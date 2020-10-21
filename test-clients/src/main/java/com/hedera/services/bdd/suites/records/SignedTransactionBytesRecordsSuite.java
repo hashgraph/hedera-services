@@ -67,7 +67,8 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 								.asTxnWithOnlySigMap()
 								.hasPrecheck(INVALID_TRANSACTION_BODY),
 						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
-						fileUpdate("bytecode").path(PATH_TO_LOOKUP_BYTECODE)
+						fileUpdate("bytecode")
+								.path(PATH_TO_LOOKUP_BYTECODE)
 								.via("failedFileTransaction")
 								.asTxnWithOnlySigMap()
 								.hasPrecheck(INVALID_TRANSACTION_BODY)

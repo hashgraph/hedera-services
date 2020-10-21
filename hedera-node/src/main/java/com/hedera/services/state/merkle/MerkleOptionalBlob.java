@@ -35,9 +35,10 @@ import com.swirlds.blob.BinaryObject;
 import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleExternalLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
-public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, MerkleExternalLeaf {
+public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, MerkleExternalLeaf {
+
 	static final int MERKLE_VERSION = (int)BinaryObject.CLASS_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4cefb15eb131d9e3L;
 	static final Hash MISSING_DELEGATE_HASH = new Hash(new byte[] {
@@ -98,7 +99,7 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 	public void modify(byte[] newContents) {
 		var newDelegate = blobStoreSupplier.get().put(newContents);
 		if (delegate != MISSING_DELEGATE) {
-			delegate.delete();
+			delegate.release();
 		}
 		delegate = newDelegate;
 	}
@@ -122,6 +123,15 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 	@Override
 	public void setHash(Hash hash) {
 		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Intentionally a no-op method
+	 */
+	@Override
+	public void invalidateHash() {
 	}
 
 	@Override
@@ -172,13 +182,6 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 	}
 
 	@Override
-	public void delete() {
-		if (delegate != MISSING_DELEGATE) {
-			delegate.delete();
-		}
-	}
-
-	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
@@ -223,5 +226,12 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 		return MoreObjects.toStringHelper(this)
 				.add("delegate", delegate)
 				.toString();
+	}
+
+	@Override
+	public void onRelease() {
+		if (delegate != MISSING_DELEGATE) {
+			delegate.release();
+		}
 	}
 }

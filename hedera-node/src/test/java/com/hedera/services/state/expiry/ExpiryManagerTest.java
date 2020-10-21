@@ -112,9 +112,6 @@ class ExpiryManagerTest {
 				longThat(l -> l == 33),
 				any());
 		// and:
-		System.out.println("Final payerExpiries: " + subject.payerExpiries.allExpiries);
-		System.out.println("Final historicalExpiries: " + subject.historicalExpiries.allExpiries);
-		// and:
 		verify(recordCache).forgetAnyOtherExpiredHistory(33);
 	}
 

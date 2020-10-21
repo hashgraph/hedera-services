@@ -56,6 +56,9 @@ import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 	private static final Logger log = LogManager.getLogger(FreezeServiceImpl.class);
 
+	public static final String JUST_FREEZE_METRIC = "freeze";
+	public static final String FREEZE_AND_UPDATE_METRIC = "freezeAndUpdate";
+
 	private final FileID softwareUpdateZipFid;
 	private TransactionHandler txHandler;
 	private PlatformSubmissionManager submissionManager;

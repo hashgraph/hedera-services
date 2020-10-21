@@ -26,7 +26,7 @@ package com.hedera.services.utils;
  * @author Michael Tinker
  */
 public enum SleepingPause implements Pause {
-	INSTANCE;
+	SLEEPING_PAUSE;
 
 	@Override
 	public boolean forMs(long n) {

@@ -22,6 +22,8 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.ConsensusThrottlesSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
@@ -42,10 +44,10 @@ import com.hedera.services.bdd.suites.contract.SmartContractInlineAssemblySpec;
 import com.hedera.services.bdd.suites.contract.SmartContractPaySpec;
 import com.hedera.services.bdd.suites.contract.SmartContractSelfDestructSpec;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -76,6 +78,8 @@ import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
+import com.hedera.services.bdd.suites.reconnect.GetAccountBalanceAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
@@ -91,6 +95,8 @@ import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -101,6 +107,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -110,9 +117,17 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
@@ -172,6 +187,7 @@ public class SuiteRunner {
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
+		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
 		put("FileUpdateLoadTest", aof(new FileUpdateLoadTest()));
 		put("ContractCallLoadTest", aof(new ContractCallLoadTest()));
 		put("SubmitMessageLoadTest", aof(new SubmitMessageLoadTest()));
@@ -179,6 +195,8 @@ public class SuiteRunner {
 		put("MixedTransferAndSubmitLoadTest", aof(new MixedTransferAndSubmitLoadTest()));
 		put("MixedTransferCallAndSubmitLoadTest", aof(new MixedTransferCallAndSubmitLoadTest()));
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
+		/* Functional tests - RECONNECT */
+		put("GetAccountBalanceAfterReconnect", aof(new GetAccountBalanceAfterReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
@@ -266,8 +284,7 @@ public class SuiteRunner {
 	private static final String NODE_SELECTOR_ARG = "-NODE";
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
-	/* The instance id of the suiteRunner running on the client. */
-	private static final String PAYER_ID_ARG = "-PAYER";
+	private static String payerId = DEFAULT_PAYER_ID;
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -275,21 +292,19 @@ public class SuiteRunner {
 
 		String[] effArgs = trueArgs(args);
 		log.info("Effective args :: " + List.of(effArgs));
+
 		if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
-			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
+			expectedNetworkSize = Integer.parseInt(overrideOrDefault(effArgs,
 					NETWORK_SIZE_ARG,
-					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
+					"" + EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
-
-			String payer_id = "0.0." + overrideOrDefault(effArgs,
-					PAYER_ID_ARG, DEFAULT_PAYER_ID).split("=")[1];
-
+			createPayerAccount(System.getenv("NODES"), args[1]);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
-					payer_id,
+					payerId,
 					args[1],
 					tlsOverride.substring(TLS_ARG.length() + 1),
 					txnOverride.substring(TXN_ARG.length() + 1),
@@ -314,6 +329,22 @@ public class SuiteRunner {
 		summarizeResults(byRunType);
 
 		System.exit(globalPassFlag ? 0 : 1);
+	}
+
+	/**
+	 * Create a default payer account for each test client while running JRS regression tests
+	 * @param nodes
+	 * @param defaultNode
+	 */
+	private static void createPayerAccount(String nodes, String defaultNode) {
+		Random r = new Random();
+		try {
+			Thread.sleep(r.nextInt(5000));
+			new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private static String overrideOrDefault(String[] effArgs, String argPrefix, String defaultValue) {
@@ -489,4 +520,9 @@ public class SuiteRunner {
 	public static <T> T[] aof(T... items) {
 		return items;
 	}
+
+	public static void setPayerId(String payerId) {
+		SuiteRunner.payerId = payerId;
+	}
+
 }

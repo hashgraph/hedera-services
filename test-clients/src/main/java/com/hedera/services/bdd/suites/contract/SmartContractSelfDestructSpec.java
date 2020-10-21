@@ -62,7 +62,7 @@ public class SmartContractSelfDestructSpec  extends HapiApiSuite  {
 
 		return defaultHapiSpec("payTestSelfDestructCall")
 				.given(
-						cryptoCreate("payer").balance( 10_000_000_000_000L).logged(),
+						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
 						cryptoCreate("receiver").balance( 1_000L),
 						fileCreate("bytecode")
 								.path(PATH_TO_PAY_TEST_SELF_DESTRUCT_BYTECODE),

@@ -156,7 +156,7 @@ class ExpirableTxnRecordTest {
 		// expect;
 		assertTrue(subject.isImmutable());
 		assertSame(subject, subject.copy());
-		assertDoesNotThrow(subject::delete);
+		assertDoesNotThrow(subject::release);
 	}
 
 	@Test

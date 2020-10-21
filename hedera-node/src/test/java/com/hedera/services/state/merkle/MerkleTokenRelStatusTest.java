@@ -155,7 +155,7 @@ class MerkleTokenRelStatusTest {
 	@Test
 	public void deleteIsNoop() {
 		// expect:
-		assertDoesNotThrow(subject::delete);
+		assertDoesNotThrow(subject::release);
 	}
 
 	@Test

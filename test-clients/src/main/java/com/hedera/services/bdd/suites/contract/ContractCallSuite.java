@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +38,7 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeF
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -132,7 +134,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						newKeyNamed("initialAdminKey").shape(initialKeyShape),
 						newKeyNamed("newAdminKey").shape(newKeyShape),
 						cryptoCreate("payer")
-								.balance(9999999999999999L),
+								.balance(10 * A_HUNDRED_HBARS),
 						fileCreate("bytecode")
 								.path(PATH_TO_SIMPLE_STORAGE_BYTECODE)
 								.payingWith("payer")
@@ -146,6 +148,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.adminKey("initialAdminKey")
 								.memo(INITIAL_MEMO)
 								.bytecode("bytecode"),
+						sleepFor(3_000),
 						getContractInfo("contract")
 								.payingWith("payer")
 								.logged()
@@ -170,6 +173,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.payingWith("payer")
 								.newExpiryTime(newExpiry)
 								.newMemo(NEW_MEMO),
+						sleepFor(3_000),
 						getContractInfo("contract")
 								.payingWith("payer")
 								.logged()
@@ -180,6 +184,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractUpdate("contract")
 								.payingWith("payer")
 								.newMemo(BETTER_MEMO),
+						sleepFor(3_000),
 						getContractInfo("contract")
 								.payingWith("payer")
 								.logged()
@@ -190,6 +195,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.payingWith("payer")
 								.signedBy("payer")
 								.newExpiryTime(betterExpiry),
+						sleepFor(3_000),
 						getContractInfo("contract")
 								.payingWith("payer")
 								.logged()
@@ -252,7 +258,8 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("DepositSuccess")
 				.given(
 						fileCreate("payableBytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
-						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
+						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD),
+						sleepFor(3_000L)
 				)
 				.when()
 				.then(
@@ -306,6 +313,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						fileCreate("parentDelegateBytecode").path(PATH_TO_DELEGATING_CONTRACT_BYTECODE),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD),
+						sleepFor(3_000L),
 						getContractInfo("parentDelegate").saveToRegistry("parentInfo")
 				).when(
 						contractCall("parentDelegate", CREATE_CHILD_ABI).via("createChildTxn"),
@@ -334,10 +342,11 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec insufficientGas() {
-		return defaultHapiSpec("InsuffcientGas")
+		return defaultHapiSpec("InsufficientGas")
 				.given(
 						fileCreate("simpleStorageBytecode").path(PATH_TO_SIMPLE_STORAGE_BYTECODE),
 						contractCreate("simpleStorage").bytecode("simpleStorageBytecode").adminKey(THRESHOLD),
+						sleepFor(3_000L),
 						getContractInfo("simpleStorage").saveToRegistry("simpleStorageInfo")
 				).when().then(
 						contractCall("simpleStorage", CREATE_CHILD_ABI).via("simpleStorageTxn")

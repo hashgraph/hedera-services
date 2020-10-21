@@ -21,6 +21,7 @@ package com.hedera.services.sigs.factories;
  */
 
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,7 +50,7 @@ public class PlatformSigFactoryTest {
 	public static byte[] differentSig = DIFFERENT_SIG.getBytes();
 	public static byte[] data = DATA.getBytes();
 	public static byte[] differentData = DIFFERENT_DATA.getBytes();
-	public static Signature EXPECTED_SIG = new Signature(
+	public static TransactionSignature EXPECTED_SIG = new TransactionSignature(
 			CONTENTS.getBytes(),
 			0, sig.length,
 			pk, 0, pk.length,
@@ -58,7 +59,7 @@ public class PlatformSigFactoryTest {
 	@Test
 	public void createsExpectedSig() {
 		// when:
-		Signature actualSig = PlatformSigFactory.createEd25519(pk, sig, data);
+		TransactionSignature actualSig = PlatformSigFactory.createEd25519(pk, sig, data);
 
 		// then:
 		Assertions.assertEquals(EXPECTED_SIG, actualSig);
@@ -132,7 +133,6 @@ public class PlatformSigFactoryTest {
 				Hex.encodeHexString(sig),
 				Hex.encodeHexString(differentPk),
 				Hex.encodeHexString(differentSig));
-		System.out.println(expected);
 
 		// given:
 		var sigs = List.of(a, b);

@@ -59,6 +59,7 @@ public class AppendFailuresSpec extends HapiApiSuite {
 						getFileContents(APP_PROPERTIES)
 								.saveTo("tmp-application.properties"),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("maxFileSize", "3"))
 				).when(
 						fileCreate("file")
@@ -70,9 +71,11 @@ public class AppendFailuresSpec extends HapiApiSuite {
 								.hasKnownStatus(MAX_FILE_SIZE_EXCEEDED)
 				).then(
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("maxFileSize", "1024"))
 								.droppingUnmentioned(),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.path("tmp-application.properties")
 				);
 	}

@@ -26,8 +26,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +37,7 @@ import java.util.Optional;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.describe;
 
-public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf {
+public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
 
 	static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;

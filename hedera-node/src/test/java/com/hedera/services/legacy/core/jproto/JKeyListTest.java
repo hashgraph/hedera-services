@@ -44,13 +44,9 @@ public class JKeyListTest {
 	void emptyWaclSerdeWorks() throws IOException {
 		// given:
 		byte[] repr = JKeySerializer.serialize(StateView.EMPTY_WACL);
-		// and:
-		System.out.println(Hex.encodeHex(repr));
 
 		// when:
 		JKey recovered = JKeySerializer.deserialize(new DataInputStream(new ByteArrayInputStream(repr)));
-		// and:
-		System.out.println(recovered);
 
 		// then:
 		assertTrue(recovered.isEmpty());

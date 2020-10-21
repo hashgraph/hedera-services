@@ -76,7 +76,6 @@ public class FeeCalcUtilsTest {
 		try {
 			return MessageFormat.format(path, params);
 		} catch (final MissingResourceException e) {
-			e.printStackTrace();
 		}
 		return path;
 	}

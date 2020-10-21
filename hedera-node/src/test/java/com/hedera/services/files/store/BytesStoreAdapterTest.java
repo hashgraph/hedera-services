@@ -49,7 +49,6 @@ class BytesStoreAdapterTest {
 	private final Function<Integer, String> fromInteger = i -> String.format(TPL, PREFIX, i);
 	private final Function<String, Integer> toInteger = s -> Integer.parseInt(s.substring(PREFIX.length() + 1));
 	private final Predicate<String> IS_VALID_KEY = key -> {
-		System.out.println("Testing '" + key + "'...");
 		return key.length() >= (PREFIX.length() + 2) &&
 				DIGITS_PATTERN.matcher(key.substring(PREFIX.length() + 1)).matches();
 	};
