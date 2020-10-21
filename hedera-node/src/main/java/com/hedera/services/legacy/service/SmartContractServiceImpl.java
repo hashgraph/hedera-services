@@ -27,6 +27,7 @@ import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
+import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.contract.ContractAnswers;
@@ -74,7 +75,10 @@ import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.legacy.utils.TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -87,40 +91,36 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
   private SmartContractFeeBuilder feeBuilder = new SmartContractFeeBuilder();
   private static final Logger log = LogManager.getLogger(SmartContractServiceImpl.class);
 
-  public static final String GET_BYTECODE_METRIC = "ContractGetBytecode";
-  public static final String GET_CONTRACT_INFO_METRIC = "getContractInfo";
-
-  private Platform platform;
   private TransactionHandler txHandler;
   private SmartContractRequestHandler smartContractHandler;
-  private HederaNodeStats hederaNodeStats;
   private UsagePricesProvider usagePrices;
   private HbarCentExchange exchange;
   private ServicesNodeType nodeType;
   private PlatformSubmissionManager submissionManager;
   private ContractAnswers contractAnswers;
   private QueryResponseHelper queryHelper;
+  private HapiOpCounters opCounters;
 
   public SmartContractServiceImpl(
           TransactionHandler txHandler,
           SmartContractRequestHandler smartContractHandler,
-          HederaNodeStats hederaNodeStats,
           UsagePricesProvider usagePrices,
           HbarCentExchange exchange,
           ServicesNodeType nodeType,
           PlatformSubmissionManager submissionManager,
           ContractAnswers contractAnswers,
-          QueryResponseHelper queryHelper
+          QueryResponseHelper queryHelper,
+          HapiOpCounters opCounters
   ) {
     this.txHandler = txHandler;
     this.smartContractHandler = smartContractHandler;
-    this.hederaNodeStats = hederaNodeStats;
     this.usagePrices = usagePrices;
     this.exchange = exchange;
     this.nodeType = nodeType;
     this.submissionManager = submissionManager;
     this.contractAnswers = contractAnswers;
     this.queryHelper = queryHelper;
+    this.opCounters = opCounters;
   }
 
   public long getContractCallLocalGasPriceInTinyBars(Timestamp at) {
@@ -140,7 +140,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
    */
   @Override
   public void contractCallLocalMethod(Query request, StreamObserver<Response> responseObserver) {
-    hederaNodeStats.smartContractQueryReceived("contractCallLocalMethod");
+    opCounters.countReceived(ContractCallLocal);
 
     if (log.isDebugEnabled()) {
       log.debug("In contractCallLocalMethod :: request : " + TextFormat.shortDebugString(request));
@@ -288,7 +288,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
       TransactionValidationUtils.constructContractCallLocalErrorResponse(responseObserver,
           validationCode,0);
     }
-    hederaNodeStats.smartContractQuerySubmitted("contractCallLocalMethod");
+    opCounters.countAnswered(ContractCallLocal);
   }
 
   /**
@@ -299,7 +299,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
    */
   @Override
   public void createContract(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
-    smartContractTransactionExecution(request, responseObserver, "createContract");
+    smartContractTransactionExecution(request, responseObserver, "createContract", HederaFunctionality.ContractCreate);
   }
 
   /**
@@ -311,7 +311,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
   @Override
   public void contractCallMethod(Transaction request,
       StreamObserver<TransactionResponse> responseObserver) {
-    smartContractTransactionExecution(request, responseObserver, "contractCallMethod");
+    smartContractTransactionExecution(request, responseObserver, "contractCallMethod", HederaFunctionality.ContractCall);
   }
 
 
@@ -332,7 +332,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
   @Override
   public void updateContract(Transaction request,
       StreamObserver<TransactionResponse> responseObserver) {
-    smartContractTransactionExecution(request, responseObserver, "updateContract");
+    smartContractTransactionExecution(request, responseObserver, "updateContract", HederaFunctionality.ContractUpdate);
   }
 
   /**
@@ -340,20 +340,18 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
    */
   @Override
   public void getBySolidityID(Query request, StreamObserver<Response> responseObserver) {
-    hederaNodeStats.smartContractQueryReceived("getBySolidityID");
-    TransactionValidationUtils.constructGetBySolidityIDErrorResponse(
-            responseObserver, ResponseCodeEnum.NOT_SUPPORTED,0);
-    log.debug("getBySolidityID not supported");
+    opCounters.countReceived(GetBySolidityID);
+    TransactionValidationUtils.constructGetBySolidityIDErrorResponse(responseObserver, ResponseCodeEnum.NOT_SUPPORTED,0);
   }
 
   @Override
   public void getContractInfo(Query query, StreamObserver<Response> observer) {
-    queryHelper.respondToContract(query, observer, contractAnswers.getContractInfo(), GET_CONTRACT_INFO_METRIC);
+    queryHelper.answer(query, observer, contractAnswers.getContractInfo(), ContractGetInfo);
   }
 
   @Override
   public void contractGetBytecode(Query query, StreamObserver<Response> observer) {
-      queryHelper.respondToContract(query, observer, contractAnswers.getBytecode(), GET_BYTECODE_METRIC);
+      queryHelper.answer(query, observer, contractAnswers.getBytecode(), ContractGetBytecode);
   }
 
   /**
@@ -364,7 +362,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
    */
   @Override
   public void getTxRecordByContractID(Query request, StreamObserver<Response> responseObserver) {
-    hederaNodeStats.smartContractQueryReceived("getTxRecordByContractID");
+    opCounters.countReceived(ContractGetRecords);
 
     boolean isStaked = (nodeType == STAKED_NODE);
 
@@ -475,7 +473,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     }
     responseObserver.onCompleted();
 
-    hederaNodeStats.smartContractQuerySubmitted("getTxRecordByContractID");
+    opCounters.countAnswered(ContractGetRecords);
   }
 
   /**
@@ -488,13 +486,15 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
    */
   private void smartContractTransactionExecution(
           Transaction request,
-          StreamObserver<TransactionResponse> responseObserver, String transactionRequest
+          StreamObserver<TransactionResponse> responseObserver,
+          String transactionRequest,
+          HederaFunctionality function
   ) {
     if (nodeType == ZERO_STAKE_NODE) {
       transactionResponse(responseObserver, new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_NODE_ACCOUNT));
       return;
     }
-    hederaNodeStats.smartContractTransactionReceived(transactionRequest);
+    opCounters.countReceived(function);
 
     TransactionBody transactionBody;
     TxnValidityAndFeeReq precheckResult;
@@ -578,7 +578,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
       return;
     }
     TransactionValidationUtils.transactionResponse(responseObserver, new TxnValidityAndFeeReq(OK));
-    hederaNodeStats.smartContractTransactionSubmitted(transactionRequest);
+    opCounters.countSubmitted(function);
   }
 
   private boolean durationRangeCheck(
@@ -601,7 +601,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
   @Override
   public void deleteContract(Transaction request,
       StreamObserver<TransactionResponse> responseObserver) {
-    smartContractTransactionExecution(request, responseObserver, "deleteContract");
+    smartContractTransactionExecution(request, responseObserver, "deleteContract", HederaFunctionality.ContractDelete);
   }
 
   /**
@@ -611,9 +611,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
    * @param responseObserver Observer to be informed of the results
    */
   @Override
-  public void systemDelete(Transaction request,
-      StreamObserver<TransactionResponse> responseObserver) {
-    hederaNodeStats.smartContractTransactionReceived("smartContractSystemDelete");
+  public void systemDelete(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
     TxnValidityAndFeeReq precheckResult = txHandler.validateTransactionPreConsensus(request, false);
     if (precheckResult.getValidity() != OK) {
       String errorMsg = "Pre-check validation failed. " + precheckResult;
@@ -638,7 +636,6 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
       precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
       TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
     }
-    hederaNodeStats.smartContractTransactionSubmitted("smartContractSystemDelete");
   }
 
   /**
@@ -648,9 +645,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
    * @param responseObserver Observer to be informed of the results
    */
   @Override
-  public void systemUndelete(Transaction request,
-      StreamObserver<TransactionResponse> responseObserver) {
-    hederaNodeStats.smartContractTransactionReceived("smartContractSystemUndelete");
+  public void systemUndelete(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
     TxnValidityAndFeeReq precheckResult = txHandler.validateTransactionPreConsensus(request, false);
     if (precheckResult.getValidity() != OK) {
       String errorMsg = "Pre-check validation failed. " + precheckResult;
@@ -676,7 +671,5 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
       precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
       TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
     }
-    hederaNodeStats.smartContractTransactionSubmitted("smartContractSystemUndelete");
   }
-
 }

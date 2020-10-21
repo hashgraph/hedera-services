@@ -23,6 +23,7 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.file.FileAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -32,6 +33,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.grpc.controllers.FileController.*;
 
@@ -120,7 +124,7 @@ public class FileControllerTest {
 
 		// expect:
 		verify(answers).fileInfo();
-		verify(queryResponseHelper).respondToFile(query, queryObserver, null, GET_FILE_INFO_METRIC);
+		verify(queryResponseHelper).answer(query, queryObserver, null, FileGetInfo);
 	}
 
 	@Test
@@ -130,6 +134,6 @@ public class FileControllerTest {
 
 		// expect:
 		verify(answers).fileContents();
-		verify(queryResponseHelper).respondToFile(query, queryObserver, null, GET_FILE_CONTENT_METRIC);
+		verify(queryResponseHelper).answer(query, queryObserver, null, FileGetContents);
 	}
 }

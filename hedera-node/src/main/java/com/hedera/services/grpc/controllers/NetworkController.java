@@ -23,12 +23,15 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.NetworkServiceGrpc;
 import io.grpc.stub.StreamObserver;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 
 public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase {
 	private final MetaAnswers metaAnswers;
@@ -50,7 +53,7 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 
 	@Override
 	public void getVersionInfo(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToNetwork(query, observer, metaAnswers.getVersionInfo(), GET_VERSION_INFO_METRIC);
+		queryHelper.answer(query, observer, metaAnswers.getVersionInfo(), GetVersionInfo);
 	}
 
 	@Override

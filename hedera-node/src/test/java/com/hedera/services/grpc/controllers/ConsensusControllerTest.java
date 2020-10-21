@@ -23,6 +23,7 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.consensus.HcsAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -66,7 +67,7 @@ class ConsensusControllerTest {
 
 		// expect:
 		verify(hcsAnswers).topicInfo();
-		verify(queryResponseHelper).respondToHcs(query, queryObserver, null, ConsensusController.GET_TOPIC_INFO_METRIC);
+		verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.TokenGetInfo);
 	}
 
 	@Test

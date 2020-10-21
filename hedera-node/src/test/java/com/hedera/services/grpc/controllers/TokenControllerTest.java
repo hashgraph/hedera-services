@@ -24,6 +24,7 @@ import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -35,6 +36,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.grpc.controllers.TokenController.*;
 
@@ -186,6 +188,6 @@ class TokenControllerTest {
 		subject.getTokenInfo(query, queryObserver);
 
 		// expect:
-		verify(queryResponseHelper).respondToToken(query, queryObserver,null , TOKEN_GET_INFO_METRIC);
+		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetInfo);
 	}
 }

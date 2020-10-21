@@ -23,12 +23,16 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.file.FileAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import io.grpc.stub.StreamObserver;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 
 public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	private final FileAnswers fileAnswers;
@@ -86,11 +90,11 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 
 	@Override
 	public void getFileInfo(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToFile(query, observer, fileAnswers.fileInfo(), GET_FILE_INFO_METRIC);
+		queryHelper.answer(query, observer, fileAnswers.fileInfo(), FileGetInfo);
 	}
 
 	@Override
 	public void getFileContent(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToFile(query, observer, fileAnswers.fileContents(), GET_FILE_CONTENT_METRIC);
+		queryHelper.answer(query, observer, fileAnswers.fileContents(), FileGetContents);
 	}
 }

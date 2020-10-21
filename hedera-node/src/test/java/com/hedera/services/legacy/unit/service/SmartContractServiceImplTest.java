@@ -58,6 +58,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.validation.BasicPrecheck;
@@ -420,9 +421,9 @@ public class SmartContractServiceImplTest {
 		given(submissionManager.trySubmission(any())).willReturn(OK);
 
 		smartContractImpl = new SmartContractServiceImpl(transactionHandler,
-				smartContractHandler, hederaNodeStats,
+				smartContractHandler,
 				TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-				submissionManager, null, null);
+				submissionManager, null, null, mock(HapiOpCounters.class));
 		smartContractImpl.createContract(trx, responseObserver);
 
 		verify(hederaNodeStats, times(1)).smartContractTransactionReceived("createContract");
@@ -454,9 +455,9 @@ public class SmartContractServiceImplTest {
 			given(submissionManager.trySubmission(any())).willReturn(OK);
 
 			smartContractImpl = new SmartContractServiceImpl(transactionHandler,
-					smartContractHandler, hederaNodeStats,
+					smartContractHandler,
 					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-					submissionManager, null, null);
+					submissionManager, null, null, mock(HapiOpCounters.class));
 
 			StreamObserver<Response> respOb = new StreamObserver<Response>() {
 

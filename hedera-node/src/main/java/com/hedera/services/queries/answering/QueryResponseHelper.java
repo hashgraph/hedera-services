@@ -22,6 +22,8 @@ package com.hedera.services.queries.answering;
 
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.AnswerService;
+import com.hedera.services.stats.HapiOpCounters;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
@@ -40,95 +42,28 @@ public class QueryResponseHelper {
 	private static final Marker ALL_QUERIES_MARKER = MarkerManager.getMarker("ALL_QUERIES");
 
 	private final AnswerFlow answerFlow;
-	private final HederaNodeStats stats;
+	private final HapiOpCounters opCounters;
 
-	public QueryResponseHelper(AnswerFlow answerFlow, HederaNodeStats stats) {
+	public QueryResponseHelper(
+			AnswerFlow answerFlow,
+			HapiOpCounters opCounters
+	) {
+		this.opCounters = opCounters;
 		this.answerFlow = answerFlow;
-		this.stats = stats;
 	}
 
-	public void respondToToken(
+	public void answer(
 			Query query,
 			StreamObserver<Response> observer,
 			AnswerService answer,
-			String metric
+			HederaFunctionality statedFunction
 	) {
 		respondWithMetrics(
 				query,
 				observer,
 				answer,
-				() -> stats.tokenQueryReceived(metric),
-				() -> stats.tokenQueryAnswered(metric));
-	}
-
-	public void respondToNetwork(
-			Query query,
-			StreamObserver<Response> observer,
-			AnswerService answer,
-			String metric
-	) {
-		respondWithMetrics(
-				query,
-				observer,
-				answer,
-				() -> stats.networkQueryReceived(metric),
-				() -> stats.networkQueryAnswered(metric));
-	}
-
-	public void respondToHcs(
-			Query query,
-			StreamObserver<Response> observer,
-			AnswerService answer,
-			String metric
-	) {
-		respondWithMetrics(
-				query,
-				observer,
-				answer,
-				() -> stats.hcsQueryReceived(metric),
-				() -> stats.hcsQueryAnswered(metric));
-	}
-
-	public void respondToCrypto(
-			Query query,
-			StreamObserver<Response> observer,
-			AnswerService answer,
-			String metric
-	) {
-		respondWithMetrics(
-				query,
-				observer,
-				answer,
-				() -> stats.cryptoQueryReceived(metric),
-				() -> stats.cryptoQuerySubmitted(metric));
-	}
-
-	public void respondToFile(
-			Query query,
-			StreamObserver<Response> observer,
-			AnswerService answer,
-			String metric
-	) {
-		respondWithMetrics(
-				query,
-				observer,
-				answer,
-				() -> stats.fileQueryReceived(metric),
-				() -> stats.fileQuerySubmitted(metric));
-	}
-
-	public void respondToContract(
-			Query query,
-			StreamObserver<Response> observer,
-			AnswerService answer,
-			String metric
-	) {
-		respondWithMetrics(
-				query,
-				observer,
-				answer,
-				() -> stats.smartContractQueryReceived(metric),
-				() -> stats.smartContractQuerySubmitted(metric));
+				() -> opCounters.countReceived(statedFunction),
+				() -> opCounters.countAnswered(statedFunction));
 	}
 
 	private void respondWithMetrics(

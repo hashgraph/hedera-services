@@ -633,7 +633,7 @@ public class ServicesContext {
 
 	public QueryResponseHelper queryResponseHelper() {
 		if (queryResponseHelper == null) {
-			queryResponseHelper = new QueryResponseHelper(answerFlow(), stats());
+			queryResponseHelper = new QueryResponseHelper(answerFlow(), opCounters());
 		}
 		return queryResponseHelper;
 	}
@@ -1333,13 +1333,13 @@ public class ServicesContext {
 			contractsGrpc = new SmartContractServiceImpl(
 					txns(),
 					contracts(),
-					stats(),
 					usagePrices(),
 					exchange(),
 					nodeType(),
 					submissionManager(),
 					contractAnswers(),
-					queryResponseHelper());
+					queryResponseHelper(),
+					opCounters());
 		}
 		return contractsGrpc;
 	}

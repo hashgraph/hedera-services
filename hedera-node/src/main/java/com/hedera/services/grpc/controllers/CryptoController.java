@@ -24,6 +24,7 @@ import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.crypto.CryptoAnswers;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -32,6 +33,15 @@ import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetStakers;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
 public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	private static final Logger log = LogManager.getLogger(CryptoController.class);
@@ -70,42 +80,42 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 
 	@Override
 	public void getAccountInfo(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToCrypto(query, observer, cryptoAnswers.getAccountInfo(), GET_ACCOUNT_INFO_METRIC);
+		queryHelper.answer(query, observer, cryptoAnswers.getAccountInfo(), CryptoGetInfo);
 	}
 
 	@Override
 	public void cryptoGetBalance(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToCrypto(query, observer, cryptoAnswers.getAccountBalance(), GET_ACCOUNT_BALANCE_METRIC);
+		queryHelper.answer(query, observer, cryptoAnswers.getAccountBalance(), CryptoGetAccountBalance);
 	}
 
 	@Override
 	public void getAccountRecords(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToCrypto(query, observer, cryptoAnswers.getAccountRecords(), GET_ACCOUNT_RECORDS_METRIC);
+		queryHelper.answer(query, observer, cryptoAnswers.getAccountRecords(), CryptoGetAccountRecords);
 	}
 
 	@Override
 	public void getStakersByAccountID(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToCrypto(query, observer, cryptoAnswers.getStakers(), GET_STAKERS_METRIC);
+		queryHelper.answer(query, observer, cryptoAnswers.getStakers(), CryptoGetStakers);
 	}
 
 	@Override
 	public void getLiveHash(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToCrypto(query, observer, cryptoAnswers.getLiveHash(), GET_LIVE_HASH_METRIC);
+		queryHelper.answer(query, observer, cryptoAnswers.getLiveHash(), CryptoGetLiveHash);
 	}
 
 	@Override
 	public void getTransactionReceipts(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToCrypto(query, observer, metaAnswers.getTxnReceipt(), GET_RECEIPT_METRIC);
+		queryHelper.answer(query, observer, metaAnswers.getTxnReceipt(), TransactionGetReceipt);
 	}
 
 	@Override
 	public void getTxRecordByTxID(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToCrypto(query, observer, metaAnswers.getTxnRecord(), GET_RECORD_METRIC);
+		queryHelper.answer(query, observer, metaAnswers.getTxnRecord(), TransactionGetRecord);
 	}
 
 	@Override
 	public void getFastTransactionRecord(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToCrypto(query, observer, metaAnswers.getFastTxnRecord(), GET_FAST_RECORD_METRIC);
+		queryHelper.answer(query, observer, metaAnswers.getFastTxnRecord(), NONE);
 	}
 
 	@Override

@@ -23,6 +23,7 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -31,6 +32,8 @@ import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 
 public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	private static final Logger log = LogManager.getLogger(TokenController.class);
@@ -132,6 +135,6 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 
 	@Override
 	public void getTokenInfo(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToToken(query, observer, tokenAnswers.getTokenInfo(), TOKEN_GET_INFO_METRIC);
+		queryHelper.answer(query, observer, tokenAnswers.getTokenInfo(), TokenGetInfo);
 	}
 }
