@@ -50,7 +50,7 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 		new CreateAccountsBeforeReconnect().runSuiteSync();
 	}
 
-	private static final AtomicInteger accountNumber = new AtomicInteger();
+	private static final AtomicInteger accountNumber = new AtomicInteger(1);
 
 
 	@Override
@@ -61,13 +61,14 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 	}
 
 	private synchronized HapiSpecOperation generateCreateAccountOperation() {
-		if (accountNumber.get() >= ACCOUNT_CREATION_LIMIT) {
+		final long accNumber = accountNumber.getAndIncrement();
+		if (accNumber >= ACCOUNT_CREATION_LIMIT) {
 			return getVersionInfo()
 					.noLogging();
 		}
 
-		return cryptoCreate("account" + accountNumber.getAndIncrement())
-				.balance(100L)
+		return cryptoCreate("account" + accNumber)
+				.balance(accNumber)
 				.noLogging()
 				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 				.deferStatusResolution();
