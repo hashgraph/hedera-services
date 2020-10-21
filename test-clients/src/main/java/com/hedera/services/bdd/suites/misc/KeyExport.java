@@ -23,18 +23,28 @@ package com.hedera.services.bdd.suites.misc;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -42,7 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 public class KeyExport extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(KeyExport.class);
 
-	private static final String PEM_FILE_NAME = "previewTestnet.pem";
+	private static final String PEM_FILE_NAME = "dev-testnet-account2.pem";
 
 	public static void main(String... args) throws Exception {
 		new KeyExport().runSuiteSync();
@@ -51,10 +61,32 @@ public class KeyExport extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						exportCurrentTreasuryKey(),
+						updateTreasuryKey(),
+//						exportCurrentTreasuryKey(),
 //						exportGenesisKey(),
 //						validateNewKey(),
 				}
+		);
+	}
+
+	private HapiApiSpec updateTreasuryKey() {
+		return customHapiSpec("UpdateTreasuryKey").withProperties(Map.of(
+				"nodes", "34.74.191.8"
+		)).given(
+//				keyFromPem(PEM_FILE_NAME)
+//						.name("newKey")
+//						.passphrase("ya3Xlgxaz3D4IWZcnF")
+//						.simpleWacl()
+		).when(
+//				getAccountInfo(GENESIS).logged(),
+//				cryptoUpdate(GENESIS).key("newKey")
+				fileUpdate(API_PERMISSIONS)
+						.erasingProps(Set.of("tokenGetInfo"))
+						.overridingProps(Map.of("getTokenInfo", "0-*"))
+		).then(
+				getFileContents(API_PERMISSIONS).logged()
+//				getAccountInfo(GENESIS).signedBy("newKey").logged()
+//				freeze().startingIn(60).seconds().andLasting(1).minutes()
 		);
 	}
 

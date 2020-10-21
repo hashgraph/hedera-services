@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Issue2098Spec extends HapiApiSuite {
@@ -58,12 +59,16 @@ public class Issue2098Spec extends HapiApiSuite {
 				.given(
 						cryptoCreate("civilian")
 				).when(
-						fileUpdate(API_PERMISSIONS).erasingProps(Set.of("cryptoTransfer"))
+						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.erasingProps(Set.of("cryptoTransfer"))
 				).then(
 						cryptoTransfer(tinyBarsFromTo("civilian", FUNDING, 1L))
 								.payingWith("civilian")
 								.hasPrecheck(NOT_SUPPORTED),
-						fileUpdate(API_PERMISSIONS),
+						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("cryptoTransfer", "0-*")),
 						cryptoTransfer(tinyBarsFromTo("civilian", FUNDING, 1L))
 								.payingWith("civilian")
 				);
@@ -75,10 +80,14 @@ public class Issue2098Spec extends HapiApiSuite {
 						cryptoCreate("civilian"),
 						createTopic("misc")
 				).when(
-						fileUpdate(API_PERMISSIONS).erasingProps(Set.of("getTopicInfo"))
+						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.erasingProps(Set.of("getTopicInfo"))
 				).then(
 						getTopicInfo("misc").payingWith("civilian").hasCostAnswerPrecheck(NOT_SUPPORTED),
-						fileUpdate(API_PERMISSIONS),
+						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("getTopicInfo", "0-*")),
 						getTopicInfo("misc").payingWith("civilian")
 				);
 	}
@@ -89,11 +98,15 @@ public class Issue2098Spec extends HapiApiSuite {
 						cryptoCreate("civilian"),
 						createTopic("misc")
 				).when(
-						fileUpdate(API_PERMISSIONS).erasingProps(Set.of("getTopicInfo"))
+						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.erasingProps(Set.of("getTopicInfo"))
 				).then(
 						getTopicInfo("misc").payingWith("civilian").hasCostAnswerPrecheck(NOT_SUPPORTED),
 						getTopicInfo("misc"),
 						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("getTopicInfo", "0-*"))
 				);
 	}
 
@@ -102,13 +115,17 @@ public class Issue2098Spec extends HapiApiSuite {
 				.given(
 						cryptoCreate("civilian")
 				).when(
-						fileUpdate(API_PERMISSIONS).erasingProps(Set.of("cryptoTransfer"))
+						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.erasingProps(Set.of("cryptoTransfer"))
 				).then(
 						cryptoTransfer(tinyBarsFromTo("civilian", FUNDING, 1L))
 								.payingWith("civilian")
 								.hasPrecheck(NOT_SUPPORTED),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
 						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("cryptoTransfer", "0-*"))
 				);
 	}
 

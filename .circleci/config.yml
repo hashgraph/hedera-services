@@ -1917,23 +1917,23 @@ jobs:
       - run-eet-suites:
           dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
       - run-eet-suites:
-          dsl-args: "ContractUpdateSuite -TLS=on -NODE=random"
+          dsl-args: "ContractUpdateSuite -TLS=on"
       - run-eet-suites:
-          dsl-args: "ContractDeleteSuite -TLS=on -NODE=random"
+          dsl-args: "ContractDeleteSuite -TLS=on"
       - run-eet-suites:
-          dsl-args: "ChildStorageSpecs -TLS=on -NODE=random"
+          dsl-args: "ChildStorageSpecs -TLS=on"
       - run-eet-suites:
-          dsl-args: "BigArraySpec -TLS=on -NODE=random"
+          dsl-args: "BigArraySpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "SmartContractInlineAssemblySpec -TLS=on -NODE=random"
+          dsl-args: "SmartContractInlineAssemblySpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "OCTokenSpec -TLS=on -NODE=random"
+          dsl-args: "OCTokenSpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "CharacterizationSuite -TLS=on -NODE=random"
+          dsl-args: "CharacterizationSuite -TLS=on"
       - run-eet-suites:
-          dsl-args: "SmartContractFailFirstSpec -TLS=on -NODE=random"
+          dsl-args: "SmartContractFailFirstSpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "SmartContractSelfDestructSpec -TLS=on -NODE=random"
+          dsl-args: "SmartContractSelfDestructSpec -TLS=on"
       - run-eet-suites:
           dsl-args: "ChildStorageSpecs"
       - run-eet-suites:

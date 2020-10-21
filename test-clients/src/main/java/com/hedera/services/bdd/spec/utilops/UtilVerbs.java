@@ -89,6 +89,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
@@ -237,7 +238,9 @@ public class UtilVerbs {
 				newConfig.addNameValue(from(name, jutilProps.getProperty(name)));
 			}
 
-			var update = fileUpdate(APP_PROPERTIES).contents(newConfig.build().toByteString());
+			var update = fileUpdate(APP_PROPERTIES)
+					.payingWith(ADDRESS_BOOK_CONTROL)
+					.contents(newConfig.build().toByteString());
 			allRunFor(spec, update);
 		});
 	}

@@ -1,4 +1,4 @@
-package com.hedera.services.utils;
+package com.hedera.services.stats;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,21 +20,22 @@ package com.hedera.services.utils;
  * ‍
  */
 
-/**
- * Minimal implementation of {@link Pause}.
- *
- * @author Michael Tinker
- */
-public enum SleepingPause implements Pause {
-	SLEEPING_PAUSE;
+import com.swirlds.common.StatEntry;
+import com.swirlds.platform.StatsSpeedometer;
 
-	@Override
-	public boolean forMs(long n) {
-		try {
-			Thread.sleep(n);
-			return true;
-		} catch (InterruptedException ignore) {
-			return false;
-		}
+public interface SpeedometerFactory {
+	default StatEntry from(String name, String desc, StatsSpeedometer speedometer) {
+		return new StatEntry(
+				"app",
+				name,
+				desc,
+				"%,13.2f",
+				speedometer,
+				newHalfLife -> {
+					speedometer.reset(newHalfLife);
+					return speedometer;
+				},
+				speedometer::reset,
+				speedometer::getCyclesPerSecond);
 	}
 }

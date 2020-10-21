@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.transactions.file;
 import com.google.common.base.MoreObjects;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.GeneratedMessage;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -62,6 +63,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.currExpiry;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.EMPTY_SET;
 
@@ -286,8 +290,9 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			if (!file.equals(HapiApiSuite.API_PERMISSIONS) && !file.equals(HapiApiSuite.APP_PROPERTIES)) {
 				throw new IllegalStateException("Property overrides make no sense for file '" + file + "'!");
 			}
-			HapiGetFileContents subOp = QueryVerbs.getFileContents(file);
-			CustomSpecAssert.allRunFor(spec, subOp);
+			HapiGetFileContents subOp = getFileContents(file);
+			payer.ifPresent(name -> subOp.payingWith(payerToUse(name, spec)));
+			allRunFor(spec, subOp);
 			try {
 				byte[] bytes = subOp.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 				ServicesConfigurationList defaults = ServicesConfigurationList.parseFrom(bytes);
@@ -348,7 +353,9 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			oldExpiry = spec.registry().getTimestamp(file);
 		}
 		if (oldExpiry == null) {
-			oldExpiry = TxnUtils.currExpiry(file, spec);
+			oldExpiry = payer.isPresent()
+					? currExpiry(file, spec, payerToUse(payer.get(), spec))
+					: currExpiry(file, spec);
 		}
 		return oldExpiry;
 	}
@@ -365,5 +372,16 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		newContentsPath.ifPresent(p -> helper.add("path", p));
 		literalNewContents.ifPresent(l -> helper.add("contents", l));
 		return helper;
+	}
+
+	private String payerToUse(String designated, HapiApiSpec spec) {
+		return isPrivileged(designated, spec) ? spec.setup().genesisAccountName() : designated;
+	}
+
+	private boolean isPrivileged(String account, HapiApiSpec spec) {
+		return account.equals(spec.setup().addressBookControlName()) ||
+				account.equals(spec.setup().exchangeRatesControlName()) ||
+				account.equals(spec.setup().feeScheduleControlName()) ||
+				account.equals(spec.setup().strongControlName());
 	}
 }

@@ -61,9 +61,9 @@ public class TogglePayerRecordUse extends HapiApiSuite {
 
 		return defaultHapiSpec("ChangePayerRecordStateStorage")
 				.given().when().then(
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"ledger.createPayerRecords", NEW_VALUE
-						))
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("ledger.createPayerRecords", NEW_VALUE))
 				);
 	}
 

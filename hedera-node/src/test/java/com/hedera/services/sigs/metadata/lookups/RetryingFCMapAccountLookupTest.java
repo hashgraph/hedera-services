@@ -55,7 +55,7 @@ public class RetryingFCMapAccountLookupTest {
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private RetryingFCMapAccountLookup subject;
 	private Pause pause;
-	private final Pause defaultPause = SleepingPause.INSTANCE;
+	private final Pause defaultPause = SleepingPause.SLEEPING_PAUSE;
 	private final AccountID account = IdUtils.asAccount("0.0.1337");
 	private final MerkleEntityId accountKey = MerkleEntityId.fromAccountId(account);
 	private final MerkleAccount accountValue = newAccount().receiverSigRequired(true).accountKeys(accountKeys).get();

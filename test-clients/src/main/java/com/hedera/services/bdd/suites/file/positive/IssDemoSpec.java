@@ -92,14 +92,14 @@ public class IssDemoSpec extends HapiApiSuite {
 
 	private HapiSpecOperation setMaxFileSizeTo1kb() {
 		return UtilVerbs.blockingOrder(
-				fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+				fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).overridingProps(Map.of(
 						"maxFileSize", "1"
 				)),
 				UtilVerbs.sleepFor(500L),
-				fileUpdate(APP_PROPERTIES).droppingUnmentioned().overridingProps(Map.of(
+				fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).droppingUnmentioned().overridingProps(Map.of(
 						"maxFileSize", "1024"
 				)),
-				fileUpdate(APP_PROPERTIES).contents(ignore -> legacyProps.get())
+				fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).contents(ignore -> legacyProps.get())
 		);
 	}
 

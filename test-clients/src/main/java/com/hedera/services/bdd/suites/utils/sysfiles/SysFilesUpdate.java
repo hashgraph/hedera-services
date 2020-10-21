@@ -316,6 +316,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							if (toUpload.length < (6 * 1024)) {
 								var singleOp = fileUpdate(registryNames.get(target))
+										.payingWith(GENESIS)
 										.fee(feeToOffer())
 										.contents(toUpload)
 										.signedBy(GENESIS, DEFAULT_SYSFILE_KEY);

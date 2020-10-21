@@ -78,6 +78,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 						})
 				).when(
 						fileUpdate(EXCHANGE_RATES)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents("NONSENSE".getBytes())
 								.extendingExpiryBy(extension)
 								.hasKnownStatus(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE)
@@ -117,8 +118,9 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 		return defaultHapiSpec("precheckAllowsMissing")
 				.given().when().then(
 						fileUpdate("1.2.3")
-								.fee(1_234_567L)
+								.payingWith(GENESIS)
 								.signedBy(GENESIS)
+								.fee(1_234_567L)
 								.hasPrecheck(OK)
 								.hasKnownStatus(INVALID_FILE_ID)
 				);
