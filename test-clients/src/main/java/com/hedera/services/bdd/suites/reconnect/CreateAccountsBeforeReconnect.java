@@ -69,7 +69,8 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 		return cryptoCreate("account" + accountNumber.getAndIncrement())
 				.balance(100L)
 				.noLogging()
-				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED);
+				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+				.deferStatusResolution();
 	}
 
 	private HapiApiSpec runCreateAccounts() {
