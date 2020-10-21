@@ -77,6 +77,6 @@ class NetworkControllerTest {
 		subject.uncheckedSubmit(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToNetwork(txn, txnObserver, UNCHECKED_SUBMIT_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, HederaFunctionality.UncheckedSubmit);
 	}
 }

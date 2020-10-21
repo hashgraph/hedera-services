@@ -32,6 +32,7 @@ import com.hederahashgraph.service.proto.java.NetworkServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
 public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase {
 	private final MetaAnswers metaAnswers;
@@ -58,6 +59,6 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 
 	@Override
 	public void uncheckedSubmit(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnResponseHelper.respondToNetwork(signedTxn, observer, UNCHECKED_SUBMIT_METRIC);
+		txnResponseHelper.submit(signedTxn, observer, UncheckedSubmit);
 	}
 }

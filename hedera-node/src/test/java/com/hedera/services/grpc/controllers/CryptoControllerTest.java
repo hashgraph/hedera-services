@@ -35,11 +35,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetStakers;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -160,7 +166,7 @@ class CryptoControllerTest {
 		subject.cryptoTransfer(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToCrypto(txn, txnObserver, CRYPTO_TRANSFER_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoTransfer);
 	}
 
 	@Test
@@ -169,7 +175,7 @@ class CryptoControllerTest {
 		subject.createAccount(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToCrypto(txn, txnObserver, CRYPTO_CREATE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoCreate);
 	}
 
 	@Test
@@ -178,7 +184,7 @@ class CryptoControllerTest {
 		subject.cryptoDelete(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToCrypto(txn, txnObserver, CRYPTO_DELETE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoDelete);
 	}
 
 	@Test
@@ -187,7 +193,7 @@ class CryptoControllerTest {
 		subject.updateAccount(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToCrypto(txn, txnObserver, CRYPTO_UPDATE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoUpdate);
 	}
 
 	@Test
@@ -196,7 +202,7 @@ class CryptoControllerTest {
 		subject.addLiveHash(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToCrypto(txn, txnObserver, ADD_LIVE_HASH_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoAddLiveHash);
 	}
 
 	@Test
@@ -205,6 +211,6 @@ class CryptoControllerTest {
 		subject.deleteLiveHash(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToCrypto(txn, txnObserver, DELETE_LIVE_HASH_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoDeleteLiveHash);
 	}
 }

@@ -122,7 +122,7 @@ public class CryptoTxRecordTransferListTest {
 			createAccount(transferAccountID, transferAccountBalance, keys);
 			Instant consensusTimestamp = Instant.now(Clock.systemUTC()).plusSeconds(20);
 			TransactionBody txBody = getDeleteTransactionBody();
-			CryptoHandlerTestHelper crHandler = new CryptoHandlerTestHelper(fcMap, null);
+			CryptoHandlerTestHelper crHandler = new CryptoHandlerTestHelper(fcMap);
 			TransactionRecord trRecord = crHandler.cryptoDelete(txBody, consensusTimestamp);
 			for(AccountAmount accountAmount : trRecord.getTransferList().getAccountAmountsList()) {
 				if(accountAmount.getAccountID().equals(deleteAccountID)) {
@@ -151,7 +151,7 @@ public class CryptoTxRecordTransferListTest {
 			Instant consensusTimestamp = Instant.now(Clock.systemUTC()).plusSeconds(20);
 			TransactionBody txBody = getDummyTransaction(startTime, transactionDuration, transactionFee);
 			hederaFunc = HederaFunctionality.CryptoTransfer;
-			CryptoHandlerTestHelper crHandler = new CryptoHandlerTestHelper(fcMap, null);
+			CryptoHandlerTestHelper crHandler = new CryptoHandlerTestHelper(fcMap);
 			TransactionRecord txRecord = crHandler.cryptoTransfer(txBody, consensusTimestamp);
 			
 			for(AccountAmount accountAmount : txRecord.getTransferList().getAccountAmountsList()) {

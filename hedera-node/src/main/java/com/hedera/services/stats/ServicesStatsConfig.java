@@ -29,16 +29,16 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 public class ServicesStatsConfig {
 	public static Set<HederaFunctionality> IGNORED_FUNCTIONS = EnumSet.of(
-		NONE
+			NONE
 	);
 
 	static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
 	static final String COUNTER_RECEIVED_NAME_TPL = "%sRcv";
-	static final String COUNTER_ANSWERED_NAME_TPL = "%sAns";
+	static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
 	static final String COUNTER_SUBMITTED_NAME_TPL = "%sSub";
 	static final String SPEEDOMETER_HANDLED_NAME_TPL = "%sHdl/sec";
 	static final String SPEEDOMETER_RECEIVED_NAME_TPL = "%sRcv/sec";
-	static final String SPEEDOMETER_ANSWERED_NAME_TPL = "%sAns/sec";
+	static final String SPEEDOMETER_ANSWERED_NAME_TPL = "%sSub/sec";
 	static final String SPEEDOMETER_SUBMITTED_NAME_TPL = "%sSub/sec";
 
 	static final String COUNTER_HANDLED_DESC_TPL = "number of %s handled";

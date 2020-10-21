@@ -34,6 +34,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
@@ -76,7 +80,7 @@ class ConsensusControllerTest {
 		subject.createTopic(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.CREATE_TOPIC_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, ConsensusCreateTopic);
 	}
 
 	@Test
@@ -85,7 +89,7 @@ class ConsensusControllerTest {
 		subject.deleteTopic(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.DELETE_TOPIC_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, ConsensusDeleteTopic);
 	}
 
 	@Test
@@ -94,7 +98,7 @@ class ConsensusControllerTest {
 		subject.updateTopic(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.UPDATE_TOPIC_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, ConsensusUpdateTopic);
 	}
 
 	@Test
@@ -103,6 +107,6 @@ class ConsensusControllerTest {
 		subject.submitMessage(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.SUBMIT_MESSAGE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, ConsensusSubmitMessage);
 	}
 }

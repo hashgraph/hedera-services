@@ -34,11 +34,17 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetStakers;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -120,31 +126,31 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 
 	@Override
 	public void cryptoTransfer(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToCrypto(signedTxn, observer, CRYPTO_TRANSFER_METRIC);
+		txnHelper.submit(signedTxn, observer, CryptoTransfer);
 	}
 
 	@Override
 	public void cryptoDelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToCrypto(signedTxn, observer, CRYPTO_DELETE_METRIC);
+		txnHelper.submit(signedTxn, observer, CryptoDelete);
 	}
 
 	@Override
 	public void createAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToCrypto(signedTxn, observer, CRYPTO_CREATE_METRIC);
+		txnHelper.submit(signedTxn, observer, CryptoCreate);
 	}
 
 	@Override
 	public void updateAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToCrypto(signedTxn, observer, CRYPTO_UPDATE_METRIC);
+		txnHelper.submit(signedTxn, observer, CryptoUpdate);
 	}
 
 	@Override
 	public void addLiveHash(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToCrypto(signedTxn, observer, ADD_LIVE_HASH_METRIC);
+		txnHelper.submit(signedTxn, observer, CryptoAddLiveHash);
 	}
 
 	@Override
 	public void deleteLiveHash(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToCrypto(signedTxn, observer, DELETE_LIVE_HASH_METRIC);
+		txnHelper.submit(signedTxn, observer, CryptoDeleteLiveHash);
 	}
 }

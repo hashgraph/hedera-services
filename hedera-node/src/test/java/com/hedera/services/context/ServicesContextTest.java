@@ -113,7 +113,6 @@ import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.legacy.service.FreezeServiceImpl;
 import com.hedera.services.legacy.service.SmartContractServiceImpl;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.swirlds.common.Address;
@@ -436,7 +435,6 @@ public class ServicesContextTest {
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));
-		assertThat(ctx.stats(), instanceOf(HederaNodeStats.class));
 		assertThat(ctx.contracts(), instanceOf(SmartContractRequestHandler.class));
 		assertThat(ctx.freezeGrpc(), instanceOf(FreezeServiceImpl.class));
 		assertThat(ctx.contractsGrpc(), instanceOf(SmartContractServiceImpl.class));

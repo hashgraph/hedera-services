@@ -31,8 +31,13 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import io.grpc.stub.StreamObserver;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	private final FileAnswers fileAnswers;
@@ -60,32 +65,32 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 
 	@Override
 	public void updateFile(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, UPDATE_FILE_METRIC);
+		txnHelper.submit(signedTxn, observer, FileUpdate);
 	}
 
 	@Override
 	public void createFile(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, CREATE_FILE_METRIC);
+		txnHelper.submit(signedTxn, observer, FileCreate);
 	}
 
 	@Override
 	public void deleteFile(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, DELETE_FILE_METRIC);
+		txnHelper.submit(signedTxn, observer, FileDelete);
 	}
 
 	@Override
 	public void appendContent(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, FILE_APPEND_METRIC);
+		txnHelper.submit(signedTxn, observer, FileAppend);
 	}
 
 	@Override
 	public void systemDelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, FILE_SYSDEL_METRIC);
+		txnHelper.submit(signedTxn, observer, NONE);
 	}
 
 	@Override
 	public void systemUndelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, FILE_SYSUNDEL_METRIC);
+		txnHelper.submit(signedTxn, observer, NONE);
 	}
 
 	@Override

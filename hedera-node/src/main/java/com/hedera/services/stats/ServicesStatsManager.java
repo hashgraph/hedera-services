@@ -64,6 +64,8 @@ public class ServicesStatsManager {
 		speedometers.registerWith(platform);
 		opSpeedometers.registerWith(platform);
 
+		platform.appStatInit();
+
 		var updateThread = loopFactory.apply(() -> {
 			pause.forMs(properties.statsHapiOpsSpeedometerUpdateIntervalMs());
 			opSpeedometers.updateAll();

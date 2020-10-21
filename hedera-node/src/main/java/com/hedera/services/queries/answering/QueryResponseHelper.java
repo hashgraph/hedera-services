@@ -26,7 +26,6 @@ import com.hedera.services.stats.HapiOpCounters;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

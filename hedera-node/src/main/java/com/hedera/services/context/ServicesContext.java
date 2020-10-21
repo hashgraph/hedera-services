@@ -283,7 +283,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.swirlds.common.Address;
@@ -376,7 +375,6 @@ public class ServicesContext {
 	private ContractAnswers contractAnswers;
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
-	private HederaNodeStats stats;
 	private TokenController tokenGrpc;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
@@ -590,7 +588,7 @@ public class ServicesContext {
 
 	public TxnResponseHelper txnResponseHelper() {
 		if (txnResponseHelper == null) {
-			txnResponseHelper = new TxnResponseHelper(submissionFlow(), stats());
+			txnResponseHelper = new TxnResponseHelper(submissionFlow(), opCounters());
 		}
 		return txnResponseHelper;
 	}
@@ -849,10 +847,11 @@ public class ServicesContext {
 			var lookups = defaultAccountRetryingLookupsFor(
 					hfs(),
 					nodeLocalProperties(),
-					stats(),
 					this::accounts,
 					this::topics,
-					REF_LOOKUP_FACTORY.apply(tokenStore()));
+					REF_LOOKUP_FACTORY.apply(tokenStore()),
+					runningAvgs(),
+					speedometers());
 			lookupRetryingKeyOrder = keyOrderWith(lookups);
 		}
 		return lookupRetryingKeyOrder;
@@ -1253,7 +1252,7 @@ public class ServicesContext {
 		if (recordStream == null) {
 			recordStream = new RecordStream(
 					platform,
-					stats(),
+					runningAvgs(),
 					nodeAccount(),
 					properties().getStringProperty("hedera.recordStream.logDir"),
 					properties());
@@ -1346,7 +1345,7 @@ public class ServicesContext {
 
 	public PlatformSubmissionManager submissionManager() {
 		if (submissionManager == null) {
-			submissionManager = new PlatformSubmissionManager(platform(), recordCache(), stats());
+			submissionManager = new PlatformSubmissionManager(platform(), recordCache(), speedometers());
 		}
 		return submissionManager;
 	}
@@ -1514,19 +1513,11 @@ public class ServicesContext {
 					queryFeeCheck(),
 					bucketThrottling(),
 					accountNums(),
-					stats(),
 					systemOpPolicies(),
 					exemptions(),
 					platformStatus());
 		}
 		return txns;
-	}
-
-	public HederaNodeStats stats() {
-		if (stats == null) {
-			stats = new HederaNodeStats(platform(), id().getId(), ServicesMain.log);
-		}
-		return stats;
 	}
 
 	public Console console() {

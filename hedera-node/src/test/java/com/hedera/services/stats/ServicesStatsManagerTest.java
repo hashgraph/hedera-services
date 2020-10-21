@@ -103,6 +103,8 @@ class ServicesStatsManagerTest {
 		verify(speedometers).registerWith(platform);
 		verify(miscSpeedometers).registerWith(platform);
 		verify(runningAvgs).registerWith(platform);
+		verify(platform).appStatInit();
+		// and:
 		verify(thread).start();
 		verify(thread).setName(String.format(ServicesStatsManager.SPEEDOMETER_UPDATE_THREAD_NAME_TPL, 123L));
 		// and when:

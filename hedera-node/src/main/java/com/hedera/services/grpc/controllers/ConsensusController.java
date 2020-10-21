@@ -33,6 +33,10 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 
 public class ConsensusController extends ConsensusServiceGrpc.ConsensusServiceImplBase {
@@ -65,21 +69,21 @@ public class ConsensusController extends ConsensusServiceGrpc.ConsensusServiceIm
 
 	@Override
 	public void createTopic(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToHcs(signedTxn, observer, CREATE_TOPIC_METRIC);
+		txnHelper.submit(signedTxn, observer, ConsensusCreateTopic);
 	}
 
 	@Override
 	public void updateTopic(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToHcs(signedTxn, observer, UPDATE_TOPIC_METRIC);
+		txnHelper.submit(signedTxn, observer, ConsensusUpdateTopic);
 	}
 
 	@Override
 	public void deleteTopic(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToHcs(signedTxn, observer, DELETE_TOPIC_METRIC);
+		txnHelper.submit(signedTxn, observer, ConsensusDeleteTopic);
 	}
 
 	@Override
 	public void submitMessage(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToHcs(signedTxn, observer, SUBMIT_MESSAGE_METRIC);
+		txnHelper.submit(signedTxn, observer, ConsensusSubmitMessage);
 	}
 }

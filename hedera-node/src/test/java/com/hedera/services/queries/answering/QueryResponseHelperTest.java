@@ -20,7 +20,6 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.stats.HapiOpCounters;
@@ -50,7 +49,6 @@ class QueryResponseHelperTest {
 
 	AnswerFlow answerFlow;
 	AnswerService answer;
-	HederaNodeStats stats;
 	HapiOpCounters opCounters;
 	StreamObserver<Response> observer;
 

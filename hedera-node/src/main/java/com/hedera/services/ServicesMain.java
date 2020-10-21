@@ -143,6 +143,7 @@ public class ServicesMain implements SwirldMain {
 
 	private void contextDrivenInit() {
 		registerIssListener();
+		log.info("Platform callbacks registered.");
 		checkPropertySources();
 		log.info("Property sources are available.");
 		configurePlatform();
@@ -167,6 +168,8 @@ public class ServicesMain implements SwirldMain {
 		log.info("Record expiration reviewed.");
 		loadFeeSchedule();
 		log.info("Fee schedule loaded.");
+		initializeStats();
+		log.info("Stats initialized.");
 
 		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
 	}
@@ -251,6 +254,10 @@ public class ServicesMain implements SwirldMain {
 
 	private void loadFeeSchedule() {
 		ctx.fees().init();
+	}
+
+	private void initializeStats() {
+		ctx.statsManager().initializeFor(ctx.platform());
 	}
 
 	private void checkPropertySources() {
