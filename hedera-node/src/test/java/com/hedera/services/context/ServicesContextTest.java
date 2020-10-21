@@ -81,6 +81,10 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
+import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.tokens.HederaTokenStore;
@@ -424,6 +428,10 @@ public class ServicesContextTest {
 		assertThat(ctx.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));
 		assertThat(ctx.exchange(), instanceOf(AwareHbarCentExchange.class));
 		assertThat(ctx.stateMigrations(), instanceOf(StdStateMigrations.class));
+		assertThat(ctx.opCounters(), instanceOf(HapiOpCounters.class));
+		assertThat(ctx.runningAvgs(), instanceOf(MiscRunningAvgs.class));
+		assertThat(ctx.speedometers(), instanceOf(MiscSpeedometers.class));
+		assertThat(ctx.statsManager(), instanceOf(ServicesStatsManager.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

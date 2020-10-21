@@ -151,6 +151,14 @@ import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.BasedLedgerValidator;
+import com.hedera.services.stats.CounterFactory;
+import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.stats.HapiOpSpeedometers;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.stats.RunningAvgFactory;
+import com.hedera.services.stats.ServicesStatsManager;
+import com.hedera.services.stats.SpeedometerFactory;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
@@ -239,8 +247,10 @@ import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_S
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.MiscUtils.BASE_STAT_NAMES;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
@@ -281,7 +291,10 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.StatEntry;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.platform.StatsRunningAverage;
+import com.swirlds.platform.StatsSpeedometer;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
@@ -358,12 +371,15 @@ public class ServicesContext {
 	private PropertySource properties;
 	private EntityIdSource ids;
 	private FileController fileGrpc;
+	private HapiOpCounters opCounters;
 	private AnswerFunctions answerFunctions;
 	private ContractAnswers contractAnswers;
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private HederaNodeStats stats;
 	private TokenController tokenGrpc;
+	private MiscRunningAvgs runningAvgs;
+	private MiscSpeedometers speedometers;
 	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
@@ -395,6 +411,7 @@ public class ServicesContext {
 	private NodeLocalProperties nodeLocalProperties;
 	private TxnFeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
+	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
 	private FCMapBackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
@@ -454,6 +471,44 @@ public class ServicesContext {
 		queryableStorage().set(storage());
 		queryableTokens().set(tokens());
 		queryableTokenAssociations().set(tokenAssociations());
+	}
+
+	public HapiOpCounters opCounters() {
+		if (opCounters == null) {
+			opCounters = new HapiOpCounters(new CounterFactory() {}, BASE_STAT_NAMES::get);
+		}
+		return opCounters;
+	}
+
+	public MiscRunningAvgs runningAvgs() {
+		if (runningAvgs == null) {
+			runningAvgs = new MiscRunningAvgs(new RunningAvgFactory() {}, nodeLocalProperties());
+		}
+		return runningAvgs;
+	}
+
+	public MiscSpeedometers speedometers() {
+		if (speedometers == null) {
+			speedometers = new MiscSpeedometers(new SpeedometerFactory() {}, nodeLocalProperties());
+		}
+		return speedometers;
+	}
+
+	public ServicesStatsManager statsManager() {
+		if (statsManager == null) {
+			var opSpeedometers = new HapiOpSpeedometers(
+					opCounters(),
+					new SpeedometerFactory() {},
+					nodeLocalProperties(),
+					BASE_STAT_NAMES::get);
+			statsManager = new ServicesStatsManager(
+					opCounters(),
+					runningAvgs(),
+					speedometers(),
+					opSpeedometers,
+					nodeLocalProperties());
+		}
+		return statsManager;
 	}
 
 	public CurrentPlatformStatus platformStatus() {
