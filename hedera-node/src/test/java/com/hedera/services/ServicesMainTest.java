@@ -43,7 +43,6 @@ import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
-import com.hedera.services.utils.TimerUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
@@ -181,7 +180,6 @@ public class ServicesMainTest {
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
 		given(ledgerValidator.hasExpectedTotalBalance(any())).willReturn(true);
 		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
-		given(properties.getBooleanProperty("timer.stats.dump.started")).willReturn(true);
 
 		subject = new ServicesMain();
 		subject.systemExits = systemExits;
@@ -279,9 +277,6 @@ public class ServicesMainTest {
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
 		inOrder.verify(recordsHistorian).reviewExistingRecords();
 		inOrder.verify(fees).init();
-
-		// cleanup:
-		TimerUtils.stopStatsDumpTimer();
 	}
 
 	@Test

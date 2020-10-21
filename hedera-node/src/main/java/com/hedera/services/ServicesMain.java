@@ -26,7 +26,6 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
-import com.hedera.services.utils.TimerUtils;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
@@ -170,8 +169,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("Fee schedule loaded.");
 
 		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
-
-		startTimerTasksIfNeeded();
 	}
 
 	private void startRecordStreamThread() {
@@ -292,13 +289,5 @@ public class ServicesMain implements SwirldMain {
 
 	void registerIssListener() {
 		ctx.platform().addSignedStateListener(new IssListener(ctx.issEventInfo()));
-	}
-
-	private void startTimerTasksIfNeeded() {
-		if (ctx.properties().getBooleanProperty("timer.stats.dump.started")) {
-			TimerUtils.initStatsDumpTimers(ctx.stats());
-			TimerUtils.startStatsDumpTimer(ctx.properties().getIntProperty("timer.stats.dump.value"));
-			log.info("Stats Dump Timer Task started.");
-		}
 	}
 }

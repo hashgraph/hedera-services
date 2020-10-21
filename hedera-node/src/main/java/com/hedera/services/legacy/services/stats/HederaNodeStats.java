@@ -565,15 +565,4 @@ public class HederaNodeStats {
 		}
 	}
 
-	public String dumpHederaNodeStats() {
-		StringBuffer statsSB = new StringBuffer();
-		Iterator iterator = countStats.entrySet().iterator();
-		while (iterator.hasNext()) {
-			Map.Entry statElement = (Map.Entry) iterator.next();
-			String thisStat = String.format("%s -> %s\n", statElement.getKey(), statElement.getValue().toString());
-			statsSB.append(thisStat);
-		}
-		log.info(String.format("Current services stats: \n %s", statsSB.toString()));
-		return statsSB.toString();
-	}
 }

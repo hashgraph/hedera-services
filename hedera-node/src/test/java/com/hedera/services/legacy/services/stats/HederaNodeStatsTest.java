@@ -315,9 +315,4 @@ public class HederaNodeStatsTest {
 		}
 	}
 
-	@Test
-	public void dumpHederaNodeStatsShouldNotBeEmptyTest() throws Exception {
-		assertNotNull(stats.dumpHederaNodeStats());
-	}
-
 }
