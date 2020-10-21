@@ -199,6 +199,13 @@ public abstract class HapiSpecOperation {
 			}
 			return Optional.of(t);
 		}
+
+		if (unavailableNode) {
+			String message = String.format("Node %s is NOT unavailable as expected!!!",
+					HapiPropertySource.asAccountString(node.get()));
+			log.error(message);
+			return Optional.of(new RuntimeException(message));
+		}
 		return Optional.empty();
 	}
 
