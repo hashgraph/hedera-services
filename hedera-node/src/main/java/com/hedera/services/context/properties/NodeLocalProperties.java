@@ -27,9 +27,10 @@ public class NodeLocalProperties {
 	private int tlsPort;
 	private int precheckLookupRetries;
 	private int precheckLookupRetryBackoffMs;
-	private long statsHapiSpeedometerUpdateIntervalMs;
+	private long statsHapiOpsSpeedometerUpdateIntervalMs;
 	private Profile activeProfile;
-	private double statsHapiSpeedometerHalfLifeSecs;
+	private double statsSpeedometerHalfLifeSecs;
+	private double statsRunningAvgHalfLifeSecs;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -43,8 +44,9 @@ public class NodeLocalProperties {
 		precheckLookupRetries = properties.getIntProperty("precheck.account.maxLookupRetries");
 		precheckLookupRetryBackoffMs = properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs");
 		activeProfile = properties.getProfileProperty("hedera.profiles.active");
-		statsHapiSpeedometerUpdateIntervalMs = properties.getLongProperty("stats.hapi.speedometerUpdateIntervalMs");
-		statsHapiSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.hapi.speedometerHalfLifeSecs");
+		statsHapiOpsSpeedometerUpdateIntervalMs = properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
+		statsSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
+		statsRunningAvgHalfLifeSecs = properties.getDoubleProperty("stats.runningAvgHalfLifeSecs");
 	}
 
 	public int port() {
@@ -67,11 +69,15 @@ public class NodeLocalProperties {
 		return activeProfile;
 	}
 
-	public long statsHapiSpeedometerUpdateIntervalMs() {
-		return statsHapiSpeedometerUpdateIntervalMs;
+	public long statsHapiOpsSpeedometerUpdateIntervalMs() {
+		return statsHapiOpsSpeedometerUpdateIntervalMs;
 	}
 
-	public double statsHapiSpeedometerHalfLifeSecs() {
-		return statsHapiSpeedometerHalfLifeSecs;
+	public double statsSpeedometerHalfLifeSecs() {
+		return statsSpeedometerHalfLifeSecs;
+	}
+
+	public double statsRunningAvgHalfLifeSecs() {
+		return statsRunningAvgHalfLifeSecs;
 	}
 }

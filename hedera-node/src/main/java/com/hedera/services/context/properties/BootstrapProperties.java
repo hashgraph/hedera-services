@@ -220,8 +220,9 @@ public class BootstrapProperties implements PropertySource {
 			"hedera.profiles.active",
 			"precheck.account.maxLookupRetries",
 			"precheck.account.lookupRetryBackoffIncrementMs",
-			"stats.hapi.speedometerHalfLifeSecs",
-			"stats.hapi.speedometerUpdateIntervalMs"
+			"stats.hapiOps.speedometerUpdateIntervalMs",
+			"stats.runningAvgHalfLifeSecs",
+			"stats.speedometerHalfLifeSecs"
 	);
 
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
@@ -293,7 +294,8 @@ public class BootstrapProperties implements PropertySource {
 			entry("contracts.defaultSendThreshold", AS_LONG),
 			entry("contracts.maxStorageKb", AS_INT),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
-			entry("stats.hapi.speedometerHalfLifeSecs", AS_DOUBLE),
-			entry("stats.hapi.speedometerUpdateIntervalMs", AS_LONG)
+			entry("stats.hapiOps.speedometerUpdateIntervalMs", AS_LONG),
+			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
+			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE)
 	);
 }

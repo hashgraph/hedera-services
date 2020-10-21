@@ -47,7 +47,6 @@ public class HapiOpSpeedometers {
 
 	private final HapiOpCounters counters;
 	private final SpeedometerFactory speedometer;
-	private final NodeLocalProperties properties;
 	private final Function<HederaFunctionality, String> statNameFn;
 
 	final Map<HederaFunctionality, Long> lastReceivedOpsCount = new HashMap<>();
@@ -68,10 +67,9 @@ public class HapiOpSpeedometers {
 	) {
 		this.counters = counters;
 		this.statNameFn = statNameFn;
-		this.properties = properties;
 		this.speedometer = speedometer;
 
-		double halfLife = properties.statsHapiSpeedometerHalfLifeSecs();
+		double halfLife = properties.statsSpeedometerHalfLifeSecs();
 		Arrays.stream(allFunctions.get()).forEach(function -> {
 			receivedOps.put(function, new StatsSpeedometer(halfLife));
 			lastReceivedOpsCount.put(function, 0L);

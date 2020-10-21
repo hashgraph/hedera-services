@@ -30,32 +30,36 @@ import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
 public class ServicesStatsManager {
 	static Pause pause = SLEEPING_PAUSE;
-	static Function<Runnable, Thread> eternalRunFactory = worker -> new Thread(() -> {
+	static Function<Runnable, Thread> loopFactory = loop -> new Thread(() -> {
 		while (true) {
-			worker.run();
+			loop.run();
 		}
 	});
 
 	private final HapiOpCounters opCounters;
+	private final MiscRunningAvgs runningAvgs;
 	private final HapiOpSpeedometers opSpeedometers;
 	private final NodeLocalProperties properties;
 
 	public ServicesStatsManager(
 			HapiOpCounters opCounters,
+			MiscRunningAvgs runningAvgs,
 			HapiOpSpeedometers opSpeedometers,
 			NodeLocalProperties properties
 	) {
 		this.properties = properties;
 		this.opCounters = opCounters;
+		this.runningAvgs = runningAvgs;
 		this.opSpeedometers = opSpeedometers;
 	}
 
 	public void initializeFor(Platform platform) {
 		opCounters.registerWith(platform);
+		runningAvgs.registerWith(platform);
 		opSpeedometers.registerWith(platform);
 
-		var updateThread = eternalRunFactory.apply(() -> {
-			pause.forMs(properties.statsHapiSpeedometerUpdateIntervalMs());
+		var updateThread = loopFactory.apply(() -> {
+			pause.forMs(properties.statsHapiOpsSpeedometerUpdateIntervalMs());
 			opSpeedometers.updateAll();
 		});
 		updateThread.setName("StatsUpdateNode" + platform.getSelfId().getId());
