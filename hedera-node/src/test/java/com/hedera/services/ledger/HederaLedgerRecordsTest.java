@@ -30,11 +30,9 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.stream.Collectors;
 
-import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.verify;
@@ -72,33 +70,5 @@ public class HederaLedgerRecordsTest extends BaseHederaLedgerTest {
 						.map(ExpirableTxnRecord::getExpiry)
 						.collect(Collectors.toList()),
 				contains(100L, 50L, 200L, 311L, 1_000L));
-	}
-
-	@Test
-	public void addsNewRecordLast() {
-		// setup:
-		FCQueue<ExpirableTxnRecord> records = asExpirableRecords(100L, 50L, 200L, 311L);
-		addRecords(misc, records);
-		// and:
-		ExpirableTxnRecord newRecord = asExpirableRecords(1L).peek();
-
-		// when:
-		long newEarliestExpiry = subject.addRecord(misc, newRecord);
-
-		// then:
-		assertEquals(100L, newEarliestExpiry);
-		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
-		verify(accountsLedger).set(
-				argThat(misc::equals),
-				argThat(HISTORY_RECORDS::equals),
-				captor.capture());
-		// and:
-		assertTrue(captor.getValue() == records);
-		assertThat(
-				((FCQueue<ExpirableTxnRecord>) captor.getValue())
-						.stream()
-						.map(ExpirableTxnRecord::getExpiry)
-						.collect(Collectors.toList()),
-				contains(100L, 50L, 200L, 311L, 1L));
 	}
 }

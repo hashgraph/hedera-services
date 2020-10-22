@@ -27,59 +27,39 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.TxnId;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.time.Instant;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.util.Collections.EMPTY_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willReturn;
 
 @RunWith(JUnitPlatform.class)
 public class FeeChargingRecordsHistorianTest {
@@ -243,13 +223,6 @@ public class FeeChargingRecordsHistorianTest {
 		// and:
 		verify(properties, never()).getIntProperty("ledger.records.ttl");
 		verify(txnCtx, times(1)).consensusTime();
-		verify(ledger, never()).addRecord(b, jFinalRecord);
-		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, b));
-		verify(ledger, never()).addRecord(c, jFinalRecord);
-		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, c));
-		verify(ledger, never()).addRecord(d, jFinalRecord);
-		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, d));
-		verify(ledger, never()).addRecord(asAccount(contract), jFinalRecord);
 		// and:
 		assertEquals(finalRecord, subject.lastCreatedRecord().get());
 		// and:
@@ -287,7 +260,6 @@ public class FeeChargingRecordsHistorianTest {
 
 		ledger = mock(HederaLedger.class);
 		given(ledger.netTransfersInTxn()).willReturn(initialTransfers);
-		given(ledger.addRecord(any(), any())).willReturn(expiry);
 		given(ledger.isPendingCreation(any())).willReturn(false);
 
 		fees = mock(FeeCalculator.class);

@@ -188,17 +188,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::payerRecords;
 		}
-	},
-	HISTORY_RECORDS {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, r) -> a.setRecords((FCQueue<ExpirableTxnRecord>) r);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::records;
-		}
 	};
 
 	@Override

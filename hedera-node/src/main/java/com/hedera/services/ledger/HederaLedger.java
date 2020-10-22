@@ -24,7 +24,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -36,7 +35,6 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.TokenStore;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -63,7 +61,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
@@ -455,10 +452,6 @@ public class HederaLedger {
 	}
 
 	/* -- TRANSACTION HISTORY MANIPULATION -- */
-	public long addRecord(AccountID id, ExpirableTxnRecord record) {
-		return addReturningEarliestExpiry(id, HISTORY_RECORDS, record);
-	}
-
 	public long addPayerRecord(AccountID id, ExpirableTxnRecord record) {
 		return addReturningEarliestExpiry(id, PAYER_RECORDS, record);
 	}
@@ -468,10 +461,6 @@ public class HederaLedger {
 		records.offer(record);
 		accountsLedger.set(id, property, records);
 		return records.peek().getExpiry();
-	}
-
-	public long purgeExpiredRecords(AccountID id, long now) {
-		return purge(id, HISTORY_RECORDS, now, NOOP_CB);
 	}
 
 	public long purgeExpiredPayerRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
