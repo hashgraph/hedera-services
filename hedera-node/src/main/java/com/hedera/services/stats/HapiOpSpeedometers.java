@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.stats.ServicesStatsConfig.IGNORED_FUNCTIONS;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_ANSWERED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_ANSWERED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_HANDLED_DESC_TPL;
@@ -70,7 +71,9 @@ public class HapiOpSpeedometers {
 		this.speedometer = speedometer;
 
 		double halfLife = properties.statsSpeedometerHalfLifeSecs();
-		Arrays.stream(allFunctions.get()).forEach(function -> {
+		Arrays.stream(allFunctions.get())
+				.filter(function -> !IGNORED_FUNCTIONS.contains(function))
+				.forEach(function -> {
 			receivedOps.put(function, new StatsSpeedometer(halfLife));
 			lastReceivedOpsCount.put(function, 0L);
 			if (QUERY_FUNCTIONS.contains(function)) {

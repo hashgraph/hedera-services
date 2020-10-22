@@ -25,11 +25,15 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumSet;
 import java.util.Set;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 
 public class ServicesStatsConfig {
 	public static Set<HederaFunctionality> IGNORED_FUNCTIONS = EnumSet.of(
-			NONE
+			NONE,
+			UNRECOGNIZED,
+			GetByKey
 	);
 
 	static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
