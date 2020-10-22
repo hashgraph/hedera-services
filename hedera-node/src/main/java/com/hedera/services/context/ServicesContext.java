@@ -473,7 +473,7 @@ public class ServicesContext {
 
 	public HapiOpCounters opCounters() {
 		if (opCounters == null) {
-			opCounters = new HapiOpCounters(new CounterFactory() {}, BASE_STAT_NAMES::get);
+			opCounters = new HapiOpCounters(new CounterFactory() {}, MiscUtils::baseStatNameOf);
 		}
 		return opCounters;
 	}
@@ -498,7 +498,7 @@ public class ServicesContext {
 					opCounters(),
 					new SpeedometerFactory() {},
 					nodeLocalProperties(),
-					BASE_STAT_NAMES::get);
+					MiscUtils::baseStatNameOf);
 			statsManager = new ServicesStatsManager(
 					opCounters(),
 					runningAvgs(),

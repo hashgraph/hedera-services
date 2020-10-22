@@ -146,6 +146,13 @@ import static org.mockito.Mockito.mock;
 @RunWith(JUnitPlatform.class)
 public class MiscUtilsTest {
 	@Test
+	public void retrievesExpectedStatNames() {
+		// expect:
+		assertEquals(ContractController.CALL_CONTRACT_METRIC, MiscUtils.baseStatNameOf(ContractCall));
+		assertEquals(GetByKey.toString(), baseStatNameOf(GetByKey));
+	}
+
+	@Test
 	public void getsNodeAccounts() {
 		var address = mock(Address.class);
 		given(address.getMemo()).willReturn("0.0.3");

@@ -196,6 +196,10 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(TokenGetInfo, TOKEN_GET_INFO_METRIC);
 	}
 
+	public static String baseStatNameOf(HederaFunctionality function) {
+		return BASE_STAT_NAMES.getOrDefault(function, function.toString());
+	}
+
 	public static List<AccountAmount> canonicalDiffRepr(List<AccountAmount> a, List<AccountAmount> b) {
 		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).collect(toList()));
 	}
