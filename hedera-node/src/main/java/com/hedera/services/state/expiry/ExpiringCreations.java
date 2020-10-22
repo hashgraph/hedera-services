@@ -34,9 +34,6 @@ import java.util.function.ObjLongConsumer;
 import java.util.function.ToLongBiFunction;
 
 public class ExpiringCreations implements EntityCreator {
-	private TransactionRecord currentRecord = null;
-	private ExpirableTxnRecord currentExpirableRecord = null;
-
 	private HederaLedger ledger;
 	private RecordCache recordCache;
 	private final ExpiryManager expiries;
@@ -44,9 +41,7 @@ public class ExpiringCreations implements EntityCreator {
 	private final GlobalDynamicProperties dynamicProperties;
 
 	private ObjLongConsumer<AccountID> payerTracker;
-	private ObjLongConsumer<AccountID> historicalTracker;
 	private ToLongBiFunction<AccountID, ExpirableTxnRecord> payerRecordFn;
-	private ToLongBiFunction<AccountID, ExpirableTxnRecord> historicalRecordFn;
 
 	public ExpiringCreations(
 			ExpiryManager expiries,
@@ -58,7 +53,6 @@ public class ExpiringCreations implements EntityCreator {
 		this.dynamicProperties = dynamicProperties;
 
 		payerTracker = this::trackPayerRecord;
-		historicalTracker = expiries::trackHistoricalRecord;
 	}
 
 	@Override
@@ -70,7 +64,6 @@ public class ExpiringCreations implements EntityCreator {
 	public void setLedger(HederaLedger ledger) {
 		this.ledger = ledger;
 		payerRecordFn = this::updatePayerRecord;
-		historicalRecordFn = ledger::addRecord;
 	}
 
 	private void trackPayerRecord(AccountID effectivePayer, long expiry) {
@@ -103,31 +96,6 @@ public class ExpiringCreations implements EntityCreator {
 				payerTracker,
 				payerRecordFn,
 				ExpirableTxnRecord::fromGprc);
-	}
-
-	@Override
-	public void createExpiringHistoricalRecord(
-			AccountID id,
-			TransactionRecord record,
-			long now,
-			long submittingMember
-	) {
-		createExpiringRecord(
-				now + properties.getIntProperty("ledger.records.ttl"),
-				submittingMember,
-				id,
-				record,
-				historicalTracker,
-				historicalRecordFn,
-				this::expirableRecordWithReuse);
-	}
-
-	private ExpirableTxnRecord expirableRecordWithReuse(TransactionRecord record) {
-		if (record != currentRecord) {
-			currentExpirableRecord = ExpirableTxnRecord.fromGprc(record);
-			currentRecord = record;
-		}
-		return currentExpirableRecord;
 	}
 
 	private ExpirableTxnRecord createExpiringRecord(

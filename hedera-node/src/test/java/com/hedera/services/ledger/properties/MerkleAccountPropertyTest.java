@@ -131,8 +131,6 @@ public class MerkleAccountPropertyTest {
 				.customizing(new MerkleAccount());
 		account.setTokens(origTokens);
 		account.setBalance(origBalance);
-		account.records().offer(origRecords.get(0));
-		account.records().offer(origRecords.get(1));
 		account.payerRecords().offer(origPayerRecords.get(0));
 		account.payerRecords().offer(origPayerRecords.get(1));
 		// and:
@@ -167,7 +165,6 @@ public class MerkleAccountPropertyTest {
 		KEY.setter().accept(account, newKey);
 		MEMO.setter().accept(account, newMemo);
 		PROXY.setter().accept(account, newProxy);
-		HISTORY_RECORDS.setter().accept(account, newRecords);
 		PAYER_RECORDS.setter().accept(account, newPayerRecords);
 		// and:
 		TOKENS.setter().accept(account, newTokens);
@@ -184,7 +181,6 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newKey, KEY.getter().apply(account));
 		assertEquals(newMemo, MEMO.getter().apply(account));
 		assertEquals(newProxy, PROXY.getter().apply(account));
-		assertEquals(newRecords, HISTORY_RECORDS.getter().apply(account));
 		assertEquals(newPayerRecords, PAYER_RECORDS.getter().apply(account));
 		// and:
 		assertEquals(newTokens, TOKENS.getter().apply(account));

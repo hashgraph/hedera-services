@@ -29,6 +29,5 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 public interface EntityCreator {
 	void setLedger(HederaLedger ledger);
 	void setRecordCache(RecordCache recordCache);
-	void createExpiringHistoricalRecord(AccountID id, TransactionRecord record, long now, long submittingMember);
 	ExpirableTxnRecord createExpiringPayerRecord(AccountID id, TransactionRecord record, long now, long submittingMember);
 }

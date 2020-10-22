@@ -20,13 +20,13 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
+import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,25 +37,27 @@ import org.junit.runner.RunWith;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.state.merkle.MerkleAccount.ChildIndices.RELEASE_090_ASSOCIATED_TOKENS;
+import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static java.util.Comparator.comparingLong;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.will;
 
 @RunWith(JUnitPlatform.class)
 public class MerkleAccountTest {
@@ -127,9 +129,6 @@ public class MerkleAccountTest {
 		serdes = mock(DomainSerdes.class);
 		MerkleAccount.serdes = serdes;
 
-		records = mock(FCQueue.class);
-		given(records.copy()).willReturn(records);
-		given(records.isImmutable()).willReturn(false);
 		payerRecords = mock(FCQueue.class);
 		given(payerRecords.copy()).willReturn(payerRecords);
 		given(payerRecords.isImmutable()).willReturn(false);
@@ -152,7 +151,7 @@ public class MerkleAccountTest {
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
 				otherProxy);
 
-		subject = new MerkleAccount(List.of(state, records, payerRecords, tokens));
+		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 	}
 
 	@AfterEach
@@ -162,6 +161,9 @@ public class MerkleAccountTest {
 
 	@Test
 	public void immutableAccountThrowsIse() {
+		// setup:
+		MerkleAccount.stackDump = () -> {};
+
 		// given:
 		var original = new MerkleAccount();
 
@@ -170,16 +172,22 @@ public class MerkleAccountTest {
 
 		// then:
 		assertThrows(IllegalStateException.class, () -> original.copy());
+
+		// cleanup:
+		MerkleAccount.stackDump = Thread::dumpStack;
 	}
 
 	@Test
 	public void merkleMethodsWork() {
 		// expect;
 		assertEquals(
-				MerkleAccount.ChildIndices.NUM_V1_CHILDREN,
+				MerkleAccount.ChildIndices.NUM_081_CHILDREN,
+				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION - 2));
+		assertEquals(
+				MerkleAccount.ChildIndices.NUM_090_ALPHA_CHILDREN,
 				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION - 1));
 		assertEquals(
-				MerkleAccount.ChildIndices.NUM_V2_CHILDREN,
+				MerkleAccount.ChildIndices.NUM_090_CHILDREN,
 				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
 		assertEquals(MerkleAccount.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleAccount.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -188,14 +196,12 @@ public class MerkleAccountTest {
 
 	@Test
 	public void toStringWorks() {
-		given(records.size()).willReturn(2);
 		given(payerRecords.size()).willReturn(3);
 		given(tokens.readableTokenIds()).willReturn("[1.2.3, 2.3.4]");
 
 		// expect:
 		assertEquals(
 				"MerkleAccount{state=" + state.toString()
-						+ ", # records=" + 2
 						+ ", # payer records=" + 3
 						+ ", tokens=" + "[1.2.3, 2.3.4]"
 						+ "}",
@@ -262,11 +268,10 @@ public class MerkleAccountTest {
 	public void objectContractMet() {
 		// given:
 		var one = new MerkleAccount();
-		var two = new MerkleAccount(List.of(state, payerRecords, records, tokens));
+		var two = new MerkleAccount(List.of(state, payerRecords, tokens));
 		var three = two.copy();
 
 		// then:
-		verify(records).copy();
 		verify(payerRecords).copy();
 		verify(tokens).copy();
 		assertNotEquals(null, one);
@@ -281,40 +286,15 @@ public class MerkleAccountTest {
 
 	@Test
 	public void copyConstructorFastCopiesMutableFcqs() {
-		given(records.isImmutable()).willReturn(false);
 		given(payerRecords.isImmutable()).willReturn(false);
 
 		// when:
 		var copy = subject.copy();
 
 		// then:
-		verify(records).copy();
 		verify(payerRecords).copy();
 		// and:
-		assertEquals(records, copy.records());
 		assertEquals(payerRecords, copy.payerRecords());
-	}
-
-	@Test
-	public void recordsHelpersWork() {
-		// setup:
-		var defaultAccount = new MerkleAccount();
-		defaultAccount.setRecords(new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER));
-
-		// given:
-		offerRecordsInOrder(defaultAccount, List.of(recordOne(), recordTwo()));
-
-		// when:
-		Iterator<ExpirableTxnRecord> iterator = defaultAccount.recordIterator();
-		// and:
-		var recordsCopy = defaultAccount.recordList();
-
-		// then:
-		assertEquals(recordOne(), iterator.next());
-		assertEquals(recordTwo(), iterator.next());
-		assertFalse(iterator.hasNext());
-		// and:
-		assertEquals(List.of(recordOne(), recordTwo()), recordsCopy);
 	}
 
 	@Test
@@ -324,15 +304,42 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void initializeEnsuresAssociationsExist() {
+	public void initializeTranslatesFromRelease090AlphaStates() {
+		// setup:
+		var accountState = new MerkleAccountState();
+		var accountTokens = new MerkleAccountTokens();
+
 		// given:
-		subject.setTokens(null);
+		subject.addDeserializedChildren(
+				List.of(accountState, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ, accountTokens),
+				MerkleAccount.RELEASE_090_ALPHA_VERSION);
 
 		// when:
 		subject.initialize(null);
 
 		// then:
-		assertNotNull(subject.tokens());
+		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));
+		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_PAYER_RECORDS));
+		assertSame(accountTokens, subject.getChild(RELEASE_090_ASSOCIATED_TOKENS));
+	}
+
+	@Test
+	public void initializeTranslatesFromRelease081States() {
+		// setup:
+		var accountState = new MerkleAccountState();
+
+		// given:
+		subject.addDeserializedChildren(
+				List.of(accountState, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ),
+				MerkleAccount.RELEASE_081_VERSION);
+
+		// when:
+		subject.initialize(null);
+
+		// then:
+		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));
+		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_PAYER_RECORDS));
+		assertThat(subject.getChild(RELEASE_090_ASSOCIATED_TOKENS), instanceOf(MerkleAccountTokens.class));
 	}
 
 	@Test
@@ -383,8 +390,6 @@ public class MerkleAccountTest {
 
 		// then:
 		assertEquals(expectedState, providedSubject.state());
-		// and:
-		assertEquals(2, providedSubject.records().size());
 	}
 
 	@Test
@@ -405,27 +410,6 @@ public class MerkleAccountTest {
 		subject.release();
 
 		// then:
-		verify(records).decrementReferenceCount();
 		verify(payerRecords).decrementReferenceCount();
-	}
-
-	@Test
-	public void negOneIfEmptyRecords() {
-		given(records.isEmpty()).willReturn(true);
-
-		// then:
-		assertEquals(-1, subject.expiryOfEarliestRecord());
-	}
-
-	@Test
-	public void getsEarliestExpiry() {
-		// setup:
-		var record = mock(ExpirableTxnRecord.class);
-
-		given(record.getExpiry()).willReturn(expiry);
-		given(records.peek()).willReturn(record);
-
-		// then:
-		assertEquals(expiry, subject.expiryOfEarliestRecord());
 	}
 }

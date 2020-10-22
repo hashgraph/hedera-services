@@ -168,126 +168,11 @@ public class FeeChargingRecordsHistorianTest {
 	private FeeChargingRecordsHistorian subject;
 
 	@Test
-	public void doesntAddRecordToCreatedContractIfAlreadyDoneViaThreshX() {
-		setupForAdd();
-		addSetupForValidContractCreate(duplicateContract);
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(creator).createExpiringHistoricalRecord(
-				argThat(asAccount(duplicateContract)::equals),
-				any(),
-				longThat(l -> l == now.getEpochSecond()),
-				longThat(k -> k == submittingMember));
-	}
-
-	@Test
-	public void addsRecordToCreatedContract() {
-		setupForAdd();
-		addSetupForValidContractCreate();
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(creator).createExpiringHistoricalRecord(
-				argThat(asAccount(contract)::equals),
-				any(),
-				longThat(l -> l == now.getEpochSecond()),
-				longThat(k -> k == submittingMember));
-	}
-
-	@Test
-	public void addsRecordToCalledContract() {
-		setupForAdd();
-		addSetupForValidContractCall();
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(creator).createExpiringHistoricalRecord(
-				argThat(asAccount(contract)::equals),
-				any(),
-				longThat(l -> l == now.getEpochSecond()),
-				longThat(k -> k == submittingMember));
-		verify(txnCtx).recordSoFar();
-		verify(txnCtx).updatedRecordGiven(any());
-	}
-
-	@Test
-	public void doesntAddRecordToDeletedCalledContract() {
-		setupForAdd();
-		addSetupForCallToDeletedContract();
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(creator, never()).createExpiringHistoricalRecord(
-				argThat(asAccount(contract)::equals),
-				any(),
-				longThat(l -> l == now.getEpochSecond()),
-				longThat(k -> k == submittingMember));
-	}
-
-	@Test
-	public void doesntAddRecordToCalledAccount() {
-		setupForAdd();
-		addSetupForCallToAccount();
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(creator, never()).createExpiringHistoricalRecord(
-				argThat(asAccount(contract)::equals),
-				any(),
-				longThat(l -> l == now.getEpochSecond()),
-				longThat(k -> k == submittingMember));
-	}
-
-	@Test
-	public void doesntAddRecordToContractIfStatusNotSuccess() {
-		setupForAdd();
-		addSetupForValidContractCreate();
-		given(txnCtx.status()).willReturn(FAIL_INVALID);
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(creator, never()).createExpiringHistoricalRecord(
-				argThat(asAccount(contract)::equals),
-				any(),
-				longThat(l -> l == now.getEpochSecond()),
-				longThat(k -> k == submittingMember));
-	}
-
-	@Test
 	public void lastAddedIsEmptyAtFirst() {
 		setupForAdd();
 
 		// expect:
 		assertFalse(subject.lastCreatedRecord().isPresent());
-	}
-
-	@Test
-	public void skipsAccountsPendingCreation() {
-		setupForAdd();
-		given(ledger.isPendingCreation(b)).willReturn(true);
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(creator, never()).createExpiringHistoricalRecord(
-				argThat(b::equals),
-				any(),
-				longThat(l -> l == now.getEpochSecond()),
-				longThat(k -> k == submittingMember));
 	}
 
 	@Test
@@ -330,8 +215,6 @@ public class FeeChargingRecordsHistorianTest {
 		// and:
 		verify(properties, never()).getIntProperty("ledger.records.ttl");
 		verify(txnCtx, times(1)).consensusTime();
-		// and:
-		verify(creator, never()).createExpiringHistoricalRecord(any(), any(), anyLong(), anyLong());
 	}
 
 	@Test
@@ -350,31 +233,16 @@ public class FeeChargingRecordsHistorianTest {
 				payerRecord);
 		verify(ledger).doTransfer(a, funding, aBalance);
 		// and:
-		verify(ledger, times(2)).netTransfersInTxn();
+		verify(ledger).netTransfersInTxn();
 		verify(txnCtx).recordSoFar();
 		verify(txnCtx).updatedRecordGiven(any());
-		verify(fees).computeStorageFee(record);
 		// and:
-		verify(ledger, times(2)).getBalance(a);
-		verify(ledger).getBalance(b);
-		verify(ledger).fundsReceivedRecordThreshold(b);
-		verify(ledger).getBalance(c);
-		verify(ledger).getBalance(d);
-		verify(ledger).fundsSentRecordThreshold(d);
+		verify(ledger, times(1)).getBalance(a);
 		// and:
 		verify(dynamicProperties, times(1)).fundingAccount();
-		verify(ledger).doTransfer(b, funding, recordFee);
-		verify(ledger, never()).doTransfer(c, funding, recordFee);
-		verify(ledger).doTransfer(d, funding, recordFee);
 		// and:
 		verify(properties, never()).getIntProperty("ledger.records.ttl");
 		verify(txnCtx, times(1)).consensusTime();
-		// and:
-		verify(creator).createExpiringHistoricalRecord(b, finalRecord, now.getEpochSecond(), submittingMember);
-		verify(creator).createExpiringHistoricalRecord(c, finalRecord, now.getEpochSecond(), submittingMember);
-		verify(creator).createExpiringHistoricalRecord(d, finalRecord, now.getEpochSecond(), submittingMember);
-		verify(creator, never()).createExpiringHistoricalRecord(
-				asAccount(contract), finalRecord, now.getEpochSecond(), submittingMember);
 		verify(ledger, never()).addRecord(b, jFinalRecord);
 		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, b));
 		verify(ledger, never()).addRecord(c, jFinalRecord);
@@ -408,80 +276,6 @@ public class FeeChargingRecordsHistorianTest {
 
 		// expect:
 		verify(expiries).purgeExpiredRecordsAt(nows, ledger);
-	}
-
-	private void addSetupForCallToAccount() {
-		ContractCallTransactionBody op = mock(ContractCallTransactionBody.class);
-		given(op.getContractID()).willReturn(asContract(contract));
-		TransactionBody contractCallTxn = mock(TransactionBody.class);
-		given(contractCallTxn.hasContractCall()).willReturn(true);
-		given(contractCallTxn.getContractCall()).willReturn(op);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
-		given(accessor.getTxn()).willReturn(contractCallTxn);
-		given(accessor.getTxnId()).willReturn(txnIdA);
-
-		given(txnCtx.accessor()).willReturn(accessor);
-
-		MerkleAccount v = new MerkleAccount();
-		IS_SMART_CONTRACT.setter().accept(v, false);
-		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(contract)))).willReturn(v);
-	}
-
-	private void addSetupForCallToDeletedContract() {
-		ContractCallTransactionBody op = mock(ContractCallTransactionBody.class);
-		given(op.getContractID()).willReturn(asContract(contract));
-		TransactionBody contractCallTxn = mock(TransactionBody.class);
-		given(contractCallTxn.hasContractCall()).willReturn(true);
-		given(contractCallTxn.getContractCall()).willReturn(op);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
-		given(accessor.getTxn()).willReturn(contractCallTxn);
-		given(accessor.getTxnId()).willReturn(txnIdA);
-
-		given(txnCtx.accessor()).willReturn(accessor);
-
-		MerkleAccount v = new MerkleAccount();
-		IS_SMART_CONTRACT.setter().accept(v, true);
-		IS_DELETED.setter().accept(v, true);
-		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(contract)))).willReturn(v);
-	}
-
-	private void addSetupForValidContractCall() {
-		ContractCallTransactionBody op = mock(ContractCallTransactionBody.class);
-		given(op.getContractID()).willReturn(asContract(contract));
-		TransactionBody contractCallTxn = mock(TransactionBody.class);
-		given(contractCallTxn.hasContractCall()).willReturn(true);
-		given(contractCallTxn.getContractCall()).willReturn(op);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
-		given(accessor.getTxn()).willReturn(contractCallTxn);
-		given(accessor.getTxnId()).willReturn(txnIdA);
-		given(accessor.getPayer()).willReturn(a);
-		given(ledger.netTransfersInTxn()).willReturn(TransferList.getDefaultInstance());
-
-		given(txnCtx.accessor()).willReturn(accessor);
-
-		MerkleAccount v = new MerkleAccount();
-		IS_SMART_CONTRACT.setter().accept(v, true);
-		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(contract)))).willReturn(v);
-	}
-
-	private void addSetupForValidContractCreate() {
-		addSetupForValidContractCreate(contract);
-	}
-
-	private void addSetupForValidContractCreate(String contractToUse) {
-		TransactionBody contractCreateTxn = mock(TransactionBody.class);
-		given(contractCreateTxn.hasContractCreateInstance()).willReturn(true);
-		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
-		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(accessor.getTxnId()).willReturn(txnIdA);
-
-		TransactionRecord record = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder().setContractID(asContract(contractToUse)))
-				.build();
-		given(txnCtx.recordSoFar()).willReturn(record);
-		given(txnCtx.updatedRecordGiven(any())).willReturn(record);
-		given(txnCtx.status()).willReturn(ResponseCodeEnum.SUCCESS);
-		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
 	private void setupForReview() {
@@ -529,11 +323,11 @@ public class FeeChargingRecordsHistorianTest {
 		given(txnCtx.effectivePayer()).willReturn(effPayer);
 
 		accounts = mock(FCMap.class);
-		aValue = add(a, aBalance, aSendThresh, aReceiveThresh, aExps, aCons, aIds);
-		bValue = add(b, bBalance, bSendThresh, bReceiveThresh, bExps, bCons, bIds);
-		cValue = add(c, cBalance, cSendThresh, cReceiveThresh, cExps, EMPTY_LIST, EMPTY_LIST);
-		dValue = add(d, dBalance, dSendThresh, dReceiveThresh, dExps, EMPTY_LIST, EMPTY_LIST);
-		snValue = add(sn, snBalance, dSendThresh, dReceiveThresh, EMPTY_LIST, EMPTY_LIST, EMPTY_LIST);
+		aValue = add(a, aBalance, aSendThresh, aReceiveThresh);
+		bValue = add(b, bBalance, bSendThresh, bReceiveThresh);
+		cValue = add(c, cBalance, cSendThresh, cReceiveThresh);
+		dValue = add(d, dBalance, dSendThresh, dReceiveThresh);
+		snValue = add(sn, snBalance, dSendThresh, dReceiveThresh);
 
 		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, dynamicProperties);
 		itemizableFeeCharging.resetFor(accessor, sn);
@@ -579,10 +373,7 @@ public class FeeChargingRecordsHistorianTest {
 			AccountID id,
 			long balance,
 			long sendThreshold,
-			long receiveThreshold,
-			List<Long> expiries,
-			List<Long> consensusTimes,
-			List<TransactionID> txnIds
+			long receiveThreshold
 	) {
 		MerkleEntityId key = MerkleEntityId.fromAccountId(id);
 		MerkleAccount value = new MerkleAccount();
@@ -591,31 +382,7 @@ public class FeeChargingRecordsHistorianTest {
 		given(ledger.fundsReceivedRecordThreshold(id)).willReturn(receiveThreshold);
 		FUNDS_SENT_RECORD_THRESHOLD.setter().accept(value, 50_000_000_000L);
 		FUNDS_RECEIVED_RECORD_THRESHOLD.setter().accept(value, 50_000_000_000L);
-		HISTORY_RECORDS.setter().accept(
-				value,
-				asFcq(IntStream.range(0, expiries.size()).mapToObj(i -> {
-					ExpirableTxnRecord record = new ExpirableTxnRecord(
-							null,
-							new byte[0],
-							TxnId.fromGrpc(txnIds.get(i)),
-							RichInstant.fromGrpc(Timestamp.newBuilder().setSeconds(consensusTimes.get(i)).build()),
-							"",
-							0L,
-							null,
-							null,
-							null);
-					record.setExpiry(expiries.get(i));
-					return record;
-				}).collect(Collectors.toCollection(LinkedList::new))));
 		given(accounts.get(key)).willReturn(value);
 		return value;
-	}
-
-	private FCQueue<ExpirableTxnRecord> asFcq(LinkedList<ExpirableTxnRecord> ll) {
-		FCQueue<ExpirableTxnRecord> fcq = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
-		for (ExpirableTxnRecord record : ll) {
-			fcq.offer(record);
-		}
-		return fcq;
 	}
 }

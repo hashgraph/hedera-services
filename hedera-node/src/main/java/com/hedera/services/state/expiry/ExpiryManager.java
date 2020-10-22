@@ -53,27 +53,19 @@ public class ExpiryManager {
 		this.txnHistories = txnHistories;
 	}
 
-	public void trackHistoricalRecord(AccountID payer, long expiry) {
-		historicalExpiries.track(payer.getAccountNum(), expiry);
-	}
-
 	public void trackPayerRecord(AccountID effectivePayer, long expiry) {
 		payerExpiries.track(effectivePayer.getAccountNum(), expiry);
 	}
 
 	public void resumeTrackingFrom(FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
-		var _historicalExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		accounts.forEach((id, account) -> {
-			addUniqueExpiries(id.getNum(), account.payerRecords(), _payerExpiries, true);
-			addUniqueExpiries(id.getNum(), account.records(), _historicalExpiries, false);
+			addUniqueExpiries(id.getNum(), account.payerRecords(), _payerExpiries);
 		});
 
 		var cmp = Comparator.comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey);
 		_payerExpiries.sort(cmp);
-		_historicalExpiries.sort(cmp);
 		_payerExpiries.forEach(entry -> payerExpiries.track(entry.getKey(), entry.getValue()));
-		_historicalExpiries.forEach(entry -> historicalExpiries.track(entry.getKey(), entry.getValue()));
 
 		txnHistories.values().forEach(TxnIdRecentHistory::observeStaged);
 	}
@@ -81,14 +73,11 @@ public class ExpiryManager {
 	private void addUniqueExpiries(
 			Long num,
 			FCQueue<ExpirableTxnRecord> records,
-			List<Map.Entry<Long, Long>> expiries,
-			boolean shouldStage
+			List<Map.Entry<Long, Long>> expiries
 	) {
 		long lastAdded = -1;
 		for (ExpirableTxnRecord record : records) {
-			if (shouldStage) {
-				stage(record);
-			}
+			stage(record);
 			var expiry = record.getExpiry();
 			if (expiry != lastAdded) {
 				expiries.add(new AbstractMap.SimpleImmutableEntry<>(num, expiry));

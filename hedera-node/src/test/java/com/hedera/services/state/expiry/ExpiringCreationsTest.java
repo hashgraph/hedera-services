@@ -78,24 +78,6 @@ class ExpiringCreationsTest {
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.createExpiringPayerRecord(
 						null, null, 0L, submittingMember));
-		Assertions.assertDoesNotThrow(() ->
-				NOOP_EXPIRING_CREATIONS.createExpiringHistoricalRecord(
-						null, null, 0L, submittingMember));
-	}
-
-	@Test
-	public void reusesLastExpirableIfSameRecord() {
-		// setup:
-		ArgumentCaptor<ExpirableTxnRecord> captor = ArgumentCaptor.forClass(ExpirableTxnRecord.class);
-
-		// when:
-		subject.createExpiringHistoricalRecord(effPayer, record, now, submittingMember);
-		subject.createExpiringHistoricalRecord(effPayer, record, now, submittingMember);
-
-		// then:
-		verify(ledger, times(2)).addRecord(argThat(effPayer::equals), captor.capture());
-		// and:
-		Assertions.assertSame(captor.getAllValues().get(0), captor.getAllValues().get(1));
 	}
 
 	@Test
@@ -143,25 +125,5 @@ class ExpiringCreationsTest {
 		Assertions.assertEquals(expected, actual);
 		// and:
 		verify(expiries).trackPayerRecord(effPayer, expectedExpiry);
-	}
-
-	@Test
-	public void addsToHistoryRecordsAndTracks() {
-		// setup:
-		ArgumentCaptor<ExpirableTxnRecord> captor = ArgumentCaptor.forClass(ExpirableTxnRecord.class);
-
-		// given:
-		long expectedExpiry = now + historyTtl;
-
-		// when:
-		subject.createExpiringHistoricalRecord(effPayer, record, now, submittingMember);
-
-		// then:
-		verify(ledger).addRecord(argThat(effPayer::equals), captor.capture());
-		// and:
-		assertEquals(expectedExpiry, captor.getValue().getExpiry());
-		assertEquals(submittingMember, captor.getValue().getSubmittingMember());
-		// and:
-		verify(expiries).trackHistoricalRecord(effPayer, expectedExpiry);
 	}
 }

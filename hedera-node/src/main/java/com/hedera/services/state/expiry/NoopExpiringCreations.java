@@ -45,12 +45,4 @@ public enum NoopExpiringCreations implements EntityCreator {
 	) {
 		throw new UnsupportedOperationException();
 	}
-
-	@Override
-	public void createExpiringHistoricalRecord(
-			AccountID id,
-			TransactionRecord record,
-			long now,
-			long submittingMember
-	) { }
 }

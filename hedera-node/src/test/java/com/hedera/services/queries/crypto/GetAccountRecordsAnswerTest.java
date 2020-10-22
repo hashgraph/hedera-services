@@ -82,8 +82,8 @@ class GetAccountRecordsAnswerTest {
 				.autoRenewPeriod(1_000_000L)
 				.expirationTime(9_999_999L)
 				.get();
-		payerAccount.records().offer(recordOne());
-		payerAccount.records().offer(recordTwo());
+		payerAccount.payerRecords().offer(recordOne());
+		payerAccount.payerRecords().offer(recordTwo());
 
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);

@@ -84,8 +84,8 @@ class AnswerFunctionsTest {
 	@BeforeEach
 	private void setup() {
 		payerAccount = MerkleAccountFactory.newAccount().get();
-		payerAccount.records().offer(recordOne());
-		payerAccount.records().offer(targetRecord);
+		payerAccount.payerRecords().offer(recordOne());
+		payerAccount.payerRecords().offer(targetRecord);
 
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);

@@ -66,8 +66,8 @@ class GetAccountRecordsResourceUsageTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		aValue = MerkleAccountFactory.newAccount().get();
-		aValue.records().offer(recordOne());
-		aValue.records().offer(recordTwo());
+		aValue.payerRecords().offer(recordOne());
+		aValue.payerRecords().offer(recordTwo());
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		accounts = mock(FCMap.class);
 		propertySource = mock(PropertySource.class);
