@@ -925,7 +925,9 @@ workflows:
   weekly-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "0 1 * * 0,6"
+#  Make it run daily before converting to weekly
+#          cron: "0 1 * * 0,6"
+          cron: "0 21 * * *"
           filters:
             branches:
               only:
@@ -1030,7 +1032,7 @@ workflows:
   nightly-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "45 18,5 * * *"
+          cron: "30 20,5 * * *"
           filters:
             branches:
               only:
