@@ -922,19 +922,17 @@ workflows:
                 at: /
           workflow-name: "nightly-performance-regression"
 
-  weekly-perf-start-from-saved-state-regression:
+  weekly-crypto-transfer-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
-#  Make it run daily before converting to weekly
-#          cron: "0 1 * * 0,6"
-          cron: "0 10,22 * * *"
+          cron: "0 1,13 * * *"
           filters:
             branches:
               only:
                 - master
     jobs:
       - build-platform-and-services
-      - weekly-run-start-from-saved-state-regression:
+      - weekly-run-crypto-transfer-start-from-saved-state-regression:
           context: Slack
           requires:
             - build-platform-and-services
@@ -942,7 +940,27 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "weekly-perf-start-from-saved-state-regression"
+          workflow-name: "weekly-crypto-transfer-perf-start-from-saved-state-regression"
+
+  weekly-HCS-perf-start-from-saved-state-regression:
+    triggers:
+      - schedule:
+          cron: "0 6,18 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - weekly-run-HCS-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "weekly-HCS-perf-start-from-saved-state-regression"
 
 
   nightly-network-error-regression:
@@ -1708,7 +1726,7 @@ jobs:
       - store_artifacts:
           path: /results.tar.gz
 
-  weekly-run-start-from-saved-state-regression:
+  weekly-run-crypto-transfer-start-from-saved-state-regression:
     parameters:
       workflow-name:
         type: string
@@ -1726,7 +1744,36 @@ jobs:
           no_output_timeout: 60m
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/weekly/15N_15C/AWS-Services-Weekly-Perf-StartFromState-15N-15C.json /repo
+            ./regression_services_circleci.sh configs/services/weekly/15N_15C/AWS-Services-Weekly-CryptoTransfer-Perf-StartFromState-15N-15C.json /repo
+
+      - run:
+          name: Sync results of software update regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  weekly-run-HCS-start-from-saved-state-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Modify Payer account for Public testnet start from saved state test
+          command: |
+            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+      - run:
+          name: Run start from saved state regression tests
+          no_output_timeout: 60m
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh configs/services/weekly/15N_15C/AWS-Services-Weekly-HCS-Perf-StartFromState-15N-15C.json /repo
 
       - run:
           name: Sync results of software update regression to AWS
