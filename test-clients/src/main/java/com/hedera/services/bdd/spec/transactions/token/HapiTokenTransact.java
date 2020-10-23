@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.token.TokenTransactUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -36,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -79,6 +81,10 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 			this.receivers = receivers;
 		}
 
+		public boolean isTrulyToken() {
+			return token != HapiApiSuite.HBAR_TOKEN_SENTINEL;
+		}
+
 		public List<Map.Entry<String, Long>> generallyInvolved() {
 			if (sender.isPresent()) {
 				Map.Entry<String, Long> senderEntry = new AbstractMap.SimpleEntry<>(sender.get(), -amount);
@@ -102,7 +108,7 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 
 		public TokenTransferList specializedFor(HapiApiSpec spec) {
 			var scopedTransfers = TokenTransferList.newBuilder();
-			var id = spec.registry().getTokenID(token);
+			var id = isTrulyToken() ? spec.registry().getTokenID(token) : TokenID.getDefaultInstance();
 			scopedTransfers.setToken(id);
 			if (sender.isPresent()) {
 				scopedTransfers.addTransfers(adjustment(sender.get(), -amount, spec));
@@ -170,6 +176,10 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 		public static TokenMovement.Builder moving(long amount, String token) {
 			return new TokenMovement.Builder(amount, token);
 		}
+
+		public static TokenMovement.Builder movingHbar(long amount) {
+			return new TokenMovement.Builder(amount, HapiApiSuite.HBAR_TOKEN_SENTINEL);
+		}
 	}
 
 	private List<TokenMovement> providers;
@@ -204,7 +214,16 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 				.txns()
 				.<TokenTransfersTransactionBody, TokenTransfersTransactionBody.Builder>body(
 						TokenTransfersTransactionBody.class, b -> {
-							b.addAllTokenTransfers(transfersFor(spec));
+							var xfers = transfersFor(spec);
+							for (TokenTransferList scopedXfers : xfers) {
+								if (scopedXfers.getToken() == TokenID.getDefaultInstance()) {
+									b.setHbarTransfers(TransferList.newBuilder()
+											.addAllAccountAmounts(scopedXfers.getTransfersList())
+											.build());
+								} else {
+									b.addTokenTransfers(scopedXfers);
+								}
+							}
 						});
 		return b -> b.setTokenTransfers(opBody);
 	}

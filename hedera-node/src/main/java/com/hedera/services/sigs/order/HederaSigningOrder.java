@@ -24,6 +24,7 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -822,25 +823,36 @@ public class HederaSigningOrder {
 			TokenTransfersTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		List<JKey> required = EMPTY_LIST;
+		List<JKey> required = new ArrayList<>();
 
 		for (TokenTransferList xfers : op.getTokenTransfersList()) {
 			for (AccountAmount adjust : xfers.getTransfersList()) {
-				var account = adjust.getAccountID();
-				var result = sigMetaLookup.accountSigningMetaFor(account);
-				if (result.succeeded()) {
-					var meta = result.metadata();
-					if (adjust.getAmount() < 0 || meta.isReceiverSigRequired()) {
-						required = mutable(required);
-						required.add(meta.getKey());
-					}
-				} else {
-					return factory.forMissingAccount(account, txnId);
+				if (!includeIfPresentAndNecessary(adjust, required)) {
+					return factory.forMissingAccount(adjust.getAccountID(), txnId);
 				}
+			}
+		}
+		for (AccountAmount adjust : op.getHbarTransfers().getAccountAmountsList()) {
+			if (!includeIfPresentAndNecessary(adjust, required)) {
+				return factory.forMissingAccount(adjust.getAccountID(), txnId);
 			}
 		}
 
 		return factory.forValidOrder(required);
+	}
+
+	private boolean includeIfPresentAndNecessary(AccountAmount adjust, List<JKey> required) {
+		var account = adjust.getAccountID();
+		var result = sigMetaLookup.accountSigningMetaFor(account);
+		if (result.succeeded()) {
+			var meta = result.metadata();
+			if (adjust.getAmount() < 0 || meta.isReceiverSigRequired()) {
+				required.add(meta.getKey());
+			}
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	private <T> void addToMutableReqIfPresent(
