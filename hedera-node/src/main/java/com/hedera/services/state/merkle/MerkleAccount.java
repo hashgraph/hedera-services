@@ -209,10 +209,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		return getChild(ChildIndices.RELEASE_090_PAYER_RECORDS);
 	}
 
-	public void setRecords(FCQueue<ExpirableTxnRecord> records) {
-		throw new UnsupportedOperationException("25hr records are gone!");
-	}
-
 	public void setPayerRecords(FCQueue<ExpirableTxnRecord> payerRecords) {
 		setChild(ChildIndices.RELEASE_090_PAYER_RECORDS, payerRecords);
 	}

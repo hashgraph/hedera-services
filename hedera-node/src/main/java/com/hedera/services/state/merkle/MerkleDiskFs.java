@@ -80,7 +80,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf {
 			byte[] actualHash = diskContentHash(fid);
 			if (!Arrays.equals(expectedHash, actualHash)) {
 				log.error(
-						"State hash doesn't disk hash for content of '{}'!\n  State :: {}\n  Disk  :: {}",
+						"State hash doesn't match disk hash for content of '{}'!\n  State :: {}\n  Disk  :: {}",
 						asLiteralString(fid),
 						hex(expectedHash),
 						hex(actualHash));

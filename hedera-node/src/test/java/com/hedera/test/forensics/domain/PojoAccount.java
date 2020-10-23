@@ -88,11 +88,6 @@ public class PojoAccount {
 		pojo.setBalance(value.getBalance());
 		pojo.setSmartContract(value.isSmartContract());
 		pojo.setKeys(value.getKey().toString());
-		pojo.setNumRecords(value.records().size());
-		pojo.setHasMutableRecords(!value.records().isImmutable());
-		if (pojo.getNumRecords() > 0) {
-			pojo.setRecords(value.records().stream().map(PojoRecord::from).collect(toList()));
-		}
 		pojo.setNumPayerRecords(value.payerRecords().size());
 		pojo.setHasMutablePayerRecords(!value.payerRecords().isImmutable());
 		if (pojo.getNumPayerRecords() > 0) {
