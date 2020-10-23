@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -70,6 +71,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORD
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
+import static com.hedera.services.txns.crypto.CryptoTransferTransitionLogic.tryTransfers;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -349,7 +351,6 @@ public class HederaLedger {
 
 	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfersTransactionBody transfers) {
 		var validity = OK;
-
 		for (TokenTransferList xfers : transfers.getTokenTransfersList()) {
 			var id = tokenStore.resolve(xfers.getToken());
 			if (id == MISSING_TOKEN) {
@@ -370,6 +371,14 @@ public class HederaLedger {
 		}
 		if (validity == OK) {
 			validity = checkNetOfTokenTransfers();
+		}
+		if (validity == OK) {
+			if (transfers.hasHbarTransfers()) {
+				var hbarTransfers = transfers.getHbarTransfers();
+				if (hbarTransfers.getAccountAmountsCount() > 0) {
+					validity = tryTransfers(this, hbarTransfers);
+				}
+			}
 		}
 		if (validity != OK) {
 			dropPendingTokenChanges();

@@ -63,7 +63,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						balancesAreChecked(),
 						duplicateAccountsInTokenTransferRejected(),
 						allRequiredSigsAreChecked(),
-						txnsAreAtomic(),
+						tokenOnlyTxnsAreAtomic(),
 						nonZeroTransfersRejected(),
 						prechecksWork(),
 				}
@@ -245,8 +245,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec txnsAreAtomic() {
-		return defaultHapiSpec("TxnsAreAtomic")
+	public HapiApiSpec tokenOnlyTxnsAreAtomic() {
+		return defaultHapiSpec("TokenOnlyTxnsAreAtomic")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate("firstTreasury"),
