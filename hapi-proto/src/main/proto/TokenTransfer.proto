@@ -35,4 +35,5 @@ If any sender account fails to have sufficient token balance, then the entire tr
 */
 message TokenTransfersTransactionBody {
     repeated TokenTransferList tokenTransfers = 1;
+    TransferList hbarTransfers = 2;
 }

@@ -429,7 +429,6 @@ public class SolidityExecutor {
 				trackingRepository.commit();
 			}
 		} catch (Throwable e) {
-			e.printStackTrace();
 			if (e instanceof Program.OutOfGasException) {
 				BigInteger gasUpperBound = BigInteger.valueOf(PropertiesLoader.getMaxGasLimit());
 				BigInteger gasProvided = ByteUtil.bytesToBigInteger(solidityTxn.getGasLimit());

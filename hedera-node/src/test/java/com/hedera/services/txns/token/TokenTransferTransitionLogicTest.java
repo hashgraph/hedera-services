@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -61,6 +62,10 @@ import static org.mockito.BDDMockito.verify;
 @RunWith(JUnitPlatform.class)
 class TokenTransferTransitionLogicTest {
 	TokenTransfersTransactionBody xfers = TokenTransfersTransactionBody.newBuilder()
+			.setHbarTransfers(TransferList.newBuilder()
+					.addAccountAmounts(adjustFrom(asAccount("0.0.75231"), -1_000))
+					.addAccountAmounts(adjustFrom(asAccount("0.0.2"), +1_000))
+					.build())
 			.addTokenTransfers(TokenTransferList.newBuilder()
 					.setToken(asToken("0.0.12345"))
 					.addAllTransfers(List.of(
@@ -85,6 +90,7 @@ class TokenTransferTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(OK);
+		given(validator.isAcceptableTransfersLength(any())).willReturn(true);
 
 		subject = new TokenTransferTransitionLogic(ledger, validator, txnCtx);
 	}
@@ -144,6 +150,22 @@ class TokenTransferTransitionLogicTest {
 
 		// expect:
 		assertEquals(OK, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsRepeatedAccountAmounts() {
+		// setup:
+		xfers = xfers.toBuilder()
+				.setHbarTransfers(xfers.getHbarTransfers().toBuilder()
+						.addAccountAmounts(adjustFrom(asAccount("0.0.75231"), -1_000)))
+				.build();
+
+		givenValidTxnCtx();
+		// and:
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+
+		// expect:
+		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(tokenTransactTxn));
 	}
 
 	@Test

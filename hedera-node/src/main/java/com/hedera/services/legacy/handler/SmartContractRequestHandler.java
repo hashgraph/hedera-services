@@ -254,7 +254,6 @@ public class SmartContractRequestHandler {
 					sbhInTinybars,
 					true);
 		} catch (Exception e) {
-			e.printStackTrace();
 			result = getFailureTransactionRecord(transaction, consensusTime, CONTRACT_EXECUTION_EXCEPTION);
 		}
 		if (result.getReceipt().getStatus() == SUCCESS) {
@@ -507,7 +506,6 @@ public class SmartContractRequestHandler {
 						record.getContractCallResult().getCreatedContractIDsList());
 				return record;
 			} catch (Exception e) {
-				e.printStackTrace();
 				return getFailureTransactionRecord(transaction, consensusTime, CONTRACT_EXECUTION_EXCEPTION);
 			}
 		} else {

@@ -77,7 +77,6 @@ public class FileDeleteTransitionLogic implements TransitionLogic {
 			var result = hfs.delete(tbd);
 			txnCtx.setStatus(result.outcome());
 		} catch (Exception unknown) {
-			unknown.printStackTrace();
 			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxn4Log(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
