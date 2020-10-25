@@ -40,7 +40,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -249,22 +248,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		state().setHbarBalance(balance);
 	}
 
-	public long getReceiverThreshold() {
-		return state().receiverThreshold();
-	}
-
-	public void setReceiverThreshold(long receiverThreshold) {
-		state().setReceiverThreshold(receiverThreshold);
-	}
-
-	public long getSenderThreshold() {
-		return state().senderThreshold();
-	}
-
-	public void setSenderThreshold(long senderThreshold) {
-		state().setSenderThreshold(senderThreshold);
-	}
-
 	public boolean isReceiverSigRequired() {
 		return state().isReceiverSigRequired();
 	}
@@ -343,7 +326,7 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 			var smartContract = (in.readByte() == 1);
 			var state = new MerkleAccountState(
 					key,
-					expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+					expiry, balance, autoRenewSecs,
 					memo,
 					deleted, smartContract, receiverSigRequired,
 					proxy);

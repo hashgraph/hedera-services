@@ -416,9 +416,7 @@ public class SmartContractRequestHandler {
 				.memo(parentAccount.getMemo())
 				.expiry(parentAccount.getExpiry())
 				.autoRenewPeriod(parentAccount.getAutoRenewSecs())
-				.proxy(parentAccount.getProxy())
-				.fundsSentRecordThreshold(parentAccount.getSenderThreshold())
-				.fundsReceivedRecordThreshold(parentAccount.getReceiverThreshold());
+				.proxy(parentAccount.getProxy());
 		for (ContractID child : children) {
 			ledger.customize(asAccount(child), customizer);
 		}

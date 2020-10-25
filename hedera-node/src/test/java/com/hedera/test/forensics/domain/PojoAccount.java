@@ -95,8 +95,6 @@ public class PojoAccount {
 		}
 		pojo.setExpiry(value.getExpiry());
 		pojo.setAutoRenewPeriod(value.getAutoRenewSecs());
-		pojo.setReceiveThreshold(value.getReceiverThreshold());
-		pojo.setSendThreshold(value.getSenderThreshold());
 		pojo.setMemo(value.getMemo());
 		pojo.setReceiverSigRequired(value.isReceiverSigRequired());
 		pojo.setDeleted(value.isDeleted());

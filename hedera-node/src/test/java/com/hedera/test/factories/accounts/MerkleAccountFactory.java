@@ -59,9 +59,7 @@ public class MerkleAccountFactory {
 		accountKeys.ifPresent(k -> value.setKey(k));
 		expirationTime.ifPresent(l -> value.setExpiry(l));
 		autoRenewPeriod.ifPresent(d -> value.setAutoRenewSecs(d));
-		senderThreshold.ifPresent(l -> value.setSenderThreshold(l));
 		isSmartContract.ifPresent(b -> value.setSmartContract(b));
-		receiverThreshold.ifPresent(l -> value.setReceiverThreshold(l));
 		receiverSigRequired.ifPresent(b -> value.setReceiverSigRequired(b));
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(associatedTokens);

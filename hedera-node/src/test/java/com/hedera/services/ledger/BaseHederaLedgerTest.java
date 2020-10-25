@@ -48,8 +48,6 @@ import java.util.Optional;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
@@ -145,8 +143,6 @@ public class BaseHederaLedgerTest {
 		when(accountsLedger.get(id, BALANCE)).thenReturn(balance);
 		when(accountsLedger.get(id, IS_DELETED)).thenReturn(false);
 		when(accountsLedger.get(id, IS_SMART_CONTRACT)).thenReturn(false);
-		when(accountsLedger.get(id, FUNDS_SENT_RECORD_THRESHOLD)).thenReturn(1L);
-		when(accountsLedger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD)).thenReturn(2L);
 		when(accountsLedger.exists(id)).thenReturn(true);
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(tokenInfo.keySet());

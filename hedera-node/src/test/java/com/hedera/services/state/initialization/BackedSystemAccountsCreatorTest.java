@@ -257,8 +257,6 @@ class BackedSystemAccountsCreatorTest {
 
 	private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
 		MerkleAccount hAccount = new HederaAccountCustomizer()
-				.fundsSentRecordThreshold(recordThresholds)
-				.fundsReceivedRecordThreshold(recordThresholds)
 				.isReceiverSigRequired(false)
 				.proxy(EntityId.MISSING_ENTITY_ID)
 				.isDeleted(false)

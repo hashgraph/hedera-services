@@ -140,13 +140,13 @@ public class MerkleAccountTest {
 
 		state = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
 		otherState = new MerkleAccountState(
 				otherKey,
-				otherExpiry, otherBalance, otherAutoRenewSecs, otherSenderThreshold, otherReceiverThreshold,
+				otherExpiry, otherBalance, otherAutoRenewSecs,
 				otherMemo,
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
 				otherProxy);
@@ -214,8 +214,6 @@ public class MerkleAccountTest {
 		assertEquals(state.expiry(), subject.getExpiry());
 		assertEquals(state.balance(), subject.getBalance());
 		assertEquals(state.autoRenewSecs(), subject.getAutoRenewSecs());
-		assertEquals(state.senderThreshold(), subject.getSenderThreshold());
-		assertEquals(state.receiverThreshold(), subject.getReceiverThreshold());
 		assertEquals(state.isReleased(), subject.isReleased());
 		assertEquals(state.isSmartContract(), subject.isSmartContract());
 		assertEquals(state.isReceiverSigRequired(), subject.isReceiverSigRequired());
@@ -234,8 +232,6 @@ public class MerkleAccountTest {
 		subject.setExpiry(otherExpiry);
 		subject.setBalance(otherBalance);
 		subject.setAutoRenewSecs(otherAutoRenewSecs);
-		subject.setSenderThreshold(otherSenderThreshold);
-		subject.setReceiverThreshold(otherReceiverThreshold);
 		subject.setDeleted(otherDeleted);
 		subject.setSmartContract(otherSmartContract);
 		subject.setReceiverSigRequired(otherReceiverSigRequired);
@@ -246,8 +242,6 @@ public class MerkleAccountTest {
 		// then:
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
-		verify(delegate).setSenderThreshold(otherSenderThreshold);
-		verify(delegate).setReceiverThreshold(otherReceiverThreshold);
 		verify(delegate).setDeleted(otherDeleted);
 		verify(delegate).setSmartContract(otherSmartContract);
 		verify(delegate).setReceiverSigRequired(otherReceiverSigRequired);
@@ -347,7 +341,7 @@ public class MerkleAccountTest {
 		// setup:
 		var expectedState = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);

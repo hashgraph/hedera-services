@@ -138,8 +138,6 @@ class BasedLedgerValidatorTest {
 
 	private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
 		MerkleAccount hAccount = new HederaAccountCustomizer()
-				.fundsSentRecordThreshold(123)
-				.fundsReceivedRecordThreshold(123)
 				.isReceiverSigRequired(false)
 				.proxy(MISSING_ENTITY_ID)
 				.isDeleted(false)

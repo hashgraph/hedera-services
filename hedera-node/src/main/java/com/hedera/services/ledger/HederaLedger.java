@@ -61,8 +61,6 @@ import java.util.function.Consumer;
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
@@ -435,14 +433,6 @@ public class HederaLedger {
 
 	public long expiry(AccountID id) {
 		return (long) accountsLedger.get(id, EXPIRY);
-	}
-
-	public long fundsSentRecordThreshold(AccountID id) {
-		return (long) accountsLedger.get(id, FUNDS_SENT_RECORD_THRESHOLD);
-	}
-
-	public long fundsReceivedRecordThreshold(AccountID id) {
-		return (long) accountsLedger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD);
 	}
 
 	public boolean isSmartContract(AccountID id) {

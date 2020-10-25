@@ -116,8 +116,6 @@ class LedgerAccountsSourceTest {
 		given(account.getAutoRenewSecs()).willReturn(autoRenew);
 		given(account.getExpiry()).willReturn(expiry);
 		given(account.getProxy()).willReturn(EntityId.ofNullableAccountId(IdUtils.asAccount("1.2.3")));
-		given(account.getSenderThreshold()).willReturn(sendThreshold);
-		given(account.getReceiverThreshold()).willReturn(receiveThreshold);
 		given(account.isReceiverSigRequired()).willReturn(receiverSigRequired);
 		given(account.isDeleted()).willReturn(deleted);
 		given(account.isSmartContract()).willReturn(smartContract);
@@ -138,8 +136,6 @@ class LedgerAccountsSourceTest {
 		assertEquals(1, evmState.getProxyAccountShard());
 		assertEquals(2, evmState.getProxyAccountRealm());
 		assertEquals(3, evmState.getProxyAccountNum());
-		assertEquals(receiveThreshold, evmState.getReceiverThreshold());
-		assertEquals(sendThreshold, evmState.getSenderThreshold());
 		assertEquals(BigInteger.ZERO, evmState.getNonce());
 		assertEquals(deleted, evmState.isDeleted());
 		assertEquals(evmState.isSmartContract(), smartContract);
@@ -209,8 +205,6 @@ class LedgerAccountsSourceTest {
 				argThat(target::equals),
 				argThat(KEY::equals),
 				argThat(k -> expectedKey.toString().equals(k.toString())));
-		verify(txnLedger).set(target, FUNDS_RECEIVED_RECORD_THRESHOLD, receiveThreshold);
-		verify(txnLedger).set(target, FUNDS_SENT_RECORD_THRESHOLD, sendThreshold);
 		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
 		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
 		verify(txnLedger).set(target, PROXY, EntityId.ofNullableAccountId(proxy));
@@ -252,8 +246,6 @@ class LedgerAccountsSourceTest {
 				argThat(target::equals),
 				argThat(KEY::equals),
 				argThat(k -> expectedKey.toString().equals(k.toString())));
-		verify(txnLedger).set(target, FUNDS_RECEIVED_RECORD_THRESHOLD, receiveThreshold);
-		verify(txnLedger).set(target, FUNDS_SENT_RECORD_THRESHOLD, sendThreshold);
 		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
 		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
 		verify(txnLedger).set(target, PROXY, EntityId.ofNullableAccountId(proxy));

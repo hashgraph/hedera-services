@@ -47,8 +47,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -295,11 +293,11 @@ public class FeeChargingRecordsHistorianTest {
 		given(txnCtx.effectivePayer()).willReturn(effPayer);
 
 		accounts = mock(FCMap.class);
-		aValue = add(a, aBalance, aSendThresh, aReceiveThresh);
-		bValue = add(b, bBalance, bSendThresh, bReceiveThresh);
-		cValue = add(c, cBalance, cSendThresh, cReceiveThresh);
-		dValue = add(d, dBalance, dSendThresh, dReceiveThresh);
-		snValue = add(sn, snBalance, dSendThresh, dReceiveThresh);
+		aValue = add(a, aBalance);
+		bValue = add(b, bBalance);
+		cValue = add(c, cBalance);
+		dValue = add(d, dBalance);
+		snValue = add(sn, snBalance);
 
 		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, dynamicProperties);
 		itemizableFeeCharging.resetFor(accessor, sn);
@@ -343,17 +341,11 @@ public class FeeChargingRecordsHistorianTest {
 
 	private MerkleAccount add(
 			AccountID id,
-			long balance,
-			long sendThreshold,
-			long receiveThreshold
+			long balance
 	) {
 		MerkleEntityId key = MerkleEntityId.fromAccountId(id);
 		MerkleAccount value = new MerkleAccount();
 		given(ledger.getBalance(id)).willReturn(balance);
-		given(ledger.fundsSentRecordThreshold(id)).willReturn(sendThreshold);
-		given(ledger.fundsReceivedRecordThreshold(id)).willReturn(receiveThreshold);
-		FUNDS_SENT_RECORD_THRESHOLD.setter().accept(value, 50_000_000_000L);
-		FUNDS_RECEIVED_RECORD_THRESHOLD.setter().accept(value, 50_000_000_000L);
 		given(accounts.get(key)).willReturn(value);
 		return value;
 	}
