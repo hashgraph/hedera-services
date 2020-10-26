@@ -218,6 +218,7 @@ class HederaTokenStoreTest {
 		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
+		subject.knownTreasuries.put(treasury, new HashSet<>() {{ add(misc); }});
 	}
 
 	@Test
@@ -289,6 +290,8 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(OK, outcome);
+		// and:
+		assertTrue(subject.knownTreasuries.isEmpty());
 	}
 
 	@Test
