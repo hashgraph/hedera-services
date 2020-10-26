@@ -85,7 +85,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 		long nodeBalance = properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance");
 		long defaultBalance = properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance");
-		long recordThresholds = properties.getLongProperty("bootstrap.ledger.systemAccounts.recordThresholds");
 		long treasuryBalance = tinyBarFloat
 				- (nodeBalance * nodeAccountNums.size())
 				- (defaultBalance * (N - nodeAccountNums.size() - 1));

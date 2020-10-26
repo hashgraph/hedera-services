@@ -61,11 +61,10 @@ class ExpiringCreationsTest {
 		properties = mock(PropertySource.class);
 		recordCache = mock(RecordCache.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
-		given(dynamicProperties.shouldCreatePayerRecords()).willReturn(true);
-		given(properties.getIntProperty("ledger.records.ttl")).willReturn(historyTtl);
+		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
-		subject = new ExpiringCreations(expiries, properties, dynamicProperties);
+		subject = new ExpiringCreations(expiries, dynamicProperties);
 		subject.setRecordCache(recordCache);
 		subject.setLedger(ledger);
 	}
@@ -76,13 +75,13 @@ class ExpiringCreationsTest {
 		Assertions.assertDoesNotThrow(() ->
 				NOOP_EXPIRING_CREATIONS.setLedger(null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.createExpiringPayerRecord(
+				NOOP_EXPIRING_CREATIONS.createExpiringRecord(
 						null, null, 0L, submittingMember));
 	}
 
 	@Test
 	public void ifNotCreatingStatePayerRecordsDirectlyTracksWithCache() {
-		given(dynamicProperties.shouldCreatePayerRecords()).willReturn(false);
+		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(false);
 
 		// given:
 		long expectedExpiry = now + cacheTtl;
@@ -92,13 +91,13 @@ class ExpiringCreationsTest {
 		expected.setSubmittingMember(submittingMember);
 
 		// when:
-		var actual = subject.createExpiringPayerRecord(effPayer, record, now, submittingMember);
+		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);
 
 		// then:
-		verify(ledger, never()).addPayerRecord(any(), any());
+		verify(ledger, never()).addRecord(any(), any());
 		verify(recordCache).trackForExpiry(expected);
 		// and:
-		verify(expiries, never()).trackPayerRecord(effPayer, expectedExpiry);
+		verify(expiries, never()).trackRecord(effPayer, expectedExpiry);
 		// and:
 		Assertions.assertEquals(expected, actual);
 	}
@@ -116,14 +115,14 @@ class ExpiringCreationsTest {
 		expected.setSubmittingMember(submittingMember);
 
 		// when:
-		var actual = subject.createExpiringPayerRecord(effPayer, record, now, submittingMember);
+		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);
 
 		// then:
-		verify(ledger).addPayerRecord(argThat(effPayer::equals), captor.capture());
+		verify(ledger).addRecord(argThat(effPayer::equals), captor.capture());
 		// and:
 		assertEquals(expectedExpiry, captor.getValue().getExpiry());
 		Assertions.assertEquals(expected, actual);
 		// and:
-		verify(expiries).trackPayerRecord(effPayer, expectedExpiry);
+		verify(expiries).trackRecord(effPayer, expectedExpiry);
 	}
 }

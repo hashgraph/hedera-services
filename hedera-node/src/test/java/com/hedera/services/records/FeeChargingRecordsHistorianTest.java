@@ -168,34 +168,6 @@ public class FeeChargingRecordsHistorianTest {
 	}
 
 	@Test
-	public void doesntAddRecordToQualifyingAccountsIfShouldnt() {
-		setupForAdd();
-		given(dynamicProperties.shouldCreateThresholdRecords()).willReturn(false);
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(exemptions).hasExemptPayer(txnCtx.accessor());
-		verify(fees).computeCachingFee(record);
-		verify(recordCache).setPostConsensus(
-				txnIdA,
-				finalRecord.getReceipt().getStatus(),
-				payerRecord);
-		verify(ledger).doTransfer(a, funding, aBalance);
-		// and:
-		verify(ledger, times(1)).netTransfersInTxn();
-		verify(txnCtx).recordSoFar();
-		verify(txnCtx).updatedRecordGiven(any());
-		verify(fees, never()).computeStorageFee(record);
-		// and:
-		verify(ledger, times(1)).getBalance(a);
-		// and:
-		verify(properties, never()).getIntProperty("ledger.records.ttl");
-		verify(txnCtx, times(1)).consensusTime();
-	}
-
-	@Test
 	public void addsRecordToQualifyingThresholdAccounts() {
 		setupForAdd();
 
@@ -224,7 +196,7 @@ public class FeeChargingRecordsHistorianTest {
 		// and:
 		assertEquals(finalRecord, subject.lastCreatedRecord().get());
 		// and:
-		verify(creator).createExpiringPayerRecord(effPayer, finalRecord, nows, submittingMember);
+		verify(creator).createExpiringRecord(effPayer, finalRecord, nows, submittingMember);
 	}
 
 	@Test
@@ -272,10 +244,9 @@ public class FeeChargingRecordsHistorianTest {
 
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
-		given(dynamicProperties.shouldCreateThresholdRecords()).willReturn(true);
 
 		creator = mock(ExpiringCreations.class);
-		given(creator.createExpiringPayerRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
+		given(creator.createExpiringRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
 
 		TransactionBody txn = mock(TransactionBody.class);
 		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);

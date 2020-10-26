@@ -66,8 +66,6 @@ class LedgerAccountsSourceTest {
 	@BeforeEach
 	void setup() {
 		var props = mock(GlobalDynamicProperties.class);
-		given(props.defaultContractReceiveThreshold()).willReturn(receiveThreshold);
-		given(props.defaultContractSendThreshold()).willReturn(sendThreshold);
 		ledger = mock(HederaLedger.class);
 
 		subject = new LedgerAccountsSource(ledger, props);

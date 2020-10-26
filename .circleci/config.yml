@@ -804,23 +804,23 @@ commands:
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:
-          dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
+          dsl-args: "ContractCallLocalSuite -TLS=on"
       - run-eet-suites:
-          dsl-args: "ContractCallSuite -TLS=on -NODE=random"
+          dsl-args: "ContractCallSuite -TLS=on"
       - run-eet-suites:
-          dsl-args: "ChildStorageSpecs -TLS=on -NODE=random"
+          dsl-args: "ChildStorageSpecs -TLS=on"
       - run-eet-suites:
-          dsl-args: "BigArraySpec -TLS=on -NODE=random"
+          dsl-args: "BigArraySpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "SmartContractInlineAssemblySpec -TLS=on -NODE=random"
+          dsl-args: "SmartContractInlineAssemblySpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "OCTokenSpec -TLS=on -NODE=random"
+          dsl-args: "OCTokenSpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "CharacterizationSuite -TLS=on -NODE=random"
+          dsl-args: "CharacterizationSuite -TLS=on"
       - run-eet-suites:
-          dsl-args: "SmartContractFailFirstSpec -TLS=on -NODE=random"
+          dsl-args: "SmartContractFailFirstSpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "SmartContractSelfDestructSpec -TLS=on -NODE=random"
+          dsl-args: "SmartContractSelfDestructSpec -TLS=on"
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:
@@ -1803,7 +1803,7 @@ jobs:
       - run-eet-suites:
           dsl-args: "SubmitMessageSpecs"
       - run-eet-suites:
-          dsl-args: "HCSTopicFragmentationSuite -TLS=alternate -NODE=random"
+          dsl-args: "HCSTopicFragmentationSuite -TLS=alternate"
       - run-eet-suites:
           dsl-args: "TopicGetInfoSpecs"
       - run-eet-suites:
@@ -1911,11 +1911,11 @@ jobs:
           dsl-args: "MultipleSelfDestructsAreSafe"
       - postgres-get-counts
       - run-eet-suites:
-          dsl-args: "ContractCallSuite -TLS=on -NODE=random"
+          dsl-args: "ContractCallSuite -TLS=on"
       - postgres-verify-counts:
           expected-difference: 17
       - run-eet-suites:
-          dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
+          dsl-args: "ContractCallLocalSuite -TLS=on"
       - run-eet-suites:
           dsl-args: "ContractUpdateSuite -TLS=on"
       - run-eet-suites:

@@ -70,7 +70,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	/* Order of Merkle node children */
 	static class ChildIndices {
 		static final int STATE = 0;
-		static final int RECORDS = 1;
 		static final int RELEASE_081_PAYER_RECORDS = 2;
 		static final int NUM_081_CHILDREN = 3;
 
@@ -78,7 +77,7 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		static final int RELEASE_090_ALPHA_ASSOCIATED_TOKENS = 3;
 		static final int NUM_090_ALPHA_CHILDREN = 4;
 
-		static final int RELEASE_090_PAYER_RECORDS = 1;
+		static final int RELEASE_090_RECORDS = 1;
 		static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
 		static final int NUM_090_CHILDREN = 3;
 	}
@@ -140,7 +139,7 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		if (isImmutable()) {
 			var msg = String.format("Copy called on immutable MerkleAccount by thread '%s'! Payer records mutable? %s",
 					Thread.currentThread().getName(),
-					payerRecords().isImmutable() ? "NO" : "YES");
+					records().isImmutable() ? "NO" : "YES");
 			log.warn(msg);
 			/* Ensure we get this stack trace in case a caller incorrectly suppresses the exception. */
 			stackDump.run();
@@ -150,7 +149,7 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		setImmutable(true);
 		return new MerkleAccount(List.of(
 				state().copy(),
-				payerRecords().copy(),
+				records().copy(),
 				tokens().copy()));
 	}
 
@@ -177,20 +176,20 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		}
 		var that = (MerkleAccount) o;
 		return this.state().equals(that.state()) &&
-				this.payerRecords().equals(that.payerRecords()) &&
+				this.records().equals(that.records()) &&
 				this.tokens().equals(that.tokens());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(state(), payerRecords(), tokens());
+		return Objects.hash(state(), records(), tokens());
 	}
 
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleAccount.class)
 				.add("state", state())
-				.add("# payer records", payerRecords().size())
+				.add("# records", records().size())
 				.add("tokens", tokens().readableTokenIds())
 				.toString();
 	}
@@ -201,15 +200,11 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	}
 
 	public FCQueue<ExpirableTxnRecord> records() {
-		throw new UnsupportedOperationException("25hr records are gone!");
+		return getChild(ChildIndices.RELEASE_090_RECORDS);
 	}
 
-	public FCQueue<ExpirableTxnRecord> payerRecords() {
-		return getChild(ChildIndices.RELEASE_090_PAYER_RECORDS);
-	}
-
-	public void setPayerRecords(FCQueue<ExpirableTxnRecord> payerRecords) {
-		setChild(ChildIndices.RELEASE_090_PAYER_RECORDS, payerRecords);
+	public void setRecords(FCQueue<ExpirableTxnRecord> payerRecords) {
+		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
 	}
 
 	public MerkleAccountTokens tokens() {
@@ -298,7 +293,7 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 
 	/* --- Helpers --- */
 	public List<ExpirableTxnRecord> recordList() {
-		return new ArrayList<>(payerRecords());
+		return new ArrayList<>(records());
 	}
 
 	@Deprecated

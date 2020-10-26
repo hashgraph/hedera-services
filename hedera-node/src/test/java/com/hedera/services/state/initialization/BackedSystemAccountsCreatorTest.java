@@ -105,8 +105,6 @@ class BackedSystemAccountsCreatorTest {
 				.willReturn(10L);
 		given(properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance"))
 				.willReturn(5L);
-		given(properties.getLongProperty("bootstrap.ledger.systemAccounts.recordThresholds"))
-				.willReturn(recordThresholds);
 		given(properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"))
 				.willReturn(legacyId);
 		given(properties.getStringProperty("bootstrap.genesisB64Keystore.path"))

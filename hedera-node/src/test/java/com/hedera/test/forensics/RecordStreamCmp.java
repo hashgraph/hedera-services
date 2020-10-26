@@ -26,7 +26,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -35,7 +34,6 @@ import com.hedera.test.forensics.records.RecordParser;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -58,14 +56,12 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Deque;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
 
 import static com.hedera.test.forensics.records.RecordParser.TxnHistory;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -196,7 +192,7 @@ public class RecordStreamCmp {
 
 		var issRoundAccounts = AccountsReader.from(firstIssRoundAccounts);
 		var suspectAccount = issRoundAccounts.get(new MerkleEntityId(0, 0, SUSPECT));
-		int nFromState = suspectAccount.payerRecords().size();
+		int nFromState = suspectAccount.records().size();
 		int nFromStream = history.suspectRecords.size();
 
 		System.out.println(
@@ -205,7 +201,7 @@ public class RecordStreamCmp {
 
 		int minN = Math.min(nFromState, nFromStream);
 		for (int i = 0; i < minN; i++) {
-			var fromState = suspectAccount.payerRecords().poll();
+			var fromState = suspectAccount.records().poll();
 			var fromStream = history.suspectRecords.poll();
 			fromStream.setSubmittingMember(fromState.getSubmittingMember());
 			if (!fromState.equals(fromStream)) {
@@ -610,13 +606,13 @@ public class RecordStreamCmp {
 			while (true) {
 				try {
 					var account = backingAccounts.getRef(txnPayer);
-					var payerRecords = account.payerRecords();
+					var payerRecords = account.records();
 					if (!payerRecords.isEmpty()) {
 						payerRecords.poll();
 					}
 
 					var accountAgain = backingAccounts.getRef(txnPayer);
-					accountAgain.payerRecords().offer(new ExpirableTxnRecord());
+					accountAgain.records().offer(new ExpirableTxnRecord());
 
 					backingAccounts.flushMutableRefs();
 				} catch (ConcurrentModificationException cme) {

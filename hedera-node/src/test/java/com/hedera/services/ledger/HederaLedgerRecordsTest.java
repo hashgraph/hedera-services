@@ -30,7 +30,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.stream.Collectors;
 
-import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,13 +54,13 @@ public class HederaLedgerRecordsTest extends BaseHederaLedgerTest {
 		ExpirableTxnRecord newRecord = asExpirableRecords(1_000L).peek();
 
 		// when:
-		subject.addPayerRecord(misc, newRecord);
+		subject.addRecord(misc, newRecord);
 
 		// then:
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
 		verify(accountsLedger).set(
 				argThat(misc::equals),
-				argThat(PAYER_RECORDS::equals),
+				argThat(RECORDS::equals),
 				captor.capture());
 		// and:
 		assertTrue(captor.getValue() == records);

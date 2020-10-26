@@ -1200,7 +1200,7 @@ public class ServicesContext {
 
 	public ExpiringCreations creator() {
 		if (creator == null) {
-			creator = new ExpiringCreations(expiries(), properties(), globalDynamicProperties());
+			creator = new ExpiringCreations(expiries(), globalDynamicProperties());
 			creator.setRecordCache(recordCache());
 		}
 		return creator;

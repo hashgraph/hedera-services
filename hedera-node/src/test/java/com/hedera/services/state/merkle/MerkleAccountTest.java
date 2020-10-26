@@ -36,14 +36,12 @@ import org.junit.runner.RunWith;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.MerkleAccount.ChildIndices.RELEASE_090_ASSOCIATED_TOKENS;
 import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
-import static java.util.Comparator.comparingLong;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -107,22 +105,12 @@ public class MerkleAccountTest {
 
 	MerkleAccountState state;
 	MerkleAccountState otherState;
-	FCQueue<ExpirableTxnRecord> records;
 	FCQueue<ExpirableTxnRecord> payerRecords;
 	MerkleAccountTokens tokens;
 	DomainSerdes serdes;
 
 	MerkleAccount subject;
 	MerkleAccountState delegate;
-
-	public static void offerRecordsInOrder(MerkleAccount account, List<ExpirableTxnRecord> _records) {
-		List<ExpirableTxnRecord> recordList = new ArrayList<>(_records);
-		recordList.sort(comparingLong(ExpirableTxnRecord::getExpiry));
-		var records = account.records();
-		for (ExpirableTxnRecord record : recordList) {
-			records.offer(record);
-		}
-	}
 
 	@BeforeEach
 	public void setup() {
@@ -202,7 +190,7 @@ public class MerkleAccountTest {
 		// expect:
 		assertEquals(
 				"MerkleAccount{state=" + state.toString()
-						+ ", # payer records=" + 3
+						+ ", # records=" + 3
 						+ ", tokens=" + "[1.2.3, 2.3.4]"
 						+ "}",
 				subject.toString());
@@ -288,7 +276,7 @@ public class MerkleAccountTest {
 		// then:
 		verify(payerRecords).copy();
 		// and:
-		assertEquals(payerRecords, copy.payerRecords());
+		assertEquals(payerRecords, copy.records());
 	}
 
 	@Test
@@ -313,7 +301,7 @@ public class MerkleAccountTest {
 
 		// then:
 		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));
-		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_PAYER_RECORDS));
+		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_RECORDS));
 		assertSame(accountTokens, subject.getChild(RELEASE_090_ASSOCIATED_TOKENS));
 	}
 
@@ -332,7 +320,7 @@ public class MerkleAccountTest {
 
 		// then:
 		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));
-		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_PAYER_RECORDS));
+		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_RECORDS));
 		assertThat(subject.getChild(RELEASE_090_ASSOCIATED_TOKENS), instanceOf(MerkleAccountTokens.class));
 	}
 

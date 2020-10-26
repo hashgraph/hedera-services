@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
@@ -37,22 +36,14 @@ public class ExpiringCreations implements EntityCreator {
 	private HederaLedger ledger;
 	private RecordCache recordCache;
 	private final ExpiryManager expiries;
-	private final PropertySource properties;
 	private final GlobalDynamicProperties dynamicProperties;
-
-	private ObjLongConsumer<AccountID> payerTracker;
-	private ToLongBiFunction<AccountID, ExpirableTxnRecord> payerRecordFn;
 
 	public ExpiringCreations(
 			ExpiryManager expiries,
-			PropertySource properties,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.expiries = expiries;
-		this.properties = properties;
 		this.dynamicProperties = dynamicProperties;
-
-		payerTracker = this::trackPayerRecord;
 	}
 
 	@Override
@@ -63,26 +54,19 @@ public class ExpiringCreations implements EntityCreator {
 	@Override
 	public void setLedger(HederaLedger ledger) {
 		this.ledger = ledger;
-		payerRecordFn = this::updatePayerRecord;
 	}
 
-	private void trackPayerRecord(AccountID effectivePayer, long expiry) {
-		if (dynamicProperties.shouldCreatePayerRecords()) {
-			expiries.trackPayerRecord(effectivePayer, expiry);
-		}
-	}
-
-	private long updatePayerRecord(AccountID id, ExpirableTxnRecord record) {
-		if (dynamicProperties.shouldCreatePayerRecords()) {
-			return ledger.addPayerRecord(id, record);
+	private void manageRecord(AccountID owner, ExpirableTxnRecord record) {
+		if (dynamicProperties.shouldKeepRecordsInState()) {
+			ledger.addRecord(owner, record);
+			expiries.trackRecord(owner, record.getExpiry());
 		} else {
 			recordCache.trackForExpiry(record);
-			return 0L;
 		}
 	}
 
 	@Override
-	public ExpirableTxnRecord createExpiringPayerRecord(
+	public ExpirableTxnRecord createExpiringRecord(
 			AccountID id,
 			TransactionRecord record,
 			long now,
@@ -93,8 +77,6 @@ public class ExpiringCreations implements EntityCreator {
 				submittingMember,
 				id,
 				record,
-				payerTracker,
-				payerRecordFn,
 				ExpirableTxnRecord::fromGprc);
 	}
 
@@ -103,15 +85,14 @@ public class ExpiringCreations implements EntityCreator {
 			long submittingMember,
 			AccountID id,
 			TransactionRecord record,
-			ObjLongConsumer<AccountID> tracker,
-			ToLongBiFunction<AccountID, ExpirableTxnRecord> adder,
 			Function<TransactionRecord, ExpirableTxnRecord> fromGrpc
 	) {
 		var expiringRecord = fromGrpc.apply(record);
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);
-		adder.applyAsLong(id, expiringRecord);
-		tracker.accept(id, expiry);
+
+		manageRecord(id, expiringRecord);
+
 		return expiringRecord;
 	}
 }

@@ -145,7 +145,7 @@ class ExpiryManagerTest {
 	private void givenAccount(long num, long[] payerExpiries) {
 		var account = new MerkleAccount();
 		for (long t : payerExpiries) {
-			account.payerRecords().offer(withExpiry(t));
+			account.records().offer(withExpiry(t));
 		}
 		var id = new MerkleEntityId(0, 0, num);
 		accounts.put(id, account);
@@ -271,7 +271,7 @@ class ExpiryManagerTest {
 		subject.payerExpiries = (MonotonicFullQueueExpiries<Long>) mock(MonotonicFullQueueExpiries.class);
 
 		// when:
-		subject.trackPayerRecord(payer, expiry);
+		subject.trackRecord(payer, expiry);
 
 		// then:
 		verify(subject.payerExpiries).track(Long.valueOf(13257), expiry);

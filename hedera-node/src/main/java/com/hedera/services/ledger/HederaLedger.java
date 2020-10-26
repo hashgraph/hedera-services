@@ -35,8 +35,6 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.TokenStore;
-import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -63,7 +61,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
@@ -452,8 +450,8 @@ public class HederaLedger {
 	}
 
 	/* -- TRANSACTION HISTORY MANIPULATION -- */
-	public long addPayerRecord(AccountID id, ExpirableTxnRecord record) {
-		return addReturningEarliestExpiry(id, PAYER_RECORDS, record);
+	public long addRecord(AccountID id, ExpirableTxnRecord record) {
+		return addReturningEarliestExpiry(id, RECORDS, record);
 	}
 
 	private long addReturningEarliestExpiry(AccountID id, AccountProperty property, ExpirableTxnRecord record) {
@@ -464,7 +462,7 @@ public class HederaLedger {
 	}
 
 	public long purgeExpiredPayerRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
-		return purge(id, PAYER_RECORDS, now, cb);
+		return purge(id, RECORDS, now, cb);
 	}
 
 	private long purge(

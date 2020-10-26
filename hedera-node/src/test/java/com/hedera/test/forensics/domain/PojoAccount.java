@@ -88,10 +88,10 @@ public class PojoAccount {
 		pojo.setBalance(value.getBalance());
 		pojo.setSmartContract(value.isSmartContract());
 		pojo.setKeys(value.getKey().toString());
-		pojo.setNumPayerRecords(value.payerRecords().size());
-		pojo.setHasMutablePayerRecords(!value.payerRecords().isImmutable());
+		pojo.setNumPayerRecords(value.records().size());
+		pojo.setHasMutablePayerRecords(!value.records().isImmutable());
 		if (pojo.getNumPayerRecords() > 0) {
-			pojo.setPayerRecords(value.payerRecords().stream().map(PojoRecord::from).collect(toList()));
+			pojo.setPayerRecords(value.records().stream().map(PojoRecord::from).collect(toList()));
 		}
 		pojo.setExpiry(value.getExpiry());
 		pojo.setAutoRenewPeriod(value.getAutoRenewSecs());

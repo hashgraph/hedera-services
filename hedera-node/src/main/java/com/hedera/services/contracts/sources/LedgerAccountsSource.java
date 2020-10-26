@@ -127,12 +127,6 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 				evmState.getProxyAccountShard(),
 				evmState.getProxyAccountRealm(),
 				evmState.getProxyAccountNum());
-		long fundsSentRecordThreshold = (evmState.getSenderThreshold() == 0)
-				? properties.defaultContractSendThreshold()
-				: evmState.getSenderThreshold();
-		long fundsReceivedRecordThreshold = (evmState.getReceiverThreshold() == 0)
-				? properties.defaultContractReceiveThreshold()
-				: evmState.getReceiverThreshold();
 		var key = new JContractIDKey(asContract(id));
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.key(key)

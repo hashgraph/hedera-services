@@ -156,15 +156,15 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::tokens;
 		}
 	},
-	PAYER_RECORDS {
+	RECORDS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, r) -> a.setPayerRecords((FCQueue<ExpirableTxnRecord>) r);
+			return (a, r) -> a.setRecords((FCQueue<ExpirableTxnRecord>) r);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::payerRecords;
+			return MerkleAccount::records;
 		}
 	};
 

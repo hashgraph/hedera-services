@@ -52,7 +52,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
@@ -124,8 +124,8 @@ public class MerkleAccountPropertyTest {
 				.customizing(new MerkleAccount());
 		account.setTokens(origTokens);
 		account.setBalance(origBalance);
-		account.payerRecords().offer(origPayerRecords.get(0));
-		account.payerRecords().offer(origPayerRecords.get(1));
+		account.records().offer(origPayerRecords.get(0));
+		account.records().offer(origPayerRecords.get(1));
 		// and:
 		var unfrozenTokenId = IdUtils.tokenWith(123);
 		var frozenTokenId = IdUtils.tokenWith(321);
@@ -156,7 +156,7 @@ public class MerkleAccountPropertyTest {
 		KEY.setter().accept(account, newKey);
 		MEMO.setter().accept(account, newMemo);
 		PROXY.setter().accept(account, newProxy);
-		PAYER_RECORDS.setter().accept(account, newPayerRecords);
+		RECORDS.setter().accept(account, newPayerRecords);
 		// and:
 		TOKENS.setter().accept(account, newTokens);
 
@@ -170,7 +170,7 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newKey, KEY.getter().apply(account));
 		assertEquals(newMemo, MEMO.getter().apply(account));
 		assertEquals(newProxy, PROXY.getter().apply(account));
-		assertEquals(newPayerRecords, PAYER_RECORDS.getter().apply(account));
+		assertEquals(newPayerRecords, RECORDS.getter().apply(account));
 		// and:
 		assertEquals(newTokens, TOKENS.getter().apply(account));
 	}

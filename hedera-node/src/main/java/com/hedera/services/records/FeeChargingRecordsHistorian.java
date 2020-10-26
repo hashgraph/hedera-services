@@ -105,7 +105,7 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 		long now = txnCtx.consensusTime().getEpochSecond();
 		long submittingMember = txnCtx.submittingSwirldsMember();
 
-		var payerRecord = creator.createExpiringPayerRecord(
+		var payerRecord = creator.createExpiringRecord(
 				txnCtx.effectivePayer(),
 				lastCreatedRecord,
 				now,

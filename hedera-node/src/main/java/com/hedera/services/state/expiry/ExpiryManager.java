@@ -52,14 +52,14 @@ public class ExpiryManager {
 		this.txnHistories = txnHistories;
 	}
 
-	public void trackPayerRecord(AccountID effectivePayer, long expiry) {
-		payerExpiries.track(effectivePayer.getAccountNum(), expiry);
+	public void trackRecord(AccountID owner, long expiry) {
+		payerExpiries.track(owner.getAccountNum(), expiry);
 	}
 
 	public void resumeTrackingFrom(FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		accounts.forEach((id, account) -> {
-			addUniqueExpiries(id.getNum(), account.payerRecords(), _payerExpiries);
+			addUniqueExpiries(id.getNum(), account.records(), _payerExpiries);
 		});
 
 		var cmp = Comparator.comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey);
