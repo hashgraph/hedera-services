@@ -210,6 +210,7 @@ public class BaseHederaLedgerTest {
 				.willReturn(frozenId);
 		given(tokenStore.resolve(tokenId))
 				.willReturn(tokenId);
+		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
 		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
