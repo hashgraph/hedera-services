@@ -21,9 +21,6 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -35,44 +32,32 @@ import com.swirlds.fcmap.FCMap;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.hedera.services.fees.TxnFeeType.CACHE_RECORD;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.CACHE_RECORD_FEE;
-
 /**
  * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
  *
  * @author Michael Tinker
  */
-public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
+public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private HederaLedger ledger;
 	private TransactionRecord lastCreatedRecord;
 
 	private EntityCreator creator;
 
 	private final RecordCache recordCache;
-	private final FeeCalculator fees;
 	private final ExpiryManager expiries;
 	private final TransactionContext txnCtx;
-	private final ItemizableFeeCharging feeCharging;
-	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public FeeChargingRecordsHistorian(
+	public TxnAwareRecordsHistorian(
 			RecordCache recordCache,
-			FeeCalculator fees,
 			TransactionContext txnCtx,
-			ItemizableFeeCharging feeCharging,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			ExpiryManager expiries,
-			GlobalDynamicProperties properties
+			ExpiryManager expiries
 	) {
-		this.fees = fees;
 		this.expiries = expiries;
 		this.txnCtx = txnCtx;
 		this.accounts = accounts;
-		this.properties = properties;
 		this.recordCache = recordCache;
-		this.feeCharging = feeCharging;
 	}
 
 	@Override
@@ -88,30 +73,23 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public void setLedger(HederaLedger ledger) {
 		this.ledger = ledger;
-		feeCharging.setLedger(ledger);
 	}
 
 	@Override
 	public void addNewRecords() {
-		var record = txnCtx.recordSoFar();
-
-		long cachingFeePaid = payForCaching(record);
-		if (cachingFeePaid > 0L) {
-			record = txnCtx.updatedRecordGiven(ledger.netTransfersInTxn());
-		}
-
-		lastCreatedRecord = record;
+		lastCreatedRecord = txnCtx.recordSoFar();
 
 		long now = txnCtx.consensusTime().getEpochSecond();
 		long submittingMember = txnCtx.submittingSwirldsMember();
 
+		var accessor = txnCtx.accessor();
 		var payerRecord = creator.createExpiringRecord(
 				txnCtx.effectivePayer(),
 				lastCreatedRecord,
 				now,
 				submittingMember);
 		recordCache.setPostConsensus(
-				txnCtx.accessor().getTxnId(),
+				accessor.getTxnId(),
 				lastCreatedRecord.getReceipt().getStatus(),
 				payerRecord);
 	}
@@ -124,16 +102,5 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public void reviewExistingRecords() {
 		expiries.resumeTrackingFrom(accounts.get());
-	}
-
-	private long payForCaching(TransactionRecord record) {
-		feeCharging.setFor(CACHE_RECORD, fees.computeCachingFee(record));
-		if (txnCtx.isPayerSigKnownActive()) {
-			feeCharging.chargePayerUpTo(CACHE_RECORD_FEE);
-			return feeCharging.chargedToPayer(CACHE_RECORD);
-		} else {
-			feeCharging.chargeSubmittingNodeUpTo(CACHE_RECORD_FEE);
-			return feeCharging.chargedToSubmittingNode(CACHE_RECORD);
-		}
 	}
 }

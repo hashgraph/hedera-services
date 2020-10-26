@@ -22,10 +22,6 @@ package com.hedera.services.records;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.FeeExemptions;
-import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -44,8 +40,6 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -55,62 +49,26 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
-public class FeeChargingRecordsHistorianTest {
-	final private AccountID sn = asAccount("0.0.3");
+public class TxnAwareRecordsHistorianTest {
 	final private long submittingMember = 1L;
 	final private AccountID a = asAccount("0.0.1111");
 	final private TransactionID txnIdA = TransactionID.newBuilder().setAccountID(a).build();
 	final private AccountID b = asAccount("0.0.2222");
-	final private TransactionID txnIdB = TransactionID.newBuilder().setAccountID(b).build();
 	final private AccountID c = asAccount("0.0.3333");
-	final private TransactionID txnIdC = TransactionID.newBuilder().setAccountID(c).build();
 	final private AccountID effPayer = asAccount("0.0.13257");
-	final private long recordFee = 1_230L;
 	final private Instant now = Instant.now();
 	final private long nows = now.getEpochSecond();
-	final private long lastCons = 100L;
-	final private int cacheTtl = 30;
 	final int accountRecordTtl = 1_000;
 	final int payerRecordTtl = 180;
 	final long expiry = now.getEpochSecond() + accountRecordTtl;
 	final long payerExpiry = now.getEpochSecond() + payerRecordTtl;
-	final private List<Long> aExps = List.of(expiry + 55L);
-	final private List<Long> aCons = List.of(lastCons - cacheTtl);
-	final private List<TransactionID> aIds = List.of(txnIdA);
-	final private long aBalance = recordFee - 1L;
-	final private long aSendThresh = 999L;
-	final private long aReceiveThresh = 1_001L;
-	final private List<Long> bExps = List.of(expiry - 55L);
-	final private List<Long> bCons = List.of(lastCons - cacheTtl - 1);
-	final private List<TransactionID> bIds = List.of(txnIdB);
-	final private long bBalance = recordFee + 1L;
-	final private long bSendThresh = 2_000L;
-	final private long bReceiveThresh = 201L;
-	final private List<Long> cExps = List.of();
-	final private long cBalance = recordFee + 1L;
-	final private long cSendThresh = 3_000L;
-	final private long cReceiveThresh = 301L;
-	final private List<Long> dExps = List.of();
-	final private long dBalance = recordFee + 1L;
-	final private long snBalance = 1_234_567_890L;
-	final private long dSendThresh = 0L;
-	final private long dReceiveThresh = 50_000_000_000L;
-	final private long cacheRecordFee = 10 * recordFee;
 	final private AccountID d = asAccount("0.0.4444");
-	final private String contract = "1.2.3";
-	final private String duplicateContract = "0.0.3333";
 	final private AccountID funding = asAccount("0.0.98");
 	final private TransferList initialTransfers = withAdjustments(
 			a, -1_000L, b, 500L, c, 501L, d, -1L);
-	final private TransactionRecord record = TransactionRecord.newBuilder()
-			.setTransactionID(TransactionID.newBuilder().setAccountID(a))
-			.setTransferList(initialTransfers)
-			.build();
 	final private TransactionRecord finalRecord = TransactionRecord.newBuilder()
 			.setTransactionID(TransactionID.newBuilder().setAccountID(a))
 			.setTransferList(initialTransfers)
@@ -125,25 +83,15 @@ public class FeeChargingRecordsHistorianTest {
 		payerRecord.setExpiry(payerExpiry);
 	}
 
-	private MerkleAccount aValue;
-	private MerkleAccount bValue;
-	private MerkleAccount cValue;
-	private MerkleAccount dValue;
-	private MerkleAccount snValue;
 	private RecordCache recordCache;
 	private HederaLedger ledger;
 	private ExpiryManager expiries;
-	private FeeCalculator fees;
-	private FeeExemptions exemptions;
-	private PropertySource properties;
 	private GlobalDynamicProperties dynamicProperties;
 	private ExpiringCreations creator;
 	private TransactionContext txnCtx;
-	private ItemizableFeeCharging itemizableFeeCharging;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-	private BlockingQueue<EarliestRecordExpiry> expirations;
 
-	private FeeChargingRecordsHistorian subject;
+	private TxnAwareRecordsHistorian subject;
 
 	@Test
 	public void lastAddedIsEmptyAtFirst() {
@@ -154,49 +102,22 @@ public class FeeChargingRecordsHistorianTest {
 	}
 
 	@Test
-	public void usesActivePayerForCachePayment() {
+	public void addsRecordToAllQualifyingAccounts() {
 		setupForAdd();
-
-		given(txnCtx.isPayerSigKnownActive()).willReturn(false);
+		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 
 		// when:
 		subject.addNewRecords();
 
 		// then:
-		verify(txnCtx).isPayerSigKnownActive();
-		verify(ledger).doTransfer(sn, funding, cacheRecordFee);
-	}
-
-	@Test
-	public void addsRecordToQualifyingThresholdAccounts() {
-		setupForAdd();
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(exemptions).hasExemptPayer(txnCtx.accessor());
-		verify(fees).computeCachingFee(record);
+		verify(txnCtx).recordSoFar();
 		verify(recordCache).setPostConsensus(
 				txnIdA,
 				finalRecord.getReceipt().getStatus(),
 				payerRecord);
-		verify(ledger).doTransfer(a, funding, aBalance);
-		// and:
-		verify(ledger).netTransfersInTxn();
-		verify(txnCtx).recordSoFar();
-		verify(txnCtx).updatedRecordGiven(any());
-		// and:
-		verify(ledger, times(1)).getBalance(a);
-		// and:
-		verify(dynamicProperties, times(1)).fundingAccount();
-		// and:
-		verify(properties, never()).getIntProperty("ledger.records.ttl");
-		verify(txnCtx, times(1)).consensusTime();
+		verify(creator).createExpiringRecord(effPayer, finalRecord, nows, submittingMember);
 		// and:
 		assertEquals(finalRecord, subject.lastCreatedRecord().get());
-		// and:
-		verify(creator).createExpiringRecord(effPayer, finalRecord, nows, submittingMember);
 	}
 
 	@Test
@@ -232,16 +153,6 @@ public class FeeChargingRecordsHistorianTest {
 		given(ledger.netTransfersInTxn()).willReturn(initialTransfers);
 		given(ledger.isPendingCreation(any())).willReturn(false);
 
-		fees = mock(FeeCalculator.class);
-		given(fees.computeCachingFee(any())).willReturn(cacheRecordFee);
-		given(fees.computeStorageFee(any())).willReturn(recordFee);
-
-		exemptions = mock(FeeExemptions.class);
-		given(exemptions.isExemptFromRecordFees(c)).willReturn(true);
-
-		properties = mock(PropertySource.class);
-		given(properties.getIntProperty("ledger.records.ttl")).willReturn(accountRecordTtl);
-
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
 
@@ -257,34 +168,19 @@ public class FeeChargingRecordsHistorianTest {
 		given(txnCtx.status()).willReturn(SUCCESS);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
-		given(txnCtx.recordSoFar()).willReturn(record);
-		given(txnCtx.updatedRecordGiven(any())).willReturn(finalRecord);
-		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
+		given(txnCtx.recordSoFar()).willReturn(finalRecord);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
 		given(txnCtx.effectivePayer()).willReturn(effPayer);
 
 		accounts = mock(FCMap.class);
-		aValue = add(a, aBalance);
-		bValue = add(b, bBalance);
-		cValue = add(c, cBalance);
-		dValue = add(d, dBalance);
-		snValue = add(sn, snBalance);
-
-		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, dynamicProperties);
-		itemizableFeeCharging.resetFor(accessor, sn);
-
-		expirations = mock(BlockingQueue.class);
 
 		recordCache = mock(RecordCache.class);
 
-		subject = new FeeChargingRecordsHistorian(
+		subject = new TxnAwareRecordsHistorian(
 				recordCache,
-				fees,
 				txnCtx,
-				itemizableFeeCharging,
 				() -> accounts,
-				expiries,
-				dynamicProperties);
+				expiries);
 		subject.setLedger(ledger);
 		subject.setCreator(creator);
 	}
@@ -297,27 +193,11 @@ public class FeeChargingRecordsHistorianTest {
 
 		ledger = mock(HederaLedger.class);
 
-		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, dynamicProperties);
-
-		subject = new FeeChargingRecordsHistorian(
+		subject = new TxnAwareRecordsHistorian(
 				recordCache,
-				fees,
 				txnCtx,
-				itemizableFeeCharging,
 				() -> accounts,
-				expiries,
-				dynamicProperties);
+				expiries);
 		subject.setLedger(ledger);
-	}
-
-	private MerkleAccount add(
-			AccountID id,
-			long balance
-	) {
-		MerkleEntityId key = MerkleEntityId.fromAccountId(id);
-		MerkleAccount value = new MerkleAccount();
-		given(ledger.getBalance(id)).willReturn(balance);
-		given(accounts.get(key)).willReturn(value);
-		return value;
 	}
 }

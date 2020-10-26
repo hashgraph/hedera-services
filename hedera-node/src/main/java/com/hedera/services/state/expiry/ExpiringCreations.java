@@ -28,13 +28,9 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
-import java.util.function.Function;
-import java.util.function.ObjLongConsumer;
-import java.util.function.ToLongBiFunction;
-
 public class ExpiringCreations implements EntityCreator {
-	private HederaLedger ledger;
 	private RecordCache recordCache;
+	private HederaLedger ledger;
 	private final ExpiryManager expiries;
 	private final GlobalDynamicProperties dynamicProperties;
 
@@ -56,6 +52,24 @@ public class ExpiringCreations implements EntityCreator {
 		this.ledger = ledger;
 	}
 
+	@Override
+	public ExpirableTxnRecord createExpiringRecord(
+			AccountID id,
+			TransactionRecord record,
+			long now,
+			long submittingMember
+	) {
+		var expiringRecord = ExpirableTxnRecord.fromGprc(record);
+
+		long expiry = now + dynamicProperties.cacheRecordsTtl();
+		expiringRecord.setExpiry(expiry);
+		expiringRecord.setSubmittingMember(submittingMember);
+
+		manageRecord(id, expiringRecord);
+
+		return expiringRecord;
+	}
+
 	private void manageRecord(AccountID owner, ExpirableTxnRecord record) {
 		if (dynamicProperties.shouldKeepRecordsInState()) {
 			ledger.addRecord(owner, record);
@@ -65,34 +79,4 @@ public class ExpiringCreations implements EntityCreator {
 		}
 	}
 
-	@Override
-	public ExpirableTxnRecord createExpiringRecord(
-			AccountID id,
-			TransactionRecord record,
-			long now,
-			long submittingMember
-	) {
-		return createExpiringRecord(
-				now + dynamicProperties.cacheRecordsTtl(),
-				submittingMember,
-				id,
-				record,
-				ExpirableTxnRecord::fromGprc);
-	}
-
-	private ExpirableTxnRecord createExpiringRecord(
-			long expiry,
-			long submittingMember,
-			AccountID id,
-			TransactionRecord record,
-			Function<TransactionRecord, ExpirableTxnRecord> fromGrpc
-	) {
-		var expiringRecord = fromGrpc.apply(record);
-		expiringRecord.setExpiry(expiry);
-		expiringRecord.setSubmittingMember(submittingMember);
-
-		manageRecord(id, expiringRecord);
-
-		return expiringRecord;
-	}
 }

@@ -44,11 +44,6 @@ public class StandardExemptions implements FeeExemptions {
 		return systemOpPolicies.check(accessor) == AUTHORIZED;
 	}
 
-	@Override
-	public boolean isExemptFromRecordFees(AccountID id) {
-		return isAlwaysExempt(id.getAccountNum());
-	}
-
 	private boolean isAlwaysExempt(long payerAccount) {
 		return payerAccount == accountNums.treasury() || payerAccount == accountNums.systemAdmin();
 	}

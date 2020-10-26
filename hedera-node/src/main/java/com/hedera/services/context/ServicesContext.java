@@ -21,7 +21,6 @@ package com.hedera.services.context;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.services.ServicesMain;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
@@ -36,6 +35,7 @@ import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
+import com.hedera.services.fees.calculation.contract.queries.GetContractRecordsResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
@@ -51,6 +51,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.queries.contract.GetContractRecordsAnswer;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -228,7 +229,7 @@ import com.hedera.services.queries.meta.GetTxnReceiptAnswer;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.records.FeeChargingRecordsHistorian;
+import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordCacheFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -247,7 +248,6 @@ import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_S
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
-import static com.hedera.services.utils.MiscUtils.BASE_STAT_NAMES;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 import com.hedera.services.utils.MiscUtils;
@@ -290,10 +290,7 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
-import com.swirlds.common.StatEntry;
 import com.swirlds.fcmap.FCMap;
-import com.swirlds.platform.StatsRunningAverage;
-import com.swirlds.platform.StatsSpeedometer;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
@@ -613,7 +610,10 @@ public class ServicesContext {
 
 	public ItemizableFeeCharging charging() {
 		if (itemizableFeeCharging == null) {
-			itemizableFeeCharging = new ItemizableFeeCharging(exemptions(), globalDynamicProperties());
+			itemizableFeeCharging = new ItemizableFeeCharging(
+					ledger(),
+					exemptions(),
+					globalDynamicProperties());
 		}
 		return itemizableFeeCharging;
 	}
@@ -650,7 +650,8 @@ public class ServicesContext {
 		if (contractAnswers == null) {
 			contractAnswers = new ContractAnswers(
 					new GetBytecodeAnswer(validator()),
-					new GetContractInfoAnswer(validator())
+					new GetContractInfoAnswer(validator()),
+					new GetContractRecordsAnswer(validator())
 			);
 		}
 		return contractAnswers;
@@ -727,10 +728,8 @@ public class ServicesContext {
 			SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
 
 			fees = new UsageBasedFeeCalculator(
-					properties(),
 					exchange(),
 					usagePrices(),
-					globalDynamicProperties(),
 					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),
@@ -746,6 +745,7 @@ public class ServicesContext {
 							/* Smart Contract */
 							new GetBytecodeResourceUsage(contractFees),
 							new GetContractInfoResourceUsage(contractFees),
+							new GetContractRecordsResourceUsage(contractFees),
 							/* Token */
 							new GetTokenInfoResourceUsage()
 					),
@@ -1097,14 +1097,11 @@ public class ServicesContext {
 
 	public AccountRecordsHistorian recordsHistorian() {
 		if (recordsHistorian == null) {
-			recordsHistorian = new FeeChargingRecordsHistorian(
+			recordsHistorian = new TxnAwareRecordsHistorian(
 					recordCache(),
-					fees(),
 					txnCtx(),
-					charging(),
 					this::accounts,
-					expiries(),
-					globalDynamicProperties());
+					expiries());
 		}
 		return recordsHistorian;
 	}

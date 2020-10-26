@@ -38,6 +38,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetCont
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 
 public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	private final FileAnswers fileAnswers;
@@ -50,8 +52,6 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	public static final String CREATE_FILE_METRIC = "createFile";
 	public static final String DELETE_FILE_METRIC = "deleteFile";
 	public static final String FILE_APPEND_METRIC = "appendContent";
-	public static final String FILE_SYSDEL_METRIC = "fileSystemDelete";
-	public static final String FILE_SYSUNDEL_METRIC = "fileSystemUndelete";
 
 	public FileController(
 			FileAnswers fileAnswers,
@@ -85,12 +85,12 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 
 	@Override
 	public void systemDelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.submit(signedTxn, observer, NONE);
+		txnHelper.submit(signedTxn, observer, SystemDelete);
 	}
 
 	@Override
 	public void systemUndelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.submit(signedTxn, observer, NONE);
+		txnHelper.submit(signedTxn, observer, SystemUndelete);
 	}
 
 	@Override

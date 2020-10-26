@@ -31,16 +31,18 @@ import static org.mockito.BDDMockito.*;
 class ContractAnswersTest {
 	GetBytecodeAnswer getBytecodeAnswer = mock(GetBytecodeAnswer.class);
 	GetContractInfoAnswer getContractInfoAnswer = mock(GetContractInfoAnswer.class);
+	GetContractRecordsAnswer getContractRecordsAnswer = mock(GetContractRecordsAnswer.class);
 
 	ContractAnswers subject;
 
 	@Test
 	public void hasExpectedAnswers() {
 		// given:
-		subject = new ContractAnswers(getBytecodeAnswer, getContractInfoAnswer);
+		subject = new ContractAnswers(getBytecodeAnswer, getContractInfoAnswer, getContractRecordsAnswer);
 
 		// then:
 		assertSame(getBytecodeAnswer, subject.getBytecode());
 		assertSame(getContractInfoAnswer, subject.getContractInfo());
+		assertSame(getContractRecordsAnswer, subject.getContractRecords());
 	}
 }
