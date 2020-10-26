@@ -22,7 +22,7 @@ package com.hedera.services.throttling.bucket;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
-import com.swirlds.throttle.Throttle;
+import com.swirlds.common.throttle.Throttle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
