@@ -1624,8 +1624,7 @@ jobs:
       - run:
           name: Modify Payer account for Public testnet Migration test
           command: |
-            sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
-            echo -n "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
 
       - run:
           name: Run Public testnet Migration test
