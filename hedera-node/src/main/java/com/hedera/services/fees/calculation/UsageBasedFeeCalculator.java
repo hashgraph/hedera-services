@@ -21,11 +21,10 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.keys.HederaKeyTraversal;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -34,11 +33,9 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
-import com.hedera.services.legacy.core.jproto.JKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,8 +45,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
-import static com.hederahashgraph.fee.FeeBuilder.getTransactionRecordFeeInTinyCents;
 
 /**
  * Implements a {@link FeeCalculator} in terms of injected usage prices,
@@ -61,25 +56,19 @@ import static com.hederahashgraph.fee.FeeBuilder.getTransactionRecordFeeInTinyCe
 public class UsageBasedFeeCalculator implements FeeCalculator {
 	private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
 
-	private final PropertySource properties;
 	private final HbarCentExchange exchange;
 	private final UsagePricesProvider usagePrices;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final List<QueryResourceUsageEstimator> queryUsageEstimators;
 	private final Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
 	public UsageBasedFeeCalculator(
-			PropertySource properties,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties dynamicProperties,
 			List<QueryResourceUsageEstimator> queryUsageEstimators,
 			Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
 	) {
 		this.exchange = exchange;
-		this.properties = properties;
 		this.usagePrices = usagePrices;
-		this.dynamicProperties = dynamicProperties;
 		this.queryUsageEstimators = queryUsageEstimators;
 		this.txnUsageEstimators = txnUsageEstimators;
 	}
@@ -87,22 +76,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	@Override
 	public void init() {
 		usagePrices.loadPriceSchedules();
-	}
-
-	@Override
-	public long computeCachingFee(TransactionRecord record) {
-		return priceForStorage(record, dynamicProperties.cacheRecordsTtl());
-	}
-
-	@Override
-	public long computeStorageFee(TransactionRecord record) {
-		return priceForStorage(record, properties.getIntProperty("ledger.records.ttl"));
-	}
-
-	private long priceForStorage(TransactionRecord record, int ttl) {
-		long rbhPrice = usagePrices.activePrices().getServicedata().getRbh();
-		long feeInTinyCents = getTransactionRecordFeeInTinyCents(record, rbhPrice, ttl);
-		return getTinybarsFromTinyCents(exchange.activeRate(), feeInTinyCents);
 	}
 
 	@Override

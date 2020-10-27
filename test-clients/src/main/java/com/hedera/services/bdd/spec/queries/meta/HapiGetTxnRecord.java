@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNull;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final Logger log = LogManager.getLogger(HapiGetTxnRecord.class);
@@ -56,6 +57,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
 
 	String txn;
+	boolean assertNothing = false;
 	boolean useDefaultTxnId = false;
 	boolean requestDuplicates = false;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
@@ -86,6 +88,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord andAnyDuplicates() {
 		requestDuplicates = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord assertingNothing() {
+		assertNothing = true;
 		return this;
 	}
 
@@ -194,6 +201,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+		if (assertNothing) {
+			return;
+		}
 		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
 		assertPriority(spec, actualRecord);
 		assertDuplicates(spec);

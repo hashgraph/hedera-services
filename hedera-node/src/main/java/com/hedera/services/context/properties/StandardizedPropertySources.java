@@ -189,17 +189,13 @@ public class StandardizedPropertySources implements PropertySources {
 
 		source.put("binary.object.query.retry.times", PropertiesLoader::getBinaryObjectQueryRetryTimes);
 
-		/* Node-local/static properties. */
+		/* Node-local properties. */
 		source.put("dev.defaultListeningNodeAccount", PropertiesLoader::getDefaultListeningNodeAccount);
 		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);
 		source.put("hedera.accountsExportPath", PropertiesLoader::getExportedAccountPath);
 		source.put("hedera.exportAccountsOnStartup", () -> getSaveAccounts().equals("YES"));
 		source.put("iss.reset.periodSecs", () -> ISS_RESET_PERIOD_SECS);
 		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
-
-		/* Node-local/dynamic properties. */
-		source.put("timer.stats.dump.started", PropertiesLoader::getStartStatsDumpTimer);
-		source.put("timer.stats.dump.value", PropertiesLoader::getStatsDumpTimerValue);
 
 		return source;
 	}

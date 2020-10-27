@@ -27,5 +27,5 @@ package com.hedera.services.fees;
  * @author Michael Tinker
  */
 public enum TxnFeeType {
-	NETWORK, NODE, SERVICE, CACHE_RECORD, THRESHOLD_RECORD
+	NETWORK, NODE, SERVICE
 }

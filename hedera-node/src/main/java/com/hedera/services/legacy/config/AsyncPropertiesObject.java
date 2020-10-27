@@ -72,10 +72,6 @@ public class AsyncPropertiesObject {
 	private static int nettyFlowControlWindow = ApplicationConstants.NETTY_FLOW_CONTROL_WINDOW;
 	private static Map<String, PermissionedAccountsRange> apiPermission = new HashMap<>();
 
-	// Timer properties
-	private static boolean startStatsDumpTimer = false;
-	private static int     statsDumpTimerValue = 60; // in seconds
-
 	// Re-try times for querying binary object store (for file services)
 	private static int binaryObjectQueryRetryTimes = ApplicationConstants.BINARY_OBJECT_QUERY_RETRY_TIMES;
 
@@ -119,13 +115,8 @@ public class AsyncPropertiesObject {
 		 recordLogDir = appConfig.getString("recordLogDir", ApplicationConstants.RECORD_LOG_DIR);
 		 recordStreamQueueCapacity = appConfig.getInt("recordStreamQueueCapacity", ApplicationConstants.RECORD_STREAM_QU_CAP);
 
-		// properties for timers
-		startStatsDumpTimer = appConfig.getBoolean("startStatsDumpTimer",false);
-		statsDumpTimerValue = appConfig.getInt("statsDumpTimerValue",60);
-
 		// Re-try times for querying binary object store (for file services)
 		binaryObjectQueryRetryTimes = appConfig.getInt("binary.object.query.retry.times", 3);
-
 	}
 
 	public static void loadApiProperties(CustomProperties apiPermissionProp) {
@@ -259,13 +250,6 @@ public class AsyncPropertiesObject {
 		return nettyMode;
 	}
 	 
-	static boolean getStartStatsDumpTimer() {
-		return startStatsDumpTimer;
-	}
-
-	static int getStatsDumpTimerValue() {
-		return statsDumpTimerValue;
-	}
 	static int getBinaryObjectQueryRetryTimes() {
 		return binaryObjectQueryRetryTimes;
 	}

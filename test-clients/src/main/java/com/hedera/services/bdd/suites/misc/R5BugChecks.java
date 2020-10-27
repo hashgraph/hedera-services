@@ -92,7 +92,7 @@ public class R5BugChecks extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 //						genesisUpdatesFeesForFree(),
 //						canGetDeletedFileInfo(),
-//						enforcesSigRequirements(),
+						enforcesSigRequirements(),
 //						contractCannotTransferToReceiverSigRequired(),
 //						cannotTransferEntirePayerBalance(),
 //						costAnswerGetAccountInfoRejectsInvalidId(),
@@ -178,7 +178,7 @@ public class R5BugChecks extends HapiApiSuite {
 		SigControl activeSig = complexSrShape.signedWith(sigs(ON, sigs(OFF, OFF, ON)));
 		SigControl inactiveSig = complexSrShape.signedWith(sigs(OFF, sigs(ON, ON, ON)));
 
-		return defaultHapiSpec("ExceptionReverts")
+		return defaultHapiSpec("EnforcesSigRequirements")
 				.given(
 						newKeyNamed("srKey").shape(complexSrShape),
 						fileCreate("bytecode")

@@ -20,167 +20,80 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
+import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
-import static org.mockito.BDDMockito.*;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
 
 @RunWith(JUnitPlatform.class)
 class TxnResponseHelperTest {
 	Transaction txn = Transaction.getDefaultInstance();
-	String metric = "imaginary";
 	TransactionResponse okResponse;
 	TransactionResponse notOkResponse;
 
 	SubmissionFlow submissionFlow;
-	HederaNodeStats stats;
+	HapiOpCounters opCounters;
 	StreamObserver<TransactionResponse> observer;
 	TxnResponseHelper subject;
 
 	@BeforeEach
 	private void setup() {
 		submissionFlow = mock(SubmissionFlow.class);
-		stats = mock(HederaNodeStats.class);
+		opCounters = mock(HapiOpCounters.class);
 		observer = mock(StreamObserver.class);
 		okResponse = mock(TransactionResponse.class);
 		given(okResponse.getNodeTransactionPrecheckCode()).willReturn(OK);
 		notOkResponse = mock(TransactionResponse.class);
 
-		subject = new TxnResponseHelper(submissionFlow, stats);
+		subject = new TxnResponseHelper(submissionFlow, opCounters);
 	}
 
 	@Test
-	public void helpsWithTokenHappyPath() {
+	public void helpsWithSubmitHappyPath() {
 		// setup:
-		InOrder inOrder = inOrder(submissionFlow, stats, observer);
+		InOrder inOrder = inOrder(submissionFlow, opCounters, observer);
 
 		given(submissionFlow.submit(txn)).willReturn(okResponse);
 
 		// when:
-		subject.respondToToken(txn, observer, metric);
+		subject.submit(txn, observer, CryptoTransfer);
 
 		// then:
-		inOrder.verify(stats).tokenTxnReceived(metric);
+		inOrder.verify(opCounters).countReceived(CryptoTransfer);
 		inOrder.verify(submissionFlow).submit(txn);
 		inOrder.verify(observer).onNext(okResponse);
 		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).tokenTxnSubmitted(metric);
+		inOrder.verify(opCounters).countSubmitted(CryptoTransfer);
 	}
 
 	@Test
-	public void helpsWithNetworkHappyPath() {
+	public void helpsWithSubmitUnhappyPath() {
 		// setup:
-		InOrder inOrder = inOrder(submissionFlow, stats, observer);
-
-		given(submissionFlow.submit(txn)).willReturn(okResponse);
-
-		// when:
-		subject.respondToNetwork(txn, observer, metric);
-
-		// then:
-		inOrder.verify(stats).networkTxnReceived(metric);
-		inOrder.verify(submissionFlow).submit(txn);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).networkTxnSubmitted(metric);
-	}
-
-	@Test
-	public void helpsWithHcsHappyPath() {
-		// setup:
-		InOrder inOrder = inOrder(submissionFlow, stats, observer);
-
-		given(submissionFlow.submit(txn)).willReturn(okResponse);
-
-		// when:
-		subject.respondToHcs(txn, observer, metric);
-
-		// then:
-		inOrder.verify(stats).hcsTxnReceived(metric);
-		inOrder.verify(submissionFlow).submit(txn);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).hcsTxnSubmitted(metric);
-	}
-
-	@Test
-	public void helpsWithCryptoHappyPath() {
-		// setup:
-		InOrder inOrder = inOrder(submissionFlow, stats, observer);
-
-		given(submissionFlow.submit(txn)).willReturn(okResponse);
-
-		// when:
-		subject.respondToCrypto(txn, observer, metric);
-
-		// then:
-		inOrder.verify(stats).cryptoTransactionReceived(metric);
-		inOrder.verify(submissionFlow).submit(txn);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).cryptoTransactionSubmitted(metric);
-	}
-
-	@Test
-	public void helpsWithFileHappyPath() {
-		// setup:
-		InOrder inOrder = inOrder(submissionFlow, stats, observer);
-
-		given(submissionFlow.submit(txn)).willReturn(okResponse);
-
-		// when:
-		subject.respondToFile(txn, observer, metric);
-
-		// then:
-		inOrder.verify(stats).fileTransactionReceived(metric);
-		inOrder.verify(submissionFlow).submit(txn);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).fileTransactionSubmitted(metric);
-	}
-
-	@Test
-	public void helpsWithUnhappyPath() {
-		// setup:
-		InOrder inOrder = inOrder(submissionFlow, stats, observer);
+		InOrder inOrder = inOrder(submissionFlow, opCounters, observer);
 
 		given(submissionFlow.submit(txn)).willReturn(notOkResponse);
 
 		// when:
-		subject.respondToCrypto(txn, observer, metric);
+		subject.submit(txn, observer, CryptoTransfer);
 
 		// then:
-		inOrder.verify(stats).cryptoTransactionReceived(metric);
+		inOrder.verify(opCounters).countReceived(CryptoTransfer);
 		inOrder.verify(submissionFlow).submit(txn);
 		inOrder.verify(observer).onNext(notOkResponse);
 		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats, never()).cryptoTransactionSubmitted(metric);
-	}
-
-	@Test
-	public void helpsWithExceptionalPath() {
-		// setup:
-		InOrder inOrder = inOrder(submissionFlow, stats, observer);
-
-		given(submissionFlow.submit(txn)).willThrow(IllegalStateException.class);
-
-		// when:
-		subject.respondToCrypto(txn, observer, metric);
-
-		// then:
-		inOrder.verify(stats).cryptoTransactionReceived(metric);
-		inOrder.verify(submissionFlow).submit(txn);
-		inOrder.verify(observer).onNext(TxnResponseHelper.FAIL_INVALID_RESPONSE);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats, never()).cryptoQuerySubmitted(metric);
+		inOrder.verify(opCounters, never()).countSubmitted(CryptoTransfer);
 	}
 }

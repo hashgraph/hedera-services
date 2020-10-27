@@ -1201,6 +1201,34 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
+	public void getsTokenTransactMovingHbarsReceiverSigReq() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenTransactMovingHbars() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey()));
+	}
+
+	@Test
 	public void getsTokenTransactMissingSenders() throws Throwable {
 		// given:
 		setupFor(TOKEN_TRANSACT_WITH_MISSING_SENDERS);

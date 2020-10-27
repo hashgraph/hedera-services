@@ -73,33 +73,15 @@ class FieldSourcedFeeScreeningTest {
 		given(accessor.getTxn()).willReturn(txn);
 		given(accessor.getPayer()).willReturn(payer);
 
-		given(exemptions.isExemptFromRecordFees(master)).willReturn(true);
-
 		subject = new FieldSourcedFeeScreening(exemptions);
 		subject.setBalanceCheck(check);
 		subject.resetFor(accessor);
 	}
 
 	@Test
-	public void exemptsMasterFromRecordFees() {
-		// setup:
-		EnumSet<TxnFeeType> thresholdRecordFee = EnumSet.of(THRESHOLD_RECORD);
-
-		givenKnownFeeAmounts();
-		given(check.canAfford(master, 0)).willReturn(true);
-		given(check.canAfford(argThat(master::equals), longThat(l -> l > 0))).willReturn(false);
-
-		// when:
-		boolean viability = subject.canParticipantAfford(master, thresholdRecordFee);
-
-		// then:
-		assertTrue(viability);
-	}
-
-	@Test
 	public void exemptsPayerWhenExpected() {
 		// setup:
-		EnumSet<TxnFeeType> allPossibleFees = EnumSet.of(NETWORK, NODE, SERVICE, CACHE_RECORD, THRESHOLD_RECORD);
+		EnumSet<TxnFeeType> allPossibleFees = EnumSet.of(NETWORK, NODE, SERVICE);
 
 		givenKnownFeeAmounts();
 		given(exemptions.hasExemptPayer(accessor)).willReturn(true);
@@ -171,10 +153,10 @@ class FieldSourcedFeeScreeningTest {
 		subject.feeAmounts = amounts;
 
 		// when:
-		subject.setFor(THRESHOLD_RECORD, stateRecord);
+		subject.setFor(NODE, node);
 
 		// then:
-		verify(amounts).put(THRESHOLD_RECORD, stateRecord);
+		verify(amounts).put(NODE, node);
 	}
 
 	@Test
@@ -190,34 +172,17 @@ class FieldSourcedFeeScreeningTest {
 	}
 
 	@Test
-	public void canParticipantAffordTest() {
-		// setup:
-		EnumSet<TxnFeeType> thresholdRecordFee = EnumSet.of(THRESHOLD_RECORD);
-		subject.setFor(NETWORK, network);
-		subject.setFor(SERVICE, service);
-		subject.setFor(NODE, node);
-		subject.setFor(CACHE_RECORD, cacheRecord);
-		// when:
-		boolean viability = subject.canParticipantAfford(master, thresholdRecordFee);
-		// then:
-		assertFalse(viability);
-	}
-
-	@Test
 	public void participantCantAffordTest() {
 		// setup:
-		final BalanceCheck check = (payer, amount) -> amount >= stateRecord;
+		final BalanceCheck check = (payer, amount) -> amount < (node + network);
 
-		final EnumSet<TxnFeeType> thresholdRecordFee = EnumSet.of(THRESHOLD_RECORD);
+		final EnumSet<TxnFeeType> fees = EnumSet.of(NETWORK, NODE);
 		subject.setFor(NETWORK, network);
-		subject.setFor(SERVICE, service);
 		subject.setFor(NODE, node);
-		subject.setFor(CACHE_RECORD, cacheRecord);
-		subject.setFor(THRESHOLD_RECORD, stateRecord);
 		subject.setBalanceCheck(check);
 
 		// when:
-		boolean viability = subject.canParticipantAfford(master, thresholdRecordFee);
+		boolean viability = subject.canParticipantAfford(master, fees);
 		// then:
 		assertFalse(viability);
 	}
@@ -226,7 +191,5 @@ class FieldSourcedFeeScreeningTest {
 		subject.setFor(NETWORK, network);
 		subject.setFor(SERVICE, service);
 		subject.setFor(NODE, node);
-		subject.setFor(CACHE_RECORD, cacheRecord);
-		subject.setFor(THRESHOLD_RECORD, stateRecord);
 	}
 }

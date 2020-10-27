@@ -226,8 +226,6 @@ public class StandardizedPropertySourcesTest {
 		PropertySource properties = subject.asResolvingSource();
 
 		// then:
-		assertTrue(properties.containsProperty("contracts.defaultSendThreshold"));
-		assertTrue(properties.containsProperty("contracts.defaultReceiveThreshold"));
 		assertTrue(properties.containsProperty("contracts.maxStorageKb"));
 		assertTrue(properties.containsProperty("dev.defaultListeningNodeAccount"));
 		assertTrue(properties.containsProperty("dev.onlyDefaultNodeListens"));

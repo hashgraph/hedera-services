@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -401,10 +402,7 @@ public class HederaTokenStore implements TokenStore {
 
 
 	public void addKnownTreasury(AccountID aId, TokenID tId) {
-		if (!knownTreasuries.containsKey(aId)) {
-			knownTreasuries.put(aId, new HashSet<>());
-		}
-		knownTreasuries.get(aId).add(tId);
+		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
 	}
 
 	public void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
@@ -465,6 +463,22 @@ public class HederaTokenStore implements TokenStore {
 
 		ids.reclaimLastId();
 		resetPendingCreation();
+	}
+
+	@Override
+	public ResponseCodeEnum delete(TokenID tId) {
+		var outcome = TokenStore.super.delete(tId);
+		if (outcome != OK) {
+			return outcome;
+		}
+
+		var treasury = tokens.get().get(fromTokenId(tId)).treasury().toGrpcAccountId();
+		var tokensServed = knownTreasuries.get(treasury);
+		tokensServed.remove(tId);
+		if (tokensServed.isEmpty()) {
+			knownTreasuries.remove(treasury);
+		}
+		return OK;
 	}
 
 	@Override

@@ -22,12 +22,12 @@ package com.hedera.services.legacy.stream;
 
 import com.google.common.primitives.Ints;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.legacy.config.PropertiesLoader;
+import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.swirlds.common.Platform;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
@@ -36,6 +36,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -82,7 +83,7 @@ public class RecordStream implements Runnable {
 	MessageDigest md;
 	MessageDigest mdForContent;
 	Platform platform;
-	HederaNodeStats stats;
+	MiscRunningAvgs runningAvgs;
 	boolean inFreeze;
 	String recordStreamsDirectory;
 
@@ -90,12 +91,12 @@ public class RecordStream implements Runnable {
 
 	public RecordStream(
 			Platform platform,
-			HederaNodeStats stats,
+			MiscRunningAvgs runningAvgs,
 			AccountID nodeAccountID,
 			String directory,
 			PropertySource properties
 	) {
-		this.stats = stats;
+		this.runningAvgs = runningAvgs;
 		this.platform = platform;
 		this.properties = properties;
 		this.logDirectory = directory;
@@ -137,7 +138,6 @@ public class RecordStream implements Runnable {
 		if (recordBuffer != null) {
 			try {
 				recordBuffer.put(Triple.of(transaction, record, consensusTimeStamp));
-				stats.updateRecordStreamQueueSize(getRecordStreamQueueSize());
 			} catch (InterruptedException e) {
 				log.error(EXCEPTION, "thread interruption ignored in addRecord: {}", e);
 			}
@@ -331,7 +331,7 @@ public class RecordStream implements Runnable {
 
 				Triple<Transaction, TransactionRecord, Instant> record = recordBuffer.poll(STREAM_DELAY,
 						TimeUnit.MILLISECONDS);
-				stats.updateRecordStreamQueueSize(getRecordStreamQueueSize());
+				runningAvgs.recordStreamQueueSize(getRecordStreamQueueSize());
 
 				long recordLogPeriod = properties.getLongProperty("hedera.recordStream.logPeriod");
 				if (record != null) {

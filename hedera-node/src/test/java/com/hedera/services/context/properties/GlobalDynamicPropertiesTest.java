@@ -61,13 +61,10 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// expect:
-		assertFalse(subject.shouldCreatePayerRecords());
-		assertFalse(subject.shouldCreateThresholdRecords());
+		assertFalse(subject.shouldKeepRecordsInState());
 		assertEquals(1, subject.maxTokensPerAccount());
 		assertEquals(2, subject.maxTokenSymbolLength());
 		assertEquals(3L, subject.maxAccountNum());
-		assertEquals(4L, subject.defaultContractSendThreshold());
-		assertEquals(5L, subject.defaultContractReceiveThreshold());
 		assertEquals(6, subject.maxFileSizeKb());
 		assertEquals(accountWith(1L, 2L, 7L), subject.fundingAccount());
 		assertEquals(8, subject.cacheRecordsTtl());
@@ -101,13 +98,10 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// expect:
-		assertTrue(subject.shouldCreatePayerRecords());
-		assertTrue(subject.shouldCreateThresholdRecords());
+		assertTrue(subject.shouldKeepRecordsInState());
 		assertEquals(2, subject.maxTokensPerAccount());
 		assertEquals(3, subject.maxTokenSymbolLength());
 		assertEquals(4L, subject.maxAccountNum());
-		assertEquals(5L, subject.defaultContractSendThreshold());
-		assertEquals(6L, subject.defaultContractReceiveThreshold());
 		assertEquals(7, subject.maxFileSizeKb());
 		assertEquals(accountWith(1L, 2L, 8L), subject.fundingAccount());
 		assertEquals(9, subject.cacheRecordsTtl());
@@ -128,11 +122,8 @@ class GlobalDynamicPropertiesTest {
 	private void givenPropsWithSeed(int i) {
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(i + 1);
-		given(properties.getBooleanProperty("ledger.createPayerRecords")).willReturn((i % 2) == 0);
-		given(properties.getBooleanProperty("ledger.createThresholdRecords")).willReturn((i % 2) == 0);
+		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long)i + 2);
-		given(properties.getLongProperty("contracts.defaultSendThreshold")).willReturn((long)i + 3);
-		given(properties.getLongProperty("contracts.defaultReceiveThreshold")).willReturn((long)i + 4);
 		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
 		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long)i + 6);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(i + 7);

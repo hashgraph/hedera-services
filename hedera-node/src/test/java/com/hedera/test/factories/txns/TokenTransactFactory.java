@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory> {
+	List<AccountAmount> hbarAdjustments = new ArrayList<>();
 	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
 
 	private boolean adjustmentsAreSet = false;
@@ -43,6 +45,11 @@ public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory>
 
 	public static TokenTransactFactory newSignedTokenTransact() {
 		return new TokenTransactFactory();
+	}
+
+	public TokenTransactFactory adjustingHbars(AccountID aId, long amount) {
+		hbarAdjustments.add(AccountAmount.newBuilder().setAccountID(aId).setAmount(amount) .build());
+		return this;
 	}
 
 	public TokenTransactFactory adjusting(AccountID aId, TokenID tId, long amount) {
@@ -72,6 +79,7 @@ public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory>
 							.setToken(entry.getKey())
 							.addAllTransfers(entry.getValue())
 							.build()));
+			xfers.setHbarTransfers(TransferList.newBuilder().addAllAccountAmounts(hbarAdjustments));
 			adjustmentsAreSet = true;
 		}
 		txn.setTokenTransfers(xfers);
