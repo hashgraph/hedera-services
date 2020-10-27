@@ -850,9 +850,8 @@ public class HederaSigningOrder {
 				required.add(meta.getKey());
 			}
 			return true;
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	private <T> void addToMutableReqIfPresent(

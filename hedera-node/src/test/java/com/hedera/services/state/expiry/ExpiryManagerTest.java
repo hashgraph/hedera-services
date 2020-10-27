@@ -101,7 +101,7 @@ class ExpiryManagerTest {
 		subject.purgeExpiredRecordsAt(33, ledger);
 
 		// then:
-		inOrder.verify(ledger).purgeExpiredPayerRecords(
+		inOrder.verify(ledger).purgeExpiredRecords(
 				argThat(asAccount(b)::equals),
 				longThat(l -> l == 33),
 				any());

@@ -60,7 +60,7 @@ public class PayerRecordsPurgeTest extends BaseHederaLedgerTest {
 		addPayerRecords(misc, records);
 
 		// when:
-		long newEarliestExpiry = subject.purgeExpiredPayerRecords(misc, 200L, cb);
+		long newEarliestExpiry = subject.purgeExpiredRecords(misc, 200L, cb);
 
 		// then:
 		assertEquals(311L, newEarliestExpiry);

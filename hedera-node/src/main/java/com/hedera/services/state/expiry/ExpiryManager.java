@@ -93,7 +93,7 @@ public class ExpiryManager {
 	public void purgeExpiredRecordsAt(long now, HederaLedger ledger) {
 		sharedNow = now;
 		while (payerExpiries.hasExpiringAt(now)) {
-			ledger.purgeExpiredPayerRecords(accountWith(payerExpiries.expireNextAt(now)), now, this::updateHistory);
+			ledger.purgeExpiredRecords(accountWith(payerExpiries.expireNextAt(now)), now, this::updateHistory);
 		}
 		recordCache.forgetAnyOtherExpiredHistory(now);
 	}

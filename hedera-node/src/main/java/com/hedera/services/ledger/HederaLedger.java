@@ -105,8 +105,6 @@ public class HederaLedger {
 
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 	private static final long[] NO_NEW_BALANCES = new long[0];
-	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {
-	};
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
@@ -464,7 +462,7 @@ public class HederaLedger {
 		return records.peek().getExpiry();
 	}
 
-	public long purgeExpiredPayerRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
+	public long purgeExpiredRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
 		return purge(id, RECORDS, now, cb);
 	}
 
