@@ -69,10 +69,12 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.3")
+								.payingWith(MASTER)
 								.saveToRegistry(fileInfoRegistry),
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.6")
+								.payingWith(MASTER)
 								.hasContents(fileInfoRegistry)
 				);
 	}
