@@ -30,13 +30,13 @@ import "TransactionRecord.proto";
 import "QueryHeader.proto";
 import "ResponseHeader.proto";
 
-// Requests records of all transactions for which the given account was the effective payer in the last 3 minutes of consensus time. Will receive a non-empty response only if  network property <tt>ledger.keepRecordsInState=true</tt>.
+// Requests records of all transactions for which the given account was the effective payer in the last 3 minutes of consensus time and <tt>ledger.keepRecordsInState=true</tt> was true during <tt>handleTransaction</tt>.
 message CryptoGetAccountRecordsQuery {
     QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
     AccountID accountID = 2; // The account ID for which the records should be retrieved
 }
 
-// When network property <tt>ledger.keepRecordsInState=true</tt>, returns records of all transactions for which the given account was the effective payer in the last 3 minutes of consensus time.
+// Retruns records of all transactions for which the given account was the effective payer in the last 3 minutes of consensus time and <tt>ledger.keepRecordsInState=true</tt> was true during <tt>handleTransaction</tt>.
 message CryptoGetAccountRecordsResponse {
     ResponseHeader header = 1; // Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
     AccountID accountID = 2; // The account that this record is for
