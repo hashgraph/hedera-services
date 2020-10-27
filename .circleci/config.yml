@@ -1903,7 +1903,6 @@ jobs:
     executor:
       name: ci-test-executor
       workflow-name:  << parameters.workflow-name >>
-
     steps:
       - run-eet-suites:
           dsl-args: "NewOpInConstructorSpecs"
@@ -1944,8 +1943,6 @@ jobs:
           dsl-args: "ContractRecordSanityChecks"
       - run-eet-suites:
           dsl-args: "ContractGetBytecodeSuite"
-      - run-eet-suites:
-          dsl-args: "ContractRecordSanityChecks"
 
   run-umbrella-freeze-restart-test:
     parameters:

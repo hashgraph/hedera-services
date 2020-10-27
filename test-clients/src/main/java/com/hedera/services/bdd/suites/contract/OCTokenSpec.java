@@ -286,8 +286,10 @@ public class OCTokenSpec extends HapiApiSuite  {
 							int totalRecordNum = spec.registry().getIntValue("tokenContractRecordNum");
 							ctxLog.info("Finished {}", totalRecordNum);
 
-							Assert.assertEquals("Total token contract record should be 6",
-									6, totalRecordNum);
+							Assert.assertEquals(
+									"Contracts should no longer receive records!",
+									0,
+									totalRecordNum);
 						})
 				);
 	}
