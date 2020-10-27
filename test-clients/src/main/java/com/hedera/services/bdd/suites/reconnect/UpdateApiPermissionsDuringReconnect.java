@@ -65,7 +65,7 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 				)
 				.then(
 
-						UtilVerbs.sleepFor(Duration.ofMinutes(4).toMillis()),
+						UtilVerbs.sleepFor(Duration.ofMinutes(5).toMillis()),
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.3")
