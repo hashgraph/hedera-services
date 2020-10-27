@@ -22,6 +22,8 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -30,38 +32,23 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
+import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import com.swirlds.common.crypto.engine.CryptoEngine;
-
-import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
-import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
-import static com.hedera.test.factories.sigs.SigWrappers.*;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.swirlds.common.crypto.VerificationStatus.*;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -69,19 +56,38 @@ import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.*;
-import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.*;
-import static com.hedera.test.factories.scenarios.BadPayerScenarios.*;
-import static com.hedera.test.factories.scenarios.FileUpdateScenarios.*;
+import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
+import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
+import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.services.sigs.HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY;
+import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
+import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
+import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
+import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.NEW_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
+import static com.hedera.test.factories.sigs.SigWrappers.asKind;
+import static com.hedera.test.factories.sigs.SigWrappers.asValid;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.swirlds.common.crypto.VerificationStatus.INVALID;
+import static com.swirlds.common.crypto.VerificationStatus.VALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class SigOpsRegressionTest {
 	private HederaFs hfs;
-	private HederaNodeStats stats;
+	private MiscRunningAvgs runningAvgs;
+	private MiscSpeedometers speedometers;
 	private List<TransactionSignature> expectedSigs;
 	private SignatureStatus actualStatus;
 	private SignatureStatus successStatus;
@@ -353,7 +359,8 @@ public class SigOpsRegressionTest {
 		int MAGIC_NUMBER = 10;
 		SigMetadataLookup sigMetaLookups =
 				defaultLookupsPlusAccountRetriesFor(
-						hfs, () -> accounts, () -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER, stats);
+						hfs, () -> accounts, () -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
+						runningAvgs, speedometers);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
 				sigMetaLookups,
@@ -377,7 +384,8 @@ public class SigOpsRegressionTest {
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		hfs = scenario.hfs();
-		stats = mock(HederaNodeStats.class);
+		runningAvgs = mock(MiscRunningAvgs.class);
+		speedometers = mock(MiscSpeedometers.class);
 		accounts = scenario.accounts();
 		platformTxn = scenario.platformTxn();
 

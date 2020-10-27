@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includ
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBytes.LEGACY_THROTTLES_FIRST_ORDER;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 
@@ -46,6 +47,7 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
@@ -308,7 +310,14 @@ public class ValidationScenarios extends HapiApiSuite {
 							newKeyNamed("topicKey").shape(complexAdmin),
 							/* Contract keys */
 							newKeyNamed("contractFirstKey").shape(complexContract),
-							newKeyNamed("contractSecondKey")
+							newKeyNamed("contractSecondKey"),
+							/* Token keys */
+							newKeyNamed("tokenFirstKey").shape(complex),
+							newKeyNamed("tokenSecondKey"),
+							newKeyNamed("supplyKey"),
+							newKeyNamed("wipeKey"),
+							newKeyNamed("freezeKey"),
+							newKeyNamed("kycKey")
 					).when(
 							/* Crypto ops */
 							cryptoCreate("tbd")
@@ -333,6 +342,57 @@ public class ValidationScenarios extends HapiApiSuite {
 									.payingWith(SCENARIO_PAYER_NAME)
 									.transfer(SCENARIO_PAYER_NAME),
 							getTxnRecord("deleteTxn").logged(),
+							/* Token ops */
+							tokenCreate("tokenTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.treasury(GENESIS)
+									.autoRenewAccount(SCENARIO_PAYER_NAME)
+									.adminKey("tokenFirstKey")
+									.supplyKey("supplyKey")
+									.wipeKey("wipeKey")
+									.freezeKey("freezeKey")
+									.kycKey("kycKey"),
+							tokenUpdate("tokenTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.adminKey("tokenSecondKey"),
+							tokenAssociate(SCENARIO_PAYER_NAME, "tokenTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							tokenUnfreeze("tokenTbd", SCENARIO_PAYER_NAME)
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							grantTokenKyc("tokenTbd", SCENARIO_PAYER_NAME)
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							tokenTransact(moving(10, "tokenTbd").between(GENESIS, SCENARIO_PAYER_NAME))
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							wipeTokenAccount("tokenTbd", SCENARIO_PAYER_NAME, 10)
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							mintToken("tokenTbd", 10)
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							burnToken("tokenTbd", 10)
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							tokenFreeze("tokenTbd", SCENARIO_PAYER_NAME)
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							revokeTokenKyc("tokenTbd", SCENARIO_PAYER_NAME)
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							tokenUnfreeze("tokenTbd", SCENARIO_PAYER_NAME)
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							tokenDissociate(SCENARIO_PAYER_NAME, "tokenTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							tokenDelete("tokenTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
 							/* File ops */
 							fileCreate("fileTbd")
 									.fee(tinyBarsToOffer)
@@ -1462,6 +1522,7 @@ public class ValidationScenarios extends HapiApiSuite {
 				}
 			}
 		}
+		System.out.println(params.getScenarios());
 	}
 
 	private static String keyOf(Matcher m) {

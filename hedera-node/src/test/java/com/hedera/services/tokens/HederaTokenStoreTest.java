@@ -218,6 +218,7 @@ class HederaTokenStoreTest {
 		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
+		subject.knownTreasuries.put(treasury, new HashSet<>() {{ add(misc); }});
 	}
 
 	@Test
@@ -289,6 +290,8 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(OK, outcome);
+		// and:
+		assertTrue(subject.knownTreasuries.isEmpty());
 	}
 
 	@Test
@@ -915,6 +918,9 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void isTreasuryForTokenReturnsFalse() {
+		// setup:
+		subject.knownTreasuries.clear();
+		
 		// expect:
 		assertFalse(subject.isTreasuryForToken(treasury, misc));
 	}
@@ -927,6 +933,9 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void throwsIfInvalidTreasury() {
+		// setup:
+		subject.knownTreasuries.clear();
+
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(treasury, misc));
 	}
@@ -1448,8 +1457,6 @@ class HederaTokenStoreTest {
 		// setup:
 		subject.pendingId = created;
 		subject.pendingCreation = token;
-		Set<TokenID> tokenSet = new HashSet<>();
-		tokenSet.add(subject.pendingId);
 
 		// when:
 		subject.commitCreation();
@@ -1461,7 +1468,7 @@ class HederaTokenStoreTest {
 		assertNull(subject.pendingCreation);
 		// and:
 		assertTrue(subject.isKnownTreasury(treasury));
-		assertEquals(tokenSet, subject.knownTreasuries.get(treasury));
+		assertEquals(Set.of(created, misc), subject.knownTreasuries.get(treasury));
 	}
 
 	@Test

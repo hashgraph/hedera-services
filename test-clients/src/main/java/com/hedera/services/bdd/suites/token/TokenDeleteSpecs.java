@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
@@ -64,8 +65,32 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						deletionWorksAsExpected(),
 						deletionValidatesAlreadyDeletedToken(),
 						deletionValidatesRef(),
+						treasuryBecomesDeletableAfterTokenDelete(),
 				}
 		);
+	}
+
+	private HapiApiSpec treasuryBecomesDeletableAfterTokenDelete() {
+		return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
+				.given(
+						newKeyNamed("tokenAdmin"),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate("firstTbd")
+								.adminKey("tokenAdmin")
+								.treasury(TOKEN_TREASURY),
+						tokenCreate("secondTbd")
+								.adminKey("tokenAdmin")
+								.treasury(TOKEN_TREASURY),
+						cryptoDelete(TOKEN_TREASURY)
+								.hasKnownStatus(ACCOUNT_IS_TREASURY)
+				).when(
+						tokenDelete("firstTbd"),
+						cryptoDelete(TOKEN_TREASURY)
+								.hasKnownStatus(ACCOUNT_IS_TREASURY),
+						tokenDelete("secondTbd")
+				).then(
+						cryptoDelete(TOKEN_TREASURY)
+				);
 	}
 
 	private HapiApiSpec deletionValidatesAlreadyDeletedToken() {
@@ -94,7 +119,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.freezeDefault(false)
 								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
-				).when( ).then(
+				).when().then(
 						tokenDelete("tbd")
 								.payingWith("payer")
 								.signedBy("payer")
@@ -156,7 +181,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 		return defaultHapiSpec("DeletionValidatesRef")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
-				).when( ).then(
+				).when().then(
 						tokenDelete("1.2.3")
 								.payingWith("payer")
 								.signedBy("payer")

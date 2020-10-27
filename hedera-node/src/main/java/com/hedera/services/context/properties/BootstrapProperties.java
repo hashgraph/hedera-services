@@ -151,7 +151,6 @@ public class BootstrapProperties implements PropertySource {
 			"bootstrap.hapiPermissions.path",
 			"bootstrap.ledger.nodeAccounts.initialBalance",
 			"bootstrap.ledger.systemAccounts.initialBalance",
-			"bootstrap.ledger.systemAccounts.recordThresholds",
 			"bootstrap.networkProperties.path",
 			"bootstrap.rates.currentHbarEquiv",
 			"bootstrap.rates.currentCentEquiv",
@@ -195,15 +194,12 @@ public class BootstrapProperties implements PropertySource {
 			"balances.exportTokenBalances",
 			"balances.nodeBalanceWarningThreshold",
 			"cache.records.ttl",
-			"contracts.defaultReceiveThreshold",
-			"contracts.defaultSendThreshold",
 			"contracts.maxStorageKb",
 			"files.maxSizeKb",
 			"hedera.transaction.maxMemoUtf8Bytes",
 			"hedera.transaction.maxValidDuration",
 			"hedera.transaction.minValidDuration",
-			"ledger.createPayerRecords",
-			"ledger.createThresholdRecords",
+			"ledger.keepRecordsInState",
 			"ledger.fundingAccount",
 			"ledger.maxAccountNum",
 			"ledger.transfers.maxLen",
@@ -220,8 +216,9 @@ public class BootstrapProperties implements PropertySource {
 			"hedera.profiles.active",
 			"precheck.account.maxLookupRetries",
 			"precheck.account.lookupRetryBackoffIncrementMs",
-			"stats.hapi.speedometerHalfLifeSecs",
-			"stats.hapi.speedometerUpdateIntervalMs"
+			"stats.hapiOps.speedometerUpdateIntervalMs",
+			"stats.runningAvgHalfLifeSecs",
+			"stats.speedometerHalfLifeSecs"
 	);
 
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
@@ -269,7 +266,6 @@ public class BootstrapProperties implements PropertySource {
 			entry("precheck.account.lookupRetryBackoffIncrementMs", AS_INT),
 			entry("bootstrap.ledger.nodeAccounts.initialBalance", AS_LONG),
 			entry("bootstrap.ledger.systemAccounts.initialBalance", AS_LONG),
-			entry("bootstrap.ledger.systemAccounts.recordThresholds", AS_LONG),
 			entry("bootstrap.rates.currentHbarEquiv", AS_INT),
 			entry("bootstrap.rates.currentCentEquiv", AS_INT),
 			entry("bootstrap.rates.currentExpiry", AS_LONG),
@@ -279,8 +275,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("bootstrap.system.entityExpiry", AS_LONG),
 			entry("files.maxSizeKb", AS_INT),
 			entry("ledger.fundingAccount", AS_LONG),
-			entry("ledger.createPayerRecords", AS_BOOLEAN),
-			entry("ledger.createThresholdRecords", AS_BOOLEAN),
+			entry("ledger.keepRecordsInState", AS_BOOLEAN),
 			entry("ledger.maxAccountNum", AS_LONG),
 			entry("ledger.numSystemAccounts", AS_INT),
 			entry("ledger.transfers.maxLen", AS_INT),
@@ -289,11 +284,10 @@ public class BootstrapProperties implements PropertySource {
 			entry("tokens.maxPerAccount", AS_INT),
 			entry("tokens.maxSymbolLength", AS_INT),
 			entry("tokens.maxTokenNameLength", AS_INT),
-			entry("contracts.defaultReceiveThreshold", AS_LONG),
-			entry("contracts.defaultSendThreshold", AS_LONG),
 			entry("contracts.maxStorageKb", AS_INT),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
-			entry("stats.hapi.speedometerHalfLifeSecs", AS_DOUBLE),
-			entry("stats.hapi.speedometerUpdateIntervalMs", AS_LONG)
+			entry("stats.hapiOps.speedometerUpdateIntervalMs", AS_LONG),
+			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
+			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE)
 	);
 }

@@ -353,7 +353,13 @@ public class TxnUtils {
 	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
 	public static String readableTokenTransferList(TokenTransfersTransactionBody xfers) {
-		return xfers.getTokenTransfersList().stream()
+		String readableHbarXfers = xfers.hasHbarTransfers()
+				? String.format(
+						"HBAR(%s)%s",
+						readableTransferList(xfers.getHbarTransfers()),
+				        (xfers.getTokenTransfersCount() > 0 ? " & " : ""))
+				: "";
+		return readableHbarXfers + xfers.getTokenTransfersList().stream()
 				.map(scopedXfers -> String.format("%s(%s)",
 						asTokenString(scopedXfers.getToken()),
 						readableTransferList(scopedXfers.getTransfersList())))

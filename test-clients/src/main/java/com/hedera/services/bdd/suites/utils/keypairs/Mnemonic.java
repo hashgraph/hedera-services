@@ -83,6 +83,10 @@ public final class Mnemonic {
 		return key.getKey();
 	}
 
+	public static void main(String... args) {
+		System.out.println(generate());
+	}
+
 	public static Mnemonic generate() {
 		final byte[] entropy = new byte[32];
 		secureRandom.nextBytes(entropy);

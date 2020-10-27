@@ -138,7 +138,7 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public TransactionRecord recordSoFar() {
-		long amount = ctx.charging().totalNonThresholdFeesChargedToPayer() + otherNonThresholdFees;
+		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
 
 		if (log.isDebugEnabled()) {
 			logItemized();
@@ -167,7 +167,7 @@ public class AwareTransactionContext implements TransactionContext {
 					readableTransferList(listWithNewFees)));
 		}
 
-		long amount = ctx.charging().totalNonThresholdFeesChargedToPayer() + otherNonThresholdFees;
+		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		recordSoFar.setTransferList(listWithNewFees).setTransactionFee(amount);
 
 		return recordSoFar.build();

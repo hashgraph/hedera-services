@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,7 +60,7 @@ public class PayerRecordsPurgeTest extends BaseHederaLedgerTest {
 		addPayerRecords(misc, records);
 
 		// when:
-		long newEarliestExpiry = subject.purgeExpiredPayerRecords(misc, 200L, cb);
+		long newEarliestExpiry = subject.purgeExpiredRecords(misc, 200L, cb);
 
 		// then:
 		assertEquals(311L, newEarliestExpiry);
@@ -72,7 +72,7 @@ public class PayerRecordsPurgeTest extends BaseHederaLedgerTest {
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
 		verify(accountsLedger).set(
 				argThat(misc::equals),
-				argThat(PAYER_RECORDS::equals),
+				argThat(RECORDS::equals),
 				captor.capture());
 		// and:
 		assertTrue(captor.getValue() == records);

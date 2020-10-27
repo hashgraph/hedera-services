@@ -23,7 +23,6 @@ package com.hedera.services.records;
 import com.google.common.cache.Cache;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -38,7 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -95,7 +93,7 @@ public class RecordCache {
 				.setTransactionHash(accessor.getHash())
 				.setConsensusTimestamp(asTimestamp(consensusTimestamp))
 				.build();
-		var record = ctx.creator().createExpiringPayerRecord(
+		var record = ctx.creator().createExpiringRecord(
 				effectivePayer,
 				grpc,
 				consensusTimestamp.getEpochSecond(),

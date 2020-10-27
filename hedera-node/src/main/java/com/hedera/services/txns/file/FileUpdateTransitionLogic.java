@@ -124,7 +124,6 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		} catch (IllegalArgumentException iae) {
 			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {
-			unknown.printStackTrace();
 			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxn4Log(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);
 		}

@@ -21,11 +21,12 @@ package com.hedera.services.txns.submission;
  */
 
 import com.hedera.services.queries.answering.QueryResponseHelper;
+import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,71 +42,23 @@ public class TxnResponseHelper {
 			.build();
 
 	private final SubmissionFlow submissionFlow;
-	private final HederaNodeStats stats;
+	private final HapiOpCounters opCounters;
 
-	public TxnResponseHelper(SubmissionFlow submissionFlow, HederaNodeStats stats) {
-		this.stats = stats;
+	public TxnResponseHelper(SubmissionFlow submissionFlow, HapiOpCounters opCounters) {
+		this.opCounters = opCounters;
 		this.submissionFlow = submissionFlow;
 	}
 
-	public void respondToHcs(
+	public void submit(
 			Transaction signedTxn,
 			StreamObserver<TransactionResponse> observer,
-			String metric
+			HederaFunctionality statedFunction
 	) {
 		respondWithMetrics(
 				signedTxn,
 				observer,
-				() -> stats.hcsTxnReceived(metric),
-				() -> stats.hcsTxnSubmitted(metric));
-	}
-
-	public void respondToFile(
-			Transaction signedTxn,
-			StreamObserver<TransactionResponse> observer,
-			String metric
-	) {
-		respondWithMetrics(
-				signedTxn,
-				observer,
-				() -> stats.fileTransactionReceived(metric),
-				() -> stats.fileTransactionSubmitted(metric));
-	}
-
-	public void respondToCrypto(
-			Transaction signedTxn,
-			StreamObserver<TransactionResponse> observer,
-			String metric
-	) {
-		respondWithMetrics(
-				signedTxn,
-				observer,
-				() -> stats.cryptoTransactionReceived(metric),
-				() -> stats.cryptoTransactionSubmitted(metric));
-	}
-
-	public void respondToNetwork(
-			Transaction signedTxn,
-			StreamObserver<TransactionResponse> observer,
-			String metric
-	) {
-		respondWithMetrics(
-				signedTxn,
-				observer,
-				() -> stats.networkTxnReceived(metric),
-				() -> stats.networkTxnSubmitted(metric));
-	}
-
-	public void respondToToken(
-			Transaction signedTxn,
-			StreamObserver<TransactionResponse> observer,
-			String metric
-	) {
-		respondWithMetrics(
-				signedTxn,
-				observer,
-				() -> stats.tokenTxnReceived(metric),
-				() -> stats.tokenTxnSubmitted(metric));
+				() -> opCounters.countReceived(statedFunction),
+				() -> opCounters.countSubmitted(statedFunction));
 	}
 
 	private void respondWithMetrics(

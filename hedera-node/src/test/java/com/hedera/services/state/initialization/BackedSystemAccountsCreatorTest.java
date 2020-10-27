@@ -105,8 +105,6 @@ class BackedSystemAccountsCreatorTest {
 				.willReturn(10L);
 		given(properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance"))
 				.willReturn(5L);
-		given(properties.getLongProperty("bootstrap.ledger.systemAccounts.recordThresholds"))
-				.willReturn(recordThresholds);
 		given(properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"))
 				.willReturn(legacyId);
 		given(properties.getStringProperty("bootstrap.genesisB64Keystore.path"))
@@ -257,8 +255,6 @@ class BackedSystemAccountsCreatorTest {
 
 	private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
 		MerkleAccount hAccount = new HederaAccountCustomizer()
-				.fundsSentRecordThreshold(recordThresholds)
-				.fundsReceivedRecordThreshold(recordThresholds)
 				.isReceiverSigRequired(false)
 				.proxy(EntityId.MISSING_ENTITY_ID)
 				.isDeleted(false)

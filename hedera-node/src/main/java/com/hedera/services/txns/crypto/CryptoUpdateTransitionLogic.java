@@ -101,16 +101,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 			customizer.key(key);
 		}
-		if (op.hasSendRecordThresholdWrapper()) {
-			customizer.fundsSentRecordThreshold(op.getSendRecordThresholdWrapper().getValue());
-		} else if (op.getSendRecordThreshold() > 0) {
-			customizer.fundsSentRecordThreshold(op.getSendRecordThreshold());
-		}
-		if (op.hasReceiveRecordThresholdWrapper()) {
-			customizer.fundsReceivedRecordThreshold(op.getReceiveRecordThresholdWrapper().getValue());
-		} else if (op.getReceiveRecordThreshold() > 0) {
-			customizer.fundsReceivedRecordThreshold(op.getReceiveRecordThreshold());
-		}
 		if (op.hasExpirationTime()) {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}

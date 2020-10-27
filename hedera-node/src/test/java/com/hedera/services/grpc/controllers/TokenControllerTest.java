@@ -24,6 +24,7 @@ import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -35,6 +36,20 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenTransact;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.grpc.controllers.TokenController.*;
 
@@ -69,7 +84,7 @@ class TokenControllerTest {
 		subject.createToken(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_CREATE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenCreate);
 	}
 
 	@Test
@@ -78,7 +93,7 @@ class TokenControllerTest {
 		subject.transferTokens(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_TRANSACT_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenTransact);
 	}
 
 	@Test
@@ -87,7 +102,7 @@ class TokenControllerTest {
 		subject.freezeTokenAccount(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_FREEZE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenFreezeAccount);
 	}
 
 	@Test
@@ -96,7 +111,7 @@ class TokenControllerTest {
 		subject.unfreezeTokenAccount(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_UNFREEZE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenUnfreezeAccount);
 	}
 
 	@Test
@@ -105,7 +120,7 @@ class TokenControllerTest {
 		subject.grantKycToTokenAccount(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_GRANT_KYC_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenGrantKycToAccount);
 	}
 
 	@Test
@@ -114,7 +129,7 @@ class TokenControllerTest {
 		subject.revokeKycFromTokenAccount(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_REVOKE_KYC_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenRevokeKycFromAccount);
 	}
 
 	@Test
@@ -123,7 +138,7 @@ class TokenControllerTest {
 		subject.deleteToken(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_DELETE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenDelete);
 	}
 
 	@Test
@@ -132,7 +147,7 @@ class TokenControllerTest {
 		subject.updateToken(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_UPDATE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenUpdate);
 	}
 
 	@Test
@@ -141,7 +156,7 @@ class TokenControllerTest {
 		subject.mintToken(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_MINT_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenMint);
 	}
 
 	@Test
@@ -150,7 +165,7 @@ class TokenControllerTest {
 		subject.burnToken(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_BURN_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenBurn);
 	}
 
 	@Test
@@ -159,7 +174,7 @@ class TokenControllerTest {
 		subject.wipeTokenAccount(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_WIPE_ACCOUNT_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenAccountWipe);
 	}
 
 	@Test
@@ -168,7 +183,7 @@ class TokenControllerTest {
 		subject.dissociateTokens(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_DISSOCIATE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenDissociateFromAccount);
 	}
 
 	@Test
@@ -177,7 +192,7 @@ class TokenControllerTest {
 		subject.associateTokens(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_ASSOCIATE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenAssociateToAccount);
 	}
 
 	@Test
@@ -186,6 +201,6 @@ class TokenControllerTest {
 		subject.getTokenInfo(query, queryObserver);
 
 		// expect:
-		verify(queryResponseHelper).respondToToken(query, queryObserver,null , TOKEN_GET_INFO_METRIC);
+		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetInfo);
 	}
 }

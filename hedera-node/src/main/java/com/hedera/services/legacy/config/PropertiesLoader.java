@@ -220,14 +220,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getMaxGasLimit();
 	}
 
-	public static boolean getStartStatsDumpTimer() {
-		return AsyncPropertiesObject.getStartStatsDumpTimer();
-	}
-
-	public static int getStatsDumpTimerValue() {
-		return AsyncPropertiesObject.getStatsDumpTimerValue();
-	}
-
 	public static int getBinaryObjectQueryRetryTimes() {
 		return AsyncPropertiesObject.getBinaryObjectQueryRetryTimes();
 	}

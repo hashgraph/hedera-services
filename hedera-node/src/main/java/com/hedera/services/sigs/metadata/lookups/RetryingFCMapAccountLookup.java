@@ -21,10 +21,11 @@ package com.hedera.services.sigs.metadata.lookups;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
@@ -42,9 +43,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
  * with {@code Pause} invocations that increase by {@code retryWaitIncrementMs} between
  * each failed lookup.
  *
- * When one or more lookups are attempted, the injected {@link HederaNodeStats} is used
- * to record statistics about the lookups performed.
- *
  * @author Nathan Klick
  * @author Michael Tinker
  */
@@ -55,8 +53,9 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 
 	private int maxRetries;
 	private int retryWaitIncrementMs;
-	final private Pause pause;
-	final private HederaNodeStats stats;
+	private final Pause pause;
+	private final MiscRunningAvgs runningAvgs;
+	private final MiscSpeedometers speedometers;
 
 	private Optional<NodeLocalProperties> properties;
 
@@ -65,12 +64,14 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 			int maxRetries,
 			int retryWaitIncrementMs,
 			Pause pause,
-			HederaNodeStats stats
+			MiscRunningAvgs runningAvgs,
+			MiscSpeedometers speedometers
 	) {
 		super(accounts);
-		this.stats = stats;
 		this.pause = pause;
 		this.properties = Optional.empty();
+		this.runningAvgs = runningAvgs;
+		this.speedometers = speedometers;
 		this.maxRetries = maxRetries;
 		this.retryWaitIncrementMs = retryWaitIncrementMs;
 	}
@@ -78,13 +79,15 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 	public RetryingFCMapAccountLookup(
 			Pause pause,
 			NodeLocalProperties properties,
-			HederaNodeStats stats,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			MiscRunningAvgs runningAvgs,
+			MiscSpeedometers speedometers
 	) {
 		super(accounts);
-		this.stats = stats;
 		this.pause = pause;
 		this.properties = Optional.of(properties);
+		this.runningAvgs = runningAvgs;
+		this.speedometers = speedometers;
 		this.maxRetries = DEFAULT_MAX_RETRIES;
 		this.retryWaitIncrementMs = DEFAULT_RETRY_WAIT_INCREMENT_MS;
 	}
@@ -113,18 +116,28 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 			}
 			meta = superLookup(id);
 			if (meta != null) {
-				if (stats != null) {
-					stats.lookupRetries(retryNo, msElapsedSince(lookupStart));
+				if (isInstrumented()) {
+					updateStats(retryNo, msElapsedSince(lookupStart));
 				}
 				return new SafeLookupResult<>(meta);
 			}
 			retriesRemaining--;
 		} while (retriesRemaining > 0);
 
-		if (stats != null) {
-			stats.lookupRetries(maxRetries, msElapsedSince(lookupStart));
+		if (isInstrumented()) {
+			updateStats(maxRetries, msElapsedSince(lookupStart));
 		}
 		return SafeLookupResult.failure(MISSING_ACCOUNT);
+	}
+
+	private boolean isInstrumented() {
+		return runningAvgs != null && speedometers != null;
+	}
+
+	private void updateStats(int n, double time) {
+		speedometers.cycleAccountLookupRetries();
+		runningAvgs.recordAccountLookupRetries(n);
+		runningAvgs.recordAccountRetryWaitMs(time);
 	}
 
 	private double msElapsedSince(long then) {
