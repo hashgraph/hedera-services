@@ -42,9 +42,6 @@ import java.util.Map;
 public interface FeeCalculator {
 	void init();
 
-	long computeCachingFee(TransactionRecord record);
-	long computeStorageFee(TransactionRecord record);
-
 	FeeObject computeFee(SignedTxnAccessor accessor, JKey payerKey, StateView view);
 	FeeObject estimateFee(SignedTxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
 	FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);

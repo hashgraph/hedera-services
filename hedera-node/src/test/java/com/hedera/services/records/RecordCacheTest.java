@@ -327,7 +327,7 @@ class RecordCacheTest {
 		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);
 		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
 		expectedRecord.setSubmittingMember(submittingMember);
-		given(creator.createExpiringPayerRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
+		given(creator.createExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
 
 		// when:
 		subject.setFailInvalid(

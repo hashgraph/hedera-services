@@ -90,9 +90,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 						.setAccountID(op.getAccountID())
 						.setBalance(account.getBalance())
 						.setContractAccountID(solidityAddress)
-						.setReceiverSigRequired(account.isReceiverSigRequired())
-						.setGenerateSendRecordThreshold(account.getSenderThreshold())
-						.setGenerateReceiveRecordThreshold(account.getReceiverThreshold());
+						.setReceiverSigRequired(account.isReceiverSigRequired());
 				List<TokenRelationship> relationships = new ArrayList<>();
 				var tokenIds = account.tokens().asIds();
 				for (TokenID tId : tokenIds) {

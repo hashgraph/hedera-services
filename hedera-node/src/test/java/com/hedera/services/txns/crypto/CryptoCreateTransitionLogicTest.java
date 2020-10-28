@@ -181,10 +181,8 @@ public class CryptoCreateTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
-		assertEquals(7, changes.size());
+		assertEquals(5, changes.size());
 		assertEquals(customAutoRenewPeriod, (long)changes.get(AUTO_RENEW_PERIOD));
-		assertEquals(customSendThreshold, (long)changes.get(FUNDS_SENT_RECORD_THRESHOLD));
-		assertEquals(customReceiveThreshold, (long)changes.get(FUNDS_RECEIVED_RECORD_THRESHOLD));
 		assertEquals(expiry, (long)changes.get(EXPIRY));
 		assertEquals(key, JKey.mapJKey((JKey)changes.get(KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));

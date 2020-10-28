@@ -21,8 +21,8 @@ package com.hedera.services.txns.submission;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.Platform;
@@ -38,16 +38,16 @@ public class PlatformSubmissionManager {
 
 	private final Platform platform;
 	private final RecordCache recordCache;
-	private final HederaNodeStats stats;
+	private final MiscSpeedometers speedometers;
 
 	public PlatformSubmissionManager(
 			Platform platform,
 			RecordCache recordCache,
-			HederaNodeStats stats
+			MiscSpeedometers speedometers
 	) {
 		this.platform = platform;
 		this.recordCache = recordCache;
-		this.stats = stats;
+		this.speedometers = speedometers;
 	}
 
 	public ResponseCodeEnum trySubmission(SignedTxnAccessor accessor) {
@@ -58,7 +58,7 @@ public class PlatformSubmissionManager {
 			recordCache.addPreConsensus(accessor.getTxnId());
 			return OK;
 		} else {
-			stats.platformTxnNotCreated();
+			speedometers.cyclePlatformTxnRejections();
 			return PLATFORM_TRANSACTION_NOT_CREATED;
 		}
 	}

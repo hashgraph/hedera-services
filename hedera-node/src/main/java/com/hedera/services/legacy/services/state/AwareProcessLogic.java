@@ -246,7 +246,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			}
 		}
 
-		ctx.stats().transactionHandled(accessor.getTxn());
+		ctx.opCounters().countHandled(accessor.getFunction());
 	}
 
 	private boolean hasActivePayerSig(PlatformTxnAccessor accessor) {
@@ -326,7 +326,11 @@ public class AwareProcessLogic implements ProcessLogic {
 	private SignatureStatus rationalizeWithPreConsensusSigs(PlatformTxnAccessor accessor) {
 		var sigStatus = rationalizeIn(accessor, ctx.syncVerifier(), ctx.backedKeyOrder(), DEFAULT_SIG_BYTES);
 		if (!sigStatus.isError()) {
-			ctx.stats().signatureVerified(sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC);
+			if (sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC) {
+				ctx.speedometers().cycleAsyncVerifications();
+			} else {
+				ctx.speedometers().cycleSyncVerifications();
+			}
 		}
 		return sigStatus;
 	}

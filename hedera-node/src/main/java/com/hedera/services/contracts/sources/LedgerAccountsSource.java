@@ -82,8 +82,6 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 				evmState.setProxyAccountRealm(proxy.realm());
 				evmState.setProxyAccountNum(proxy.num());
 			}
-			evmState.setSenderThreshold(hederaAccount.getSenderThreshold());
-			evmState.setReceiverThreshold(hederaAccount.getReceiverThreshold());
 			evmState.setReceiverSigRequired(hederaAccount.isReceiverSigRequired());
 			evmState.setDeleted(hederaAccount.isDeleted());
 			evmState.setExpirationTime(hederaAccount.getExpiry());
@@ -129,12 +127,6 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 				evmState.getProxyAccountShard(),
 				evmState.getProxyAccountRealm(),
 				evmState.getProxyAccountNum());
-		long fundsSentRecordThreshold = (evmState.getSenderThreshold() == 0)
-				? properties.defaultContractSendThreshold()
-				: evmState.getSenderThreshold();
-		long fundsReceivedRecordThreshold = (evmState.getReceiverThreshold() == 0)
-				? properties.defaultContractReceiveThreshold()
-				: evmState.getReceiverThreshold();
 		var key = new JContractIDKey(asContract(id));
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.key(key)
@@ -142,9 +134,7 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 				.proxy(proxy)
 				.expiry(evmState.getExpirationTime())
 				.autoRenewPeriod(evmState.getAutoRenewPeriod())
-				.isSmartContract(true)
-				.fundsSentRecordThreshold(fundsSentRecordThreshold)
-				.fundsReceivedRecordThreshold(fundsReceivedRecordThreshold);
+				.isSmartContract(true);
 
 		long balance = evmState.getBalance().longValue();
 		ledger.spawn(id, balance, customizer);

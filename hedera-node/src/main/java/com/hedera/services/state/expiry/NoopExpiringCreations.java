@@ -37,7 +37,7 @@ public enum NoopExpiringCreations implements EntityCreator {
 	public void setRecordCache(RecordCache recordCache) { }
 
 	@Override
-	public ExpirableTxnRecord createExpiringPayerRecord(
+	public ExpirableTxnRecord createExpiringRecord(
 			AccountID id,
 			TransactionRecord record,
 			long now,
@@ -45,12 +45,4 @@ public enum NoopExpiringCreations implements EntityCreator {
 	) {
 		throw new UnsupportedOperationException();
 	}
-
-	@Override
-	public void createExpiringHistoricalRecord(
-			AccountID id,
-			TransactionRecord record,
-			long now,
-			long submittingMember
-	) { }
 }

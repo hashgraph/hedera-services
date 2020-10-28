@@ -23,6 +23,7 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -67,7 +68,7 @@ class NetworkControllerTest {
 
 		// expect:
 		verify(answers).getVersionInfo();
-		verify(queryResponseHelper).respondToNetwork(query, queryObserver, null, GET_VERSION_INFO_METRIC);
+		verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.GetVersionInfo);
 	}
 
 	@Test
@@ -76,6 +77,6 @@ class NetworkControllerTest {
 		subject.uncheckedSubmit(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToNetwork(txn, txnObserver, UNCHECKED_SUBMIT_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, HederaFunctionality.UncheckedSubmit);
 	}
 }

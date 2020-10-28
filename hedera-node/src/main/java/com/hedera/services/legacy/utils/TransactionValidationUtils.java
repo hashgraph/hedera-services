@@ -25,13 +25,10 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsResponse;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDResponse;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
@@ -211,24 +208,6 @@ public class TransactionValidationUtils {
 		responseObserver.onCompleted();
 	}
 
-	public static void constructGetAccountRecordsErrorResponse(
-			StreamObserver<Response> responseObserver, ResponseCodeEnum validationCode, long scheduledFee) {
-		ResponseHeader responseHeader = RequestBuilder
-				.getResponseHeader(validationCode, scheduledFee, ResponseType.ANSWER_ONLY, ByteString.EMPTY);
-		responseObserver.onNext(Response.newBuilder().setCryptoGetAccountRecords(
-				CryptoGetAccountRecordsResponse.newBuilder().setHeader(responseHeader)).build());
-		responseObserver.onCompleted();
-	}
-
-	public static void constructContractGetRecordsErrorResponse(
-			StreamObserver<Response> responseObserver, ResponseCodeEnum validationCode, long scheduledFee) {
-		ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
-				validationCode, scheduledFee, ResponseType.ANSWER_ONLY, ByteString.EMPTY);
-		responseObserver.onNext(Response.newBuilder().setContractGetRecordsResponse(
-				ContractGetRecordsResponse.newBuilder().setHeader(responseHeader)).build());
-		responseObserver.onCompleted();
-	}
-
 	public static void constructContractCallLocalErrorResponse(
 			StreamObserver<Response> responseObserver, ResponseCodeEnum validationCode, long scheduledFee) {
 		ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
@@ -239,10 +218,8 @@ public class TransactionValidationUtils {
 	}
 
 	public static void logAndConstructResponseWhenCreateTxFailed(
-			Logger log,
 			StreamObserver<Response> responseObserver,
-			String methodMsg,
-			AccountID accountID
+			String methodMsg
 	) {
 		ResponseCodeEnum responseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 		if (methodMsg.startsWith("getBySolidityID")) {
@@ -251,15 +228,11 @@ public class TransactionValidationUtils {
 		} else if (methodMsg.startsWith("contractCallLocalMethod")) {
 			TransactionValidationUtils.constructContractCallLocalErrorResponse(responseObserver,
 					responseCode, 0);
-		} else if (methodMsg.startsWith("getTxRecordByContractID")) {
-			TransactionValidationUtils.constructContractGetRecordsErrorResponse(responseObserver,
-					responseCode, 0);
 		}
 	}
 
 	public static void logAndConstructResponseWhenCreateTxFailed(
-			Logger log,
-			StreamObserver<TransactionResponse> responseObserver
+			Logger log, StreamObserver<TransactionResponse> responseObserver
 	) {
 		TxnValidityAndFeeReq responseCode = new TxnValidityAndFeeReq(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED);
 		transactionResponse(responseObserver, responseCode);

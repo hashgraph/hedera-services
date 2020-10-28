@@ -39,6 +39,30 @@ public enum TokenTransactScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenTransact()
+							.adjustingHbars(FIRST_TOKEN_SENDER, -2_000)
+							.adjustingHbars(TOKEN_RECEIVER, +2_000)
+							.nonPayerKts(FIRST_TOKEN_SENDER_KT)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenTransact()
+							.adjustingHbars(FIRST_TOKEN_SENDER, -2_000)
+							.adjustingHbars(RECEIVER_SIG, +2_000)
+							.nonPayerKts(FIRST_TOKEN_SENDER_KT, RECEIVER_SIG_KT)
+							.get()
+			));
+		}
+	},
 	TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {

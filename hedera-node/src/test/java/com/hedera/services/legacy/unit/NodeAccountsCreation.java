@@ -67,8 +67,6 @@ public class NodeAccountsCreation {
 
 		JKey jKey = JKey.mapKey(accountKeys);
 		MerkleAccount hAccount = new HederaAccountCustomizer()
-				.fundsSentRecordThreshold(INITIAL_GENESIS_COINS)
-				.fundsReceivedRecordThreshold(INITIAL_GENESIS_COINS)
 				.isReceiverSigRequired(false)
 				.proxy(EntityId.MISSING_ENTITY_ID)
 				.isDeleted(false)

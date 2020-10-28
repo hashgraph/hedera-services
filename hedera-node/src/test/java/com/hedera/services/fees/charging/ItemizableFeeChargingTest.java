@@ -21,7 +21,6 @@ package com.hedera.services.fees.charging;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -39,9 +38,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
 
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.CACHE_RECORD_FEE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.THRESHOLD_RECORD_FEE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
@@ -53,7 +50,7 @@ import static com.hedera.services.fees.TxnFeeType.*;
 
 @RunWith(JUnitPlatform.class)
 class ItemizableFeeChargingTest {
-	long network = 500L, service = 200L, node = 100L, thresholdRecord = 150L, cacheRecord = 50L;
+	long network = 500L, service = 200L, node = 100L;
 
 	AccountID givenNode = IdUtils.asAccount("0.0.3");
 	AccountID submittingNode = IdUtils.asAccount("0.0.4");
@@ -82,7 +79,7 @@ class ItemizableFeeChargingTest {
 		given(accessor.getPayer()).willReturn(payer);
 		given(properties.fundingAccount()).willReturn(funding);
 
-		subject = new ItemizableFeeCharging(exemptions, properties);
+		subject = new ItemizableFeeCharging(ledger, exemptions, properties);
 		subject.setLedger(ledger);
 
 		subject.resetFor(accessor, submittingNode);
@@ -99,8 +96,6 @@ class ItemizableFeeChargingTest {
 		// then:
 		assertEquals(network, subject.chargedToSubmittingNode(NETWORK));
 		assertEquals(service, subject.chargedToSubmittingNode(SERVICE));
-		// and:
-		assertEquals(0, subject.chargedToSubmittingNode(CACHE_RECORD));
 	}
 
 	@Test
@@ -108,37 +103,23 @@ class ItemizableFeeChargingTest {
 		givenKnownFeeAmounts();
 
 		// when:
-		subject.chargePayer(NETWORK_NODE_SERVICE_FEES);
+		subject.chargePayer(EnumSet.of(NETWORK, NODE));
 
 		// then:
 		assertEquals(network, subject.chargedToPayer(NETWORK));
 		assertEquals(node, subject.chargedToPayer(NODE));
-		assertEquals(service, subject.chargedToPayer(SERVICE));
-		// and:
-		assertEquals(0, subject.chargedToPayer(CACHE_RECORD));
+		assertEquals(0, subject.chargedToPayer(SERVICE));
 	}
 
 	@Test
-	public void reportsTotalNonThresholdPayerFees() {
+	public void reportsTotalPayerFees() {
 		givenKnownFeeAmounts();
 
 		// when:
-		subject.chargePayer(EnumSet.of(NODE, THRESHOLD_RECORD, CACHE_RECORD));
+		subject.chargePayer(EnumSet.of(NODE));
 
 		// then:
-		assertEquals(node + cacheRecord, subject.totalNonThresholdFeesChargedToPayer());
-	}
-
-	@Test
-	public void reportsNumChargedThresholdFees() {
-		givenKnownFeeAmounts();
-
-		// when:
-		subject.chargeParticipant(payer, THRESHOLD_RECORD_FEE);
-		subject.chargeParticipant(participant, THRESHOLD_RECORD_FEE);
-
-		// then:
-		assertEquals(2, subject.numThresholdFeesCharged());
+		assertEquals(node , subject.totalFeesChargedToPayer());
 	}
 
 	@Test
@@ -183,36 +164,19 @@ class ItemizableFeeChargingTest {
 	@Test
 	public void ignoresDegenerateFees() {
 		// given:
-		subject.setFor(THRESHOLD_RECORD, 0L);
+		subject.setFor(NODE, 0L);
 
 		// when:
-		subject.chargeParticipant(participant, EnumSet.of(THRESHOLD_RECORD));
+		subject.chargeParticipant(participant, EnumSet.of(NODE));
 
 		// then:
 		verify(ledger, never()).doTransfer(any(), any(), anyLong());
-	}
-
-	@Test
-	public void chargesExemptParticipantNothingForRecord() {
-		// setup:
-		EnumSet<TxnFeeType> thresholdRecordFee = EnumSet.of(THRESHOLD_RECORD);
-
-		givenKnownFeeAmounts();
-		given(exemptions.isExemptFromRecordFees(participant)).willReturn(true);
-
-		// when:
-		subject.chargeParticipant(participant, thresholdRecordFee);
-
-		// then:
-		verify(ledger, never()).doTransfer(any(), any(), anyLong());
-		// and:
-		assertTrue(subject.thresholdFeePayers.isEmpty());
 	}
 
 	@Test
 	public void chargesPayerNothingWhenExempt() {
 		// setup:
-		EnumSet<TxnFeeType> allPossibleFees = EnumSet.of(NETWORK, NODE, SERVICE, CACHE_RECORD, THRESHOLD_RECORD);
+		EnumSet<TxnFeeType> allPossibleFees = EnumSet.of(NETWORK, NODE, SERVICE);
 
 		givenKnownFeeAmounts();
 		given(ledger.getBalance(payer)).willReturn(Long.MAX_VALUE);
@@ -256,9 +220,6 @@ class ItemizableFeeChargingTest {
 
 		// when:
 		subject.chargePayer(NETWORK_NODE_SERVICE_FEES);
-		subject.chargePayer(CACHE_RECORD_FEE);
-		subject.chargeParticipant(participant, THRESHOLD_RECORD_FEE);
-		subject.chargeParticipant(payer, THRESHOLD_RECORD_FEE);
 		// and:
 		TransferList itemizedFees = subject.itemizedFees();
 
@@ -269,13 +230,7 @@ class ItemizableFeeChargingTest {
 						aa(funding, network),
 						aa(givenNode, -network),
 						aa(funding, service),
-						aa(givenNode, -service),
-						aa(givenNode, -cacheRecord),
-						aa(funding, cacheRecord),
-						aa(funding, thresholdRecord),
-						aa(payer, -thresholdRecord),
-						aa(funding, thresholdRecord),
-						aa(participant, -thresholdRecord)));
+						aa(givenNode, -service)));
 	}
 
 	@Test
@@ -285,9 +240,6 @@ class ItemizableFeeChargingTest {
 
 		// when:
 		subject.chargePayer(NETWORK_NODE_SERVICE_FEES);
-		subject.chargePayer(CACHE_RECORD_FEE);
-		subject.chargeParticipant(participant, THRESHOLD_RECORD_FEE);
-		subject.chargeParticipant(payer, THRESHOLD_RECORD_FEE);
 		// and:
 		TransferList itemizedFees = subject.itemizedFees();
 
@@ -300,13 +252,7 @@ class ItemizableFeeChargingTest {
 						aa(givenNode, node),
 						aa(payer, -node),
 						aa(funding, service),
-						aa(payer, -service),
-						aa(payer, -cacheRecord),
-						aa(funding, cacheRecord),
-						aa(funding, thresholdRecord),
-						aa(payer, -thresholdRecord),
-						aa(funding, thresholdRecord),
-						aa(participant, -thresholdRecord)));
+						aa(payer, -service)));
 	}
 
 	private AccountAmount aa(AccountID who, long what) {
@@ -327,23 +273,6 @@ class ItemizableFeeChargingTest {
 		// and:
 		assertTrue(subject.submittingNodeFeesCharged.isEmpty());
 		assertTrue(subject.payerFeesCharged.isEmpty());
-	}
-
-	@Test
-	public void recognizesParticipantsWhoPayedForThresholdRecords() {
-		givenKnownFeeAmounts();
-
-		// when:
-		subject.chargeParticipant(payer, EnumSet.of(NETWORK, CACHE_RECORD));
-		subject.chargeParticipant(participant, EnumSet.of(THRESHOLD_RECORD));
-
-		// then:
-		assertEquals(1, subject.thresholdFeePayers.size());
-		assertTrue(subject.thresholdFeePayers.contains(participant));
-		// and:
-		assertEquals(2, subject.payerFeesCharged.size());
-		assertEquals(network, subject.payerFeesCharged.get(NETWORK).longValue());
-		assertEquals(cacheRecord, subject.payerFeesCharged.get(CACHE_RECORD).longValue());
 	}
 
 	@Test
@@ -384,7 +313,6 @@ class ItemizableFeeChargingTest {
 	@Test
 	public void resetsForNewTxn() {
 		// setup:
-		Set<AccountID> threshPayers = mock(Set.class);
 		EnumMap<TxnFeeType, Long> paidByPayer = mock(EnumMap.class);
 		EnumMap<TxnFeeType, Long> paidByNode = mock(EnumMap.class);
 
@@ -392,7 +320,6 @@ class ItemizableFeeChargingTest {
 		subject.funding = givenNode;
 		subject.submittingNodeFeesCharged = paidByNode;
 		subject.payerFeesCharged = paidByPayer;
-		subject.thresholdFeePayers = threshPayers;
 
 		// when:
 		subject.resetFor(accessor, submittingNode);
@@ -400,7 +327,6 @@ class ItemizableFeeChargingTest {
 		// then:
 		verify(paidByNode).clear();
 		verify(paidByPayer).clear();
-		verify(threshPayers).clear();
 		assertEquals(funding, subject.funding);
 	}
 
@@ -408,7 +334,5 @@ class ItemizableFeeChargingTest {
 		subject.setFor(NETWORK, network);
 		subject.setFor(SERVICE, service);
 		subject.setFor(NODE, node);
-		subject.setFor(CACHE_RECORD, cacheRecord);
-		subject.setFor(THRESHOLD_RECORD, thresholdRecord);
 	}
 }

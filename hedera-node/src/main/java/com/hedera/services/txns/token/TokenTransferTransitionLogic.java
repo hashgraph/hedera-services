@@ -23,6 +23,7 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
@@ -33,11 +34,11 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.txns.crypto.CryptoTransferTransitionLogic.basicSyntaxChecks;
 import static com.hedera.services.txns.validation.TokenListChecks.checkTokenTransfers;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 
 
 public class TokenTransferTransitionLogic implements TransitionLogic {
@@ -80,7 +81,12 @@ public class TokenTransferTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		TokenTransfersTransactionBody op = txnBody.getTokenTransfers();
 
-		var validity = validator.isAcceptableTokenTransfersLength(op.getTokenTransfersList());
+		var validity = basicSyntaxChecks(op.getHbarTransfers(), validator);
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = validator.isAcceptableTokenTransfersLength(op.getTokenTransfersList());
 		if (validity != OK) {
 			return validity;
 		}

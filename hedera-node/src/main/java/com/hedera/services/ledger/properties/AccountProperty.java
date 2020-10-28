@@ -90,28 +90,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getBalance;
 		}
 	},
-	FUNDS_RECEIVED_RECORD_THRESHOLD {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, v) -> a.setReceiverThreshold((long) v);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getReceiverThreshold;
-		}
-	},
-	FUNDS_SENT_RECORD_THRESHOLD {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, v) -> a.setSenderThreshold((long) v);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getSenderThreshold;
-		}
-	},
 	AUTO_RENEW_PERIOD {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
@@ -178,18 +156,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::tokens;
 		}
 	},
-	PAYER_RECORDS {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, r) -> a.setPayerRecords((FCQueue<ExpirableTxnRecord>) r);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::payerRecords;
-		}
-	},
-	HISTORY_RECORDS {
+	RECORDS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, r) -> a.setRecords((FCQueue<ExpirableTxnRecord>) r);

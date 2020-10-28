@@ -24,7 +24,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -36,7 +35,6 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.TokenStore;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -61,15 +59,13 @@ import java.util.function.Consumer;
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
+import static com.hedera.services.txns.crypto.CryptoTransferTransitionLogic.tryTransfers;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -109,8 +105,6 @@ public class HederaLedger {
 
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 	private static final long[] NO_NEW_BALANCES = new long[0];
-	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {
-	};
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
@@ -291,6 +285,9 @@ public class HederaLedger {
 
 		var tokens = (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
 		for (TokenID tId : tokens.asIds()) {
+			if (tokenStore.get(tId).isDeleted()) {
+				continue;
+			}
 			var relationship = asTokenRel(aId, tId);
 			var balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 			if (balance > 0) {
@@ -349,7 +346,6 @@ public class HederaLedger {
 
 	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfersTransactionBody transfers) {
 		var validity = OK;
-
 		for (TokenTransferList xfers : transfers.getTokenTransfersList()) {
 			var id = tokenStore.resolve(xfers.getToken());
 			if (id == MISSING_TOKEN) {
@@ -370,6 +366,14 @@ public class HederaLedger {
 		}
 		if (validity == OK) {
 			validity = checkNetOfTokenTransfers();
+		}
+		if (validity == OK) {
+			if (transfers.hasHbarTransfers()) {
+				var hbarTransfers = transfers.getHbarTransfers();
+				if (hbarTransfers.getAccountAmountsCount() > 0) {
+					validity = tryTransfers(this, hbarTransfers);
+				}
+			}
 		}
 		if (validity != OK) {
 			dropPendingTokenChanges();
@@ -430,14 +434,6 @@ public class HederaLedger {
 		return (long) accountsLedger.get(id, EXPIRY);
 	}
 
-	public long fundsSentRecordThreshold(AccountID id) {
-		return (long) accountsLedger.get(id, FUNDS_SENT_RECORD_THRESHOLD);
-	}
-
-	public long fundsReceivedRecordThreshold(AccountID id) {
-		return (long) accountsLedger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD);
-	}
-
 	public boolean isSmartContract(AccountID id) {
 		return (boolean) accountsLedger.get(id, IS_SMART_CONTRACT);
 	}
@@ -456,11 +452,7 @@ public class HederaLedger {
 
 	/* -- TRANSACTION HISTORY MANIPULATION -- */
 	public long addRecord(AccountID id, ExpirableTxnRecord record) {
-		return addReturningEarliestExpiry(id, HISTORY_RECORDS, record);
-	}
-
-	public long addPayerRecord(AccountID id, ExpirableTxnRecord record) {
-		return addReturningEarliestExpiry(id, PAYER_RECORDS, record);
+		return addReturningEarliestExpiry(id, RECORDS, record);
 	}
 
 	private long addReturningEarliestExpiry(AccountID id, AccountProperty property, ExpirableTxnRecord record) {
@@ -470,12 +462,8 @@ public class HederaLedger {
 		return records.peek().getExpiry();
 	}
 
-	public long purgeExpiredRecords(AccountID id, long now) {
-		return purge(id, HISTORY_RECORDS, now, NOOP_CB);
-	}
-
-	public long purgeExpiredPayerRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
-		return purge(id, PAYER_RECORDS, now, cb);
+	public long purgeExpiredRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
+		return purge(id, RECORDS, now, cb);
 	}
 
 	private long purge(

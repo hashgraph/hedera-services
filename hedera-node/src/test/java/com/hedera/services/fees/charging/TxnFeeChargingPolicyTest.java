@@ -105,7 +105,7 @@ class TxnFeeChargingPolicyTest {
 		HederaLedger ledger = mock(HederaLedger.class);
 		GlobalDynamicProperties properties = mock(GlobalDynamicProperties.class);
 		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
-		charging = new ItemizableFeeCharging(new NoExemptions(), properties);
+		charging = new ItemizableFeeCharging(ledger, new NoExemptions(), properties);
 
 		given(ledger.getBalance(any())).willReturn(Long.MAX_VALUE);
 		given(properties.fundingAccount()).willReturn(funding);
@@ -114,7 +114,6 @@ class TxnFeeChargingPolicyTest {
 		given(accessor.getTxn()).willReturn(txn);
 
 		given(accessor.getPayer()).willReturn(payer);
-		charging.setLedger(ledger);
 
 		// when:
 		charging.resetFor(accessor, submittingNode);
@@ -134,11 +133,6 @@ class TxnFeeChargingPolicyTest {
 	private static class NoExemptions implements FeeExemptions {
 		@Override
 		public boolean hasExemptPayer(SignedTxnAccessor accessor) {
-			return false;
-		}
-
-		@Override
-		public boolean isExemptFromRecordFees(AccountID id) {
 			return false;
 		}
 	}

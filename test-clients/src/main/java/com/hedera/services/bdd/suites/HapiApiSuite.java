@@ -90,6 +90,8 @@ public abstract class HapiApiSuite {
 
 	public static final String NODE = HapiSpecSetup.getDefaultInstance().defaultNodeName();
 
+	public static final String HBAR_TOKEN_SENTINEL = "HBAR";
+
 	public static final String MASTER = HapiSpecSetup.getDefaultInstance().strongControlName();
 	public static final String FUNDING = HapiSpecSetup.getDefaultInstance().fundingAccountName();
 	public static final String GENESIS = HapiSpecSetup.getDefaultInstance().genesisAccountName();

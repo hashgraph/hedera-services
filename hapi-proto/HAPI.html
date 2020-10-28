@@ -290,6 +290,10 @@
                   <a href="#proto.TransactionID"><span class="badge">M</span>TransactionID</a>
                 </li>
               
+                <li>
+                  <a href="#proto.TransferList"><span class="badge">M</span>TransferList</a>
+                </li>
+              
               
                 <li>
                   <a href="#proto.HederaFunctionality"><span class="badge">E</span>HederaFunctionality</a>
@@ -774,10 +778,6 @@
               
                 <li>
                   <a href="#proto.CryptoTransferTransactionBody"><span class="badge">M</span>CryptoTransferTransactionBody</a>
-                </li>
-              
-                <li>
-                  <a href="#proto.TransferList"><span class="badge">M</span>TransferList</a>
                 </li>
               
               
@@ -2662,6 +2662,30 @@
 
         
       
+        <h3 id="proto.TransferList">TransferList</h3>
+        <p>A list of accounts and amounts to transfer out of each account (negative) or into it (positive).</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>accountAmounts</td>
+                  <td><a href="#proto.AccountAmount">AccountAmount</a></td>
+                  <td>repeated</td>
+                  <td><p>Multiple list of AccountAmount pairs, each of which has an account and an amount to transfer into it (positive) or out of it (negative) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
         <h3 id="proto.HederaFunctionality">HederaFunctionality</h3>
@@ -4310,7 +4334,7 @@ If unspecified, no change. </p></td>
 
       
         <h3 id="proto.ContractGetRecordsQuery">ContractGetRecordsQuery</h3>
-        <p>Get all the records for a smart contract instance, for any transaction (creation or call) that occurred in the last 25 hours.</p>
+        <p>Before v0.9.0, requested records of all transactions against the given contract in the last 25 hours.</p>
 
         
           <table class="field-table">
@@ -4341,7 +4365,7 @@ If unspecified, no change. </p></td>
         
       
         <h3 id="proto.ContractGetRecordsResponse">ContractGetRecordsResponse</h3>
-        <p>Response when the client sends the node ContractGetRecordsQuery</p>
+        <p>Before v0.9.0, returned records of all transactions against the given contract in the last 25 hours.</p>
 
         
           <table class="field-table">
@@ -4925,7 +4949,7 @@ If unspecified, no change. </p></td>
 
       
         <h3 id="proto.CryptoGetAccountRecordsQuery">CryptoGetAccountRecordsQuery</h3>
-        <p>Get all the records for an account for any transfers into it and out of it, that were above the threshold, during the last 25 hours.</p>
+        <p>Requests records of all transactions for which the given account was the effective payer in the last 3 minutes of consensus time and <tt>ledger.keepRecordsInState=true</tt> was true during <tt>handleTransaction</tt>.</p>
 
         
           <table class="field-table">
@@ -4956,7 +4980,7 @@ If unspecified, no change. </p></td>
         
       
         <h3 id="proto.CryptoGetAccountRecordsResponse">CryptoGetAccountRecordsResponse</h3>
-        <p>Response when the client sends the node CryptoGetAccountRecordsQuery</p>
+        <p>Retruns records of all transactions for which the given account was the effective payer in the last 3 minutes of consensus time and <tt>ledger.keepRecordsInState=true</tt> was true during <tt>handleTransaction</tt>.</p>
 
         
           <table class="field-table">
@@ -4983,7 +5007,7 @@ If unspecified, no change. </p></td>
                   <td>records</td>
                   <td><a href="#proto.TransactionRecord">TransactionRecord</a></td>
                   <td>repeated</td>
-                  <td><p>List of records, each with CryptoRecordBody as their body </p></td>
+                  <td><p>List of records </p></td>
                 </tr>
               
             </tbody>
@@ -5636,30 +5660,6 @@ If unspecified, no change. </p></td>
                   <td><a href="#proto.TransferList">TransferList</a></td>
                   <td></td>
                   <td><p>Accounts and amounts to transfer </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="proto.TransferList">TransferList</h3>
-        <p>A list of accounts and amounts to transfer out of each account (negative) or into it (positive).</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>accountAmounts</td>
-                  <td><a href="#proto.AccountAmount">AccountAmount</a></td>
-                  <td>repeated</td>
-                  <td><p>Multiple list of AccountAmount pairs, each of which has an account and an amount to transfer into it (positive) or out of it (negative) </p></td>
                 </tr>
               
             </tbody>
@@ -9473,6 +9473,13 @@ by HAPI.</p></td>
                   <td>tokenTransfers</td>
                   <td><a href="#proto.TokenTransferList">TokenTransferList</a></td>
                   <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hbarTransfers</td>
+                  <td><a href="#proto.TransferList">TransferList</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               

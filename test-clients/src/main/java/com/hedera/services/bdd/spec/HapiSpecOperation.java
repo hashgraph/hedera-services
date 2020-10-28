@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
@@ -347,9 +348,9 @@ public abstract class HapiSpecOperation {
 	}
 
 	protected void lookupSubmissionRecord(HapiApiSpec spec) throws Throwable {
-		HapiGetTxnRecord subOp = QueryVerbs
-				.getTxnRecord(extractTxnId(txnSubmitted))
+		HapiGetTxnRecord subOp = getTxnRecord(extractTxnId(txnSubmitted))
 				.noLogging()
+				.assertingNothing()
 				.suppressStats(true)
 				.nodePayment(spec.setup().defaultNodePaymentTinyBars());
 		Optional<Throwable> error = subOp.execFor(spec);

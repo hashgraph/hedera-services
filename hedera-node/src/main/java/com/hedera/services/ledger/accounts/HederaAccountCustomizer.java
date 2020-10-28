@@ -37,9 +37,7 @@ public class HederaAccountCustomizer extends
 			Option.IS_DELETED, AccountProperty.IS_DELETED,
 			Option.AUTO_RENEW_PERIOD, AccountProperty.AUTO_RENEW_PERIOD,
 			Option.IS_SMART_CONTRACT, AccountProperty.IS_SMART_CONTRACT,
-			Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED,
-			Option.FUNDS_SENT_RECORD_THRESHOLD, AccountProperty.FUNDS_SENT_RECORD_THRESHOLD,
-			Option.FUNDS_RECEIVED_RECORD_THRESHOLD, AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD
+			Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED
 	);
 
 	public HederaAccountCustomizer() {

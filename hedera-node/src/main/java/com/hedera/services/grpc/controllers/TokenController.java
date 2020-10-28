@@ -23,6 +23,7 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -31,6 +32,21 @@ import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenTransact;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
 public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	private static final Logger log = LogManager.getLogger(TokenController.class);
@@ -67,71 +83,71 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 
 	@Override
 	public void createToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_CREATE_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenCreate);
 	}
 
 	@Override
 	public void deleteToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_DELETE_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenDelete);
 	}
 
 	@Override
 	public void mintToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_MINT_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenMint);
 	}
 
 	@Override
 	public void burnToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_BURN_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenBurn);
 	}
 
 	@Override
 	public void updateToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_UPDATE_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenUpdate);
 	}
 
 	@Override
 	public void wipeTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_WIPE_ACCOUNT_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenAccountWipe);
 	}
 
 	@Override
 	public void freezeTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_FREEZE_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenFreezeAccount);
 	}
 
 	@Override
 	public void unfreezeTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_UNFREEZE_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenUnfreezeAccount);
 	}
 
 	@Override
 	public void grantKycToTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_GRANT_KYC_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenGrantKycToAccount);
 	}
 
 	@Override
 	public void revokeKycFromTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_REVOKE_KYC_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenRevokeKycFromAccount);
 	}
 
 	@Override
 	public void transferTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_TRANSACT_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenTransact);
 	}
 
 	@Override
 	public void associateTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_ASSOCIATE_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenAssociateToAccount);
 	}
 
 	@Override
 	public void dissociateTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToToken(signedTxn, observer, TOKEN_DISSOCIATE_METRIC);
+		txnHelper.submit(signedTxn, observer, TokenDissociateFromAccount);
 	}
 
 	@Override
 	public void getTokenInfo(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToToken(query, observer, tokenAnswers.getTokenInfo(), TOKEN_GET_INFO_METRIC);
+		queryHelper.answer(query, observer, tokenAnswers.getTokenInfo(), TokenGetInfo);
 	}
 }
