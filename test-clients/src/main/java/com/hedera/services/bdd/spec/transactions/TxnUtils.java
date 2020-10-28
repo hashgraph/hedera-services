@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -360,6 +361,14 @@ public class TxnUtils {
 				        (xfers.getTokenTransfersCount() > 0 ? " & " : ""))
 				: "";
 		return readableHbarXfers + xfers.getTokenTransfersList().stream()
+				.map(scopedXfers -> String.format("%s(%s)",
+						asTokenString(scopedXfers.getToken()),
+						readableTransferList(scopedXfers.getTransfersList())))
+				.collect(joining(", "));
+	}
+
+	public static String readableTokenTransfers(List<TokenTransferList> tokenTransfers) {
+		return tokenTransfers.stream()
 				.map(scopedXfers -> String.format("%s(%s)",
 						asTokenString(scopedXfers.getToken()),
 						readableTransferList(scopedXfers.getTransfersList())))

@@ -21,7 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,15 +35,25 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
-import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.movingHbar;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 public class TokenTransactSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
@@ -92,52 +102,47 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"ledger.tokenTransfers.maxLen", "" + 1
 						)).payingWith(ADDRESS_BOOK_CONTROL),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER),
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER)
-						)
-								.hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
-						tokenTransact(
+						).hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
+						cryptoTransfer(
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER),
 								moving(1, B_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER)
-						)
-								.hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
+						).hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"ledger.tokenTransfers.maxLen", "" + 10
 						)).payingWith(ADDRESS_BOOK_CONTROL),
-						tokenTransact(
+						cryptoTransfer(
 								movingHbar(1)
 										.between(TOKEN_TREASURY, FIRST_USER),
 								movingHbar(1)
 										.between(TOKEN_TREASURY, FIRST_USER)
 						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER),
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER)
 						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-						tokenTransact(
+						cryptoTransfer(
 								moving(0, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER)
-						)
-								.hasPrecheck(INVALID_ACCOUNT_AMOUNTS),
-						tokenTransact(
+						).hasPrecheck(INVALID_ACCOUNT_AMOUNTS),
+						cryptoTransfer(
 								moving(10, A_TOKEN)
 										.from(TOKEN_TREASURY)
-						)
-								.hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
-						tokenTransact()
+						).hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
+						cryptoTransfer(new TokenMovement[0])
 								.hasPrecheck(EMPTY_TOKEN_TRANSFER_BODY),
-						tokenTransact(
+						cryptoTransfer(
 								moving(10, A_TOKEN)
 										.empty()
-						)
-								.hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
+						).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
 				);
 	}
 
@@ -154,13 +159,13 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury("firstTreasury"),
 						tokenAssociate("beneficiary", A_TOKEN)
 				).then(
-						tokenTransact(
+						cryptoTransfer(
 								moving(100_000_000_000_000L, A_TOKEN)
 										.between("firstTreasury", "beneficiary")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury")
 								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
 								movingHbar(A_HUNDRED_HBARS).between("firstTreasury", "beneficiary")
 						).payingWith("payer")
@@ -182,7 +187,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.freezeKey("freezeKey")
 								.freezeDefault(true),
 						tokenAssociate("randomBeneficiary", A_TOKEN),
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, A_TOKEN)
 										.between("treasury", "randomBeneficiary")
 						).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
@@ -191,7 +196,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury("treasury")
 								.freezeDefault(false),
 						tokenAssociate("randomBeneficiary", B_TOKEN),
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, B_TOKEN)
 										.between("treasury", "randomBeneficiary")
 						).payingWith("payer").via("successfulTransfer")
@@ -220,28 +225,28 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury("secondTreasury"),
 						tokenAssociate("beneficiary", A_TOKEN, B_TOKEN)
 				).then(
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury", "beneficiary")
 								.hasKnownStatus(INVALID_SIGNATURE),
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury", "secondTreasury")
 								.hasKnownStatus(INVALID_SIGNATURE),
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury", "secondTreasury", "beneficiary")
 								.hasKnownStatus(INVALID_SIGNATURE),
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
 								movingHbar(1_000).between("sponsor", "firstTreasury")
@@ -267,7 +272,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						balanceSnapshot("treasuryBefore", "firstTreasury"),
 						balanceSnapshot("beneBefore", "beneficiary")
 				).then(
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								movingHbar(ONE_HBAR).between("beneficiary", "firstTreasury")
 						).payingWith("payer")
@@ -301,7 +306,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury("secondTreasury"),
 						tokenAssociate("beneficiary", A_TOKEN, B_TOKEN),
 						balanceSnapshot("before", "beneficiary"),
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(10, B_TOKEN).between("secondTreasury", "beneficiary"),
 								movingHbar(1).between("beneficiary", "tbd")
@@ -334,7 +339,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.initialSupply(50)
 								.treasury("secondTreasury"),
 						tokenAssociate("beneficiary", A_TOKEN, B_TOKEN),
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
 						).hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
@@ -357,7 +362,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate(A_TOKEN)
 				).then(
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(1, A_TOKEN).from("firstTreasury")
 						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
@@ -371,10 +376,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate(A_TOKEN)
 				).then(
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, A_TOKEN).from("firstTreasury")
 						).hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
-						tokenTransact(
+						cryptoTransfer(
 								movingHbar(1).from("firstTreasury")
 						).hasPrecheck(INVALID_ACCOUNT_AMOUNTS)
 				);
@@ -395,7 +400,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenAssociate(FIRST_USER, A_TOKEN),
 						tokenAssociate(SECOND_USER, B_TOKEN)
 				).when(
-						tokenTransact(
+						cryptoTransfer(
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),
 								moving(100, B_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
 						)

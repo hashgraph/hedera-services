@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includ
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBytes.LEGACY_THROTTLES_FIRST_ORDER;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 
@@ -47,7 +47,6 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;

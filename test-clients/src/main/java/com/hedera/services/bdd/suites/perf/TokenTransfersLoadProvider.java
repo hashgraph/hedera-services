@@ -23,7 +23,7 @@ package com.hedera.services.bdd.suites.perf;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,7 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -149,7 +149,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				var numSenders = sendingAccountsPerToken.get();
 				var numReceivers = receivingAccountsPerToken.get();
 				if (firstDir.get()) {
-					var xfers = new HapiTokenTransact.TokenMovement[numTokens * numSenders];
+					var xfers = new TokenMovement[numTokens * numSenders];
 					for (int i = 0; i < numTokens; i++) {
 						var token = "token" + i;
 						for (int j = 0; j < numSenders; j++) {
@@ -164,7 +164,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 					op = tokenTransact(xfers).noLogging().deferStatusResolution();
 					firstDir.set(Boolean.FALSE);
 				} else {
-					var xfers = new HapiTokenTransact.TokenMovement[numTokens * numReceivers];
+					var xfers = new TokenMovement[numTokens * numReceivers];
 					for (int i = 0; i < numTokens; i++) {
 						var token = "token" + i;
 						for (int j = 0; j < numReceivers; j++) {

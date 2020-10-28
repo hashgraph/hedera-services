@@ -25,7 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import java.util.List;
 
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -103,7 +103,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 								.initialSupply(TOKEN_INITIAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate("toBeDeleted", "misc"),
-						tokenTransact(HapiTokenTransact.TokenMovement
+						tokenTransact(TokenMovement
 								.moving(TOKEN_INITIAL_SUPPLY, "misc")
 								.between(TOKEN_TREASURY, "toBeDeleted"))
 				).then(
