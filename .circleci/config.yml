@@ -987,7 +987,7 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "0 22,23 * * *"
+              cron: "38 2,15 * * *"
               filters:
                 branches:
                   only:
