@@ -9,7 +9,7 @@ commands:
           command: |
             sudo apt update -y;
             sudo apt install -y net-tools;
-            sudo apt-get ubstall -y apt-utils;
+            sudo apt-get install -y apt-utils;
             sudo apt install -y curl;
             sudo apt install -y python3.7;
             sudo rm /usr/bin/python3;
@@ -989,7 +989,7 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "15 4,16 * * *"
+              cron: "10 4,17 * * *"
               filters:
                 branches:
                   only:
