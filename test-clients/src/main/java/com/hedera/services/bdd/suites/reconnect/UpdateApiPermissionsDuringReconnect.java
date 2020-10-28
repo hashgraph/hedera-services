@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UpdateApiPermissionsDuringReconnect.class);
@@ -53,7 +54,7 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
 		return defaultHapiSpec("updateApiPermissionsDuringReconnect")
 				.given(
-						UtilVerbs.sleepFor(Duration.ofSeconds(60).toMillis()),
+						sleepFor(Duration.ofSeconds(60).toMillis()),
 						getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode()
 				)
 				.when(
@@ -65,7 +66,7 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 				)
 				.then(
 
-						UtilVerbs.sleepFor(Duration.ofMinutes(5).toMillis()),
+						sleepFor(Duration.ofMinutes(5).toMillis()),
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.3")
