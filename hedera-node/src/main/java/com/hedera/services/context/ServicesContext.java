@@ -21,7 +21,6 @@ package com.hedera.services.context;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.services.ServicesMain;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
@@ -36,6 +35,7 @@ import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
+import com.hedera.services.fees.calculation.contract.queries.GetContractRecordsResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
@@ -51,6 +51,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.queries.contract.GetContractRecordsAnswer;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -151,6 +152,14 @@ import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.BasedLedgerValidator;
+import com.hedera.services.stats.CounterFactory;
+import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.stats.HapiOpSpeedometers;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.stats.RunningAvgFactory;
+import com.hedera.services.stats.ServicesStatsManager;
+import com.hedera.services.stats.SpeedometerFactory;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
@@ -220,7 +229,7 @@ import com.hedera.services.queries.meta.GetTxnReceiptAnswer;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.records.FeeChargingRecordsHistorian;
+import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordCacheFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -241,6 +250,7 @@ import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
@@ -273,7 +283,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.swirlds.common.Address;
@@ -358,12 +367,14 @@ public class ServicesContext {
 	private PropertySource properties;
 	private EntityIdSource ids;
 	private FileController fileGrpc;
+	private HapiOpCounters opCounters;
 	private AnswerFunctions answerFunctions;
 	private ContractAnswers contractAnswers;
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
-	private HederaNodeStats stats;
 	private TokenController tokenGrpc;
+	private MiscRunningAvgs runningAvgs;
+	private MiscSpeedometers speedometers;
 	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
@@ -395,6 +406,7 @@ public class ServicesContext {
 	private NodeLocalProperties nodeLocalProperties;
 	private TxnFeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
+	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
 	private FCMapBackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
@@ -454,6 +466,44 @@ public class ServicesContext {
 		queryableStorage().set(storage());
 		queryableTokens().set(tokens());
 		queryableTokenAssociations().set(tokenAssociations());
+	}
+
+	public HapiOpCounters opCounters() {
+		if (opCounters == null) {
+			opCounters = new HapiOpCounters(new CounterFactory() {}, MiscUtils::baseStatNameOf);
+		}
+		return opCounters;
+	}
+
+	public MiscRunningAvgs runningAvgs() {
+		if (runningAvgs == null) {
+			runningAvgs = new MiscRunningAvgs(new RunningAvgFactory() {}, nodeLocalProperties());
+		}
+		return runningAvgs;
+	}
+
+	public MiscSpeedometers speedometers() {
+		if (speedometers == null) {
+			speedometers = new MiscSpeedometers(new SpeedometerFactory() {}, nodeLocalProperties());
+		}
+		return speedometers;
+	}
+
+	public ServicesStatsManager statsManager() {
+		if (statsManager == null) {
+			var opSpeedometers = new HapiOpSpeedometers(
+					opCounters(),
+					new SpeedometerFactory() {},
+					nodeLocalProperties(),
+					MiscUtils::baseStatNameOf);
+			statsManager = new ServicesStatsManager(
+					opCounters(),
+					runningAvgs(),
+					speedometers(),
+					opSpeedometers,
+					nodeLocalProperties());
+		}
+		return statsManager;
 	}
 
 	public CurrentPlatformStatus platformStatus() {
@@ -535,7 +585,7 @@ public class ServicesContext {
 
 	public TxnResponseHelper txnResponseHelper() {
 		if (txnResponseHelper == null) {
-			txnResponseHelper = new TxnResponseHelper(submissionFlow(), stats());
+			txnResponseHelper = new TxnResponseHelper(submissionFlow(), opCounters());
 		}
 		return txnResponseHelper;
 	}
@@ -560,7 +610,10 @@ public class ServicesContext {
 
 	public ItemizableFeeCharging charging() {
 		if (itemizableFeeCharging == null) {
-			itemizableFeeCharging = new ItemizableFeeCharging(exemptions(), globalDynamicProperties());
+			itemizableFeeCharging = new ItemizableFeeCharging(
+					ledger(),
+					exemptions(),
+					globalDynamicProperties());
 		}
 		return itemizableFeeCharging;
 	}
@@ -578,7 +631,7 @@ public class ServicesContext {
 
 	public QueryResponseHelper queryResponseHelper() {
 		if (queryResponseHelper == null) {
-			queryResponseHelper = new QueryResponseHelper(answerFlow(), stats());
+			queryResponseHelper = new QueryResponseHelper(answerFlow(), opCounters());
 		}
 		return queryResponseHelper;
 	}
@@ -597,7 +650,8 @@ public class ServicesContext {
 		if (contractAnswers == null) {
 			contractAnswers = new ContractAnswers(
 					new GetBytecodeAnswer(validator()),
-					new GetContractInfoAnswer(validator())
+					new GetContractInfoAnswer(validator()),
+					new GetContractRecordsAnswer(validator())
 			);
 		}
 		return contractAnswers;
@@ -674,10 +728,8 @@ public class ServicesContext {
 			SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
 
 			fees = new UsageBasedFeeCalculator(
-					properties(),
 					exchange(),
 					usagePrices(),
-					globalDynamicProperties(),
 					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),
@@ -693,6 +745,7 @@ public class ServicesContext {
 							/* Smart Contract */
 							new GetBytecodeResourceUsage(contractFees),
 							new GetContractInfoResourceUsage(contractFees),
+							new GetContractRecordsResourceUsage(contractFees),
 							/* Token */
 							new GetTokenInfoResourceUsage()
 					),
@@ -794,10 +847,11 @@ public class ServicesContext {
 			var lookups = defaultAccountRetryingLookupsFor(
 					hfs(),
 					nodeLocalProperties(),
-					stats(),
 					this::accounts,
 					this::topics,
-					REF_LOOKUP_FACTORY.apply(tokenStore()));
+					REF_LOOKUP_FACTORY.apply(tokenStore()),
+					runningAvgs(),
+					speedometers());
 			lookupRetryingKeyOrder = keyOrderWith(lookups);
 		}
 		return lookupRetryingKeyOrder;
@@ -1043,14 +1097,11 @@ public class ServicesContext {
 
 	public AccountRecordsHistorian recordsHistorian() {
 		if (recordsHistorian == null) {
-			recordsHistorian = new FeeChargingRecordsHistorian(
+			recordsHistorian = new TxnAwareRecordsHistorian(
 					recordCache(),
-					fees(),
 					txnCtx(),
-					charging(),
 					this::accounts,
-					expiries(),
-					globalDynamicProperties());
+					expiries());
 		}
 		return recordsHistorian;
 	}
@@ -1146,7 +1197,7 @@ public class ServicesContext {
 
 	public ExpiringCreations creator() {
 		if (creator == null) {
-			creator = new ExpiringCreations(expiries(), properties(), globalDynamicProperties());
+			creator = new ExpiringCreations(expiries(), globalDynamicProperties());
 			creator.setRecordCache(recordCache());
 		}
 		return creator;
@@ -1198,7 +1249,7 @@ public class ServicesContext {
 		if (recordStream == null) {
 			recordStream = new RecordStream(
 					platform,
-					stats(),
+					runningAvgs(),
 					nodeAccount(),
 					properties().getStringProperty("hedera.recordStream.logDir"),
 					properties());
@@ -1278,20 +1329,20 @@ public class ServicesContext {
 			contractsGrpc = new SmartContractServiceImpl(
 					txns(),
 					contracts(),
-					stats(),
 					usagePrices(),
 					exchange(),
 					nodeType(),
 					submissionManager(),
 					contractAnswers(),
-					queryResponseHelper());
+					queryResponseHelper(),
+					opCounters());
 		}
 		return contractsGrpc;
 	}
 
 	public PlatformSubmissionManager submissionManager() {
 		if (submissionManager == null) {
-			submissionManager = new PlatformSubmissionManager(platform(), recordCache(), stats());
+			submissionManager = new PlatformSubmissionManager(platform(), recordCache(), speedometers());
 		}
 		return submissionManager;
 	}
@@ -1459,19 +1510,11 @@ public class ServicesContext {
 					queryFeeCheck(),
 					bucketThrottling(),
 					accountNums(),
-					stats(),
 					systemOpPolicies(),
 					exemptions(),
 					platformStatus());
 		}
 		return txns;
-	}
-
-	public HederaNodeStats stats() {
-		if (stats == null) {
-			stats = new HederaNodeStats(platform(), id().getId(), ServicesMain.log);
-		}
-		return stats;
 	}
 
 	public Console console() {

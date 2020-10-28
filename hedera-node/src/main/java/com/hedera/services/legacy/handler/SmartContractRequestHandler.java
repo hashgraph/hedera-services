@@ -254,7 +254,6 @@ public class SmartContractRequestHandler {
 					sbhInTinybars,
 					true);
 		} catch (Exception e) {
-			e.printStackTrace();
 			result = getFailureTransactionRecord(transaction, consensusTime, CONTRACT_EXECUTION_EXCEPTION);
 		}
 		if (result.getReceipt().getStatus() == SUCCESS) {
@@ -417,9 +416,7 @@ public class SmartContractRequestHandler {
 				.memo(parentAccount.getMemo())
 				.expiry(parentAccount.getExpiry())
 				.autoRenewPeriod(parentAccount.getAutoRenewSecs())
-				.proxy(parentAccount.getProxy())
-				.fundsSentRecordThreshold(parentAccount.getSenderThreshold())
-				.fundsReceivedRecordThreshold(parentAccount.getReceiverThreshold());
+				.proxy(parentAccount.getProxy());
 		for (ContractID child : children) {
 			ledger.customize(asAccount(child), customizer);
 		}
@@ -507,7 +504,6 @@ public class SmartContractRequestHandler {
 						record.getContractCallResult().getCreatedContractIDsList());
 				return record;
 			} catch (Exception e) {
-				e.printStackTrace();
 				return getFailureTransactionRecord(transaction, consensusTime, CONTRACT_EXECUTION_EXCEPTION);
 			}
 		} else {

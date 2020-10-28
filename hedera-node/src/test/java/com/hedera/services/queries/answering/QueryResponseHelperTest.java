@@ -20,12 +20,11 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.AnswerService;
+import com.hedera.services.stats.HapiOpCounters;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,13 +32,13 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
 
 @RunWith(JUnitPlatform.class)
 class QueryResponseHelperTest {
@@ -50,7 +49,7 @@ class QueryResponseHelperTest {
 
 	AnswerFlow answerFlow;
 	AnswerService answer;
-	HederaNodeStats stats;
+	HapiOpCounters opCounters;
 	StreamObserver<Response> observer;
 
 	QueryResponseHelper subject;
@@ -58,165 +57,50 @@ class QueryResponseHelperTest {
 	@BeforeEach
 	private void setup() {
 		answerFlow = mock(AnswerFlow.class);
-		stats = mock(HederaNodeStats.class);
+		opCounters = mock(HapiOpCounters.class);
 		answer = mock(AnswerService.class);
 		observer = mock(StreamObserver.class);
 		okResponse = mock(Response.class);
 		notOkResponse = mock(Response.class);
 
-		subject = new QueryResponseHelper(answerFlow, stats);
+		subject = new QueryResponseHelper(answerFlow, opCounters);
 	}
 
 	@Test
-	public void helpsWithFileHappyPath() {
+	public void helpsWithAnswerHappyPath() {
 		// setup:
-		InOrder inOrder = inOrder(answerFlow, stats, observer);
+		InOrder inOrder = inOrder(answerFlow, opCounters, observer);
 
 		given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
 		given(answer.extractValidityFrom(okResponse)).willReturn(OK);
 
 		// when:
-		subject.respondToFile(query, observer, answer, metric);
+		subject.answer(query, observer, answer, TokenGetInfo);
 
 		// then:
-		inOrder.verify(stats).fileQueryReceived(metric);
+		inOrder.verify(opCounters).countReceived(TokenGetInfo);
 		inOrder.verify(answerFlow).satisfyUsing(answer, query);
 		inOrder.verify(observer).onNext(okResponse);
 		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).fileQuerySubmitted(metric);
+		inOrder.verify(opCounters).countAnswered(TokenGetInfo);
 	}
 
 	@Test
-	public void helpsWithContractHappyPath() {
+	public void helpsWithAnswerUnhappyPath() {
 		// setup:
-		InOrder inOrder = inOrder(answerFlow, stats, observer);
-
-		given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
-		given(answer.extractValidityFrom(okResponse)).willReturn(OK);
-
-		// when:
-		subject.respondToContract(query, observer, answer, metric);
-
-		// then:
-		inOrder.verify(stats).smartContractQueryReceived(metric);
-		inOrder.verify(answerFlow).satisfyUsing(answer, query);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).smartContractQuerySubmitted(metric);
-	}
-
-	@Test
-	public void helpsWithCryptoHappyPath() {
-		// setup:
-		InOrder inOrder = inOrder(answerFlow, stats, observer);
-
-		given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
-		given(answer.extractValidityFrom(okResponse)).willReturn(OK);
-
-		// when:
-		subject.respondToCrypto(query, observer, answer, metric);
-
-		// then:
-		inOrder.verify(stats).cryptoQueryReceived(metric);
-		inOrder.verify(answerFlow).satisfyUsing(answer, query);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).cryptoQuerySubmitted(metric);
-	}
-
-	@Test
-	public void helpsWithHcsHappyPath() {
-		// setup:
-		InOrder inOrder = inOrder(answerFlow, stats, observer);
-
-		given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
-		given(answer.extractValidityFrom(okResponse)).willReturn(OK);
-
-		// when:
-		subject.respondToHcs(query, observer, answer, metric);
-
-		// then:
-		inOrder.verify(stats).hcsQueryReceived(metric);
-		inOrder.verify(answerFlow).satisfyUsing(answer, query);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).hcsQueryAnswered(metric);
-	}
-
-	@Test
-	public void helpsWithUnhappyPath() {
-		// setup:
-		InOrder inOrder = inOrder(answerFlow, stats, observer);
+		InOrder inOrder = inOrder(answerFlow, opCounters, observer);
 
 		given(answerFlow.satisfyUsing(answer, query)).willReturn(notOkResponse);
 		given(answer.extractValidityFrom(okResponse)).willReturn(INVALID_TRANSACTION_START);
 
 		// when:
-		subject.respondToCrypto(query, observer, answer, metric);
+		subject.answer(query, observer, answer, TokenGetInfo);
 
 		// then:
-		inOrder.verify(stats).cryptoQueryReceived(metric);
+		inOrder.verify(opCounters).countReceived(TokenGetInfo);
 		inOrder.verify(answerFlow).satisfyUsing(answer, query);
 		inOrder.verify(observer).onNext(notOkResponse);
 		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats, never()).cryptoQuerySubmitted(metric);
-	}
-
-	@Test
-	public void helpsWithExceptionalPath() {
-		// setup:
-		InOrder inOrder = inOrder(answerFlow, stats, observer, answer);
-
-		given(answerFlow.satisfyUsing(answer, query)).willThrow(IllegalStateException.class);
-		given(answer.responseGiven(query, StateView.EMPTY_VIEW, FAIL_INVALID, 0L)).willReturn(notOkResponse);
-
-		// when:
-		subject.respondToCrypto(query, observer, answer, metric);
-
-		// then:
-		inOrder.verify(stats).cryptoQueryReceived(metric);
-		inOrder.verify(answerFlow).satisfyUsing(answer, query);
-		inOrder.verify(answer).responseGiven(query, StateView.EMPTY_VIEW, FAIL_INVALID, 0L);
-		inOrder.verify(observer).onNext(notOkResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats, never()).cryptoQuerySubmitted(metric);
-	}
-
-	@Test
-	public void helpsWithNetworkHappyPath() {
-		// setup:
-		InOrder inOrder = inOrder(answerFlow, stats, observer);
-
-		given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
-		given(answer.extractValidityFrom(okResponse)).willReturn(OK);
-
-		// when:
-		subject.respondToNetwork(query, observer, answer, metric);
-
-		// then:
-		inOrder.verify(stats).networkQueryReceived(metric);
-		inOrder.verify(answerFlow).satisfyUsing(answer, query);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).networkQueryAnswered(metric);
-	}
-
-	@Test
-	public void helpsWithTokenHappyPath() {
-		// setup:
-		InOrder inOrder = inOrder(answerFlow, stats, observer);
-
-		given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
-		given(answer.extractValidityFrom(okResponse)).willReturn(OK);
-
-		// when:
-		subject.respondToToken(query, observer, answer, metric);
-
-		// then:
-		inOrder.verify(stats).tokenQueryReceived(metric);
-		inOrder.verify(answerFlow).satisfyUsing(answer, query);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).tokenQueryAnswered(metric);
+		inOrder.verify(opCounters, never()).countAnswered(TokenGetInfo);
 	}
 }

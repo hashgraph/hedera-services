@@ -59,8 +59,6 @@ class MerkleAccountStateTest {
 	long expiry = 1_234_567L;
 	long balance = 555_555L;
 	long autoRenewSecs = 234_567L;
-	long senderThreshold = 1_234L;
-	long receiverThreshold = 4_321L;
 	String memo = "A memo";
 	boolean deleted = true;
 	boolean smartContract = true;
@@ -71,8 +69,6 @@ class MerkleAccountStateTest {
 	long otherExpiry = 7_234_567L;
 	long otherBalance = 666_666L;
 	long otherAutoRenewSecs = 432_765L;
-	long otherSenderThreshold = 4_321L;
-	long otherReceiverThreshold = 1_234L;
 	String otherMemo = "Another memo";
 	boolean otherDeleted = false;
 	boolean otherSmartContract = false;
@@ -95,13 +91,13 @@ class MerkleAccountStateTest {
 
 		release070Subject = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
 		subject = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
@@ -123,8 +119,6 @@ class MerkleAccountStateTest {
 						"expiry=" + expiry + ", " +
 						"balance=" + balance + ", " +
 						"autoRenewSecs=" + autoRenewSecs + ", " +
-						"senderThreshold=" + senderThreshold + ", " +
-						"receiverThreshold=" + receiverThreshold + ", " +
 						"memo=" + memo + ", " +
 						"deleted=" + deleted + ", " +
 						"smartContract=" + smartContract + ", " +
@@ -144,9 +138,7 @@ class MerkleAccountStateTest {
 		given(in.readLong())
 				.willReturn(expiry)
 				.willReturn(balance)
-				.willReturn(autoRenewSecs)
-				.willReturn(senderThreshold)
-				.willReturn(receiverThreshold);
+				.willReturn(autoRenewSecs);
 		given(in.readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE))
 				.willThrow(IllegalStateException.class);
 		given(in.readNormalisedString(anyInt())).willReturn(memo);
@@ -174,9 +166,7 @@ class MerkleAccountStateTest {
 		given(in.readLong())
 				.willReturn(expiry)
 				.willReturn(balance)
-				.willReturn(autoRenewSecs)
-				.willReturn(senderThreshold)
-				.willReturn(receiverThreshold);
+				.willReturn(autoRenewSecs);
 		given(in.readNormalisedString(anyInt())).willReturn(memo);
 		given(in.readBoolean())
 				.willReturn(deleted)
@@ -185,12 +175,40 @@ class MerkleAccountStateTest {
 		given(serdes.readNullableSerializable(in)).willReturn(proxy);
 
 		// when:
-		newSubject.deserialize(in, MerkleAccountState.RELEASE_080_VERSION);
+		newSubject.deserialize(in, MerkleAccountState.RELEASE_08x_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);
 		// and:
 		verify(in).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
+	}
+
+	@Test
+	public void release090AlphaDeserializeWorks() throws IOException {
+		// setup:
+		var in = mock(SerializableDataInputStream.class);
+		// and:
+		var newSubject = new MerkleAccountState();
+
+		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		given(in.readLong())
+				.willReturn(expiry)
+				.willReturn(balance)
+				.willReturn(autoRenewSecs);
+		given(in.readNormalisedString(anyInt())).willReturn(memo);
+		given(in.readBoolean())
+				.willReturn(deleted)
+				.willReturn(smartContract)
+				.willReturn(receiverSigRequired);
+		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+
+		// when:
+		newSubject.deserialize(in, MerkleAccountState.RELEASE_090_ALPHA_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
+		// and:
+		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
 	}
 
 	@Test
@@ -204,9 +222,7 @@ class MerkleAccountStateTest {
 		given(in.readLong())
 				.willReturn(expiry)
 				.willReturn(balance)
-				.willReturn(autoRenewSecs)
-				.willReturn(senderThreshold)
-				.willReturn(receiverThreshold);
+				.willReturn(autoRenewSecs);
 		given(in.readNormalisedString(anyInt())).willReturn(memo);
 		given(in.readBoolean())
 				.willReturn(deleted)
@@ -221,6 +237,7 @@ class MerkleAccountStateTest {
 		assertEquals(subject, newSubject);
 		// and:
 		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
+		verify(in, times(3)).readLong();
 	}
 
 	@Test
@@ -238,8 +255,6 @@ class MerkleAccountStateTest {
 		inOrder.verify(out).writeLong(expiry);
 		inOrder.verify(out).writeLong(balance);
 		inOrder.verify(out).writeLong(autoRenewSecs);
-		inOrder.verify(out).writeLong(senderThreshold);
-		inOrder.verify(out).writeLong(receiverThreshold);
 		inOrder.verify(out).writeNormalisedString(memo);
 		inOrder.verify(out, times(3)).writeBoolean(true);
 		inOrder.verify(serdes).writeNullableSerializable(proxy, out);
@@ -270,7 +285,7 @@ class MerkleAccountStateTest {
 		// given:
 		otherSubject = new MerkleAccountState(
 				otherKey,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
@@ -284,7 +299,7 @@ class MerkleAccountStateTest {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
-				otherExpiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				otherExpiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
@@ -298,7 +313,7 @@ class MerkleAccountStateTest {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
-				expiry, otherBalance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, otherBalance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
@@ -312,35 +327,7 @@ class MerkleAccountStateTest {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
-				expiry, balance, otherAutoRenewSecs, senderThreshold, receiverThreshold,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy);
-
-		// expect:
-		assertNotEquals(subject, otherSubject);
-	}
-
-	@Test
-	public void equalsWorksForSenderThreshold() {
-		// given:
-		otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs, otherSenderThreshold, receiverThreshold,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy);
-
-		// expect:
-		assertNotEquals(subject, otherSubject);
-	}
-
-	@Test
-	public void equalsWorksForReceiverThreshold() {
-		// given:
-		otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs, senderThreshold, otherReceiverThreshold,
+				expiry, balance, otherAutoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
@@ -354,7 +341,7 @@ class MerkleAccountStateTest {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				otherMemo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
@@ -368,7 +355,7 @@ class MerkleAccountStateTest {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				otherDeleted, smartContract, receiverSigRequired,
 				proxy);
@@ -382,7 +369,7 @@ class MerkleAccountStateTest {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, otherSmartContract, receiverSigRequired,
 				proxy);
@@ -396,7 +383,7 @@ class MerkleAccountStateTest {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, otherReceiverSigRequired,
 				proxy);
@@ -410,7 +397,7 @@ class MerkleAccountStateTest {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				otherProxy);
@@ -434,14 +421,14 @@ class MerkleAccountStateTest {
 		// and:
 		var identicalSubject = new MerkleAccountState(
 				key,
-				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
+				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
 		// and:
 		otherSubject = new MerkleAccountState(
 				otherKey,
-				otherExpiry, otherBalance, otherAutoRenewSecs, otherSenderThreshold, otherReceiverThreshold,
+				otherExpiry, otherBalance, otherAutoRenewSecs,
 				otherMemo,
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
 				otherProxy);

@@ -23,12 +23,23 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.file.FileAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import io.grpc.stub.StreamObserver;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 
 public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	private final FileAnswers fileAnswers;
@@ -41,8 +52,6 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	public static final String CREATE_FILE_METRIC = "createFile";
 	public static final String DELETE_FILE_METRIC = "deleteFile";
 	public static final String FILE_APPEND_METRIC = "appendContent";
-	public static final String FILE_SYSDEL_METRIC = "fileSystemDelete";
-	public static final String FILE_SYSUNDEL_METRIC = "fileSystemUndelete";
 
 	public FileController(
 			FileAnswers fileAnswers,
@@ -56,41 +65,41 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 
 	@Override
 	public void updateFile(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, UPDATE_FILE_METRIC);
+		txnHelper.submit(signedTxn, observer, FileUpdate);
 	}
 
 	@Override
 	public void createFile(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, CREATE_FILE_METRIC);
+		txnHelper.submit(signedTxn, observer, FileCreate);
 	}
 
 	@Override
 	public void deleteFile(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, DELETE_FILE_METRIC);
+		txnHelper.submit(signedTxn, observer, FileDelete);
 	}
 
 	@Override
 	public void appendContent(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, FILE_APPEND_METRIC);
+		txnHelper.submit(signedTxn, observer, FileAppend);
 	}
 
 	@Override
 	public void systemDelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, FILE_SYSDEL_METRIC);
+		txnHelper.submit(signedTxn, observer, SystemDelete);
 	}
 
 	@Override
 	public void systemUndelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, FILE_SYSUNDEL_METRIC);
+		txnHelper.submit(signedTxn, observer, SystemUndelete);
 	}
 
 	@Override
 	public void getFileInfo(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToFile(query, observer, fileAnswers.fileInfo(), GET_FILE_INFO_METRIC);
+		queryHelper.answer(query, observer, fileAnswers.fileInfo(), FileGetInfo);
 	}
 
 	@Override
 	public void getFileContent(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToFile(query, observer, fileAnswers.fileContents(), GET_FILE_CONTENT_METRIC);
+		queryHelper.answer(query, observer, fileAnswers.fileContents(), FileGetContents);
 	}
 }

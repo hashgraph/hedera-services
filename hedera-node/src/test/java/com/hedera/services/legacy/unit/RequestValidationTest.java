@@ -96,7 +96,6 @@ public class RequestValidationTest {
                 null,
                 null,
                 new MockAccountNumbers(),
-                null,
                 policies,
                 new StandardExemptions(new MockAccountNumbers(), policies),
                 platformStatus);

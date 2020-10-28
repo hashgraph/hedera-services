@@ -46,15 +46,19 @@ public class TokenTransactUsage extends TokenTxnUsage<TokenTransactUsage> {
 	public FeeData get() {
 		var op = this.op.getTokenTransfers();
 
-		int xfers = 0;
+		int hbarXfers = op.getHbarTransfers().getAccountAmountsCount();
+		int tokenXfers = 0;
 		long xferBytes = 0;
 		for (TokenTransferList transfer : op.getTokenTransfersList()) {
 			xferBytes += BASIC_ENTITY_ID_SIZE;
-			xfers += transfer.getTransfersCount();
+			tokenXfers += transfer.getTransfersCount();
 		}
-		xferBytes += xfers * usageProperties.accountAmountBytes();
+		xferBytes += (hbarXfers + tokenXfers) * usageProperties.accountAmountBytes();
 		usageEstimator.addBpt(xferBytes);
-		addTokenTransfersRecordRb(op.getTokenTransfersCount(), xfers);
+		if (hbarXfers > 0) {
+			addRecordRb(hbarXfers * usageProperties.accountAmountBytes());
+		}
+		addTokenTransfersRecordRb(op.getTokenTransfersCount(), tokenXfers);
 
 		return usageEstimator.get();
 	}

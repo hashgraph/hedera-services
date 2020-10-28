@@ -61,8 +61,6 @@ public class ExportExistingAccounts {
 					cryptoAccount.put("proxyRealmNum", 0);
 					cryptoAccount.put("proxyShardNum", 0);
 				}
-				cryptoAccount.put("sendRecordThreshold", mapValue.getSenderThreshold());
-				cryptoAccount.put("receiveRecordThreshold", mapValue.getReceiverThreshold());
 				cryptoAccount.put("receiverSigRequired", mapValue.isReceiverSigRequired());
 				cryptoAccount.put("autoRenewPeriod", mapValue.getAutoRenewSecs());
 				cryptoAccount.put("shardID", currKey.getShard());

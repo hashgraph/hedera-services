@@ -70,6 +70,7 @@ class GetAccountRecordsAnswerTest {
 	GetAccountRecordsAnswer subject;
 
 	PropertySource propertySource;
+
 	@BeforeEach
 	private void setup() throws Throwable {
 		payerAccount = MerkleAccountFactory.newAccount()

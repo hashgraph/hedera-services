@@ -89,7 +89,7 @@
   <repositories>
     <repository>
       <id>comswirlds-staging</id>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1011/</url>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1033/</url>
     </repository>
   </repositories>
 

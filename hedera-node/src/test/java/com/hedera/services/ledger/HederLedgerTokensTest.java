@@ -84,6 +84,14 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
+	public void ignoresNonZeroBalanceOfDeletedToken() {
+		given(frozenToken.isDeleted()).willReturn(true);
+		
+		// expect:
+		assertTrue(subject.allTokenBalancesVanish(misc));
+	}
+
+	@Test
 	public void throwsIfSubjectHasNoUsableTokenRelsLedger() {
 		subject.setTokenRelsLedger(HederaLedger.UNUSABLE_TOKEN_RELS_LEDGER);
 

@@ -26,7 +26,6 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
-import com.hedera.services.utils.TimerUtils;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
@@ -144,6 +143,7 @@ public class ServicesMain implements SwirldMain {
 
 	private void contextDrivenInit() {
 		registerIssListener();
+		log.info("Platform callbacks registered.");
 		checkPropertySources();
 		log.info("Property sources are available.");
 		configurePlatform();
@@ -168,10 +168,10 @@ public class ServicesMain implements SwirldMain {
 		log.info("Record expiration reviewed.");
 		loadFeeSchedule();
 		log.info("Fee schedule loaded.");
+		initializeStats();
+		log.info("Stats initialized.");
 
 		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
-
-		startTimerTasksIfNeeded();
 	}
 
 	private void startRecordStreamThread() {
@@ -256,6 +256,10 @@ public class ServicesMain implements SwirldMain {
 		ctx.fees().init();
 	}
 
+	private void initializeStats() {
+		ctx.statsManager().initializeFor(ctx.platform());
+	}
+
 	private void checkPropertySources() {
 		ctx.propertySources().assertSourcesArePresent();
 	}
@@ -292,13 +296,5 @@ public class ServicesMain implements SwirldMain {
 
 	void registerIssListener() {
 		ctx.platform().addSignedStateListener(new IssListener(ctx.issEventInfo()));
-	}
-
-	private void startTimerTasksIfNeeded() {
-		if (ctx.properties().getBooleanProperty("timer.stats.dump.started")) {
-			TimerUtils.initStatsDumpTimers(ctx.stats());
-			TimerUtils.startStatsDumpTimer(ctx.properties().getIntProperty("timer.stats.dump.value"));
-			log.info("Stats Dump Timer Task started.");
-		}
 	}
 }

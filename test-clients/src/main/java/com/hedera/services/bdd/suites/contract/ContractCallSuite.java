@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,32 +33,18 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
-import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.*;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.*;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -68,8 +53,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractCallSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
@@ -148,7 +143,6 @@ public class ContractCallSuite extends HapiApiSuite {
 								.adminKey("initialAdminKey")
 								.memo(INITIAL_MEMO)
 								.bytecode("bytecode"),
-						sleepFor(3_000),
 						getContractInfo("contract")
 								.payingWith("payer")
 								.logged()
@@ -173,7 +167,6 @@ public class ContractCallSuite extends HapiApiSuite {
 								.payingWith("payer")
 								.newExpiryTime(newExpiry)
 								.newMemo(NEW_MEMO),
-						sleepFor(3_000),
 						getContractInfo("contract")
 								.payingWith("payer")
 								.logged()
@@ -184,7 +177,6 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractUpdate("contract")
 								.payingWith("payer")
 								.newMemo(BETTER_MEMO),
-						sleepFor(3_000),
 						getContractInfo("contract")
 								.payingWith("payer")
 								.logged()
@@ -195,7 +187,6 @@ public class ContractCallSuite extends HapiApiSuite {
 								.payingWith("payer")
 								.signedBy("payer")
 								.newExpiryTime(betterExpiry),
-						sleepFor(3_000),
 						getContractInfo("contract")
 								.payingWith("payer")
 								.logged()
@@ -258,8 +249,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("DepositSuccess")
 				.given(
 						fileCreate("payableBytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
-						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD),
-						sleepFor(3_000L)
+						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
 				)
 				.when()
 				.then(
@@ -313,7 +303,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						fileCreate("parentDelegateBytecode").path(PATH_TO_DELEGATING_CONTRACT_BYTECODE),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD),
-						sleepFor(3_000L),
 						getContractInfo("parentDelegate").saveToRegistry("parentInfo")
 				).when(
 						contractCall("parentDelegate", CREATE_CHILD_ABI).via("createChildTxn"),
@@ -346,7 +335,6 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						fileCreate("simpleStorageBytecode").path(PATH_TO_SIMPLE_STORAGE_BYTECODE),
 						contractCreate("simpleStorage").bytecode("simpleStorageBytecode").adminKey(THRESHOLD),
-						sleepFor(3_000L),
 						getContractInfo("simpleStorage").saveToRegistry("simpleStorageInfo")
 				).when().then(
 						contractCall("simpleStorage", CREATE_CHILD_ABI).via("simpleStorageTxn")

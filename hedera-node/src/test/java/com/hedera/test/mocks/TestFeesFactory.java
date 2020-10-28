@@ -107,10 +107,8 @@ public enum TestFeesFactory {
 				new HashMap<>());
 
 		return new UsageBasedFeeCalculator(
-				properties,
 				exchange,
 				TEST_USAGE_PRICES,
-				new MockGlobalDynamicProps(),
 				List.of(
 						/* Meta */
 						new GetTxnRecordResourceUsage(recordCache, answerFunctions, cryptoFees),

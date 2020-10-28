@@ -52,36 +52,33 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	public static EnumSet<TxnFeeType> NODE_FEE = EnumSet.of(NODE);
 	public static EnumSet<TxnFeeType> NETWORK_FEE = EnumSet.of(NETWORK);
 	public static EnumSet<TxnFeeType> NETWORK_NODE_SERVICE_FEES = EnumSet.of(NETWORK, NODE, SERVICE);
-	public static EnumSet<TxnFeeType> CACHE_RECORD_FEE = EnumSet.of(CACHE_RECORD);
-	public static EnumSet<TxnFeeType> THRESHOLD_RECORD_FEE = EnumSet.of(THRESHOLD_RECORD);
 
 	private HederaLedger ledger;
-	private final FeeExemptions exemptions;
 
 	private final GlobalDynamicProperties properties;
 
 	AccountID node;
 	AccountID funding;
 	AccountID submittingNode;
-	Set<AccountID> thresholdFeePayers = new HashSet<>();
 	EnumMap<TxnFeeType, Long> payerFeesCharged = new EnumMap<>(TxnFeeType.class);
 	EnumMap<TxnFeeType, Long> submittingNodeFeesCharged = new EnumMap<>(TxnFeeType.class);
 
 	public ItemizableFeeCharging(
+			HederaLedger ledger,
 			FeeExemptions exemptions,
 			GlobalDynamicProperties properties
 	) {
 		super(exemptions);
-		this.exemptions = exemptions;
+		this.ledger = ledger;
 		this.properties = properties;
+		setBalanceCheck((payer, amount) -> ledger.getBalance(payer) >= amount);
 	}
 
 	public void setLedger(HederaLedger ledger) {
 		this.ledger = ledger;
-		setBalanceCheck((payer, amount) -> ledger.getBalance(payer) >= amount);
 	}
 
-	public long totalNonThresholdFeesChargedToPayer() {
+	public long totalFeesChargedToPayer() {
 		return payerFeesCharged.values().stream().mapToLong(Long::longValue).sum();
 	}
 
@@ -93,10 +90,6 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 		return Optional.ofNullable(submittingNodeFeesCharged.get(fee)).orElse(0L);
 	}
 
-	public int numThresholdFeesCharged() {
-		return thresholdFeePayers.size();
-	}
-
 	public void resetFor(SignedTxnAccessor accessor, AccountID submittingNode) {
 		super.resetFor(accessor);
 
@@ -105,7 +98,6 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 		this.submittingNode = submittingNode;
 
 		payerFeesCharged.clear();
-		thresholdFeePayers.clear();
 		submittingNodeFeesCharged.clear();
 	}
 
@@ -120,15 +112,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	 *    <li>Received by funding, sent by the txn payer, for network operating costs.</li>
 	 *    <li>Received by the submitting node, sent by the txn payer, for handling costs.</li>
 	 *    <li>Received by funding, sent by the txn payer, for service costs.</li>
-	 *    <li>Sent by the txn payer, received by funding, for record caching costs.</li>
-	 *    <li>Received by funding, sent by an interested participant, for a threshold record.</li>
-	 *    <li><i>...[ordered by account numbers of interested participants]...</i></li>
-	 *    <li>Received by funding, sent by an interested participant, for a threshold record.</li>
 	 * </ol>
-	 *
-	 * <b>NOTE:</b> We reverse the order of {@link com.hederahashgraph.api.proto.java.AccountAmount}
-	 * entries when itemizing the record caching fee to distinguish it from the service fee or a
-	 * threshold record fee assessed to the txn payer.
 	 *
 	 * @return the itemized charges in canonical order
 	 */
@@ -143,14 +127,6 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 			includeIfCharged(NETWORK, payer, payerFeesCharged, fees);
 			includeIfCharged(NODE, payer, payerFeesCharged, fees);
 			includeIfCharged(SERVICE, payer, payerFeesCharged, fees);
-			includeIfCharged(CACHE_RECORD, payer, payerFeesCharged, fees);
-		}
-
-		if (!thresholdFeePayers.isEmpty()) {
-			long thresholdRecordFee = feeAmounts.get(THRESHOLD_RECORD);
-			thresholdFeePayers.stream()
-					.sorted(HederaLedger.ACCOUNT_ID_COMPARATOR)
-					.forEach(id -> fees.addAllAccountAmounts(receiverFirst(id, funding, thresholdRecordFee)));
 		}
 
 		return fees.build();
@@ -164,19 +140,12 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	) {
 		if (feesCharged.containsKey(fee)) {
 			AccountID receiver = (fee == NODE) ? node : funding;
-			if (fee == CACHE_RECORD) {
-				fees.addAllAccountAmounts(senderFirst(source, receiver, feesCharged.get(CACHE_RECORD)));
-			} else {
-				fees.addAllAccountAmounts(receiverFirst(source, receiver, feesCharged.get(fee)));
-			}
+			fees.addAllAccountAmounts(receiverFirst(source, receiver, feesCharged.get(fee)));
 		}
 	}
 
 	private List<AccountAmount> receiverFirst(AccountID payer, AccountID receiver, long amount) {
 		return itemized(payer, receiver, amount, true);
-	}
-	private List<AccountAmount> senderFirst(AccountID payer, AccountID receiver, long amount) {
-		return itemized(payer, receiver, amount, false);
 	}
 	private List<AccountAmount> itemized(AccountID payer, AccountID receiver, long amount, boolean isReceiverFirst) {
 		return List.of(
@@ -264,23 +233,17 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 			return true;
 		} else if (payer.equals(accessor.getPayer()) && isPayerExempt()) {
 			return true;
-		} else if (fee == THRESHOLD_RECORD && exemptions.isExemptFromRecordFees(payer)) {
-			return true;
 		} else {
 			return false;
 		}
 	}
 
 	private void updateRecords(AccountID source, TxnFeeType fee, long amount) {
-		if (fee == THRESHOLD_RECORD) {
-			thresholdFeePayers.add(source);
-		} else {
-			if (source.equals(accessor.getPayer())) {
-				payerFeesCharged.put(fee, amount);
-			}
-			if (source.equals(submittingNode)) {
-				submittingNodeFeesCharged.put(fee, amount);
-			}
+		if (source.equals(accessor.getPayer())) {
+			payerFeesCharged.put(fee, amount);
+		}
+		if (source.equals(submittingNode)) {
+			submittingNodeFeesCharged.put(fee, amount);
 		}
 	}
 }

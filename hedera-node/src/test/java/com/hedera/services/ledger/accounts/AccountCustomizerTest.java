@@ -76,13 +76,11 @@ public class AccountCustomizerTest {
 		Long id = 1L;
 		TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger = mock(TransactionalLedger.class);
 		// and:
-		long customFundsReceivedRecordThreshold = 9_876_543L;
 		String customMemo = "alpha bravo charlie";
 		boolean customIsReceiverSigRequired = true;
 
 		// when:
 		subject
-				.fundsReceivedRecordThreshold(customFundsReceivedRecordThreshold)
 				.isReceiverSigRequired(customIsReceiverSigRequired)
 				.memo(customMemo);
 		// and:
@@ -91,7 +89,6 @@ public class AccountCustomizerTest {
 		// then:
 		verify(ledger).set(id, OBJ, customMemo);
 		verify(ledger).set(id, FLAG, customIsReceiverSigRequired);
-		verify(ledger).set(id, LONG, customFundsReceivedRecordThreshold);
 	}
 
 	@Test
@@ -228,39 +225,5 @@ public class AccountCustomizerTest {
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(IS_RECEIVER_SIG_REQUIRED)::equals),
 				argThat(isSigRequired::equals));
-	}
-
-	@Test
-	public void changesExpectedSendThreshProperty() {
-		setupWithMockChangeManager();
-
-		// given:
-		Long thresh = 3L;
-
-		// when:
-		subject.fundsSentRecordThreshold(thresh);
-
-		// expect:
-		verify(changeManager).update(
-				any(EnumMap.class),
-				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(FUNDS_SENT_RECORD_THRESHOLD)::equals),
-				argThat(thresh::equals));
-	}
-
-	@Test
-	public void changesExpectedReceiveThreshProperty() {
-		setupWithMockChangeManager();
-
-		// given:
-		Long thresh = 3L;
-
-		// when:
-		subject.fundsReceivedRecordThreshold(thresh);
-
-		// expect:
-		verify(changeManager).update(
-				any(EnumMap.class),
-				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(FUNDS_RECEIVED_RECORD_THRESHOLD)::equals),
-				argThat(thresh::equals));
 	}
 }
