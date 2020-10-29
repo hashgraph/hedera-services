@@ -744,7 +744,7 @@ public class ServicesContext {
 							new GetTopicInfoResourceUsage(),
 							/* Smart Contract */
 							new GetBytecodeResourceUsage(contractFees),
-							new GetContractInfoResourceUsage(contractFees),
+							new GetContractInfoResourceUsage(),
 							new GetContractRecordsResourceUsage(contractFees),
 							/* Token */
 							new GetTokenInfoResourceUsage()

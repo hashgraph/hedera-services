@@ -25,6 +25,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +37,8 @@ class ContractEntitySizesTest {
 	@Test
 	public void knowsExpectedFixedBytes() {
 		// expect:
-		assertEquals(1 * BOOL_SIZE + 4 * LONG_SIZE, subject.fixedBytesInContractRepr());
+		assertEquals(
+				1 * BOOL_SIZE + 4 * LONG_SIZE + 2 * BASIC_ENTITY_ID_SIZE + 40,
+				subject.fixedBytesInContractRepr());
 	}
 }
