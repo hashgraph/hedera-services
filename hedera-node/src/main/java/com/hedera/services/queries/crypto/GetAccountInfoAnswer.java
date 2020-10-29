@@ -22,9 +22,7 @@ package com.hedera.services.queries.crypto;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.queries.AnswerService;
-import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,15 +35,14 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.Transaction;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -80,7 +77,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				MerkleAccount account = view.accounts().get(MerkleEntityId.fromAccountId(id));
+				MerkleAccount account = view.accounts().get(fromAccountId(id));
 				String solidityAddress = asSolidityAddressHex(id);
 				CryptoGetInfoResponse.AccountInfo.Builder info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 						.setKey(asKeyUnchecked(account.getKey()))
@@ -91,26 +88,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 						.setBalance(account.getBalance())
 						.setContractAccountID(solidityAddress)
 						.setReceiverSigRequired(account.isReceiverSigRequired());
-				List<TokenRelationship> relationships = new ArrayList<>();
-				var tokenIds = account.tokens().asIds();
-				for (TokenID tId : tokenIds) {
-					var optionalToken = view.tokenWith(tId);
-					if (optionalToken.isPresent()) {
-						var token = optionalToken.get();
-						if (!token.isDeleted()) {
-							var relKey = fromAccountTokenRel(id, tId);
-							var relationship = view.tokenAssociations().get().get(relKey);
-							relationships.add(new RawTokenRelationship(
-									relationship.getBalance(),
-									tId.getShardNum(),
-									tId.getRealmNum(),
-									tId.getTokenNum(),
-									relationship.isFrozen(),
-									relationship.isKycGranted()
-							).asGrpcFor(token));
-						}
-					}
-				}
+				List<TokenRelationship> relationships = StateView.tokenRels(view, id);
 				if (!relationships.isEmpty()) {
 					info.addAllTokenRelationships(relationships);
 				}

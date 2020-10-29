@@ -21,7 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -461,12 +461,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasTokenBalance("primary", 500),
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
-										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+										ExpectedTokenRel.relationshipWith("primary")
 												.balance(0)
 								),
 						getAccountInfo("newTokenTreasury")
 								.hasToken(
-										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+										ExpectedTokenRel.relationshipWith("primary")
 												.freeze(TokenFreezeStatus.Unfrozen)
 												.kyc(TokenKycStatus.Granted)
 												.balance(500)

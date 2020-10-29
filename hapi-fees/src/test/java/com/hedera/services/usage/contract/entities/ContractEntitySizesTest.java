@@ -1,4 +1,4 @@
-package com.hedera.services.usage.crypto.entities;
+package com.hedera.services.usage.contract.entities;
 
 /*-
  * ‌
@@ -28,24 +28,14 @@ import org.junit.runner.RunWith;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.*;
 
 @RunWith(JUnitPlatform.class)
-class CryptoEntitySizesTest {
-	CryptoEntitySizes subject = CRYPTO_ENTITY_SIZES;
+class ContractEntitySizesTest {
+	ContractEntitySizes subject = ContractEntitySizes.CONTRACT_ENTITY_SIZES;
 
 	@Test
 	public void knowsExpectedFixedBytes() {
 		// expect:
-		assertEquals(3 * BOOL_SIZE + 3 * LONG_SIZE, subject.fixedBytesInAccountRepr());
-	}
-
-	@Test
-	public void knowsTotalBytes() {
-		// when:
-		var actual = subject.bytesInTokenAssocRepr();
-
-		// then:
-		assertEquals(LONG_SIZE + 2 * BOOL_SIZE, actual);
+		assertEquals(1 * BOOL_SIZE + 4 * LONG_SIZE, subject.fixedBytesInContractRepr());
 	}
 }

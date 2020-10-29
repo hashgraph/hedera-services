@@ -22,6 +22,7 @@ package com.hedera.services.context.primitives;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
+import com.hedera.services.queries.crypto.GetAccountRecordsAnswer;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -30,7 +31,9 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.tokens.TokenStore;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -48,15 +51,21 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
@@ -70,6 +79,8 @@ import static java.util.Collections.unmodifiableMap;
 
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
+
+	static BiFunction<StateView, AccountID, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
 	private static final byte[] EMPTY_BYTES = new byte[0];
 	public static final JKey EMPTY_WACL = new JKeyList();
@@ -152,6 +163,31 @@ public class StateView {
 		contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
 		this.properties = properties;
 		this.diskFs = diskFs;
+	}
+
+	public static List<TokenRelationship> tokenRels(StateView view, AccountID id) {
+		var account = view.accounts().get(fromAccountId(id));
+		List<TokenRelationship> relationships = new ArrayList<>();
+		var tokenIds = account.tokens().asIds();
+		for (TokenID tId : tokenIds) {
+			var optionalToken = view.tokenWith(tId);
+			if (optionalToken.isPresent()) {
+				var token = optionalToken.get();
+				if (!token.isDeleted()) {
+					var relKey = fromAccountTokenRel(id, tId);
+					var relationship = view.tokenAssociations().get().get(relKey);
+					relationships.add(new RawTokenRelationship(
+							relationship.getBalance(),
+							tId.getShardNum(),
+							tId.getRealmNum(),
+							tId.getTokenNum(),
+							relationship.isFrozen(),
+							relationship.isKycGranted()
+					).asGrpcFor(token));
+				}
+			}
+		}
+		return relationships;
 	}
 
 	public Optional<JFileInfo> attrOf(FileID id) {
@@ -298,6 +334,7 @@ public class StateView {
 		var totalBytesUsed = storageSize + bytecodeSize;
 		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setAccountID(mirrorId)
+				.setDeleted(contract.isDeleted())
 				.setContractID(id)
 				.setMemo(contract.getMemo())
 				.setStorage(totalBytesUsed)
@@ -305,7 +342,10 @@ public class StateView {
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
 				.setContractAccountID(asSolidityAddressHex(mirrorId));
-
+		var tokenRels = tokenRelsFn.apply(this, mirrorId);
+		if (!tokenRels.isEmpty()) {
+			info.addAllTokenRelationships(tokenRels);
+		}
 
 		try {
 			var adminKey = JKey.mapJKey(contract.getKey());

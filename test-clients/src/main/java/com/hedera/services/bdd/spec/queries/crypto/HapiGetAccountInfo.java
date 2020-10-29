@@ -21,14 +21,10 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
-import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
@@ -36,7 +32,6 @@ import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
@@ -49,7 +44,6 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
@@ -106,38 +100,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 			List<Throwable> errors = asserts.errorsIn(actualInfo);
 			rethrowSummaryError(log, "Bad account info!", errors);
 		}
-		for (ExpectedTokenRel rel : relationships) {
-			var actualRels = response.getCryptoGetInfo().getAccountInfo().getTokenRelationshipsList();
-			boolean found = false;
-			var expectedId = spec.registry().getTokenID(rel.getToken());
-			for (TokenRelationship actualRel : actualRels) {
-				if (actualRel.getTokenId().equals(expectedId)) {
-					found = true;
-					rel.getBalance().ifPresent(a -> Assert.assertEquals(a, actualRel.getBalance()));
-					rel.getKycStatus().ifPresent(s -> Assert.assertEquals(s, actualRel.getKycStatus()));
-					rel.getFreezeStatus().ifPresent(s -> Assert.assertEquals(s, actualRel.getFreezeStatus()));
-				}
-			}
-			if (!found) {
-				Assert.fail(String.format(
-						"Account '%s' had no relationship with token '%s'!",
-						account,
-						rel.getToken()));
-			}
-		}
-		for (String unexpectedToken : absentRelationships) {
-			var actualRels = response.getCryptoGetInfo().getAccountInfo().getTokenRelationshipsList();
-			for (TokenRelationship actualRel : actualRels) {
-				var unexpectedId = spec.registry().getTokenID(unexpectedToken);
-				if (actualRel.getTokenId().equals(unexpectedId)) {
-					Assert.fail(String.format(
-							"Account '%s' should have had no relationship with token '%s'!",
-							account,
-							unexpectedToken));
-				}
-			}
-		}
+		var actualTokenRels = response.getCryptoGetInfo().getAccountInfo().getTokenRelationshipsList();
+		ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
+		ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
 	}
+
 
 	@Override
 	protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
@@ -180,50 +147,4 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return super.toStringHelper().add("account", account);
 	}
 
-	public static class ExpectedTokenRel {
-		private final String token;
-
-		private OptionalLong balance = OptionalLong.empty();
-		private Optional<TokenKycStatus> kycStatus = Optional.empty();
-		private Optional<TokenFreezeStatus> freezeStatus = Optional.empty();
-
-		private ExpectedTokenRel(String token) {
-			this.token = token;
-		}
-
-		public static ExpectedTokenRel relationshipWith(String token) {
-			return new ExpectedTokenRel(token);
-		}
-
-		public ExpectedTokenRel balance(long expected) {
-			balance = OptionalLong.of(expected);
-			return this;
-		}
-
-		public ExpectedTokenRel kyc(TokenKycStatus expected) {
-			kycStatus = Optional.of(expected);
-			return this;
-		}
-
-		public ExpectedTokenRel freeze(TokenFreezeStatus expected) {
-			freezeStatus = Optional.of(expected);
-			return this;
-		}
-
-		public String getToken() {
-			return token;
-		}
-
-		public OptionalLong getBalance() {
-			return balance;
-		}
-
-		public Optional<TokenKycStatus> getKycStatus() {
-			return kycStatus;
-		}
-
-		public Optional<TokenFreezeStatus> getFreezeStatus() {
-			return freezeStatus;
-		}
-	}
 }

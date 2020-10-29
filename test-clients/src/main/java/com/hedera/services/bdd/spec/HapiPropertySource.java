@@ -182,6 +182,9 @@ public interface HapiPropertySource {
 				.setContractNum(nativeParts[2])
 				.build();
 	}
+	static String asContractString(ContractID contract) {
+		return String.format("%d.%d.%d", contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
+	}
 
 	static SemanticVersion asSemVer(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);

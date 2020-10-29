@@ -31,11 +31,14 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
@@ -75,8 +78,66 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						treasuryAssociationIsAutomatic(),
 						associateHasExpectedSemantics(),
 						dissociateHasExpectedSemantics(),
+						accountInfoQueriesAsExpected(),
+						contractInfoQueriesAsExpected(),
 				}
 		);
+	}
+
+	public HapiApiSpec contractInfoQueriesAsExpected() {
+		return defaultHapiSpec("ContractInfoQueriesAsExpected")
+				.given(
+						newKeyNamed("simple"),
+						tokenCreate("a"),
+						tokenCreate("b"),
+						tokenCreate("c"),
+						tokenCreate("tbd").adminKey("simple"),
+						contractCreate("contract")
+				).when(
+						tokenAssociate("contract", "a", "b", "c", "tbd"),
+						getContractInfo("contract")
+								.hasToken(relationshipWith("a"))
+								.hasToken(relationshipWith("b"))
+								.hasToken(relationshipWith("c"))
+								.hasToken(relationshipWith("tbd")),
+						tokenDissociate("contract", "b"),
+						tokenDelete("tbd")
+				).then(
+						getContractInfo("contract")
+								.hasToken(relationshipWith("a"))
+								.hasNoTokenRelationship("b")
+								.hasToken(relationshipWith("c"))
+								.hasNoTokenRelationship("tbd")
+								.logged()
+				);
+	}
+
+	public HapiApiSpec accountInfoQueriesAsExpected() {
+		return defaultHapiSpec("InfoQueriesAsExpected")
+				.given(
+						newKeyNamed("simple"),
+						tokenCreate("a"),
+						tokenCreate("b"),
+						tokenCreate("c"),
+						tokenCreate("tbd").adminKey("simple"),
+						cryptoCreate("account")
+				).when(
+						tokenAssociate("account", "a", "b", "c", "tbd"),
+						getAccountInfo("account")
+								.hasToken(relationshipWith("a"))
+								.hasToken(relationshipWith("b"))
+								.hasToken(relationshipWith("c"))
+								.hasToken(relationshipWith("tbd")),
+						tokenDissociate("account", "b"),
+						tokenDelete("tbd")
+				).then(
+						getAccountInfo("account")
+								.hasToken(relationshipWith("a"))
+								.hasNoTokenRelationship("b")
+								.hasToken(relationshipWith("c"))
+								.hasNoTokenRelationship("tbd")
+								.logged()
+				);
 	}
 
 	public HapiApiSpec dissociateHasExpectedSemantics() {
@@ -131,7 +192,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of( "tokens.maxPerAccount", "" + 1 )),
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
 						tokenAssociate("misc", FREEZABLE_TOKEN_OFF_BY_DEFAULT)
 								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
