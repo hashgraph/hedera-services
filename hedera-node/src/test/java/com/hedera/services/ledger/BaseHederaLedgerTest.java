@@ -1,5 +1,25 @@
 package com.hedera.services.ledger;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -28,12 +48,9 @@ import java.util.Optional;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -113,11 +130,7 @@ public class BaseHederaLedgerTest {
 	}
 
 	protected void addPayerRecords(AccountID id, FCQueue<ExpirableTxnRecord> records) {
-		when(accountsLedger.get(id, PAYER_RECORDS)).thenReturn(records);
-	}
-
-	protected void addRecords(AccountID id, FCQueue<ExpirableTxnRecord> records) {
-		when(accountsLedger.get(id, HISTORY_RECORDS)).thenReturn(records);
+		when(accountsLedger.get(id, RECORDS)).thenReturn(records);
 	}
 
 	protected void addToLedger(
@@ -130,8 +143,6 @@ public class BaseHederaLedgerTest {
 		when(accountsLedger.get(id, BALANCE)).thenReturn(balance);
 		when(accountsLedger.get(id, IS_DELETED)).thenReturn(false);
 		when(accountsLedger.get(id, IS_SMART_CONTRACT)).thenReturn(false);
-		when(accountsLedger.get(id, FUNDS_SENT_RECORD_THRESHOLD)).thenReturn(1L);
-		when(accountsLedger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD)).thenReturn(2L);
 		when(accountsLedger.exists(id)).thenReturn(true);
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(tokenInfo.keySet());
@@ -190,6 +201,7 @@ public class BaseHederaLedgerTest {
 				.willReturn(frozenId);
 		given(tokenStore.resolve(tokenId))
 				.willReturn(tokenId);
+		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
 		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);

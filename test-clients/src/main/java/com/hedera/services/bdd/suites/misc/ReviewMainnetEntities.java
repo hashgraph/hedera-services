@@ -35,8 +35,23 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 public class ReviewMainnetEntities extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ReviewMainnetEntities.class);
@@ -52,8 +67,51 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 //						checkTls(),
 						xfer(),
 //						doSomething(),
+//						oneOfEveryTokenTxn(),
 				}
 		);
+	}
+
+	private HapiApiSpec oneOfEveryTokenTxn() {
+		String A_TOKEN = "mine";
+		String FIRST_USER = "somebody";
+
+		return customHapiSpec("DoSomethingDefault")
+				.withProperties(Map.of(
+						"nodes", "35.231.208.148",
+						"startupAccounts.path", "src/main/resource/Preview2StartupAccount.txt"
+				)).given(
+						newKeyNamed("firstAdminKey"),
+						newKeyNamed("secondAdminKey"),
+						newKeyNamed("kycKey"),
+						newKeyNamed("wipeKey"),
+						newKeyNamed("freezeKey"),
+						newKeyNamed("supplyKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(FIRST_USER)
+				).when(
+						tokenCreate(A_TOKEN)
+								.treasury(TOKEN_TREASURY)
+								.adminKey("firstAdminKey")
+								.freezeKey("freezeKey")
+								.freezeDefault(true)
+								.kycKey("kycKey")
+								.wipeKey("wipeKey")
+								.supplyKey("supplyKey"),
+						tokenAssociate(FIRST_USER, A_TOKEN),
+						tokenUnfreeze(A_TOKEN, FIRST_USER),
+						grantTokenKyc(A_TOKEN, FIRST_USER)
+				).then(
+						tokenUpdate(A_TOKEN).adminKey("secondAdminKey"),
+						tokenTransact(moving(10, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)),
+						wipeTokenAccount(A_TOKEN, FIRST_USER, 10),
+						mintToken(A_TOKEN, 10),
+						burnToken(A_TOKEN, 10),
+						tokenFreeze(A_TOKEN, FIRST_USER),
+						revokeTokenKyc(A_TOKEN, FIRST_USER),
+						tokenUnfreeze(A_TOKEN, FIRST_USER),
+						tokenDissociate(FIRST_USER, A_TOKEN)
+				);
 	}
 
 	private HapiApiSpec doSomething() {
@@ -65,7 +123,8 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 				+ "34.68.9.203:0.0.5,34.83.131.197:0.0.6";
 		final String DIRECT_NODES = "35.237.194.97:0.0.3,13.71.127.1:0.0.6,27.110.33.145:0.0.7,20.49.137.94:0.0.12," +
 				"35.245.226.22:0.0.4,34.72.55.137:0.0.5,35.203.26.115:0.0.8,34.77.3.213:0.0.9," + // Ubuntu
-				"35.197.237.44:0.0.10,35.246.250.176:0.0.11,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"; // CentOS
+				"35.197.237.44:0.0.10,35.246.250.176:0.0.11,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0" +
+				".15"; // CentOS
 		final String DIRECT_MAINNET = "50.28.79.14:0.0.3";
 
 		return customHapiSpec("xfer")
@@ -73,27 +132,26 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 						"nodes", DIRECT_MAINNET,
 						"default.payer", "0.0.950",
 						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
-				)).given( ).when().then(
+				)).given().when().then(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
 				);
 	}
 
 	private HapiApiSpec xfer() {
-//		final String NODES = "35.237.200.180:0.0.3";
-		final String NODES = "34.94.106.61:0.0.3";
+		final String MAINNET_NODES = "35.237.200.180:0.0.3";
 		final long ONE_HBAR = 100_000_000L;
 		return customHapiSpec("xfer")
 				.withProperties(Map.of(
-						"nodes", NODES,
-						"default.payer", "0.0.50",
-//						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
-						"startupAccounts.path", "src/main/resource/StableTestnetAccount50StartupAccount.txt"
+						"nodes", MAINNET_NODES,
+						"default.payer", "0.0.950",
+						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
+//						"startupAccounts.path", "src/main/resource/StableTestnetAccount50StartupAccount.txt"
 				)).given(
 				).when(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FEE_SCHEDULE_CONTROL, 100 * ONE_HBAR))
+//						cryptoTransfer(tinyBarsFromTo(GENESIS, FEE_SCHEDULE_CONTROL, 100 * ONE_HBAR))
 				).then(
-						getAccountBalance(GENESIS).logged(),
-						getAccountBalance("0.0.56").logged()
+						getAccountBalance("0.0.950").logged(),
+						getAccountBalance("0.0.45385").logged()
 				);
 	}
 

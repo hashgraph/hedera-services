@@ -47,22 +47,17 @@ import java.util.Set;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
-import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(JUnitPlatform.class)
 public class MerkleAccountPropertyTest {
@@ -118,8 +113,6 @@ public class MerkleAccountPropertyTest {
 		newPayerRecords.offer(expirableRecord(ResponseCodeEnum.INVALID_FILE_ID));
 		// and:
 		MerkleAccount account = new HederaAccountCustomizer()
-				.fundsReceivedRecordThreshold(origReceivedRecordThresh)
-				.fundsSentRecordThreshold(origSendRecordThresh)
 				.key(JKey.mapKey(origKey))
 				.expiry(origExpiry)
 				.proxy(EntityId.ofNullableAccountId(origProxy))
@@ -131,10 +124,8 @@ public class MerkleAccountPropertyTest {
 				.customizing(new MerkleAccount());
 		account.setTokens(origTokens);
 		account.setBalance(origBalance);
-		account.records().offer(origRecords.get(0));
-		account.records().offer(origRecords.get(1));
-		account.payerRecords().offer(origPayerRecords.get(0));
-		account.payerRecords().offer(origPayerRecords.get(1));
+		account.records().offer(origPayerRecords.get(0));
+		account.records().offer(origPayerRecords.get(1));
 		// and:
 		var unfrozenTokenId = IdUtils.tokenWith(123);
 		var frozenTokenId = IdUtils.tokenWith(321);
@@ -160,15 +151,12 @@ public class MerkleAccountPropertyTest {
 		IS_RECEIVER_SIG_REQUIRED.setter().accept(account, newIsReceiverSigReq);
 		IS_SMART_CONTRACT.setter().accept(account, newIsContract);
 		BALANCE.setter().accept(account, newBalance);
-		FUNDS_RECEIVED_RECORD_THRESHOLD.setter().accept(account, newReceivedRecordThresh);
-		FUNDS_SENT_RECORD_THRESHOLD.setter().accept(account, newSendRecordThresh);
 		AUTO_RENEW_PERIOD.setter().accept(account, newAutoRenew);
 		EXPIRY.setter().accept(account, newExpiry);
 		KEY.setter().accept(account, newKey);
 		MEMO.setter().accept(account, newMemo);
 		PROXY.setter().accept(account, newProxy);
-		HISTORY_RECORDS.setter().accept(account, newRecords);
-		PAYER_RECORDS.setter().accept(account, newPayerRecords);
+		RECORDS.setter().accept(account, newPayerRecords);
 		// and:
 		TOKENS.setter().accept(account, newTokens);
 
@@ -177,15 +165,12 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
 		assertEquals(newIsContract, IS_SMART_CONTRACT.getter().apply(account));
 		assertEquals(newBalance, BALANCE.getter().apply(account));
-		assertEquals(newReceivedRecordThresh, FUNDS_RECEIVED_RECORD_THRESHOLD.getter().apply(account));
-		assertEquals(newSendRecordThresh, FUNDS_SENT_RECORD_THRESHOLD.getter().apply(account));
 		assertEquals(newAutoRenew, AUTO_RENEW_PERIOD.getter().apply(account));
 		assertEquals(newExpiry, EXPIRY.getter().apply(account));
 		assertEquals(newKey, KEY.getter().apply(account));
 		assertEquals(newMemo, MEMO.getter().apply(account));
 		assertEquals(newProxy, PROXY.getter().apply(account));
-		assertEquals(newRecords, HISTORY_RECORDS.getter().apply(account));
-		assertEquals(newPayerRecords, PAYER_RECORDS.getter().apply(account));
+		assertEquals(newPayerRecords, RECORDS.getter().apply(account));
 		// and:
 		assertEquals(newTokens, TOKENS.getter().apply(account));
 	}

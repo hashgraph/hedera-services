@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
@@ -29,36 +28,18 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
-import java.util.function.Function;
-import java.util.function.ObjLongConsumer;
-import java.util.function.ToLongBiFunction;
-
 public class ExpiringCreations implements EntityCreator {
-	private TransactionRecord currentRecord = null;
-	private ExpirableTxnRecord currentExpirableRecord = null;
-
-	private HederaLedger ledger;
 	private RecordCache recordCache;
+	private HederaLedger ledger;
 	private final ExpiryManager expiries;
-	private final PropertySource properties;
 	private final GlobalDynamicProperties dynamicProperties;
-
-	private ObjLongConsumer<AccountID> payerTracker;
-	private ObjLongConsumer<AccountID> historicalTracker;
-	private ToLongBiFunction<AccountID, ExpirableTxnRecord> payerRecordFn;
-	private ToLongBiFunction<AccountID, ExpirableTxnRecord> historicalRecordFn;
 
 	public ExpiringCreations(
 			ExpiryManager expiries,
-			PropertySource properties,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.expiries = expiries;
-		this.properties = properties;
 		this.dynamicProperties = dynamicProperties;
-
-		payerTracker = this::trackPayerRecord;
-		historicalTracker = expiries::trackHistoricalRecord;
 	}
 
 	@Override
@@ -69,81 +50,33 @@ public class ExpiringCreations implements EntityCreator {
 	@Override
 	public void setLedger(HederaLedger ledger) {
 		this.ledger = ledger;
-		payerRecordFn = this::updatePayerRecord;
-		historicalRecordFn = ledger::addRecord;
-	}
-
-	private void trackPayerRecord(AccountID effectivePayer, long expiry) {
-		if (dynamicProperties.shouldCreatePayerRecords()) {
-			expiries.trackPayerRecord(effectivePayer, expiry);
-		}
-	}
-
-	private long updatePayerRecord(AccountID id, ExpirableTxnRecord record) {
-		if (dynamicProperties.shouldCreatePayerRecords()) {
-			return ledger.addPayerRecord(id, record);
-		} else {
-			recordCache.trackForExpiry(record);
-			return 0L;
-		}
 	}
 
 	@Override
-	public ExpirableTxnRecord createExpiringPayerRecord(
+	public ExpirableTxnRecord createExpiringRecord(
 			AccountID id,
 			TransactionRecord record,
 			long now,
 			long submittingMember
 	) {
-		return createExpiringRecord(
-				now + dynamicProperties.cacheRecordsTtl(),
-				submittingMember,
-				id,
-				record,
-				payerTracker,
-				payerRecordFn,
-				ExpirableTxnRecord::fromGprc);
-	}
+		var expiringRecord = ExpirableTxnRecord.fromGprc(record);
 
-	@Override
-	public void createExpiringHistoricalRecord(
-			AccountID id,
-			TransactionRecord record,
-			long now,
-			long submittingMember
-	) {
-		createExpiringRecord(
-				now + properties.getIntProperty("ledger.records.ttl"),
-				submittingMember,
-				id,
-				record,
-				historicalTracker,
-				historicalRecordFn,
-				this::expirableRecordWithReuse);
-	}
-
-	private ExpirableTxnRecord expirableRecordWithReuse(TransactionRecord record) {
-		if (record != currentRecord) {
-			currentExpirableRecord = ExpirableTxnRecord.fromGprc(record);
-			currentRecord = record;
-		}
-		return currentExpirableRecord;
-	}
-
-	private ExpirableTxnRecord createExpiringRecord(
-			long expiry,
-			long submittingMember,
-			AccountID id,
-			TransactionRecord record,
-			ObjLongConsumer<AccountID> tracker,
-			ToLongBiFunction<AccountID, ExpirableTxnRecord> adder,
-			Function<TransactionRecord, ExpirableTxnRecord> fromGrpc
-	) {
-		var expiringRecord = fromGrpc.apply(record);
+		long expiry = now + dynamicProperties.cacheRecordsTtl();
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);
-		adder.applyAsLong(id, expiringRecord);
-		tracker.accept(id, expiry);
+
+		manageRecord(id, expiringRecord);
+
 		return expiringRecord;
 	}
+
+	private void manageRecord(AccountID owner, ExpirableTxnRecord record) {
+		if (dynamicProperties.shouldKeepRecordsInState()) {
+			ledger.addRecord(owner, record);
+			expiries.trackRecord(owner, record.getExpiry());
+		} else {
+			recordCache.trackForExpiry(record);
+		}
+	}
+
 }

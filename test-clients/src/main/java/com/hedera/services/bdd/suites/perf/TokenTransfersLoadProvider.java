@@ -47,14 +47,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TokenTransfersLoadProvider extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenTransfersLoadProvider.class);
 
-	private AtomicLong duration = new AtomicLong(30);
-	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
+	private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
+	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
 	public static void main(String... args) {
@@ -72,7 +72,20 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 
 	private HapiApiSpec runTokenTransfers() {
 		return HapiApiSpec.defaultHapiSpec("RunTokenTransfers")
-				.given().when().then(
+				.given(
+						withOpContext((spec, opLog) -> {
+							var ciProps = spec.setup().ciPropertiesMap();
+							if (ciProps.has("duration")) {
+								duration.set(ciProps.getLong("duration"));
+							}
+							if (ciProps.has("unit")) {
+								unit.set(ciProps.getTimeUnit("unit"));
+							}
+							if (ciProps.has("maxOpsPerSec")) {
+								maxOpsPerSec.set(ciProps.getInteger("maxOpsPerSec"));
+							}
+						})
+				).when().then(
 						runWithProvider(tokenTransfersFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)

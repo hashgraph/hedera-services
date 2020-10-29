@@ -32,8 +32,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.grpc.controllers.FileController.*;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class FileControllerTest {
@@ -65,7 +74,7 @@ public class FileControllerTest {
 		subject.updateFile(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToFile(txn, txnObserver, UPDATE_FILE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, FileUpdate);
 	}
 
 	@Test
@@ -74,7 +83,7 @@ public class FileControllerTest {
 		subject.createFile(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToFile(txn, txnObserver, CREATE_FILE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, FileCreate);
 	}
 
 	@Test
@@ -83,7 +92,7 @@ public class FileControllerTest {
 		subject.deleteFile(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToFile(txn, txnObserver, DELETE_FILE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, FileDelete);
 	}
 
 	@Test
@@ -92,7 +101,7 @@ public class FileControllerTest {
 		subject.appendContent(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToFile(txn, txnObserver, FILE_APPEND_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, FileAppend);
 	}
 
 	@Test
@@ -101,7 +110,7 @@ public class FileControllerTest {
 		subject.systemDelete(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToFile(txn, txnObserver, FILE_SYSDEL_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, SystemDelete);
 	}
 
 	@Test
@@ -110,7 +119,7 @@ public class FileControllerTest {
 		subject.systemUndelete(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToFile(txn, txnObserver, FILE_SYSUNDEL_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, SystemUndelete);
 	}
 
 	@Test
@@ -120,7 +129,7 @@ public class FileControllerTest {
 
 		// expect:
 		verify(answers).fileInfo();
-		verify(queryResponseHelper).respondToFile(query, queryObserver, null, GET_FILE_INFO_METRIC);
+		verify(queryResponseHelper).answer(query, queryObserver, null, FileGetInfo);
 	}
 
 	@Test
@@ -130,6 +139,6 @@ public class FileControllerTest {
 
 		// expect:
 		verify(answers).fileContents();
-		verify(queryResponseHelper).respondToFile(query, queryObserver, null, GET_FILE_CONTENT_METRIC);
+		verify(queryResponseHelper).answer(query, queryObserver, null, FileGetContents);
 	}
 }

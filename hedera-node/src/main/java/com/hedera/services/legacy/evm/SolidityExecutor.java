@@ -102,7 +102,7 @@ public class SolidityExecutor {
 	private static final Logger logger = Logger.getLogger(SolidityExecutor.class);
 	private static final BlockStore NULL_BLOCK_STORE = null;
 
-	private final long thresholdRecordDurationSecs = PropertiesLoader.getThresholdTxRecordTTL();
+	private final long logStorageSecs = PropertiesLoader.getThresholdTxRecordTTL();
 	private final EthereumListener listener = new EthereumListenerAdapter();
 
 	private final long rbh;
@@ -285,7 +285,7 @@ public class SolidityExecutor {
 						rbh,
 						sbh,
 						PropertiesLoader.getDefaultContractDurationInSec(),
-						thresholdRecordDurationSecs).withCommonConfig(commonConfig);
+						logStorageSecs).withCommonConfig(commonConfig);
 			}
 		}
 		if (!localCall) {
@@ -348,7 +348,7 @@ public class SolidityExecutor {
 					rbh,
 					sbh,
 					PropertiesLoader.getDefaultContractDurationInSec(),
-					thresholdRecordDurationSecs).withCommonConfig(commonConfig);
+					logStorageSecs).withCommonConfig(commonConfig);
 		}
 		if (!localCall) {
 			transfer(trackingRepository, solidityTxn.getSender(), newContractAddress, toBI(solidityTxn.getValue()));
@@ -429,7 +429,6 @@ public class SolidityExecutor {
 				trackingRepository.commit();
 			}
 		} catch (Throwable e) {
-			e.printStackTrace();
 			if (e instanceof Program.OutOfGasException) {
 				BigInteger gasUpperBound = BigInteger.valueOf(PropertiesLoader.getMaxGasLimit());
 				BigInteger gasProvided = ByteUtil.bytesToBigInteger(solidityTxn.getGasLimit());

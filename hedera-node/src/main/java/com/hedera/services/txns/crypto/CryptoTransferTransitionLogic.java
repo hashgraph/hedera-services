@@ -28,7 +28,6 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -72,24 +71,30 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			var transfers = txnCtx.accessor().getTxn().getCryptoTransfer().getTransfers();
-			if (!hasOnlyCryptoAccounts(transfers)) {
-				txnCtx.setStatus(INVALID_ACCOUNT_ID);
-				return;
-			}
-			ledger.doTransfers(transfers);
-			txnCtx.setStatus(SUCCESS);
-		} catch (MissingAccountException mae) {
-			txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
-		} catch (DeletedAccountException aide) {
-			txnCtx.setStatus(ACCOUNT_DELETED);
-		} catch (InsufficientFundsException ife) {
-			txnCtx.setStatus(INSUFFICIENT_ACCOUNT_BALANCE);
+			var outcome = tryTransfers(ledger, transfers);
+			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
 
-	private boolean hasOnlyCryptoAccounts(TransferList transfers) {
+	public static ResponseCodeEnum tryTransfers(HederaLedger ledger, TransferList transfers) {
+		if (!hasOnlyCryptoAccounts(ledger, transfers)) {
+			return INVALID_ACCOUNT_ID;
+		}
+		try {
+			ledger.doTransfers(transfers);
+		} catch (MissingAccountException mae) {
+			return ACCOUNT_ID_DOES_NOT_EXIST;
+		} catch (DeletedAccountException aide) {
+			return ACCOUNT_DELETED;
+		} catch (InsufficientFundsException ife) {
+			return INSUFFICIENT_ACCOUNT_BALANCE;
+		}
+		return OK;
+	}
+
+	private static boolean hasOnlyCryptoAccounts(HederaLedger ledger, TransferList transfers) {
 		for (AccountAmount aa : transfers.getAccountAmountsList()) {
 			if (ledger.isSmartContract(aa.getAccountID())) {
 				return false;
@@ -109,19 +114,19 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	}
 
 	private ResponseCodeEnum validate(TransactionBody cryptoTransferTxn) {
-		CryptoTransferTransactionBody op = cryptoTransferTxn.getCryptoTransfer();
-		TransferList accountAmounts = op.getTransfers();
-		ResponseCodeEnum responseCode;
+		var op = cryptoTransferTxn.getCryptoTransfer();
+		return basicSyntaxChecks(op.getTransfers(), validator);
+	}
 
-		if (hasRepeatedAccount(accountAmounts)) {
-			responseCode = ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-		} else if (!isNetZeroAdjustment(accountAmounts)) {
-			responseCode = INVALID_ACCOUNT_AMOUNTS;
-		} else if (!validator.isAcceptableTransfersLength(accountAmounts)) {
-			responseCode = TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+	public static ResponseCodeEnum basicSyntaxChecks(TransferList transfers, OptionValidator validator) {
+		if (hasRepeatedAccount(transfers)) {
+			return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+		} else if (!isNetZeroAdjustment(transfers)) {
+			return INVALID_ACCOUNT_AMOUNTS;
+		} else if (!validator.isAcceptableTransfersLength(transfers)) {
+			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		} else {
-			responseCode = OK;
+			return OK;
 		}
-		return responseCode;
 	}
 }

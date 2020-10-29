@@ -214,8 +214,6 @@ class GetAccountInfoAnswerTest {
 		String address = Hex.toHexString(asSolidityAddress(0, 0L, 12_345L));
 		assertEquals(address, info.getContractAccountID());
 		assertEquals(payerAccount.getBalance(), info.getBalance());
-		assertEquals(payerAccount.getReceiverThreshold(), info.getGenerateReceiveRecordThreshold());
-		assertEquals(payerAccount.getSenderThreshold(), info.getGenerateSendRecordThreshold());
 		assertEquals(payerAccount.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
 		assertEquals(payerAccount.getProxy(), EntityId.ofNullableAccountId(info.getProxyAccountID()));
 		assertEquals(JKey.mapJKey(payerAccount.getKey()), info.getKey());

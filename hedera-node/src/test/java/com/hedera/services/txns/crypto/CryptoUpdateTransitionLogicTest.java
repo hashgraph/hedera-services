@@ -115,44 +115,6 @@ public class CryptoUpdateTransitionLogicTest {
 		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(AccountProperty.PROXY));
 	}
 
-	@Test
-	public void updatesReceiveThreshIfPresent() {
-		// setup:
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
-		givenValidTxnCtx(EnumSet.of(FUNDS_RECEIVED_RECORD_THRESHOLD));
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
-		verify(txnCtx).setStatus(SUCCESS);
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
-		assertEquals(1, changes.size());
-		assertEquals(receiveThresh, (long)changes.get(AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
-	}
-
-	@Test
-	public void updatesReceiveThreshIfNonnegativeLegacyPresent() {
-		// setup:
-		useLegacyFields = true;
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
-		givenValidTxnCtx(EnumSet.of(FUNDS_RECEIVED_RECORD_THRESHOLD));
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
-		verify(txnCtx).setStatus(SUCCESS);
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
-		assertEquals(1, changes.size());
-		assertEquals(receiveThresh, (long)changes.get(AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
-	}
 
 	@Test
 	public void updatesReceiverSigReqIfPresent() {
@@ -194,25 +156,6 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void updatesSendThreshIfPresent() {
-		// setup:
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
-		givenValidTxnCtx(EnumSet.of(FUNDS_SENT_RECORD_THRESHOLD));
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
-		verify(txnCtx).setStatus(SUCCESS);
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
-		assertEquals(1, changes.size());
-		assertEquals(sendThresh, (long)changes.get(AccountProperty.FUNDS_SENT_RECORD_THRESHOLD));
-	}
-
-	@Test
 	public void updatesExpiryIfPresent() {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
@@ -229,25 +172,6 @@ public class CryptoUpdateTransitionLogicTest {
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
 		assertEquals(expiry, (long)changes.get(AccountProperty.EXPIRY));
-	}
-
-	@Test
-	public void updatesSendThreshIfNonnegativeLegacyPresent() {
-		// setup:
-		useLegacyFields = true;
-		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
-		givenValidTxnCtx(EnumSet.of(FUNDS_SENT_RECORD_THRESHOLD));
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(ledger).customize(argThat(target::equals), captor.capture());
-		// and:
-		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
-		assertEquals(1, changes.size());
-		assertEquals(sendThresh, (long)changes.get(AccountProperty.FUNDS_SENT_RECORD_THRESHOLD));
 	}
 
 	@Test
@@ -400,9 +324,7 @@ public class CryptoUpdateTransitionLogicTest {
 				PROXY,
 				EXPIRY,
 				IS_RECEIVER_SIG_REQUIRED,
-				AUTO_RENEW_PERIOD,
-				FUNDS_SENT_RECORD_THRESHOLD,
-				FUNDS_RECEIVED_RECORD_THRESHOLD
+				AUTO_RENEW_PERIOD
 		));
 	}
 
@@ -426,20 +348,6 @@ public class CryptoUpdateTransitionLogicTest {
 		}
 		if (updating.contains(AUTO_RENEW_PERIOD)) {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
-		}
-		if (updating.contains(FUNDS_SENT_RECORD_THRESHOLD)) {
-			if (!useLegacyFields) {
-				op.setSendRecordThresholdWrapper(UInt64Value.newBuilder().setValue(sendThresh));
-			} else {
-				op.setSendRecordThreshold(sendThresh);
-			}
-		}
-		if (updating.contains(FUNDS_RECEIVED_RECORD_THRESHOLD)) {
-			if (!useLegacyFields) {
-				op.setReceiveRecordThresholdWrapper(UInt64Value.newBuilder().setValue(receiveThresh));
-			} else {
-				op.setReceiveRecordThreshold(receiveThresh);
-			}
 		}
 		op.setAccountIDToUpdate(target);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();

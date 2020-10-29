@@ -188,7 +188,7 @@ public class AwareTransactionContextTest {
 		var expected = mock(TransactionRecord.class);
 
 		// given:
-		given(itemizableFeeCharging.totalNonThresholdFeesChargedToPayer()).willReturn(123L);
+		given(itemizableFeeCharging.totalFeesChargedToPayer()).willReturn(123L);
 		var xfers = withAdjustments(payer, -100, funding, 50, another, 50);
 		// and:
 		given(subject.recordSoFar.build()).willReturn(expected);
@@ -335,7 +335,7 @@ public class AwareTransactionContextTest {
 	public void usesChargingToSetTransactionFee() {
 		long std = 1_234L;
 		long other = 4_321L;
-		given(itemizableFeeCharging.totalNonThresholdFeesChargedToPayer()).willReturn(std);
+		given(itemizableFeeCharging.totalFeesChargedToPayer()).willReturn(std);
 
 		// when:
 		subject.addNonThresholdFeeChargedToPayer(other);

@@ -1,4 +1,4 @@
-package com.hedera.services.utils;
+package com.hedera.services.stats;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,26 +20,22 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
+import com.swirlds.common.StatEntry;
+import com.swirlds.platform.StatsRunningAverage;
 
-import java.util.TimerTask;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-
-public class StatsDumpTimerTask extends TimerTask {
-	public static Logger log = LogManager.getLogger(StatsDumpTimerTask.class);
-
-	private HederaNodeStats stats;
-
-	@Override
-	public void run() {
-		log.info("Dumping stats...");
-		stats.dumpHederaNodeStats();
+public interface RunningAvgFactory {
+	default StatEntry from(String name, String desc, StatsRunningAverage runningAvg) {
+		return new StatEntry(
+				"app",
+				name,
+				desc,
+				"%,13.6f",
+				runningAvg,
+				newHalfLife -> {
+					runningAvg.reset(newHalfLife);
+					return runningAvg;
+				},
+				runningAvg::reset,
+				runningAvg::getWeightedMean);
 	}
-
-	public StatsDumpTimerTask(HederaNodeStats stats) {
-		this.stats = stats;
-	}
-
 }

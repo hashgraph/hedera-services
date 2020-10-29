@@ -53,16 +53,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public long defaultContractSendThreshold() {
-		return 5000000000000000000L;
-	}
-
-	@Override
-	public long defaultContractReceiveThreshold() {
-		return 5000000000000000000L;
-	}
-
-	@Override
 	public int maxFileSizeKb() {
 		return 1024;
 	}
@@ -85,11 +75,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public int ratesIntradayChangeLimitPercent() {
 		return 5;
-	}
-
-	@Override
-	public boolean shouldCreateThresholdRecords() {
-		return false;
 	}
 
 	@Override

@@ -36,12 +36,9 @@ public class GlobalDynamicProperties {
 	private int balancesExportPeriodSecs;
 	private int ratesIntradayChangeLimitPercent;
 	private long maxAccountNum;
-	private long defaultContractSendThreshold;
-	private long defaultContractReceiveThreshold;
 	private long nodeBalanceWarningThreshold;
 	private String pathToBalancesExportDir;
-	private boolean shouldCreatePayerRecords;
-	private boolean shouldCreateThresholdRecords;
+	private boolean shouldKeepRecordsInState;
 	private boolean shouldExportBalances;
 	private boolean shouldExportTokenBalances;
 	private AccountID fundingAccount;
@@ -62,14 +59,11 @@ public class GlobalDynamicProperties {
 	}
 
 	public void reload() {
-		shouldCreatePayerRecords = properties.getBooleanProperty("ledger.createPayerRecords");
-		shouldCreateThresholdRecords = properties.getBooleanProperty("ledger.createThresholdRecords");
+		shouldKeepRecordsInState = properties.getBooleanProperty("ledger.keepRecordsInState");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
 		maxTokensSymbolLength = properties.getIntProperty("tokens.maxSymbolLength");
 		maxTokensNameLength = properties.getIntProperty("tokens.maxTokenNameLength");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
-		defaultContractSendThreshold = properties.getLongProperty("contracts.defaultSendThreshold");
-		defaultContractReceiveThreshold = properties.getLongProperty("contracts.defaultReceiveThreshold");
 		maxFileSizeKb = properties.getIntProperty("files.maxSizeKb");
 		fundingAccount = AccountID.newBuilder()
 				.setShardNum(hederaNums.shard())
@@ -89,14 +83,6 @@ public class GlobalDynamicProperties {
 		maxMemoUtf8Bytes = properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes");
 		maxTxnDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
 		minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
-	}
-
-	public long defaultContractSendThreshold() {
-		return defaultContractSendThreshold;
-	}
-
-	public long defaultContractReceiveThreshold() {
-		return defaultContractReceiveThreshold;
 	}
 
 	public int maxTokensPerAccount() {
@@ -135,12 +121,8 @@ public class GlobalDynamicProperties {
 		return ratesIntradayChangeLimitPercent;
         }
 
-	public boolean shouldCreatePayerRecords() {
-		return shouldCreatePayerRecords;
-	}
-
-	public boolean shouldCreateThresholdRecords() {
-		return shouldCreateThresholdRecords;
+	public boolean shouldKeepRecordsInState() {
+		return shouldKeepRecordsInState;
 	}
 
 	public int balancesExportPeriodSecs() {

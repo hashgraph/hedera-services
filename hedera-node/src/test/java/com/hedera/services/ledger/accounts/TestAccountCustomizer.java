@@ -38,9 +38,7 @@ public class TestAccountCustomizer extends
 			IS_DELETED, FLAG,
 			AUTO_RENEW_PERIOD, LONG,
 			IS_SMART_CONTRACT, FLAG,
-			IS_RECEIVER_SIG_REQUIRED, FLAG,
-			FUNDS_SENT_RECORD_THRESHOLD, LONG,
-			FUNDS_RECEIVED_RECORD_THRESHOLD, LONG
+			IS_RECEIVER_SIG_REQUIRED, FLAG
 	);
 
 	public TestAccountCustomizer(ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager) {

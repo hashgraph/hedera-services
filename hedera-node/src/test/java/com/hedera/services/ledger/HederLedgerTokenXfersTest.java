@@ -32,8 +32,12 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.tokenWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -86,6 +90,22 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
+	public void tokenTransfersRollbackIfInvalidHbars() {
+		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
+		given(accountsLedger.get(rand, IS_SMART_CONTRACT)).willReturn(true);
+
+		// when:
+		var outcome = subject.doAtomicZeroSumTokenTransfers(validTokenXfersPlusInvalidHbarXfers);
+		// and:
+		var netXfers = subject.netTokenTransfersInTxn();
+
+		// then:
+		assertEquals(INVALID_ACCOUNT_ID, outcome);
+		// and:
+		assertTrue(netXfers.isEmpty());
+	}
+
+	@Test
 	public void happyPathZeroSumTokenTransfers() {
 		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
 
@@ -105,6 +125,31 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		assertEquals(
 				List.of(aa(misc, 1_000), aa(rand, -1_000)),
 				netXfers.get(1).getTransfersList());
+	}
+
+	@Test
+	public void happyPathZeroSumTokenTransfersWithHbar() {
+		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
+
+		// when:
+		var outcome = subject.doAtomicZeroSumTokenTransfers(multipleValidTokenTransfersPlusHbars);
+		// and:
+		var netXfers = subject.netTokenTransfersInTxn();
+
+		// then:
+		assertEquals(OK, outcome);
+		// and:
+		assertEquals(frozenId, netXfers.get(0).getToken());
+		assertEquals(
+				List.of(aa(misc, 1_000), aa(rand, -1_000)),
+				netXfers.get(0).getTransfersList());
+		assertEquals(tokenId, netXfers.get(1).getToken());
+		assertEquals(
+				List.of(aa(misc, 1_000), aa(rand, -1_000)),
+				netXfers.get(1).getTransfersList());
+		// and:
+		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE - 123);
+		verify(accountsLedger).set(rand, BALANCE, RAND_BALANCE + 123);
 	}
 
 	@Test
@@ -247,5 +292,40 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
-
+	TokenTransfersTransactionBody multipleValidTokenTransfersPlusHbars = TokenTransfersTransactionBody.newBuilder()
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(frozenId)
+					.addAllTransfers(List.of(
+							adjustFrom(misc, +1_000),
+							adjustFrom(rand, -1_000)
+					)))
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(tokenId)
+					.addAllTransfers(List.of(
+							adjustFrom(misc, +1_000),
+							adjustFrom(rand, -1_000)
+					)))
+			.setHbarTransfers(TransferList.newBuilder()
+					.addAccountAmounts(adjustFrom(rand, +123))
+					.addAccountAmounts(adjustFrom(misc, -123))
+					.build())
+			.build();
+	TokenTransfersTransactionBody validTokenXfersPlusInvalidHbarXfers = TokenTransfersTransactionBody.newBuilder()
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(frozenId)
+					.addAllTransfers(List.of(
+							adjustFrom(misc, +1_000),
+							adjustFrom(rand, -1_000)
+					)))
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(tokenId)
+					.addAllTransfers(List.of(
+							adjustFrom(misc, +1_000),
+							adjustFrom(rand, -1_000)
+					)))
+			.setHbarTransfers(TransferList.newBuilder()
+					.addAccountAmounts(adjustFrom(rand, +123))
+					.addAccountAmounts(adjustFrom(misc, -123))
+					.build())
+			.build();
 }

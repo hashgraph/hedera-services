@@ -58,6 +58,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.validation.BasicPrecheck;
@@ -83,7 +84,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.TestHelper;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -182,9 +182,6 @@ public class SmartContractServiceImplTest {
 	private AccountID senderAccountId;
 	private AccountID receiverAccountId;
 	private LedgerAccountsSource ledgerSource;
-
-	@Mock
-	private HederaNodeStats hederaNodeStats;
 
 	@BeforeAll
 	public void setUp() throws Exception {
@@ -420,13 +417,10 @@ public class SmartContractServiceImplTest {
 		given(submissionManager.trySubmission(any())).willReturn(OK);
 
 		smartContractImpl = new SmartContractServiceImpl(transactionHandler,
-				smartContractHandler, hederaNodeStats,
+				smartContractHandler,
 				TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-				submissionManager, null, null);
+				submissionManager, null, null, mock(HapiOpCounters.class));
 		smartContractImpl.createContract(trx, responseObserver);
-
-		verify(hederaNodeStats, times(1)).smartContractTransactionReceived("createContract");
-		verify(hederaNodeStats, times(1)).smartContractTransactionSubmitted("createContract");
 	}
 
 	@AfterAll
@@ -454,9 +448,9 @@ public class SmartContractServiceImplTest {
 			given(submissionManager.trySubmission(any())).willReturn(OK);
 
 			smartContractImpl = new SmartContractServiceImpl(transactionHandler,
-					smartContractHandler, hederaNodeStats,
+					smartContractHandler,
 					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-					submissionManager, null, null);
+					submissionManager, null, null, mock(HapiOpCounters.class));
 
 			StreamObserver<Response> respOb = new StreamObserver<Response>() {
 

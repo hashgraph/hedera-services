@@ -29,7 +29,6 @@ import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.context.ContextPlatformStatus;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.security.ops.SystemOpPolicies;
@@ -73,7 +72,6 @@ public class TransactionHandlerTest {
 	private BasicPrecheck basicPrecheck;
 	private QueryFeeCheck queryFeeCheck;
 	private FunctionalityThrottling throttling;
-	private HederaNodeStats stats;
 
 	private TransactionHandler subject;
 
@@ -95,7 +93,6 @@ public class TransactionHandlerTest {
 		basicPrecheck = mock(BasicPrecheck.class);
 		queryFeeCheck = mock(QueryFeeCheck.class);
 		throttling = mock(FunctionalityThrottling.class);
-		stats = mock(HederaNodeStats.class);
 
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		var platformStatus = new ContextPlatformStatus();
@@ -114,7 +111,6 @@ public class TransactionHandlerTest {
 				queryFeeCheck,
 				throttling,
 				new MockAccountNumbers(),
-				stats,
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
 				platformStatus);

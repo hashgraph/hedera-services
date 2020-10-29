@@ -9,11 +9,13 @@ commands:
           command: |
             sudo apt update -y;
             sudo apt install -y net-tools;
+            sudo apt-get install -y apt-utils;
             sudo apt install -y curl;
             sudo apt install -y python3.7;
             sudo rm /usr/bin/python3;
             sudo ln -s python3.7 /usr/bin/python3;
             sudo apt install -y python3-pip;
+            pip3 install --upgrade pip;
             pip3 -q install matplotlib;
             sudo apt-get install -y python3-setuptools;
             pip3 install awscli;
@@ -804,23 +806,23 @@ commands:
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:
-          dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
+          dsl-args: "ContractCallLocalSuite -TLS=on"
       - run-eet-suites:
-          dsl-args: "ContractCallSuite -TLS=on -NODE=random"
+          dsl-args: "ContractCallSuite -TLS=on"
       - run-eet-suites:
-          dsl-args: "ChildStorageSpecs -TLS=on -NODE=random"
+          dsl-args: "ChildStorageSpecs -TLS=on"
       - run-eet-suites:
-          dsl-args: "BigArraySpec -TLS=on -NODE=random"
+          dsl-args: "BigArraySpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "SmartContractInlineAssemblySpec -TLS=on -NODE=random"
+          dsl-args: "SmartContractInlineAssemblySpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "OCTokenSpec -TLS=on -NODE=random"
+          dsl-args: "OCTokenSpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "CharacterizationSuite -TLS=on -NODE=random"
+          dsl-args: "CharacterizationSuite -TLS=on"
       - run-eet-suites:
-          dsl-args: "SmartContractFailFirstSpec -TLS=on -NODE=random"
+          dsl-args: "SmartContractFailFirstSpec -TLS=on"
       - run-eet-suites:
-          dsl-args: "SmartContractSelfDestructSpec -TLS=on -NODE=random"
+          dsl-args: "SmartContractSelfDestructSpec -TLS=on"
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:
@@ -922,6 +924,47 @@ workflows:
                 at: /
           workflow-name: "nightly-performance-regression"
 
+  weekly-crypto-transfer-perf-start-from-saved-state-regression:
+    triggers:
+      - schedule:
+          cron: "0 1,13 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - weekly-run-crypto-transfer-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "weekly-crypto-transfer-perf-start-from-saved-state-regression"
+
+  weekly-HCS-perf-start-from-saved-state-regression:
+    triggers:
+      - schedule:
+          cron: "0 6,18 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - weekly-run-HCS-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "weekly-HCS-perf-start-from-saved-state-regression"
+
+
   nightly-network-error-regression:
     triggers:
       - schedule:
@@ -946,7 +989,7 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "15 18,5 * * *"
+              cron: "30 6,18 * * *"
               filters:
                 branches:
                   only:
@@ -1009,7 +1052,7 @@ workflows:
   nightly-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "45 18,5 * * *"
+          cron: "30 5,20 * * *"
           filters:
             branches:
               only:
@@ -1582,8 +1625,7 @@ jobs:
       - run:
           name: Modify Payer account for Public testnet Migration test
           command: |
-            sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
-            echo -n "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
 
       - run:
           name: Run Public testnet Migration test
@@ -1684,6 +1726,65 @@ jobs:
 
       - store_artifacts:
           path: /results.tar.gz
+
+  weekly-run-crypto-transfer-start-from-saved-state-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Modify Payer account for Public testnet start from saved state test
+          command: |
+            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+      - run:
+          name: Run start from saved state regression tests
+          no_output_timeout: 60m
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh configs/services/weekly/15N_15C/AWS-Services-Weekly-CryptoTransfer-Perf-StartFromState-15N-15C.json /repo
+
+      - run:
+          name: Sync results of software update regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  weekly-run-HCS-start-from-saved-state-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Modify Payer account for Public testnet start from saved state test
+          command: |
+            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+      - run:
+          name: Run start from saved state regression tests
+          no_output_timeout: 60m
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh configs/services/weekly/15N_15C/AWS-Services-Weekly-HCS-Perf-StartFromState-15N-15C.json /repo
+
+      - run:
+          name: Sync results of software update regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
 
   build-platform-and-services:
     parameters:
@@ -1803,7 +1904,7 @@ jobs:
       - run-eet-suites:
           dsl-args: "SubmitMessageSpecs"
       - run-eet-suites:
-          dsl-args: "HCSTopicFragmentationSuite -TLS=alternate -NODE=random"
+          dsl-args: "HCSTopicFragmentationSuite -TLS=alternate"
       - run-eet-suites:
           dsl-args: "TopicGetInfoSpecs"
       - run-eet-suites:
@@ -1903,7 +2004,6 @@ jobs:
     executor:
       name: ci-test-executor
       workflow-name:  << parameters.workflow-name >>
-
     steps:
       - run-eet-suites:
           dsl-args: "NewOpInConstructorSpecs"
@@ -1911,11 +2011,11 @@ jobs:
           dsl-args: "MultipleSelfDestructsAreSafe"
       - postgres-get-counts
       - run-eet-suites:
-          dsl-args: "ContractCallSuite -TLS=on -NODE=random"
+          dsl-args: "ContractCallSuite -TLS=on"
       - postgres-verify-counts:
           expected-difference: 17
       - run-eet-suites:
-          dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
+          dsl-args: "ContractCallLocalSuite -TLS=on"
       - run-eet-suites:
           dsl-args: "ContractUpdateSuite -TLS=on"
       - run-eet-suites:
@@ -1944,8 +2044,6 @@ jobs:
           dsl-args: "ContractRecordSanityChecks"
       - run-eet-suites:
           dsl-args: "ContractGetBytecodeSuite"
-      - run-eet-suites:
-          dsl-args: "ContractRecordSanityChecks"
 
   run-umbrella-freeze-restart-test:
     parameters:

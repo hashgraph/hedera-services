@@ -32,5 +32,4 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public interface FeeExemptions {
 	boolean hasExemptPayer(SignedTxnAccessor accessor);
-	boolean isExemptFromRecordFees(AccountID id);
 }

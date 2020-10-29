@@ -22,8 +22,6 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.ConsensusThrottlesSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
@@ -89,7 +87,7 @@ import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
-import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
+import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
@@ -99,8 +97,6 @@ import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -121,17 +117,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
@@ -168,26 +156,36 @@ public class SuiteRunner {
 //				new CryptoTransferSuite(),
 //				new CryptoRecordsSanityCheckSuite(),
 //				new Issue2144Spec()));
-		put("CiTokenJob", aof(
-				new TokenAssociationSpecs(),
-				new TokenCreateSpecs(),
-				new TokenDeleteSpecs(),
-				new TokenManagementSpecs(),
-				new TokenTransactSpecs()));
-		put("CiFileJob", aof(
-				new FileRecordsSanityCheckSuite(),
-				new VersionInfoSpec(),
-				new ProtectedFilesUpdateSuite(),
-				new PermissionSemanticsSpec(),
-				new SysDelSysUndelSpec()));
+//		put("CiTokenJob", aof(
+//				new TokenAssociationSpecs(),
+//				new TokenCreateSpecs(),
+//				new TokenDeleteSpecs(),
+//				new TokenManagementSpecs(),
+//				new TokenTransactSpecs()));
+//		put("CiFileJob", aof(
+//				new FileRecordsSanityCheckSuite(),
+//				new VersionInfoSpec(),
+//				new ProtectedFilesUpdateSuite(),
+//				new PermissionSemanticsSpec(),
+//				new SysDelSysUndelSpec()));
 //		put("CiSmartContractJob", aof(
 //				new NewOpInConstructorSuite(),
 //				new IssueXXXXSpec(),
-//				new FetchSystemFiles(),
+//				new ContractCallSuite(),
+//				new ContractCallLocalSuite(),
+//				new ContractUpdateSuite(),
+//				new ContractDeleteSuite(),
 //				new ChildStorageSpec(),
+//				new BigArraySpec(),
+//				new CharacterizationSuite(),
+//				new SmartContractFailFirstSpec(),
+//				new SmartContractSelfDestructSpec(),
 //				new DeprecatedContractKeySuite(),
-//				new ThresholdRecordCreationSuite(),
-//				new ContractRecordsSanityCheckSuite()));
+//				new ContractRecordsSanityCheckSuite(),
+//				new ContractGetBytecodeSuite(),
+//				new SmartContractInlineAssemblySpec(),
+//				new OCTokenSpec(),
+//				new RecordCreationSuite()));
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
@@ -251,7 +249,7 @@ public class SuiteRunner {
 		put("SmartContractSelfDestructSpec", aof(new SmartContractSelfDestructSpec()));
 		put("SmartContractPaySpec", aof(new SmartContractPaySpec()));
 		/* Functional tests - MIXED (record emphasis) */
-		put("ThresholdRecordCreationSpecs", aof(new ThresholdRecordCreationSuite()));
+		put("ThresholdRecordCreationSpecs", aof(new RecordCreationSuite()));
 		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));
 		put("CryptoRecordSanityChecks", aof(new CryptoRecordsSanityCheckSuite()));
 		put("FileRecordSanityChecks", aof(new FileRecordsSanityCheckSuite()));
@@ -283,7 +281,6 @@ public class SuiteRunner {
 	}};
 
 	static boolean runAsync;
-	static Set<String> argSet;
 	static List<CategorySuites> targetCategories;
 	static boolean globalPassFlag = true;
 
@@ -341,6 +338,7 @@ public class SuiteRunner {
 
 	/**
 	 * Create a default payer account for each test client while running JRS regression tests
+	 *
 	 * @param nodes
 	 * @param defaultNode
 	 */
@@ -406,8 +404,7 @@ public class SuiteRunner {
 	}
 
 	private static List<CategoryResult> runCategories(List<String> args) {
-		argSet = args.stream().collect(Collectors.toSet());
-		collectTargetCategories();
+		collectTargetCategories(args);
 		return runTargetCategories();
 	}
 
@@ -443,11 +440,10 @@ public class SuiteRunner {
 		}
 	}
 
-	private static void collectTargetCategories() {
-		targetCategories = CATEGORY_MAP
-				.keySet()
+	private static void collectTargetCategories(List<String> args) {
+		targetCategories = args
 				.stream()
-				.filter(argSet::contains)
+				.filter(k -> null != CATEGORY_MAP.get(k))
 				.map(k -> new CategorySuites(rightPadded(k, SUITE_NAME_WIDTH), CATEGORY_MAP.get(k)))
 				.collect(toList());
 	}

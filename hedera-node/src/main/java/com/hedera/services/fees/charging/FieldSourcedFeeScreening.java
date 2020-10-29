@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
-import static com.hedera.services.fees.TxnFeeType.THRESHOLD_RECORD;
 
 /**
  * Implements a {@link TxnScopedFeeScreening} using an injected
@@ -82,13 +81,7 @@ public class FieldSourcedFeeScreening implements TxnScopedFeeScreening {
 
 	@Override
 	public boolean canParticipantAfford(AccountID participant, EnumSet<TxnFeeType> fees) {
-		long exemptAmount = 0;
-		if (fees.contains(THRESHOLD_RECORD) && feeAmounts.containsKey(THRESHOLD_RECORD)) {
-			exemptAmount += exemptions.isExemptFromRecordFees(participant) ? feeAmounts.get(THRESHOLD_RECORD) : 0;
-		}
-
-		final long netAmount = totalAmountOf(fees) - exemptAmount;
-		return check.canAfford(participant, netAmount);
+		return check.canAfford(participant, totalAmountOf(fees));
 	}
 
 	protected long totalAmountOf(EnumSet<TxnFeeType> fees) {

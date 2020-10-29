@@ -48,6 +48,8 @@ class ServicesStatsManagerTest {
 	Platform platform;
 
 	HapiOpCounters counters;
+	MiscRunningAvgs runningAvgs;
+	MiscSpeedometers miscSpeedometers;
 	HapiOpSpeedometers speedometers;
 	NodeLocalProperties properties;
 
@@ -58,24 +60,26 @@ class ServicesStatsManagerTest {
 		pause = mock(Pause.class);
 		threads = mock(Function.class);
 
-		ServicesStatsManager.eternalRunFactory = threads;
+		ServicesStatsManager.loopFactory = threads;
 		ServicesStatsManager.pause = pause;
 
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 123L));
 		counters = mock(HapiOpCounters.class);
+		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(HapiOpSpeedometers.class);
+		miscSpeedometers = mock(MiscSpeedometers.class);
 		properties = mock(NodeLocalProperties.class);
-		given(properties.statsHapiSpeedometerUpdateIntervalMs()).willReturn(updateIntervalMs);
+		given(properties.statsHapiOpsSpeedometerUpdateIntervalMs()).willReturn(updateIntervalMs);
 
-		subject = new ServicesStatsManager(counters, speedometers, properties);
+		subject = new ServicesStatsManager(counters, runningAvgs, miscSpeedometers, speedometers, properties);
 	}
 
 
 	@AfterEach
 	public void cleanup() throws Exception {
 		ServicesStatsManager.pause = SleepingPause.SLEEPING_PAUSE;
-		ServicesStatsManager.eternalRunFactory = runnable -> new Thread(() -> {
+		ServicesStatsManager.loopFactory = runnable -> new Thread(() -> {
 			while (true) {
 				runnable.run();
 			}
@@ -97,8 +101,12 @@ class ServicesStatsManagerTest {
 		// then:
 		verify(counters).registerWith(platform);
 		verify(speedometers).registerWith(platform);
+		verify(miscSpeedometers).registerWith(platform);
+		verify(runningAvgs).registerWith(platform);
+		verify(platform).appStatInit();
+		// and:
 		verify(thread).start();
-		verify(thread).setName("StatsUpdateNode123");
+		verify(thread).setName(String.format(ServicesStatsManager.SPEEDOMETER_UPDATE_THREAD_NAME_TPL, 123L));
 		// and when:
 		captor.getValue().run();
 		// then:

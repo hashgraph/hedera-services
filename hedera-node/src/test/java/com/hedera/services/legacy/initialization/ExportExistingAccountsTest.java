@@ -85,12 +85,12 @@ class ExportExistingAccountsTest {
 		savedAccounts.copyFromExtra(in);
 
 		// given:
-		String expected = Files.readString(Paths.get(LEGACY_EXPORT_LOC));
+		String expected = Files.readString(Paths.get(LEGACY_EXPORT_LOC)).strip();
 
 		// when:
 		ExportExistingAccounts.exportAccounts(TMP_EXPORT_LOC, savedAccounts);
 		// and:
-		String actual = Files.readString(Paths.get(TMP_EXPORT_LOC));
+		String actual = Files.readString(Paths.get(TMP_EXPORT_LOC)).strip();
 
 		// then:
 		Assertions.assertEquals(expected, actual);

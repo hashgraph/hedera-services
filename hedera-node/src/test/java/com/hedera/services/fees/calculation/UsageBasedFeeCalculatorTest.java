@@ -21,13 +21,11 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -35,11 +33,9 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
-import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -51,15 +47,17 @@ import java.util.List;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
+import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
-import static com.hederahashgraph.fee.FeeBuilder.getTransactionRecordFeeInTinyCents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
-import static com.hedera.test.utils.IdUtils.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willThrow;
 
 @RunWith(JUnitPlatform.class)
 class UsageBasedFeeCalculatorTest {
@@ -83,16 +81,8 @@ class UsageBasedFeeCalculatorTest {
 	TxnResourceUsageEstimator incorrectOpEstimator;
 	QueryResourceUsageEstimator correctQueryEstimator;
 	QueryResourceUsageEstimator incorrectQueryEstimator;
-	TransactionRecord record = TransactionRecord.newBuilder()
-			.setTransferList(TxnUtils.withAdjustments(
-					asAccount("1.2.3"), 100,
-					asAccount("2.3.4"), -50,
-					asAccount("3.4.5"), -50))
-			.build();
 	Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
-	PropertySource properties;
-	GlobalDynamicProperties dynamicProperties;
 	UsageBasedFeeCalculator subject;
 	/* Has nine simple keys. */
 	KeyTree complexKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -117,16 +107,12 @@ class UsageBasedFeeCalculatorTest {
 		incorrectOpEstimator = mock(TxnResourceUsageEstimator.class);
 		correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
-		properties = mock(PropertySource.class);
-		dynamicProperties = mock(GlobalDynamicProperties.class);
 
 		txnUsageEstimators = (Function<HederaFunctionality, List<TxnResourceUsageEstimator>>)mock(Function.class);
 
 		subject = new UsageBasedFeeCalculator(
-				properties,
 				exchange,
 				usagePrices,
-				dynamicProperties,
 				List.of(incorrectQueryEstimator, correctQueryEstimator),
 				txnUsageEstimators);
 	}
@@ -146,48 +132,6 @@ class UsageBasedFeeCalculatorTest {
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.init());
-	}
-
-	@Test
-	public void calculatesExpectedThresholdRecordFee() {
-		// setup:
-		int ttl = 10_000;
-
-		given(exchange.activeRate()).willReturn(currentRate);
-		given(usagePrices.activePrices()).willReturn(mockFeeData);
-		given(properties.getIntProperty("ledger.records.ttl")).willReturn(ttl);
-		// and:
-		long shouldBe = expectedPriceForStorage(record, ttl);
-
-		// when:
-		long actual = subject.computeStorageFee(record);
-
-		// then:
-		assertEquals(shouldBe, actual);
-	}
-
-	@Test
-	public void calculatesExpectedCachingFee() {
-		// setup:
-		int ttl = 100;
-
-		given(exchange.activeRate()).willReturn(currentRate);
-		given(usagePrices.activePrices()).willReturn(mockFeeData);
-		given(dynamicProperties.cacheRecordsTtl()).willReturn(ttl);
-		// and:
-		long shouldBe = expectedPriceForStorage(record, ttl);
-
-		// when:
-		long actual = subject.computeCachingFee(record);
-
-		// then:
-		assertEquals(shouldBe, actual);
-	}
-
-	private long expectedPriceForStorage(TransactionRecord record, int ttl) {
-		long rbhPrice = mockFeeData.getServicedata().getRbh();
-		long feeInTinyCents = getTransactionRecordFeeInTinyCents(record, rbhPrice, ttl);
-		return getTinybarsFromTinyCents(exchange.activeRate(), feeInTinyCents);
 	}
 
 	@Test
