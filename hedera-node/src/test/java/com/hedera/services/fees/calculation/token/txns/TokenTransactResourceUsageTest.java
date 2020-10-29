@@ -108,5 +108,4 @@ class TokenTransactResourceUsageTest {
 					.setBpr(2)
 					.setSbpr(2)
 					.build(), 2);
-
 }

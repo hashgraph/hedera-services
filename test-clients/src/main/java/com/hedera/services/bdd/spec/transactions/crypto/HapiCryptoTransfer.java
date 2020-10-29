@@ -24,9 +24,12 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.usage.crypto.CryptoTransferUsage;
+import com.hedera.services.usage.token.TokenTransactUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -37,6 +40,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hederahashgraph.fee.SigValueObj;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +52,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
 import static java.util.stream.Collectors.*;
 
@@ -159,11 +164,13 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	}
 
 	@Override
-	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
+	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.CryptoTransfer,
-				cryptoFees::getCryptoTransferTxFeeMatrices,
-				txn, numPayerSigs);
+				HederaFunctionality.CryptoTransfer, this::usageEstimate, txn, numPayerKeys);
+	}
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return CryptoTransferUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
 	@Override

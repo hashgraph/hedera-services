@@ -765,7 +765,7 @@ public class ServicesContext {
 				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoFees))),
 				entry(CryptoDelete, List.of(new CryptoDeleteResourceUsage(cryptoFees))),
 				entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoFees))),
-				entry(CryptoTransfer, List.of(new CryptoTransferResourceUsage(cryptoFees))),
+				entry(CryptoTransfer, List.of(new CryptoTransferResourceUsage())),
 				/* Contract */
 				entry(ContractCall, List.of(new ContractCallResourceUsage(contractFees))),
 				entry(ContractCreate, List.of(new ContractCreateResourceUsage(contractFees))),
