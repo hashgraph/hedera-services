@@ -80,6 +80,7 @@ import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
+import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
 import com.hedera.services.bdd.suites.reconnect.GetAccountBalanceAfterReconnect;
 import com.hedera.services.bdd.suites.records.CharacterizationSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
@@ -199,6 +200,7 @@ public class SuiteRunner {
 		put("MixedTransferCallAndSubmitLoadTest", aof(new MixedTransferCallAndSubmitLoadTest()));
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
 		/* Functional tests - RECONNECT */
+		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
 		put("GetAccountBalanceAfterReconnect", aof(new GetAccountBalanceAfterReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
@@ -278,7 +280,6 @@ public class SuiteRunner {
 	}};
 
 	static boolean runAsync;
-	static Set<String> argSet;
 	static List<CategorySuites> targetCategories;
 	static boolean globalPassFlag = true;
 
@@ -402,8 +403,7 @@ public class SuiteRunner {
 	}
 
 	private static List<CategoryResult> runCategories(List<String> args) {
-		argSet = args.stream().collect(Collectors.toSet());
-		collectTargetCategories();
+		collectTargetCategories(args);
 		return runTargetCategories();
 	}
 
@@ -439,11 +439,10 @@ public class SuiteRunner {
 		}
 	}
 
-	private static void collectTargetCategories() {
-		targetCategories = CATEGORY_MAP
-				.keySet()
+	private static void collectTargetCategories(List<String> args) {
+		targetCategories = args
 				.stream()
-				.filter(argSet::contains)
+				.filter(k -> null != CATEGORY_MAP.get(k))
 				.map(k -> new CategorySuites(rightPadded(k, SUITE_NAME_WIDTH), CATEGORY_MAP.get(k)))
 				.collect(toList());
 	}

@@ -99,6 +99,7 @@ public abstract class HapiSpecOperation {
 	protected boolean useTls = false;
 	protected HapiSpecSetup.TxnConfig txnConfig = HapiSpecSetup.TxnConfig.ALTERNATE;
 	protected boolean useRandomNode = false;
+	protected boolean unavailableNode = false;
 	protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
 	protected Optional<SigMapGenerator.Nature> sigMapGen = Optional.empty();
 	protected Optional<List<Function<HapiApiSpec, Key>>> signers = Optional.empty();
@@ -190,10 +191,21 @@ public abstract class HapiSpecOperation {
 				updateStateOf(spec);
 			}
 		} catch (Throwable t) {
+			if (unavailableNode && t.getMessage().startsWith("UNAVAILABLE")) {
+				log.info("Node {} is unavailable as expected!", HapiPropertySource.asAccountString(node.get()));
+				return Optional.empty();
+			}
 			if (!loggingOff) {
 				log.warn(spec.logPrefix() + this + " failed!", t);
 			}
 			return Optional.of(t);
+		}
+
+		if (unavailableNode) {
+			String message = String.format("Node %s is NOT unavailable as expected!!!",
+					HapiPropertySource.asAccountString(node.get()));
+			log.error(message);
+			return Optional.of(new RuntimeException(message));
 		}
 		return Optional.empty();
 	}
