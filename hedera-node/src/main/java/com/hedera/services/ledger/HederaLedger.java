@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
@@ -343,10 +342,6 @@ public class HederaLedger {
 			dropPendingTokenChanges();
 		}
 		return validity;
-	}
-
-	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfersTransactionBody txn) {
-		return zeroSumTransfers(txn.getHbarTransfers(), txn.getTokenTransfersList());
 	}
 
 	public ResponseCodeEnum doAtomicTransfers(CryptoTransferTransactionBody txn) {
