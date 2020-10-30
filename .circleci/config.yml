@@ -887,7 +887,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "30 19 * * *"
+          cron: "15 17,4 * * *"
           filters:
             branches:
               only:
@@ -907,7 +907,7 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "45 18 * * *"
+          cron: "30 17,4 * * *"
           filters:
             branches:
               only:
@@ -931,7 +931,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - test-on-develop
     jobs:
       - build-platform-and-services
       - weekly-run-crypto-transfer-start-from-saved-state-regression:
@@ -951,7 +951,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - test-on-develop
     jobs:
       - build-platform-and-services
       - weekly-run-HCS-start-from-saved-state-regression:
@@ -968,7 +968,7 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "30 18 * * *"
+          cron: "45 17,4 * * *"
           filters:
             branches:
               only:
@@ -989,7 +989,7 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "25 18 * * *"
+              cron: "30 6,18 * * *"
               filters:
                 branches:
                   only:
@@ -1032,7 +1032,7 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "19 18 * * *"
+          cron: "30 18,5 * * *"
           filters:
             branches:
               only:
@@ -1814,7 +1814,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git checkout develop;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 573-D-Final-Changes;
+            cd /swirlds-platform/regression;   git checkout 573-D-Final-Changes-To-Develop;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
