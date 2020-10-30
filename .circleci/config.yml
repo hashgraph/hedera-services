@@ -887,7 +887,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "28 19 * * *"
+          cron: "30 19 * * *"
           filters:
             branches:
               only:
@@ -1542,7 +1542,6 @@ jobs:
             - root/.m2
             - repo/hedera-node
 
-  run-basic-suiterunner-tests:
   run-basic-suiterunner-tests:
     parameters:
       workflow-name:
