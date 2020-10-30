@@ -78,7 +78,7 @@ public class SystemFileTest {
   public SystemFileTest(int port, String host) {
     // connecting to the grpc server on the port
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SystemFileTest.stub = CryptoServiceGrpc.newBlockingStub(channel);
     SystemFileTest.fileServiceBlockingStub = FileServiceGrpc.newBlockingStub(channel);

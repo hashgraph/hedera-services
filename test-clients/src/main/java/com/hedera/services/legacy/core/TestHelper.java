@@ -992,7 +992,7 @@ public class TestHelper {
           if (channel == null) {
             Properties properties = TestHelper.getApplicationProperties();
             int port = Integer.parseInt(properties.getProperty("port"));
-            channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+            channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
             cstub = CryptoServiceGrpc.newBlockingStub(channel);
           }
         }

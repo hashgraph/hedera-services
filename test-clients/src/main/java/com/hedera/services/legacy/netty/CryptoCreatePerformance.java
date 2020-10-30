@@ -95,7 +95,7 @@ public class CryptoCreatePerformance implements Runnable {
   public CryptoCreatePerformance(int port, String host, int batchSize, boolean retrieveTxReceipt, long nodeAccount, boolean retrieveTxRecord) {
     // connecting to the grpc server on the port
 //    channel = ManagedChannelBuilder.forAddress(host, port)
-//        .usePlaintext(true)
+//        .usePlaintext()
 //        .build();
 
     this.channel = NettyChannelBuilder.forAddress(host, port)

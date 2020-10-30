@@ -167,7 +167,7 @@ public class OCTransferStepTwo {
     System.out.println("Got high account number as " + accountNumberHigh);
 
     channelShared = ManagedChannelBuilder.forAddress(grpcHost, grpcPort)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     cryptoStub = CryptoServiceGrpc.newBlockingStub(channelShared);
     sCServiceStub = SmartContractServiceGrpc.newBlockingStub(channelShared);

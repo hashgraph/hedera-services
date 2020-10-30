@@ -67,7 +67,7 @@ public class GrpcStub {
 		this.port = port;
 
 		channel = ManagedChannelBuilder.forAddress(host, port)
-				.usePlaintext(true)
+				.usePlaintext()
 				.build();
 		cryptoStub = CryptoServiceGrpc.newBlockingStub(channel);
 		scStub = SmartContractServiceGrpc.newBlockingStub(channel);

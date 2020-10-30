@@ -214,7 +214,7 @@ public class BaseFeeTests extends BaseClient {
     accountKeyPairs.put(queryPayerId, queryPayerKeyPair);
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true).build();
+        .usePlaintext().build();
     channelList.add(channel);
     sstub = SmartContractServiceGrpc.newBlockingStub(channel);
 
@@ -379,7 +379,7 @@ public class BaseFeeTests extends BaseClient {
       TransactionID transactionId) throws Exception {
     AccountID createdAccount = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     long fee = FeeClient.getCostForGettingTxRecord();
@@ -531,7 +531,7 @@ public class BaseFeeTests extends BaseClient {
             .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
                     transactionId, ResponseType.ANSWER_ONLY)).build();
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-            .usePlaintext(true)
+            .usePlaintext()
             .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Response transactionReceipts = stub.getTransactionReceipts(query);

@@ -124,7 +124,7 @@ public class CryptoTransferAll {
 	  private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
 	      throws Exception {
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 	    Transaction transaction = TestHelper
@@ -150,7 +150,7 @@ public class CryptoTransferAll {
 	        .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
 	            transactionId, ResponseType.ANSWER_ONLY)).build();
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 	    Response transactionReceipts = stub.getTransactionReceipts(query);
@@ -170,7 +170,7 @@ public class CryptoTransferAll {
 
 	  private TransactionRecord transferTo (AccountID fromAcct, AccountID toAcct, long amount) throws Exception {
 			ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-					.usePlaintext(true)
+					.usePlaintext()
 					.build();
 			CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 
@@ -199,7 +199,7 @@ public class CryptoTransferAll {
 	      TransactionID transactionId) throws Exception {
 	    AccountID createdAccount = null;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 	    long fee = FeeClient.getCostForGettingTxRecord();

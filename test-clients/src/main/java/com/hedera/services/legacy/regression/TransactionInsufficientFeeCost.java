@@ -147,7 +147,7 @@ public class TransactionInsufficientFeeCost {
   private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
       throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 
@@ -194,7 +194,7 @@ public class TransactionInsufficientFeeCost {
         .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
             transactionId, ResponseType.ANSWER_ONLY)).build();
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Response transactionReceipts = stub.getTransactionReceipts(query);
@@ -218,7 +218,7 @@ public class TransactionInsufficientFeeCost {
       AccountID adminAccount) throws Exception {
     ContractID createdContract = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
 
     Duration contractAutoRenew = Duration.newBuilder()
@@ -285,7 +285,7 @@ public class TransactionInsufficientFeeCost {
       TransactionID transactionId) throws Exception {
     AccountID createdAccount = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     long fee = FeeClient.getCostForGettingTxRecord();
@@ -316,7 +316,7 @@ public class TransactionInsufficientFeeCost {
       AccountID adminAccount, ResponseCodeEnum expectedStatus) throws Exception {
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
         .newBlockingStub(channel);
@@ -366,7 +366,7 @@ public class TransactionInsufficientFeeCost {
   private ResponseCodeEnum deleteContract(AccountID payerAccount, ContractID contractId,
       AccountID adminAccount, ResponseCodeEnum expectedStatus) throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
         .newBlockingStub(channel);
@@ -433,7 +433,7 @@ public class TransactionInsufficientFeeCost {
       throws Exception {
     byte[] dataToReturn = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
         .newBlockingStub(channel);
@@ -504,7 +504,7 @@ public class TransactionInsufficientFeeCost {
   public void crytpoTransfer(AccountID fromAccount, AccountID toAccount, long amount)
       throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 
@@ -555,7 +555,7 @@ public class TransactionInsufficientFeeCost {
 
   public void crytpoUpdate(AccountID accountID) throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Duration accountAutoRenew = Duration.newBuilder()
@@ -604,7 +604,7 @@ public class TransactionInsufficientFeeCost {
 
   public void cryptoDelete(AccountID accountID) throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 
@@ -673,7 +673,7 @@ public class TransactionInsufficientFeeCost {
 
   public FileID fileCreate(AccountID payerAccount, ByteString fileData) throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc.newBlockingStub(channel);
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
@@ -732,7 +732,7 @@ public class TransactionInsufficientFeeCost {
 
   public void fileAppend(AccountID payerAccount, ByteString fileData, FileID fid) throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc.newBlockingStub(channel);
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
@@ -781,7 +781,7 @@ public class TransactionInsufficientFeeCost {
 
   public void fileUpdate(AccountID payerAccount, ByteString fileData, FileID fid) throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc.newBlockingStub(channel);
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
@@ -833,7 +833,7 @@ public class TransactionInsufficientFeeCost {
 
   public void fileDelete(AccountID payerAccount, FileID fid) throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc.newBlockingStub(channel);
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
@@ -883,7 +883,7 @@ public class TransactionInsufficientFeeCost {
     loadGenesisAndNodeAcccounts();
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
         nodeAccount);

@@ -106,7 +106,7 @@ public class CryptoTransferandUpdateParallel {
     int port = Integer.parseInt(properties.getProperty("port"));
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoTransferandUpdateParallel.stub = CryptoServiceGrpc.newBlockingStub(channel);
 

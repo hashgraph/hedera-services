@@ -78,7 +78,7 @@ public class DoubleSpendingTest {
   public DoubleSpendingTest(int port, String host) {
     // connecting to the grpc server on the port
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     DoubleSpendingTest.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }
