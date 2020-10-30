@@ -252,7 +252,6 @@ enum HederaFunctionality {
     ConsensusSubmitMessage = 54; // Submit message to topic
     UncheckedSubmit = 55;
     TokenCreate = 56; // Create Token
-    TokenTransact = 57; // Transfer Tokens
     TokenGetInfo = 58; // Get token information
     TokenFreezeAccount = 59; // Freeze Account
     TokenUnfreezeAccount = 60; // Unfreeze Account

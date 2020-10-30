@@ -161,7 +161,6 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(ConsensusDeleteTopic, DELETE_TOPIC_METRIC);
 		BASE_STAT_NAMES.put(ConsensusSubmitMessage, SUBMIT_MESSAGE_METRIC);
 		BASE_STAT_NAMES.put(TokenCreate, TOKEN_CREATE_METRIC);
-		BASE_STAT_NAMES.put(TokenTransact, TOKEN_TRANSACT_METRIC);
 		BASE_STAT_NAMES.put(TokenFreezeAccount, TOKEN_FREEZE_METRIC);
 		BASE_STAT_NAMES.put(TokenUnfreezeAccount, TOKEN_UNFREEZE_METRIC);
 		BASE_STAT_NAMES.put(TokenGrantKycToAccount, TOKEN_GRANT_KYC_METRIC);
@@ -378,8 +377,6 @@ public class MiscUtils {
 			return ConsensusSubmitMessage;
 		} else if (txn.hasTokenCreation()) {
 			return TokenCreate;
-		} else if (txn.hasTokenTransfers()) {
-			return TokenTransact;
 		} else if (txn.hasTokenFreeze()) {
 			return TokenFreezeAccount;
 		} else if (txn.hasTokenUnfreeze()) {

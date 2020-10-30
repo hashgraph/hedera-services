@@ -39,7 +39,7 @@ service TokenService {
     rpc mintToken (Transaction) returns (TransactionResponse);
     // Burns an amount of the token from the defined treasury account
     rpc burnToken (Transaction) returns (TransactionResponse);
-    // (NOT CURRENTLY SUPPORTED) Deletes a Token
+    // Deletes a Token
     rpc deleteToken (Transaction) returns (TransactionResponse);
     // Wipes the provided amount of tokens from the specified Account ID
     rpc wipeTokenAccount (Transaction) returns (TransactionResponse);
@@ -51,8 +51,6 @@ service TokenService {
     rpc grantKycToTokenAccount (Transaction) returns (TransactionResponse);
     // Removes the KYC flag of the provided Account ID
     rpc revokeKycFromTokenAccount (Transaction) returns (TransactionResponse);
-    // Initiates a Token transfer by submitting the transaction
-    rpc transferTokens (Transaction) returns (TransactionResponse);
     // Associates tokens to an account
     rpc associateTokens (Transaction) returns (TransactionResponse);
     // Dissociates tokens from an account

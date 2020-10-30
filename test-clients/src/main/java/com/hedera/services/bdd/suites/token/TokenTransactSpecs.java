@@ -78,8 +78,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenOnlyTxnsAreAtomic(),
 						tokenPlusHbarTxnsAreAtomic(),
 						nonZeroTransfersRejected(),
-						allRequiredSigsAreChecked(),
 						prechecksWork(),
+						allRequiredSigsAreChecked(),
 				}
 		);
 	}
@@ -226,14 +226,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
-								.signedBy("payer", "firstTreasury", "beneficiary")
+								.signedBy("payer", "firstTreasury", "beneficiary", "sponsor")
 								.hasKnownStatus(INVALID_SIGNATURE),
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
-								.signedBy("payer", "firstTreasury", "secondTreasury")
+								.signedBy("payer", "firstTreasury", "secondTreasury", "sponsor")
 								.hasKnownStatus(INVALID_SIGNATURE),
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),

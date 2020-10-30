@@ -23,14 +23,12 @@ package com.hedera.test.factories.scenarios;
 import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.*;
-import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.CryptoCreateFactory.*;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
 
 
 public enum CryptoTransferScenarios implements TxnHandlingScenario {
@@ -99,5 +97,71 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							).get()
 			));
 		}
-	}
+	},
+	TOKEN_TRANSACT_WITH_EXTANT_SENDERS {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(SECOND_TOKEN_SENDER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +2_000)
+							.nonPayerKts(FIRST_TOKEN_SENDER_KT, SECOND_TOKEN_SENDER_KT)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.adjustingHbars(FIRST_TOKEN_SENDER, -2_000)
+							.adjustingHbars(TOKEN_RECEIVER, +2_000)
+							.nonPayerKts(FIRST_TOKEN_SENDER_KT)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.adjustingHbars(FIRST_TOKEN_SENDER, -2_000)
+							.adjustingHbars(RECEIVER_SIG, +2_000)
+							.nonPayerKts(FIRST_TOKEN_SENDER_KT, RECEIVER_SIG_KT)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(SECOND_TOKEN_SENDER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(RECEIVER_SIG, KNOWN_TOKEN_NO_SPECIAL_KEYS, +2_000)
+							.nonPayerKts(
+									FIRST_TOKEN_SENDER_KT,
+									SECOND_TOKEN_SENDER_KT,
+									RECEIVER_SIG_KT)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_MISSING_SENDERS {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(MISSING_ACCOUNT, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +2_000)
+							.nonPayerKts(FIRST_TOKEN_SENDER_KT, SECOND_TOKEN_SENDER_KT)
+							.get()
+			));
+		}
+	},
 }

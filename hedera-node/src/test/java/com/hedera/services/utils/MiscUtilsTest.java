@@ -355,7 +355,6 @@ public class MiscUtilsTest {
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
 			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(TokenController.TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreateTransactionBody.class));
-			put(TokenController.TOKEN_TRANSACT_METRIC, new BodySetter<>(TokenTransfersTransactionBody.class));
 			put(TokenController.TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TokenController.TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
 			put(TokenController.TOKEN_GRANT_KYC_METRIC, new BodySetter<>(TokenGrantKycTransactionBody.class));
@@ -612,7 +611,6 @@ public class MiscUtilsTest {
 			put(FileUpdate, new BodySetter<>(FileUpdateTransactionBody.class));
 			put(ContractDelete, new BodySetter<>(ContractDeleteTransactionBody.class));
 			put(TokenCreate, new BodySetter<>(TokenCreateTransactionBody.class));
-			put(TokenTransact, new BodySetter<>(TokenTransfersTransactionBody.class));
 			put(TokenFreezeAccount, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TokenUnfreezeAccount, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
 			put(TokenGrantKycToAccount, new BodySetter<>(TokenGrantKycTransactionBody.class));

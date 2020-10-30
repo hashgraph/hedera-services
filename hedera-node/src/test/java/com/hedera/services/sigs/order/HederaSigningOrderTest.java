@@ -93,7 +93,6 @@ import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.SystemUndeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
-import static com.hedera.test.factories.scenarios.TokenTransactScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.*;
