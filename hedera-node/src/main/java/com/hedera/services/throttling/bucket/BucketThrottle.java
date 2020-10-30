@@ -21,7 +21,7 @@ package com.hedera.services.throttling.bucket;
  */
 
 import com.google.common.base.MoreObjects;
-import com.swirlds.common.throttle.Throttle;
+import com.swirlds.throttle.Throttle;
 
 import java.util.Optional;
 

@@ -220,15 +220,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		}
 
 		ctx.update(this);
-
-		/*
-		ctx.txnHistories().clear();
-		ctx.recordsHistorian().reviewExistingRecords();
-		ctx.systemFilesManager().loadFeeSchedules();
-		ctx.systemFilesManager().loadExchangeRates();
-		ctx.systemFilesManager().loadApplicationProperties();
-		ctx.systemFilesManager().loadApiPermissions(); */
-
 		CONTEXTS.store(ctx);
 
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);

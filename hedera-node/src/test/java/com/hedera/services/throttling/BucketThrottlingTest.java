@@ -26,7 +26,7 @@ import com.hedera.services.throttling.bucket.BucketThrottle;
 import com.hedera.services.throttling.bucket.CapacityTest;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.throttle.Throttle;
+import com.swirlds.throttle.Throttle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
