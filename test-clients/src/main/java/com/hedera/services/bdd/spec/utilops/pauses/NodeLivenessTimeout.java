@@ -71,7 +71,7 @@ public class NodeLivenessTimeout extends UtilOp {
 		var deadline = now.plus(duration, unit.toChronoUnit());
 		var nextDeadLog = now.plus(logIntervalDuration, unit.toChronoUnit());
 		while (Instant.now().isBefore(deadline)) {
-			var op = getAccountBalance(node).noLogging();
+			var op = getAccountBalance("0.0.2").setNode(node).noLogging();
 			var error = op.execFor(spec);
 			if (error.isEmpty()) {
 				log.info(" --> Node {} available after {} {}",
