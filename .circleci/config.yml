@@ -907,11 +907,11 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "30 17,4 * * *"
+          cron: "45 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - test-on-develop
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -968,11 +968,11 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "45 17,4 * * *"
+          cron: "30 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - test-on-develop
     jobs:
       - build-platform-and-services
       - run-network-error-regression:
@@ -989,7 +989,7 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "30 16 * * *"
+              cron: "25 18 * * *"
               filters:
                 branches:
                   only:
@@ -1032,7 +1032,7 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "25 16 * * *"
+          cron: "19 18 * * *"
           filters:
             branches:
               only:
