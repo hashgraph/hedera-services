@@ -887,7 +887,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "57 15 * * *"
+          cron: "28 19 * * *"
           filters:
             branches:
               only:
@@ -1543,6 +1543,7 @@ jobs:
             - repo/hedera-node
 
   run-basic-suiterunner-tests:
+  run-basic-suiterunner-tests:
     parameters:
       workflow-name:
         type: string
@@ -1555,7 +1556,7 @@ jobs:
           name: Run various suites in SuiteRunner
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Basic-4N-1C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Misc-6_2N-1C.json /repo
 
       - run:
           name: Sync results of SuiteRunner suites to AWS
