@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
@@ -40,7 +41,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -147,14 +147,14 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						grantTokenKyc("tbd", GENESIS),
 						tokenFreeze("tbd", GENESIS),
 						tokenUnfreeze("tbd", GENESIS),
-						tokenTransact(moving(1, "tbd")
+						cryptoTransfer(moving(1, "tbd")
 								.between(TOKEN_TREASURY, GENESIS)),
 						tokenDelete("tbd")
 								.payingWith("payer")
 				).then(
 						getTokenInfo("tbd").logged(),
 						getAccountInfo(TOKEN_TREASURY).logged(),
-						tokenTransact(moving(1, "tbd")
+						cryptoTransfer(moving(1, "tbd")
 								.between(TOKEN_TREASURY, GENESIS))
 								.hasKnownStatus(TOKEN_WAS_DELETED),
 						mintToken("tbd", 1)

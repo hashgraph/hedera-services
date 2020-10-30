@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -80,8 +78,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenOnlyTxnsAreAtomic(),
 						tokenPlusHbarTxnsAreAtomic(),
 						nonZeroTransfersRejected(),
-						prechecksWork(),
 						allRequiredSigsAreChecked(),
+						prechecksWork(),
 				}
 		);
 	}
@@ -137,8 +135,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								moving(10, A_TOKEN)
 										.from(TOKEN_TREASURY)
 						).hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
-						cryptoTransfer(new TokenMovement[0])
-								.hasPrecheck(EMPTY_TOKEN_TRANSFER_BODY),
 						cryptoTransfer(
 								moving(10, A_TOKEN)
 										.empty()

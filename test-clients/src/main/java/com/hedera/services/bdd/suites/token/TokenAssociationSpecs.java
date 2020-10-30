@@ -35,14 +35,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -157,12 +156,12 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
 								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
 						tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 										.between(TOKEN_TREASURY, "misc")),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
 								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 										.between("misc", TOKEN_TREASURY)),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)

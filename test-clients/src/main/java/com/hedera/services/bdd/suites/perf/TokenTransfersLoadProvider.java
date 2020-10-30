@@ -41,10 +41,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -124,7 +123,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						senders.computeIfAbsent(token, ignore -> new ArrayList<>()).add(sender);
 						initializers.add(cryptoCreate(sender));
 						initializers.add(tokenAssociate(sender, token));
-						initializers.add(tokenTransact(
+						initializers.add(cryptoTransfer(
 								moving(balanceInit.get(), token)
 										.between(treasury, sender)));
 					}
@@ -133,7 +132,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						receivers.computeIfAbsent(token, ignore -> new ArrayList<>()).add(receiver);
 						initializers.add(cryptoCreate(receiver));
 						initializers.add(tokenAssociate(receiver, token));
-						initializers.add(tokenTransact(
+						initializers.add(cryptoTransfer(
 								moving(balanceInit.get(), token)
 										.between(treasury, receiver)));
 					}
@@ -161,7 +160,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 									.distributing(token + "sender" + j, receivers);
 						}
 					}
-					op = tokenTransact(xfers).noLogging().deferStatusResolution();
+					op = cryptoTransfer(xfers).noLogging().deferStatusResolution();
 					firstDir.set(Boolean.FALSE);
 				} else {
 					var xfers = new TokenMovement[numTokens * numReceivers];
@@ -176,7 +175,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 									.distributing(token + "receiver" + j, senders);
 						}
 					}
-					op = tokenTransact(xfers).noLogging().deferStatusResolution();
+					op = cryptoTransfer(xfers).noLogging().deferStatusResolution();
 					firstDir.set(Boolean.TRUE);
 				}
 				return Optional.of(op);

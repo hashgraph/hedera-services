@@ -35,13 +35,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -164,7 +164,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.supplyKey("burnKey"),
 						tokenAssociate("misc", BURN_TOKEN),
-						tokenTransact(
+						cryptoTransfer(
 								moving(TRANSFER_AMOUNT, BURN_TOKEN)
 										.between(TOKEN_TREASURY, "misc")),
 						getAccountBalance("misc")
@@ -201,7 +201,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.initialSupply(1_000)
 								.wipeKey("wipeKey"),
 						tokenAssociate("misc", wipeableToken),
-						tokenTransact(
+						cryptoTransfer(
 								moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
 						getAccountBalance("misc")
 								.hasTokenBalance(wipeableToken, 500),
@@ -243,7 +243,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.initialSupply(1_000)
 								.wipeKey("wipeKey"),
 						tokenAssociate("misc", anotherWipeableToken),
-						tokenTransact(
+						cryptoTransfer(
 								moving(500, anotherWipeableToken).between(TOKEN_TREASURY, "misc"))
 				).then(
 						wipeTokenAccount(unwipeableToken, TOKEN_TREASURY, 1)
@@ -360,17 +360,17 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate("misc", withPlusDefaultFalse)
 				).when(
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, withPlusDefaultFalse)
 										.between(TOKEN_TREASURY, "misc")),
 						tokenFreeze(withPlusDefaultFalse, "misc"),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, withPlusDefaultFalse)
 										.between(TOKEN_TREASURY, "misc"))
 								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
 						getAccountInfo("misc").logged(),
 						tokenUnfreeze(withPlusDefaultFalse, "misc"),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, withPlusDefaultFalse)
 										.between(TOKEN_TREASURY, "misc"))
 				).then(
@@ -395,21 +395,21 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate("misc", withKycKey, withoutKycKey)
 				).when(
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, withKycKey)
 										.between(TOKEN_TREASURY, "misc"))
 								.hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
 						getAccountInfo("misc").logged(),
 						grantTokenKyc(withKycKey, "misc"),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, withKycKey)
 										.between(TOKEN_TREASURY, "misc")),
 						revokeTokenKyc(withKycKey, "misc"),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, withKycKey)
 										.between(TOKEN_TREASURY, "misc"))
 								.hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, withoutKycKey)
 										.between(TOKEN_TREASURY, "misc"))
 				).then(

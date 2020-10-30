@@ -64,6 +64,7 @@ import org.junit.runner.RunWith;
 
 import javax.swing.plaf.nimbus.State;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -179,6 +180,7 @@ class StateViewTest {
 		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
 
 		StateView.tokenRelsFn = mockTokenRelsFn;
+		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
 		subject = new StateView(
 				tokenStore,

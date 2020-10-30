@@ -1322,7 +1322,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 0703-M-SubsumeTokenTransfers
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack

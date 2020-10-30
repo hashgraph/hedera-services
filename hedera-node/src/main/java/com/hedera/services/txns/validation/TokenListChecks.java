@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -46,14 +47,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 public class TokenListChecks {
-    public static boolean hasRepeatedTokenID(List<TokenID> tokens) {
-        var unique = new HashSet<TokenID>(tokens);
-        return unique.size() < tokens.size();
+    public static boolean repeatsItself(List<TokenID> tokens) {
+        return new HashSet<>(tokens).size() < tokens.size();
     }
 
     public static ResponseCodeEnum checkTokenTransfers(List<TokenTransferList> tokenTransferLists) {
-        var uniqueTokens = new HashSet<TokenID>();
+    	if (tokenTransferLists.isEmpty()) {
+    	    return OK;
+        }
 
+        Set<TokenID> uniqueTokens = new HashSet<>();
         for (TokenTransferList tokenTransferList : tokenTransferLists) {
             if (!tokenTransferList.hasToken()) {
                 return INVALID_TOKEN_ID;
@@ -99,19 +102,6 @@ public class TokenListChecks {
         return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
     }
 
-    public static ResponseCodeEnum checkKey(Key key, ResponseCodeEnum failure) {
-        try {
-            var fcKey = JKey.mapKey(key);
-            if (!fcKey.isValid()) {
-                return failure;
-            }
-            return OK;
-        } catch (Exception ignore) {
-            return failure;
-        }
-    }
-
-
     public static ResponseCodeEnum checkKeys(boolean hasAdminKey, Key adminKey, boolean hasKycKey, Key kycKey, boolean hasWipeKey, Key wipeKey, boolean hasSupplyKey, Key supplyKey) {
         var validity = OK;
 
@@ -143,5 +133,17 @@ public class TokenListChecks {
             }
         }
         return validity;
+    }
+
+    public static ResponseCodeEnum checkKey(Key key, ResponseCodeEnum failure) {
+        try {
+            var fcKey = JKey.mapKey(key);
+            if (!fcKey.isValid()) {
+                return failure;
+            }
+            return OK;
+        } catch (Exception ignore) {
+            return failure;
+        }
     }
 }

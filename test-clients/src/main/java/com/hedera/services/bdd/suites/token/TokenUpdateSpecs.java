@@ -187,7 +187,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUnfreeze("tbu", "misc")
 								.signedBy(GENESIS, "kycThenFreezeKey"),
 						getAccountInfo("misc").logged(),
-						tokenTransact(moving(5, "tbu")
+						cryptoTransfer(moving(5, "tbu")
 								.between(TOKEN_TREASURY, "misc")),
 						mintToken("tbu", 10)
 								.signedBy(GENESIS, "wipeThenSupplyKey"),
@@ -268,7 +268,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				).then(
 						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
 						tokenAssociate(GENESIS, "tbu"),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, "tbu").between(TOKEN_TREASURY, GENESIS))
 				);
 	}

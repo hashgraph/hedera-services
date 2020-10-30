@@ -365,7 +365,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							grantTokenKyc("tokenTbd", SCENARIO_PAYER_NAME)
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME),
-							tokenTransact(moving(10, "tokenTbd").between(GENESIS, SCENARIO_PAYER_NAME))
+							cryptoTransfer(moving(10, "tokenTbd").between(GENESIS, SCENARIO_PAYER_NAME))
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME),
 							wipeTokenAccount("tokenTbd", SCENARIO_PAYER_NAME, 10)

@@ -33,15 +33,16 @@ import org.apache.logging.log4j.Logger;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -103,8 +104,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 								.initialSupply(TOKEN_INITIAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate("toBeDeleted", "misc"),
-						tokenTransact(TokenMovement
-								.moving(TOKEN_INITIAL_SUPPLY, "misc")
+						cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc")
 								.between(TOKEN_TREASURY, "toBeDeleted"))
 				).then(
 						cryptoDelete("toBeDeleted")

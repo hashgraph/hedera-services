@@ -37,6 +37,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -289,7 +290,7 @@ public class HederaLedger {
 				continue;
 			}
 			var relationship = asTokenRel(aId, tId);
-			var balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+			var balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 			if (balance > 0) {
 				return false;
 			}
@@ -344,15 +345,26 @@ public class HederaLedger {
 		return validity;
 	}
 
-	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfersTransactionBody transfers) {
+	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfersTransactionBody txn) {
+		return zeroSumTransfers(txn.getHbarTransfers(), txn.getTokenTransfersList());
+	}
+
+	public ResponseCodeEnum doAtomicTransfers(CryptoTransferTransactionBody txn) {
+		return zeroSumTransfers(txn.getTransfers(), txn.getTokenTransfersList());
+	}
+
+	private ResponseCodeEnum zeroSumTransfers(
+			TransferList hbarTransfers,
+			List<TokenTransferList> allTokenTransfers
+	) {
 		var validity = OK;
-		for (TokenTransferList xfers : transfers.getTokenTransfersList()) {
-			var id = tokenStore.resolve(xfers.getToken());
+		for (TokenTransferList tokenTransfers : allTokenTransfers) {
+			var id = tokenStore.resolve(tokenTransfers.getToken());
 			if (id == MISSING_TOKEN) {
 				validity = INVALID_TOKEN_ID;
 			}
 			if (validity == OK) {
-				var adjustments = xfers.getTransfersList();
+				var adjustments = tokenTransfers.getTransfersList();
 				for (AccountAmount adjustment : adjustments) {
 					validity = adjustTokenBalance(adjustment.getAccountID(), id, adjustment.getAmount());
 					if (validity != OK) {
@@ -368,11 +380,8 @@ public class HederaLedger {
 			validity = checkNetOfTokenTransfers();
 		}
 		if (validity == OK) {
-			if (transfers.hasHbarTransfers()) {
-				var hbarTransfers = transfers.getHbarTransfers();
-				if (hbarTransfers.getAccountAmountsCount() > 0) {
-					validity = tryTransfers(this, hbarTransfers);
-				}
+			if (hbarTransfers.getAccountAmountsCount() > 0) {
+				validity = tryTransfers(this, hbarTransfers);
 			}
 		}
 		if (validity != OK) {
