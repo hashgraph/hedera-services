@@ -1226,15 +1226,19 @@ workflows:
                 at: /
 
   nightly-freeze-restart:
-    triggers:
-      - schedule:
-          cron: "0 5 * * *"
+#    triggers:
+#      - schedule:
+#          cron: "0 5 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
+    jobs:
+      - fast-build-artifact:
           filters:
             branches:
               only:
-                - master
-    jobs:
-      - fast-build-artifact:
+                - 00716-D-freeze-restart-nightly-failure
           context: Slack
           workflow-name: freeze restart
       - start-singlejob-testnet:
@@ -1322,6 +1326,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 00716-D-freeze-restart-nightly-failure
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
