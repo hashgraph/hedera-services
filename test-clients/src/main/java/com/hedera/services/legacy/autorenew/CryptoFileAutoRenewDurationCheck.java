@@ -85,7 +85,7 @@ public class CryptoFileAutoRenewDurationCheck {
   public CryptoFileAutoRenewDurationCheck(int port, String host) {
     // connecting to the grpc server on the port
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoFileAutoRenewDurationCheck.stub = CryptoServiceGrpc.newBlockingStub(channel);
     CryptoFileAutoRenewDurationCheck.fileStub = FileServiceGrpc.newBlockingStub(channel);

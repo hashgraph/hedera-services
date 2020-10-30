@@ -542,7 +542,7 @@ public class DynamicRestartTest extends TestHelperComplex {
                 .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
                         transactionId, ResponseType.ANSWER_ONLY)).build();
         ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext(true)
+                .usePlaintext()
                 .build();
         CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
         Response transactionReceipts = stub.getTransactionReceipts(query);

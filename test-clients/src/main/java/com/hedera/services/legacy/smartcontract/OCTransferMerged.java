@@ -157,7 +157,7 @@ public class OCTransferMerged {
     loadGenesisAndNodeAcccounts();
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcHost, grpcPort)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
         nodeAccount);
@@ -237,7 +237,7 @@ public class OCTransferMerged {
       channelShared.shutdown();
     }
     channelShared = ManagedChannelBuilder.forAddress(grpcHost, grpcPort)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     cryptoStub = CryptoServiceGrpc.newBlockingStub(channelShared);
     sCServiceStub = SmartContractServiceGrpc.newBlockingStub(channelShared);

@@ -100,7 +100,7 @@ public class ServerAppConfigUtility {
 
     loadGenesisAndNodeAcccounts();  // Use the genesisAccount
 
-    channel = ManagedChannelBuilder.forAddress(hostName, port).usePlaintext(true).build();
+    channel = ManagedChannelBuilder.forAddress(hostName, port).usePlaintext().build();
     fStub = FileServiceGrpc.newBlockingStub(channel);
     Response response;
 

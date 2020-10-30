@@ -75,7 +75,7 @@ public class MultiSigCreationTransfer {
   public MultiSigCreationTransfer(int port, String host) {
     // connecting to the grpc server on the port
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     MultiSigCreationTransfer.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }

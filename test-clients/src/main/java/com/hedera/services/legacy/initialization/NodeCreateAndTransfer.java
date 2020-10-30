@@ -62,7 +62,7 @@ public class NodeCreateAndTransfer {
       throws Exception {
     log.info("Node Account to Create and Transfer Started");
     int port = 50211;
-    channel = ManagedChannelBuilder.forAddress("localhost", port).usePlaintext(true)
+    channel = ManagedChannelBuilder.forAddress("localhost", port).usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 

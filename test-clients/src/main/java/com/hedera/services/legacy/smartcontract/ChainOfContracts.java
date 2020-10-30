@@ -149,7 +149,7 @@ public class ChainOfContracts {
 
 	    loadGenesisAndNodeAcccounts();
 	    int port = 50211;
-	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true)
+	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext()
 	        .build();
 	    FileServiceBlockingStub stub = FileServiceGrpc.newBlockingStub(channel);
 	    CryptoServiceGrpc.CryptoServiceBlockingStub cryptoStub = CryptoServiceGrpc
@@ -211,7 +211,7 @@ public class ChainOfContracts {
 	      KeyPair keyGenerated) throws Exception {
 		  int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 	    Transaction transaction = TestHelper
@@ -241,7 +241,7 @@ public class ChainOfContracts {
 	            transactionId, ResponseType.ANSWER_ONLY)).build();
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 	    Response transactionReceipts = stub.getTransactionReceipts(query);
@@ -268,7 +268,7 @@ public class ChainOfContracts {
 	  private static FileID uploadFile(AccountID payerAccount, String fileName) throws Exception {
 	    FileID fileIdToReturn = null;
 	    int port = 50211;
-	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true)
+	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext()
 	        .build();
 	    FileServiceBlockingStub stub = FileServiceGrpc.newBlockingStub(channel);
 
@@ -320,7 +320,7 @@ public class ChainOfContracts {
 	    ContractID createdContract = null;
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 
 	    Duration contractAutoRenew = Duration.newBuilder().setSeconds(durationInSeconds).build();
@@ -365,7 +365,7 @@ public class ChainOfContracts {
 	      throws Exception {
 	    FileID fileIdToReturn = null;
 	    int port = 50211;
-	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true)
+	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext()
 	        .build();
 	    FileServiceBlockingStub stub = FileServiceGrpc.newBlockingStub(channel);
 	    CryptoServiceGrpc.CryptoServiceBlockingStub cryptoStub = CryptoServiceGrpc
@@ -426,7 +426,7 @@ public class ChainOfContracts {
 	    ContractID createdContract = null;
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -479,7 +479,7 @@ public class ChainOfContracts {
 	    AccountID createdAccount = null;
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 	    Transaction paymentTx = createQueryHeaderTransfer(payerAccount);
@@ -523,7 +523,7 @@ public class ChainOfContracts {
 	    AccountID createdAccount = null;
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -569,7 +569,7 @@ public class ChainOfContracts {
 	      ContractID contractId) throws Exception {
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -591,7 +591,7 @@ public class ChainOfContracts {
 
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -625,7 +625,7 @@ public class ChainOfContracts {
 	    String byteCode = "";
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -649,7 +649,7 @@ public class ChainOfContracts {
 	      AccountID accountID) throws Exception {
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 
@@ -670,7 +670,7 @@ public class ChainOfContracts {
 	      String solidityId) throws Exception {
 	    int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);

@@ -77,7 +77,7 @@ public class CryptoDeleteTest {
   public CryptoDeleteTest(int port, String host) {
     // connecting to the grpc server on the port
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoDeleteTest.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }
