@@ -85,7 +85,7 @@ public class SystemDeleteIT {
   public SystemDeleteIT(int port, String host) {
     // connecting to the grpc server on the port
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SystemDeleteIT.fileServiceBlockingStub = FileServiceGrpc.newBlockingStub(channel);
     SystemDeleteIT.cryptoStub = CryptoServiceGrpc.newBlockingStub(channel);
@@ -336,7 +336,7 @@ public class SystemDeleteIT {
     AccountID nodeAccount = AccountID.newBuilder().setAccountNum(3l).build();
     ContractID createdContract = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
 
     Duration contractAutoRenew = Duration.newBuilder().setSeconds(durationInSeconds).build();
@@ -379,7 +379,7 @@ public class SystemDeleteIT {
         .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
             transactionId, ResponseType.ANSWER_ONLY)).build();
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Response transactionReceipts = stub.getTransactionReceipts(query);

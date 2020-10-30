@@ -191,7 +191,7 @@ public class ClientBaseThread extends Thread {
 		while (channel == null || (channel.getState(false) != ConnectivityState.READY
 				&& channel.getState(false) != ConnectivityState.IDLE)) {
 
-			channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+			channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 			if (retry < MAX_RETRY_TIMES) {
 				log.info("{} Retry times {} state {}", getName(), retry, channel.getState(false));
 				retry++;
@@ -259,7 +259,7 @@ public class ClientBaseThread extends Thread {
 		nodeAccount = RequestBuilder.getAccountIdBuild(nodeAccountNumber, 0l, 0l);
 
 		channel = ManagedChannelBuilder.forAddress(host, port)
-				.usePlaintext(true)
+				.usePlaintext()
 				.build();
 		stub = CryptoServiceGrpc.newBlockingStub(channel);
 		sCServiceStub = SmartContractServiceGrpc.newBlockingStub(channel);

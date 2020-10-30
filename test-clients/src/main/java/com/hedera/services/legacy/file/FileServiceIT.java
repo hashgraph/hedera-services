@@ -195,7 +195,7 @@ public class FileServiceIT {
         channel.awaitTermination(10, TimeUnit.SECONDS);
       }catch (Exception e) {}
     }
-    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
     stub = FileServiceGrpc.newBlockingStub(channel);
     cstub = CryptoServiceGrpc.newBlockingStub(channel);
   }

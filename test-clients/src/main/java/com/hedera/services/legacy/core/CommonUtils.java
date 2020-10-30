@@ -20,16 +20,16 @@ package com.hedera.services.legacy.core;
  * ‍
  */
 
-import com.google.gson.Gson;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.ethereum.util.ByteUtil;
+import org.junit.Assert;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -46,15 +46,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-import org.ethereum.util.ByteUtil;
-import org.junit.Assert;
 
 import static java.lang.Boolean.parseBoolean;
 
@@ -336,45 +330,6 @@ public class CommonUtils {
       rv[i] = b[i];
     }
 
-    return rv;
-  }
-
-  /**
-   * Returns a short form of a string in the form of display first and last n characters.
-   */
-  public static String shortForm(String string, int n) {
-    int d = 2 * n;
-    int len = string.length();
-    if (string.length() <= d) {
-      return string;
-    }
-    String rv = "length=" + len + ": content=" + string.substring(0, n) + " ... " + string
-        .substring(len - d, len);
-    return rv;
-  }
-
-  /**
-   * Serialize a Java object into Json string.
-   *
-   * @param obj Java object
-   * @return Json string
-   */
-  public static String serialize2Json(Object obj) {
-    Gson gsonObj = new Gson();
-    String json = gsonObj.toJson(obj);
-    return json;
-  }
-
-  /**
-   * Deserialize a Json string into a Java object.
-   *
-   * @param json Java object
-   * @return Json string
-   */
-  @SuppressWarnings({"unchecked"})
-  public static List<String> deserializeListOfStringFromJson(String json) {
-    Gson gsonObj = new Gson();
-    List<String> rv = gsonObj.fromJson(json, ArrayList.class);
     return rv;
   }
 

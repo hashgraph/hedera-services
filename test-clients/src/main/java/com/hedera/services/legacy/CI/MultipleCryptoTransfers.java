@@ -80,7 +80,7 @@ public class MultipleCryptoTransfers {
   public MultipleCryptoTransfers(int port, String host) {
     // connecting to the grpc server on the port
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     MultipleCryptoTransfers.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }
