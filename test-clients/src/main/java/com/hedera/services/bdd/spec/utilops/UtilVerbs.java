@@ -37,6 +37,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
+import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
@@ -104,15 +105,15 @@ public class UtilVerbs {
 	public static InBlockingOrder blockingOrder(HapiSpecOperation... ops) {
 		return new InBlockingOrder(ops);
 	}
-
+	public static NodeLivenessTimeout withLiveNode(String node) {
+		return new NodeLivenessTimeout(node);
+	}
 	public static HapiSpecSleep sleepFor(long timeMs) {
 		return new HapiSpecSleep(timeMs);
 	}
-
 	public static HapiSpecWaitUntil waitUntil(String timeOfDay) throws ParseException {
 		return new HapiSpecWaitUntil(timeOfDay);
 	}
-
 	public static UsableTxnId usableTxnIdNamed(String txnId) {
 		return new UsableTxnId(txnId);
 	}
