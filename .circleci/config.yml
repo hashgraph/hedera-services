@@ -989,11 +989,11 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "30 6,18 * * *"
+              cron: "45 16 * * *"
               filters:
                 branches:
                   only:
-                    - master
+                    - test-on-develop
     jobs:
       - build-platform-and-services
       - run-testnet-migration-regression:
@@ -1032,7 +1032,7 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "45 15 * * *"
+          cron: "30 16 * * *"
           filters:
             branches:
               only:
