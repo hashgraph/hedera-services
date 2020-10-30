@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -35,7 +36,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 
 public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidateDuplicateTransactionAfterReconnect.class);
@@ -55,12 +58,15 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 		final String transactionId = "specialTransactionId";
 		return defaultHapiSpec("validateDuplicateTransactionAfterReconnect")
 				.given(
-						sleepFor(Duration.ofSeconds(60).toMillis()),
+						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode()
 				)
 				.when(
+						getAccountBalance(GENESIS)
+								.setNode("0.0.6")
+								.unavailableNode(),
 						cryptoCreate("repeatedTransaction")
 								.payingWith(MASTER)
 								.via(transactionId),
@@ -69,7 +75,10 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 								.unavailableNode()
 				)
 				.then(
-						sleepFor(Duration.ofMinutes(5).toMillis()),
+						withLiveNode("0.0.6")
+								.within(180, TimeUnit.SECONDS)
+								.loggingAvailabilityEvery(30)
+								.sleepingBetweenRetriesFor(10),
 						cryptoCreate("repeatedTransaction")
 								.payingWith(MASTER)
 								.txnId(transactionId)
