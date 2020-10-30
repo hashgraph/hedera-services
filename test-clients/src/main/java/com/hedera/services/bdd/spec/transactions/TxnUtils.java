@@ -31,12 +31,9 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -352,20 +349,6 @@ public class TxnUtils {
 	}
 	private static final SplittableRandom r = new SplittableRandom();
 	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
-
-	public static String readableTokenTransferList(TokenTransfersTransactionBody xfers) {
-		String readableHbarXfers = xfers.hasHbarTransfers()
-				? String.format(
-						"HBAR(%s)%s",
-						readableTransferList(xfers.getHbarTransfers()),
-				        (xfers.getTokenTransfersCount() > 0 ? " & " : ""))
-				: "";
-		return readableHbarXfers + xfers.getTokenTransfersList().stream()
-				.map(scopedXfers -> String.format("%s(%s)",
-						asTokenString(scopedXfers.getToken()),
-						readableTransferList(scopedXfers.getTransfersList())))
-				.collect(joining(", "));
-	}
 
 	public static String readableTokenTransfers(List<TokenTransferList> tokenTransfers) {
 		return tokenTransfers.stream()
