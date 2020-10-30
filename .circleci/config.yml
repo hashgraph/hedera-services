@@ -887,7 +887,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "42 15 * * *"
+          cron: "57 15 * * *"
           filters:
             branches:
               only:
@@ -1032,11 +1032,11 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "30 18,5 * * *"
+          cron: "45 15 * * *"
           filters:
             branches:
               only:
-                - master
+                - test-on-develop
     jobs:
       - build-platform-and-services
       - run-software-update-regression:
@@ -1322,6 +1322,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - test-on-develop
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -1811,7 +1812,7 @@ jobs:
           command: |
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
-            cd /swirlds-platform; git checkout services-regression;
+            cd /swirlds-platform; git checkout develop;
             git submodule update --init --recursive --checkout;
             cd /swirlds-platform/regression;   git checkout 573-D-Final-Changes;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
