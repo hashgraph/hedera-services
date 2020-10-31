@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -56,7 +57,10 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 
 	private HapiApiSpec validateDuplicateTransactionAfterReconnect() {
 		final String transactionId = "specialTransactionId";
-		return defaultHapiSpec("validateDuplicateTransactionAfterReconnect")
+		return customHapiSpec("validateDuplicateTransactionAfterReconnect")
+				.withProperties(Map.of(
+						"txn.start.offset.secs", "-5")
+				)
 				.given(
 						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
@@ -69,6 +73,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 								.unavailableNode(),
 						cryptoCreate("repeatedTransaction")
 								.payingWith(MASTER)
+								.validDurationSecs(180)
 								.via(transactionId),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
@@ -82,6 +87,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 						cryptoCreate("repeatedTransaction")
 								.payingWith(MASTER)
 								.txnId(transactionId)
+								.validDurationSecs(180)
 								.hasPrecheck(DUPLICATE_TRANSACTION)
 								.setNode("0.0.6")
 				);
