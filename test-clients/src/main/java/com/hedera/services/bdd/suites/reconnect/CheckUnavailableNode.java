@@ -47,7 +47,7 @@ public class CheckUnavailableNode extends HapiApiSuite {
 	private HapiApiSpec checkUnavailableNode() {
 		return defaultHapiSpec("CheckUnavailableNode")
 				.given().when().then(
-						getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode()
+						getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode().noLogging()
 				);
 	}
 
