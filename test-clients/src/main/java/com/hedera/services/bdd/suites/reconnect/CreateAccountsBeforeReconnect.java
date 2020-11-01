@@ -36,7 +36,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -75,7 +74,7 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec runCreateAccounts() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings();
+		PerfTestLoadSettings settings = new PerfTestLoadSettings(120, 3, 1);
 
 		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
 				generateCreateAccountOperation()
@@ -83,7 +82,6 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 
 		return defaultHapiSpec("RunCreateAccounts")
 				.given(
-						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when()
 				.then(
