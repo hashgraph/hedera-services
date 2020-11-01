@@ -148,7 +148,7 @@ public class SmartContractFailFirst {
   private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
       throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Transaction transaction = TestHelper
@@ -175,7 +175,7 @@ public class SmartContractFailFirst {
         .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
             transactionId, ResponseType.ANSWER_ONLY)).build();
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Response transactionReceipts = stub.getTransactionReceipts(query);
@@ -202,7 +202,7 @@ public class SmartContractFailFirst {
       long durationInSeconds, long gas, long balance, ResponseCodeEnum expectedStatus)
       throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
 
     Duration contractAutoRenew = Duration.newBuilder().setSeconds(durationInSeconds).build();
@@ -255,7 +255,7 @@ public class SmartContractFailFirst {
     long totalCost = 0; // gas plus fees
     ContractID createdContract = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
         .newBlockingStub(channel);
@@ -303,7 +303,7 @@ public class SmartContractFailFirst {
   private TransactionRecord getTransactionRecordUsingGenesisAccount(TransactionID transactionId)
       throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     long fee = FeeClient.getCostForGettingTxRecord();
@@ -363,7 +363,7 @@ public class SmartContractFailFirst {
     byte[] dataToReturn = null;
     AccountID createdAccount = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
         .newBlockingStub(channel);
@@ -420,7 +420,7 @@ public class SmartContractFailFirst {
     loadGenesisAndNodeAcccounts();
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
         nodeAccount);

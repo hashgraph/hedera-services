@@ -106,7 +106,7 @@ public class ThresholdRecordTestSC {
     nodeAccount = AccountID.newBuilder().setAccountNum(node_account_number)
         .setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
     ManagedChannel channel1 = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     stub = CryptoServiceGrpc.newBlockingStub(channel1);
 
@@ -122,7 +122,7 @@ public class ThresholdRecordTestSC {
     loadGenesisAndNodeAcccounts();
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
         nodeAccount);
@@ -225,7 +225,7 @@ public class ThresholdRecordTestSC {
   public List<TransactionRecord> getTxRecordByContractID(AccountID payerID, ContractID contractId)
       throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
 
     SmartContractServiceGrpc.SmartContractServiceBlockingStub scstub = SmartContractServiceGrpc
@@ -277,7 +277,7 @@ public class ThresholdRecordTestSC {
     byte[] dataToReturn = null;
     AccountID createdAccount = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
         .newBlockingStub(channel);
@@ -340,7 +340,7 @@ public class ThresholdRecordTestSC {
     byte[] dataToReturn = null;
     ContractID createdContract = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
         .newBlockingStub(channel);
@@ -393,7 +393,7 @@ public class ThresholdRecordTestSC {
     AccountID createdAccount = null;
     int port = 50211;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     long fee = FeeClient.getCostForGettingTxRecord();
@@ -421,7 +421,7 @@ public class ThresholdRecordTestSC {
   private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
       throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Transaction transaction = TestHelper
@@ -446,7 +446,7 @@ public class ThresholdRecordTestSC {
       long durationInSeconds) throws Exception {
     ContractID createdContract = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
 
     Duration contractAutoRenew = Duration.newBuilder().setSeconds(durationInSeconds).build();
@@ -486,7 +486,7 @@ public class ThresholdRecordTestSC {
         .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
             transactionId, ResponseType.ANSWER_ONLY)).build();
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Response transactionReceipts = stub.getTransactionReceipts(query);

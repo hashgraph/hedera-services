@@ -227,7 +227,7 @@ public class SimpleStoragePerformanceThread implements Runnable {
         .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
             transactionId, ResponseType.ANSWER_ONLY)).build();
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Response transactionReceipts = stub.getTransactionReceipts(query);
@@ -432,7 +432,7 @@ public class SimpleStoragePerformanceThread implements Runnable {
     loadGenesisAndNodeAcccounts();
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
         nodeAccount);
@@ -588,7 +588,7 @@ public class SimpleStoragePerformanceThread implements Runnable {
       channel.shutdown();
     }
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     cstub = CryptoServiceGrpc.newBlockingStub(channel);
     scstub = SmartContractServiceGrpc.newBlockingStub(channel);

@@ -123,7 +123,7 @@ public class BigArrayPerformance  extends Thread {
   public BigArrayPerformance(String grpcHost, int grpcPort, int index) throws Exception {
 
     channelShared = ManagedChannelBuilder.forAddress(grpcHost, grpcPort)
-            .usePlaintext(true)
+            .usePlaintext()
             .build();
     cryptoStub = CryptoServiceGrpc.newBlockingStub(channelShared);
     sCServiceStub = SmartContractServiceGrpc.newBlockingStub(channelShared);

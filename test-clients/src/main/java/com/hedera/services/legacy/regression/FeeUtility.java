@@ -105,7 +105,7 @@ public class FeeUtility {
 
     loadGenesisAndNodeAcccounts();  // Use the genesisAccount
 
-    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
     fStub = FileServiceGrpc.newBlockingStub(channel);
 
     // Get the cost of gas in thousands of tinycents per unit

@@ -79,7 +79,7 @@ public class DuplicateTransactionTest {
   public DuplicateTransactionTest(int port, String host) {
     // connecting to the grpc server on the port
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     DuplicateTransactionTest.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }

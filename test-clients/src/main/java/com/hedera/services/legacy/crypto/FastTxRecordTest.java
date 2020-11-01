@@ -69,7 +69,7 @@ public class FastTxRecordTest {
   public FastTxRecordTest(int port, String host) {
     // connecting to the grpc server on the port
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     stub = CryptoServiceGrpc.newBlockingStub(channel);
   }

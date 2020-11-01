@@ -78,7 +78,7 @@ public class CryptoCreateThrottling {
   public CryptoCreateThrottling(int port, String host) {
     // connecting to the grpc server on the port
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     stub = CryptoServiceGrpc.newBlockingStub(channel);
   }
