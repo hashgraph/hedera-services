@@ -27,6 +27,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -52,7 +53,10 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 		String receiver = "0.0.1002";
 		return defaultHapiSpec("GetAccountBalanceFromAllNodes")
 				.given().when().then(
-						UtilVerbs.sleepFor(4 * 60 * 1000),
+						UtilVerbs.withLiveNode("0.0.6")
+								.within(4 * 60, TimeUnit.SECONDS)
+								.loggingAvailabilityEvery(30)
+								.sleepingBetweenRetriesFor(10),
 						balanceSnapshot("senderBalance", sender), // from default node 0.0.3
 						balanceSnapshot("receiverBalance", receiver), // from default node 0.0.3
 						getAccountBalance(sender).logged().setNode("0.0.4")
