@@ -29,12 +29,14 @@ import org.apache.logging.log4j.Logger;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 
 public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UpdateApiPermissionsDuringReconnect.class);
@@ -65,8 +67,10 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 						getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode()
 				)
 				.then(
-
-						sleepFor(Duration.ofMinutes(5).toMillis()),
+						withLiveNode("0.0.6")
+								.within(5 * 60, TimeUnit.SECONDS)
+								.loggingAvailabilityEvery(30)
+								.sleepingBetweenRetriesFor(10),
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.3")
