@@ -49,7 +49,7 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 		new CreateAccountsBeforeReconnect().runSuiteSync();
 	}
 
-	private static final AtomicInteger accountNumber = new AtomicInteger(1);
+	private static final AtomicInteger accountNumber = new AtomicInteger(0);
 
 
 	@Override
