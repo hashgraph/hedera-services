@@ -1052,11 +1052,11 @@ workflows:
   nightly-state-recover-regression:
     triggers:
       - schedule:
-          cron: "29 17 * * *"
+          cron: "40 18,5 * * *"
           filters:
             branches:
               only:
-                - test-on-develop
+                - master
     jobs:
       - build-platform-and-services-temporary
       - run-state-recover-regression:
@@ -1892,7 +1892,7 @@ jobs:
       - run:
           name: Build hedera-services repo
           command: |
-            mvn --no-transfer-progress clean install -DskipTests
+                mvn --no-transfer-progress clean install -DskipTests
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
@@ -1900,7 +1900,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git checkout services-regression;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout test-334;
+            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
