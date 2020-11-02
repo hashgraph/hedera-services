@@ -2139,7 +2139,6 @@ jobs:
             '/repo/.circleci/scripts/show_java_process.sh'
       - run-eet-suites:
           dsl-args: FreezeSuite
-          ci-properties-map: default.payer=0.0.2
       - run:
           name: Show logs before HGCApp restart
           command: |

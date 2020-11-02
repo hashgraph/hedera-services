@@ -106,9 +106,11 @@ public class FreezeSuite extends HapiApiSuite {
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
 						fileUpdate(fileIDString).path(uploadFile)
+						.payingWith(GENESIS)
 				).when(
 						freeze().setFileID(fileIDString)
 								.setFileHash(hash)
+								.payingWith(GENESIS)
 								.startingIn(60).seconds().andLasting(1).minutes()
 				).then(
 				);
