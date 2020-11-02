@@ -1052,11 +1052,11 @@ workflows:
   nightly-state-recover-regression:
     triggers:
       - schedule:
-          cron: "30 18,5 * * *"
+          cron: "29 17 * * *"
           filters:
             branches:
               only:
-                - master
+                - test-on-develop
     jobs:
       - build-platform-and-services-temporary
       - run-state-recover-regression:
@@ -1900,7 +1900,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git checkout services-regression;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
+            cd /swirlds-platform/regression;   git checkout test-334;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
