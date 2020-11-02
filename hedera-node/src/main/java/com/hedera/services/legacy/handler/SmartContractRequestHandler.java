@@ -632,15 +632,21 @@ public class SmartContractRequestHandler {
 						if (memoProvided) {
 							customizer.memo(op.getMemo());
 						}
+						var hasAcceptableAdminKey = true;
 						if (op.hasAdminKey()) {
 							JKey newAdminKey = convertKey(op.getAdminKey(), 1);
-							if (!(newAdminKey instanceof JContractIDKey)) {
+							if (!newAdminKey.isValid()) {
+								hasAcceptableAdminKey = false;
+							} else if (!(newAdminKey instanceof JContractIDKey)) {
 								customizer.key(newAdminKey);
 							}
 						}
-						ledger.customize(id, customizer);
-
-						receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
+						if (hasAcceptableAdminKey) {
+							ledger.customize(id, customizer);
+							receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
+						} else {
+							receipt = getTransactionReceipt(INVALID_ADMIN_KEY, exchange.activeRates());
+						}
 					}
 				} else {
 					receipt = getTransactionReceipt(FAIL_INVALID, exchange.activeRates());

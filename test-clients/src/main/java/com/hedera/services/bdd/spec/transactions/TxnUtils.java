@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -91,6 +92,8 @@ public class TxnUtils {
 
 	private static Pattern ID_LITERAL_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
 	private static Pattern PORT_LITERAL_PATTERN = Pattern.compile("\\d+");
+
+	public static Key EMPTY_THRESHOLD_KEY = Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build();
 
 	public static Key netOf(
 			HapiApiSpec spec,

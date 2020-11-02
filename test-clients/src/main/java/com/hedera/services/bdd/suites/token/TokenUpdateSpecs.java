@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
@@ -67,22 +68,23 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						symbolChanges(),
-						standardImmutabilitySemanticsHold(),
-						validAutoRenewWorks(),
-						validatesMissingAdminKey(),
-						tooLongNameCheckHolds(),
-						tooLongSymbolCheckHolds(),
-						numericSymbolCheckHolds(),
-						nameChanges(),
-						keysChange(),
-						validatesAlreadyDeletedToken(),
-						validatesMissingRef(),
-						treasuryEvolves(),
-						deletedAutoRenewAccountCheckHolds(),
-						renewalPeriodCheckHolds(),
-						invalidTreasuryCheckHolds(),
-						updateHappyPath()
+//						symbolChanges(),
+//						standardImmutabilitySemanticsHold(),
+//						validAutoRenewWorks(),
+//						validatesMissingAdminKey(),
+//						tooLongNameCheckHolds(),
+//						tooLongSymbolCheckHolds(),
+//						numericSymbolCheckHolds(),
+//						nameChanges(),
+//						keysChange(),
+//						validatesAlreadyDeletedToken(),
+//						validatesMissingRef(),
+//						treasuryEvolves(),
+//						deletedAutoRenewAccountCheckHolds(),
+//						renewalPeriodCheckHolds(),
+//						invalidTreasuryCheckHolds(),
+//						updateHappyPath(),
+						newTreasuryMustHaveZeroBalance(),
 				}
 		);
 	}
@@ -196,6 +198,34 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						wipeTokenAccount("tbu", "misc", 5)
 								.signedBy(GENESIS, "supplyThenWipeKey"),
 						getAccountInfo(TOKEN_TREASURY).logged()
+				);
+	}
+
+	public HapiApiSpec newTreasuryMustHaveZeroBalance() {
+		return defaultHapiSpec("NewTreasuryMustHaveZeroBalance")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate("oldTreasury"),
+						cryptoCreate("newTreasury"),
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury("oldTreasury")
+				).when(
+						getAccountInfo("oldTreasury").logged(),
+						getAccountInfo("newTreasury").logged(),
+						tokenAssociate("newTreasury", "tbu"),
+						cryptoTransfer(moving(1, "tbu")
+								.between("oldTreasury", "newTreasury")),
+						tokenUpdate("tbu")
+								.treasury("newTreasury")
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+						tokenUpdate("tbu")
+								.treasury("newTreasury")
+								.via("treasuryUpdateTxn")
+				).then(
+						getAccountInfo("oldTreasury").logged(),
+						getAccountInfo("newTreasury").logged(),
+						getTxnRecord("treasuryUpdateTxn").logged()
 				);
 	}
 

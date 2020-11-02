@@ -24,14 +24,10 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.token.TokenUnfreezeUsage;
 import com.hedera.services.usage.token.TokenUpdateUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -39,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,9 +44,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -75,6 +68,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
+	private boolean wipeToEmptyThresholdKey = false;
 
 	@Override
 	public HederaFunctionality type() {
@@ -85,6 +79,10 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		this.token = token;
 	}
 
+	public HapiTokenUpdate emptyingWipeKey() {
+		wipeToEmptyThresholdKey = true;
+		return this;
+	}
 
 	public HapiTokenUpdate freezeKey(String name) {
 		newFreezeKey = Optional.of(name);
@@ -174,6 +172,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				if (info.hasKycKey()) {
 					estimate.givenCurrentKycKey(Optional.of(info.getKycKey()));
 				}
+				if (info.hasWipeKey()) {
+					estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
+				}
 				estimate.givenCurrentExpiry(info.getExpiry())
 						.givenCurrentName(info.getName())
 						.givenCurrentSymbol(info.getSymbol());
@@ -223,7 +224,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
 							newTreasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
-							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
+							if (wipeToEmptyThresholdKey) {
+								b.setWipeKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+							} else {
+								newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
+							}
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							newFreezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {

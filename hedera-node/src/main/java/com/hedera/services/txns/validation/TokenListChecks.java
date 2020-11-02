@@ -36,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
@@ -102,37 +103,42 @@ public class TokenListChecks {
         return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
     }
 
-    public static ResponseCodeEnum checkKeys(boolean hasAdminKey, Key adminKey, boolean hasKycKey, Key kycKey, boolean hasWipeKey, Key wipeKey, boolean hasSupplyKey, Key supplyKey) {
-        var validity = OK;
+    public static ResponseCodeEnum checkKeys(
+            boolean hasAdminKey, Key adminKey,
+            boolean hasKycKey, Key kycKey,
+            boolean hasWipeKey, Key wipeKey,
+            boolean hasSupplyKey, Key supplyKey,
+            boolean hasFreezeKey, Key freezeKey
+    ) {
+        ResponseCodeEnum validity;
 
         if (hasAdminKey) {
-            validity = checkKey(adminKey, INVALID_ADMIN_KEY);
-            if (validity != OK) {
+            if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
                 return validity;
             }
         }
-
         if (hasKycKey) {
-            validity = checkKey(kycKey, INVALID_KYC_KEY);
-            if (validity != OK) {
+            if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
                 return validity;
             }
         }
-
         if (hasWipeKey) {
-            validity = checkKey(wipeKey, INVALID_WIPE_KEY);
-            if (validity != OK) {
+            if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasSupplyKey) {
+            if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasFreezeKey) {
+            if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
                 return validity;
             }
         }
 
-        if (hasSupplyKey) {
-            validity = checkKey(supplyKey, INVALID_SUPPLY_KEY);
-            if (validity != OK) {
-                return validity;
-            }
-        }
-        return validity;
+        return OK;
     }
 
     public static ResponseCodeEnum checkKey(Key key, ResponseCodeEnum failure) {
