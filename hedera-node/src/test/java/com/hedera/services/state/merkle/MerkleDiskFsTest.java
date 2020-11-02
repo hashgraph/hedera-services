@@ -20,12 +20,13 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityIdUtils;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.CommonUtils;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.logging.log4j.Logger;
@@ -35,18 +36,24 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -56,24 +63,26 @@ import static org.mockito.Mockito.verify;
 @RunWith(JUnitPlatform.class)
 public class MerkleDiskFsTest {
 	MerkleDiskFs subject;
-	AccountID nodeAccount = AccountID.newBuilder()
-			.setAccountNum(3).build();
+	AccountID nodeAccount = AccountID.newBuilder().setAccountNum(3).build();
 	FileID file150 = asFile("0.0.150");
 	byte[] origContents = "Where, like a pillow on a bed /".getBytes();
-	byte[] fileHash = null;
+	byte[] origFileHash = null;
+	byte[] newContents = "A pregnant bank swelled up to rest /".getBytes();
+	byte[] newFileHash = null;
 
 	String MOCK_DISKFS_DIR = "src/test/resources/diskFs";
 
 	@BeforeEach
 	private void setup() throws NoSuchAlgorithmException {
-		fileHash = MessageDigest.getInstance("SHA-384").digest(origContents);
+		origFileHash = MessageDigest.getInstance("SHA-384").digest(origContents);
+		newFileHash = MessageDigest.getInstance("SHA-384").digest(newContents);
 
 		Map<FileID, byte[]> hashes = new HashMap<>();
-		hashes.put(IdUtils.asFile("0.0.150"), fileHash);
+		hashes.put(IdUtils.asFile("0.0.150"), origFileHash);
 		subject = new MerkleDiskFs(
 				hashes,
 				MOCK_DISKFS_DIR,
-				EntityIdUtils.asLiteralString(nodeAccount));
+				asLiteralString(nodeAccount));
 	}
 
 	@Test
@@ -81,18 +90,18 @@ public class MerkleDiskFsTest {
 		// expect:
 		assertEquals(
 				"MerkleDiskFs{baseDir=" + MOCK_DISKFS_DIR
-						+ ", nodeScopedDir=" + EntityIdUtils.asLiteralString(nodeAccount)
-						+ ", fileHashes=[0.0.150 :: " + CommonUtils.hex(fileHash) + "]"
+						+ ", nodeScopedDir=" + asLiteralString(nodeAccount)
+						+ ", fileHashes=[0.0.150 :: " + CommonUtils.hex(origFileHash) + "]"
 						+ "}",
 				subject.toString()
 		);
 	}
 
 	@Test
-	public void SaveFileHashCorrect() {
+	public void saveFileHashCorrect() {
 		// setup:
 		subject.put(file150, origContents);
-		assertArrayEquals(fileHash, subject.diskContentHash(file150));
+		assertArrayEquals(origFileHash, subject.diskContentHash(file150));
 		assertArrayEquals(origContents, subject.contentsOf(file150));
 
 		MerkleDiskFs.log = mock(Logger.class);
@@ -101,15 +110,45 @@ public class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void FileNotExist() {
+	public void putChangesHash() {
+		// when:
+		subject.put(file150, newContents);
+
+		// then:
+		assertArrayEquals(hashWithFileHash(newFileHash), subject.getHash().getValue());
+	}
+
+	@Test
+	public void fileNotExist() {
 		// setup:
-		subject = new MerkleDiskFs("this/doesnt/exist", EntityIdUtils.asLiteralString(nodeAccount));
+		subject = new MerkleDiskFs("this/doesnt/exist", asLiteralString(nodeAccount));
 
 		Assertions.assertSame(MerkleDiskFs.MISSING_CONTENT, subject.contentsOf(file150));
 	}
 
 	@Test
+	void serializeAbbreviatedWorks() throws IOException {
+		var out = mock(SerializableDataOutputStream.class);
+
+		// when:
+		subject.serializeAbbreviated(out);
+
+		// then:
+		verify(out).writeInt(1);
+		verify(out, times(2)).writeLong(0);
+		verify(out).writeLong(150);
+		verify(out).writeByteArray(origFileHash);
+	}
+
+	@Test
 	public void serializeWorks() throws IOException {
+		// setup:
+		byte[] expectedBytes = "ABCDEFGH".getBytes();
+		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
+		MerkleDiskFs.bytesHelper = getter;
+
+		given(getter.allBytesFrom(Paths.get(subject.pathToContentsOf(file150)))).willReturn(expectedBytes);
+		// and:
 		var out = mock(SerializableDataOutputStream.class);
 
 		// when:
@@ -119,7 +158,23 @@ public class MerkleDiskFsTest {
 		verify(out).writeInt(1);
 		verify(out, times(2)).writeLong(0);
 		verify(out).writeLong(150);
-		verify(out).writeByteArray(fileHash);
+		verify(out).writeByteArray(expectedBytes);
+
+		// cleanup:
+		MerkleDiskFs.bytesHelper = Files::readAllBytes;
+	}
+
+	@Test
+	public void serializePropagatesException() throws IOException {
+		// setup:
+		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
+		MerkleDiskFs.bytesHelper = getter;
+		// and:
+		var out = mock(SerializableDataOutputStream.class);
+
+		given(getter.allBytesFrom(Paths.get(subject.pathToContentsOf(file150)))).willThrow(IOException.class);
+		// expect:
+		assertThrows(UncheckedIOException.class, () -> subject.serialize(out));
 	}
 
 	@Test
@@ -133,25 +188,85 @@ public class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	public void deserializeAbbreviatedWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+		// and:
+		var expectedHash = new Hash(hashWithOrigContents());
 
 		given(fin.readInt()).willReturn(1);
 		given(fin.readLong())
 				.willReturn(0L)
 				.willReturn(0L)
 				.willReturn(150L);
-		given(fin.readByteArray(48)).willReturn(fileHash);
+		given(fin.readByteArray(48)).willReturn(origFileHash);
 		// and:
-		var read = new MerkleDiskFs(MOCK_DISKFS_DIR, EntityIdUtils.asLiteralString(nodeAccount));
+		var read = new MerkleDiskFs(MOCK_DISKFS_DIR, asLiteralString(nodeAccount));
 
 		// when:
-		read.deserialize(fin, MerkleDiskFs.MERKLE_VERSION);
-		read.setFsBaseDir(MOCK_DISKFS_DIR);
-		read.setFsNodeScopedDir(EntityIdUtils.asLiteralString(nodeAccount));
+		read.deserializeAbbreviated(fin, expectedHash, MerkleDiskFs.MERKLE_VERSION);
 
 		// then:
 		assertEquals(subject, read);
+		// and:
+		assertEquals(expectedHash, read.getHash());
+	}
+
+	@Test
+	public void deserializeWorks() throws IOException {
+		// setup:
+		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+		// and:
+		var onDisk = new File(subject.pathToContentsOf(file150));
+		if (onDisk.exists()) {
+			onDisk.delete();
+		}
+		// and:
+		var expectedHash = new Hash(hashWithOrigContents());
+
+		given(fin.readInt()).willReturn(1);
+		given(fin.readLong())
+				.willReturn(0L)
+				.willReturn(0L)
+				.willReturn(150L);
+		given(fin.readByteArray(MerkleDiskFs.MAX_FILE_BYTES)).willReturn(origContents);
+		// and:
+		var read = new MerkleDiskFs(MOCK_DISKFS_DIR, asLiteralString(nodeAccount));
+
+		// when:
+		read.deserialize(fin, MerkleDiskFs.MERKLE_VERSION);
+
+		// then:
+		assertEquals(subject, read);
+		// and:
+		assertEquals(expectedHash, read.getHash());
+		// and:
+		assertArrayEquals(origContents, Files.readAllBytes(Paths.get(subject.pathToContentsOf(file150))));
+	}
+
+	@Test
+	public void hasExpectedHash() {
+		// expect:
+		assertArrayEquals(hashWithOrigContents(), subject.getHash().getValue());
+	}
+
+	@Test
+	public void emptyContentsHaveExpectedHash() {
+		// expect:
+		assertEquals(new Hash(noThrowSha384HashOf(new byte[0])), new MerkleDiskFs().getHash());
+	}
+
+	private byte[] hashWithOrigContents() {
+		return hashWithFileHash(origFileHash);
+	}
+
+	private byte[] hashWithFileHash(byte[] fileHash) {
+		byte[] stuff = new byte[3 * 8 + 48 + 4];
+		System.arraycopy(Longs.toByteArray(0), 0, stuff, 0, 8);
+		System.arraycopy(Longs.toByteArray(0), 0, stuff, 8, 8);
+		System.arraycopy(Longs.toByteArray(150), 0, stuff, 16, 8);
+		System.arraycopy(Ints.toByteArray(48), 0, stuff,24, 4);
+		System.arraycopy(fileHash, 0, stuff, 28, 48);
+		return noThrowSha384HashOf(stuff);
 	}
 }

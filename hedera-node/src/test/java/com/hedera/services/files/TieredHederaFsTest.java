@@ -277,6 +277,66 @@ class TieredHederaFsTest {
 	}
 
 	@Test
+	public void appendAllowsOversizeContentsForDiskFs() {
+		// setup:
+		var stretchContents = new byte[BYTES_PER_KB - 1];
+		var burstContents = new byte[2];
+		// and:
+		diskFs = mock(MerkleDiskFs.class);
+		// and:
+		subject = new TieredHederaFs(ids, properties, clock, data, metadata, () -> diskFs);
+
+		given(metadata.containsKey(fid)).willReturn(true);
+		given(metadata.get(fid)).willReturn(livingAttr);
+		given(diskFs.contains(fid)).willReturn(true);
+		given(diskFs.contentsOf(fid)).willReturn(stretchContents);
+		// and:
+		given(properties.maxFileSizeKb()).willReturn(1);
+
+		// when:
+		var result = subject.append(fid, burstContents);
+
+		// then:
+		assertEquals(SUCCESS, result.outcome());
+		assertTrue(result.fileReplaced());
+		// and:
+		verify(diskFs).put(
+				argThat(fid::equals),
+				argThat(bytes -> new String(bytes).equals(
+						new String(stretchContents) + new String(burstContents)
+				)));
+	}
+
+	@Test
+	public void overwritePermitsOversizeContentsForDiskFs() {
+		// setup:
+		var oversizeContents = new byte[BYTES_PER_KB + 1];
+		// and:
+		diskFs = mock(MerkleDiskFs.class);
+		// and:
+		subject = new TieredHederaFs(ids, properties, clock, data, metadata, () -> diskFs);
+
+		given(metadata.containsKey(fid)).willReturn(true);
+		given(metadata.get(fid)).willReturn(livingAttr);
+		given(diskFs.contains(fid)).willReturn(true);
+		// and:
+		given(properties.maxFileSizeKb()).willReturn(1);
+
+		// when:
+		var result = subject.overwrite(fid, oversizeContents);
+
+		// then:
+		assertEquals(SUCCESS, result.outcome());
+		assertTrue(result.fileReplaced());
+		// and:
+		verify(diskFs).put(
+				argThat(fid::equals),
+				argThat(bytes -> new String(bytes).equals(
+						new String(oversizeContents)
+				)));
+	}
+
+	@Test
 	public void overwriteRejectsOversizeContents() {
 		// setup:
 		IllegalArgumentException iae = null;
