@@ -911,7 +911,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable_4N_Perf_JRS_Regression_master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1154,20 +1154,16 @@ workflows:
             - attach_workspace:
                 at: /
   feature-update-regression:
-#    triggers:
-#        - schedule:
-#            cron: "0 8 * * *"
-#            filters:
-#              branches:
-#                only:
-#                  - master
+    triggers:
+        - schedule:
+            cron: "0 8 * * *"
+            filters:
+              branches:
+                only:
+                  - master
     jobs:
       - fast-build-artifact:
           context: Slack
-          filters:
-            branches:
-              only:
-                - 00715-D-nightly-update-regression-failure
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
@@ -1326,7 +1322,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00715-D-nightly-update-regression-failure
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
