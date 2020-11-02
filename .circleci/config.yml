@@ -891,7 +891,7 @@ workflows:
           filters:
             branches:
               only:
-                - test-on-develop
+                - master
     jobs:
       - build-platform-and-services
       - run-basic-suiterunner-tests:
@@ -911,7 +911,7 @@ workflows:
           filters:
             branches:
               only:
-                - test-on-develop
+                - master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -927,11 +927,11 @@ workflows:
   weekly-crypto-transfer-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "0 6 * * *"
+          cron: "0 1,13 * * *"
           filters:
             branches:
               only:
-                - test-on-develop
+                - master
     jobs:
       - build-platform-and-services
       - weekly-run-crypto-transfer-start-from-saved-state-regression:
@@ -947,11 +947,11 @@ workflows:
   weekly-HCS-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "0 6 * * *"
+          cron: "0 6,18 * * *"
           filters:
             branches:
               only:
-                - test-on-develop
+                - master
     jobs:
       - build-platform-and-services
       - weekly-run-HCS-start-from-saved-state-regression:
@@ -972,7 +972,7 @@ workflows:
           filters:
             branches:
               only:
-                - test-on-develop
+                - master
     jobs:
       - build-platform-and-services
       - run-network-error-regression:
@@ -993,7 +993,7 @@ workflows:
               filters:
                 branches:
                   only:
-                    - test-on-develop
+                    - master
     jobs:
       - build-platform-and-services
       - run-testnet-migration-regression:
@@ -1036,7 +1036,7 @@ workflows:
           filters:
             branches:
               only:
-                - test-on-develop
+                - master
     jobs:
       - build-platform-and-services
       - run-software-update-regression:
@@ -1322,7 +1322,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - test-on-develop
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -1814,7 +1813,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git checkout develop;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 573-D-Final-Changes-To-Develop;
+            cd /swirlds-platform/regression;   git checkout 573-D-Final-Changes;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
