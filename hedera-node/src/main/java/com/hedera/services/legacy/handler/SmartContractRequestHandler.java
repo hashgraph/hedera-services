@@ -885,29 +885,4 @@ public class SmartContractRequestHandler {
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
 	}
-
-	@VisibleForTesting
-	public static long getLogsBillableSize(TransactionRecord transactionRecord) {
-		long sizeToReturn = 0L;
-		ContractFunctionResult contractFunctionResult = ContractFunctionResult.getDefaultInstance();
-		if (transactionRecord.hasContractCallResult()) {
-			contractFunctionResult = transactionRecord.getContractCallResult();
-		} else if (transactionRecord.hasContractCreateResult()) {
-			contractFunctionResult = transactionRecord.getContractCreateResult();
-		}
-		if (contractFunctionResult.getLogInfoCount() > 0) {
-			List<ContractLoginfo> logsList = contractFunctionResult.getLogInfoList();
-			for (ContractLoginfo currLog : logsList) {
-				int numOfTopics = currLog.getTopicCount();
-				long dataSize = 0L;
-				ByteString logData = currLog.getData();
-				if (logData != null) {
-					dataSize = logData.size();
-				}
-				long currLogBillableSize = Program.calculateLogSize(numOfTopics, dataSize);
-				sizeToReturn += currLogBillableSize;
-			}
-		}
-		return sizeToReturn;
-	}
 }
