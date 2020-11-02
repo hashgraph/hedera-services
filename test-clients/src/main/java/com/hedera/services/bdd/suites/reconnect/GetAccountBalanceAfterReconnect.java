@@ -49,8 +49,8 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec getAccountBalanceFromAllNodes() {
-		String sender = "0.0.1001";
-		String receiver = "0.0.1002";
+		String sender = "0.0.1002";
+		String receiver = "0.0.1003";
 		return defaultHapiSpec("GetAccountBalanceFromAllNodes")
 				.given().when().then(
 						UtilVerbs.withLiveNode("0.0.6")
