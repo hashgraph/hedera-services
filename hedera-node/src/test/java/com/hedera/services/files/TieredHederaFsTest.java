@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.files.TieredHederaFs.BYTES_PER_KB;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -87,8 +88,6 @@ class TieredHederaFsTest {
 	MerkleDiskFs diskFs;
 	TieredHederaFs subject;
 
-	String MOCK_DISKFS_DIR = "src/test/resources/diskFs";
-
 	@BeforeEach
 	private void setup() throws Throwable {
 		validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
@@ -107,10 +106,7 @@ class TieredHederaFsTest {
 		ids = mock(EntityIdSource.class);
 		data = mock(Map.class);
 		metadata = mock(Map.class);
-		diskFs = new MerkleDiskFs(
-				MOCK_DISKFS_DIR,
-				EntityIdUtils.asLiteralString(AccountID.newBuilder().setAccountNum(3).build()));
-		diskFs.put(FileID.newBuilder().setFileNum(150).build(), "Where, like a pillow on a bed /".getBytes());
+		diskFs = mock(MerkleDiskFs.class);
 
 		clock = mock(Supplier.class);
 		given(clock.get()).willReturn(now);
@@ -118,11 +114,7 @@ class TieredHederaFsTest {
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxFileSizeKb()).willReturn(1);
 
-		subject = new TieredHederaFs(ids, properties, clock, data, metadata, this::getCurrentSpecialFileSystem);
-	}
-
-	private MerkleDiskFs getCurrentSpecialFileSystem() {
-		return diskFs;
+		subject = new TieredHederaFs(ids, properties, clock, data, metadata, () -> diskFs);
 	}
 
 	@Test
@@ -281,10 +273,6 @@ class TieredHederaFsTest {
 		// setup:
 		var stretchContents = new byte[BYTES_PER_KB - 1];
 		var burstContents = new byte[2];
-		// and:
-		diskFs = mock(MerkleDiskFs.class);
-		// and:
-		subject = new TieredHederaFs(ids, properties, clock, data, metadata, () -> diskFs);
 
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
@@ -311,10 +299,6 @@ class TieredHederaFsTest {
 	public void overwritePermitsOversizeContentsForDiskFs() {
 		// setup:
 		var oversizeContents = new byte[BYTES_PER_KB + 1];
-		// and:
-		diskFs = mock(MerkleDiskFs.class);
-		// and:
-		subject = new TieredHederaFs(ids, properties, clock, data, metadata, () -> diskFs);
 
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
@@ -859,30 +843,21 @@ class TieredHederaFsTest {
 		FileID fileID = FileID.newBuilder().setFileNum(150L).build();
 		given(metadata.containsKey(fileID)).willReturn(true);
 		given(metadata.get(fileID)).willReturn(livingAttr);
+		given(diskFs.contains(fileID)).willReturn(true);
+		given(diskFs.contentsOf(fileID)).willReturn(newContents);
 		// when:
 		var result = subject.overwrite(fileID, newContents);
 
 		// then:
 		assertEquals(SUCCESS, result.outcome());
 		assertTrue(result.fileReplaced());
+		// and:
+		verify(diskFs).put(fileID, newContents);
 
-		// given:
-		var contents = subject.cat(fileID);
-
-		// then:
-		assertEquals(
-				new String(newContents),
-				new String(contents));
-
-		// when
+		// and when:
 		subject.append(fileID, moreContents);
 
 		// then:
-		contents = subject.cat(fileID);
-		assertEquals(
-				new String(newContents) + new String(moreContents),
-				new String(contents));
-
-		assertEquals(subject.diskFs(), diskFs);
+		verify(diskFs).put(fileID, (new String(newContents) + new String(moreContents)).getBytes());
 	}
 }
