@@ -64,7 +64,7 @@ public class CryptoTwoToFifty {
   public CryptoTwoToFifty(int port, String host) {
     // connecting to the grpc server on the port
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoTwoToFifty.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }
@@ -88,7 +88,7 @@ public class CryptoTwoToFifty {
 
     log.info("Connecting host = " + host + "; port = " + port);
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoTwoToFifty.stub = CryptoServiceGrpc.newBlockingStub(channel);
 

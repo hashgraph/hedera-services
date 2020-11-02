@@ -164,7 +164,7 @@ public class BigArray {
     }
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcHost, grpcPort)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
         nodeAccount);
@@ -237,7 +237,7 @@ public class BigArray {
       channelShared.shutdown();
     }
     channelShared = ManagedChannelBuilder.forAddress(grpcHost, grpcPort)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     cryptoStub = CryptoServiceGrpc.newBlockingStub(channelShared);
     sCServiceStub = SmartContractServiceGrpc.newBlockingStub(channelShared);

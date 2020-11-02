@@ -67,7 +67,7 @@ public class CreateAccountPayerScenario {
   public CreateAccountPayerScenario(int port, String host) {
     // connecting to the grpc server on the port
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CreateAccountPayerScenario.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }

@@ -174,7 +174,7 @@ public class OCTransferStepOne {
     System.out.println(grpcHost + ":: is the grpc host");
 
     channelShared = ManagedChannelBuilder.forAddress(grpcHost, grpcPort)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     cryptoStub = CryptoServiceGrpc.newBlockingStub(channelShared);
     sCServiceStub = SmartContractServiceGrpc.newBlockingStub(channelShared);

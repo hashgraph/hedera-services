@@ -927,11 +927,12 @@ workflows:
   weekly-crypto-transfer-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "0 1,13 * * *"
+          cron: "0 5 * * *"
           filters:
             branches:
               only:
-                - master
+#                - master
+                - 00678-D-weekend-perf-regression
     jobs:
       - build-platform-and-services
       - weekly-run-crypto-transfer-start-from-saved-state-regression:
@@ -947,7 +948,7 @@ workflows:
   weekly-HCS-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "0 6,18 * * *"
+          cron: "0 8 * * *"
           filters:
             branches:
               only:
@@ -1785,7 +1786,8 @@ jobs:
       - run:
           name: Modify Payer account for Public testnet start from saved state test
           command: |
-            echo -n "$KEY_DevTestNetTreasury";
+            echo -n "$KEY_DevTestNetTreasury";    echo -n /repo/test-clients/src/main/resource/StartUpAccount.txt;
+#            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - run:
           name: Run start from saved state regression tests
           no_output_timeout: 120m
@@ -1814,10 +1816,11 @@ jobs:
       - run:
           name: Modify Payer account for Public testnet start from saved state test
           command: |
-            echo -n "$KEY_DevTestNetTreasury";
+            echo -n "$KEY_DevTestNetTreasury";    echo -n /repo/test-clients/src/main/resource/StartUpAccount.txt;
+#            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - run:
           name: Run start from saved state regression tests
-          no_output_timeout: 120m
+          no_output_timeout: 180m
           command: |
             cd /swirlds-platform/regression;
             ./regression_services_circleci.sh configs/services/suites/weekly/AWS-Weekly-Services-HCS-Restart-Performance-15N-15C.json /repo

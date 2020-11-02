@@ -79,7 +79,7 @@ public class NegativeTransferTest {
   public NegativeTransferTest(int port, String host) {
     // connecting to the grpc server on the port
     NegativeTransferTest.channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     NegativeTransferTest.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }

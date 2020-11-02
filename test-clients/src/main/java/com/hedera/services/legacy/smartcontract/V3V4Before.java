@@ -143,7 +143,7 @@ public class V3V4Before {
   private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
       throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Transaction transaction = TestHelper
@@ -170,7 +170,7 @@ public class V3V4Before {
         .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
             transactionId, ResponseType.ANSWER_ONLY)).build();
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     Response transactionReceipts = stub.getTransactionReceipts(query);
@@ -195,7 +195,7 @@ public class V3V4Before {
       AccountID adminAccount, String memo) throws Exception {
     ContractID createdContract = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
 
     Duration contractAutoRenew = Duration.newBuilder().setSeconds(DAY_SEC * 30).build();
@@ -246,7 +246,7 @@ public class V3V4Before {
       TransactionID transactionId) throws Exception {
     AccountID createdAccount = null;
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     long fee = FeeClient.getCostForGettingTxRecord();
@@ -338,7 +338,7 @@ public class V3V4Before {
   private ContractInfo getContractInfo(AccountID payerAccount,
       ContractID contractId) throws Exception {
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
         .newBlockingStub(channel);

@@ -155,7 +155,7 @@ public class SmartContractSelfDestruct {
 	  private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
 	      throws Exception {
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 	    Transaction transaction = TestHelper
@@ -182,7 +182,7 @@ public class SmartContractSelfDestruct {
 	        .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
 	            transactionId, ResponseType.ANSWER_ONLY)).build();
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 	    Response transactionReceipts = stub.getTransactionReceipts(query);
@@ -209,7 +209,7 @@ public class SmartContractSelfDestruct {
 	      long durationInSeconds) throws Exception {
 	    ContractID createdContract = null;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 
 	    Duration contractAutoRenew = Duration.newBuilder().setSeconds(durationInSeconds).build();
@@ -262,7 +262,7 @@ public class SmartContractSelfDestruct {
 	    byte[] dataToReturn = null;
 	    ContractID createdContract = null;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -316,7 +316,7 @@ public class SmartContractSelfDestruct {
 	      TransactionID transactionId) throws Exception {
 	    AccountID createdAccount = null;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 	    long fee = FeeClient.getCostForGettingTxRecord();
@@ -346,7 +346,7 @@ public class SmartContractSelfDestruct {
 	    byte[] dataToReturn = null;
 	    ContractID createdContract = null;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -425,7 +425,7 @@ public class SmartContractSelfDestruct {
 	    byte[] dataToReturn = null;
 	    AccountID createdAccount = null;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -471,7 +471,7 @@ public class SmartContractSelfDestruct {
 	  private AccountInfo getCryptoGetAccountInfo(AccountID payerAccount,
 	      AccountID accountID) throws Exception {
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 
@@ -505,7 +505,7 @@ public class SmartContractSelfDestruct {
 	  private GetBySolidityIDResponse getBySolidityID(AccountID payerAccount,
 	      String solidityId) throws Exception {
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -527,7 +527,7 @@ public class SmartContractSelfDestruct {
 	    loadGenesisAndNodeAcccounts();
 
 			ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-					.usePlaintext(true)
+					.usePlaintext()
 					.build();
 			TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
 					nodeAccount);
@@ -585,7 +585,7 @@ public class SmartContractSelfDestruct {
 	  private ContractInfo getContractInfo(AccountID payerAccount,
 	      ContractID contractId,ResponseCodeEnum expectedConstResponse , ResponseCodeEnum expecedAnswerResponse) throws Exception {
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-	        .usePlaintext(true)
+	        .usePlaintext()
 	        .build();
 	    SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 	        .newBlockingStub(channel);
@@ -706,7 +706,7 @@ public class SmartContractSelfDestruct {
 		        .setTransactionGetReceipt(RequestBuilder.getTransactionGetReceiptQuery(
 		            transactionId, ResponseType.ANSWER_ONLY)).build();
 		    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-		        .usePlaintext(true)
+		        .usePlaintext()
 		        .build();
 		    CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		    Response transactionReceipts = stub.getTransactionReceipts(query);
