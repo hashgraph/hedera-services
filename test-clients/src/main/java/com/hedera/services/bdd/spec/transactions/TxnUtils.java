@@ -297,8 +297,8 @@ public class TxnUtils {
 				.collect(joining(", "));
 	}
 
-	public static Timestamp currExpiry(String file, HapiApiSpec spec) throws Throwable {
-		HapiGetFileInfo subOp = getFileInfo(file).noLogging();
+	public static Timestamp currExpiry(String file, HapiApiSpec spec, String payer) throws Throwable {
+		HapiGetFileInfo subOp = getFileInfo(file).payingWith(payer).noLogging();
 		Optional<Throwable> error = subOp.execFor(spec);
 		if (error.isPresent()) {
 			log.error("Unable to look up current expiration timestamp of file 0.0."
@@ -306,6 +306,10 @@ public class TxnUtils {
 			throw error.get();
 		}
 		return subOp.getResponse().getFileGetInfo().getFileInfo().getExpirationTime();
+	}
+
+	public static Timestamp currExpiry(String file, HapiApiSpec spec) throws Throwable {
+		return currExpiry(file, spec, spec.setup().defaultPayerName());
 	}
 
 	public static Timestamp currContractExpiry(String contract, HapiApiSpec spec) throws Throwable {
@@ -349,7 +353,13 @@ public class TxnUtils {
 	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
 	public static String readableTokenTransferList(TokenTransfersTransactionBody xfers) {
-		return xfers.getTokenTransfersList().stream()
+		String readableHbarXfers = xfers.hasHbarTransfers()
+				? String.format(
+						"HBAR(%s)%s",
+						readableTransferList(xfers.getHbarTransfers()),
+				        (xfers.getTokenTransfersCount() > 0 ? " & " : ""))
+				: "";
+		return readableHbarXfers + xfers.getTokenTransfersList().stream()
 				.map(scopedXfers -> String.format("%s(%s)",
 						asTokenString(scopedXfers.getToken()),
 						readableTransferList(scopedXfers.getTransfersList())))

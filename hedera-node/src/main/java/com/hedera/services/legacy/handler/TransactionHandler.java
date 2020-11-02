@@ -36,7 +36,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
@@ -123,7 +122,6 @@ public class TransactionHandler {
   private BasicPrecheck basicPrecheck;
   private QueryFeeCheck queryFeeCheck;
   private AccountNumbers accountNums;
-  private HederaNodeStats stats;
   private SystemOpPolicies systemOpPolicies;
   private CurrentPlatformStatus platformStatus;
 
@@ -183,7 +181,7 @@ public class TransactionHandler {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
             null, null, null, null,
-            accountNums, null, systemOpPolicies, exemptions, platformStatus);
+            accountNums, systemOpPolicies, exemptions, platformStatus);
   }
 
   public TransactionHandler(
@@ -200,7 +198,6 @@ public class TransactionHandler {
           QueryFeeCheck queryFeeCheck,
           FunctionalityThrottling throttling,
           AccountNumbers accountNums,
-          HederaNodeStats stats,
           SystemOpPolicies systemOpPolicies,
           FeeExemptions exemptions,
           CurrentPlatformStatus platformStatus
@@ -218,7 +215,6 @@ public class TransactionHandler {
     this.queryFeeCheck = queryFeeCheck;
     this.throttling = throttling;
     this.accountNums = accountNums;
-    this.stats = stats;
     this.systemOpPolicies = systemOpPolicies;
     this.exemptions = exemptions;
     this.platformStatus = platformStatus;

@@ -76,7 +76,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	}
 
 	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
+		return List.of(new HapiApiSpec[] {
 				account2CanUpdateApplicationProperties(),
 				account50CanUpdateApplicationProperties(),
 				account2CanUpdateApiPermissions(),
@@ -93,7 +93,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 				account2CanUpdateExchangeRates(),
 				account50CanUpdateExchangeRates(),
 				account57CanUpdateExchangeRates()
-		);
+		});
 	}
 
 	private List<HapiApiSpec> negativeTests() {

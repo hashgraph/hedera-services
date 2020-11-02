@@ -6,6 +6,7 @@ function ensure_slackclient() {
   PIP_FINGERPRINT="${REPO}/.circleci/pipInstallSlackClientDone"
   if [ ! -f "$PIP_FINGERPRINT" ]; then
     ci_echo "Installing Python slackclient..."
+    pip3 install --upgrade pip -q
     pip3 install wheel -q
     pip3 install slackclient -q
     touch $PIP_FINGERPRINT

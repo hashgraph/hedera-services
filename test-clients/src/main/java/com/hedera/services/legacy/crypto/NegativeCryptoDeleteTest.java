@@ -68,7 +68,7 @@ public class NegativeCryptoDeleteTest {
   public NegativeCryptoDeleteTest(int port, String host) {
     // connecting to the grpc server on the port
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     NegativeCryptoDeleteTest.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }

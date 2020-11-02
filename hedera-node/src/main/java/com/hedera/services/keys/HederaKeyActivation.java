@@ -31,6 +31,7 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 
 import java.util.List;
@@ -51,9 +52,9 @@ import static java.util.stream.Collectors.toMap;
  * @see JKey
  */
 public class HederaKeyActivation {
-	public static final Signature INVALID_SIG = new InvalidSignature();
+	public static final TransactionSignature INVALID_SIG = new InvalidSignature();
 
-	public static final BiPredicate<JKey, Signature> ONLY_IF_SIG_IS_VALID =
+	public static final BiPredicate<JKey, TransactionSignature> ONLY_IF_SIG_IS_VALID =
 			(ignoredKey, sig) -> VALID.equals( sig.getSignatureStatus() );
 
 	private HederaKeyActivation(){
@@ -106,7 +107,7 @@ public class HederaKeyActivation {
 			KeyActivationCharacteristics characteristics
 	) {
 		TransactionBody txn = accessor.getTxn();
-		Function<byte[], Signature> sigsFn = pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
+		Function<byte[], TransactionSignature> sigsFn = pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
 
 		SigningOrderResult<SignatureStatus> othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
 		for (JKey otherKey : othersResult.getOrderedKeys()) {
@@ -132,16 +133,16 @@ public class HederaKeyActivation {
 	 */
 	public static boolean isActive(
 			JKey key,
-			Function<byte[], Signature> sigsFn,
-			BiPredicate<JKey, Signature> tests
+			Function<byte[], TransactionSignature> sigsFn,
+			BiPredicate<JKey, TransactionSignature> tests
 	) {
 		return isActive(key, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS);
 	}
 
 	public static boolean isActive(
 			JKey key,
-			Function<byte[], Signature> sigsFn,
-			BiPredicate<JKey, Signature> tests,
+			Function<byte[], TransactionSignature> sigsFn,
+			BiPredicate<JKey, TransactionSignature> tests,
 			KeyActivationCharacteristics characteristics
 	) {
 		if (!key.hasKeyList() && !key.hasThresholdKey()) {
@@ -163,15 +164,15 @@ public class HederaKeyActivation {
 	 * @param sigs the backing list of platform sigs.
 	 * @return a supplier that produces the backing list sigs by public key.
 	 */
-	public static Function<byte[], Signature> pkToSigMapFrom(List<Signature> sigs) {
-		final Map<ByteString, Signature> pkSigs = sigs
+	public static Function<byte[], TransactionSignature> pkToSigMapFrom(List<TransactionSignature> sigs) {
+		final Map<ByteString, TransactionSignature> pkSigs = sigs
 				.stream()
 				.collect(toMap(s -> ByteString.copyFrom(s.getExpandedPublicKeyDirect()), s -> s, (a, b) -> a));
 
 		return ed25519 -> pkSigs.getOrDefault(ByteString.copyFrom(ed25519), INVALID_SIG);
 	}
 
-	private static class InvalidSignature extends Signature {
+	private static class InvalidSignature extends TransactionSignature {
 		private static byte[] MEANINGLESS_BYTE = new byte[] {
 				(byte)0xAB
 		};

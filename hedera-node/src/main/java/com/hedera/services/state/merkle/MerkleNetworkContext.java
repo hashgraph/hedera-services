@@ -26,8 +26,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,7 +35,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public class MerkleNetworkContext extends AbstractMerkleNode implements MerkleLeaf {
+public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
 	public static final RichInstant UNKNOWN_CONSENSUS_TIME = null;

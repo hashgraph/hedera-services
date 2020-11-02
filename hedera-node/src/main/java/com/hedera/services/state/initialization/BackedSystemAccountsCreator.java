@@ -85,7 +85,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 		long nodeBalance = properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance");
 		long defaultBalance = properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance");
-		long recordThresholds = properties.getLongProperty("bootstrap.ledger.systemAccounts.recordThresholds");
 		long treasuryBalance = tinyBarFloat
 				- (nodeBalance * nodeAccountNums.size())
 				- (defaultBalance * (N - nodeAccountNums.size() - 1));
@@ -96,11 +95,11 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 				continue;
 			}
 			if (num == accountNums.treasury()) {
-				accounts.put(id, accountWith(treasuryBalance, recordThresholds, expiry));
+				accounts.put(id, accountWith(treasuryBalance, expiry));
 			} else if (nodeAccountNums.contains(num)) {
-				accounts.put(id, accountWith(nodeBalance, recordThresholds, expiry));
+				accounts.put(id, accountWith(nodeBalance, expiry));
 			} else {
-				accounts.put(id, accountWith(defaultBalance, recordThresholds, expiry));
+				accounts.put(id, accountWith(defaultBalance, expiry));
 			}
 		}
 
@@ -111,10 +110,8 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		accounts.flushMutableRefs();
 	}
 
-	private MerkleAccount accountWith(long balance, long amount, long expiry) {
+	private MerkleAccount accountWith(long balance, long expiry) {
 		var account = new HederaAccountCustomizer()
-				.fundsSentRecordThreshold(amount)
-				.fundsReceivedRecordThreshold(amount)
 				.isReceiverSigRequired(false)
 				.proxy(MISSING_ENTITY_ID)
 				.isDeleted(false)

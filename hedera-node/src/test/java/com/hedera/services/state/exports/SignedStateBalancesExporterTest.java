@@ -48,8 +48,10 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -278,9 +280,7 @@ class SignedStateBalancesExporterTest {
 
 		// then:
 		var lines = Files.readAllLines(Paths.get(testExportLoc()));
-		System.out.println(lines);
 		var expected = theExpectedBalances();
-		System.out.println(expected);
 		assertEquals(expected.size() + 2, lines.size());
 		assertEquals(String.format("TimeStamp:%s", now), lines.get(0));
 		assertEquals("shardNum,realmNum,accountNum,balance", lines.get(1));
@@ -400,7 +400,10 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@AfterAll
-	public static void removeDir() {
-		new File("src/test/resources/balances0.0.3/").delete();
+	public static void tearDown() throws IOException {
+		Files.walk(Path.of("src/test/resources/balance0.0.3"))
+				.sorted(Comparator.reverseOrder())
+				.map(Path::toFile)
+				.forEach(File::delete);
 	}
 }

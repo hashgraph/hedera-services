@@ -23,7 +23,6 @@ package com.hedera.services.sigs.metadata;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.BackedAccountLookup;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
@@ -38,6 +37,8 @@ import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -57,7 +58,7 @@ import java.util.function.Supplier;
  * @author Michael Tinker
  */
 public class DelegatingSigMetadataLookup implements SigMetadataLookup {
-	private final static Pause pause = SleepingPause.INSTANCE;
+	private final static Pause pause = SleepingPause.SLEEPING_PAUSE;
 
 	private final FileSigMetaLookup fileSigMetaLookup;
 	private final AccountSigMetaLookup accountSigMetaLookup;
@@ -102,11 +103,19 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			int maxRetries,
 			int retryWaitIncrementMs,
-			HederaNodeStats stats
+			MiscRunningAvgs runningAvgs,
+			MiscSpeedometers speedometers
 	) {
+		var accountLookup = new RetryingFCMapAccountLookup(
+				accounts,
+				maxRetries,
+				retryWaitIncrementMs,
+				pause,
+				runningAvgs,
+				speedometers);
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
-				new RetryingFCMapAccountLookup(accounts, maxRetries, retryWaitIncrementMs, pause, stats),
+				accountLookup,
 				new DefaultFCMapContractLookup(accounts),
 				new DefaultFCMapTopicLookup(topics),
 				tokenLookup);
@@ -115,14 +124,16 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	public static DelegatingSigMetadataLookup defaultAccountRetryingLookupsFor(
 			HederaFs hfs,
 			NodeLocalProperties properties,
-			HederaNodeStats stats,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup
+			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
+			MiscRunningAvgs runningAvgs,
+			MiscSpeedometers speedometers
 	) {
+		var accountLookup = new RetryingFCMapAccountLookup(pause, properties, accounts, runningAvgs, speedometers);
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
-				new RetryingFCMapAccountLookup(pause, properties, stats, accounts),
+				accountLookup,
 				new DefaultFCMapContractLookup(accounts),
 				new DefaultFCMapTopicLookup(topics),
 				tokenLookup);

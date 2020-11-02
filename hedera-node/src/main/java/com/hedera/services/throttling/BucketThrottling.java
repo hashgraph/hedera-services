@@ -24,14 +24,13 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.throttling.bucket.BucketConfig;
 import com.hedera.services.throttling.bucket.BucketThrottle;
 import com.hedera.services.throttling.bucket.CapacityTest;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -143,33 +142,15 @@ public class BucketThrottling implements FunctionalityThrottling {
 	}
 
 	private String defaultBucketPropFor(HederaFunctionality function) {
-		return QUERY_FUNCTIONS.contains(function)
+		return MiscUtils.QUERY_FUNCTIONS.contains(function)
 				? DEFAULT_QUERY_BUCKET_PROPERTY
 				: DEFAULT_TXN_BUCKET_PROPERTY;
 	}
 
 	private String defaultRequirementPropFor(HederaFunctionality function) {
-		return QUERY_FUNCTIONS.contains(function)
+		return MiscUtils.QUERY_FUNCTIONS.contains(function)
 				? DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY
 				: DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY;
 	}
 
-	private static final EnumSet<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
-			ConsensusGetTopicInfo,
-			GetBySolidityID,
-			ContractCallLocal,
-			ContractGetInfo,
-			ContractGetBytecode,
-			ContractGetRecords,
-			CryptoGetAccountBalance,
-			CryptoGetAccountRecords,
-			CryptoGetInfo,
-			CryptoGetLiveHash,
-			FileGetContents,
-			FileGetInfo,
-			TransactionGetReceipt,
-			TransactionGetRecord,
-			GetVersionInfo,
-			TokenGetInfo
-	);
 }

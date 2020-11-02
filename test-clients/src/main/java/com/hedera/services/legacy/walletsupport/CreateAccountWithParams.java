@@ -70,7 +70,7 @@ public class CreateAccountWithParams {
     public CreateAccountWithParams(int port, String host) {
         // connecting to the grpc server on the port
         ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext(true)
+                .usePlaintext()
                 .build();
         CreateAccountWithParams.stub = CryptoServiceGrpc.newBlockingStub(channel);
     }

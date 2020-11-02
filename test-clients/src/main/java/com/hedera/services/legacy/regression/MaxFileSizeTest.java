@@ -142,7 +142,7 @@ public class MaxFileSizeTest {
 	}
 
 	private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance) throws Exception {
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		Transaction transaction = TestHelper.createAccountWithSigMap(payerAccount, nodeAccount, keyPair, initialBalance,
 				accountKeyPairs.get(payerAccount));
@@ -162,7 +162,7 @@ public class MaxFileSizeTest {
 			throws Exception {
 		Query query = Query.newBuilder().setTransactionGetReceipt(
 				RequestBuilder.getTransactionGetReceiptQuery(transactionId, ResponseType.ANSWER_ONLY)).build();
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		Response transactionReceipts = stub.getTransactionReceipts(query);
 		int attempts = 1;
@@ -182,7 +182,7 @@ public class MaxFileSizeTest {
 
 	private TransactionRecord getTransactionRecord(AccountID payerAccount, TransactionID transactionId)
 			throws Exception {
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		long fee = FeeClient.getCostForGettingTxRecord();
 		Response recordResp = executeQueryForTxRecord(payerAccount, transactionId, stub, fee, ResponseType.COST_ANSWER);
@@ -206,7 +206,7 @@ public class MaxFileSizeTest {
 			Timestamp expirationTime, String contractMemo, AccountID adminAccount, ResponseCodeEnum expectedStatus)
 			throws Exception {
 
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);
 
@@ -346,7 +346,7 @@ public class MaxFileSizeTest {
         populateKeyListAndMapFromWacl(waclPubKeyList,waclPrivKeyList,keyList, pubKey2privKeyMap);
         Transaction signedFileCreate =TransactionSigner.signTransactionComplexWithSigMap(fileCreateRequest, keyList,
                 pubKey2privKeyMap);
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc
 				.newBlockingStub(channel);
 		
@@ -384,7 +384,7 @@ public class MaxFileSizeTest {
         populateKeyListAndMapFromWacl(waclPubKeyList,waclPrivKeyList,keyList, pubKey2privKeyMap);
         Transaction signedFileAppend =TransactionSigner.signTransactionComplexWithSigMap(fileAppendRequest, keyList,
                 pubKey2privKeyMap);
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc
 				.newBlockingStub(channel);
 		

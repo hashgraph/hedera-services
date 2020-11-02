@@ -63,8 +63,6 @@ import static org.mockito.Mockito.times;
 @RunWith(JUnitPlatform.class)
 class ExpiryManagerTest {
 	long a = 13257, b = 75231;
-	long[] aHistorical = { 10, 20, 20, 20 };
-	long[] bHistorical = { 10, 50 };
 	long[] aPayer = { 55 };
 	long[] bPayer = { 33 };
 
@@ -94,8 +92,8 @@ class ExpiryManagerTest {
 		// setup:
 		InOrder inOrder = inOrder(ledger);
 
-		givenAccount(a, aHistorical, aPayer);
-		givenAccount(b, bHistorical, bPayer);
+		givenAccount(a, aPayer);
+		givenAccount(b, bPayer);
 		// given:
 		subject.resumeTrackingFrom(accounts);
 
@@ -103,17 +101,10 @@ class ExpiryManagerTest {
 		subject.purgeExpiredRecordsAt(33, ledger);
 
 		// then:
-		inOrder.verify(ledger).purgeExpiredRecords(asAccount(a), 33);
-		inOrder.verify(ledger).purgeExpiredRecords(asAccount(b), 33);
-		inOrder.verify(ledger).purgeExpiredRecords(asAccount(a), 33);
-		// and:
-		inOrder.verify(ledger).purgeExpiredPayerRecords(
+		inOrder.verify(ledger).purgeExpiredRecords(
 				argThat(asAccount(b)::equals),
 				longThat(l -> l == 33),
 				any());
-		// and:
-		System.out.println("Final payerExpiries: " + subject.payerExpiries.allExpiries);
-		System.out.println("Final historicalExpiries: " + subject.historicalExpiries.allExpiries);
 		// and:
 		verify(recordCache).forgetAnyOtherExpiredHistory(33);
 	}
@@ -124,8 +115,8 @@ class ExpiryManagerTest {
 
 	@Test
 	public void resumesTrackingAsExpected() {
-		givenAccount(a, aHistorical, aPayer);
-		givenAccount(b, bHistorical, bPayer);
+		givenAccount(a, aPayer);
+		givenAccount(b, bPayer);
 
 		// when:
 		txnHistories.clear();
@@ -142,39 +133,18 @@ class ExpiryManagerTest {
 		// and:
 		assertTrue(subject.payerExpiries.allExpiries.isEmpty());
 		// and:
-		var e3 = subject.historicalExpiries.allExpiries.poll();
-		assertEquals(a, e3.getId());
-		assertEquals(10, e3.getExpiry());
-		var e4 = subject.historicalExpiries.allExpiries.poll();
-		assertEquals(b, e4.getId());
-		assertEquals(10, e4.getExpiry());
-		var e5 = subject.historicalExpiries.allExpiries.poll();
-		assertEquals(a, e5.getId());
-		assertEquals(20, e5.getExpiry());
-		var e6 = subject.historicalExpiries.allExpiries.poll();
-		assertEquals(b, e6.getId());
-		assertEquals(50, e6.getExpiry());
-		// and:
 		long[] allPayerTs = Stream.of(aPayer, bPayer)
 				.flatMap(a -> Arrays.stream(a).boxed())
 				.mapToLong(Long::valueOf)
 				.toArray();
-		long[] allHistoryTs = Stream.of(aHistorical, bHistorical)
-				.flatMap(a -> Arrays.stream(a).boxed())
-				.mapToLong(Long::valueOf)
-				.toArray();
 		assertTrue(Arrays.stream(allPayerTs).mapToObj(t -> txnIdOf(t).toGrpc()).allMatch(txnHistories::containsKey));
-		assertTrue(Arrays.stream(allHistoryTs).mapToObj(t -> txnIdOf(t).toGrpc()).noneMatch(txnHistories::containsKey));
 		// and:
 		assertTrue(txnHistories.values().stream().noneMatch(TxnIdRecentHistory::isStagePending));
 	}
 
-	private void givenAccount(long num, long[] historicalExpiries, long[] payerExpiries) {
+	private void givenAccount(long num, long[] payerExpiries) {
 		var account = new MerkleAccount();
 		for (long t : payerExpiries) {
-			account.payerRecords().offer(withExpiry(t));
-		}
-		for (long t : historicalExpiries) {
 			account.records().offer(withExpiry(t));
 		}
 		var id = new MerkleEntityId(0, 0, num);
@@ -301,21 +271,9 @@ class ExpiryManagerTest {
 		subject.payerExpiries = (MonotonicFullQueueExpiries<Long>) mock(MonotonicFullQueueExpiries.class);
 
 		// when:
-		subject.trackPayerRecord(payer, expiry);
+		subject.trackRecord(payer, expiry);
 
 		// then:
 		verify(subject.payerExpiries).track(Long.valueOf(13257), expiry);
-	}
-
-	@Test
-	public void addsExpectedExpiryForThreshold() {
-		// setup:
-		subject.historicalExpiries = (MonotonicFullQueueExpiries<Long>) mock(MonotonicFullQueueExpiries.class);
-
-		// when:
-		subject.trackHistoricalRecord(payer, expiry);
-
-		// then:
-		verify(subject.historicalExpiries).track(Long.valueOf(13257), expiry);
 	}
 }

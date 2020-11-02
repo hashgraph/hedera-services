@@ -104,9 +104,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.key(key)
 				.expiry(expiry)
 				.autoRenewPeriod(autoRenewPeriod)
-				.isReceiverSigRequired(op.getReceiverSigRequired())
-				.fundsSentRecordThreshold(op.getSendRecordThreshold())
-				.fundsReceivedRecordThreshold(op.getReceiveRecordThreshold());
+				.isReceiverSigRequired(op.getReceiverSigRequired());
 		if (op.hasProxyAccountID()) {
 			customizer.proxy(EntityId.ofNullableAccountId(op.getProxyAccountID()));
 		}

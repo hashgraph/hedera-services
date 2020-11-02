@@ -329,7 +329,7 @@ public class CreatePerformanceThread implements Runnable {
     genesisAccountPrivateKeys.add(genesisPrivateKey);
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
         nodeAccount);
@@ -479,7 +479,7 @@ public class CreatePerformanceThread implements Runnable {
       channel.shutdown();
     }
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     cstub = CryptoServiceGrpc.newBlockingStub(channel);
     scstub = SmartContractServiceGrpc.newBlockingStub(channel);

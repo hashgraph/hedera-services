@@ -24,12 +24,14 @@ import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.controllers.ConsensusController;
+import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -143,6 +145,13 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class MiscUtilsTest {
+	@Test
+	public void retrievesExpectedStatNames() {
+		// expect:
+		assertEquals(ContractController.CALL_CONTRACT_METRIC, MiscUtils.baseStatNameOf(ContractCall));
+		assertEquals(GetByKey.toString(), baseStatNameOf(GetByKey));
+	}
+
 	@Test
 	public void getsNodeAccounts() {
 		var address = mock(Address.class);
@@ -310,7 +319,7 @@ public class MiscUtilsTest {
 						.build()));
 
 		// expect:
-		Assertions.assertDoesNotThrow(() -> System.out.println(readableProperty(records)));
+		Assertions.assertDoesNotThrow(() -> readableProperty(records));
 	}
 
 	@Test
@@ -328,19 +337,19 @@ public class MiscUtilsTest {
 			put(CryptoController.CRYPTO_UPDATE_METRIC, new BodySetter<>(CryptoUpdateTransactionBody.class));
 			put(CryptoController.CRYPTO_TRANSFER_METRIC, new BodySetter<>(CryptoTransferTransactionBody.class));
 			put(CryptoController.CRYPTO_DELETE_METRIC, new BodySetter<>(CryptoDeleteTransactionBody.class));
-			put("createContract", new BodySetter<>(ContractCreateTransactionBody.class));
-			put("contractCallMethod", new BodySetter<>(ContractCallTransactionBody.class));
-			put("updateContract", new BodySetter<>(ContractUpdateTransactionBody.class));
-			put("deleteContract", new BodySetter<>(ContractDeleteTransactionBody.class));
-			put("addLiveHash", new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
-			put("deleteLiveHash", new BodySetter<>(CryptoDeleteLiveHashTransactionBody.class));
+			put(ContractController.CREATE_CONTRACT_METRIC, new BodySetter<>(ContractCreateTransactionBody.class));
+			put(ContractController.CALL_CONTRACT_METRIC, new BodySetter<>(ContractCallTransactionBody.class));
+			put(ContractController.UPDATE_CONTRACT_METRIC, new BodySetter<>(ContractUpdateTransactionBody.class));
+			put(ContractController.DELETE_CONTRACT_METRIC, new BodySetter<>(ContractDeleteTransactionBody.class));
+			put(CryptoController.ADD_LIVE_HASH_METRIC, new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
+			put(CryptoController.DELETE_LIVE_HASH_METRIC, new BodySetter<>(CryptoDeleteLiveHashTransactionBody.class));
 			put(FileController.CREATE_FILE_METRIC, new BodySetter<>(FileCreateTransactionBody.class));
 			put(FileController.FILE_APPEND_METRIC, new BodySetter<>(FileAppendTransactionBody.class));
 			put(FileController.UPDATE_FILE_METRIC, new BodySetter<>(FileUpdateTransactionBody.class));
 			put(FileController.DELETE_FILE_METRIC, new BodySetter<>(FileDeleteTransactionBody.class));
-			put("systemDelete", new BodySetter<>(SystemDeleteTransactionBody.class));
-			put("systemUndelete", new BodySetter<>(SystemUndeleteTransactionBody.class));
-			put("freeze", new BodySetter<>(FreezeTransactionBody.class));
+			put(ServicesStatsConfig.FREEZE_METRIC, new BodySetter<>(FreezeTransactionBody.class));
+			put(ServicesStatsConfig.SYSTEM_DELETE_METRIC, new BodySetter<>(SystemDeleteTransactionBody.class));
+			put(ServicesStatsConfig.SYSTEM_UNDELETE_METRIC, new BodySetter<>(SystemUndeleteTransactionBody.class));
 			put(ConsensusController.CREATE_TOPIC_METRIC, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusController.UPDATE_TOPIC_METRIC, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));

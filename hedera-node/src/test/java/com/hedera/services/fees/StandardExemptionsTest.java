@@ -53,16 +53,6 @@ class StandardExemptionsTest {
 	}
 
 	@Test
-	public void sysAdminAndTreasuryPayNoThresholdFees() {
-		// expect:
-		assertTrue(subject.isExemptFromRecordFees(account(2)));
-		assertTrue(subject.isExemptFromRecordFees(account(50)));
-		// and:
-		assertFalse(subject.isExemptFromRecordFees(account(51)));
-		assertFalse(subject.isExemptFromRecordFees(account(3)));
-	}
-
-	@Test
 	public void sysAdminPaysNoFees() {
 		given(accessor.getPayer()).willReturn(account(50));
 

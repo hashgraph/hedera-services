@@ -23,6 +23,7 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.consensus.HcsAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -33,6 +34,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
@@ -66,7 +71,7 @@ class ConsensusControllerTest {
 
 		// expect:
 		verify(hcsAnswers).topicInfo();
-		verify(queryResponseHelper).respondToHcs(query, queryObserver, null, ConsensusController.GET_TOPIC_INFO_METRIC);
+		verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.TokenGetInfo);
 	}
 
 	@Test
@@ -75,7 +80,7 @@ class ConsensusControllerTest {
 		subject.createTopic(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.CREATE_TOPIC_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, ConsensusCreateTopic);
 	}
 
 	@Test
@@ -84,7 +89,7 @@ class ConsensusControllerTest {
 		subject.deleteTopic(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.DELETE_TOPIC_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, ConsensusDeleteTopic);
 	}
 
 	@Test
@@ -93,7 +98,7 @@ class ConsensusControllerTest {
 		subject.updateTopic(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.UPDATE_TOPIC_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, ConsensusUpdateTopic);
 	}
 
 	@Test
@@ -102,6 +107,6 @@ class ConsensusControllerTest {
 		subject.submitMessage(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.SUBMIT_MESSAGE_METRIC);
+		verify(txnResponseHelper).submit(txn, txnObserver, ConsensusSubmitMessage);
 	}
 }

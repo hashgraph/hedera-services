@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
@@ -98,6 +99,7 @@ public abstract class HapiSpecOperation {
 	protected boolean useTls = false;
 	protected HapiSpecSetup.TxnConfig txnConfig = HapiSpecSetup.TxnConfig.ALTERNATE;
 	protected boolean useRandomNode = false;
+	protected boolean unavailableNode = false;
 	protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
 	protected Optional<SigMapGenerator.Nature> sigMapGen = Optional.empty();
 	protected Optional<List<Function<HapiApiSpec, Key>>> signers = Optional.empty();
@@ -189,10 +191,21 @@ public abstract class HapiSpecOperation {
 				updateStateOf(spec);
 			}
 		} catch (Throwable t) {
+			if (unavailableNode && t.getMessage().startsWith("UNAVAILABLE")) {
+				log.info("Node {} is unavailable as expected!", HapiPropertySource.asAccountString(node.get()));
+				return Optional.empty();
+			}
 			if (!loggingOff) {
 				log.warn(spec.logPrefix() + this + " failed!", t);
 			}
 			return Optional.of(t);
+		}
+
+		if (unavailableNode) {
+			String message = String.format("Node %s is NOT unavailable as expected!!!",
+					HapiPropertySource.asAccountString(node.get()));
+			log.error(message);
+			return Optional.of(new RuntimeException(message));
 		}
 		return Optional.empty();
 	}
@@ -347,9 +360,9 @@ public abstract class HapiSpecOperation {
 	}
 
 	protected void lookupSubmissionRecord(HapiApiSpec spec) throws Throwable {
-		HapiGetTxnRecord subOp = QueryVerbs
-				.getTxnRecord(extractTxnId(txnSubmitted))
+		HapiGetTxnRecord subOp = getTxnRecord(extractTxnId(txnSubmitted))
 				.noLogging()
+				.assertingNothing()
 				.suppressStats(true)
 				.nodePayment(spec.setup().defaultNodePaymentTinyBars());
 		Optional<Throwable> error = subOp.execFor(spec);

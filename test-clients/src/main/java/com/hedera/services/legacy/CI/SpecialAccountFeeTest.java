@@ -67,7 +67,7 @@ public class SpecialAccountFeeTest {
   public SpecialAccountFeeTest(int port, String host) {
     // connecting to the grpc server on the port
     channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     SpecialAccountFeeTest.stub = CryptoServiceGrpc.newBlockingStub(channel);
   }

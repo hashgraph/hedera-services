@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,7 @@ public class TokenTransactUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForTransferList() {
+	public void createsExpectedDeltaForTransferLists() {
 		givenOp();
 		// and:
 		subject = TokenTransactUsage.newEstimate(txn, sigUsage);
@@ -98,14 +99,22 @@ public class TokenTransactUsageTest {
 				+ FeeBuilder.BASIC_ENTITY_ID_SIZE
 				+ 2 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
 				+ FeeBuilder.BASIC_ENTITY_ID_SIZE
-				+ 2 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8));
+				+ 2 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
+				+ 3 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8));
 		verify(base).addRbs(
 				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(3, 7) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		verify(base).addRbs((3 * USAGE_PROPERTIES.accountAmountBytes()) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	private void givenOp() {
+		var hbarAdjusts = TransferList.newBuilder()
+				.addAccountAmounts(adjustFrom(a, -100))
+				.addAccountAmounts(adjustFrom(b, 50))
+				.addAccountAmounts(adjustFrom(c, 50))
+				.build();
 		op = TokenTransfersTransactionBody.newBuilder()
+				.setHbarTransfers(hbarAdjusts)
 				.addTokenTransfers(TokenTransferList.newBuilder()
 						.setToken(anotherId)
 						.addAllTransfers(List.of(

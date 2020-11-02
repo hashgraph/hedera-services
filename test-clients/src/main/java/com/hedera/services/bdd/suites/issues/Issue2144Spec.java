@@ -126,8 +126,7 @@ public class Issue2144Spec extends HapiApiSuite {
 						sleepFor(5_000L),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-								Map.of("throttlingTps", "0"))
+								.overridingProps(Map.of("throttlingTps", "0"))
 				));
 	}
 
@@ -164,8 +163,7 @@ public class Issue2144Spec extends HapiApiSuite {
 						inParallel(miscQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-								Map.of("queriesTps", "0"))
+								.overridingProps(Map.of("queriesTps", "0"))
 				));
 	}
 
@@ -177,15 +175,13 @@ public class Issue2144Spec extends HapiApiSuite {
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-								Map.of("throttling.hcs.getTopicInfo.tps", "0.5"))
+								.overridingProps(Map.of("throttling.hcs.getTopicInfo.tps", "0.5"))
 				).then(flattened(
 						inParallel(hcsQueryBurstFn.apply(MASTER)),
 						inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-								Map.of("throttling.hcs.getTopicInfo.tps", "33.3"))
+								.overridingProps(Map.of("throttling.hcs.getTopicInfo.tps", "33.3"))
 				));
 	}
 

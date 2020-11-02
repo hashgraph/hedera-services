@@ -57,8 +57,6 @@ public abstract class AccountCustomizer<
 		IS_SMART_CONTRACT,
 		AUTO_RENEW_PERIOD,
 		IS_RECEIVER_SIG_REQUIRED,
-		FUNDS_SENT_RECORD_THRESHOLD,
-		FUNDS_RECEIVED_RECORD_THRESHOLD,
 	};
 
 	private final Map<Option, P> optionProperties;
@@ -131,16 +129,6 @@ public abstract class AccountCustomizer<
 
 	public T isReceiverSigRequired(boolean option) {
 		changeManager.update(changes, optionProperties.get(IS_RECEIVER_SIG_REQUIRED), option);
-		return self();
-	}
-
-	public T fundsSentRecordThreshold(long option) {
-		changeManager.update(changes, optionProperties.get(FUNDS_SENT_RECORD_THRESHOLD), option);
-		return self();
-	}
-
-	public T fundsReceivedRecordThreshold(long option) {
-		changeManager.update(changes, optionProperties.get(FUNDS_RECEIVED_RECORD_THRESHOLD), option);
 		return self();
 	}
 }

@@ -26,8 +26,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,15 +37,16 @@ import java.util.Optional;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.describe;
 
-public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf {
+public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
 
 	static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
 	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
 
 	static final int RELEASE_070_VERSION = 1;
-	static final int RELEASE_080_VERSION = 2;
-	static final int RELEASE_090_VERSION = 3;
+	static final int RELEASE_08x_VERSION = 2;
+	static final int RELEASE_090_ALPHA_VERSION = 3;
+	static final int RELEASE_090_VERSION = 4;
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
@@ -58,8 +58,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	private long expiry;
 	private long hbarBalance;
 	private long autoRenewSecs;
-	private long senderThreshold;
-	private long receiverThreshold;
 	private String memo = DEFAULT_MEMO;
 	private boolean deleted;
 	private boolean smartContract;
@@ -73,8 +71,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			long expiry,
 			long hbarBalance,
 			long autoRenewSecs,
-			long senderThreshold,
-			long receiverThreshold,
 			String memo,
 			boolean deleted,
 			boolean smartContract,
@@ -85,8 +81,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		this.expiry = expiry;
 		this.hbarBalance = hbarBalance;
 		this.autoRenewSecs = autoRenewSecs;
-		this.senderThreshold = senderThreshold;
-		this.receiverThreshold = receiverThreshold;
 		this.memo = Optional.ofNullable(memo).orElse(DEFAULT_MEMO);
 		this.deleted = deleted;
 		this.smartContract = smartContract;
@@ -111,15 +105,19 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		expiry = in.readLong();
 		hbarBalance = in.readLong();
 		autoRenewSecs = in.readLong();
-		senderThreshold = in.readLong();
-		receiverThreshold = in.readLong();
+		if (version < RELEASE_090_VERSION) {
+			/* Previous releases included send/receive record thresholds */
+			in.readLong();
+			in.readLong();
+		}
 		memo = in.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
 		deleted = in.readBoolean();
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
 		proxy = serdes.readNullableSerializable(in);
-		if (version == RELEASE_080_VERSION) {
-			long[] unused = in.readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
+		if (version == RELEASE_08x_VERSION) {
+			/* Releases v0.8.0 and v0.8.1 included token information in the account state. */
+			in.readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
 		}
 	}
 
@@ -129,8 +127,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		out.writeLong(expiry);
 		out.writeLong(hbarBalance);
 		out.writeLong(autoRenewSecs);
-		out.writeLong(senderThreshold);
-		out.writeLong(receiverThreshold);
 		out.writeNormalisedString(memo);
 		out.writeBoolean(deleted);
 		out.writeBoolean(smartContract);
@@ -145,8 +141,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				expiry,
 				hbarBalance,
 				autoRenewSecs,
-				senderThreshold,
-				receiverThreshold,
 				memo,
 				deleted,
 				smartContract,
@@ -168,8 +162,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		return this.expiry == that.expiry &&
 				this.hbarBalance == that.hbarBalance &&
 				this.autoRenewSecs == that.autoRenewSecs &&
-				this.senderThreshold == that.senderThreshold &&
-				this.receiverThreshold == that.receiverThreshold &&
 				Objects.equals(this.memo, that.memo) &&
 				this.deleted == that.deleted &&
 				this.smartContract == that.smartContract &&
@@ -185,8 +177,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				expiry,
 				hbarBalance,
 				autoRenewSecs,
-				senderThreshold,
-				receiverThreshold,
 				memo,
 				deleted,
 				smartContract,
@@ -202,8 +192,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				.add("expiry", expiry)
 				.add("balance", hbarBalance)
 				.add("autoRenewSecs", autoRenewSecs)
-				.add("senderThreshold", senderThreshold)
-				.add("receiverThreshold", receiverThreshold)
 				.add("memo", memo)
 				.add("deleted", deleted)
 				.add("smartContract", smartContract)
@@ -226,14 +214,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 
 	public long autoRenewSecs() {
 		return autoRenewSecs;
-	}
-
-	public long senderThreshold() {
-		return senderThreshold;
-	}
-
-	public long receiverThreshold() {
-		return receiverThreshold;
 	}
 
 	public String memo() {
@@ -270,14 +250,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 
 	public void setAutoRenewSecs(long autoRenewSecs) {
 		this.autoRenewSecs = autoRenewSecs;
-	}
-
-	public void setSenderThreshold(long senderThreshold) {
-		this.senderThreshold = senderThreshold;
-	}
-
-	public void setReceiverThreshold(long receiverThreshold) {
-		this.receiverThreshold = receiverThreshold;
 	}
 
 	public void setMemo(String memo) {

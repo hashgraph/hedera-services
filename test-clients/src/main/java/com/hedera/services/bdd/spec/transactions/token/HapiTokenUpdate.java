@@ -263,7 +263,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 			return;
 		}
 		var registry = spec.registry();
-		newAdminKey.ifPresent(n -> registry.saveKey(token, registry.getKey(n)));
+		newAdminKey.ifPresent(n -> registry.saveAdminKey(token, registry.getKey(n)));
 		newSymbol.ifPresent(s -> registry.saveSymbol(token, s));
 		newName.ifPresent(s -> registry.saveName(token, s));
 		newFreezeKey.ifPresent(n -> registry.saveFreezeKey(token, registry.getKey(n)));

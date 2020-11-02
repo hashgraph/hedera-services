@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
@@ -64,16 +63,10 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 	private static final Logger log = LogManager.getLogger(CryptoHandlerTestHelper.class);
 	private FCMap<MerkleEntityId, MerkleAccount> map;
 	private GlobalFlag globalFlag;
-	private HederaNodeStats stats;
 
-	public CryptoHandlerTestHelper(FCMap<MerkleEntityId, MerkleAccount> map, HederaNodeStats stats) {
+	public CryptoHandlerTestHelper(FCMap<MerkleEntityId, MerkleAccount> map) {
 		this.map = map;
 		this.globalFlag = GlobalFlag.getInstance();
-		this.stats = stats;
-	}
-
-	public CryptoHandlerTestHelper(FCMap<MerkleEntityId, MerkleAccount> map){
-		this(map, null);
 	}
 
 	/**
@@ -263,7 +256,6 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 				transactionReceipt = TransactionReceipt.newBuilder().setAccountID(accountId)
 						.setStatus(ResponseCodeEnum.SUCCESS).build();
 			} catch (Exception e) {
-				e.printStackTrace();
 				transactionReceipt = TransactionReceipt.newBuilder().setAccountID(accountId)
 						.setStatus(ResponseCodeEnum.FAIL_INVALID).build();
 			}

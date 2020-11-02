@@ -99,11 +99,11 @@ public class CryptoDuplicatedTransaction extends Thread {
     String host = properties.getProperty("host");
     int port = Integer.parseInt(properties.getProperty("port"));
 
-    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
     stub = CryptoServiceGrpc.newBlockingStub(channel);
 
     channel2 = ManagedChannelBuilder.forAddress(properties.getProperty("host2"),
-            Integer.parseInt(properties.getProperty("port2"))).usePlaintext(true).build();
+            Integer.parseInt(properties.getProperty("port2"))).usePlaintext().build();
     stub2 = CryptoServiceGrpc.newBlockingStub(channel2);
 
     try {

@@ -157,7 +157,7 @@ public class SmartContractDeletePayable {
 	}
 
 	private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance) throws Exception {
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		Transaction transaction = TestHelper.createAccountWithSigMap(payerAccount, nodeAccount, keyPair, initialBalance,
 				accountKeyPairs.get(payerAccount));
@@ -178,7 +178,7 @@ public class SmartContractDeletePayable {
 		TransactionGetReceiptResponse receiptToReturn = null;
 		Query query = Query.newBuilder().setTransactionGetReceipt(
 				RequestBuilder.getTransactionGetReceiptQuery(transactionId, ResponseType.ANSWER_ONLY)).build();
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		Response transactionReceipts = stub.getTransactionReceipts(query);
 		int attempts = 1;
@@ -215,7 +215,7 @@ public class SmartContractDeletePayable {
 	private byte[] callContract(AccountID payerAccount, ContractID contractToCall, byte[] data) throws Exception {
 		byte[] dataToReturn = null;
 		ContractID createdContract = null;
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);
 
@@ -262,7 +262,7 @@ public class SmartContractDeletePayable {
 	private TransactionRecord getTransactionRecord(AccountID payerAccount, TransactionID transactionId)
 			throws Exception {
 		AccountID createdAccount = null;
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		long fee = FeeClient.getCostForGettingTxRecord();
 		Response recordResp = executeQueryForTxRecord(payerAccount, transactionId, stub, fee, ResponseType.COST_ANSWER);
@@ -285,7 +285,7 @@ public class SmartContractDeletePayable {
 	private ResponseCodeEnum callContract(AccountID payerAccount, ContractID contractToCall, byte[] data, long value)
 			throws Exception {
 		ContractID createdContract = null;
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);
 
@@ -358,7 +358,7 @@ public class SmartContractDeletePayable {
 			ResponseCodeEnum expectedPrecheckCode) throws Exception {
 		byte[] dataToReturn = null;
 		AccountID createdAccount = null;
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);
 
@@ -415,7 +415,7 @@ public class SmartContractDeletePayable {
 	public ResponseCodeEnum updateContract(AccountID payerAccount, ContractID contractToUpdate,
 			Duration autoRenewPeriod) throws Exception {
 
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);
 
@@ -454,7 +454,7 @@ public class SmartContractDeletePayable {
 
 	private String getContractByteCode(AccountID payerAccount, ContractID contractId) throws Exception {
 		String byteCode = "";
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);
 		long fee = FeeClient.getFeeByID(HederaFunctionality.ContractGetBytecode);
@@ -484,7 +484,7 @@ public class SmartContractDeletePayable {
 	}
 
 	private AccountInfo getCryptoGetAccountInfo(AccountID payerAccount, AccountID accountID) throws Exception {
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 
 		long fee = FeeClient.getFeeByID(HederaFunctionality.CryptoGetInfo);
@@ -510,7 +510,7 @@ public class SmartContractDeletePayable {
 	}
 
 	private GetBySolidityIDResponse getBySolidityID(AccountID payerAccount, String solidityId) throws Exception {
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);
 		long fee = FeeClient.getFeegetBySolidityID();
@@ -530,7 +530,7 @@ public class SmartContractDeletePayable {
 		loadGenesisAndNodeAcccounts();
 
 		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-				.usePlaintext(true)
+				.usePlaintext()
 				.build();
 		TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
 				nodeAccount);
@@ -633,7 +633,7 @@ public class SmartContractDeletePayable {
 
 	private ContractInfo getContractInfo(AccountID payerAccount, ContractID contractId,
 			ResponseCodeEnum expectedConstResponse, ResponseCodeEnum expecedAnswerResponse) throws Exception {
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);
 		ContractInfo contractInfToReturn = null;
@@ -780,7 +780,7 @@ public class SmartContractDeletePayable {
 	private ResponseCodeEnum deleteContract(AccountID payerAccount, ContractID contractId, AccountID transferAccount,
 			ContractID transferContractID) throws Exception {
 		ContractID createdContract = null;
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);
@@ -814,7 +814,7 @@ public class SmartContractDeletePayable {
 	private ContractID createContractWithKey(AccountID payerAccount, FileID contractFile, long durationInSeconds,
 			KeyPair adminKeyPair) throws Exception {
 		ContractID createdContract = null;
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 
 		byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
 		// note the admin key should be wrapped in a KeyList to match the signing
@@ -859,7 +859,7 @@ public class SmartContractDeletePayable {
 	private TransactionRecord deleteContractAndGetRecord(AccountID payerAccount, ContractID contractId,
 			AccountID transferAccount, ContractID transferContractID) throws Exception {
 		ContractID createdContract = null;
-		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 
 		SmartContractServiceGrpc.SmartContractServiceBlockingStub stub = SmartContractServiceGrpc
 				.newBlockingStub(channel);

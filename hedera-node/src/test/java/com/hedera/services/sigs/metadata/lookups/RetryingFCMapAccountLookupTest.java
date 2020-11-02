@@ -23,12 +23,13 @@ package com.hedera.services.sigs.metadata.lookups;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -51,11 +52,12 @@ import static com.hedera.test.factories.accounts.MerkleAccountFactory.*;
 @RunWith(JUnitPlatform.class)
 public class RetryingFCMapAccountLookupTest {
 	private NodeLocalProperties properties;
-	private HederaNodeStats stats;
+	private MiscRunningAvgs runningAvgs;
+	private MiscSpeedometers speedometers;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private RetryingFCMapAccountLookup subject;
 	private Pause pause;
-	private final Pause defaultPause = SleepingPause.INSTANCE;
+	private final Pause defaultPause = SleepingPause.SLEEPING_PAUSE;
 	private final AccountID account = IdUtils.asAccount("0.0.1337");
 	private final MerkleEntityId accountKey = MerkleEntityId.fromAccountId(account);
 	private final MerkleAccount accountValue = newAccount().receiverSigRequired(true).accountKeys(accountKeys).get();
@@ -69,7 +71,8 @@ public class RetryingFCMapAccountLookupTest {
 
 	@BeforeEach
 	private void setup() {
-		stats = mock(HederaNodeStats.class);
+		runningAvgs = mock(MiscRunningAvgs.class);
+		speedometers = mock(MiscSpeedometers.class);
 		pause = mock(Pause.class);
 		accounts = (FCMap<MerkleEntityId, MerkleAccount>)mock(FCMap.class);
 		properties = mock(NodeLocalProperties.class);
@@ -81,13 +84,13 @@ public class RetryingFCMapAccountLookupTest {
 	public void neverRetriesIfAccountAlreadyExists() throws Exception {
 		given(accounts.get(accountKey)).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
 
 		// when:
 		AccountSigningMetadata meta = subject.safeLookup(account).metadata();
 
 		// then:
-		verifyZeroInteractions(stats, pause);
+		verifyZeroInteractions(pause);
 		assertTrue(meta.isReceiverSigRequired());
 		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.getKey()));
 	}
@@ -97,9 +100,9 @@ public class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
-		InOrder inOrder = inOrder(pause, stats);
+		InOrder inOrder = inOrder(pause, speedometers, runningAvgs);
 
 		// when:
 		AccountSigningMetadata meta = subject.safeLookup(account).metadata();
@@ -108,7 +111,9 @@ public class RetryingFCMapAccountLookupTest {
 		inOrder.verify(pause).forMs(RETRY_WAIT_MS);
 		inOrder.verify(pause).forMs(RETRY_WAIT_MS * 2);
 		ArgumentCaptor<Integer> captor = forClass(Integer.class);
-		inOrder.verify(stats).lookupRetries(captor.capture(), anyDouble());
+		inOrder.verify(speedometers).cycleAccountLookupRetries();
+		inOrder.verify(runningAvgs).recordAccountLookupRetries(captor.capture());
+		inOrder.verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
 		assertEquals(2, captor.getValue().intValue());
 		assertTrue(meta.isReceiverSigRequired());
 		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.getKey()));
@@ -118,16 +123,18 @@ public class RetryingFCMapAccountLookupTest {
 	public void retriesOnceWithSleepingPause() throws Exception {
 		given(accounts.get(accountKey)).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(defaultPause, properties, stats, () -> accounts);
+		subject = new RetryingFCMapAccountLookup(defaultPause, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
-		InOrder inOrder = inOrder(stats);
+		InOrder inOrder = inOrder(runningAvgs, speedometers);
 
 		// when:
 		AccountSigningMetadata meta = subject.safeLookup(account).metadata();
 
 		// then:
 		ArgumentCaptor<Integer> captor = forClass(Integer.class);
-		inOrder.verify(stats).lookupRetries(captor.capture(), anyDouble());
+		inOrder.verify(speedometers).cycleAccountLookupRetries();
+		inOrder.verify(runningAvgs).recordAccountLookupRetries(captor.capture());
+		inOrder.verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
 		assertEquals(1, captor.getValue().intValue());
 		assertTrue(meta.isReceiverSigRequired());
 		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.getKey()));
@@ -138,9 +145,9 @@ public class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
-		InOrder inOrder = inOrder(pause, stats);
+		InOrder inOrder = inOrder(pause, runningAvgs, speedometers);
 
 		// when:
 		assertEquals(KeyOrderingFailure.MISSING_ACCOUNT, subject.safeLookup(account).failureIfAny());
@@ -149,7 +156,9 @@ public class RetryingFCMapAccountLookupTest {
 		inOrder.verify(pause).forMs(RETRY_WAIT_MS);
 		inOrder.verify(pause).forMs(RETRY_WAIT_MS * 2);
 		ArgumentCaptor<Integer> captor = forClass(Integer.class);
-		inOrder.verify(stats).lookupRetries(captor.capture(), anyDouble());
+		inOrder.verify(speedometers).cycleAccountLookupRetries();
+		inOrder.verify(runningAvgs).recordAccountLookupRetries(captor.capture());
+		inOrder.verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
 		assertEquals(2, captor.getValue().intValue());
 	}
 
@@ -158,9 +167,9 @@ public class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true).willReturn(false);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
-		InOrder inOrder = inOrder(pause, stats);
+		InOrder inOrder = inOrder(pause);
 
 		// when:
 		assertEquals(KeyOrderingFailure.MISSING_ACCOUNT, subject.safeLookup(account).failureIfAny());
@@ -168,6 +177,5 @@ public class RetryingFCMapAccountLookupTest {
 		// then:
 		inOrder.verify(pause).forMs(RETRY_WAIT_MS);
 		inOrder.verify(pause).forMs(RETRY_WAIT_MS * 2);
-		verifyNoInteractions(stats);
 	}
 }

@@ -23,10 +23,13 @@ package com.hedera.services.sigs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
-import com.hedera.services.context.ContextPlatformStatus;
+import com.hedera.services.legacy.exception.InvalidAccountIDException;
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -35,6 +38,10 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -45,14 +52,6 @@ import com.hedera.test.mocks.TestProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.handler.TransactionHandler;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.fcmap.FCMap;
@@ -66,17 +65,26 @@ import java.util.function.Predicate;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
+import static com.hedera.test.CiConditions.isInCircleCi;
+import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_INVALID_SENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_MISSING_SIGS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.VALID_QUERY_PAYMENT_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.AMBIGUOUS_SIG_MAP_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.FULL_PAYER_SIGS_VIA_MAP_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.INVALID_PAYER_SIGS_VIA_MAP_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.MISSING_PAYER_SIGS_VIA_MAP_SCENARIO;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.*;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.*;
-import static com.hedera.test.factories.scenarios.BadPayerScenarios.*;
-import static org.mockito.BDDMockito.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static com.hedera.test.CiConditions.isInCircleCi;
+import static org.mockito.BDDMockito.anyDouble;
+import static org.mockito.BDDMockito.anyInt;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class TxnHandlerVerifySigRegressionTest {
@@ -89,7 +97,8 @@ public class TxnHandlerVerifySigRegressionTest {
 	private PlatformTxnAccessor platformTxn;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private TransactionHandler subject;
-	private HederaNodeStats stats;
+	private MiscRunningAvgs runningAvgs;
+	private MiscSpeedometers speedometers;
 
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(new MockEntityNumbers());
 	private Predicate<TransactionBody> updateAccountSigns = txn ->
@@ -204,7 +213,9 @@ public class TxnHandlerVerifySigRegressionTest {
 		// expect:
 		assertThrows(InvalidAccountIDException.class,
 				() -> subject.verifySignature(platformTxn.getSignedTxn()));
-		verify(stats).lookupRetries(anyInt(), anyDouble());
+		verify(runningAvgs).recordAccountLookupRetries(anyInt());
+		verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
+		verify(speedometers).cycleAccountLookupRetries();
 	}
 
 	@Test
@@ -234,7 +245,8 @@ public class TxnHandlerVerifySigRegressionTest {
 		final int MN = 10;
 		accounts = scenario.accounts();
 		platformTxn = scenario.platformTxn();
-		stats = mock(HederaNodeStats.class);
+		runningAvgs = mock(MiscRunningAvgs.class);
+		speedometers = mock(MiscSpeedometers.class);
 		keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null),
@@ -245,7 +257,7 @@ public class TxnHandlerVerifySigRegressionTest {
 						new MockEntityNumbers(),
 						defaultLookupsPlusAccountRetriesFor(
 								null, () -> accounts, () -> null, ref -> null,
-								MN, MN, stats),
+								MN, MN, runningAvgs, speedometers),
 						updateAccountSigns,
 						targetWaclSigns);
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);

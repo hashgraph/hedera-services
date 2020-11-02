@@ -30,7 +30,6 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.exports.AccountsExporter;
@@ -41,9 +40,9 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
+import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
-import com.hedera.services.utils.TimerUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
@@ -105,7 +104,7 @@ public class ServicesMainTest {
 	PropertySources propertySources;
 	BalancesExporter balancesExporter;
 	StateMigrations stateMigrations;
-	HederaNodeStats stats;
+	ServicesStatsManager statsManager;
 	GrpcServerManager grpc;
 	NodeLocalProperties nodeLocalProps;
 	SystemFilesManager systemFilesManager;
@@ -119,7 +118,6 @@ public class ServicesMainTest {
 	private void setup() {
 		fees = mock(FeeCalculator.class);
 		grpc = mock(GrpcServerManager.class);
-		stats = mock(HederaNodeStats.class);
 		pause = mock(Pause.class);
 		accounts = mock(FCMap.class);
 		topics = mock(FCMap.class);
@@ -132,6 +130,7 @@ public class ServicesMainTest {
 		recordStream = mock(RecordStream.class);
 		recordStreamThread = mock(Thread.class);
 		backingAccounts = (BackingStore<AccountID, MerkleAccount>)mock(BackingStore.class);
+		statsManager = mock(ServicesStatsManager.class);
 		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
 		nodeLocalProps = mock(NodeLocalProperties.class);
@@ -152,7 +151,6 @@ public class ServicesMainTest {
 		given(nodeLocalProps.port()).willReturn(50211);
 		given(nodeLocalProps.tlsPort()).willReturn(50212);
 		given(ctx.fees()).willReturn(fees);
-		given(ctx.stats()).willReturn(stats);
 		given(ctx.grpc()).willReturn(grpc);
 		given(ctx.globalDynamicProperties()).willReturn(globalDynamicProperties);
 		given(ctx.pause()).willReturn(pause);
@@ -178,10 +176,10 @@ public class ServicesMainTest {
 		given(ctx.systemAccountsCreator()).willReturn(systemAccountsCreator);
 		given(ctx.accountsExporter()).willReturn(accountsExporter);
 		given(ctx.balancesExporter()).willReturn(balancesExporter);
+		given(ctx.statsManager()).willReturn(statsManager);
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
 		given(ledgerValidator.hasExpectedTotalBalance(any())).willReturn(true);
 		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
-		given(properties.getBooleanProperty("timer.stats.dump.started")).willReturn(true);
 
 		subject = new ServicesMain();
 		subject.systemExits = systemExits;
@@ -264,7 +262,8 @@ public class ServicesMainTest {
 				recordStreamThread,
 				recordsHistorian,
 				fees,
-				grpc);
+				grpc,
+				statsManager);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -279,9 +278,7 @@ public class ServicesMainTest {
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
 		inOrder.verify(recordsHistorian).reviewExistingRecords();
 		inOrder.verify(fees).init();
-
-		// cleanup:
-		TimerUtils.stopStatsDumpTimer();
+		inOrder.verify(statsManager).initializeFor(platform);
 	}
 
 	@Test

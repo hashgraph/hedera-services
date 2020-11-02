@@ -22,8 +22,6 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 
@@ -67,8 +65,8 @@ public class PojoAccount {
 	private long autoRenewPeriod;
 	private long sendThreshold;
 	private long receiveThreshold;
-	private List<PojoRecord> records = Collections.EMPTY_LIST;
-	private List<PojoRecord> payerRecords = Collections.EMPTY_LIST;
+	private List<PojoRecord> records = Collections.emptyList();
+	private List<PojoRecord> payerRecords = Collections.emptyList();
 	private String id;
 	private String proxyId = "0.0.0";
 	private String memo;
@@ -90,20 +88,13 @@ public class PojoAccount {
 		pojo.setBalance(value.getBalance());
 		pojo.setSmartContract(value.isSmartContract());
 		pojo.setKeys(value.getKey().toString());
-		pojo.setNumRecords(value.records().size());
-		pojo.setHasMutableRecords(!value.records().isImmutable());
-		if (pojo.getNumRecords() > 0) {
-			pojo.setRecords(value.records().stream().map(PojoRecord::from).collect(toList()));
-		}
-		pojo.setNumPayerRecords(value.payerRecords().size());
-		pojo.setHasMutablePayerRecords(!value.payerRecords().isImmutable());
+		pojo.setNumPayerRecords(value.records().size());
+		pojo.setHasMutablePayerRecords(!value.records().isImmutable());
 		if (pojo.getNumPayerRecords() > 0) {
-			pojo.setPayerRecords(value.payerRecords().stream().map(PojoRecord::from).collect(toList()));
+			pojo.setPayerRecords(value.records().stream().map(PojoRecord::from).collect(toList()));
 		}
 		pojo.setExpiry(value.getExpiry());
 		pojo.setAutoRenewPeriod(value.getAutoRenewSecs());
-		pojo.setReceiveThreshold(value.getReceiverThreshold());
-		pojo.setSendThreshold(value.getSenderThreshold());
 		pojo.setMemo(value.getMemo());
 		pojo.setReceiverSigRequired(value.isReceiverSigRequired());
 		pojo.setDeleted(value.isDeleted());

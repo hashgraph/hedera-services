@@ -1,12 +1,31 @@
 package com.hedera.services.state.merkle;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,7 +48,7 @@ import static org.apache.commons.io.FileUtils.writeByteArrayToFile;
  * Save some special system files in local file system instead of database to improve access efficiency
  * File contents locate on local file system, but file hashes save in memory using a hash map
  */
-public class MerkleDiskFs extends AbstractMerkleNode implements MerkleLeaf {
+public class MerkleDiskFs extends AbstractMerkleLeaf {
 	static Logger log = LogManager.getLogger(MerkleDiskFs.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
@@ -81,7 +100,7 @@ public class MerkleDiskFs extends AbstractMerkleNode implements MerkleLeaf {
 			byte[] actualHash = diskContentHash(fid);
 			if (!Arrays.equals(expectedHash, actualHash)) {
 				log.error(
-						"State hash doesn't disk hash for content of '{}'!\n  State :: {}\n  Disk  :: {}",
+						"State hash doesn't match disk hash for content of '{}'!\n  State :: {}\n  Disk  :: {}",
 						asLiteralString(fid),
 						hex(expectedHash),
 						hex(actualHash));

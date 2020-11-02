@@ -42,10 +42,10 @@ import com.hedera.services.bdd.suites.contract.SmartContractInlineAssemblySpec;
 import com.hedera.services.bdd.suites.contract.SmartContractPaySpec;
 import com.hedera.services.bdd.suites.contract.SmartContractSelfDestructSpec;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -59,6 +59,7 @@ import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
+import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.issues.Issue2144Spec;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
@@ -76,12 +77,15 @@ import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
+import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
+import com.hedera.services.bdd.suites.reconnect.GetAccountBalanceAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
-import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
+import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
@@ -103,6 +107,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -114,6 +119,7 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.groupingBy;
@@ -151,29 +157,40 @@ public class SuiteRunner {
 //				new CryptoTransferSuite(),
 //				new CryptoRecordsSanityCheckSuite(),
 //				new Issue2144Spec()));
-		put("CiTokenJob", aof(
-				new TokenAssociationSpecs(),
-				new TokenCreateSpecs(),
-				new TokenDeleteSpecs(),
-				new TokenManagementSpecs(),
-				new TokenTransactSpecs()));
-		put("CiFileJob", aof(
-				new FileRecordsSanityCheckSuite(),
-				new VersionInfoSpec(),
-				new ProtectedFilesUpdateSuite(),
-				new PermissionSemanticsSpec(),
-				new SysDelSysUndelSpec()));
+//		put("CiTokenJob", aof(
+//				new TokenAssociationSpecs(),
+//				new TokenCreateSpecs(),
+//				new TokenDeleteSpecs(),
+//				new TokenManagementSpecs(),
+//				new TokenTransactSpecs()));
+//		put("CiFileJob", aof(
+//				new FileRecordsSanityCheckSuite(),
+//				new VersionInfoSpec(),
+//				new ProtectedFilesUpdateSuite(),
+//				new PermissionSemanticsSpec(),
+//				new SysDelSysUndelSpec()));
 //		put("CiSmartContractJob", aof(
 //				new NewOpInConstructorSuite(),
 //				new IssueXXXXSpec(),
-//				new FetchSystemFiles(),
+//				new ContractCallSuite(),
+//				new ContractCallLocalSuite(),
+//				new ContractUpdateSuite(),
+//				new ContractDeleteSuite(),
 //				new ChildStorageSpec(),
+//				new BigArraySpec(),
+//				new CharacterizationSuite(),
+//				new SmartContractFailFirstSpec(),
+//				new SmartContractSelfDestructSpec(),
 //				new DeprecatedContractKeySuite(),
-//				new ThresholdRecordCreationSuite(),
-//				new ContractRecordsSanityCheckSuite()));
+//				new ContractRecordsSanityCheckSuite(),
+//				new ContractGetBytecodeSuite(),
+//				new SmartContractInlineAssemblySpec(),
+//				new OCTokenSpec(),
+//				new RecordCreationSuite()));
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
+		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
 		put("FileUpdateLoadTest", aof(new FileUpdateLoadTest()));
 		put("ContractCallLoadTest", aof(new ContractCallLoadTest()));
 		put("SubmitMessageLoadTest", aof(new SubmitMessageLoadTest()));
@@ -181,6 +198,9 @@ public class SuiteRunner {
 		put("MixedTransferAndSubmitLoadTest", aof(new MixedTransferAndSubmitLoadTest()));
 		put("MixedTransferCallAndSubmitLoadTest", aof(new MixedTransferCallAndSubmitLoadTest()));
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
+		/* Functional tests - RECONNECT */
+		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
+		put("GetAccountBalanceAfterReconnect", aof(new GetAccountBalanceAfterReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
@@ -227,7 +247,7 @@ public class SuiteRunner {
 		put("SmartContractSelfDestructSpec", aof(new SmartContractSelfDestructSpec()));
 		put("SmartContractPaySpec", aof(new SmartContractPaySpec()));
 		/* Functional tests - MIXED (record emphasis) */
-		put("ThresholdRecordCreationSpecs", aof(new ThresholdRecordCreationSuite()));
+		put("ThresholdRecordCreationSpecs", aof(new RecordCreationSuite()));
 		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));
 		put("CryptoRecordSanityChecks", aof(new CryptoRecordsSanityCheckSuite()));
 		put("FileRecordSanityChecks", aof(new FileRecordsSanityCheckSuite()));
@@ -256,10 +276,10 @@ public class SuiteRunner {
 		put("ZeroStakeTest", aof(new ZeroStakeNodeTest()));
 		/* Query payment validation */
 		put("QueryPaymentSuite", aof(new QueryPaymentSuite()));
+		put("SimpleFreezeOnly", aof(new SimpleFreezeOnly()));
 	}};
 
 	static boolean runAsync;
-	static Set<String> argSet;
 	static List<CategorySuites> targetCategories;
 	static boolean globalPassFlag = true;
 
@@ -268,10 +288,9 @@ public class SuiteRunner {
 	private static final String NODE_SELECTOR_ARG = "-NODE";
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
-	/* The instance id of the suiteRunner running on the client. */
-	private static final String PAYER_ID_ARG = "-PAYER";
-	/**/
+	/* Specify the network to run legacy SC tests instead of using suiterunner */
 	private static final String LEGACY_SMART_CONTRACT_TESTS="SmartContractAggregatedTests";
+	private static String payerId = DEFAULT_PAYER_ID;
 
 	public static void main(String... args) throws Exception {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -289,17 +308,14 @@ public class SuiteRunner {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
-			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
+			expectedNetworkSize = Integer.parseInt(overrideOrDefault(effArgs,
 					NETWORK_SIZE_ARG,
-					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
+					"" + EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
-
-			String payer_id = "0.0." + overrideOrDefault(effArgs,
-					PAYER_ID_ARG, DEFAULT_PAYER_ID).split("=")[1];
-
+			createPayerAccount(System.getenv("NODES"), args[1]);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
-					payer_id,
+					payerId,
 					args[1],
 					tlsOverride.substring(TLS_ARG.length() + 1),
 					txnOverride.substring(TXN_ARG.length() + 1),
@@ -324,6 +340,23 @@ public class SuiteRunner {
 		summarizeResults(byRunType);
 
 		System.exit(globalPassFlag ? 0 : 1);
+	}
+
+	/**
+	 * Create a default payer account for each test client while running JRS regression tests
+	 *
+	 * @param nodes
+	 * @param defaultNode
+	 */
+	private static void createPayerAccount(String nodes, String defaultNode) {
+		Random r = new Random();
+		try {
+			Thread.sleep(r.nextInt(5000));
+			new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private static String overrideOrDefault(String[] effArgs, String argPrefix, String defaultValue) {
@@ -377,8 +410,7 @@ public class SuiteRunner {
 	}
 
 	private static List<CategoryResult> runCategories(List<String> args) {
-		argSet = args.stream().collect(Collectors.toSet());
-		collectTargetCategories();
+		collectTargetCategories(args);
 		return runTargetCategories();
 	}
 
@@ -414,11 +446,10 @@ public class SuiteRunner {
 		}
 	}
 
-	private static void collectTargetCategories() {
-		targetCategories = CATEGORY_MAP
-				.keySet()
+	private static void collectTargetCategories(List<String> args) {
+		targetCategories = args
 				.stream()
-				.filter(argSet::contains)
+				.filter(k -> null != CATEGORY_MAP.get(k))
 				.map(k -> new CategorySuites(rightPadded(k, SUITE_NAME_WIDTH), CATEGORY_MAP.get(k)))
 				.collect(toList());
 	}
@@ -499,4 +530,9 @@ public class SuiteRunner {
 	public static <T> T[] aof(T... items) {
 		return items;
 	}
+
+	public static void setPayerId(String payerId) {
+		SuiteRunner.payerId = payerId;
+	}
+
 }

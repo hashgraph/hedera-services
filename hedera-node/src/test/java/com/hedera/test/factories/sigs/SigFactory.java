@@ -64,7 +64,6 @@ public class SigFactory {
 		try {
 			return MiscUtils.commonsHexToBytes(signBytes(data, pk));
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new IllegalStateException("Impossible signing error!");
 		}
 	}

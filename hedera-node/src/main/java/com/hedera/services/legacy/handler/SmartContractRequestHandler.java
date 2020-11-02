@@ -45,7 +45,6 @@ import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.evm.SolidityExecutor;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.Transaction;
@@ -63,11 +62,9 @@ import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -257,7 +254,6 @@ public class SmartContractRequestHandler {
 					sbhInTinybars,
 					true);
 		} catch (Exception e) {
-			e.printStackTrace();
 			result = getFailureTransactionRecord(transaction, consensusTime, CONTRACT_EXECUTION_EXCEPTION);
 		}
 		if (result.getReceipt().getStatus() == SUCCESS) {
@@ -420,9 +416,7 @@ public class SmartContractRequestHandler {
 				.memo(parentAccount.getMemo())
 				.expiry(parentAccount.getExpiry())
 				.autoRenewPeriod(parentAccount.getAutoRenewSecs())
-				.proxy(parentAccount.getProxy())
-				.fundsSentRecordThreshold(parentAccount.getSenderThreshold())
-				.fundsReceivedRecordThreshold(parentAccount.getReceiverThreshold());
+				.proxy(parentAccount.getProxy());
 		for (ContractID child : children) {
 			ledger.customize(asAccount(child), customizer);
 		}
@@ -510,7 +504,6 @@ public class SmartContractRequestHandler {
 						record.getContractCallResult().getCreatedContractIDsList());
 				return record;
 			} catch (Exception e) {
-				e.printStackTrace();
 				return getFailureTransactionRecord(transaction, consensusTime, CONTRACT_EXECUTION_EXCEPTION);
 			}
 		} else {

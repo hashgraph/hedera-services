@@ -92,7 +92,7 @@ public class CryptoTransferCheckBalance extends Thread {
     String host = properties.getProperty("host");
     int port = Integer.parseInt(properties.getProperty("port"));
 
-    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
     stub = CryptoServiceGrpc.newBlockingStub(channel);
 
     try {

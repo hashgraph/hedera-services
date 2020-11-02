@@ -143,7 +143,7 @@ public class OCTokenIT extends LegacySmartContractTest {
     grpcPort = Integer.parseInt(properties.getProperty("port"));
     localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
     channelShared = ManagedChannelBuilder.forAddress(OCTokenIT.grpcHost, grpcPort)
-            .usePlaintext(true)
+            .usePlaintext()
             .build();
     cryptoStub = CryptoServiceGrpc.newBlockingStub(channelShared);
     sCServiceStub = SmartContractServiceGrpc.newBlockingStub(channelShared);

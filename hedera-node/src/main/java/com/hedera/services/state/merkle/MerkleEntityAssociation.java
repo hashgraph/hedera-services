@@ -22,16 +22,13 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.FCMKey;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -40,7 +37,7 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Map;
 
-public class MerkleEntityAssociation extends AbstractMerkleNode implements FCMKey, MerkleLeaf {
+public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKey {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xce8d38caab2e51dcL;
 
@@ -157,10 +154,6 @@ public class MerkleEntityAssociation extends AbstractMerkleNode implements FCMKe
 	@Override
 	public MerkleEntityAssociation copy() {
 		return new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
-	}
-
-	@Override
-	public void delete() {
 	}
 
 	@Override

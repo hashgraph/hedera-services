@@ -94,6 +94,10 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	private List<EntityId> tokens = NO_TOKENS;
 	private List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
 
+	@Override
+	public void release() {
+	}
+
 	@Deprecated
 	public static class Provider implements SerializedObjectProvider<ExpirableTxnRecord> {
 		@Override
@@ -406,10 +410,6 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	@Override
 	public ExpirableTxnRecord copy() {
 		return this;
-	}
-
-	@Override
-	public void delete() {
 	}
 
 	@Override

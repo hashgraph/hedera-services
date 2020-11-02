@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.hedera.services</groupId>
@@ -12,7 +10,7 @@
   <parent>
     <groupId>com.hedera.services</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.8.0</version>
+    <version>0.9.1-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -32,12 +30,39 @@
 
     <commons-io.version>2.1</commons-io.version>
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
-    <swirlds.version>0.7.3</swirlds.version>
+    <swirlds.version>0.7.4-alpha.4</swirlds.version>
   </properties>
 
   <build>
     <sourceDirectory>src/main/java</sourceDirectory>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>gen-proto-docs</id>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ensure-proto-headers</id>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+          <execution>
+            <id>stage-changes</id>
+            <configuration>
+              <executable>/bin/sh</executable>
+              <commandlineArgs>
+                -c 'git add src/test/java src/main/java'
+              </commandlineArgs>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -138,17 +163,17 @@
               <target>
                 <delete includeemptydirs="true" quiet="false">
                   <fileset dir="${project.basedir}">
-                    <include name="*.csv"/>
-                    <include name="settingsUsed.txt"/>
-                    <include name="data/accountBalances/**/*"/>
-                    <include name="data/config/*.bin"/>
-                    <include name="data/onboard/*.csv"/>
-                    <include name="data/onboard/exchangeRate.txt"/>
-                    <include name="data/onboard/exportedAccount.txt"/>
-                    <include name="data/onboard/feeSchedule.txt"/>
-                    <include name="data/recordstreams/**/*"/>
-                    <include name="data/saved/**/*"/>
-                    <include name="output/**/*"/>
+                    <include name="*.csv" />
+                    <include name="settingsUsed.txt" />
+                    <include name="data/accountBalances/**/*" />
+                    <include name="data/config/*.bin" />
+                    <include name="data/onboard/*.csv" />
+                    <include name="data/onboard/exchangeRate.txt" />
+                    <include name="data/onboard/exportedAccount.txt" />
+                    <include name="data/onboard/feeSchedule.txt" />
+                    <include name="data/recordstreams/**/*" />
+                    <include name="data/saved/**/*" />
+                    <include name="output/**/*" />
                   </fileset>
                 </delete>
               </target>
@@ -159,14 +184,13 @@
             <id>ensure-application-properties</id>
             <configuration>
               <target>
-                <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath"/>
+                <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
                 <if>
                   <not>
-                    <available file="data/config/api-permission.properties"/>
+                    <available file="data/config/api-permission.properties" />
                   </not>
                   <then>
-                    <copy file="configuration/dev/api-permission.properties"
-                          tofile="data/config/api-permission.properties"/>
+                    <copy file="configuration/dev/api-permission.properties" tofile="data/config/api-permission.properties" />
                   </then>
                 </if>
               </target>
@@ -180,14 +204,13 @@
             <id>ensure-api-permission-properties</id>
             <configuration>
               <target>
-                <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath"/>
+                <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
                 <if>
                   <not>
-                    <available file="data/config/application.properties"/>
+                    <available file="data/config/application.properties" />
                   </not>
                   <then>
-                    <copy file="configuration/dev/application.properties"
-                          tofile="data/config/application.properties"/>
+                    <copy file="configuration/dev/application.properties" tofile="data/config/application.properties" />
                   </then>
                 </if>
               </target>
@@ -201,7 +224,7 @@
             <id>empty-swirlds-jar-for-old-build-scripts</id>
             <configuration>
               <tasks>
-                <touch file="swirlds.jar"/>
+                <touch file="swirlds.jar" />
               </tasks>
             </configuration>
             <goals>
@@ -235,23 +258,25 @@
     <dependency>
       <groupId>com.hedera.services</groupId>
       <artifactId>hapi-fees</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>com.hedera.services</groupId>
-        <artifactId>hapi-proto</artifactId>
+      <version>0.9.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
+      <artifactId>hedera-protobuf-java-api</artifactId>
+      <version>0.9.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>com.swirlds</groupId>
       <artifactId>swirlds-platform-core</artifactId>
       <version>${swirlds.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.hedera.hashgraph</groupId>
+      <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcmap</artifactId>
       <version>${swirlds.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.hedera.hashgraph</groupId>
+      <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcqueue</artifactId>
       <version>${swirlds.version}</version>
     </dependency>
@@ -332,11 +357,6 @@
   </dependencies>
 
   <repositories>
-    <repository>
-      <id>ossrh-swirlds-staging</id>
-      <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1199</url>
-    </repository>
     <repository>
       <snapshots>
         <enabled>false</enabled>

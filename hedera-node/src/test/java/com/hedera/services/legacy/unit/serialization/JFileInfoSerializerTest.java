@@ -66,8 +66,6 @@ public class JFileInfoSerializerTest {
     
     byte[] ser1 = jfi_reborn.serialize();
     
-    System.out.println("fi=" + fi + "\nfi_reborn=" + fi_reborn);
-    System.out.println("jfi=" + jfi + "\njfi_reborn=" + jfi_reborn);
     Assert.assertArrayEquals(ser, ser1);
     Assert.assertArrayEquals(fi.toByteArray(), fi_reborn.toByteArray());
   }

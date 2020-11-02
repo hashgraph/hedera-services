@@ -58,6 +58,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.validation.BasicPrecheck;
@@ -83,7 +84,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.TestHelper;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -183,9 +183,6 @@ public class SmartContractServiceImplTest {
 	private AccountID receiverAccountId;
 	private LedgerAccountsSource ledgerSource;
 
-	@Mock
-	private HederaNodeStats hederaNodeStats;
-
 	@BeforeAll
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
@@ -196,8 +193,6 @@ public class SmartContractServiceImplTest {
 		nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
 		feeCollectionAccountId = RequestBuilder.getAccountIdBuild(feeAccount, 0l, 0l);
 
-		System.out.println("Payer Account:" + payerAccountId);
-		System.out.println("Node Account:" + nodeAccountId);
 		senderAccountId = RequestBuilder.getAccountIdBuild(9999l, 0l, 0l);
 		receiverAccountId = RequestBuilder.getAccountIdBuild(8888l, 0l, 0l);
 		storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
@@ -237,23 +232,18 @@ public class SmartContractServiceImplTest {
 				tResponse = response;
 
 				if (response.getNodeTransactionPrecheckCode() == OK) {
-					System.out.println("System OK");
 				} else if (response.getNodeTransactionPrecheckCode() == ResponseCodeEnum.BUSY) {
-					System.out.println("System BUSY");
 				} else {
-					System.out.println("System BAD");
 					Assert.assertNotNull(response.getNodeTransactionPrecheckCode());
 				}
 			}
 
 			@Override
 			public void onError(Throwable t) {
-				System.out.println("Error Happened " + t.getMessage());
 			}
 
 			@Override
 			public void onCompleted() {
-				System.out.println("Completed" + tResponse);
 			}
 
 		};
@@ -427,13 +417,10 @@ public class SmartContractServiceImplTest {
 		given(submissionManager.trySubmission(any())).willReturn(OK);
 
 		smartContractImpl = new SmartContractServiceImpl(transactionHandler,
-				smartContractHandler, hederaNodeStats,
+				smartContractHandler,
 				TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-				submissionManager, null, null);
+				submissionManager, null, null, mock(HapiOpCounters.class));
 		smartContractImpl.createContract(trx, responseObserver);
-
-		verify(hederaNodeStats, times(1)).smartContractTransactionReceived("createContract");
-		verify(hederaNodeStats, times(1)).smartContractTransactionSubmitted("createContract");
 	}
 
 	@AfterAll
@@ -441,7 +428,6 @@ public class SmartContractServiceImplTest {
 		try {
 			repository.close();
 		} catch (Throwable tx) {
-			tx.printStackTrace();
 		} finally {
 			mockStorageWrapper = null;
 		}
@@ -462,9 +448,9 @@ public class SmartContractServiceImplTest {
 			given(submissionManager.trySubmission(any())).willReturn(OK);
 
 			smartContractImpl = new SmartContractServiceImpl(transactionHandler,
-					smartContractHandler, hederaNodeStats,
+					smartContractHandler,
 					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-					submissionManager, null, null);
+					submissionManager, null, null, mock(HapiOpCounters.class));
 
 			StreamObserver<Response> respOb = new StreamObserver<Response>() {
 
@@ -474,20 +460,16 @@ public class SmartContractServiceImplTest {
 						GetBySolidityIDResponse res = response.getGetBySolidityID();
 						Assert.assertEquals(ResponseCodeEnum.NOT_SUPPORTED,
 								res.getHeader().getNodeTransactionPrecheckCode());
-						System.out.println("***RESPONSE***" + res);
 					} else {
-						System.out.println("***RESPONSE***" + response);
 					}
 				}
 
 				@Override
 				public void onError(Throwable t) {
-					System.out.println("Error Happened " + t.getMessage());
 				}
 
 				@Override
 				public void onCompleted() {
-					System.out.println("Completed");
 				}
 
 			};

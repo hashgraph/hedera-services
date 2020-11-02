@@ -22,8 +22,8 @@ package com.hedera.services.txns.submission;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -78,21 +78,21 @@ class PlatformSubmissionManagerTest {
 
 	Platform platform;
 	RecordCache recordCache;
-	HederaNodeStats stats;
+	MiscSpeedometers speedometers;
 
 	PlatformSubmissionManager subject;
 
 	@BeforeEach
 	public void setup() throws InvalidProtocolBufferException {
-		stats = mock(HederaNodeStats.class);
 		platform = mock(Platform.class);
 		recordCache = mock(RecordCache.class);
+		speedometers = mock(MiscSpeedometers.class);
 
 		accessor = new SignedTxnAccessor(signedTxn);
 		uncheckedAccessor = new SignedTxnAccessor(uncheckedSubTxn);
 		invalidUncheckedAccessor = new SignedTxnAccessor(invalidUncheckedSubTxn);
 
-		subject = new PlatformSubmissionManager(platform, recordCache, stats);
+		subject = new PlatformSubmissionManager(platform, recordCache, speedometers);
 	}
 
 	@Test
@@ -124,7 +124,7 @@ class PlatformSubmissionManagerTest {
 		assertEquals(PLATFORM_TRANSACTION_NOT_CREATED, result);
 		// and:
 		verify(recordCache, never()).addPreConsensus(any());
-		verify(stats).platformTxnNotCreated();
+		verify(speedometers).cyclePlatformTxnRejections();
 	}
 
 	@Test
@@ -156,6 +156,6 @@ class PlatformSubmissionManagerTest {
 		assertEquals(PLATFORM_TRANSACTION_NOT_CREATED, result);
 		// and:
 		verify(recordCache, never()).addPreConsensus(accessor.getTxnId());
-		verify(stats).platformTxnNotCreated();
+		verify(speedometers).cyclePlatformTxnRejections();
 	}
 }
