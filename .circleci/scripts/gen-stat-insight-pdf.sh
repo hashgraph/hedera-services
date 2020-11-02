@@ -5,6 +5,7 @@
 
 set +e
 cd $STATS_PARENT_DIR
+pip3 install --upgrade pip
 pip3 -q install matplotlib
 cp "${REPO}/test-clients/scripts/insight.py" .
 ci_echo "Now running 'python3 insight.py -d . -c $STATS_CSV_PREFIX -g -p'..."
