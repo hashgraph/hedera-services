@@ -224,6 +224,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 		log.info("ServicesState init with {} accounts", () -> this.accounts().size());
+		log.info("ServicesState init with {} topics", () -> this.topics().size());
 	}
 
 	@Override
