@@ -51,6 +51,7 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	private HapiApiSpec getAccountBalanceFromAllNodes() {
 		String sender = "0.0.1002";
 		String receiver = "0.0.1003";
+		String lastlyCreatedAccount = "0.0.21002";
 		return defaultHapiSpec("GetAccountBalanceFromAllNodes")
 				.given().when().then(
 						UtilVerbs.withLiveNode("0.0.6")
@@ -59,6 +60,7 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 								.sleepingBetweenRetriesFor(10),
 						balanceSnapshot("senderBalance", sender), // from default node 0.0.3
 						balanceSnapshot("receiverBalance", receiver), // from default node 0.0.3
+						balanceSnapshot("lastlyCreatedAccountBalance", lastlyCreatedAccount), // from default node 0.0.3
 						getAccountBalance(sender).logged().setNode("0.0.4")
 								.hasTinyBars(changeFromSnapshot("senderBalance", 0)),
 						getAccountBalance(receiver).logged().setNode("0.0.4")
@@ -70,7 +72,9 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 						getAccountBalance(sender).logged().setNode("0.0.6")
 								.hasTinyBars(changeFromSnapshot("senderBalance", 0)),
 						getAccountBalance(receiver).logged().setNode("0.0.6")
-								.hasTinyBars(changeFromSnapshot("receiverBalance", 0))
+								.hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
+						getAccountBalance(lastlyCreatedAccount).logged().setNode("0.0.6")
+								.hasTinyBars(changeFromSnapshot("lastlyCreatedAccountBalance", 0))
 				);
 	}
 
