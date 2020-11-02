@@ -30,6 +30,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,8 +73,11 @@ public class MerkleDiskFsTest {
 
 	String MOCK_DISKFS_DIR = "src/test/resources/diskFs";
 
+	MerkleDiskFs.ThrowingBytesGetter getter;
+	MerkleDiskFs.ThrowingBytesWriter writer;
+
 	@BeforeEach
-	private void setup() throws NoSuchAlgorithmException {
+	private void setup() throws Exception {
 		origFileHash = MessageDigest.getInstance("SHA-384").digest(origContents);
 		newFileHash = MessageDigest.getInstance("SHA-384").digest(newContents);
 
@@ -83,6 +87,19 @@ public class MerkleDiskFsTest {
 				hashes,
 				MOCK_DISKFS_DIR,
 				asLiteralString(nodeAccount));
+
+		getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
+		MerkleDiskFs.bytesHelper = getter;
+		writer = mock(MerkleDiskFs.ThrowingBytesWriter.class);
+		MerkleDiskFs.writeHelper = writer;
+
+		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willReturn(origContents);
+	}
+
+	@AfterEach
+	private void cleanup() {
+		MerkleDiskFs.bytesHelper = Files::readAllBytes;
+		MerkleDiskFs.writeHelper = Files::write;
 	}
 
 	@Test
@@ -98,7 +115,7 @@ public class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void saveFileHashCorrect() {
+	public void saveFileHashCorrect() throws Exception {
 		// setup:
 		subject.put(file150, origContents);
 		assertArrayEquals(origFileHash, subject.diskContentHash(file150));
@@ -106,22 +123,29 @@ public class MerkleDiskFsTest {
 
 		MerkleDiskFs.log = mock(Logger.class);
 		subject.checkHashesAgainstDiskContents();
+
 		verify(MerkleDiskFs.log, never()).error(any(String.class));
+		// and:
+		verify(writer).allBytesTo(subject.pathToContentsOf(file150), origContents);
 	}
 
 	@Test
-	public void putChangesHash() {
+	public void putChangesHash() throws IOException {
 		// when:
 		subject.put(file150, newContents);
 
 		// then:
 		assertArrayEquals(hashWithFileHash(newFileHash), subject.getHash().getValue());
+		// and:
+		verify(writer).allBytesTo(subject.pathToContentsOf(file150), newContents);
 	}
 
 	@Test
-	public void fileNotExist() {
+	public void fileNotExist() throws IOException {
 		// setup:
 		subject = new MerkleDiskFs("this/doesnt/exist", asLiteralString(nodeAccount));
+
+		given(getter.allBytesFrom(any())).willThrow(IOException.class);
 
 		Assertions.assertSame(MerkleDiskFs.MISSING_CONTENT, subject.contentsOf(file150));
 	}
@@ -147,7 +171,7 @@ public class MerkleDiskFsTest {
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
 		MerkleDiskFs.bytesHelper = getter;
 
-		given(getter.allBytesFrom(Paths.get(subject.pathToContentsOf(file150)))).willReturn(expectedBytes);
+		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willReturn(expectedBytes);
 		// and:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -159,9 +183,6 @@ public class MerkleDiskFsTest {
 		verify(out, times(2)).writeLong(0);
 		verify(out).writeLong(150);
 		verify(out).writeByteArray(expectedBytes);
-
-		// cleanup:
-		MerkleDiskFs.bytesHelper = Files::readAllBytes;
 	}
 
 	@Test
@@ -172,7 +193,7 @@ public class MerkleDiskFsTest {
 		// and:
 		var out = mock(SerializableDataOutputStream.class);
 
-		given(getter.allBytesFrom(Paths.get(subject.pathToContentsOf(file150)))).willThrow(IOException.class);
+		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willThrow(IOException.class);
 		// expect:
 		assertThrows(UncheckedIOException.class, () -> subject.serialize(out));
 	}
@@ -217,11 +238,6 @@ public class MerkleDiskFsTest {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		// and:
-		var onDisk = new File(subject.pathToContentsOf(file150));
-		if (onDisk.exists()) {
-			onDisk.delete();
-		}
-		// and:
 		var expectedHash = new Hash(hashWithOrigContents());
 
 		given(fin.readInt()).willReturn(1);
@@ -241,7 +257,7 @@ public class MerkleDiskFsTest {
 		// and:
 		assertEquals(expectedHash, read.getHash());
 		// and:
-		assertArrayEquals(origContents, Files.readAllBytes(Paths.get(subject.pathToContentsOf(file150))));
+		verify(writer).allBytesTo(subject.pathToContentsOf(file150), origContents);
 	}
 
 	@Test

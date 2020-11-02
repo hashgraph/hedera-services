@@ -67,6 +67,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	static final int MAX_FILE_BYTES = 1_024 * 1_024 * 1_024;
 	static final int MERKLE_VERSION = 1;
 
+	static ThrowingBytesWriter writeHelper = Files::write;
 	static ThrowingBytesGetter bytesHelper = Files::readAllBytes;
 
 	private String fsBaseDir = UNKNOWN_PATH_SEGMENT;
@@ -126,7 +127,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 
 	public synchronized byte[] contentsOf(FileID fid) {
 		try {
-			return Files.readAllBytes(Paths.get(pathToContentsOf(fid)));
+			return bytesHelper.allBytesFrom(pathToContentsOf(fid));
 		} catch (IOException e) {
 			log.error("Error reading '{}' @ {}!", asLiteralString(fid), pathToContentsOf(fid), e);
 			return MISSING_CONTENT;
@@ -136,7 +137,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	public synchronized void put(FileID fid, byte[] contents) {
 		try {
 			byte[] hash = noThrowSha384HashOf(contents);
-			Files.write(Paths.get(pathToContentsOf(fid)), contents);
+			writeHelper.allBytesTo(pathToContentsOf(fid), contents);
 			log.info("Updated '{}' with {} bytes; new hash :: {}", asLiteralString(fid), contents.length, hex(hash));
 			fileHashes.put(fid, hash);
 			setHashFromContents();
@@ -209,7 +210,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 					.setFileNum(in.readLong())
 					.build();
 			byte[] contents = in.readByteArray(MAX_FILE_BYTES);
-			Files.write(Paths.get(pathToContentsOf(fid)), contents);
+			writeHelper.allBytesTo(pathToContentsOf(fid), contents);
 			byte[] fileHash = noThrowSha384HashOf(contents);
 			fileHashes.put(fid, fileHash);
 			log.info("Restored file '{}' with hash :: {}", asLiteralString(fid), hex(fileHash));
@@ -222,7 +223,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		out.writeInt(fileHashes.size());
 		serializeFidInfo(out, fid -> {
 			try {
-				return bytesHelper.allBytesFrom(Paths.get(pathToContentsOf(fid)));
+				return bytesHelper.allBytesFrom(pathToContentsOf(fid));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -289,12 +290,12 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		return false;
 	}
 
-	String pathToContentsOf(FileID fid) {
-		return String.format(
+	Path pathToContentsOf(FileID fid) {
+		return Paths.get(String.format(
 				"%s%sFile%s",
 				separatorSuffixed(fsBaseDir),
 				separatorSuffixed(fsNodeScopedDir),
-				asLiteralString(fid));
+				asLiteralString(fid)));
 	}
 
 	private String separatorSuffixed(String dir) {
@@ -324,5 +325,10 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	@FunctionalInterface
 	interface ThrowingBytesGetter {
 		byte[] allBytesFrom(Path loc) throws IOException;
+	}
+
+	@FunctionalInterface
+	interface ThrowingBytesWriter {
+		void allBytesTo(Path loc, byte[] contents) throws IOException;
 	}
 }
