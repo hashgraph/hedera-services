@@ -30,6 +30,7 @@ import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
@@ -378,6 +379,7 @@ public class ServicesContext {
 	private CryptoController cryptoGrpc;
 	private BucketThrottling bucketThrottling;
 	private HbarCentExchange exchange;
+	private SemanticVersions semVers;
 	private PrecheckVerifier precheckVerifier;
 	private BackingTokenRels backingTokenRels;
 	private BalancesExporter balancesExporter;
@@ -485,6 +487,13 @@ public class ServicesContext {
 			speedometers = new MiscSpeedometers(new SpeedometerFactory() {}, nodeLocalProperties());
 		}
 		return speedometers;
+	}
+
+	public SemanticVersions semVers() {
+		if (semVers == null) {
+			semVers = new SemanticVersions();
+		}
+		return semVers;
 	}
 
 	public ServicesStatsManager statsManager() {
@@ -669,7 +678,7 @@ public class ServicesContext {
 			metaAnswers = new MetaAnswers(
 					new GetTxnRecordAnswer(recordCache(), validator(), answerFunctions()),
 					new GetTxnReceiptAnswer(recordCache()),
-					new GetVersionInfoAnswer(),
+					new GetVersionInfoAnswer(semVers()),
 					new GetFastTxnRecordAnswer()
 			);
 		}
