@@ -20,8 +20,7 @@ package com.hedera.services.throttling.bucket;
  * ‍
  */
 
-import com.swirlds.throttle.Throttle;
-import org.junit.jupiter.api.Assertions;
+import com.swirlds.common.throttle.Throttle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
