@@ -64,46 +64,6 @@ public class PropertiesLoader {
 		log.info("API Properties Populated with these values :: " + apiProperties.getCustomProperties());
 	}
 
-	public static double getCreateTopicTps() {
-		return AsyncPropertiesObject.getCreateTopicTps();
-	}
-
-	public static double getCreateTopicBurstPeriod() {
-		return AsyncPropertiesObject.getCreateTopicBurstPeriod();
-	}
-
-	public static double getUpdateTopicTps() {
-		return AsyncPropertiesObject.getUpdateTopicTps();
-	}
-
-	public static double getUpdateTopicBurstPeriod() {
-		return AsyncPropertiesObject.getUpdateTopicBurstPeriod();
-	}
-
-	public static double getDeleteTopicTps() {
-		return AsyncPropertiesObject.getDeleteTopicTps();
-	}
-
-	public static double getDeleteTopicBurstPeriod() {
-		return AsyncPropertiesObject.getDeleteTopicBurstPeriod();
-	}
-
-	public static double getSubmitMessageTps() {
-		return AsyncPropertiesObject.getSubmitMessageTps();
-	}
-
-	public static double getSubmitMessageBurstPeriod() {
-		return AsyncPropertiesObject.getSubmitMessageBurstPeriod();
-	}
-
-	public static double getGetTopicInfoTps() {
-		return AsyncPropertiesObject.getGetTopicInfoTps();
-	}
-
-	public static double getGetTopicInfoBurstPeriod() {
-		return AsyncPropertiesObject.getGetTopicInfoBurstPeriod();
-	}
-
 	public static long getDefaultContractDurationInSec() {
 		return SyncPropertiesObject.getDefaultContractDurationSec();
 	}
@@ -114,22 +74,6 @@ public class PropertiesLoader {
 
 	public static int getThresholdTxRecordTTL() {
 		return SyncPropertiesObject.getThresholdTxRecordTTL();
-	}
-
-	public static int getThrottlingTps() {
-		return AsyncPropertiesObject.getThrottlingTps();
-	}
-
-	public static int getSimpleTransferTps() {
-		return AsyncPropertiesObject.getSimpletransferTps();
-	}
-
-	public static int getGetReceiptTps() {
-		return AsyncPropertiesObject.getGetReceiptTps();
-	}
-
-	public static int getQueriesTps() {
-		return AsyncPropertiesObject.getQueriesTps();
 	}
 
 	public static long getMinimumAutorenewDuration() {

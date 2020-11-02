@@ -22,29 +22,24 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.context.properties.DeferringPropertySource;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
-import static com.hedera.services.context.properties.StandardizedPropertySources.RESPECT_LEGACY_THROTTLING_PROPERTY;
-import static com.hedera.services.throttling.bucket.BucketConfig.*;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
-import static java.util.Comparator.*;
+import static com.hedera.services.throttling.bucket.BucketConfig.API_THROTTLING_BUCKETS_PREFIX;
+import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_BURST_PROPERTY;
+import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_CAPACITY_PROPERTY;
+import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_QUERY_BUCKET_PROPERTY;
+import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_TXN_BUCKET_PROPERTY;
 import static java.util.Comparator.comparingInt;
+import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
 
 public class ThrottlingPropsBuilder {
@@ -78,8 +73,6 @@ public class ThrottlingPropsBuilder {
 	public static PropertySource withPrioritySource(PropertySource properties, int networkSize) {
 		var fallback = new HashMap<String, Object>();
 		addDefaults(fallback);
-		addFromLegacyBouncer(fallback, properties, networkSize);
-		addFromLegacyHcs(fallback, properties, networkSize);
 		var throttleProps = new DeferringPropertySource(properties, fallback);
 		var msg = String.format("Resolved network-wide throttling properties (%d nodes):\n  ", networkSize) +
 				throttleProps.allPropertyNames()
@@ -109,88 +102,5 @@ public class ThrottlingPropsBuilder {
 	public static String wordCase(HederaFunctionality function) {
 		var name = function.toString();
 		return name.substring(0, 1).toLowerCase() + name.substring(1);
-	}
-
-	public static void addFromLegacyHcs(Map<String, Object> props, PropertySource properties, int networkSize) {
-		if (!properties.getBooleanProperty(RESPECT_LEGACY_THROTTLING_PROPERTY)) {
-			return;
-		}
-		hcsFunctions.forEach(function -> {
-			var tpsProp = tpsPropFor(function);
-			var burstProp = burstPeriodPropFor(function);
-			var bucketName = hcsBucketFor(function);
-			if (properties.containsProperty(tpsProp) && properties.containsProperty(burstProp)) {
-				props.put(asBucketProperty.apply(function), bucketName);
-				var burst = properties.getDoubleProperty(burstProp);
-				var capacity = sanitized(properties.getDoubleProperty(tpsProp) * burst * networkSize);
-				props.put(capacityProperty.apply(bucketName), capacity);
-				props.put(burstProperty.apply(bucketName), burst);
-			}
-		});
-	}
-
-	private static String hcsBucketFor(HederaFunctionality function) {
-		String name = function.toString().substring("Consensus".length());
-		return name.substring(0, 1).toLowerCase() + name.substring(1) + "Bucket";
-	}
-
-	private final static EnumSet<HederaFunctionality> hcsFunctions = EnumSet.of(
-			ConsensusGetTopicInfo,
-			ConsensusSubmitMessage,
-			ConsensusCreateTopic,
-			ConsensusDeleteTopic,
-			ConsensusUpdateTopic);
-
-	public static void addFromLegacyBouncer(Map<String, Object> props, PropertySource properties, int networkSize) {
-		if (!properties.getBooleanProperty(RESPECT_LEGACY_THROTTLING_PROPERTY)) {
-			return;
-		}
-		if (properties.containsProperty("throttlingTps")) {
-			props.put(
-					capacityProperty.apply(DEFAULT_TXN_BUCKET),
-					sanitized(1.0 * properties.getIntProperty("throttlingTps") * networkSize));
-		}
-		if (properties.containsProperty("queriesTps")) {
-			props.put(
-					capacityProperty.apply(DEFAULT_QUERY_BUCKET),
-					sanitized(1.0 * properties.getIntProperty("queriesTps") * networkSize));
-		}
-		if (properties.containsProperty("simpletransferTps")) {
-			props.put(
-					capacityProperty.apply("transferBucket"),
-					sanitized(1.0 * properties.getIntProperty("simpletransferTps") * networkSize));
-			props.put(
-					asBucketProperty.apply(HederaFunctionality.CryptoTransfer),
-					"transferBucket");
-		}
-		if (properties.containsProperty("getReceiptTps")) {
-			props.put(
-					capacityProperty.apply("receiptsBucket"),
-					sanitized(1.0 * properties.getIntProperty("getReceiptTps") * networkSize));
-			props.put(
-					asBucketProperty.apply(HederaFunctionality.TransactionGetReceipt),
-					"receiptsBucket");
-		}
-	}
-
-	private static double sanitized(double capacity) {
-		return capacity > 0.0 ? capacity : DEFAULT_CAPACITY;
-	}
-
-	private static String tpsPropFor(HederaFunctionality consensusFunction) {
-		return customPropFor(consensusFunction, "tps");
-	}
-
-	private static String burstPeriodPropFor(HederaFunctionality consensusFunction) {
-		return customPropFor(consensusFunction, "burstPeriod");
-	}
-
-	private static String customPropFor(HederaFunctionality consensusFunction, String param) {
-		return basePropFor(consensusFunction) + "." + param;
-	}
-
-	private static String basePropFor(HederaFunctionality consensusFunction) {
-		String name = consensusFunction.toString().substring("Consensus".length());
-		return String.format("throttling.hcs.%s", name.substring(0, 1).toLowerCase() + name.substring(1));
 	}
 }

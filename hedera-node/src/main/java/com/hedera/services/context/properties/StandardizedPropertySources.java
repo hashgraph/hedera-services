@@ -59,11 +59,8 @@ public class StandardizedPropertySources implements PropertySources {
 	public static Supplier<ScreenedNodeFileProps> nodePropertiesSupplier = ScreenedNodeFileProps::new;
 	public static Supplier<ScreenedSysFileProps> dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
 
-	public static final String RESPECT_LEGACY_THROTTLING_PROPERTY = API_THROTTLING_CONFIG_PREFIX + ".useLegacyProps";
-
 	private static final int ISS_RESET_PERIOD_SECS = 30;
 	private static final int ISS_ROUNDS_TO_DUMP = 5;
-	public static final long LONG_MASK = 0xffffffffL;
 
 	private final PropertySource bootstrapProps;
 	private final Predicate<String> fileSourceExists;
@@ -81,8 +78,6 @@ public class StandardizedPropertySources implements PropertySources {
 
 		nodeProps = nodePropertiesSupplier.get();
 		dynamicGlobalProps = dynamicGlobalPropsSupplier.get();
-
-		throttlePropsFromSysFile.put(RESPECT_LEGACY_THROTTLING_PROPERTY, true);
 	}
 
 	public void reloadFrom(ServicesConfigurationList config) {
@@ -93,23 +88,13 @@ public class StandardizedPropertySources implements PropertySources {
 			if (!name.startsWith(API_THROTTLING_PREFIX)) {
 				continue;
 			}
-			if (name.equals(RESPECT_LEGACY_THROTTLING_PROPERTY)) {
-				putBoolean(RESPECT_LEGACY_THROTTLING_PROPERTY, setting.getValue());
-			} else if (isDoubleProp(name)) {
+			if (isDoubleProp(name)) {
 				putDouble(name, setting.getValue());
 			} else {
 				throttlePropsFromSysFile.put(name, setting.getValue());
 			}
 		}
-		if (!throttlePropsFromSysFile.containsKey(RESPECT_LEGACY_THROTTLING_PROPERTY)) {
-			throttlePropsFromSysFile.put(RESPECT_LEGACY_THROTTLING_PROPERTY, true);
-		}
-
 		dynamicGlobalProps.screenNew(config);
-	}
-
-	private void putBoolean(String name, String literal) {
-		throttlePropsFromSysFile.put(name, Boolean.parseBoolean(literal));
 	}
 
 	private static final Set<String> DEFAULT_DOUBLE_PROPS = Set.of(
@@ -171,21 +156,6 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("ledger.records.ttl", PropertiesLoader::getThresholdTxRecordTTL);
 		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);
 		source.put("hedera.recordStream.logPeriod", PropertiesLoader::getRecordLogPeriod);
-
-		source.put("throttlingTps", PropertiesLoader::getThrottlingTps);
-		source.put("queriesTps", PropertiesLoader::getQueriesTps);
-		source.put("simpletransferTps", PropertiesLoader::getSimpleTransferTps);
-		source.put("getReceiptTps", PropertiesLoader::getGetReceiptTps);
-		source.put("throttling.hcs.createTopic.tps", PropertiesLoader::getCreateTopicTps);
-		source.put("throttling.hcs.createTopic.burstPeriod", PropertiesLoader::getCreateTopicBurstPeriod);
-		source.put("throttling.hcs.updateTopic.tps", PropertiesLoader::getUpdateTopicTps);
-		source.put("throttling.hcs.updateTopic.burstPeriod", PropertiesLoader::getUpdateTopicBurstPeriod);
-		source.put("throttling.hcs.deleteTopic.tps", PropertiesLoader::getDeleteTopicTps);
-		source.put("throttling.hcs.deleteTopic.burstPeriod", PropertiesLoader::getDeleteTopicBurstPeriod);
-		source.put("throttling.hcs.submitMessage.tps", PropertiesLoader::getSubmitMessageTps);
-		source.put("throttling.hcs.submitMessage.burstPeriod", PropertiesLoader::getSubmitMessageBurstPeriod);
-		source.put("throttling.hcs.getTopicInfo.tps", PropertiesLoader::getGetTopicInfoTps);
-		source.put("throttling.hcs.getTopicInfo.burstPeriod", PropertiesLoader::getGetTopicInfoBurstPeriod);
 
 		source.put("binary.object.query.retry.times", PropertiesLoader::getBinaryObjectQueryRetryTimes);
 
