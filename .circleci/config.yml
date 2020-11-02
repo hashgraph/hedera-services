@@ -911,7 +911,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable_4N_Perf_JRS_Regression_master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
