@@ -725,7 +725,6 @@ public class OCTokenIT extends LegacySmartContractTest {
     Properties prop = new Properties();
     InputStream input = null;
     try {
-//      String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
       input = new FileInputStream("src/main/resource/application.properties");
       prop.load(input);
     } catch (IOException e) {
