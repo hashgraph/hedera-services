@@ -96,7 +96,11 @@ public class HapiSysDelete extends HapiTxnOp<HapiSysDelete> {
 
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::systemDelete;
+		if (file.isPresent()) {
+			return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::systemDelete;
+		} else {
+			return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::systemDelete;
+		}
 	}
 
 	@Override

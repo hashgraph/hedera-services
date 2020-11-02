@@ -414,6 +414,13 @@ public class HederaLedger {
 		customizer.customize(id, accountsLedger);
 	}
 
+	public void customizeDeleted(AccountID id, HederaAccountCustomizer customizer) {
+		if (!(boolean) accountsLedger.get(id, IS_DELETED)) {
+			throw new DeletedAccountException(id);
+		}
+		customizer.customize(id, accountsLedger);
+	}
+
 	public void delete(AccountID id, AccountID beneficiary) {
 		doTransfer(id, beneficiary, getBalance(id));
 		accountsLedger.set(id, IS_DELETED, true);
