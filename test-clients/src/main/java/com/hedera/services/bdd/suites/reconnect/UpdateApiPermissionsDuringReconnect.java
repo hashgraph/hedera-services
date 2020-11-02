@@ -21,12 +21,10 @@ package com.hedera.services.bdd.suites.reconnect;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +33,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 
 public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
@@ -56,14 +53,13 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
 		return defaultHapiSpec("updateApiPermissionsDuringReconnect")
 				.given(
-						sleepFor(Duration.ofSeconds(60).toMillis()),
 						getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode()
 				)
 				.when(
 						fileUpdate(API_PERMISSIONS)
-						.overridingProps(Map.of("updateFile", "1-1011"))
-						.payingWith(MASTER)
-						.logged(),
+								.overridingProps(Map.of("updateFile", "1-1011"))
+								.payingWith(MASTER)
+								.logged(),
 						getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode()
 				)
 				.then(
