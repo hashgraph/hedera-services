@@ -20,7 +20,7 @@
   <scm>
     <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
     <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>release/0.9</tag>
   </scm>
 
   <ciManagement>
