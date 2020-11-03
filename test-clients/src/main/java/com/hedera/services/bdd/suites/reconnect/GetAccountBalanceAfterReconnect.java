@@ -100,8 +100,8 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 
 	private HapiApiSpec validateFileInfo() {
 		String firstlyCreatedFile = "0.0.41004";
-		String lastlyCreatedFile = "0.0.61003";
-		String invalidFileId = "0.0.61004";
+		String lastlyCreatedFile = "0.0.51003";
+		String invalidFileId = "0.0.51004";
 		return defaultHapiSpec("ValidateFileInfo")
 				.given().when().then(
 						getFileInfo(firstlyCreatedFile).logged().setNode("0.0.6"),
