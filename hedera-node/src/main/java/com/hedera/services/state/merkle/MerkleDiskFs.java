@@ -27,6 +27,7 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,7 +35,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -67,8 +67,8 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	static final int MAX_FILE_BYTES = 1_024 * 1_024 * 1_024;
 	static final int MERKLE_VERSION = 1;
 
-	static ThrowingBytesWriter writeHelper = Files::write;
-	static ThrowingBytesGetter bytesHelper = Files::readAllBytes;
+	static ThrowingBytesWriter writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
+	static ThrowingBytesGetter bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
 
 	private String fsBaseDir = UNKNOWN_PATH_SEGMENT;
 	private String fsNodeScopedDir = UNKNOWN_PATH_SEGMENT;

@@ -29,6 +29,7 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -41,6 +42,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -98,8 +100,32 @@ public class MerkleDiskFsTest {
 
 	@AfterEach
 	private void cleanup() {
-		MerkleDiskFs.bytesHelper = Files::readAllBytes;
-		MerkleDiskFs.writeHelper = Files::write;
+		MerkleDiskFs.writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
+		MerkleDiskFs.bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
+	}
+
+	@Test
+	public void helpersSanityCheck() throws IOException {
+		// setup:
+		cleanup();
+
+		// given:
+		String tmpBase = MOCK_DISKFS_DIR + File.separator + "a" + File.separator + "b" + File.separator;
+		Path tmpLoc = Paths.get(tmpBase + "c.txt");
+		byte[] tmpMsg = "Testing-1-2-3".getBytes();
+
+		// when:
+		MerkleDiskFs.writeHelper.allBytesTo(tmpLoc, tmpMsg);
+
+		// then:
+		assertArrayEquals(tmpMsg, MerkleDiskFs.bytesHelper.allBytesFrom(tmpLoc));
+
+		// cleanup:
+		tmpLoc.toFile().delete();
+		while (!tmpBase.equals(MOCK_DISKFS_DIR + File.separator)) {
+			new File(tmpBase).delete();
+			tmpBase = tmpBase.substring(0, tmpBase.substring(0, tmpBase.length() - 1).lastIndexOf(File.separator) + 1);
+		}
 	}
 
 	@Test
