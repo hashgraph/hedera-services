@@ -43,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 public class CreateFilesBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateFilesBeforeReconnect.class);
 
-	private static final int FILE_CREATION_LIMIT = 20_000;
+	private static final int FILE_CREATION_LIMIT = 10_000;
 
 	public static void main(String... args) {
 		new CreateFilesBeforeReconnect().runSuiteSync();
@@ -72,7 +72,7 @@ public class CreateFilesBeforeReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec runCreateFiles() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings(120, 3, 1);
+		PerfTestLoadSettings settings = new PerfTestLoadSettings(60, 3, 1);
 
 		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
 				generateFileCreateOperation()
