@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 
@@ -47,7 +48,8 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				getAccountBalanceFromAllNodes(),
-				validateTopicInfo()
+				validateTopicInfo(),
+				validateFileInfo()
 		);
 	}
 
@@ -93,6 +95,18 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 						getTopicInfo(lastlyCreatedTopic).logged().setNode("0.0.6")
 								.hasRunningHash(emptyRunningHash),
 						getTopicInfo(invalidTopicId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID)
+				);
+	}
+
+	private HapiApiSpec validateFileInfo() {
+		String firstlyCreatedFile = "0.0.41004";
+		String lastlyCreatedFile = "0.0.61003";
+		String invalidFileId = "0.0.61004";
+		return defaultHapiSpec("ValidateFileInfo")
+				.given().when().then(
+						getFileInfo(firstlyCreatedFile).logged().setNode("0.0.6"),
+						getFileInfo(lastlyCreatedFile).logged().setNode("0.0.6"),
+						getFileInfo(invalidFileId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_FILE_ID)
 				);
 	}
 
