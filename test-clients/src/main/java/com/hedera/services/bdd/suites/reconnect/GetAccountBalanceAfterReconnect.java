@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.reconnect;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 
 public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
@@ -44,7 +46,8 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				getAccountBalanceFromAllNodes()
+				getAccountBalanceFromAllNodes(),
+				validateTopicInfo()
 		);
 	}
 
@@ -75,6 +78,21 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 								.hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
 						getAccountBalance(lastlyCreatedAccount).logged().setNode("0.0.6")
 								.hasTinyBars(changeFromSnapshot("lastlyCreatedAccountBalance", 0))
+				);
+	}
+
+	private HapiApiSpec validateTopicInfo() {
+		String firstlyCreatedTopic = "0.0.21003";
+		String lastlyCreatedTopic = "0.0.41001";
+		String invalidTopicId = "0.0.41002";
+		byte[] emptyRunningHash = new byte[48];
+		return defaultHapiSpec("ValidateTopicInfo")
+				.given().when().then(
+						getTopicInfo(firstlyCreatedTopic).logged().setNode("0.0.6")
+								.hasRunningHash(emptyRunningHash),
+						getTopicInfo(lastlyCreatedTopic).logged().setNode("0.0.6")
+								.hasRunningHash(emptyRunningHash),
+						getTopicInfo(invalidTopicId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID)
 				);
 	}
 
