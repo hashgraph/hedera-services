@@ -57,6 +57,7 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,6 +134,7 @@ public class OCTokenIT extends LegacySmartContractTest {
   }
 
   public void demo(String grpcHost, AccountID nodeAccount) throws Exception{
+    log.info("-------------- STARTING OCToken Regression");
 
     OCTokenIT.grpcHost = grpcHost;
     OCTokenIT.nodeAccount = nodeAccount;
@@ -177,7 +179,8 @@ public class OCTokenIT extends LegacySmartContractTest {
 
     if (tokenIssuer != null) {
 
-      FileID ocTokenCode = LargeFileUploadIT.uploadFile(tokenIssuer, fileName, tokenIssureKeyPair);
+      FileID ocTokenCode = LargeFileUploadIT.uploadFile(tokenIssuer, fileName, new ArrayList<>(
+              List.of(tokenIssureKeyPair.getPrivate())), grpcHost, nodeAccount);
       if (ocTokenCode != null) {
 
         long initialSupply = 1000_000L;
@@ -271,7 +274,8 @@ public class OCTokenIT extends LegacySmartContractTest {
         log.info("--------------------¯\\_(ツ)_/¯----------------------");
 
         // Marker message for regression report
-        log.info("Regression summary: This run is successful.");
+        log.info("-------------- RESULTS OF OCToken ----------------------");
+        log.info("OCToken Regression summary: This run is successful.");
       }
     }
   }
@@ -721,8 +725,7 @@ public class OCTokenIT extends LegacySmartContractTest {
     Properties prop = new Properties();
     InputStream input = null;
     try {
-      String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
-      input = new FileInputStream(rootPath + "application.properties");
+      input = new FileInputStream("src/main/resource/application.properties");
       prop.load(input);
     } catch (IOException e) {
       e.printStackTrace();
