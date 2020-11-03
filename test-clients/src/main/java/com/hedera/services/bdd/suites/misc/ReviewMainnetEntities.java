@@ -32,7 +32,6 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -45,12 +44,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 public class ReviewMainnetEntities extends HapiApiSuite {
@@ -103,7 +101,7 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 						grantTokenKyc(A_TOKEN, FIRST_USER)
 				).then(
 						tokenUpdate(A_TOKEN).adminKey("secondAdminKey"),
-						tokenTransact(moving(10, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)),
+						cryptoTransfer(moving(10, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)),
 						wipeTokenAccount(A_TOKEN, FIRST_USER, 10),
 						mintToken(A_TOKEN, 10),
 						burnToken(A_TOKEN, 10),

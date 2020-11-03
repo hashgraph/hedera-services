@@ -57,7 +57,6 @@ import "ConsensusSubmitMessage.proto";
 import "UncheckedSubmit.proto";
 
 import "TokenCreate.proto";
-import "TokenTransfer.proto";
 import "TokenFreezeAccount.proto";
 import "TokenUnfreezeAccount.proto";
 import "TokenGrantKyc.proto";
@@ -107,7 +106,6 @@ message TransactionBody {
     UncheckedSubmitBody uncheckedSubmit = 28;
 
     TokenCreateTransactionBody tokenCreation = 29; // Creates a token instance
-    TokenTransfersTransactionBody tokenTransfers = 30; // Transfers tokens between accounts
     TokenFreezeAccountTransactionBody tokenFreeze = 31; // Freezes account not to be able to transact with a token
     TokenUnfreezeAccountTransactionBody tokenUnfreeze = 32; // Unfreezes account for a token
     TokenGrantKycTransactionBody tokenGrantKyc = 33; // Grants KYC to an account for a token

@@ -30,6 +30,7 @@ import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
@@ -46,7 +47,6 @@ import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenTransactResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
@@ -208,7 +208,6 @@ import com.hedera.services.txns.token.TokenFreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenGrantKycTransitionLogic;
 import com.hedera.services.txns.token.TokenMintTransitionLogic;
 import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
-import com.hedera.services.txns.token.TokenTransferTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
@@ -380,6 +379,7 @@ public class ServicesContext {
 	private CryptoController cryptoGrpc;
 	private BucketThrottling bucketThrottling;
 	private HbarCentExchange exchange;
+	private SemanticVersions semVers;
 	private PrecheckVerifier precheckVerifier;
 	private BackingTokenRels backingTokenRels;
 	private BalancesExporter balancesExporter;
@@ -487,6 +487,13 @@ public class ServicesContext {
 			speedometers = new MiscSpeedometers(new SpeedometerFactory() {}, nodeLocalProperties());
 		}
 		return speedometers;
+	}
+
+	public SemanticVersions semVers() {
+		if (semVers == null) {
+			semVers = new SemanticVersions();
+		}
+		return semVers;
 	}
 
 	public ServicesStatsManager statsManager() {
@@ -671,7 +678,7 @@ public class ServicesContext {
 			metaAnswers = new MetaAnswers(
 					new GetTxnRecordAnswer(recordCache(), validator(), answerFunctions()),
 					new GetTxnReceiptAnswer(recordCache()),
-					new GetVersionInfoAnswer(),
+					new GetVersionInfoAnswer(semVers()),
 					new GetFastTxnRecordAnswer()
 			);
 		}
@@ -744,7 +751,7 @@ public class ServicesContext {
 							new GetTopicInfoResourceUsage(),
 							/* Smart Contract */
 							new GetBytecodeResourceUsage(contractFees),
-							new GetContractInfoResourceUsage(contractFees),
+							new GetContractInfoResourceUsage(),
 							new GetContractRecordsResourceUsage(contractFees),
 							/* Token */
 							new GetTokenInfoResourceUsage()
@@ -765,7 +772,7 @@ public class ServicesContext {
 				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoFees))),
 				entry(CryptoDelete, List.of(new CryptoDeleteResourceUsage(cryptoFees))),
 				entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoFees))),
-				entry(CryptoTransfer, List.of(new CryptoTransferResourceUsage(cryptoFees))),
+				entry(CryptoTransfer, List.of(new CryptoTransferResourceUsage())),
 				/* Contract */
 				entry(ContractCall, List.of(new ContractCallResourceUsage(contractFees))),
 				entry(ContractCreate, List.of(new ContractCreateResourceUsage(contractFees))),
@@ -784,7 +791,6 @@ public class ServicesContext {
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
-				entry(TokenTransact, List.of(new TokenTransactResourceUsage())),
 				entry(TokenFreezeAccount, List.of(new TokenFreezeResourceUsage())),
 				entry(TokenUnfreezeAccount, List.of(new TokenUnfreezeResourceUsage())),
 				entry(TokenGrantKycToAccount, List.of(new TokenGrantKycResourceUsage())),
@@ -1030,8 +1036,6 @@ public class ServicesContext {
 								ledger(),
 								txnCtx(),
 								HederaTokenStore::affectsExpiryAtMost))),
-				entry(TokenTransact,
-						List.of(new TokenTransferTransitionLogic(ledger(), validator(), txnCtx()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
@@ -1506,7 +1510,7 @@ public class ServicesContext {
 					exchange(),
 					fees(),
 					stateViews(),
-					new BasicPrecheck(properties(), validator()),
+					new BasicPrecheck(validator(), globalDynamicProperties()),
 					queryFeeCheck(),
 					bucketThrottling(),
 					accountNums(),

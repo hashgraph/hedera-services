@@ -26,6 +26,7 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.grpc.controllers.TokenController;
@@ -431,6 +432,7 @@ public class ServicesContextTest {
 		assertThat(ctx.runningAvgs(), instanceOf(MiscRunningAvgs.class));
 		assertThat(ctx.speedometers(), instanceOf(MiscSpeedometers.class));
 		assertThat(ctx.statsManager(), instanceOf(ServicesStatsManager.class));
+		assertThat(ctx.semVers(), instanceOf(SemanticVersions.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

@@ -117,7 +117,7 @@ public class TieredHederaFs implements HederaFs {
 	@Override
 	public FileID create(byte[] contents, JFileInfo attr, AccountID sponsor) {
 		assertValid(attr);
-		assertValid(contents);
+		assertWithinSizeLimits(contents);
 
 		var fid = ids.newFileId(sponsor);
 		data.put(fid, contents);
@@ -134,7 +134,7 @@ public class TieredHederaFs implements HederaFs {
 	@Override
 	public byte[] cat(FileID id) {
 		assertUsable(id);
-		if (diskFs.get().contains(id)) {
+		if (isOnDisk(id)) {
 			return diskFs.get().contentsOf(id);
 		} else {
 			return data.get(id);
@@ -167,7 +167,9 @@ public class TieredHederaFs implements HederaFs {
 	@Override
 	public UpdateResult overwrite(FileID id, byte[] newContents) {
 		assertUsable(id);
-		assertValid(newContents);
+		if (!isOnDisk(id)) {
+			assertWithinSizeLimits(newContents);
+		}
 
 		return uncheckedUpdate(id, newContents);
 	}
@@ -175,8 +177,11 @@ public class TieredHederaFs implements HederaFs {
 	@Override
 	public UpdateResult append(FileID id, byte[] moreContents) {
 		assertUsable(id);
+
 		byte[] contents;
-		if (diskFs.get().contains(id)) {
+
+		boolean isDiskBased = isOnDisk(id);
+		if (isDiskBased) {
 			contents = diskFs.get().contentsOf(id);
 		} else {
 			contents = data.get(id);
@@ -189,7 +194,9 @@ public class TieredHederaFs implements HederaFs {
 				idStr,
 				newContents.length);
 
-		assertValid(newContents);
+		if (!isDiskBased) {
+			assertWithinSizeLimits(newContents);
+		}
 
 		return uncheckedUpdate(id, newContents);
 	}
@@ -245,6 +252,10 @@ public class TieredHederaFs implements HederaFs {
 		public boolean attrChanged() {
 			return attrChanged;
 		}
+	}
+
+	private boolean isOnDisk(FileID fid) {
+		return diskFs.get().contains(fid);
 	}
 
 	private UpdateResult uncheckedSetattr(FileID id, JFileInfo attr) {
@@ -317,7 +328,7 @@ public class TieredHederaFs implements HederaFs {
 		}
 	}
 
-	private void assertValid(byte[] data) {
+	private void assertWithinSizeLimits(byte[] data) {
 		if (data.length > properties.maxFileSizeKb() * BYTES_PER_KB) {
 			throwIllegal(OVERSIZE_CONTENTS);
 		}

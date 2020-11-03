@@ -55,6 +55,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private OptionalLong newExpiryTime = OptionalLong.empty();
 	private Optional<String> newKey = Optional.empty();
 	private Optional<String> newMemo = Optional.empty();
+	private boolean wipeToThresholdKey = false;
 
 	public HapiContractUpdate(String contract) {
 		this.contract = contract;
@@ -85,6 +86,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		useDeprecatedAdminKey = true;
 		return this;
 	}
+	public HapiContractUpdate emptyingAdminKey() {
+		wipeToThresholdKey = true;
+		return this;
+	}
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
@@ -106,7 +111,9 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							b.setContractID(spec.registry().getContractId(contract));
 							if (useDeprecatedAdminKey) {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
-							}  else {
+							} else if (wipeToThresholdKey) {
+								b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+							} else {
 								key.ifPresent(k -> b.setAdminKey(k));
 							}
 							newExpiryTime.ifPresent(s ->

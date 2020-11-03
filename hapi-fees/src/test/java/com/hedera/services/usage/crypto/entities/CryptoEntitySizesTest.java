@@ -37,7 +37,7 @@ class CryptoEntitySizesTest {
 	@Test
 	public void knowsExpectedFixedBytes() {
 		// expect:
-		assertEquals(3 * BOOL_SIZE + 5 * LONG_SIZE, subject.fixedBytesInAccountRepr());
+		assertEquals(3 * BOOL_SIZE + 3 * LONG_SIZE, subject.fixedBytesInAccountRepr());
 	}
 
 	@Test

@@ -32,7 +32,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
 public class SyncPropertiesObject {
 	// Tx record & receipt ttl setting in seconds
 	private static int thresholdTxRecordTTL = ApplicationConstants.THRESH_REC_TTL;
-	private static int txMinRemaining = ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS;
 
 	private static int keyExpansionDepth = ApplicationConstants.KEY_EXPANSION_DEPTH;
 
@@ -51,7 +50,6 @@ public class SyncPropertiesObject {
 		keyExpansionDepth = appConfig.getInt("keyExpansionDepth", ApplicationConstants.KEY_EXPANSION_DEPTH);
 		// Tx record & receipt ttl setting in seconds
 		thresholdTxRecordTTL = appConfig.getInt("thresholdTxRecordTTL", ApplicationConstants.THRESH_REC_TTL);
-		txMinRemaining = appConfig.getInt("txMinimumRemaining", ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS);
 
 		// default valid duration of the contract in seconds
 		defaultContractDurationSec = appConfig.getLong("defaultContractDurationSec", ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC);
@@ -67,10 +65,6 @@ public class SyncPropertiesObject {
 
 	static int getThresholdTxRecordTTL() {
 		return thresholdTxRecordTTL;
-	}
-
-	static int getTxMinRemaining() {
-		return txMinRemaining;
 	}
 
 	static int getKeyExpansionDepth() {

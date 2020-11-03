@@ -45,7 +45,6 @@ public class ApplicationConstants {
 	public static int KEY_EXPANSION_DEPTH = 100;
 	// Tx record & receipt ttl setting in seconds
 	public static int THRESH_REC_TTL = 90000;
-	public static int TXN_MIN_VALIDITY_BUFFER_SECS = 10;
 
 	public static long DEFAULT_CONTRACT_DURATION_IN_SEC = 7890000;
 

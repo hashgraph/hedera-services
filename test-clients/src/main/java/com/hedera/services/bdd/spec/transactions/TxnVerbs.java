@@ -36,11 +36,10 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenDelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -73,6 +72,9 @@ public class TxnVerbs {
 	@SafeVarargs
 	public static HapiCryptoTransfer cryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
 		return new HapiCryptoTransfer(providers);
+	}
+	public static HapiCryptoTransfer cryptoTransfer(TokenMovement... sources) {
+		return new HapiCryptoTransfer(sources);
 	}
 	public static HapiCryptoUpdate cryptoUpdate(String account) {
 		return new HapiCryptoUpdate(account);
@@ -130,9 +132,6 @@ public class TxnVerbs {
 	}
 	public static HapiTokenDelete tokenDelete(String token) {
 		return new HapiTokenDelete(token);
-	}
-	public static HapiTokenTransact tokenTransact(HapiTokenTransact.TokenMovement... sources) {
-		return new HapiTokenTransact(sources);
 	}
 	public static HapiTokenFreeze tokenFreeze(String token, String account) {
 		return new HapiTokenFreeze(token, account);

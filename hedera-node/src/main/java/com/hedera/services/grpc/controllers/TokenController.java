@@ -44,7 +44,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInf
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenTransact;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
@@ -56,7 +55,6 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	public static final String TOKEN_CREATE_METRIC = "createToken";
 	public static final String TOKEN_DELETE_METRIC = "deleteToken";
 	public static final String TOKEN_UPDATE_METRIC = "updateToken";
-	public static final String TOKEN_TRANSACT_METRIC = "transferTokens";
 	public static final String TOKEN_FREEZE_METRIC = "freezeTokenAccount";
 	public static final String TOKEN_UNFREEZE_METRIC = "unfreezeTokenAccount";
 	public static final String TOKEN_GRANT_KYC_METRIC = "grantKycToTokenAccount";
@@ -129,11 +127,6 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	@Override
 	public void revokeKycFromTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, TokenRevokeKycFromAccount);
-	}
-
-	@Override
-	public void transferTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.submit(signedTxn, observer, TokenTransact);
 	}
 
 	@Override

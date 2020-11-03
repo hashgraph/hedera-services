@@ -35,6 +35,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -53,14 +54,20 @@ import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.swirlds.fcmap.FCMap;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import javax.swing.plaf.nimbus.State;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.*;
@@ -89,6 +96,7 @@ class StateViewTest {
 	Map<byte[], byte[]> bytecode;
 	Map<FileID, byte[]> contents;
 	Map<FileID, JFileInfo> attrs;
+	BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
 
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
 	TokenStore tokenStore;
@@ -135,9 +143,10 @@ class StateViewTest {
 				.receiverSigRequired(true)
 				.balance(555L)
 				.autoRenewPeriod(1_000_000L)
+				.deleted(true)
 				.expirationTime(9_999_999L)
 				.get();
-		contracts = (FCMap<MerkleEntityId, MerkleAccount>)mock(FCMap.class);
+		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
 		given(contracts.get(MerkleEntityId.fromContractId(cid))).willReturn(contract);
 		given(contracts.get(MerkleEntityId.fromContractId(notCid))).willReturn(notContract);
 
@@ -167,6 +176,12 @@ class StateViewTest {
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		propertySource = mock(PropertySource.class);
 		diskFs = mock(MerkleDiskFs.class);
+
+		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
+
+		StateView.tokenRelsFn = mockTokenRelsFn;
+		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
+
 		subject = new StateView(
 				tokenStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
@@ -177,6 +192,11 @@ class StateViewTest {
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
 		subject.contractStorage = storage;
+	}
+
+	@AfterEach
+	void cleanup() {
+		StateView.tokenRelsFn = StateView::tokenRels;
 	}
 
 	@Test
@@ -269,6 +289,16 @@ class StateViewTest {
 
 	@Test
 	public void getsContractInfo() throws Exception {
+		// setup:
+		List<TokenRelationship> rels = List.of(
+				TokenRelationship.newBuilder()
+						.setTokenId(TokenID.newBuilder().setTokenNum(123L))
+						.setFreezeStatus(TokenFreezeStatus.FreezeNotApplicable)
+						.setKycStatus(TokenKycStatus.KycNotApplicable)
+						.setBalance(321L)
+						.build());
+		given(mockTokenRelsFn.apply(subject, asAccount(cid))).willReturn(rels);
+
 		// when:
 		var info = subject.infoForContract(cid).get();
 
@@ -281,6 +311,8 @@ class StateViewTest {
 		assertEquals(contract.getBalance(), info.getBalance());
 		assertEquals(asSolidityAddressHex(asAccount(cid)), info.getContractAccountID());
 		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
+		assertEquals(rels, info.getTokenRelationshipsList());
+		assertTrue(info.getDeleted());
 		// and:
 		assertEquals(expectedStorage.length + expectedBytecode.length, info.getStorage());
 	}

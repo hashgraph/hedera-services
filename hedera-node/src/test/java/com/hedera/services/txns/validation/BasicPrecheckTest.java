@@ -20,6 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -64,15 +65,15 @@ class BasicPrecheckTest {
 	String memo = "Our souls, which to advance their state / Were gone out, hung twixt her and me.";
 	TransactionBody txn;
 
-	PropertySource properties;
 	OptionValidator validator;
+	GlobalDynamicProperties dynamicProperties;
 
 	BasicPrecheck subject;
 
 	@BeforeEach
 	private void setup() {
 		validator = mock(OptionValidator.class);
-		properties = mock(PropertySource.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
 
 		given(validator.isValidTxnDuration(anyLong())).willReturn(true);
 		given(validator.isPlausibleTxnFee(anyLong())).willReturn(true);
@@ -80,10 +81,9 @@ class BasicPrecheckTest {
 		given(validator.isPlausibleAccount(payer)).willReturn(true);
 		given(validator.isValidEntityMemo(memo)).willReturn(true);
 		given(validator.chronologyStatusForTxn(any(), anyLong(), any())).willReturn(OK);
-		given(properties.getIntProperty("hedera.transaction.minValidityBufferSecs"))
-				.willReturn(validityBufferOverride);
+		given(dynamicProperties.minValidityBuffer()).willReturn(validityBufferOverride);
 
-		subject = new BasicPrecheck(properties, validator);
+		subject = new BasicPrecheck(validator, dynamicProperties);
 
 		txn = TransactionBody.newBuilder()
 				.setTransactionID(txnId)

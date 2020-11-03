@@ -22,8 +22,8 @@ package com.hedera.services.ledger;
 
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.tokenWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -64,7 +63,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
 
 		// when:
-		var outcome = subject.doAtomicZeroSumTokenTransfers(unmatchedTokenTransfers);
+		var outcome = subject.doAtomicTransfers(unmatchedTokenTransfers);
 		// and:
 		var netXfers = subject.netTokenTransfersInTxn();
 
@@ -79,7 +78,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
 
 		// when:
-		var outcome = subject.doAtomicZeroSumTokenTransfers(missingIdTokenTransfers);
+		var outcome = subject.doAtomicTransfers(missingIdTokenTransfers);
 		// and:
 		var netXfers = subject.netTokenTransfersInTxn();
 
@@ -95,7 +94,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		given(accountsLedger.get(rand, IS_SMART_CONTRACT)).willReturn(true);
 
 		// when:
-		var outcome = subject.doAtomicZeroSumTokenTransfers(validTokenXfersPlusInvalidHbarXfers);
+		var outcome = subject.doAtomicTransfers(validTokenXfersPlusInvalidHbarXfers);
 		// and:
 		var netXfers = subject.netTokenTransfersInTxn();
 
@@ -110,7 +109,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
 
 		// when:
-		var outcome = subject.doAtomicZeroSumTokenTransfers(multipleValidTokenTransfers);
+		var outcome = subject.doAtomicTransfers(multipleValidTokenTransfers);
 		// and:
 		var netXfers = subject.netTokenTransfersInTxn();
 
@@ -132,7 +131,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
 
 		// when:
-		var outcome = subject.doAtomicZeroSumTokenTransfers(multipleValidTokenTransfersPlusHbars);
+		var outcome = subject.doAtomicTransfers(multipleValidTokenTransfersPlusHbars);
 		// and:
 		var netXfers = subject.netTokenTransfersInTxn();
 
@@ -262,7 +261,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
 	}
 
-	TokenTransfersTransactionBody unmatchedTokenTransfers = TokenTransfersTransactionBody.newBuilder()
+	CryptoTransferTransactionBody unmatchedTokenTransfers = CryptoTransferTransactionBody.newBuilder()
 			.addTokenTransfers(TokenTransferList.newBuilder()
 					.setToken(tokenId)
 					.addAllTransfers(List.of(
@@ -270,7 +269,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
-	TokenTransfersTransactionBody missingIdTokenTransfers = TokenTransfersTransactionBody.newBuilder()
+	CryptoTransferTransactionBody missingIdTokenTransfers = CryptoTransferTransactionBody.newBuilder()
 			.addTokenTransfers(TokenTransferList.newBuilder()
 					.setToken(missingId)
 					.addAllTransfers(List.of(
@@ -278,7 +277,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
-	TokenTransfersTransactionBody multipleValidTokenTransfers = TokenTransfersTransactionBody.newBuilder()
+	CryptoTransferTransactionBody multipleValidTokenTransfers = CryptoTransferTransactionBody.newBuilder()
 			.addTokenTransfers(TokenTransferList.newBuilder()
 					.setToken(frozenId)
 					.addAllTransfers(List.of(
@@ -292,7 +291,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
-	TokenTransfersTransactionBody multipleValidTokenTransfersPlusHbars = TokenTransfersTransactionBody.newBuilder()
+	CryptoTransferTransactionBody multipleValidTokenTransfersPlusHbars = CryptoTransferTransactionBody.newBuilder()
 			.addTokenTransfers(TokenTransferList.newBuilder()
 					.setToken(frozenId)
 					.addAllTransfers(List.of(
@@ -305,12 +304,12 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
 					)))
-			.setHbarTransfers(TransferList.newBuilder()
+			.setTransfers(TransferList.newBuilder()
 					.addAccountAmounts(adjustFrom(rand, +123))
 					.addAccountAmounts(adjustFrom(misc, -123))
 					.build())
 			.build();
-	TokenTransfersTransactionBody validTokenXfersPlusInvalidHbarXfers = TokenTransfersTransactionBody.newBuilder()
+	CryptoTransferTransactionBody validTokenXfersPlusInvalidHbarXfers = CryptoTransferTransactionBody.newBuilder()
 			.addTokenTransfers(TokenTransferList.newBuilder()
 					.setToken(frozenId)
 					.addAllTransfers(List.of(
@@ -323,7 +322,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
 					)))
-			.setHbarTransfers(TransferList.newBuilder()
+			.setTransfers(TransferList.newBuilder()
 					.addAccountAmounts(adjustFrom(rand, +123))
 					.addAccountAmounts(adjustFrom(misc, -123))
 					.build())

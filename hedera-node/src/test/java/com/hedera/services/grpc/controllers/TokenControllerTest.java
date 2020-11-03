@@ -47,11 +47,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInf
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenTransact;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static org.mockito.BDDMockito.*;
-import static com.hedera.services.grpc.controllers.TokenController.*;
 
 @RunWith(JUnitPlatform.class)
 class TokenControllerTest {
@@ -85,15 +83,6 @@ class TokenControllerTest {
 
 		// expect:
 		verify(txnResponseHelper).submit(txn, txnObserver, TokenCreate);
-	}
-
-	@Test
-	public void forwardTokenTransactAsExpected() {
-		// when:
-		subject.transferTokens(txn, txnObserver);
-
-		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, TokenTransact);
 	}
 
 	@Test

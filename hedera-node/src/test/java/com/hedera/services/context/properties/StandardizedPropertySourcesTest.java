@@ -64,17 +64,6 @@ public class StandardizedPropertySourcesTest {
 	}
 
 	@Test
-	void initsLegacyPropsFlagToTrue() {
-		givenImpliedSubject();
-
-		// given:
-		var properties = subject.asResolvingSource();
-
-		// expect:
-		assertTrue(properties.getBooleanProperty(StandardizedPropertySources.RESPECT_LEGACY_THROTTLING_PROPERTY));
-	}
-
-	@Test
 	void usesDynamicGlobalAsPriority() {
 		// setup:
 		ScreenedSysFileProps source = mock(ScreenedSysFileProps.class);
@@ -141,26 +130,12 @@ public class StandardizedPropertySourcesTest {
 	}
 
 	@Test
-	void restoresLegacyPropsFlagToTrueIfMissing() {
-		givenImpliedSubject();
-
-		// given:
-		var properties = subject.asResolvingSource();
-		// and:
-		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
-
-		// expect:
-		assertTrue(properties.getBooleanProperty(StandardizedPropertySources.RESPECT_LEGACY_THROTTLING_PROPERTY));
-	}
-
-	@Test
 	void castsThrottlePropsAppropriately() {
 		// setup:
 		var bucket = "B";
 		var function = HederaFunctionality.ContractGetRecords;
 		var config = ServicesConfigurationList.newBuilder()
 				.addNameValue(from("random", "no-throttle-relation"))
-				.addNameValue(from(StandardizedPropertySources.RESPECT_LEGACY_THROTTLING_PROPERTY, "false"))
 				.addNameValue(from(DEFAULT_BURST_PROPERTY, "1.23"))
 				.addNameValue(from(DEFAULT_CAPACITY_PROPERTY, "1.23"))
 				.addNameValue(from(DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY, "1.23"))
@@ -179,7 +154,6 @@ public class StandardizedPropertySourcesTest {
 		subject.reloadFrom(config);
 
 		// then:
-		assertFalse(props.getBooleanProperty(StandardizedPropertySources.RESPECT_LEGACY_THROTTLING_PROPERTY));
 		assertEquals(1.23, props.getDoubleProperty(DEFAULT_BURST_PROPERTY));
 		assertEquals(1.23, props.getDoubleProperty(DEFAULT_CAPACITY_PROPERTY));
 		assertEquals(1.23, props.getDoubleProperty(DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY));
@@ -240,23 +214,12 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("hedera.transaction.maxMemoUtf8Bytes"));
 		assertTrue(properties.containsProperty("hedera.transaction.maxValidDuration"));
 		assertTrue(properties.containsProperty("hedera.transaction.minValidDuration"));
-		assertTrue(properties.containsProperty("hedera.transaction.minValidityBufferSecs"));
 		assertTrue(properties.containsProperty("iss.reset.periodSecs"));
 		assertTrue(properties.containsProperty("iss.roundsToDump"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.maxDuration"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.minDuration"));
 		assertTrue(properties.containsProperty("ledger.totalTinyBarFloat"));
 		assertTrue(properties.containsProperty("ledger.records.ttl"));
-		assertTrue(properties.containsProperty("throttling.hcs.createTopic.tps"));
-		assertTrue(properties.containsProperty("throttling.hcs.createTopic.burstPeriod"));
-		assertTrue(properties.containsProperty("throttling.hcs.updateTopic.tps"));
-		assertTrue(properties.containsProperty("throttling.hcs.updateTopic.burstPeriod"));
-		assertTrue(properties.containsProperty("throttling.hcs.deleteTopic.tps"));
-		assertTrue(properties.containsProperty("throttling.hcs.deleteTopic.burstPeriod"));
-		assertTrue(properties.containsProperty("throttling.hcs.submitMessage.tps"));
-		assertTrue(properties.containsProperty("throttling.hcs.submitMessage.burstPeriod"));
-		assertTrue(properties.containsProperty("throttling.hcs.getTopicInfo.tps"));
-		assertTrue(properties.containsProperty("throttling.hcs.getTopicInfo.burstPeriod"));
 		assertTrue(properties.containsProperty("precheck.account.maxLookupRetries"));
 		assertTrue(properties.containsProperty("precheck.account.lookupRetryBackoffIncrementMs"));
 	}
