@@ -100,10 +100,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getLocalCallEstReturnBytes();
 	}
 
-	public static int getTxMinRemaining() {
-		return SyncPropertiesObject.getTxMinRemaining();
-	}
-
 	public static boolean isEnableRecordStreaming() {
 		return AsyncPropertiesObject.isEnableRecordStreaming();
 	}

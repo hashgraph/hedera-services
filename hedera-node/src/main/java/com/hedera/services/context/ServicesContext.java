@@ -1510,7 +1510,7 @@ public class ServicesContext {
 					exchange(),
 					fees(),
 					stateViews(),
-					new BasicPrecheck(properties(), validator()),
+					new BasicPrecheck(validator(), globalDynamicProperties()),
 					queryFeeCheck(),
 					bucketThrottling(),
 					accountNums(),
