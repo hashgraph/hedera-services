@@ -54,7 +54,7 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	private HapiApiSpec getAccountBalanceFromAllNodes() {
 		String sender = "0.0.1002";
 		String receiver = "0.0.1003";
-		String lastlyCreatedAccount = "0.0.21002";
+		String lastlyCreatedAccount = "0.0.21003";
 		return defaultHapiSpec("GetAccountBalanceFromAllNodes")
 				.given().when().then(
 						UtilVerbs.withLiveNode("0.0.6")
@@ -82,9 +82,9 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec validateTopicInfo() {
-		String firstlyCreatedTopic = "0.0.21003";
-		String lastlyCreatedTopic = "0.0.41001";
-		String invalidTopicId = "0.0.41002";
+		String firstlyCreatedTopic = "0.0.21004";
+		String lastlyCreatedTopic = "0.0.41003";
+		String invalidTopicId = "0.0.41004";
 		byte[] emptyRunningHash = new byte[48];
 		return defaultHapiSpec("ValidateTopicInfo")
 				.given().when().then(
