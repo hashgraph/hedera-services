@@ -83,6 +83,7 @@ import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
 import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.GetAccountBalanceAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.SubmitMessagesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
@@ -205,6 +206,7 @@ public class SuiteRunner {
 		/* Functional tests - RECONNECT */
 		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
+		put("SubmitMessagesBeforeReconnect", aof(new SubmitMessagesBeforeReconnect()));
 		put("CreateFilesBeforeReconnect", aof(new CreateFilesBeforeReconnect()));
 		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
 		put("GetAccountBalanceAfterReconnect", aof(new GetAccountBalanceAfterReconnect()));

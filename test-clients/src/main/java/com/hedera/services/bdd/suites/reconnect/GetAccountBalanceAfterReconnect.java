@@ -87,14 +87,19 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 		String firstlyCreatedTopic = "0.0.21004";
 		String lastlyCreatedTopic = "0.0.41003";
 		String invalidTopicId = "0.0.41004";
+		String topicIdWithMessagesSubmittedTo = "0.0.30000";
 		byte[] emptyRunningHash = new byte[48];
 		return defaultHapiSpec("ValidateTopicInfo")
-				.given().when().then(
+				.given(
+						getTopicInfo(topicIdWithMessagesSubmittedTo).logged().saveRunningHash()
+				).when().then(
 						getTopicInfo(firstlyCreatedTopic).logged().setNode("0.0.6")
 								.hasRunningHash(emptyRunningHash),
 						getTopicInfo(lastlyCreatedTopic).logged().setNode("0.0.6")
 								.hasRunningHash(emptyRunningHash),
-						getTopicInfo(invalidTopicId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID)
+						getTopicInfo(invalidTopicId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID),
+						getTopicInfo(topicIdWithMessagesSubmittedTo).logged().setNode("0.0.6")
+								.hasRunningHash(topicIdWithMessagesSubmittedTo)
 				);
 	}
 
