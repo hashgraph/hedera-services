@@ -21,7 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -168,7 +168,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				).then(
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
-										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+										ExpectedTokenRel.relationshipWith("primary")
 												.kyc(TokenKycStatus.KycNotApplicable)
 								)
 				);
@@ -223,7 +223,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasAutoRenewAccount("autoRenewAccount"),
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
-										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+										ExpectedTokenRel.relationshipWith("primary")
 												.balance(500)
 												.kyc(TokenKycStatus.Granted)
 												.freeze(TokenFreezeStatus.Unfrozen)

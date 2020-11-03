@@ -1,4 +1,4 @@
-package com.hedera.services.usage.token;
+package com.hedera.services.usage.crypto;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.usage.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,10 +27,10 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.TxnUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -53,7 +53,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
-public class TokenTransactUsageTest {
+public class CryptoTransferUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
@@ -64,12 +64,12 @@ public class TokenTransactUsageTest {
 	TokenID anId = IdUtils.asToken("0.0.75231");
 	TokenID anotherId = IdUtils.asToken("0.0.75232");
 
-	TokenTransfersTransactionBody op;
+	CryptoTransferTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
 	TxnUsageEstimator base;
-	TokenTransactUsage subject;
+	CryptoTransferUsage subject;
 
 	@BeforeEach
 	public void setUp() throws Exception {
@@ -86,7 +86,7 @@ public class TokenTransactUsageTest {
 	public void createsExpectedDeltaForTransferLists() {
 		givenOp();
 		// and:
-		subject = TokenTransactUsage.newEstimate(txn, sigUsage);
+		subject = CryptoTransferUsage.newEstimate(txn, sigUsage);
 
 		// when:
 		var actual = subject.get();
@@ -113,8 +113,8 @@ public class TokenTransactUsageTest {
 				.addAccountAmounts(adjustFrom(b, 50))
 				.addAccountAmounts(adjustFrom(c, 50))
 				.build();
-		op = TokenTransfersTransactionBody.newBuilder()
-				.setHbarTransfers(hbarAdjusts)
+		op = CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(hbarAdjusts)
 				.addTokenTransfers(TokenTransferList.newBuilder()
 						.setToken(anotherId)
 						.addAllTransfers(List.of(
@@ -144,7 +144,7 @@ public class TokenTransactUsageTest {
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
-				.setTokenTransfers(op)
+				.setCryptoTransfer(op)
 				.build();
 	}
 

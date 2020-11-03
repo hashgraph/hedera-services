@@ -103,7 +103,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CryptoServiceTest extends TestHelperComplex {
 
   private static final Logger log = LogManager.getLogger(CryptoServiceTest.class);
-  protected static String testConfigFilePath = "config/umbrellaTest.properties";
+  protected static String testConfigFilePath = "src/main/resource/umbrellaTest.properties";
   protected static String[] fileTypes = {"txt", "jpg", "pdf", "bin"};
   protected static int[] fileSizesK = {1, 2, 3, 4, 5};
   public static double MAX_REQUESTS_IN_K = 1;

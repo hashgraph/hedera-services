@@ -22,12 +22,15 @@ package com.hedera.services.bdd.spec.queries.contract;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.io.*;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +38,8 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.ensureDir;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertExpectedRels;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertNoUnexpectedRels;
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -51,7 +56,8 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 	private Optional<String> contractInfoPath = Optional.empty();
 	private Optional<String> validateDirPath = Optional.empty();
 	private Optional<String> registryEntry = Optional.empty();
-
+	private List<String> absentRelationships = new ArrayList<>();
+	private List<ExpectedTokenRel> relationships = new ArrayList<>();
 	private Optional<ContractInfoAsserts> expectations = Optional.empty();
 
 	public HapiGetContractInfo(String contract) {
@@ -88,6 +94,16 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 		return this;
 	}
 
+	public HapiGetContractInfo hasToken(ExpectedTokenRel relationship) {
+		relationships.add(relationship);
+		return this;
+	}
+
+	public HapiGetContractInfo hasNoTokenRelationship(String token) {
+		absentRelationships.add(token);
+		return this;
+	}
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.ContractGetInfo;
@@ -106,6 +122,9 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 			List<Throwable> errors = asserts.errorsIn(actualInfo);
 			rethrowSummaryError(log, "Bad contract info!", errors);
 		}
+		var actualTokenRels = response.getContractGetInfo().getContractInfo().getTokenRelationshipsList();
+		assertExpectedRels(contract, relationships, actualTokenRels, spec);
+		assertNoUnexpectedRels(contract, absentRelationships, actualTokenRels, spec);
 	}
 
 	@Override

@@ -197,18 +197,14 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		validity = checkKeys(op.hasAdminKey(), op.getAdminKey(),
+		validity = checkKeys(
+				op.hasAdminKey(), op.getAdminKey(),
 				op.hasKycKey(), op.getKycKey(),
 				op.hasWipeKey(), op.getWipeKey(),
-				op.hasSupplyKey(), op.getSupplyKey());
+				op.hasSupplyKey(), op.getSupplyKey(),
+				op.hasFreezeKey(), op.getFreezeKey());
 		if (validity != OK) {
 			return validity;
-		}
-		if (op.hasFreezeKey()) {
-			validity = checkKey(op.getFreezeKey(), INVALID_FREEZE_KEY);
-			if (validity != OK) {
-				return validity;
-			}
 		}
 
 		return validity;

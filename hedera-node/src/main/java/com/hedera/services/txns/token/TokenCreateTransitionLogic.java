@@ -160,23 +160,18 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 		}
 
-		validity = checkKeys(op.hasAdminKey(), op.getAdminKey(),
-							 op.hasKycKey(), op.getKycKey(),
-							 op.hasWipeKey(), op.getWipeKey(),
-							 op.hasSupplyKey(), op.getSupplyKey());
+		validity = checkKeys(
+				op.hasAdminKey(), op.getAdminKey(),
+				op.hasKycKey(), op.getKycKey(),
+				op.hasWipeKey(), op.getWipeKey(),
+				op.hasSupplyKey(), op.getSupplyKey(),
+				op.hasFreezeKey(), op.getFreezeKey());
 		if (validity != OK) {
 			return validity;
 		}
 
-		if (op.hasFreezeKey()) {
-			validity = checkKey(op.getFreezeKey(), INVALID_FREEZE_KEY);
-			if (validity != OK) {
-				return validity;
-			}
-		} else {
-			if (op.getFreezeDefault()) {
-				return TOKEN_HAS_NO_FREEZE_KEY;
-			}
+		if (op.getFreezeDefault() && !op.hasFreezeKey()) {
+			return TOKEN_HAS_NO_FREEZE_KEY;
 		}
 
 		if (op.hasAutoRenewAccount()) {

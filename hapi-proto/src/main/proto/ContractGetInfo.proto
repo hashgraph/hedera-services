@@ -50,8 +50,9 @@ message ContractGetInfoResponse {
         int64 storage = 7; // number of bytes of storage being used by this instance (which affects the cost to extend the expiration time)
         string memo = 8; // the memo associated with the contract (max 100 bytes)
         uint64 balance = 9; // The current balance, in tinybars
+        bool deleted = 10; // Whether the contract has been deleted
+        repeated TokenRelationship tokenRelationships = 11; // The tokens associated to the contract
     }
-
     ContractInfo contractInfo = 2; // the information about this contract instance (a state proof can be generated for this)
 }
 

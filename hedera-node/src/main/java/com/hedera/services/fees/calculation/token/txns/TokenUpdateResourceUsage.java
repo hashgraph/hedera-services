@@ -22,11 +22,8 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.token.TokenTransactUsage;
 import com.hedera.services.usage.token.TokenUpdateUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,7 +33,6 @@ import com.hederahashgraph.fee.SigValueObj;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage.ifPresent;
-import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
 
 public class TokenUpdateResourceUsage implements TxnResourceUsageEstimator {
 	static BiFunction<TransactionBody, SigUsage, TokenUpdateUsage> factory = TokenUpdateUsage::newEstimate;

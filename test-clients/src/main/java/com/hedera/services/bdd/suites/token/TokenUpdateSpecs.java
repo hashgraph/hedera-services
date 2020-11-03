@@ -21,7 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
@@ -82,7 +83,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						deletedAutoRenewAccountCheckHolds(),
 						renewalPeriodCheckHolds(),
 						invalidTreasuryCheckHolds(),
-						updateHappyPath()
+						updateHappyPath(),
+						newTreasuryMustSign(),
 				}
 		);
 	}
@@ -187,7 +189,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUnfreeze("tbu", "misc")
 								.signedBy(GENESIS, "kycThenFreezeKey"),
 						getAccountInfo("misc").logged(),
-						tokenTransact(moving(5, "tbu")
+						cryptoTransfer(moving(5, "tbu")
 								.between(TOKEN_TREASURY, "misc")),
 						mintToken("tbu", 10)
 								.signedBy(GENESIS, "wipeThenSupplyKey"),
@@ -196,6 +198,29 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						wipeTokenAccount("tbu", "misc", 5)
 								.signedBy(GENESIS, "supplyThenWipeKey"),
 						getAccountInfo(TOKEN_TREASURY).logged()
+				);
+	}
+
+	public HapiApiSpec newTreasuryMustSign() {
+		return defaultHapiSpec("NewTreasuryMustSign")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate("oldTreasury"),
+						cryptoCreate("newTreasury"),
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury("oldTreasury")
+				).when(
+						tokenAssociate("newTreasury", "tbu"),
+						cryptoTransfer(moving(1, "tbu")
+								.between("oldTreasury", "newTreasury"))
+				).then(
+						tokenUpdate("tbu")
+								.treasury("newTreasury")
+								.signedBy(GENESIS, "adminKey")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenUpdate("tbu")
+								.treasury("newTreasury")
 				);
 	}
 
@@ -268,7 +293,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				).then(
 						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
 						tokenAssociate(GENESIS, "tbu"),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, "tbu").between(TOKEN_TREASURY, GENESIS))
 				);
 	}
@@ -461,12 +486,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasTokenBalance("primary", 500),
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
-										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+										ExpectedTokenRel.relationshipWith("primary")
 												.balance(0)
 								),
 						getAccountInfo("newTokenTreasury")
 								.hasToken(
-										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+										ExpectedTokenRel.relationshipWith("primary")
 												.freeze(TokenFreezeStatus.Unfrozen)
 												.kyc(TokenKycStatus.Granted)
 												.balance(500)

@@ -31,5 +31,6 @@ import "BasicTypes.proto";
 If any sender account fails to have sufficient hbars, then the entire transaction fails, and none of those transfers occur, though the transaction fee is still charged. This transaction must be signed by the keys for all the sending accounts, and for any receiving accounts that have receiverSigRequired == true. The signatures are in the same order as the accounts, skipping those accounts that don't need a signature.
 */
 message CryptoTransferTransactionBody {
-    TransferList transfers = 1; // Accounts and amounts to transfer
+    TransferList transfers = 1;
+    repeated TokenTransferList tokenTransfers = 2;
 }

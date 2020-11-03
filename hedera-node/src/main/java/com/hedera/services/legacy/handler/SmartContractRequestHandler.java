@@ -632,15 +632,21 @@ public class SmartContractRequestHandler {
 						if (memoProvided) {
 							customizer.memo(op.getMemo());
 						}
+						var hasAcceptableAdminKey = true;
 						if (op.hasAdminKey()) {
 							JKey newAdminKey = convertKey(op.getAdminKey(), 1);
-							if (!(newAdminKey instanceof JContractIDKey)) {
+							if (!newAdminKey.isValid()) {
+								hasAcceptableAdminKey = false;
+							} else if (!(newAdminKey instanceof JContractIDKey)) {
 								customizer.key(newAdminKey);
 							}
 						}
-						ledger.customize(id, customizer);
-
-						receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
+						if (hasAcceptableAdminKey) {
+							ledger.customize(id, customizer);
+							receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
+						} else {
+							receipt = getTransactionReceipt(INVALID_ADMIN_KEY, exchange.activeRates());
+						}
 					}
 				} else {
 					receipt = getTransactionReceipt(FAIL_INVALID, exchange.activeRates());
@@ -693,9 +699,10 @@ public class SmartContractRequestHandler {
 				var entity = EntityId.ofNullableContractId(cid);
 				entityExpiries.put(entity, oldExpiry);
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(newExpiry);
-				ledger.customize(id, customizer);
+				ledger.customizeDeleted(id, customizer);
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}
@@ -732,7 +739,7 @@ public class SmartContractRequestHandler {
 			}
 			if (oldExpiry > 0) {
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(oldExpiry);
-				ledger.customize(asAccount(cid), customizer);
+				ledger.customizeDeleted(asAccount(cid), customizer);
 			}
 			if (receipt.getStatus() == SUCCESS) {
 				try {
@@ -746,6 +753,7 @@ public class SmartContractRequestHandler {
 			}
 			entityExpiries.remove(entity);
 		} catch (Exception e) {
+			e.printStackTrace();
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}
@@ -756,7 +764,12 @@ public class SmartContractRequestHandler {
 	}
 
 	private TransactionReceipt updateDeleteFlag(ContractID cid, boolean deleted) {
-		ledger.customize(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
+		var id = asAccount(cid);
+		if (ledger.isDeleted(id)) {
+			ledger.customizeDeleted(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
+		} else {
+			ledger.customize(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
+		}
 		return getTransactionReceipt(SUCCESS, exchange.activeRates());
 	}
 
@@ -871,30 +884,5 @@ public class SmartContractRequestHandler {
 		long feeInTinyCents = prices.getServicedata().getSbh() / 1000;
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
-	}
-
-	@VisibleForTesting
-	public static long getLogsBillableSize(TransactionRecord transactionRecord) {
-		long sizeToReturn = 0L;
-		ContractFunctionResult contractFunctionResult = ContractFunctionResult.getDefaultInstance();
-		if (transactionRecord.hasContractCallResult()) {
-			contractFunctionResult = transactionRecord.getContractCallResult();
-		} else if (transactionRecord.hasContractCreateResult()) {
-			contractFunctionResult = transactionRecord.getContractCreateResult();
-		}
-		if (contractFunctionResult.getLogInfoCount() > 0) {
-			List<ContractLoginfo> logsList = contractFunctionResult.getLogInfoList();
-			for (ContractLoginfo currLog : logsList) {
-				int numOfTopics = currLog.getTopicCount();
-				long dataSize = 0L;
-				ByteString logData = currLog.getData();
-				if (logData != null) {
-					dataSize = logData.size();
-				}
-				long currLogBillableSize = Program.calculateLogSize(numOfTopics, dataSize);
-				sizeToReturn += currLogBillableSize;
-			}
-		}
-		return sizeToReturn;
 	}
 }

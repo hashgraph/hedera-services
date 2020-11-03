@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,20 +31,22 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -77,8 +78,82 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						treasuryAssociationIsAutomatic(),
 						associateHasExpectedSemantics(),
 						dissociateHasExpectedSemantics(),
+						accountInfoQueriesAsExpected(),
+						contractInfoQueriesAsExpected(),
+						associatedContractsMustHaveAdminKeys(),
 				}
 		);
+	}
+
+	public HapiApiSpec associatedContractsMustHaveAdminKeys() {
+		String misc = "someToken";
+		String contract = "defaultContract";
+
+		return defaultHapiSpec("AssociatedContractsMustHaveAdminKeys")
+				.given(
+						newKeyNamed("simple"),
+						tokenCreate(misc).adminKey("simple")
+				).when(
+						contractCreate(contract).omitAdminKey()
+				).then(
+						tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE)
+				);
+	}
+
+	public HapiApiSpec contractInfoQueriesAsExpected() {
+		return defaultHapiSpec("ContractInfoQueriesAsExpected")
+				.given(
+						newKeyNamed("simple"),
+						tokenCreate("a"),
+						tokenCreate("b"),
+						tokenCreate("c"),
+						tokenCreate("tbd").adminKey("simple"),
+						contractCreate("contract")
+				).when(
+						tokenAssociate("contract", "a", "b", "c", "tbd"),
+						getContractInfo("contract")
+								.hasToken(relationshipWith("a"))
+								.hasToken(relationshipWith("b"))
+								.hasToken(relationshipWith("c"))
+								.hasToken(relationshipWith("tbd")),
+						tokenDissociate("contract", "b"),
+						tokenDelete("tbd")
+				).then(
+						getContractInfo("contract")
+								.hasToken(relationshipWith("a"))
+								.hasNoTokenRelationship("b")
+								.hasToken(relationshipWith("c"))
+								.hasNoTokenRelationship("tbd")
+								.logged()
+				);
+	}
+
+	public HapiApiSpec accountInfoQueriesAsExpected() {
+		return defaultHapiSpec("InfoQueriesAsExpected")
+				.given(
+						newKeyNamed("simple"),
+						tokenCreate("a"),
+						tokenCreate("b"),
+						tokenCreate("c"),
+						tokenCreate("tbd").adminKey("simple"),
+						cryptoCreate("account")
+				).when(
+						tokenAssociate("account", "a", "b", "c", "tbd"),
+						getAccountInfo("account")
+								.hasToken(relationshipWith("a"))
+								.hasToken(relationshipWith("b"))
+								.hasToken(relationshipWith("c"))
+								.hasToken(relationshipWith("tbd")),
+						tokenDissociate("account", "b"),
+						tokenDelete("tbd")
+				).then(
+						getAccountInfo("account")
+								.hasToken(relationshipWith("a"))
+								.hasNoTokenRelationship("b")
+								.hasToken(relationshipWith("c"))
+								.hasNoTokenRelationship("tbd")
+								.logged()
+				);
 	}
 
 	public HapiApiSpec dissociateHasExpectedSemantics() {
@@ -98,12 +173,12 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
 								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
 						tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 										.between(TOKEN_TREASURY, "misc")),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
 								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-						tokenTransact(
+						cryptoTransfer(
 								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 										.between("misc", TOKEN_TREASURY)),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
@@ -133,7 +208,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of( "tokens.maxPerAccount", "" + 1 )),
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
 						tokenAssociate("misc", FREEZABLE_TOKEN_OFF_BY_DEFAULT)
 								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(

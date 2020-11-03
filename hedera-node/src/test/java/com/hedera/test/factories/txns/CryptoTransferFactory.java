@@ -21,12 +21,18 @@ package com.hedera.test.factories.txns;
  */
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static java.util.stream.Collectors.*;
@@ -35,6 +41,12 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactory> {
 	public static final List<TinyBarsFromTo> DEFAULT_TRANSFERS = List.of(
 			tinyBarsFromTo(DEFAULT_PAYER_ID, DEFAULT_NODE_ID, 1_000L));
+
+	boolean usesTokenBuilders = false;
+	boolean adjustmentsAreSet = false;
+	List<AccountAmount> hbarAdjustments = new ArrayList<>();
+	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
+	CryptoTransferTransactionBody.Builder xfers = CryptoTransferTransactionBody.newBuilder();
 
 	private List<TinyBarsFromTo> transfers = DEFAULT_TRANSFERS;
 
@@ -46,6 +58,22 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 
 	public CryptoTransferFactory transfers(TinyBarsFromTo... transfers) {
 		this.transfers = List.of(transfers);
+		return this;
+	}
+
+	public CryptoTransferFactory adjustingHbars(AccountID aId, long amount) {
+		usesTokenBuilders = true;
+		hbarAdjustments.add(AccountAmount.newBuilder().setAccountID(aId).setAmount(amount) .build());
+		return this;
+	}
+
+	public CryptoTransferFactory adjusting(AccountID aId, TokenID tId, long amount) {
+		usesTokenBuilders = true;
+		adjustments.computeIfAbsent(tId, ignore -> new ArrayList<>())
+				.add(AccountAmount.newBuilder()
+						.setAccountID(aId)
+						.setAmount(amount)
+						.build());
 		return this;
 	}
 
@@ -61,9 +89,22 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		CryptoTransferTransactionBody.Builder op = CryptoTransferTransactionBody.newBuilder();
-		op.setTransfers(TransferList.newBuilder().addAllAccountAmounts(transfersAsAccountAmounts()));
-		txn.setCryptoTransfer(op);
+		if (!usesTokenBuilders) {
+			CryptoTransferTransactionBody.Builder op = CryptoTransferTransactionBody.newBuilder();
+			op.setTransfers(TransferList.newBuilder().addAllAccountAmounts(transfersAsAccountAmounts()));
+			txn.setCryptoTransfer(op);
+		} else {
+			if (!adjustmentsAreSet) {
+				adjustments.entrySet().stream()
+						.forEach(entry -> xfers.addTokenTransfers(TokenTransferList.newBuilder()
+								.setToken(entry.getKey())
+								.addAllTransfers(entry.getValue())
+								.build()));
+				xfers.setTransfers(TransferList.newBuilder().addAllAccountAmounts(hbarAdjustments));
+				adjustmentsAreSet = true;
+			}
+			txn.setCryptoTransfer(xfers);
+		}
 	}
 	private List<AccountAmount> transfersAsAccountAmounts() {
 		return transfers

@@ -911,7 +911,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable_4N_Perf_JRS_Regression_master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1049,6 +1049,26 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "nightly-software-update-regression"
+
+  nightly-state-recover-regression:
+    triggers:
+      - schedule:
+          cron: "40 18,5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services-temporary
+      - run-state-recover-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services-temporary
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-state-recover-regression"
 
   nightly-start-from-saved-state-regression:
     triggers:
@@ -1555,7 +1575,7 @@ jobs:
           name: Run various suites in SuiteRunner
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/daily/4N_1C/AWS-Services-Daily-Comp-4N-1C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Misc-6_2N-1C.json /repo
 
       - run:
           name: Sync results of SuiteRunner suites to AWS
@@ -1579,7 +1599,7 @@ jobs:
           name: Performance regression
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/daily/4N_4C/AWS-Services-Daily-Perf-4N-4C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Basic-Performance-4N-4C.json /repo
 
       - run:
           name: Sync results of performance regression to AWS
@@ -1603,7 +1623,7 @@ jobs:
           name: Run network error regression tests
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/daily/4N_1C/AWS-Services-Daily-NetError-4N-1C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-NetError-4N-1C.json /repo
 
       - run:
           name: Sync results of network error regression to AWS
@@ -1633,7 +1653,7 @@ jobs:
           command: |
             cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/daily/4N_1C/AWS-Services-Daily-Migration-4N-1C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Crypto-Migration-4N-1C.json /repo
 
       - run:
           name: Sync results of public testnet migration test to AWS
@@ -1689,7 +1709,7 @@ jobs:
           no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/daily/4N_1C/AWS-Services-Daily-SoftwareUpdate-4N-1C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Crypto-Restart-4N-1C.json /repo
 
       - run:
           name: Sync results of software update regression to AWS
@@ -1699,6 +1719,32 @@ jobs:
 
       - store_artifacts:
           path: /results.tar.gz
+
+  run-state-recover-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run state recover regression tests
+          no_output_timeout: 30m
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh configs/services/AWS-Services-Daily-StateRecover-4N-1C.json /repo
+
+      - run:
+          name: Sync results of state recover regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
   run-start-from-saved-state-regression:
     parameters:
       workflow-name:
@@ -1717,7 +1763,7 @@ jobs:
           no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/daily/6N_6C/AWS-Services-Daily-Perf-StartFromState-6N-6C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Restart-Performance-6N-6C.json /repo
 
       - run:
           name: Sync results of software update regression to AWS
@@ -1747,7 +1793,7 @@ jobs:
           no_output_timeout: 120m
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/weekly/15N_15C/AWS-Services-Weekly-CryptoTransfer-Perf-StartFromState-15N-15C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/weekly/AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C.json /repo
 
       - run:
           name: Sync results of software update regression to AWS
@@ -1777,7 +1823,7 @@ jobs:
           no_output_timeout: 180m
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/weekly/15N_15C/AWS-Services-Weekly-HCS-Perf-StartFromState-15N-15C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/weekly/AWS-Weekly-Services-HCS-Restart-Performance-15N-15C.json /repo
 
       - run:
           name: Sync results of software update regression to AWS
@@ -1790,6 +1836,47 @@ jobs:
 
 
   build-platform-and-services:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+    steps:
+      - attach_workspace:
+          at: /
+      - add_ssh_keys:
+          fingerprints:
+            - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
+            - "14:21:e9:81:1f:ae:df:ec:11:60:4a:49:e0:b9:bb:58"
+            - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
+      - checkout
+      - run:
+          name: Build hedera-services repo
+          command: |
+                mvn --no-transfer-progress clean install -DskipTests
+      - run:
+          name: Checkout swirlds-platform repos and build
+          command: |
+            cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+              git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
+            cd /swirlds-platform; git checkout develop;
+            git submodule update --init --recursive --checkout;
+            cd /swirlds-platform/regression;   git checkout 573-D-Final-Changes;
+            cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
+
+      - run:
+          name: Save PEM file to keys folder
+          command: |
+            cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
+
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/
+            - swirlds-platform/
+
+  build-platform-and-services-temporary:
     parameters:
       workflow-name:
         type: string
@@ -1829,6 +1916,7 @@ jobs:
           paths:
             - repo/
             - swirlds-platform/
+
   aws-summary:
     executor: ci-test-executor
     steps:

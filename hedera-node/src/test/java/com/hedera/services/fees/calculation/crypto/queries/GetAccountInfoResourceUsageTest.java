@@ -79,7 +79,6 @@ class GetAccountInfoResourceUsageTest {
 					.setSbpr(1)
 					.build(), 1);
 	StateView view;
-	CryptoFeeBuilder usageEstimator;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	GetAccountInfoResourceUsage subject;
 	Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
@@ -103,7 +102,6 @@ class GetAccountInfoResourceUsageTest {
 				.proxy(asAccount("0.0.4321"))
 				.memo(memo)
 				.get();
-		usageEstimator = mock(CryptoFeeBuilder.class);
 		accounts = mock(FCMap.class);
 		propertySource = mock(PropertySource.class);
 		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null);

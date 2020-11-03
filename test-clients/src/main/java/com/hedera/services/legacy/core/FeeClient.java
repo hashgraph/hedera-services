@@ -75,23 +75,17 @@ public class FeeClient {
     }
   }
   public static Map<HederaFunctionality, FeeData> getFeeScheduleMap() {
-    Map<HederaFunctionality, FeeData> feeSchMap = null;
+    Map<HederaFunctionality, FeeData> feeSchMap = new HashMap<>();
     try {
-      if (feeSchMap == null) {
-        feeSchMap = new HashMap<>();
-        Path pathFeeSch =
-            Paths.get(TestHelper.class.getClassLoader().getResource("feeSchedule.txt").toURI());
-        File feeSchFile = new File(pathFeeSch.toString());
-        InputStream fis = new FileInputStream(feeSchFile);
-        byte[] fileBytes = new byte[(int) feeSchFile.length()];
-        fis.read(fileBytes);
-        CurrentAndNextFeeSchedule feeSch = CurrentAndNextFeeSchedule.parseFrom(fileBytes);
-        List<TransactionFeeSchedule> transFeeSchList =
-            feeSch.getCurrentFeeSchedule().getTransactionFeeScheduleList();
-        for (TransactionFeeSchedule transSch : transFeeSchList) {
-          feeSchMap.put(transSch.getHederaFunctionality(), transSch.getFeeData());
-        }
-
+      File feeSchFile = new File("src/main/resource/feeSchedule.txt");
+      InputStream fis = new FileInputStream(feeSchFile);
+      byte[] fileBytes = new byte[(int) feeSchFile.length()];
+      fis.read(fileBytes);
+      CurrentAndNextFeeSchedule feeSch = CurrentAndNextFeeSchedule.parseFrom(fileBytes);
+      List<TransactionFeeSchedule> transFeeSchList =
+          feeSch.getCurrentFeeSchedule().getTransactionFeeScheduleList();
+      for (TransactionFeeSchedule transSch : transFeeSchList) {
+        feeSchMap.put(transSch.getHederaFunctionality(), transSch.getFeeData());
       }
     } catch (Exception e) {
       log.info("Exception while reading Fee file: "+e.getMessage());

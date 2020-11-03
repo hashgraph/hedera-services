@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.context.ContextPlatformStatus;
@@ -133,7 +134,7 @@ class QueryValidationTest {
             new StandardExemptions(new MockAccountNumbers(), policies),
             platformStatus);
     transactionHandler.setBasicPrecheck(
-            new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR));
+            new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()));
     byte[] pubKey = ((EdDSAPublicKey) payerKeyGenerated.getPublic()).getAbyte();
     onboardAccount(payerAccount, pubKey, payerAccountInitialBalance);
     onboardAccount(lowBalanceAccount, pubKey, 100L);

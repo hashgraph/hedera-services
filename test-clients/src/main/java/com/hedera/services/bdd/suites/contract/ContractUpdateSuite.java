@@ -32,6 +32,8 @@ import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 
 import java.util.Arrays;
 import java.util.List;
@@ -59,6 +61,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> negativeTests() {
 		return Arrays.asList(
+				cannotUpdateToEmptyAdminKey()
 		);
 	}
 
@@ -75,6 +78,16 @@ public class ContractUpdateSuite extends HapiApiSuite {
 								.via("txnRequiringSyncVerify")
 								.signedBy(GENESIS, "newKey")
 								.newMemo("So we outdanced thought...")
+				);
+	}
+
+	private HapiApiSpec cannotUpdateToEmptyAdminKey() {
+		return defaultHapiSpec("DeleteFailsAfterMakingContractImmutable")
+				.given(
+						contractCreate("mutable")
+				).when().then(
+						contractUpdate("mutable").emptyingAdminKey()
+								.hasKnownStatus(INVALID_ADMIN_KEY)
 				);
 	}
 

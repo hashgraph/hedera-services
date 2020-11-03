@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockFileNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.context.ContextPlatformStatus;
@@ -157,7 +158,7 @@ public class FreezeServiceImplTest {
             exchange,
             TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
             () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
-            new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+            new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
             new QueryFeeCheck(() -> accountFCMap),
             new MockAccountNumbers(),
             policies,

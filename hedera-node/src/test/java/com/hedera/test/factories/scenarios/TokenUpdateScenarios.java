@@ -47,6 +47,17 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	UPDATE_REPLACING_WITH_MISSING_TREASURY {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenUpdate()
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+							.newTreasury(MISSING_ACCOUNT)
+							.get()
+			));
+		}
+	},
 	UPDATE_REPLACING_ADMIN_KEY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
