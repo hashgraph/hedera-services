@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -79,8 +80,24 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						dissociateHasExpectedSemantics(),
 						accountInfoQueriesAsExpected(),
 						contractInfoQueriesAsExpected(),
+						associatedContractsMustHaveAdminKeys(),
 				}
 		);
+	}
+
+	public HapiApiSpec associatedContractsMustHaveAdminKeys() {
+		String misc = "someToken";
+		String contract = "defaultContract";
+
+		return defaultHapiSpec("AssociatedContractsMustHaveAdminKeys")
+				.given(
+						newKeyNamed("simple"),
+						tokenCreate(misc).adminKey("simple")
+				).when(
+						contractCreate(contract).omitAdminKey()
+				).then(
+						tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE)
+				);
 	}
 
 	public HapiApiSpec contractInfoQueriesAsExpected() {

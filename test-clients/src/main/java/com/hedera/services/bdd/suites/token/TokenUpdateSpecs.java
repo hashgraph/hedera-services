@@ -84,7 +84,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						renewalPeriodCheckHolds(),
 						invalidTreasuryCheckHolds(),
 						updateHappyPath(),
-//						newTreasuryMustHaveZeroBalance(),
+						newTreasuryMustSign(),
 				}
 		);
 	}
@@ -201,8 +201,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec newTreasuryMustHaveZeroBalance() {
-		return defaultHapiSpec("NewTreasuryMustHaveZeroBalance")
+	public HapiApiSpec newTreasuryMustSign() {
+		return defaultHapiSpec("NewTreasuryMustSign")
 				.given(
 						newKeyNamed("adminKey"),
 						cryptoCreate("oldTreasury"),
@@ -211,21 +211,16 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.adminKey("adminKey")
 								.treasury("oldTreasury")
 				).when(
-						getAccountInfo("oldTreasury").logged(),
-						getAccountInfo("newTreasury").logged(),
 						tokenAssociate("newTreasury", "tbu"),
 						cryptoTransfer(moving(1, "tbu")
-								.between("oldTreasury", "newTreasury")),
-						tokenUpdate("tbu")
-								.treasury("newTreasury")
-								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-						tokenUpdate("tbu")
-								.treasury("newTreasury")
-								.via("treasuryUpdateTxn")
+								.between("oldTreasury", "newTreasury"))
 				).then(
-						getAccountInfo("oldTreasury").logged(),
-						getAccountInfo("newTreasury").logged(),
-						getTxnRecord("treasuryUpdateTxn").logged()
+						tokenUpdate("tbu")
+								.treasury("newTreasury")
+								.signedBy(GENESIS, "adminKey")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenUpdate("tbu")
+								.treasury("newTreasury")
 				);
 	}
 

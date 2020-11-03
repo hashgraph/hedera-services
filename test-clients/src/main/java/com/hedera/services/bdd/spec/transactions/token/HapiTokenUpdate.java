@@ -252,6 +252,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				return Key.getDefaultInstance();
 			}
 		});
+		newTreasury.ifPresent(n -> signers.add((spec -> spec.registry().getKey(n))));
 		newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
 		autoRenewAccount.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));
 		return signers;
