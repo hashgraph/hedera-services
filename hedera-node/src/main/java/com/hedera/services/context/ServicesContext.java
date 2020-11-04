@@ -470,7 +470,7 @@ public class ServicesContext {
 
 	public HapiOpCounters opCounters() {
 		if (opCounters == null) {
-			opCounters = new HapiOpCounters(new CounterFactory() {}, MiscUtils::baseStatNameOf);
+			opCounters = new HapiOpCounters(new CounterFactory() {}, runningAvgs(), txnCtx(), MiscUtils::baseStatNameOf);
 		}
 		return opCounters;
 	}
