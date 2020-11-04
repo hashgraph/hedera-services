@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.ProcessIdUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -205,7 +206,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							expiry.ifPresent(b::setExpiry);
 							wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
-							treasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
+							treasury.ifPresent(a -> {
+								var treasuryId = TxnUtils.asId(a, spec);
+								b.setTreasury(treasuryId);
+							});
 						});
 		return b -> b.setTokenCreation(opBody);
 	}
