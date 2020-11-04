@@ -65,19 +65,19 @@ class MiscRunningAvgsTest {
 		given(factory.from(
 				argThat(MiscRunningAvgs.Names.ACCOUNT_LOOKUP_RETRIES::equals),
 				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_LOOKUP_RETRIES::equals),
-				any())).willReturn(retries);
+				argThat(subject.accountLookupRetries::equals))).willReturn(retries);
 		given(factory.from(
 				argThat(MiscRunningAvgs.Names.ACCOUNT_RETRY_WAIT_MS::equals),
 				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS::equals),
-				any())).willReturn(waitMs);
+				argThat(subject.accountRetryWaitMs::equals))).willReturn(waitMs);
 		given(factory.from(
 				argThat(MiscRunningAvgs.Names.RECORD_STREAM_QUEUE_SIZE::equals),
 				argThat(MiscRunningAvgs.Descriptions.RECORD_STREAM_QUEUE_SIZE::equals),
-				any())).willReturn(queueSizes);
+				argThat(subject.recordStreamQueueSize::equals))).willReturn(queueSizes);
 		given(factory.from(
 				argThat(MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
 				argThat(MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
-				any())).willReturn(submitSizes);
+				argThat(subject.handledSubmitMessageSize::equals))).willReturn(submitSizes);
 
 		// when:
 		subject.registerWith(platform);
