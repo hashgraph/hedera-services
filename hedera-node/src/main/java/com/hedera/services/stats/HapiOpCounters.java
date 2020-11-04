@@ -119,6 +119,10 @@ public class HapiOpCounters {
 
 	public void countHandled(HederaFunctionality txn) {
 		safeIncrement(handledTxns, txn);
+		if (txn == ConsensusSubmitMessage) {
+			int txnBytes = txnCtx.accessor().getTxn().getSerializedSize();
+			runningAvgs.recordHandledSubmitMessageSize(txnBytes);
+		}
 	}
 
 	public long handledSoFar(HederaFunctionality txn) {
@@ -139,10 +143,6 @@ public class HapiOpCounters {
 	) {
 		if (!IGNORED_FUNCTIONS.contains(function)) {
 			counters.get(function).getAndIncrement();
-			if (function == ConsensusSubmitMessage) {
-				int txnBytes = txnCtx.accessor().getTxn().getSerializedSize();
-				runningAvgs.recordHandledSubmitMessageSize(txnBytes);
-			}
 		}
 	}
 }

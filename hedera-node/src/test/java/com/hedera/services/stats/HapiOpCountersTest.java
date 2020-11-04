@@ -47,6 +47,7 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 @RunWith(JUnitPlatform.class)
 class HapiOpCountersTest {
@@ -157,7 +158,7 @@ class HapiOpCountersTest {
 	}
 
 	@Test
-	public void updatesAvgSubmitMessageHdlSize() {
+	public void updatesAvgSubmitMessageHdlSizeForHandled() {
 		// setup:
 		int expectedSize = 12345;
 		TransactionBody txn = mock(TransactionBody.class);
@@ -172,6 +173,25 @@ class HapiOpCountersTest {
 
 		// then
 		verify(runningAvgs).recordHandledSubmitMessageSize(expectedSize);
+	}
+
+	@Test
+	public void doesntUpdateAvgSubmitMessageHdlSizeForCountReceivedOrSubmitted() {
+		// setup:
+		int expectedSize = 12345;
+		TransactionBody txn = mock(TransactionBody.class);
+		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
+
+		given(txn.getSerializedSize()).willReturn(expectedSize);
+		given(accessor.getTxn()).willReturn(txn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		// when:
+		subject.countReceived(ConsensusSubmitMessage);
+		subject.countSubmitted(ConsensusSubmitMessage);
+
+		// then
+		verify(runningAvgs, never()).recordHandledSubmitMessageSize(expectedSize);
 	}
 
 	@Test
