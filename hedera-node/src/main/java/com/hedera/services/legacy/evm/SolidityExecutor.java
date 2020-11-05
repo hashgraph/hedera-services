@@ -54,7 +54,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.legacy.config.PropertiesLoader;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -286,7 +285,7 @@ public class SolidityExecutor {
 						fundingAddress,
 						rbh,
 						sbh,
-						PropertiesLoader.getDefaultContractDurationInSec(),
+						dynamicProperties.defaultContractLifetime(),
 						dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
 			}
 		}
@@ -349,7 +348,7 @@ public class SolidityExecutor {
 					fundingAddress,
 					rbh,
 					sbh,
-					PropertiesLoader.getDefaultContractDurationInSec(),
+					dynamicProperties.defaultContractLifetime(),
 					dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
 		}
 		if (!localCall) {
@@ -571,7 +570,7 @@ public class SolidityExecutor {
 		if (!creations.isEmpty()) {
 			final Consumer<byte[]> initializer = newScopedAccountInitializer(
 					startTime.getEpochSecond(),
-					PropertiesLoader.getDefaultContractDurationInSec(),
+					dynamicProperties.defaultContractLifetime(),
 					solidityTxn.getSender(),
 					repository);
 			createdContracts = Optional.of(

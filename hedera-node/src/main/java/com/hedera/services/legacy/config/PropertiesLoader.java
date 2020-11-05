@@ -64,10 +64,6 @@ public class PropertiesLoader {
 		log.info("API Properties Populated with these values :: " + apiProperties.getCustomProperties());
 	}
 
-	public static long getDefaultContractDurationInSec() {
-		return SyncPropertiesObject.getDefaultContractDurationSec();
-	}
-
 	public static int getKeyExpansionDepth() {
 		return SyncPropertiesObject.getKeyExpansionDepth();
 	}

@@ -44,8 +44,6 @@ public class ApplicationConstants {
 
 	public static int KEY_EXPANSION_DEPTH = 100;
 
-	public static long DEFAULT_CONTRACT_DURATION_IN_SEC = 7890000;
-
 	public static long MINIMUM_AUTORENEW_DURATION = 1l;
 	public static long MAXIMUM_AUTORENEW_DURATION = 1000000000l;
 
