@@ -30,8 +30,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
  * In other words, they impact state of system.
  */
 public class SyncPropertiesObject {
-	private static int keyExpansionDepth = ApplicationConstants.KEY_EXPANSION_DEPTH;
-
 	private static long minimumAutoRenewDuration = ApplicationConstants.MINIMUM_AUTORENEW_DURATION;
 	private static long maximumAutoRenewDuration= ApplicationConstants.MAXIMUM_AUTORENEW_DURATION;
 
@@ -40,8 +38,6 @@ public class SyncPropertiesObject {
 	private static int maxGasLimit = ApplicationConstants.MAX_GAS_LIMIT;
 
 	public static void loadSynchProperties(CustomProperties appConfig) {
-		keyExpansionDepth = appConfig.getInt("keyExpansionDepth", ApplicationConstants.KEY_EXPANSION_DEPTH);
-
 		minimumAutoRenewDuration = appConfig.getLong("minimumAutoRenewDuration", ApplicationConstants.MINIMUM_AUTORENEW_DURATION);
 		maximumAutoRenewDuration = appConfig.getLong("maximumAutoRenewDuration", ApplicationConstants.MAXIMUM_AUTORENEW_DURATION);
 
@@ -49,10 +45,6 @@ public class SyncPropertiesObject {
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
 
 		maxGasLimit = appConfig.getInt("maxGasLimit", ApplicationConstants.MAX_GAS_LIMIT);
-	}
-
-	static int getKeyExpansionDepth() {
-		return keyExpansionDepth;
 	}
 
 	static long getMINIMUM_AUTORENEW_DURATION() {
