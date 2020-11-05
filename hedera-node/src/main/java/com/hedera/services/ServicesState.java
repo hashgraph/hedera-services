@@ -224,11 +224,22 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		log.info("ServicesState init with {} topics", () -> this.topics().size());
 	}
 
-	private void initializeContext(ServicesContext ctx) {
+	private void initializeContext(final ServicesContext ctx) {
 		ctx.update(this);
 		ctx.txnHistories().clear();
 		ctx.recordsHistorian().reviewExistingRecords();
 		ctx.rebuildBackingStoresIfPresent();
+		this.loadPropertiesAndPermissions(ctx);
+	}
+
+	private void loadPropertiesAndPermissions(final ServicesContext ctx) {
+		try {
+			ctx.systemFilesManager().loadApplicationProperties();
+			ctx.systemFilesManager().loadApiPermissions();
+			log.info("Initialized properties and permissions.");
+		} catch (Exception e) {
+			throw new IllegalStateException("Could not create Config Properties system files!", e);
+		}
 	}
 
 	@Override

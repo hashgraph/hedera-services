@@ -150,8 +150,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("Platform is configured.");
 		migrateStateIfNeeded();
 		log.info("Migrations complete.");
-		loadPropertiesAndPermissions();
-		log.info("Initialized properties and permissions.");
 		startRecordStreamThread();
 		log.info("Record stream started.");
 		startNettyIfAppropriate();
@@ -194,15 +192,6 @@ public class ServicesMain implements SwirldMain {
 			ctx.systemFilesManager().createUpdateZipFileIfMissing();
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not create system files!", e);
-		}
-	}
-
-	private void loadPropertiesAndPermissions() {
-		try {
-			ctx.systemFilesManager().loadApplicationProperties();
-			ctx.systemFilesManager().loadApiPermissions();
-		} catch (Exception e) {
-			throw new IllegalStateException("Could not create Config Properties system files!", e);
 		}
 	}
 

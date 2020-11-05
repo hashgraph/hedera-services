@@ -71,6 +71,9 @@ public class ValidateApiPermissionStateAfterReconnect extends HapiApiSuite {
 								.unavailableNode(),
 						fileCreate("effectivelyImmutable")
 								.contents("Can't touch me!"),
+						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("updateFile", "2-50")),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode()
