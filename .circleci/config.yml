@@ -1860,7 +1860,7 @@ jobs:
           command: |
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
-            cd /swirlds-platform;
+            cd /swirlds-platform; git checkout develop;
             git submodule update --init --recursive --checkout;
             mvn --no-transfer-progress clean install -DskipTests;
 
