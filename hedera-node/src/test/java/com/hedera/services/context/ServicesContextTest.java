@@ -137,9 +137,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -323,6 +326,30 @@ public class ServicesContextTest {
 		assertEquals(ServicesNodeType.ZERO_STAKE_NODE, ctx.nodeType());
 		// and:
 		assertThat(ctx.answerFlow(), instanceOf(ZeroStakeAnswerFlow.class));
+	}
+
+	@Test
+	public void rebuildsBackingAccountsIfNonNull() {
+		// setup:
+		BackingTokenRels tokenRels = mock(BackingTokenRels.class);
+		FCMapBackingAccounts backingAccounts = mock(FCMapBackingAccounts.class);
+
+		// given:
+		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+
+		// expect:
+		assertDoesNotThrow(ctx::rebuildBackingStoresIfPresent);
+
+		// and given:
+		ctx.setBackingAccounts(backingAccounts);
+		ctx.setBackingTokenRels(tokenRels);
+
+		// when:
+		ctx.rebuildBackingStoresIfPresent();
+
+		// then:
+		verify(tokenRels).rebuildFromSources();
+		verify(backingAccounts).rebuildFromSources();
 	}
 
 	@Test
