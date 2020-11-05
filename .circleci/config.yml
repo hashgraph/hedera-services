@@ -1862,8 +1862,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git checkout develop;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 573-D-Final-Changes;
-            cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
+            mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
           name: Save PEM file to keys folder
