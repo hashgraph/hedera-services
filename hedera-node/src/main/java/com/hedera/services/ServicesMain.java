@@ -164,8 +164,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("System files rationalized.");
 		exportAccountsIfDesired();
 		log.info("Accounts exported.");
-		reviewRecordExpirations();
-		log.info("Record expiration reviewed.");
 		loadFeeSchedule();
 		log.info("Fee schedule loaded.");
 		initializeStats();
@@ -281,10 +279,6 @@ public class ServicesMain implements SwirldMain {
 		if (ctx.nodeAccount() == null) {
 			throw new IllegalStateException("Unknown ledger account!");
 		}
-	}
-
-	private void reviewRecordExpirations() {
-		ctx.recordsHistorian().reviewExistingRecords();
 	}
 
 	void logInfoWithConsoleEcho(String s) {

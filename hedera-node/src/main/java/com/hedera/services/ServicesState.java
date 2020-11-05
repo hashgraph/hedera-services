@@ -216,15 +216,19 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			printHashes();
 		}
 
-		ctx.update(this);
-
-		ctx.txnHistories().clear();
-		ctx.recordsHistorian().reviewExistingRecords();
+		initializeContext(ctx);
 		CONTEXTS.store(ctx);
 
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 		log.info("ServicesState init with {} accounts", () -> this.accounts().size());
 		log.info("ServicesState init with {} topics", () -> this.topics().size());
+	}
+
+	private void initializeContext(ServicesContext ctx) {
+		ctx.update(this);
+		ctx.txnHistories().clear();
+		ctx.recordsHistorian().reviewExistingRecords();
+		ctx.rebuildBackingStoresIfPresent();
 	}
 
 	@Override

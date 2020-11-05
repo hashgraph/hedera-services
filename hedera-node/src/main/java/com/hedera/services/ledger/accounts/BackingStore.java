@@ -36,9 +36,17 @@ import java.util.Set;
  */
 public interface BackingStore<K, A> {
 	/**
-	 * Alerts this {@code BackingAccounts} it should flush any cached mutable references.
+	 * Alerts this {@code BackingStore} it should flush any cached mutable references.
 	 */
 	void flushMutableRefs();
+
+	/**
+	 * Alerts this {@code BackingStore} it should reconstruct any auxiliary data structures
+	 * based on its underlying sources. Used in particular for reconnect.
+	 */
+	default void rebuildFromSources() {
+		/* No-op. */
+	}
 
 	/**
 	 * Gets a possibly mutable reference to the account with the specified id.
