@@ -48,6 +48,7 @@ public class GlobalDynamicProperties {
 	private long maxTxnDuration;
 	private long minTxnDuration;
 	private int minValidityBuffer;
+	private int maxGas;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -85,6 +86,7 @@ public class GlobalDynamicProperties {
 		maxTxnDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
 		minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
+		maxGas = properties.getIntProperty("contracts.maxGas");
 	}
 
 	public int maxTokensPerAccount() {
@@ -169,5 +171,9 @@ public class GlobalDynamicProperties {
 
 	public int minValidityBuffer() {
 		return minValidityBuffer;
+	}
+
+	public int maxGas() {
+		return maxGas;
 	}
 }

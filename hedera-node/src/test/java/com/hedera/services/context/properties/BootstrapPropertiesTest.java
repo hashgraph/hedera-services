@@ -81,6 +81,7 @@ class BootstrapPropertiesTest {
 			entry("accounts.systemDeleteAdmin", 59L),
 			entry("accounts.systemUndeleteAdmin", 60L),
 			entry("accounts.treasury", 2L),
+			entry("contracts.maxGas", 300000),
 			entry("contracts.maxStorageKb", 1024),
 			entry("files.addressBook", 101L),
 			entry("files.diskFsBaseDir.path", "data/diskFs/"),

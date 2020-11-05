@@ -100,27 +100,24 @@ public class DynamicPropertiesLoadTest {
 	@Test
 	public void testInitialiseAndChangeProperties() throws SerializationException, InvalidFileWACLException{
 		// setup:
-		ServicesConfigurationList serviceConfigList = getAppPropertiesProto("180", "90000");
+		ServicesConfigurationList serviceConfigList = getAppPropertiesProto("180");
 		FileID fileId = FileID.newBuilder().setFileNum(121).setRealmNum(0).setShardNum(0).build();
 		createFile(fileId,serviceConfigList.toByteArray());
 
 		// given:
-		serviceConfigList = getAppPropertiesProto("180", "90000");
+		serviceConfigList = getAppPropertiesProto("180");
 		TransactionBody txBody = getTxBody(serviceConfigList.toByteArray());
 		fileServiceHandler.updateFile(txBody, Instant.now());
-		assertEquals(90000, PropertiesLoader.getThresholdTxRecordTTL());
-		
+
 		// now update the file with changed Proto
-		serviceConfigList = getAppPropertiesProto("280", "80000");
+		serviceConfigList = getAppPropertiesProto("280");
 		txBody = getTxBody(serviceConfigList.toByteArray());
 		fileServiceHandler.updateFile(txBody, Instant.now());
-		assertEquals(80000, PropertiesLoader.getThresholdTxRecordTTL());
-		
+
 		// change back the value of receipt time to 180
-		serviceConfigList = getAppPropertiesProto("180", "90000");
+		serviceConfigList = getAppPropertiesProto("180");
 		txBody = getTxBody(serviceConfigList.toByteArray());
 		fileServiceHandler.updateFile(txBody, Instant.now());
-		assertEquals(90000, PropertiesLoader.getThresholdTxRecordTTL());
 	}
 	
 	private TransactionBody getTxBody(byte [] fileData) {
@@ -163,11 +160,9 @@ public class DynamicPropertiesLoadTest {
 		  return waclPubKeyList;
 	 }	  
 	  
-	  public ServicesConfigurationList getAppPropertiesProto(String txReceiptTTL, String thresholdTxRecordTTL) {
+	  public ServicesConfigurationList getAppPropertiesProto(String txReceiptTTL) {
 		  ServicesConfigurationList.Builder serviceConfigListBuilder = ServicesConfigurationList.newBuilder();
 		  Setting setting = Setting.newBuilder().setName(String.valueOf("txReceiptTTL")).setValue(txReceiptTTL).build();
-		  serviceConfigListBuilder.addNameValue(setting);
-		  setting = Setting.newBuilder().setName(String.valueOf("thresholdTxRecordTTL")).setValue(thresholdTxRecordTTL).build();
 		  serviceConfigListBuilder.addNameValue(setting);
 		  return serviceConfigListBuilder.build();
 	  }

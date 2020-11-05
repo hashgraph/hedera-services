@@ -30,9 +30,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
  * In other words, they impact state of system.
  */
 public class SyncPropertiesObject {
-	// Tx record & receipt ttl setting in seconds
-	private static int thresholdTxRecordTTL = ApplicationConstants.THRESH_REC_TTL;
-
 	private static int keyExpansionDepth = ApplicationConstants.KEY_EXPANSION_DEPTH;
 
 	private static long defaultContractDurationSec = ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC;
@@ -48,8 +45,6 @@ public class SyncPropertiesObject {
 	// load Synch Properties
 	public static void loadSynchProperties(CustomProperties appConfig) {
 		keyExpansionDepth = appConfig.getInt("keyExpansionDepth", ApplicationConstants.KEY_EXPANSION_DEPTH);
-		// Tx record & receipt ttl setting in seconds
-		thresholdTxRecordTTL = appConfig.getInt("thresholdTxRecordTTL", ApplicationConstants.THRESH_REC_TTL);
 
 		// default valid duration of the contract in seconds
 		defaultContractDurationSec = appConfig.getLong("defaultContractDurationSec", ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC);
@@ -61,10 +56,6 @@ public class SyncPropertiesObject {
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
 
 		maxGasLimit = appConfig.getInt("maxGasLimit", ApplicationConstants.MAX_GAS_LIMIT);
-	}
-
-	static int getThresholdTxRecordTTL() {
-		return thresholdTxRecordTTL;
 	}
 
 	static int getKeyExpansionDepth() {

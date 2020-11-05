@@ -43,8 +43,6 @@ public class ApplicationConstants {
 	public static int RECORD_STREAM_QU_CAP = 500;
 
 	public static int KEY_EXPANSION_DEPTH = 100;
-	// Tx record & receipt ttl setting in seconds
-	public static int THRESH_REC_TTL = 90000;
 
 	public static long DEFAULT_CONTRACT_DURATION_IN_SEC = 7890000;
 

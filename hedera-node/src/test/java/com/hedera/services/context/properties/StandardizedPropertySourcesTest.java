@@ -219,7 +219,6 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.maxDuration"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.minDuration"));
 		assertTrue(properties.containsProperty("ledger.totalTinyBarFloat"));
-		assertTrue(properties.containsProperty("ledger.records.ttl"));
 		assertTrue(properties.containsProperty("precheck.account.maxLookupRetries"));
 		assertTrue(properties.containsProperty("precheck.account.lookupRetryBackoffIncrementMs"));
 	}

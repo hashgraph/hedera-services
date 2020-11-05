@@ -72,10 +72,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getKeyExpansionDepth();
 	}
 
-	public static int getThresholdTxRecordTTL() {
-		return SyncPropertiesObject.getThresholdTxRecordTTL();
-	}
-
 	public static long getMinimumAutorenewDuration() {
 		return SyncPropertiesObject.getMINIMUM_AUTORENEW_DURATION();
 	}

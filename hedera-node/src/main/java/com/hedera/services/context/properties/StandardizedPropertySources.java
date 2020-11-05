@@ -152,7 +152,6 @@ public class StandardizedPropertySources implements PropertySources {
 		/* Global/dynamic properties. */
 		source.put("ledger.autoRenewPeriod.maxDuration", PropertiesLoader::getMaximumAutorenewDuration);
 		source.put("ledger.autoRenewPeriod.minDuration", PropertiesLoader::getMinimumAutorenewDuration);
-		source.put("ledger.records.ttl", PropertiesLoader::getThresholdTxRecordTTL);
 		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);
 		source.put("hedera.recordStream.logPeriod", PropertiesLoader::getRecordLogPeriod);
 
