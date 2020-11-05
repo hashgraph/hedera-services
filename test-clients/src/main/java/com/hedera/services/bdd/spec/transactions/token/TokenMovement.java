@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -32,6 +33,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 
 public class TokenMovement {
 	private final long amount;
@@ -39,6 +43,8 @@ public class TokenMovement {
 	private final Optional<String> sender;
 	private final Optional<String> receiver;
 	private final Optional<List<String>> receivers;
+	private final Optional<Function<HapiApiSpec, String>> senderFn;
+	private final Optional<Function<HapiApiSpec, String>> receiverFn;
 
 	public static final TokenID HBAR_SENTINEL_TOKEN_ID = TokenID.getDefaultInstance();
 
@@ -54,6 +60,25 @@ public class TokenMovement {
 		this.amount = amount;
 		this.receiver = receiver;
 		this.receivers = receivers;
+
+		senderFn = Optional.empty();
+		receiverFn = Optional.empty();
+	}
+
+	TokenMovement(
+			String token,
+			Function<HapiApiSpec, String> senderFn,
+			long amount,
+			Function<HapiApiSpec, String> receiverFn
+	) {
+		this.token = token;
+		this.senderFn = Optional.of(senderFn);
+		this.amount = amount;
+		this.receiverFn = Optional.of(receiverFn);
+
+		sender = Optional.empty();
+		receiver = Optional.empty();
+		receivers = Optional.empty();
 	}
 
 	public boolean isTrulyToken() {
@@ -85,10 +110,14 @@ public class TokenMovement {
 		var scopedTransfers = TokenTransferList.newBuilder();
 		var id = isTrulyToken() ? spec.registry().getTokenID(token) : HBAR_SENTINEL_TOKEN_ID;
 		scopedTransfers.setToken(id);
-		if (sender.isPresent()) {
+		if (senderFn.isPresent()) {
+			scopedTransfers.addTransfers(adjustment(senderFn.get().apply(spec), -amount, spec));
+		} else if (sender.isPresent()) {
 			scopedTransfers.addTransfers(adjustment(sender.get(), -amount, spec));
 		}
-		if (receiver.isPresent()) {
+		if (receiverFn.isPresent()) {
+			scopedTransfers.addTransfers(adjustment(receiverFn.get().apply(spec), +amount, spec));
+		} else if (receiver.isPresent()) {
 			scopedTransfers.addTransfers(adjustment(receiver.get(), +amount, spec));
 		} else if (receivers.isPresent()) {
 			var targets = receivers.get();
@@ -102,7 +131,7 @@ public class TokenMovement {
 
 	private AccountAmount adjustment(String name, long value, HapiApiSpec spec) {
 		return AccountAmount.newBuilder()
-				.setAccountID(spec.registry().getAccountID(name))
+				.setAccountID(asId(name, spec))
 				.setAmount(value)
 				.build();
 	}
@@ -123,6 +152,17 @@ public class TokenMovement {
 					amount,
 					Optional.of(receiver),
 					Optional.empty());
+		}
+
+		public TokenMovement between(
+				Function<HapiApiSpec, String> senderFn,
+				Function<HapiApiSpec, String> receiverFn
+		) {
+			return new TokenMovement(
+					token,
+					senderFn,
+					amount,
+					receiverFn);
 		}
 
 		public TokenMovement distributing(String sender, String... receivers) {
