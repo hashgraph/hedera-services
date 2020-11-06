@@ -86,6 +86,7 @@ public class ValidateAppPropertiesStateAfterReconnect extends HapiApiSuite {
 								.sleepingBetweenRetriesFor(10),
 						fileCreate("contractFile")
 								.setNode("0.0.6")
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.path(PATH_TO_VALID_BYTECODE),
 						contractCreate("testContract")
 								.bytecode("contractFile")
