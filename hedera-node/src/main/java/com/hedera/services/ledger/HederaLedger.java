@@ -318,7 +318,9 @@ public class HederaLedger {
 	}
 
 	public void dropPendingTokenChanges() {
-		tokenRelsLedger.rollback();
+		if (tokenRelsLedger.isInTransaction()) {
+			tokenRelsLedger.rollback();
+		}
 		clearNetTokenTransfers();
 	}
 

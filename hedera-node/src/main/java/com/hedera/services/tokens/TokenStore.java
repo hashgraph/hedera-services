@@ -51,6 +51,7 @@ public interface TokenStore {
 	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean exists(TokenID id);
 	boolean isKnownTreasury(AccountID id);
+	boolean associationExists(AccountID aId, TokenID tId);
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
 	MerkleToken get(TokenID id);
 

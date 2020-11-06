@@ -1380,19 +1380,16 @@ public class ServicesContext {
 		if (contracts == null) {
 			contracts = new SmartContractRequestHandler(
 					repository(),
-					globalDynamicProperties().fundingAccount(),
 					ledger(),
 					this::accounts,
-					this::storage,
-					accountSource(),
 					txnCtx(),
 					exchange(),
 					usagePrices(),
-					properties(),
 					newPureRepo(),
 					solidityLifecycle(),
 					soliditySigsVerifier(),
-					entityExpiries());
+					entityExpiries(),
+					globalDynamicProperties());
 		}
 		return contracts;
 	}

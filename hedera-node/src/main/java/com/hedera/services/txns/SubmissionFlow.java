@@ -20,13 +20,8 @@ package com.hedera.services.txns;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-
-import java.util.function.Function;
 
 public interface SubmissionFlow {
 	TransactionResponse submit(Transaction signedTxn);

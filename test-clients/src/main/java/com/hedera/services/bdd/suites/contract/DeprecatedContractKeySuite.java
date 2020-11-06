@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
@@ -45,7 +46,7 @@ public class DeprecatedContractKeySuite extends HapiApiSuite {
 		return Arrays.asList(
 				new HapiApiSpec[] {
 						createWithDeprecatedKeyCreatesImmutableContract(),
-						deprecatedKeyIgnoredDuringUpdate(),
+						givenAdminKeyMustBeValid(),
 				}
 		);
 	}
@@ -61,18 +62,18 @@ public class DeprecatedContractKeySuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec deprecatedKeyIgnoredDuringUpdate() {
-		return defaultHapiSpec("UpdateWithDeprecatedKeyIsIgnored")
+	private HapiApiSpec givenAdminKeyMustBeValid() {
+		return defaultHapiSpec("GivenAdminKeyMustBeValid")
 				.given(
 						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
 						contractCreate("target").bytecode("bytecode")
 				).when(
-						getContractInfo("target").logged(),
+						getContractInfo("target").logged()
+				).then(
 						contractUpdate("target")
 								.useDeprecatedAdminKey()
 								.signedBy(GENESIS, "target")
-				).then(
-						getContractInfo("target").hasExpectedInfo()
+								.hasKnownStatus(INVALID_ADMIN_KEY)
 				);
 	}
 
