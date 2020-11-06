@@ -32,28 +32,28 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 
-public class ValidateApiPermissionStateAfterReconnect extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ValidateApiPermissionStateAfterReconnect.class);
+public class ValidateAppPropertiesStateAfterReconnect extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(ValidateAppPropertiesStateAfterReconnect.class);
 
 	public static void main(String... args) {
-		new ValidateApiPermissionStateAfterReconnect().runSuiteSync();
+		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				validateApiPermissionStateAfterReconnect()
+				validateAppPropertiesStateAfterReconnect()
 		);
 	}
 
-	private HapiApiSpec validateApiPermissionStateAfterReconnect() {
-		return customHapiSpec("validateApiPermissionStateAfterReconnect")
+	private HapiApiSpec validateAppPropertiesStateAfterReconnect() {
+		return customHapiSpec("validateAppPropertiesStateAfterReconnect")
 				.withProperties(Map.of(
 						"txn.start.offset.secs", "-5")
 				)
@@ -67,11 +67,9 @@ public class ValidateApiPermissionStateAfterReconnect extends HapiApiSuite {
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode(),
-						fileCreate("effectivelyImmutable")
-								.contents("Can't touch me!"),
-						fileUpdate(API_PERMISSIONS)
+						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("updateFile", "2-50")),
+								.overridingProps(Map.of("minimumAutoRenewDuration", "20")),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode()
@@ -81,9 +79,10 @@ public class ValidateApiPermissionStateAfterReconnect extends HapiApiSuite {
 								.within(180, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
-						fileUpdate("effectivelyImmutable")
-								.setNode("0.0.6")
-								.hasPrecheck(NOT_SUPPORTED)
+						contractCreate("testContract")
+								.bytecode("contractFile")
+								.autoRenewSecs(10)
+								.hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE)
 				);
 	}
 

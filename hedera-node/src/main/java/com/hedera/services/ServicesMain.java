@@ -149,6 +149,7 @@ public class ServicesMain implements SwirldMain {
 		configurePlatform();
 		log.info("Platform is configured.");
 		migrateStateIfNeeded();
+		ctx.systemFilesManager().loadApplicationProperties();
 		log.info("Migrations complete.");
 		startRecordStreamThread();
 		log.info("Record stream started.");

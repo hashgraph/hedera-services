@@ -234,7 +234,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	private void loadPropertiesAndPermissions(final ServicesContext ctx) {
 		try {
-			ctx.systemFilesManager().loadApplicationProperties();
+			// ctx.systemFilesManager().loadApplicationProperties();
 			ctx.systemFilesManager().loadApiPermissions();
 			log.info("Initialized properties and permissions.");
 		} catch (Exception e) {
