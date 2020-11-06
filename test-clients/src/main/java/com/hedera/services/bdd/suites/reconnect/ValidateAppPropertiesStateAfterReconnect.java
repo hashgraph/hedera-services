@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.reconnect;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
@@ -40,6 +42,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 
 public class ValidateAppPropertiesStateAfterReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidateAppPropertiesStateAfterReconnect.class);
+
+	final String PATH_TO_VALID_BYTECODE = HapiSpecSetup.getDefaultInstance().defaultContractPath();
+
 
 	public static void main(String... args) {
 		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
@@ -79,10 +84,12 @@ public class ValidateAppPropertiesStateAfterReconnect extends HapiApiSuite {
 								.within(180, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
+						fileCreate("contractFile")
+								.path(PATH_TO_VALID_BYTECODE),
 						contractCreate("testContract")
 								.bytecode("contractFile")
 								.autoRenewSecs(10)
-								.hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE)
+								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)
 				);
 	}
 
