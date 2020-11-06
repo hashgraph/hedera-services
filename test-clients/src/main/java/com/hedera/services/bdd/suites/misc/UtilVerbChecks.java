@@ -21,7 +21,11 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,7 +33,13 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.makeFree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class UtilVerbChecks extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UtilVerbChecks.class);
@@ -41,9 +51,28 @@ public class UtilVerbChecks extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						testLivenessTimeout(),
+//						testLivenessTimeout(),
+						testMakingFree(),
 				}
 		);
+	}
+
+	private HapiApiSpec testMakingFree() {
+		return defaultHapiSpec("TestMakingFree")
+				.given(
+						cryptoCreate("civilian"),
+						getAccountInfo("0.0.2")
+								.payingWith("civilian")
+								.nodePayment(0L)
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)
+				).when(
+						makeFree(CryptoGetInfo)
+				).then(
+						getAccountInfo("0.0.2")
+								.payingWith("civilian")
+								.nodePayment(0L)
+								.hasAnswerOnlyPrecheck(OK)
+				);
 	}
 
 	private HapiApiSpec testLivenessTimeout() {
