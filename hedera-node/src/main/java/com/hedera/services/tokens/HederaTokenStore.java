@@ -213,6 +213,11 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
+	public boolean associationExists(AccountID aId, TokenID tId) {
+		return checkExistence(aId, tId) == OK && tokenRelsLedger.exists(asTokenRel(aId, tId));
+	}
+
+	@Override
 	public boolean exists(TokenID id) {
 		return pendingId.equals(id) || tokens.get().containsKey(fromTokenId(id));
 	}
@@ -631,7 +636,6 @@ public class HederaTokenStore implements TokenStore {
 			throw new IllegalArgumentException(String.format("No such token '%s'!", readableId(id)));
 		}
 	}
-
 
 	public boolean isKnownTreasury(AccountID aid) {
 		return knownTreasuries.containsKey(aid);
