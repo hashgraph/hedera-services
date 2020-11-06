@@ -51,7 +51,6 @@ public class UpdateServerFiles extends HapiApiSuite {
 
 	private static String uploadPath = "updateFiles/";
 
-	private static int FREEZE_LAST_MINUTES = 2;
 	private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
 
 	public static void main(String... args) {
@@ -88,39 +87,7 @@ public class UpdateServerFiles extends HapiApiSuite {
 	// Zip all files under target directory and add an unzip and launch script to it
 	// then send to server to update server
 	private HapiApiSpec uploadGivenDirectory() {
-
-		log.info("Creating zip file from " + uploadPath);
-		//create directory if uploadPath doesn't exist
-		if (!new File(uploadPath).exists()) {
-			new File(uploadPath).mkdirs();
-		}
-		final String temp_dir = "temp/";
-		final String sdk_dir = temp_dir + "sdk/";
-		byte[] data = null;
-		try {
-			//create a temp sdk directory
-			File directory = new File(temp_dir);
-			if (directory.exists()) {
-				// delete everything in it recursively
-
-				FileUtils.cleanDirectory(directory);
-
-			} else {
-				directory.mkdir();
-			}
-
-			(new File(sdk_dir)).mkdir();
-			//copy files to sdk directory
-			FileUtils.copyDirectory(new File(uploadPath), new File(sdk_dir));
-			createZip(temp_dir, zipFile, DEFAULT_SCRIPT);
-			String uploadFile = zipFile;
-
-			log.info("Uploading file " + uploadFile);
-			data = Files.readAllBytes(Paths.get(uploadFile));
-		} catch (IOException e) {
-			log.error("Directory creation failed", e);
-			fail("Directory creation failed");
-		}
+		final byte [] data = generateUpdateData(false);
 		final byte[] hash = UpdateFile150.sha384Digest(data);
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
@@ -129,10 +96,49 @@ public class UpdateServerFiles extends HapiApiSuite {
 								.overridingProps(Map.of("maxFileSize", "2048000")),
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data))
 				).when(
-						freeze().setFileID(fileIDString)
-								.setFileHash(hash).payingWith(GENESIS)
-								.startingIn(60).seconds().andLasting(10).minutes()
 				).then(
 				);
+	}
+
+	// build new zip file from items under specificed directories,
+	// or just read the pre-generated one
+	public static byte [] generateUpdateData(boolean skipGenerating) {
+		log.info("Creating zip file from " + uploadPath);
+		//create directory if uploadPath doesn't exist
+		if (!new File(uploadPath).exists()) {
+			new File(uploadPath).mkdirs();
+		}
+		final String temp_dir = "temp/";
+		final String sdk_dir = temp_dir + "sdk/";
+		byte[] data = null;
+
+
+
+		try {
+			if (!skipGenerating) { // build from scratch
+				//create a temp sdk directory
+				File directory = new File(temp_dir);
+				if (directory.exists()) {
+					// delete everything in it recursively
+
+					FileUtils.cleanDirectory(directory);
+
+				} else {
+					directory.mkdir();
+				}
+
+				(new File(sdk_dir)).mkdir();
+				//copy files to sdk directory
+				FileUtils.copyDirectory(new File(uploadPath), new File(sdk_dir));
+				createZip(temp_dir, zipFile, DEFAULT_SCRIPT);
+			}
+			String uploadFile = zipFile;
+			log.info("Uploading file " + uploadFile);
+			data = Files.readAllBytes(Paths.get(uploadFile));
+		} catch (IOException e) {
+			log.error("Directory creation failed", e);
+			fail("Directory creation failed");
+		}
+		return data;
 	}
 }

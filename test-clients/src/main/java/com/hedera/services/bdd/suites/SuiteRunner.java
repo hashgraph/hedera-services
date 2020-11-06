@@ -59,6 +59,7 @@ import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
+import com.hedera.services.bdd.suites.freeze.FreezeUpdateOnly;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.issues.Issue2144Spec;
@@ -271,12 +272,14 @@ public class SuiteRunner {
 		put("SysDelSysUndelSpec", aof(new SysDelSysUndelSpec()));
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));
+		put("SimpleFreezeOnly", aof(new SimpleFreezeOnly()));
+		put("FreezeUpdateOnly", aof(new FreezeUpdateOnly()));
 		put("OneOfEveryTxn", aof(new OneOfEveryTransaction()));
 		/* Zero Stake behaviour */
 		put("ZeroStakeTest", aof(new ZeroStakeNodeTest()));
 		/* Query payment validation */
 		put("QueryPaymentSuite", aof(new QueryPaymentSuite()));
-		put("SimpleFreezeOnly", aof(new SimpleFreezeOnly()));
+
 	}};
 
 	static boolean runAsync;
