@@ -33,6 +33,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.evm.SolidityExecutor;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -626,10 +627,18 @@ public class SmartContractRequestHandler {
 						var hasAcceptableAdminKey = true;
 						if (op.hasAdminKey()) {
 							JKey newAdminKey = convertKey(op.getAdminKey(), 1);
-							if (!newAdminKey.isValid()) {
+							if (canCustomizeWith(newAdminKey)) {
+								if (newAdminKey.isEmpty()) {
+									/* Make the contract immutable. */
+									customizer.key(new JContractIDKey(
+										cid.getShardNum(),
+										cid.getRealmNum(),
+										cid.getContractNum()));
+								} else {
+									customizer.key(newAdminKey);
+								}
+							} else {
 								hasAcceptableAdminKey = false;
-							} else if (!(newAdminKey instanceof JContractIDKey)) {
-								customizer.key(newAdminKey);
 							}
 						}
 						if (hasAcceptableAdminKey) {
@@ -656,6 +665,14 @@ public class SmartContractRequestHandler {
 				transaction.getTransactionID(),
 				getTimestamp(consensusTime),
 				receipt).build();
+	}
+
+	private boolean canCustomizeWith(JKey newAdminKey) {
+		if ((newAdminKey instanceof JKeyList) && newAdminKey.isEmpty()) {
+			return true;
+		} else {
+			return newAdminKey.isValid() && !(newAdminKey instanceof JContractIDKey);
+		}
 	}
 
 	/**
