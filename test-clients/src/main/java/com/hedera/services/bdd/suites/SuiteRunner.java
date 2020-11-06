@@ -88,6 +88,7 @@ import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconn
 import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
@@ -216,6 +217,7 @@ public class SuiteRunner {
 		put("ValidateDuplicateTransactionAfterReconnect", aof(new ValidateDuplicateTransactionAfterReconnect()));
 		put("ValidateApiPermissionStateAfterReconnect", aof(new ValidateApiPermissionStateAfterReconnect()));
 		put("ValidateAppPropertiesStateAfterReconnect", aof(new ValidateAppPropertiesStateAfterReconnect()));
+		put("ValidateFeeScheduleStateAfterReconnect", aof(new ValidateFeeScheduleStateAfterReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
