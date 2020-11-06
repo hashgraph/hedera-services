@@ -82,6 +82,7 @@ public class ValidateFeeScheduleStateAfterReconnect extends HapiApiSuite {
 						getAccountInfo("0.0.2")
 								.payingWith("civilian")
 								.nodePayment(0L)
+								.setNode("0.0.6")
 								.hasAnswerOnlyPrecheck(OK)
 				);
 	}
