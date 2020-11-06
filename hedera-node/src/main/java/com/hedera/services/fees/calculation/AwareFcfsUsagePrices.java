@@ -90,7 +90,6 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 		}
 		try {
 			var schedules = CurrentAndNextFeeSchedule.parseFrom(hfs.cat(feeSchedulesId));
-			System.out.println(schedules);
 			setFeeSchedules(schedules);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Corrupt fee schedules file at {}, may require remediation!", readableId(this.feeSchedules), e);
