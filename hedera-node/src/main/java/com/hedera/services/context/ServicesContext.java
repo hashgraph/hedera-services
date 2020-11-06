@@ -1437,6 +1437,7 @@ public class ServicesContext {
 							midnightRates().replaceWith(rates);
 						}
 					},
+					schedules -> fees().init(),
 					config -> {
 						((StandardizedPropertySources) propertySources()).reloadFrom(config);
 						globalDynamicProperties().reload();

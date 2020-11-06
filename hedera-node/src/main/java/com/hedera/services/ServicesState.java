@@ -185,7 +185,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX,
-					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart), new ExchangeRates()));
+					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart),
+							new ExchangeRates()));
 			setChild(ChildIndices.TOPICS,
 					new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
 			setChild(ChildIndices.STORAGE,
@@ -225,21 +226,32 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	}
 
 	private void initializeContext(final ServicesContext ctx) {
+		/* Set the primitive state in the context and signal the managing stores (if
+		* they are already constructed) to rebuild their auxiliary views of the state.
+		* All the initialization that follows will be a function of the primitive state. */
 		ctx.update(this);
+		ctx.rebuildBackingStoresIfPresent();
+
+		/* Use any payer records stored in state to rebuild the recent transaction
+		* history. This history has two main uses: Purging expired records, and
+		* classifying duplicate transactions. */
 		ctx.txnHistories().clear();
 		ctx.recordsHistorian().reviewExistingRecords();
-		ctx.rebuildBackingStoresIfPresent();
-		this.loadPropertiesAndPermissions(ctx);
-	}
 
-	private void loadPropertiesAndPermissions(final ServicesContext ctx) {
-		try {
-			ctx.systemFilesManager().loadApplicationProperties();
-			ctx.systemFilesManager().loadApiPermissions();
-			log.info("Initialized properties and permissions.");
-		} catch (Exception e) {
-			throw new IllegalStateException("Could not create Config Properties system files!", e);
-		}
+		/* Ensure files 0.0.121 and 0.0.122 exist in state, creating them from
+		* the application.properties and api-permission.properties assets if they
+		* are missing. (The {@code SystemFilesManager} will signal interested
+		* components of the loaded files via a callback.) */
+		ctx.systemFilesManager().loadApplicationProperties();
+		ctx.systemFilesManager().loadApiPermissions();
+
+		/* Ensure files 0.0.111 and 0.0.112 exist in state, creating them
+		* from the FeeSchedules.json and bootstrap.properties resources/files
+		* if they are missing. (The {@code SystemFilesManager} will signal interested
+		* components of the loaded files via a callback.) */
+
+		// TODO: uncomment below line.
+		// ctx.systemFilesManager().loadFeeSchedules();
 	}
 
 	@Override

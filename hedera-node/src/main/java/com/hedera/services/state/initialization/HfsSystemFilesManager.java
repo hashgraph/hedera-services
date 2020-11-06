@@ -72,6 +72,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private final TieredHederaFs hfs;
 	private final Supplier<JKey> keySupplier;
 	private final Consumer<ExchangeRateSet> ratesCb;
+	private final Consumer<CurrentAndNextFeeSchedule> schedulesCb;
 	private final Consumer<ServicesConfigurationList> propertiesCb;
 	private final Consumer<ServicesConfigurationList> permissionsCb;
 
@@ -82,6 +83,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 			TieredHederaFs hfs,
 			Supplier<JKey> keySupplier,
 			Consumer<ExchangeRateSet> ratesCb,
+			Consumer<CurrentAndNextFeeSchedule> schedulesCb,
 			Consumer<ServicesConfigurationList> propertiesCb,
 			Consumer<ServicesConfigurationList> permissionsCb
 	) {
@@ -92,6 +94,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		this.keySupplier = keySupplier;
 
 		this.ratesCb = ratesCb;
+		this.schedulesCb = schedulesCb;
 		this.propertiesCb = propertiesCb;
 		this.permissionsCb = permissionsCb;
 	}
@@ -139,7 +142,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		loadProtoWithSupplierFallback(
 				fileNumbers.feeSchedules(),
 				FEE_SCHEDULES_TAG,
-				schedules -> {},
+				schedulesCb,
 				CurrentAndNextFeeSchedule::parseFrom,
 				() -> defaultSchedules().toByteArray());
 	}

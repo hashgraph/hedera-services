@@ -216,18 +216,6 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void exitsOnApplicationPropertiesLoading() {
-		willThrow(IllegalStateException.class)
-				.given(systemFilesManager).loadApplicationProperties();
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits).fail(1);
-	}
-
-	@Test
 	public void exitsOnAddressBookCreationFailure() {
 		willThrow(IllegalStateException.class)
 				.given(systemFilesManager).createAddressBookIfMissing();
@@ -276,7 +264,6 @@ public class ServicesMainTest {
 		inOrder.verify(recordStreamThread).start();
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
-		inOrder.verify(fees).init();
 		inOrder.verify(statsManager).initializeFor(platform);
 	}
 
@@ -373,10 +360,7 @@ public class ServicesMainTest {
 		// then:
 		verify(systemFilesManager).createAddressBookIfMissing();
 		verify(systemFilesManager).createNodeDetailsIfMissing();
-		verify(systemFilesManager).loadApiPermissions();
-		verify(systemFilesManager).loadApplicationProperties();
 		verify(systemFilesManager).loadExchangeRates();
-		verify(systemFilesManager).loadFeeSchedules();
 	}
 
 	@Test

@@ -46,6 +46,7 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -330,6 +331,10 @@ public class UtilVerbs {
 
 			CustomSpecAssert.allRunFor(spec, opsList);
 		});
+	}
+
+	public static HapiSpecOperation makeFree(HederaFunctionality function) {
+
 	}
 
 	public static HapiSpecOperation updateLargeFile(

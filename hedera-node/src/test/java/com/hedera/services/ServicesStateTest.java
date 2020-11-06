@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -128,6 +129,7 @@ class ServicesStateTest {
 	SerializableDataInputStream in;
 	SerializableDataOutputStream out;
 	SystemExits systemExits;
+	SystemFilesManager systemFilesManager;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
 	ServicesState subject;
@@ -154,6 +156,7 @@ class ServicesStateTest {
 		given(ctx.id()).willReturn(self);
 		given(ctx.logic()).willReturn(logic);
 
+		systemFilesManager = mock(SystemFilesManager.class);
 		historian = mock(AccountRecordsHistorian.class);
 		txnHistories = mock(Map.class);
 
@@ -194,6 +197,7 @@ class ServicesStateTest {
 		given(ctx.recordsHistorian()).willReturn(historian);
 		given(ctx.txnHistories()).willReturn(txnHistories);
 		given(ctx.propertySources()).willReturn(propertySources);
+		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
 
 		systemExits = mock(SystemExits.class);
 
@@ -269,7 +273,7 @@ class ServicesStateTest {
 
 	@Test
 	public void initializesContext() {
-		InOrder inOrder = inOrder(ctx, txnHistories, historian);
+		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager);
 
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
 		// and:
@@ -281,9 +285,13 @@ class ServicesStateTest {
 		// then:
 		inOrder.verify(ctx).nodeAccount();
 		inOrder.verify(ctx).update(subject);
+		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(txnHistories).clear();
 		inOrder.verify(historian).reviewExistingRecords();
-		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
+		inOrder.verify(systemFilesManager).loadApplicationProperties();
+		inOrder.verify(systemFilesManager).loadApiPermissions();
+		// TODO: uncomment below line.
+		// inOrder.verify(systemFilesManager).loadFeeSchedules();
 	}
 
 	@Test

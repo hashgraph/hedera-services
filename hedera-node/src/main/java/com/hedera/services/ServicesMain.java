@@ -162,8 +162,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("System files rationalized.");
 		exportAccountsIfDesired();
 		log.info("Accounts exported.");
-		loadFeeSchedule();
-		log.info("Fee schedule loaded.");
 		initializeStats();
 		log.info("Stats initialized.");
 
@@ -187,6 +185,7 @@ public class ServicesMain implements SwirldMain {
 		try {
 			ctx.systemFilesManager().createAddressBookIfMissing();
 			ctx.systemFilesManager().createNodeDetailsIfMissing();
+			// TODO: delete below line.
 			ctx.systemFilesManager().loadFeeSchedules();
 			ctx.systemFilesManager().loadExchangeRates();
 			ctx.systemFilesManager().createUpdateZipFileIfMissing();
