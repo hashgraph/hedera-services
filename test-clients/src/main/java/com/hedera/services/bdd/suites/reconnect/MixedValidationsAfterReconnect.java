@@ -37,11 +37,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 
-public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(GetAccountBalanceAfterReconnect.class);
+public class MixedValidationsAfterReconnect extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(MixedValidationsAfterReconnect.class);
 
 	public static void main(String... args) {
-		new GetAccountBalanceAfterReconnect().runSuiteSync();
+		new MixedValidationsAfterReconnect().runSuiteSync();
 	}
 
 	@Override
