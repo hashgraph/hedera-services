@@ -48,8 +48,8 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				getAccountBalanceFromAllNodes(),
-				validateTopicInfo(),
-				validateFileInfo()
+				validateTopicInfo()
+//				validateFileInfo()
 		);
 	}
 
