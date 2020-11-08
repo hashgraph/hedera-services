@@ -295,6 +295,21 @@ class ServicesStateTest {
 	}
 
 	@Test
+	public void catchesNonProtoExceptionInExpandSigs() {
+		// setup:
+		var platformTxn = mock(Transaction.class);
+
+		given(platformTxn.getContents()).willReturn(
+				com.hederahashgraph.api.proto.java.Transaction.getDefaultInstance().toByteArray());
+		given(ctx.lookupRetryingKeyOrder()).willThrow(IllegalStateException.class);
+		// and:
+		subject.ctx = ctx;
+
+		// expect:
+		assertDoesNotThrow(() -> subject.expandSignatures(platformTxn));
+	}
+
+	@Test
 	public void catchesProtobufParseException() {
 		// setup:
 		var platformTxn = mock(Transaction.class);

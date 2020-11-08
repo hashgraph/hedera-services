@@ -27,6 +27,7 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -78,8 +79,17 @@ public class CryptoTransferTransitionLogicTest {
 		withRubberstampingValidator();
 
 		given(ledger.isSmartContract(any())).willReturn(false);
+		given(ledger.exists(any())).willReturn(true);
 
 		subject = new CryptoTransferTransitionLogic(ledger, validator, txnCtx);
+	}
+
+	@Test
+	public void hasOnlyCryptoHandlesMissingAccounts() {
+		given(ledger.exists(asAccount("0.0.75231"))).willReturn(false);
+
+		// expect:
+		assertFalse(CryptoTransferTransitionLogic.hasOnlyCryptoAccounts(ledger, xfers.getTransfers()));
 	}
 
 	@Test

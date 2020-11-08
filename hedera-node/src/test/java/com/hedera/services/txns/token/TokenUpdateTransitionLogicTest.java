@@ -105,6 +105,8 @@ class TokenUpdateTransitionLogicTest {
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(oldTreasury));
 		given(store.resolve(target)).willReturn(target);
 		given(store.get(target)).willReturn(token);
+		given(store.associationExists(newTreasury, target)).willReturn(true);
+		given(store.associationExists(oldTreasury, target)).willReturn(true);
 		withAlwaysValidValidator();
 
 		txnCtx = mock(TransactionContext.class);
@@ -179,29 +181,11 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnMissingNewTreasury() {
+	public void abortsOnUnassociatedNewTreasury() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
-		given(ledger.exists(newTreasury)).willReturn(false);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(store, never()).update(any(), anyLong());
-		// and:
-		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-		// and:
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
-	}
-
-	@Test
-	public void abortsOnDeletedNewTreasury() {
-		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.isDeleted(newTreasury)).willReturn(true);
+		given(store.associationExists(newTreasury, target)).willReturn(false);
 
 		// when:
 		subject.doStateTransition();

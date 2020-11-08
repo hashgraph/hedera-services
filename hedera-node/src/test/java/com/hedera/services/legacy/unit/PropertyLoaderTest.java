@@ -121,14 +121,9 @@ public class PropertyLoaderTest {
 
   @Test
   public void testAPPChangeProperties() throws Exception {
-    int thresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
-    assertEquals(90000, thresholdTxRecordTTL);
-    ServicesConfigurationList servicesConfigurationList = getAPPConfigPropProto(RECIEPT_TTL_UPD,THRESHOLD_TTL_UPD,TX_MAX_DURATION_UPD);
+    ServicesConfigurationList servicesConfigurationList = getAPPConfigPropProto(RECIEPT_TTL_UPD,TX_MAX_DURATION_UPD);
     // now reload properties 
     PropertiesLoader.populateApplicationPropertiesWithProto(servicesConfigurationList);
-    int newThresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
-    assertNotEquals(thresholdTxRecordTTL, newThresholdTxRecordTTL);
-    assertEquals(80000, newThresholdTxRecordTTL);
 
     // delete the files after test.
     File appProp = new File(APP_CONFIG_FILE_PATH);
@@ -186,17 +181,15 @@ public class PropertyLoaderTest {
   }
 
     
-  private ServicesConfigurationList getAPPConfigPropProto(int recieptTime, int thresholdTime, int txMaxDuration) {
+  private ServicesConfigurationList getAPPConfigPropProto(int recieptTime, int txMaxDuration) {
 	  Setting recieptTimeSet = Setting.newBuilder().setName("txReceiptTTL").setValue(String.valueOf(recieptTime)).build();
-	  Setting thresholdTimeSet = Setting.newBuilder().setName("thresholdTxRecordTTL").setValue(String.valueOf(thresholdTime)).build();
 	  Setting txMaxDurationSet = Setting.newBuilder().setName("txMaximumDuration").setValue(String.valueOf(txMaxDuration)).build();
 	  ServicesConfigurationList serviceConfigList = ServicesConfigurationList.newBuilder()
 			  																.addNameValue(recieptTimeSet)
-			  																.addNameValue(thresholdTimeSet)
 			  																.addNameValue(txMaxDurationSet).build();
 	  return serviceConfigList;
   }
-  
+
   private ServicesConfigurationList getAPIConfigPropProto(String crAcctRange, String crTransferRange) {
 	  Setting recieptTimeSet = Setting.newBuilder().setName("createAccount").setValue(String.valueOf(crAcctRange)).build();
 	  Setting thresholdTimeSet = Setting.newBuilder().setName("cryptoTransfer").setValue(String.valueOf(crTransferRange)).build();

@@ -81,14 +81,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(18L, subject.maxTxnDuration());
 		assertEquals(19L, subject.minTxnDuration());
 		assertEquals(20, subject.minValidityBuffer());
-	}
-
-	private AccountID accountWith(long shard, long realm, long num) {
-		return AccountID.newBuilder()
-				.setShardNum(shard)
-				.setRealmNum(realm)
-				.setAccountNum(num)
-				.build();
+		assertEquals(21, subject.maxGas());
+		assertEquals(22L, subject.defaultContractLifetime());
 	}
 
 	@Test
@@ -119,6 +113,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(19L, subject.maxTxnDuration());
 		assertEquals(20L, subject.minTxnDuration());
 		assertEquals(21, subject.minValidityBuffer());
+		assertEquals(22, subject.maxGas());
+		assertEquals(23L, subject.defaultContractLifetime());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -142,5 +138,15 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("hedera.transaction.maxValidDuration")).willReturn(i + 17L);
 		given(properties.getLongProperty("hedera.transaction.minValidDuration")).willReturn(i + 18L);
 		given(properties.getIntProperty("hedera.transaction.minValidityBufferSecs")).willReturn(i + 19);
+		given(properties.getIntProperty("contracts.maxGas")).willReturn(i + 20);
+		given(properties.getLongProperty("contracts.defaultLifetime")).willReturn(i + 21L);
+	}
+
+	private AccountID accountWith(long shard, long realm, long num) {
+		return AccountID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setAccountNum(num)
+				.build();
 	}
 }

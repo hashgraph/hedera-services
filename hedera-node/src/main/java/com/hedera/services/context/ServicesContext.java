@@ -479,7 +479,7 @@ public class ServicesContext {
 
 	public HapiOpCounters opCounters() {
 		if (opCounters == null) {
-			opCounters = new HapiOpCounters(new CounterFactory() {}, MiscUtils::baseStatNameOf);
+			opCounters = new HapiOpCounters(new CounterFactory() {}, runningAvgs(), txnCtx(), MiscUtils::baseStatNameOf);
 		}
 		return opCounters;
 	}
@@ -1389,19 +1389,16 @@ public class ServicesContext {
 		if (contracts == null) {
 			contracts = new SmartContractRequestHandler(
 					repository(),
-					globalDynamicProperties().fundingAccount(),
 					ledger(),
 					this::accounts,
-					this::storage,
-					accountSource(),
 					txnCtx(),
 					exchange(),
 					usagePrices(),
-					properties(),
 					newPureRepo(),
 					solidityLifecycle(),
 					soliditySigsVerifier(),
-					entityExpiries());
+					entityExpiries(),
+					globalDynamicProperties());
 		}
 		return contracts;
 	}
