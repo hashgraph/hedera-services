@@ -249,9 +249,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		* from the FeeSchedules.json and bootstrap.properties resources/files
 		* if they are missing. (The {@code SystemFilesManager} will signal interested
 		* components of the loaded files via a callback.) */
-
-		// TODO: uncomment below line.
-		// ctx.systemFilesManager().loadFeeSchedules();
+		ctx.systemFilesManager().loadFeeSchedules();
 	}
 
 	@Override

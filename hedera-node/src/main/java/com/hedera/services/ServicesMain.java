@@ -185,8 +185,6 @@ public class ServicesMain implements SwirldMain {
 		try {
 			ctx.systemFilesManager().createAddressBookIfMissing();
 			ctx.systemFilesManager().createNodeDetailsIfMissing();
-			// TODO: delete below line.
-			ctx.systemFilesManager().loadFeeSchedules();
 			ctx.systemFilesManager().loadExchangeRates();
 			ctx.systemFilesManager().createUpdateZipFileIfMissing();
 		} catch (Exception e) {
