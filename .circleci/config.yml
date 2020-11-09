@@ -927,12 +927,12 @@ workflows:
   weekly-crypto-transfer-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "0 5 * * *"
+          cron: "40 18 * * *"
           filters:
             branches:
               only:
 #                - master
-                - 00678-D-weekend-perf-regression
+                - 00753-D-extend-weekly-perf-to-4hrs
     jobs:
       - build-platform-and-services
       - weekly-run-crypto-transfer-start-from-saved-state-regression:
@@ -1343,6 +1343,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 00753-D-extend-weekly-perf-to-4hrs
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -1864,6 +1865,8 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
+            cd regression; git checkout 00753-D-increasee-weekly-perf-to-4-hrs;
+            cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
