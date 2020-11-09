@@ -95,7 +95,7 @@ class ExpiryManagerTest {
 		givenAccount(a, aPayer);
 		givenAccount(b, bPayer);
 		// given:
-		subject.resumeTrackingFrom(accounts);
+		subject.restartTrackingFrom(accounts);
 
 		// when:
 		subject.purgeExpiredRecordsAt(33, ledger);
@@ -114,14 +114,36 @@ class ExpiryManagerTest {
 	}
 
 	@Test
+	void restartClearsExistingState() {
+		// setup:
+		long oldExpiry = 2_345_678L;
+		AccountID payer = IdUtils.asAccount("0.0.2");
+		txnHistories = mock(Map.class);
+
+		// given:
+		subject = new ExpiryManager(recordCache, txnHistories);
+		// and:
+		subject.trackRecord(payer, oldExpiry);
+		// and:
+		givenAccount(2, new long[] { expiry });
+		// and:
+		given(txnHistories.computeIfAbsent(any(), any())).willReturn(new TxnIdRecentHistory());
+
+		// when:
+		subject.restartTrackingFrom(accounts);
+
+		// then:
+		verify(recordCache).reset();
+		verify(txnHistories).clear();
+	}
+
+	@Test
 	public void resumesTrackingAsExpected() {
 		givenAccount(a, aPayer);
 		givenAccount(b, bPayer);
 
 		// when:
-		txnHistories.clear();
-		// and:
-		subject.resumeTrackingFrom(accounts);
+		subject.restartTrackingFrom(accounts);
 
 		// then:
 		var e1 = subject.payerExpiries.allExpiries.poll();

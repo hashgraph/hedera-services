@@ -286,7 +286,6 @@ class ServicesStateTest {
 		inOrder.verify(ctx).nodeAccount();
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
-		inOrder.verify(txnHistories).clear();
 		inOrder.verify(historian).reviewExistingRecords();
 		inOrder.verify(systemFilesManager).loadApplicationProperties();
 		inOrder.verify(systemFilesManager).loadApiPermissions();

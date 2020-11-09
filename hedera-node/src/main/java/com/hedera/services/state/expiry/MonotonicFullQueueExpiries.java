@@ -31,6 +31,12 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 	Deque<ExpiryEvent> allExpiries = new ArrayDeque<>();
 
 	@Override
+	public void reset() {
+		now = 0L;
+		allExpiries.clear();
+	}
+
+	@Override
 	public void track(K id, long expiry) {
 		if (expiry < now) {
 			throw new IllegalArgumentException(String.format("Track time %d for %s not later than %d", expiry, id, now));

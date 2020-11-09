@@ -166,4 +166,8 @@ public class RecordCache {
 	public void trackForExpiry(ExpirableTxnRecord record) {
 		recordExpiries.track(record.getTxnId().toGrpc(), record.getExpiry());
 	}
+
+	public void reset() {
+		recordExpiries.reset();
+	}
 }

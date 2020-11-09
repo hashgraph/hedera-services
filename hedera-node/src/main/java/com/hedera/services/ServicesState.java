@@ -235,7 +235,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		/* Use any payer records stored in state to rebuild the recent transaction
 		* history. This history has two main uses: Purging expired records, and
 		* classifying duplicate transactions. */
-		ctx.txnHistories().clear();
 		ctx.recordsHistorian().reviewExistingRecords();
 
 		/* Ensure files 0.0.121 and 0.0.122 exist in state, creating them from
