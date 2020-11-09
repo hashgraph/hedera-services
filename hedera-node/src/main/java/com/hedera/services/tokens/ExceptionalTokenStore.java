@@ -78,6 +78,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public boolean associationExists(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
 		throw new UnsupportedOperationException();
 	}
@@ -91,8 +96,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
 		throw new UnsupportedOperationException();
 	}
-
-
 
 	@Override
 	public void commitCreation() {
@@ -148,4 +151,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck) {
 		throw new UnsupportedOperationException();
 	}
+
+
 }

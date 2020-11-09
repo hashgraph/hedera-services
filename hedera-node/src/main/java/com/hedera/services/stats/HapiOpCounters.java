@@ -20,6 +20,7 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
 
@@ -40,11 +41,14 @@ import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_NAM
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 
 public class HapiOpCounters {
 	static Supplier<HederaFunctionality[]> allFunctions = HederaFunctionality.class::getEnumConstants;
 
 	private final CounterFactory counter;
+	private final MiscRunningAvgs runningAvgs;
+	private final TransactionContext txnCtx;
 	private final Function<HederaFunctionality, String> statNameFn;
 
 	EnumMap<HederaFunctionality, AtomicLong> receivedOps = new EnumMap<>(HederaFunctionality.class);
@@ -52,9 +56,16 @@ public class HapiOpCounters {
 	EnumMap<HederaFunctionality, AtomicLong> submittedTxns = new EnumMap<>(HederaFunctionality.class);
 	EnumMap<HederaFunctionality, AtomicLong> answeredQueries = new EnumMap<>(HederaFunctionality.class);
 
-	public HapiOpCounters(CounterFactory counter, Function<HederaFunctionality, String> statNameFn) {
+	public HapiOpCounters(
+			CounterFactory counter,
+			MiscRunningAvgs runningAvgs,
+			TransactionContext txnCtx,
+			Function<HederaFunctionality, String> statNameFn
+	) {
+		this.txnCtx = txnCtx;
 		this.counter = counter;
 		this.statNameFn = statNameFn;
+		this.runningAvgs = runningAvgs;
 
 		Arrays.stream(allFunctions.get())
 				.filter(function -> !IGNORED_FUNCTIONS.contains(function))
@@ -108,6 +119,10 @@ public class HapiOpCounters {
 
 	public void countHandled(HederaFunctionality txn) {
 		safeIncrement(handledTxns, txn);
+		if (txn == ConsensusSubmitMessage) {
+			int txnBytes = txnCtx.accessor().getTxn().getSerializedSize();
+			runningAvgs.recordHandledSubmitMessageSize(txnBytes);
+		}
 	}
 
 	public long handledSoFar(HederaFunctionality txn) {

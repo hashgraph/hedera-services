@@ -278,6 +278,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			expandIn(accessor, ctx.lookupRetryingKeyOrder(), DEFAULT_SIG_BYTES);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("expandSignatures called with non-gRPC txn!", e);
+		} catch (Exception race) {
+			log.warn("Unexpected problem, signatures will be verified synchronously in handleTransaction!", race);
 		}
 	}
 

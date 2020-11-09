@@ -37,19 +37,19 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 
-public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(GetAccountBalanceAfterReconnect.class);
+public class MixedValidationsAfterReconnect extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(MixedValidationsAfterReconnect.class);
 
 	public static void main(String... args) {
-		new GetAccountBalanceAfterReconnect().runSuiteSync();
+		new MixedValidationsAfterReconnect().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				getAccountBalanceFromAllNodes(),
-				validateTopicInfo(),
-				validateFileInfo()
+				validateTopicInfo()
+//				validateFileInfo()
 		);
 	}
 
@@ -105,8 +105,8 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 
 	private HapiApiSpec validateFileInfo() {
 		String firstlyCreatedFile = "0.0.41004";
-		String lastlyCreatedFile = "0.0.41203";
-		String invalidFileId = "0.0.41204";
+		String lastlyCreatedFile = "0.0.42003";
+		String invalidFileId = "0.0.42004";
 		return defaultHapiSpec("ValidateFileInfo")
 				.given().when().then(
 						getFileInfo(firstlyCreatedFile).logged().setNode("0.0.6"),

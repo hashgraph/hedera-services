@@ -82,7 +82,7 @@ import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
 import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
 import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.GetAccountBalanceAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.MixedValidationsAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.SubmitMessagesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
@@ -212,7 +212,7 @@ public class SuiteRunner {
 		put("SubmitMessagesBeforeReconnect", aof(new SubmitMessagesBeforeReconnect()));
 		put("CreateFilesBeforeReconnect", aof(new CreateFilesBeforeReconnect()));
 		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
-		put("GetAccountBalanceAfterReconnect", aof(new GetAccountBalanceAfterReconnect()));
+		put("MixedValidationsAfterReconnect", aof(new MixedValidationsAfterReconnect()));
 		put("UpdateApiPermissionsDuringReconnect", aof(new UpdateApiPermissionsDuringReconnect()));
 		put("ValidateDuplicateTransactionAfterReconnect", aof(new ValidateDuplicateTransactionAfterReconnect()));
 		put("ValidateApiPermissionStateAfterReconnect", aof(new ValidateApiPermissionStateAfterReconnect()));

@@ -85,6 +85,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						invalidTreasuryCheckHolds(),
 						updateHappyPath(),
 						newTreasuryMustSign(),
+						newTreasuryMustBeAssociated(),
 				}
 		);
 	}
@@ -198,6 +199,22 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						wipeTokenAccount("tbu", "misc", 5)
 								.signedBy(GENESIS, "supplyThenWipeKey"),
 						getAccountInfo(TOKEN_TREASURY).logged()
+				);
+	}
+
+	public HapiApiSpec newTreasuryMustBeAssociated() {
+		return defaultHapiSpec("NewTreasuryMustBeAssociated")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate("oldTreasury"),
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury("oldTreasury")
+				).when(
+						cryptoCreate("newTreasury")
+				).then(
+						tokenUpdate("tbu")
+								.treasury("newTreasury").hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
 				);
 	}
 

@@ -1858,12 +1858,13 @@ jobs:
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
+            sed -i -e 's/Host services-jrs-regression/Host services-jrs-regression\n HostName github.com/g' ~/.ssh/config
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
-              git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
-            cd /swirlds-platform; git checkout develop;
+            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
+            cd /swirlds-platform;
+            sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 573-D-Final-Changes;
-            cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
+            mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
           name: Save PEM file to keys folder
@@ -1899,12 +1900,13 @@ jobs:
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
+            sed -i -e 's/Host services-jrs-regression/Host services-jrs-regression\n HostName github.com/g' ~/.ssh/config
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
-              git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
+            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
             cd /swirlds-platform; git checkout services-regression;
+            sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
-            cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
+            mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
           name: Save PEM file to keys folder

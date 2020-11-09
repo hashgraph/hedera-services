@@ -228,7 +228,7 @@ public class JkeySerializerTest {
       tKeys = key.getKeyList().getKeysList();
     }
 
-    if (depth <= PropertiesLoader.getKeyExpansionDepth()) {
+    if (depth <= 100) {
       depth++;
       for (Key aKey : tKeys) {
         computeNumOfExpandedKeys(aKey, depth, counter);

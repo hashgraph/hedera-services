@@ -20,7 +20,10 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
 import org.junit.jupiter.api.AfterEach;
@@ -31,6 +34,7 @@ import org.junit.runner.RunWith;
 
 import java.util.function.Function;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
@@ -43,11 +47,14 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 @RunWith(JUnitPlatform.class)
 class HapiOpCountersTest {
 	Platform platform;
 	CounterFactory factory;
+	MiscRunningAvgs runningAvgs;
+	TransactionContext txnCtx;
 	Function<HederaFunctionality, String> statNameFn;
 
 	HapiOpCounters subject;
@@ -57,14 +64,17 @@ class HapiOpCountersTest {
 		HapiOpCounters.allFunctions = () -> new HederaFunctionality[] {
 				CryptoTransfer,
 				TokenGetInfo,
+				ConsensusSubmitMessage,
 				NONE
 		};
 
+		txnCtx = mock(TransactionContext.class);
 		platform = mock(Platform.class);
 		factory = mock(CounterFactory.class);
 		statNameFn = HederaFunctionality::toString;
+		runningAvgs = mock(MiscRunningAvgs.class);
 
-		subject = new HapiOpCounters(factory, statNameFn);
+		subject = new HapiOpCounters(factory, runningAvgs, txnCtx, statNameFn);
 	}
 
 	@AfterEach
@@ -145,6 +155,43 @@ class HapiOpCountersTest {
 		verify(platform).addAppStatEntry(transferHdl);
 		verify(platform).addAppStatEntry(tokenInfoRcv);
 		verify(platform).addAppStatEntry(tokenInfoAns);
+	}
+
+	@Test
+	public void updatesAvgSubmitMessageHdlSizeForHandled() {
+		// setup:
+		int expectedSize = 12345;
+		TransactionBody txn = mock(TransactionBody.class);
+		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
+
+		given(txn.getSerializedSize()).willReturn(expectedSize);
+		given(accessor.getTxn()).willReturn(txn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		// when:
+		subject.countHandled(ConsensusSubmitMessage);
+
+		// then
+		verify(runningAvgs).recordHandledSubmitMessageSize(expectedSize);
+	}
+
+	@Test
+	public void doesntUpdateAvgSubmitMessageHdlSizeForCountReceivedOrSubmitted() {
+		// setup:
+		int expectedSize = 12345;
+		TransactionBody txn = mock(TransactionBody.class);
+		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
+
+		given(txn.getSerializedSize()).willReturn(expectedSize);
+		given(accessor.getTxn()).willReturn(txn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		// when:
+		subject.countReceived(ConsensusSubmitMessage);
+		subject.countSubmitted(ConsensusSubmitMessage);
+
+		// then
+		verify(runningAvgs, never()).recordHandledSubmitMessageSize(expectedSize);
 	}
 
 	@Test
