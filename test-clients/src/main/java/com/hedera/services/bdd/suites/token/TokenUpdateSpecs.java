@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -113,6 +114,9 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						cryptoCreate("neverToBe"),
 						tokenCreate("mutableForNow").adminKey("initialAdmin")
 				).when(
+						tokenUpdate("mutableForNow")
+								.improperlyEmptyingAdminKey()
+								.hasPrecheck(INVALID_ADMIN_KEY),
 						tokenUpdate("mutableForNow").properlyEmptyingAdminKey()
 				).then(
 						getTokenInfo("mutableForNow"),
