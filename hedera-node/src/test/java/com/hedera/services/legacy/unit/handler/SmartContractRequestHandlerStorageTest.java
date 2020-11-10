@@ -194,19 +194,16 @@ public class SmartContractRequestHandlerStorageTest {
     given(exchange.rate(any())).willReturn(rates.getCurrentRate());
     smartHandler = new SmartContractRequestHandler(
             repository,
-            feeCollAccountId,
             ledger,
             () -> contracts,
-            () -> storageMap,
-            ledgerSource,
             null,
             exchange,
             TestUsagePricesProvider.TEST_USAGE_PRICES,
-            TestProperties.TEST_PROPERTIES,
             () -> repository,
             SolidityLifecycleFactory.newTestInstance(),
             ignore -> true,
-            null);
+            null,
+            new MockGlobalDynamicProps());
     storageWrapper = new FCStorageWrapper(storageMap);
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());

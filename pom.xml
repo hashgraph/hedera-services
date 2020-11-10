@@ -20,7 +20,7 @@
   <scm>
     <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
     <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
-    <tag>release/0.9</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <ciManagement>
@@ -85,13 +85,6 @@
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
 <!--    <project.build.outputTimestamp>2020-10-06T08:00:00Z</project.build.outputTimestamp>-->
   </properties>
-
-  <repositories>
-    <repository>
-      <id>comswirlds-staging</id>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1043/</url>
-    </repository>
-  </repositories>
 
   <modules>
     <module>hapi-proto</module>

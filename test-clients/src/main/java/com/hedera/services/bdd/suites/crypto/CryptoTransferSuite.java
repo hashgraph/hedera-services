@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,13 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.approxChangeFromSnapshot;
@@ -30,6 +37,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.*
 
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.*;
 
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 
@@ -43,13 +51,17 @@ import static com.hedera.services.bdd.spec.keys.ControlForKey.*;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -66,26 +78,35 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
+		return List.of(new HapiApiSpec[] {
+						vanillaTransferSucceeds(),
+						complexKeyAcctPaysForOwnTransfer(),
+						twoComplexKeysRequired(),
+						systemBalancesCheck(),
+						transferToTopicReturnsInvalidAccountId(),
+				}
 		);
 	}
 
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-				vanillaTransferSucceeds(),
-				complexKeyAcctPaysForOwnTransfer(),
-				twoComplexKeysRequired(),
-				systemBalancesCheck()
-		);
+	private HapiApiSpec transferToTopicReturnsInvalidAccountId() {
+		AtomicReference<String> invalidAccountId = new AtomicReference<>();
+
+		return defaultHapiSpec("TransferToTopicReturnsInvalidAccountId")
+				.given(
+						tokenCreate("any"),
+						createTopic("something"),
+						withOpContext((spec, opLog) -> {
+							var topicId = spec.registry().getTopicID("something");
+							invalidAccountId.set(asTopicString(topicId));
+						})
+				).when().then(
+						cryptoTransfer(spec -> tinyBarsFromTo(GENESIS, invalidAccountId.get(), 1L).apply((spec)))
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						cryptoTransfer(moving(1, "any")
+								.between(spec -> GENESIS, spec -> invalidAccountId.get()))
+								.hasKnownStatus(INVALID_ACCOUNT_ID)
+				);
 	}
-
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList();
-	}
-
-
 
 	private HapiApiSpec complexKeyAcctPaysForOwnTransfer() {
 		SigControl ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(2,
@@ -99,7 +120,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoCreate("payer").key("complexKey").balance(1_000_000_000L)
 				).when().then(
 						cryptoTransfer(
-								HapiCryptoTransfer.tinyBarsFromTo("payer", NODE, 1_000_000L)
+								tinyBarsFromTo("payer", NODE, 1_000_000L)
 						).payingWith("payer").numPayerSigs(14)
 				);
 	}
@@ -137,7 +158,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 	private HapiApiSpec systemBalancesCheck() {
 		return defaultHapiSpec("SystemBalancesCheck")
-				.given( ).when( ).then(
+				.given().when().then(
 						IntStream.range(1, 101)
 								.mapToObj(i -> getAccountBalance("0.0." + i).logged())
 								.toArray(n -> new HapiSpecOperation[n])
@@ -150,9 +171,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		return defaultHapiSpec("VanillaTransferSucceeds")
 				.given(
 						UtilVerbs.inParallel(
-							cryptoCreate("payer"),
-							cryptoCreate("payeeSigReq").receiverSigRequired(true),
-							cryptoCreate("payeeNoSigReq")
+								cryptoCreate("payer"),
+								cryptoCreate("payeeSigReq").receiverSigRequired(true),
+								cryptoCreate("payeeNoSigReq")
 						)
 				).when(
 						cryptoTransfer(

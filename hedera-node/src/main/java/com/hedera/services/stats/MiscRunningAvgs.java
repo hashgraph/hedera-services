@@ -58,7 +58,7 @@ public class MiscRunningAvgs {
 				runningAvg.from(
 						Names.RECORD_STREAM_QUEUE_SIZE,
 						Descriptions.RECORD_STREAM_QUEUE_SIZE,
-						handledSubmitMessageSize));
+						recordStreamQueueSize));
 		platform.addAppStatEntry(
 				runningAvg.from(
 						Names.HANDLED_SUBMIT_MESSAGE_SIZE,

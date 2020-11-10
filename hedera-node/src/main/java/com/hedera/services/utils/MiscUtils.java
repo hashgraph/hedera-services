@@ -35,7 +35,6 @@ import static com.hedera.services.grpc.controllers.CryptoController.*;
 import static com.hedera.services.grpc.controllers.ConsensusController.*;
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
-import static com.hedera.services.grpc.controllers.TokenController.*;
 import static com.hedera.services.grpc.controllers.FileController.*;
 
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -116,6 +115,21 @@ public class MiscUtils {
 			GetVersionInfo,
 			TokenGetInfo
 	);
+
+	static final String TOKEN_MINT_METRIC = "mintToken";
+	static final String TOKEN_BURN_METRIC = "burnToken";
+	static final String TOKEN_CREATE_METRIC = "createToken";
+	static final String TOKEN_DELETE_METRIC = "deleteToken";
+	static final String TOKEN_UPDATE_METRIC = "updateToken";
+	static final String TOKEN_FREEZE_METRIC = "freezeTokenAccount";
+	static final String TOKEN_UNFREEZE_METRIC = "unfreezeTokenAccount";
+	static final String TOKEN_GRANT_KYC_METRIC = "grantKycToTokenAccount";
+	static final String TOKEN_REVOKE_KYC_METRIC = "revokeKycFromTokenAccount";
+	static final String TOKEN_WIPE_ACCOUNT_METRIC = "wipeTokenAccount";
+	static final String TOKEN_ASSOCIATE_METRIC = "associateTokens";
+	static final String TOKEN_DISSOCIATE_METRIC = "dissociateTokens";
+	static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
+
 	private static final EnumMap<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
 	static {

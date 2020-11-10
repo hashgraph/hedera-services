@@ -9,9 +9,9 @@ package com.hedera.services.queries.answering;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -52,7 +53,7 @@ import static com.hedera.services.legacy.handler.TransactionHandler.IS_THROTTLE_
 public class StakedAnswerFlow implements AnswerFlow {
 	private static final Logger log = LogManager.getLogger(StakedAnswerFlow.class);
 
-	SignedTxnAccessor defaultAccessor = null;
+	private static final SignedTxnAccessor defaultAccessor = uncheckedFrom(Transaction.getDefaultInstance());
 
 	private final FeeCalculator fees;
 	private final TransactionHandler legacyHandler;
@@ -75,12 +76,6 @@ public class StakedAnswerFlow implements AnswerFlow {
 		this.legacyHandler = legacyHandler;
 		this.resourceCosts = resourceCosts;
 		this.submissionManager = submissionManager;
-
-		try {
-			defaultAccessor = new SignedTxnAccessor(Transaction.getDefaultInstance());
-		} catch (Exception impossible) {
-			log.warn("Impossible for this exception to be thrown : {}", impossible.getMessage());
-		}
 	}
 
 	@Override

@@ -126,4 +126,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int minValidityBuffer() {
 		return 10;
 	}
+
+	@Override
+	public int maxGas() {
+		return 300_000;
+	}
 }
