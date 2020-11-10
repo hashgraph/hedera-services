@@ -27,12 +27,14 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -57,6 +59,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
@@ -981,6 +984,27 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void updateRemovesAdminKeyWhenAppropos() {
+		// setup:
+		subject.addKnownTreasury(treasury, misc);
+
+		Set<TokenID> tokenSet = new HashSet<>();
+		tokenSet.add(misc);
+
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(EnumSet.noneOf(KeyType.class));
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), false, false, false);
+
+		// when:
+		var outcome = subject.update(op, thisSecond);
+		// then:
+		assertEquals(OK, outcome);
+		verify(token).setAdminKey(MerkleToken.UNUSED_KEY);
+	}
+
+	@Test
 	public void updateHappyPathWorksForEverythingWithNewExpiry() {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
@@ -1034,11 +1058,11 @@ class HederaTokenStoreTest {
 	}
 
 	enum KeyType {
-		WIPE, FREEZE, SUPPLY, KYC, ADMIN
+		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN
 	}
 
 	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
-	private static EnumSet<KeyType> ALL_KEYS = EnumSet.allOf(KeyType.class);
+	private static EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
 
 	private TokenUpdateTransactionBody updateWith(
 			EnumSet<KeyType> keys,
@@ -1047,16 +1071,6 @@ class HederaTokenStoreTest {
 			boolean useNewTreasury
 	) {
 		return updateWith(keys, useNewName, useNewSymbol, useNewTreasury, false, false);
-	}
-
-	private TokenUpdateTransactionBody updateWith(
-			EnumSet<KeyType> keys,
-			boolean useNewSymbol,
-			boolean useNewName,
-			boolean useNewTreasury,
-			boolean setInvalidKeys
-	) {
-		return updateWith(keys, useNewSymbol, useNewName, useNewTreasury, false, false, setInvalidKeys);
 	}
 
 	private TokenUpdateTransactionBody updateWith(
@@ -1112,6 +1126,9 @@ class HederaTokenStoreTest {
 					break;
 				case ADMIN:
 					op.setAdminKey(setInvalidKeys ? invalidKey : newKey);
+					break;
+				case EMPTY_ADMIN:
+					op.setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY);
 					break;
 			}
 		}
