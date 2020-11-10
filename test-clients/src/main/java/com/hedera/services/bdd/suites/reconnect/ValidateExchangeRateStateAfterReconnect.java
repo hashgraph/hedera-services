@@ -31,32 +31,31 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.makeFree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class ValidateFeeScheduleStateAfterReconnect extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ValidateFeeScheduleStateAfterReconnect.class);
+public class ValidateExchangeRateStateAfterReconnect extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(ValidateExchangeRateStateAfterReconnect.class);
 
 
 	public static void main(String... args) {
-		new ValidateFeeScheduleStateAfterReconnect().runSuiteSync();
+		new ValidateExchangeRateStateAfterReconnect().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				validateFeeScheduleStateAfterReconnect()
+				validateExchangeRateStateAfterReconnect()
 		);
 	}
 
-	private HapiApiSpec validateFeeScheduleStateAfterReconnect() {
-		return customHapiSpec("validateFeeScheduleStateAfterReconnect")
+	private HapiApiSpec validateExchangeRateStateAfterReconnect() {
+		final String transactionid = "authorizedTxn";
+		return customHapiSpec("validateExchangeRateStateAfterReconnect")
 				.withProperties(Map.of(
 						"txn.start.offset.secs", "-5")
 				)
@@ -70,7 +69,6 @@ public class ValidateFeeScheduleStateAfterReconnect extends HapiApiSuite {
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode(),
-						makeFree(CryptoGetInfo),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode()
@@ -81,12 +79,10 @@ public class ValidateFeeScheduleStateAfterReconnect extends HapiApiSuite {
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
 						cryptoCreate("civilian")
-								.setNode("0.0.6"),
-						getAccountInfo("0.0.2")
-								.payingWith("civilian")
-								.nodePayment(0L)
+							.via(transactionid),
+						getTxnRecord(transactionid)
 								.setNode("0.0.6")
-								.hasAnswerOnlyPrecheck(OK)
+								.hasPriority(recordWith().fee(1L))
 				);
 	}
 
