@@ -32,10 +32,6 @@ import com.hedera.services.legacy.crypto.SignatureStatusCode;
  * @author Michael Tinker
  */
 public class StatusUtils {
-
-	private StatusUtils(){
-		throw new IllegalStateException("Utility Class");
-	}
 	/**
 	 * Creates a {@link SignatureStatus} representing success in some aspect of sig processing.
 	 *
@@ -49,16 +45,5 @@ public class StatusUtils {
 				SignatureStatusCode.SUCCESS, ResponseCodeEnum.OK,
 				inHandleCtx, platformTxn.getTxnId(),
 				null, null, null, null);
-	}
-
-	/**
-	 * Creates a {@link SignatureStatus} representing a protobuf-related failure in sig processing.
-	 *
-	 * @return the desired representation of failure.
-	 */
-	public static SignatureStatus protobufParseError() {
-		return new SignatureStatus(
-				SignatureStatusCode.INVALID_PROTOCOL_BUFFER, ResponseCodeEnum.INVALID_TRANSACTION_BODY,
-				false, null, null, null, null, null);
 	}
 }

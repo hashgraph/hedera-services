@@ -27,6 +27,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -35,6 +36,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -52,6 +54,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
@@ -59,6 +62,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
+import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.tokens.TokenCreationResult.failure;
 import static com.hedera.services.tokens.TokenCreationResult.success;
@@ -99,6 +103,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
  */
 public class HederaTokenStore implements TokenStore {
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
+
+	static Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
 
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
@@ -540,7 +546,12 @@ public class HederaTokenStore implements TokenStore {
 				return;
 			}
 			if (changes.hasAdminKey()) {
-				token.setAdminKey(asFcKeyUnchecked(changes.getAdminKey()));
+				var newAdminKey = changes.getAdminKey();
+				if (REMOVES_ADMIN_KEY.test(newAdminKey)) {
+					token.setAdminKey(UNUSED_KEY);
+				} else {
+					token.setAdminKey(asFcKeyUnchecked(changes.getAdminKey()));
+				}
 			}
 			if (changes.hasAutoRenewAccount()) {
 				token.setAutoRenewAccount(ofNullableAccountId(changes.getAutoRenewAccount()));
