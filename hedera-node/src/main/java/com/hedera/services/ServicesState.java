@@ -249,6 +249,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		* if they are missing. (The {@code SystemFilesManager} will signal interested
 		* components of the loaded files via a callback.) */
 		ctx.systemFilesManager().loadFeeSchedules();
+
+		ctx.systemFilesManager().loadExchangeRates();
 	}
 
 	@Override

@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 
@@ -55,6 +57,8 @@ public class ValidateExchangeRateStateAfterReconnect extends HapiApiSuite {
 
 	private HapiApiSpec validateExchangeRateStateAfterReconnect() {
 		final String transactionid = "authorizedTxn";
+		final long oldFee = 13_299_075L;
+		final long newFee = 159_588_904;
 		return customHapiSpec("validateExchangeRateStateAfterReconnect")
 				.withProperties(Map.of(
 						"txn.start.offset.secs", "-5")
@@ -69,6 +73,17 @@ public class ValidateExchangeRateStateAfterReconnect extends HapiApiSuite {
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode(),
+						fileUpdate(EXCHANGE_RATES)
+								.contents(
+										spec -> {
+											ByteString newRates = spec
+													.ratesProvider()
+													.rateSetWith(1, 1)
+													.toByteString();
+											spec.registry().saveBytes("newRates", newRates);
+											return newRates;
+										}
+								).payingWith(MASTER),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode()
@@ -79,10 +94,11 @@ public class ValidateExchangeRateStateAfterReconnect extends HapiApiSuite {
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
 						cryptoCreate("civilian")
-							.via(transactionid),
+							.via(transactionid)
+							.setNode("0.0.6"),
 						getTxnRecord(transactionid)
 								.setNode("0.0.6")
-								.hasPriority(recordWith().fee(1L))
+								.hasPriority(recordWith().fee(newFee))
 				);
 	}
 
