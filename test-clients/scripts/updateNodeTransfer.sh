@@ -9,7 +9,7 @@ NODE0_IP_ADDRESS=""
 CONFIG_FILE_PATH=""
 copyFilesToUpdateNode() {
   set -x
-  sudo scp -o StrictHostKeyChecking=no -i services-regression.pem -p $CONFIG_FILE_PATH ubuntu@3.19.76.47:/home/ubuntu/remoteExperiment
+  sudo scp -o StrictHostKeyChecking=no -i services-regression.pem -p $CONFIG_FILE_PATH ubuntu@$UPDATE_NODE_IP_ADDRESS:/home/ubuntu/remoteExperiment
   echo "Copying config.txt to the update Node"
   ssh -t -t -o StrictHostKeyChecking=no  -i services-regression.pem  ubuntu@$UPDATE_NODE_IP_ADDRESS "mkdir -p  /home/ubuntu/remoteExperiment/data/diskFs/0.0.7"
   sudo scp -o StrictHostKeyChecking=no -i services-regression.pem -r -p data/diskFs/0.0.3/* ubuntu@$UPDATE_NODE_IP_ADDRESS:/home/ubuntu/remoteExperiment/data/diskFs/0.0.7
