@@ -52,7 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
@@ -75,7 +74,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						validatesMissingAdminKey(),
 						tooLongNameCheckHolds(),
 						tooLongSymbolCheckHolds(),
-						numericSymbolCheckHolds(),
 						nameChanges(),
 						keysChange(),
 						validatesAlreadyDeletedToken(),
@@ -388,24 +386,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate("tbu")
 								.symbol(tooLongSymbol)
 								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG)
-				);
-	}
-
-	public HapiApiSpec numericSymbolCheckHolds() {
-		var numericSymbol = "1234a";
-
-		return defaultHapiSpec("NumericSymbolCheckHolds")
-				.given(
-						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY)
-				).when(
-						tokenCreate("tbu")
-								.adminKey("adminKey")
-								.treasury(TOKEN_TREASURY)
-				).then(
-						tokenUpdate("tbu")
-								.symbol(numericSymbol)
-								.hasPrecheck(INVALID_TOKEN_SYMBOL)
 				);
 	}
 

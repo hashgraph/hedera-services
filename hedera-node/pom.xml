@@ -116,7 +116,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>${project.groupId}.${mainClass.name}</mainClass>
+              <mainClass>com.hedera.services.${mainClass.name}</mainClass>
               <addClasspath>true</addClasspath>
               <classpathPrefix>../lib/</classpathPrefix>
               <useUniqueVersions>false</useUniqueVersions>

@@ -327,18 +327,10 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
-						tokenCreate("nonAlphanumeric")
-								.payingWith("payer")
-								.symbol("!")
-								.hasPrecheck(INVALID_TOKEN_SYMBOL),
 						tokenCreate("missingSymbol")
 								.payingWith("payer")
 								.symbol("")
 								.hasPrecheck(MISSING_TOKEN_SYMBOL),
-						tokenCreate("whiteSpaces")
-								.payingWith("payer")
-								.symbol(" ")
-								.hasPrecheck(INVALID_TOKEN_SYMBOL),
 						tokenCreate("tooLong")
 								.payingWith("payer")
 								.symbol(reallyLongSymbol)
