@@ -32,8 +32,9 @@ import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class ContractUpdateSuite extends HapiApiSuite {
@@ -45,21 +46,10 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
-		);
-	}
-
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-				updateWithPendingNewKeySucceeds()
-		);
-	}
-
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-		);
+		return List.of(new HapiApiSpec[]{
+				updateWithPendingNewKeySucceeds(),
+				canSetImmutableWithEmptyKeyList(),
+		});
 	}
 
 	private HapiApiSpec updateWithPendingNewKeySucceeds() {
@@ -75,6 +65,21 @@ public class ContractUpdateSuite extends HapiApiSuite {
 								.via("txnRequiringSyncVerify")
 								.signedBy(GENESIS, "newKey")
 								.newMemo("So we outdanced thought...")
+				);
+	}
+
+	private HapiApiSpec canSetImmutableWithEmptyKeyList() {
+		return defaultHapiSpec("CanSetImmutableWithEmptyKeyList")
+				.given(
+						newKeyNamed("pristine"),
+						contractCreate("toBeImmutable")
+				).when(
+						contractUpdate("toBeImmutable").improperlyEmptyingAdminKey()
+								.hasKnownStatus(INVALID_ADMIN_KEY),
+						contractUpdate("toBeImmutable").properlyEmptyingAdminKey()
+				).then(
+						contractUpdate("toBeImmutable").newKey("pristine")
+								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT)
 				);
 	}
 

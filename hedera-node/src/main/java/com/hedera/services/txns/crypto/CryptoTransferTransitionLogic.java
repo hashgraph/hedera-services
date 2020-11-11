@@ -36,6 +36,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import static com.hedera.services.txns.validation.TokenListChecks.checkTokenTransfers;
 import static com.hedera.services.txns.validation.TransferListChecks.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -70,10 +72,11 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			var transfers = txnCtx.accessor().getTxn().getCryptoTransfer().getTransfers();
-			var outcome = tryTransfers(ledger, transfers);
+			var op = txnCtx.accessor().getTxn().getCryptoTransfer();
+			var outcome = ledger.doAtomicTransfers(op);
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
+			log.warn("Unrecognized exception {}!", e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
@@ -94,9 +97,10 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	private static boolean hasOnlyCryptoAccounts(HederaLedger ledger, TransferList transfers) {
+	static boolean hasOnlyCryptoAccounts(HederaLedger ledger, TransferList transfers) {
 		for (AccountAmount aa : transfers.getAccountAmountsList()) {
-			if (ledger.isSmartContract(aa.getAccountID())) {
+			var id = aa.getAccountID();
+			if (!ledger.exists(id) || ledger.isSmartContract(id)) {
 				return false;
 			}
 		}
@@ -113,9 +117,20 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		return SYNTAX_CHECK;
 	}
 
-	private ResponseCodeEnum validate(TransactionBody cryptoTransferTxn) {
-		var op = cryptoTransferTxn.getCryptoTransfer();
-		return basicSyntaxChecks(op.getTransfers(), validator);
+	private ResponseCodeEnum validate(TransactionBody txn) {
+		var op = txn.getCryptoTransfer();
+
+		var validity = basicSyntaxChecks(op.getTransfers(), validator);
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = validator.isAcceptableTokenTransfersLength(op.getTokenTransfersList());
+		if (validity != OK) {
+			return validity;
+		}
+
+		return checkTokenTransfers(op.getTokenTransfersList());
 	}
 
 	public static ResponseCodeEnum basicSyntaxChecks(TransferList transfers, OptionValidator validator) {

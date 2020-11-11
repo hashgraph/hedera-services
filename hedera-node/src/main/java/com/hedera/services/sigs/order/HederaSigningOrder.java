@@ -24,7 +24,6 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -50,7 +49,6 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -71,6 +69,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 
@@ -232,8 +231,6 @@ public class HederaSigningOrder {
 	) {
 		if (txn.hasTokenCreation()) {
 			return Optional.of(tokenCreate(txn.getTransactionID(), txn.getTokenCreation(), factory));
-		} else if (txn.hasTokenTransfers()) {
-			return Optional.of(tokenTransact(txn.getTransactionID(), txn.getTokenTransfers(), factory));
 		} else if (txn.hasTokenAssociate()) {
 			return Optional.of(tokenAssociate(txn.getTransactionID(), txn.getTokenAssociate(), factory));
 		} else if (txn.hasTokenDissociate()) {
@@ -529,19 +526,22 @@ public class HederaSigningOrder {
 			CryptoTransferTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		List<JKey> required = EMPTY_LIST;
-		for (AccountAmount adjustment : op.getTransfers().getAccountAmountsList()) {
-			var account = adjustment.getAccountID();
-			var result = sigMetaLookup.accountSigningMetaFor(account);
-			if (result.succeeded()) {
-				if (adjustment.getAmount() < 0L || result.metadata().isReceiverSigRequired()) {
-					required = mutable(required);
-					required.add(result.metadata().getKey());
+		List<JKey> required = new ArrayList<>();
+
+		KeyOrderingFailure failure;
+		for (TokenTransferList xfers : op.getTokenTransfersList()) {
+			for (AccountAmount adjust : xfers.getTransfersList()) {
+				if ((failure = includeIfPresentAndNecessary(adjust, required)) != NONE) {
+					return accountFailure(adjust.getAccountID(), txnId, failure, factory);
 				}
-			} else {
-				return accountFailure(account, txnId, result.failureIfAny(), factory);
 			}
 		}
+		for (AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
+			if ((failure = includeIfPresentAndNecessary(adjust, required)) != NONE) {
+				return accountFailure(adjust.getAccountID(), txnId, failure, factory);
+			}
+		}
+
 		return factory.forValidOrder(required);
 	}
 
@@ -708,6 +708,13 @@ public class HederaSigningOrder {
 				required)) {
 			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
 		}
+		if (!addAccount(
+				op,
+				TokenUpdateTransactionBody::hasTreasury,
+				TokenUpdateTransactionBody::getTreasury,
+				required)) {
+			return accountFailure(op.getTreasury(), txnId, MISSING_ACCOUNT, factory);
+		}
 		addToMutableReqIfPresent(
 				op,
 				TokenUpdateTransactionBody::hasAdminKey,
@@ -818,30 +825,7 @@ public class HederaSigningOrder {
 		return factory.forValidOrder(required);
 	}
 
-	private <T> SigningOrderResult<T> tokenTransact(
-			TransactionID txnId,
-			TokenTransfersTransactionBody op,
-			SigningOrderResultFactory<T> factory
-	) {
-		List<JKey> required = new ArrayList<>();
-
-		for (TokenTransferList xfers : op.getTokenTransfersList()) {
-			for (AccountAmount adjust : xfers.getTransfersList()) {
-				if (!includeIfPresentAndNecessary(adjust, required)) {
-					return factory.forMissingAccount(adjust.getAccountID(), txnId);
-				}
-			}
-		}
-		for (AccountAmount adjust : op.getHbarTransfers().getAccountAmountsList()) {
-			if (!includeIfPresentAndNecessary(adjust, required)) {
-				return factory.forMissingAccount(adjust.getAccountID(), txnId);
-			}
-		}
-
-		return factory.forValidOrder(required);
-	}
-
-	private boolean includeIfPresentAndNecessary(AccountAmount adjust, List<JKey> required) {
+	private KeyOrderingFailure includeIfPresentAndNecessary(AccountAmount adjust, List<JKey> required) {
 		var account = adjust.getAccountID();
 		var result = sigMetaLookup.accountSigningMetaFor(account);
 		if (result.succeeded()) {
@@ -849,9 +833,8 @@ public class HederaSigningOrder {
 			if (adjust.getAmount() < 0 || meta.isReceiverSigRequired()) {
 				required.add(meta.getKey());
 			}
-			return true;
 		}
-		return false;
+		return result.failureIfAny();
 	}
 
 	private <T> void addToMutableReqIfPresent(

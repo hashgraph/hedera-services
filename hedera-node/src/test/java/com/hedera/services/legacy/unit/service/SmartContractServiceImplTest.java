@@ -268,7 +268,7 @@ public class SmartContractServiceImplTest {
 				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
-				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
@@ -285,19 +285,16 @@ public class SmartContractServiceImplTest {
 		given(exchange.activeRates()).willReturn(rates);
 		smartContractHandler = new SmartContractRequestHandler(
 				repository,
-				feeCollectionAccountId,
 				ledger,
 				() -> accountFCMap,
-				() -> storageMap,
-				ledgerSource,
 				null,
 				exchange,
 				TEST_USAGE_PRICES,
-				TestProperties.TEST_PROPERTIES,
 				() -> repository,
 				SolidityLifecycleFactory.newTestInstance(),
 				ignore -> true,
-				null);
+				null,
+				new MockGlobalDynamicProps());
 
 		genKpair = new KeyPairGenerator().generateKeyPair();
 		genPubKey = ((EdDSAPublicKey) genKpair.getPublic()).getAbyte();

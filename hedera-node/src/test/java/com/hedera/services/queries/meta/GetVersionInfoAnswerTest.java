@@ -21,7 +21,9 @@ package com.hedera.services.queries.meta;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.ActiveVersions;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.queries.token.GetTokenInfoAnswer;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
@@ -36,6 +38,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+
+import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -59,43 +63,17 @@ class GetVersionInfoAnswerTest {
 			.setMinor(4)
 			.setPatch(0)
 			.build();
+	SemanticVersions semanticVersions;
 	GetVersionInfoAnswer subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
 		view = mock(StateView.class);
+		semanticVersions = mock(SemanticVersions.class);
+		given(semanticVersions.getDeployed())
+				.willReturn(Optional.of(new ActiveVersions(expectedVersions, expectedVersions)));
 
-		GetVersionInfoAnswer.VERSION_INFO_RESOURCE = "frozenVersion.properties";
-
-		subject = new GetVersionInfoAnswer();
-		GetVersionInfoAnswer.knownActive.set(null);
-	}
-
-	@Test
-	public void recognizesAvailableResource() {
-		// when:
-		var status = GetVersionInfoAnswer.invariantValidityCheck();
-
-		// then:
-		assertEquals(ResponseCodeEnum.OK, status);
-		// and:
-		assertEquals(expectedVersions, GetVersionInfoAnswer.knownActive.get().protoSemVer());
-		assertEquals(expectedVersions, GetVersionInfoAnswer.knownActive.get().hederaSemVer());
-	}
-
-	@Test
-	public void recognizesUnavailableResource() {
-		// setup:
-		GetVersionInfoAnswer.VERSION_INFO_RESOURCE = "nonsense.properties";
-
-		// when:
-		var status = GetVersionInfoAnswer.invariantValidityCheck();
-
-		// then:
-		assertEquals(ResponseCodeEnum.FAIL_INVALID, status);
-
-		// cleanup:
-		GetVersionInfoAnswer.VERSION_INFO_RESOURCE = "frozenVersion.properties";
+		subject = new GetVersionInfoAnswer(semanticVersions);
 	}
 
 	@Test
@@ -127,6 +105,17 @@ class GetVersionInfoAnswerTest {
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(COST_ANSWER, opResponse.getHeader().getResponseType());
 		assertEquals(fee, opResponse.getHeader().getCost());
+	}
+
+	@Test
+	public void complainsWhenVersionInfoAvailable() throws Throwable {
+		// setup:
+		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+
+		given(semanticVersions.getDeployed()).willReturn(Optional.empty());
+
+		// given:
+		assertEquals(FAIL_INVALID, subject.checkValidity(sensibleQuery, view));
 	}
 
 	@Test

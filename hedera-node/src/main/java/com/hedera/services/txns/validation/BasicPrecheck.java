@@ -20,6 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,12 +37,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
 public class BasicPrecheck {
-	private final PropertySource properties;
 	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
 
-	public BasicPrecheck(PropertySource properties, OptionValidator validator) {
-		this.properties = properties;
+	public BasicPrecheck(
+			OptionValidator validator,
+			GlobalDynamicProperties dynamicProperties
+	) {
 		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txn) {
@@ -68,7 +72,7 @@ public class BasicPrecheck {
 
 		return validator.chronologyStatusForTxn(
 				asCoercedInstant(txn.getTransactionID().getTransactionValidStart()),
-				validForSecs - properties.getIntProperty("hedera.transaction.minValidityBufferSecs"),
+				validForSecs - dynamicProperties.minValidityBuffer(),
 				Instant.now(Clock.systemUTC()));
 	}
 }

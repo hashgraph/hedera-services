@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.validation.TokenListChecks.hasRepeatedTokenID;
+import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -89,7 +89,7 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 			return INVALID_ACCOUNT_ID;
 		}
 
-		if (hasRepeatedTokenID(op.getTokensList())) {
+		if (repeatsItself(op.getTokensList())) {
 			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 		}
 

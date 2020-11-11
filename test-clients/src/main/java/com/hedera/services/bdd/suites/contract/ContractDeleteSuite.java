@@ -22,9 +22,9 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,6 +34,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -57,77 +58,58 @@ public class ContractDeleteSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
-		);
-	}
-
-	List<HapiApiSpec> negativeSpecs() {
 		return List.of(new HapiApiSpec[] {
-				systemDeleteContractNotSupported(),
-				rejectsWithoutProperSig(),
-				systemDelThenUndelContractNotSupported()
-		});
+						rejectsWithoutProperSig(),
+						systemDelThenUndelContractSanityChecks(),
+						deleteWorksWithMutableContract(),
+						deleteFailsWithImmutableContract(),
+				}
+		);
 	}
 
 	HapiApiSpec rejectsWithoutProperSig() {
 		return defaultHapiSpec("ScDelete")
 				.given(
 						contractCreate("tbd")
-				).when( ).then(
+				).when().then(
 						contractDelete("tbd")
 								.signedBy(GENESIS)
 								.hasKnownStatus(INVALID_SIGNATURE)
 				);
 	}
 
-	List<HapiApiSpec> positiveSpecs() {
-		return Arrays.asList(
-				defaultHapiSpec("ScDelete")
-						.given(
-								contractCreate("toBeDeleted")
-						).when().then(
-						contractDelete("toBeDeleted").hasKnownStatus(SUCCESS))
-		);
-	}
-
-
-	private HapiApiSpec systemDeleteContractNotSupported() {
-		return defaultHapiSpec("systemDeleteContractNotSupported")
+	private HapiApiSpec deleteFailsWithImmutableContract() {
+		return defaultHapiSpec("DeleteFailsWithImmutableContract")
 				.given(
-						fileCreate("conFile")
-								.path(PATH_TO_VALID_BYTECODE),
-						contractCreate("test-contract")
-								.bytecode("conFile")
-								.hasKnownStatus(SUCCESS)
-				).when(
-				).then(
-						UtilVerbs.sleepFor(1000),
-						systemContractDelete("test-contract")
-								.payingWith(SYSTEM_DELETE_ADMIN)
-								.hasPrecheck(NOT_SUPPORTED)
+						contractCreate("immutable").omitAdminKey()
+				).when().then(
+						contractDelete("immutable").hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT)
 				);
 	}
 
-	private HapiApiSpec systemDelThenUndelContractNotSupported() {
-		return defaultHapiSpec("systemDelThenUndelContractNotSupported")
+	private HapiApiSpec deleteWorksWithMutableContract() {
+		return defaultHapiSpec("DeleteWorksWithMutableContract")
+				.given(
+						contractCreate("toBeDeleted")
+				).when().then(
+						contractDelete("toBeDeleted")
+				);
+	}
+
+	private HapiApiSpec systemDelThenUndelContractSanityChecks() {
+		return defaultHapiSpec("SystemDelThenUndelContractSanityChecks")
 				.given(
 						fileCreate("conFile")
 								.path(PATH_TO_VALID_BYTECODE),
 						contractCreate("test-contract")
 								.bytecode("conFile")
-								.hasKnownStatus(SUCCESS)
 				).when(
 						systemContractDelete("test-contract")
 								.payingWith(SYSTEM_DELETE_ADMIN)
-								.hasPrecheck(NOT_SUPPORTED)
-
 				).then(
 						systemContractUndelete("test-contract")
 								.payingWith(SYSTEM_UNDELETE_ADMIN)
-								.fee(0L)
-								.hasPrecheckFrom(NOT_SUPPORTED),
+								.fee(0L),
 						getContractInfo("test-contract")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(OK)

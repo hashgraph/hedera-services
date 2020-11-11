@@ -62,12 +62,3 @@ message CryptoGetInfoResponse {
     }
     AccountInfo accountInfo = 2; // Info about the account (a state proof can be generated for this)
 }
-
-/* Token's information related to the given Account */
-message TokenRelationship {
-    TokenID tokenId = 1; // The ID of the token
-    string symbol = 2; // The Symbol of the token
-    uint64 balance = 3; // The balance that the Account holds in the smallest denomination
-    TokenKycStatus kycStatus = 4; // The KYC status of the account (KycNotApplicable, Granted or Revoked). If the token does not have KYC key, KycNotApplicable is returned
-    TokenFreezeStatus freezeStatus = 5; // The Freeze status of the account (FreezeNotApplicable, Frozen or Unfrozen). If the token does not have Freeze key, FreezeNotApplicable is returned
-}

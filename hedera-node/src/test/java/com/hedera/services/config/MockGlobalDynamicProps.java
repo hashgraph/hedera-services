@@ -121,4 +121,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public long maxTxnDuration() {
 		return 180L;
 	}
+
+	@Override
+	public int minValidityBuffer() {
+		return 10;
+	}
+
+	@Override
+	public int maxGas() {
+		return 300_000;
+	}
 }

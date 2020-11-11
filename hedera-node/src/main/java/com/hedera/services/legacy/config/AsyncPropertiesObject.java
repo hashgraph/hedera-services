@@ -34,19 +34,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
  *
  */
 public class AsyncPropertiesObject {
-	/* ---- HCS Throttling ---- */
-	private static double createTopicTps, createTopicBurstPeriod;
-	private static double updateTopicTps, updateTopicBurstPeriod;
-	private static double deleteTopicTps, deleteTopicBurstPeriod;
-	private static double submitMessageTps, submitMessageBurstPeriod;
-	private static double getTopicInfoTps, getTopicInfoBurstPeriod;
-
-	// throttling properties - Default values are zero
-	private static int throttlingTps;
-	private static int simpletransferTps;
-	private static int getReceiptTps;
-	private static int queriesTps;
-	
 	// properties for RecordStream
 	private static boolean enableRecordStreaming;
 	private static long recordLogPeriod = ApplicationConstants.RECORD_LOG_PERIOD;
@@ -92,23 +79,6 @@ public class AsyncPropertiesObject {
 		saveAccounts = appConfig.getString("saveAccounts", ApplicationConstants.NO);
 		exportedAccountPath = appConfig.getString("exportedAccountPath", ApplicationConstants.EXPORTED_ACCOUNT_PATH);
 
-		/* ---- HCS Throttling ---- */
-		createTopicTps = appConfig.getDouble("throttling.hcs.createTopic.tps", 1000.0);
-		createTopicBurstPeriod = appConfig.getDouble("throttling.hcs.createTopic.burstPeriod", 1.0);
-		updateTopicTps = appConfig.getDouble("throttling.hcs.updateTopic.tps", 1000.0);
-		updateTopicBurstPeriod = appConfig.getDouble("throttling.hcs.updateTopic.burstPeriod", 1.0);
-		deleteTopicTps = appConfig.getDouble("throttling.hcs.deleteTopic.tps", 1000.0);
-		deleteTopicBurstPeriod = appConfig.getDouble("throttling.hcs.deleteTopic.burstPeriod", 1.0);
-		submitMessageTps = appConfig.getDouble("throttling.hcs.submitMessage.tps", 1000.0);
-		submitMessageBurstPeriod = appConfig.getDouble("throttling.hcs.submitMessage.burstPeriod", 1.0);
-		getTopicInfoTps = appConfig.getDouble("throttling.hcs.getTopicInfo.tps", 1000.0);
-		getTopicInfoBurstPeriod = appConfig.getDouble("throttling.hcs.getTopicInfo.burstPeriod", 1.0);
-
-		// throttling properties
-		throttlingTps = appConfig.getInt("throttlingTps", ApplicationConstants.ZERO);
-		simpletransferTps = appConfig.getInt("simpletransferTps", ApplicationConstants.ZERO);
-		getReceiptTps = appConfig.getInt("getReceiptTps", ApplicationConstants.ZERO);
-		queriesTps = appConfig.getInt("queriesTps", ApplicationConstants.ZERO);
 		// properties for RecordStream
 		 enableRecordStreaming = appConfig.getBoolean("enableRecordStreaming", false);
 		 recordLogPeriod = appConfig.getLong("recordLogPeriod", ApplicationConstants.RECORD_LOG_PERIOD);
@@ -128,62 +98,6 @@ public class AsyncPropertiesObject {
 
 	static Map<String , PermissionedAccountsRange> getApiPermission(){
 		return apiPermission;
-	}
-
-	public static double getCreateTopicTps() {
-		return createTopicTps;
-	}
-
-	public static double getCreateTopicBurstPeriod() {
-		return createTopicBurstPeriod;
-	}
-
-	public static double getUpdateTopicTps() {
-		return updateTopicTps;
-	}
-
-	public static double getUpdateTopicBurstPeriod() {
-		return updateTopicBurstPeriod;
-	}
-
-	public static double getDeleteTopicTps() {
-		return deleteTopicTps;
-	}
-
-	public static double getDeleteTopicBurstPeriod() {
-		return deleteTopicBurstPeriod;
-	}
-
-	public static double getSubmitMessageTps() {
-		return submitMessageTps;
-	}
-
-	public static double getSubmitMessageBurstPeriod() {
-		return submitMessageBurstPeriod;
-	}
-
-	public static double getGetTopicInfoTps() {
-		return getTopicInfoTps;
-	}
-
-	public static double getGetTopicInfoBurstPeriod() {
-		return getTopicInfoBurstPeriod;
-	}
-
-	static int getThrottlingTps() {
-		return throttlingTps;
-	}
-
-	static int getSimpletransferTps() {
-		return simpletransferTps;
-	}
-
-	static int getGetReceiptTps() {
-		return getReceiptTps;
-	}
-
-	static int getQueriesTps() {
-		return queriesTps;
 	}
 
 	static boolean isEnableRecordStreaming() {

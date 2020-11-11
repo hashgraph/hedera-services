@@ -190,6 +190,7 @@ public class BaseHederaLedgerTest {
 		addToLedger(rand, RAND_BALANCE, noopCustomizer);
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
+		given(tokenRelsLedger.isInTransaction()).willReturn(true);
 
 		tokenStore = mock(HederaTokenStore.class);
 		given(tokenStore.exists(frozenId)).willReturn(true);

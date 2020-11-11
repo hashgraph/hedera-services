@@ -626,24 +626,4 @@ public class ContextOptionValidatorTest {
 		// expect:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.isAcceptableTokenTransfersLength(wrapper));
 	}
-
-	@Test
-	public void rejectsEmptyTokenTransferAccountAmounts() {
-		// setup:
-		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, bTId);
-
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(2);
-
-		// expect:
-		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.isAcceptableTokenTransfersLength(wrapper));
-	}
-
-	@Test
-	public void rejectsEmptyTokenTransfersBody() {
-		// setup:
-		List<TokenTransferList> wrapper = List.of();
-
-		// expect:
-		assertEquals(EMPTY_TOKEN_TRANSFER_BODY, subject.isAcceptableTokenTransfersLength(wrapper));
-	}
 }

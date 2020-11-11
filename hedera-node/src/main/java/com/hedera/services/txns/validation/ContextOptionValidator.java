@@ -120,10 +120,6 @@ public class ContextOptionValidator implements OptionValidator {
 		int maxLen = dynamicProperties.maxTokenTransferListSize();
 		int tokenTransferListsSize = tokenTransferLists.size();
 
-		if (tokenTransferListsSize == 0) {
-			return EMPTY_TOKEN_TRANSFER_BODY;
-		}
-
 		if (tokenTransferListsSize > maxLen) {
 			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}

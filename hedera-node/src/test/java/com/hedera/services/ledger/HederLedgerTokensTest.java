@@ -47,6 +47,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
 @RunWith(JUnitPlatform.class)
 public class HederLedgerTokensTest extends BaseHederaLedgerTest {
@@ -212,6 +213,16 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 		assertEquals(0, subject.numTouches);
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
+	}
+
+	@Test
+	public void onlyRollsbackIfTokenRelsLedgerInTxn() {
+		given(tokenRelsLedger.isInTransaction()).willReturn(false);
+
+		// when:
+		subject.dropPendingTokenChanges();
+
+		verify(tokenRelsLedger, never()).rollback();
 	}
 
 	@Test

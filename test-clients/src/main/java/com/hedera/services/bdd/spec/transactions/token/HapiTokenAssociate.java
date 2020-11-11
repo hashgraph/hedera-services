@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -54,6 +55,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static java.util.stream.Collectors.toList;
@@ -96,18 +98,33 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 	}
 
 	private long lookupExpiry(HapiApiSpec spec) throws Throwable {
-		HapiGetAccountInfo subOp = getAccountInfo(account).noLogging();
-		Optional<Throwable> error = subOp.execFor(spec);
-		if (error.isPresent()) {
-			if (!loggingOff) {
-				log.warn(
-						"Unable to look up current info for "
-								+ HapiPropertySource.asAccountString(spec.registry().getAccountID(account)),
-						error.get());
+		if (!spec.registry().hasContractId(account)) {
+			HapiGetAccountInfo subOp = getAccountInfo(account).noLogging();
+			Optional<Throwable> error = subOp.execFor(spec);
+			if (error.isPresent()) {
+				if (!loggingOff) {
+					log.warn(
+							"Unable to look up current info for "
+									+ HapiPropertySource.asAccountString(spec.registry().getAccountID(account)),
+							error.get());
+				}
+				throw error.get();
 			}
-			throw error.get();
+			return subOp.getResponse().getCryptoGetInfo().getAccountInfo().getExpirationTime().getSeconds();
+		} else {
+			HapiGetContractInfo subOp = getContractInfo(account).noLogging();
+			Optional<Throwable> error = subOp.execFor(spec);
+			if (error.isPresent()) {
+				if (!loggingOff) {
+					log.warn(
+							"Unable to look up current info for "
+									+ HapiPropertySource.asContractString(spec.registry().getContractId(account)),
+							error.get());
+				}
+				throw error.get();
+			}
+			return subOp.getResponse().getContractGetInfo().getContractInfo().getExpirationTime().getSeconds();
 		}
-		return subOp.getResponse().getCryptoGetInfo().getAccountInfo().getExpirationTime().getSeconds();
 	}
 
 	@Override

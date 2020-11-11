@@ -73,7 +73,6 @@ public class PermissionFileUtils {
 		permissionKeys.put(ConsensusDeleteTopic, "deleteTopic");
 		permissionKeys.put(ConsensusSubmitMessage, "submitMessage");
 		permissionKeys.put(TokenCreate, "tokenCreate");
-		permissionKeys.put(TokenTransact, "tokenTransact");
 		permissionKeys.put(TokenFreezeAccount, "tokenFreezeAccount");
 		permissionKeys.put(TokenUnfreezeAccount, "tokenUnfreezeAccount");
 		permissionKeys.put(TokenGrantKycToAccount, "tokenGrantKycToAccount");

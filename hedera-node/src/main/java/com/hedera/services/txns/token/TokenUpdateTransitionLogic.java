@@ -39,10 +39,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
-import static com.hedera.services.txns.validation.TokenListChecks.checkKey;
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -113,7 +111,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
 			var newTreasury = op.getTreasury();
-			if (!ledger.exists(newTreasury) || ledger.isDeleted(newTreasury)) {
+			if (!store.associationExists(newTreasury, id)) {
 				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 				return;
 			}
@@ -197,18 +195,14 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		validity = checkKeys(op.hasAdminKey(), op.getAdminKey(),
+		validity = checkKeys(
+				op.hasAdminKey(), op.getAdminKey(),
 				op.hasKycKey(), op.getKycKey(),
 				op.hasWipeKey(), op.getWipeKey(),
-				op.hasSupplyKey(), op.getSupplyKey());
+				op.hasSupplyKey(), op.getSupplyKey(),
+				op.hasFreezeKey(), op.getFreezeKey());
 		if (validity != OK) {
 			return validity;
-		}
-		if (op.hasFreezeKey()) {
-			validity = checkKey(op.getFreezeKey(), INVALID_FREEZE_KEY);
-			if (validity != OK) {
-				return validity;
-			}
 		}
 
 		return validity;

@@ -26,6 +26,9 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 
 public class KeyUtils {
+	public static Key A_CONTRACT_KEY = Key.newBuilder()
+			.setContractID(IdUtils.asContract("1.2.3"))
+			.build();
 	public static Key A_THRESHOLD_KEY = Key.newBuilder()
 			.setThresholdKey(ThresholdKey.newBuilder()
 					.setThreshold(2)

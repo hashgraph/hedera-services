@@ -50,6 +50,8 @@ public class ScreenedSysFileProps implements PropertySource {
 
 	private static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
 			entry("configAccountNum", "ledger.maxAccountNum"),
+			entry("defaultContractDurationSec", "contracts.defaultLifetime"),
+			entry("maxGasLimit", "contracts.maxGas"),
 			entry("maxContractStateSize", "contracts.maxStorageKb"),
 			entry("maxFileSize", "files.maxSizeKb"),
 			entry("defaultFeeCollectionAccount", "ledger.fundingAccount"),
@@ -61,7 +63,8 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("accountBalanceExportDir", "balances.exportDir.path"),
 			entry("transferListSizeLimit", "ledger.transfers.maxLen"),
 			entry("txMaximumDuration", "hedera.transaction.maxValidDuration"),
-			entry("txMinimumDuration", "hedera.transaction.minValidDuration")
+			entry("txMinimumDuration", "hedera.transaction.minValidDuration"),
+			entry("txMinimumRemaining", "hedera.transaction.minValidityBufferSecs")
 	);
 	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
 			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum()),

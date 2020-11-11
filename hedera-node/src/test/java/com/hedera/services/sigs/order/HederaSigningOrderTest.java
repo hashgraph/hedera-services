@@ -93,7 +93,6 @@ import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.SystemUndeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
-import static com.hedera.test.factories.scenarios.TokenTransactScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.*;
@@ -1528,6 +1527,19 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
+	public void getsUpdateWithMissingTreasury() throws Throwable {
+		// given:
+		setupFor(UPDATE_REPLACING_WITH_MISSING_TREASURY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(SignatureStatusCode.INVALID_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
 	public void getsUpdateWithNewTreasury() throws Throwable {
 		// given:
 		setupFor(UPDATE_REPLACING_TREASURY);
@@ -1538,7 +1550,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey()));
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_TREASURY_KT.asKey()));
 	}
 
 	@Test

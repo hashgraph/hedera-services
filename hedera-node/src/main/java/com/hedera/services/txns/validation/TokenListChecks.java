@@ -30,11 +30,13 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
@@ -46,14 +48,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 public class TokenListChecks {
-    public static boolean hasRepeatedTokenID(List<TokenID> tokens) {
-        var unique = new HashSet<TokenID>(tokens);
-        return unique.size() < tokens.size();
+    public static boolean repeatsItself(List<TokenID> tokens) {
+        return new HashSet<>(tokens).size() < tokens.size();
     }
 
     public static ResponseCodeEnum checkTokenTransfers(List<TokenTransferList> tokenTransferLists) {
-        var uniqueTokens = new HashSet<TokenID>();
+    	if (tokenTransferLists.isEmpty()) {
+    	    return OK;
+        }
 
+        Set<TokenID> uniqueTokens = new HashSet<>();
         for (TokenTransferList tokenTransferList : tokenTransferLists) {
             if (!tokenTransferList.hasToken()) {
                 return INVALID_TOKEN_ID;
@@ -99,6 +103,44 @@ public class TokenListChecks {
         return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
     }
 
+    public static ResponseCodeEnum checkKeys(
+            boolean hasAdminKey, Key adminKey,
+            boolean hasKycKey, Key kycKey,
+            boolean hasWipeKey, Key wipeKey,
+            boolean hasSupplyKey, Key supplyKey,
+            boolean hasFreezeKey, Key freezeKey
+    ) {
+        ResponseCodeEnum validity;
+
+        if (hasAdminKey) {
+            if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasKycKey) {
+            if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasWipeKey) {
+            if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasSupplyKey) {
+            if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasFreezeKey) {
+            if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
+                return validity;
+            }
+        }
+
+        return OK;
+    }
+
     public static ResponseCodeEnum checkKey(Key key, ResponseCodeEnum failure) {
         try {
             var fcKey = JKey.mapKey(key);
@@ -109,39 +151,5 @@ public class TokenListChecks {
         } catch (Exception ignore) {
             return failure;
         }
-    }
-
-
-    public static ResponseCodeEnum checkKeys(boolean hasAdminKey, Key adminKey, boolean hasKycKey, Key kycKey, boolean hasWipeKey, Key wipeKey, boolean hasSupplyKey, Key supplyKey) {
-        var validity = OK;
-
-        if (hasAdminKey) {
-            validity = checkKey(adminKey, INVALID_ADMIN_KEY);
-            if (validity != OK) {
-                return validity;
-            }
-        }
-
-        if (hasKycKey) {
-            validity = checkKey(kycKey, INVALID_KYC_KEY);
-            if (validity != OK) {
-                return validity;
-            }
-        }
-
-        if (hasWipeKey) {
-            validity = checkKey(wipeKey, INVALID_WIPE_KEY);
-            if (validity != OK) {
-                return validity;
-            }
-        }
-
-        if (hasSupplyKey) {
-            validity = checkKey(supplyKey, INVALID_SUPPLY_KEY);
-            if (validity != OK) {
-                return validity;
-            }
-        }
-        return validity;
     }
 }
