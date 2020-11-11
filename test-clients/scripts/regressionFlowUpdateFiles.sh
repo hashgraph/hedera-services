@@ -66,8 +66,11 @@ updateConfig(){
   TARGET_DIR=../test-clients/updateFiles
   rm -rf $TARGET_DIR
   mkdir -p $TARGET_DIR
+
+  # copy the new config.txt which is already created by platform JRS with update nodes in it to updateFiles directory
   cp "$PLATFORM_REGRESSION_PATH/tmp/config.txt" $TARGET_DIR
   echo "Update files after build have been copied to $TARGET_DIR"
+
   ls -ltr $TARGET_DIR
   cd ../test-clients
 }
