@@ -45,6 +45,7 @@ import static org.ethereum.vm.VMUtils.saveProgramTraceFile;
 import static org.ethereum.vm.VMUtils.zipAndEncode;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -53,7 +54,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.legacy.config.PropertiesLoader;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -102,7 +102,6 @@ public class SolidityExecutor {
 	private static final Logger logger = Logger.getLogger(SolidityExecutor.class);
 	private static final BlockStore NULL_BLOCK_STORE = null;
 
-	private final long logStorageSecs = PropertiesLoader.getThresholdTxRecordTTL();
 	private final EthereumListener listener = new EthereumListenerAdapter();
 
 	private final long rbh;
@@ -124,6 +123,7 @@ public class SolidityExecutor {
 	private final ServicesRepositoryImpl repository;
 	private final ServicesRepositoryImpl trackingRepository;
 	private final NewAccountCreateAdapter contractCreateAdaptor = new SequenceAccountCreator();
+	private final GlobalDynamicProperties dynamicProperties;
 	private final Optional<TransactionContext> txnCtx;
 
 	private VM vm;
@@ -164,7 +164,8 @@ public class SolidityExecutor {
 			long sbh,
 			TransactionContext txnCtx,
 			boolean localCall,
-			SoliditySigsVerifier sigsVerifier
+			SoliditySigsVerifier sigsVerifier,
+			GlobalDynamicProperties dynamicProperties
 	) {
 		this.txn = txn;
 		this.rbh = rbh;
@@ -180,7 +181,7 @@ public class SolidityExecutor {
 		this.solidityTxn = solidityTxn;
 		this.sigsVerifier = sigsVerifier;
 		this.trackingRepository = repository.startTracking();
-
+		this.dynamicProperties = dynamicProperties;
 		this.payerAddress = Optional.ofNullable(payerAddress)
 				.map(ByteUtil::hexStringToBytes)
 				.orElse(solidityTxn.getSender());
@@ -244,7 +245,7 @@ public class SolidityExecutor {
 		if (precompiledContract != null) {
 			var gasRequired = BigInteger.valueOf(precompiledContract.getGasForData(solidityTxn.getData()));
 			if (!localCall && gasLeft.compareTo(gasRequired) < 0) {
-				var gasLimit = BigInteger.valueOf(PropertiesLoader.getMaxGasLimit());
+				var gasLimit = BigInteger.valueOf(dynamicProperties.maxGas());
 				var gasSupplied = ByteUtil.bytesToBigInteger(solidityTxn.getGasLimit());
 				errorCode = (gasSupplied.compareTo(gasLimit) < 0) ? INSUFFICIENT_GAS : MAX_GAS_LIMIT_EXCEEDED;
 				setError(String.format(
@@ -284,8 +285,8 @@ public class SolidityExecutor {
 						fundingAddress,
 						rbh,
 						sbh,
-						PropertiesLoader.getDefaultContractDurationInSec(),
-						logStorageSecs).withCommonConfig(commonConfig);
+						dynamicProperties.defaultContractLifetime(),
+						dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
 			}
 		}
 		if (!localCall) {
@@ -347,8 +348,8 @@ public class SolidityExecutor {
 					fundingAddress,
 					rbh,
 					sbh,
-					PropertiesLoader.getDefaultContractDurationInSec(),
-					logStorageSecs).withCommonConfig(commonConfig);
+					dynamicProperties.defaultContractLifetime(),
+					dynamicProperties.cacheRecordsTtl()).withCommonConfig(commonConfig);
 		}
 		if (!localCall) {
 			transfer(trackingRepository, solidityTxn.getSender(), newContractAddress, toBI(solidityTxn.getValue()));
@@ -430,7 +431,7 @@ public class SolidityExecutor {
 			}
 		} catch (Throwable e) {
 			if (e instanceof Program.OutOfGasException) {
-				BigInteger gasUpperBound = BigInteger.valueOf(PropertiesLoader.getMaxGasLimit());
+				BigInteger gasUpperBound = BigInteger.valueOf(dynamicProperties.maxGas());
 				BigInteger gasProvided = ByteUtil.bytesToBigInteger(solidityTxn.getGasLimit());
 				if (gasUpperBound.compareTo(gasProvided) > 0) {
 					errorCode = INSUFFICIENT_GAS;
@@ -569,7 +570,7 @@ public class SolidityExecutor {
 		if (!creations.isEmpty()) {
 			final Consumer<byte[]> initializer = newScopedAccountInitializer(
 					startTime.getEpochSecond(),
-					PropertiesLoader.getDefaultContractDurationInSec(),
+					dynamicProperties.defaultContractLifetime(),
 					solidityTxn.getSender(),
 					repository);
 			createdContracts = Optional.of(

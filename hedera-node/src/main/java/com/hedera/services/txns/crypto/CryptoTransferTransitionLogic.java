@@ -76,6 +76,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			var outcome = ledger.doAtomicTransfers(op);
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
+			log.warn("Unrecognized exception {}!", e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
@@ -96,9 +97,10 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	private static boolean hasOnlyCryptoAccounts(HederaLedger ledger, TransferList transfers) {
+	static boolean hasOnlyCryptoAccounts(HederaLedger ledger, TransferList transfers) {
 		for (AccountAmount aa : transfers.getAccountAmountsList()) {
-			if (ledger.isSmartContract(aa.getAccountID())) {
+			var id = aa.getAccountID();
+			if (!ledger.exists(id) || ledger.isSmartContract(id)) {
 				return false;
 			}
 		}

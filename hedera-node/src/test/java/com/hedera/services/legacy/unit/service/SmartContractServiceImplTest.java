@@ -285,19 +285,16 @@ public class SmartContractServiceImplTest {
 		given(exchange.activeRates()).willReturn(rates);
 		smartContractHandler = new SmartContractRequestHandler(
 				repository,
-				feeCollectionAccountId,
 				ledger,
 				() -> accountFCMap,
-				() -> storageMap,
-				ledgerSource,
 				null,
 				exchange,
 				TEST_USAGE_PRICES,
-				TestProperties.TEST_PROPERTIES,
 				() -> repository,
 				SolidityLifecycleFactory.newTestInstance(),
 				ignore -> true,
-				null);
+				null,
+				new MockGlobalDynamicProps());
 
 		genKpair = new KeyPairGenerator().generateKeyPair();
 		genPubKey = ((EdDSAPublicKey) genKpair.getPublic()).getAbyte();
