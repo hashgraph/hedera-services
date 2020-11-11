@@ -26,7 +26,6 @@ import java.util.HashMap;
  *  Mapping of Class name and Object Id
  *
  * @author Akshay
- * @Date : 1/17/2019
  */
 public enum JObjectType {
 
