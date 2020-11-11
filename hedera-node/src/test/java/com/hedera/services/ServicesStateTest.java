@@ -289,8 +289,8 @@ class ServicesStateTest {
 		inOrder.verify(historian).reviewExistingRecords();
 		inOrder.verify(systemFilesManager).loadApplicationProperties();
 		inOrder.verify(systemFilesManager).loadApiPermissions();
-		// TODO: uncomment below line.
-		// inOrder.verify(systemFilesManager).loadFeeSchedules();
+		inOrder.verify(systemFilesManager).loadFeeSchedules();
+		inOrder.verify(systemFilesManager).loadExchangeRates();
 	}
 
 	@Test
