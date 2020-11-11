@@ -70,6 +70,7 @@ import com.hedera.services.bdd.suites.misc.ContractQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.CryptoQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.FileQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
+import com.hedera.services.bdd.suites.misc.SleepOnly;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
 import com.hedera.services.bdd.suites.perf.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest;
@@ -279,6 +280,9 @@ public class SuiteRunner {
 		put("ZeroStakeTest", aof(new ZeroStakeNodeTest()));
 		/* Query payment validation */
 		put("QueryPaymentSuite", aof(new QueryPaymentSuite()));
+
+		put("SleepOnly", aof(new SleepOnly()));
+
 
 	}};
 
