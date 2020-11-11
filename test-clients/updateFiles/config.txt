@@ -1,0 +1,10 @@
+###############################################################################################
+# Swirlds configuration file, for automatically running multiple instances
+###############################################################################################
+swirld, 123
+app, HederaNode.jar
+address, Misc-UpdateNode-1-10m0, Misc-UpdateNode-1-10m0, 1000000000000000000, 172.31.36.236, 40124, 18.219.194.50, 40124, 0.0.3
+address, Misc-UpdateNode-1-10m1, Misc-UpdateNode-1-10m1, 1000000000000000000, 172.31.44.187, 40125, 3.22.63.85, 40125, 0.0.4
+address, Misc-UpdateNode-1-10m2, Misc-UpdateNode-1-10m2, 1000000000000000000, 172.31.45.207, 40126, 18.191.129.98, 40126, 0.0.5
+address, Misc-UpdateNode-1-10m3, Misc-UpdateNode-1-10m3, 1000000000000000000, 172.31.33.119, 40127, 3.138.193.217, 40127, 0.0.6
+address, Misc-UpdateNode-1-10m4, Misc-UpdateNode-1-10m4, 1000000000000000000, 172.31.34.228, 40128, 3.138.109.151, 40128, 0.0.7
