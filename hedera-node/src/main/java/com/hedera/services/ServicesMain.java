@@ -35,6 +35,7 @@ import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -94,6 +95,8 @@ public class ServicesMain implements SwirldMain {
 		} catch (IllegalStateException ise) {
 			log.error("Fatal precondition violated in HederaNode#{}!", ctx.id(), ise);
 			systemExits.fail(1);
+		} catch (Exception e) {
+			log.error("couldn't export Accounts on startUpin HederaNode#{} : {}",ctx.id(), e.getMessage());
 		}
 	}
 
@@ -141,7 +144,7 @@ public class ServicesMain implements SwirldMain {
 		/* No-op. */
 	}
 
-	private void contextDrivenInit() {
+	private void contextDrivenInit() throws Exception {
 		registerIssListener();
 		log.info("Platform callbacks registered.");
 		checkPropertySources();
@@ -170,7 +173,7 @@ public class ServicesMain implements SwirldMain {
 		log.info("Fee schedule loaded.");
 		initializeStats();
 		log.info("Stats initialized.");
-
+		exportExistingAccounts();
 		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
 	}
 
@@ -258,6 +261,10 @@ public class ServicesMain implements SwirldMain {
 
 	private void initializeStats() {
 		ctx.statsManager().initializeFor(ctx.platform());
+	}
+
+	private void exportExistingAccounts() throws Exception {
+		ctx.accountsExporter().toFile(ctx.accounts(), "data/accounts.json");
 	}
 
 	private void checkPropertySources() {
