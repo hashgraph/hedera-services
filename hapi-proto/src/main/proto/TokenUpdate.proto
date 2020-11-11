@@ -34,7 +34,7 @@ If no value is given for a field, that field is left unchanged. For an immutable
 --- Signing Requirements ---
 1. Whether or not a token has an admin key, its expiry can be extended with only the transaction payer's signature.
 2. Updating any other field of a mutable token requires the admin key's signature.
-3. If a new admin key is set, this new key must sign <b>unless</b> it is exactly an empty <tt>KeyList</tt>. This special sentinel key removes the existing admin key and causes the token to become immutable.
+3. If a new admin key is set, this new key must sign <b>unless</b> it is exactly an empty <tt>KeyList</tt>. This special sentinel key removes the existing admin key and causes the token to become immutable. (Other <tt>Key</tt> structures without a constituent <tt>Ed25519</tt> key will be rejected with <tt>INVALID_ADMIN_KEY</tt>.)
 4. If a new treasury is set, the new treasury account's key must sign the transaction. */
 message TokenUpdateTransactionBody {
     TokenID token = 1; // The Token to be updated

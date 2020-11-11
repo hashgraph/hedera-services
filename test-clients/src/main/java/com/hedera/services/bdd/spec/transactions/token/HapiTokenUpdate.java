@@ -68,6 +68,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
+	private boolean useImproperEmptyKey = false;
 	private boolean useEmptyAdminKeyList = false;
 
 	@Override
@@ -141,6 +142,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate expiry(long at) {
 		this.expiry = OptionalLong.of(at);
+		return this;
+	}
+
+	public HapiTokenUpdate improperlyEmptyingAdminKey() {
+		useImproperEmptyKey = true;
 		return this;
 	}
 
@@ -221,7 +227,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							b.setToken(id);
 							newSymbol.ifPresent(b::setSymbol);
 							newName.ifPresent(b::setName);
-							if (useEmptyAdminKeyList) {
+							if (useImproperEmptyKey) {
+								b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+							} else if (useEmptyAdminKeyList) {
 								b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
 							} else {
 								newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
