@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# script to be called by platform regression scrip to transfer files to update Node
+#
+#
+set -eE
+UPDATE_NODE_IP_ADDRESS=""
+NODE0_IP_ADDRESS=""
+CONFIG_FILE_PATH=""
+copyFilesToUpdateNode() {
+  set -x
+  sudo scp -o StrictHostKeyChecking=no -i services-regression.pem -p $CONFIG_FILE_PATH ubuntu@3.19.76.47:/home/ubuntu/remoteExperiment
+  echo "Copying config.txt to the update Node"
+  ssh -t -t -o StrictHostKeyChecking=no  -i services-regression.pem  ubuntu@$UPDATE_NODE_IP_ADDRESS "mkdir -p  /home/ubuntu/remoteExperiment/data/diskFs/0.0.7"
+  sudo scp -o StrictHostKeyChecking=no -i services-regression.pem -r -p data/diskFs/0.0.3/* ubuntu@$UPDATE_NODE_IP_ADDRESS:/home/ubuntu/remoteExperiment/data/diskFs/0.0.7
+  echo "Copying File0.0.150 to the update Node"
+  ssh -t -t -o StrictHostKeyChecking=no  -i services-regression.pem  ubuntu@$UPDATE_NODE_IP_ADDRESS "mkdir -p  /home/ubuntu/remoteExperiment/data/saved/com.hedera.services.ServicesMain/4/"
+  sudo scp -o StrictHostKeyChecking=no -i services-regression.pem -r -p data/saved/com.hedera.services.ServicesMain/0/123/ \
+    ubuntu@$UPDATE_NODE_IP_ADDRESS:~/remoteExperiment/data/saved/com.hedera.services.ServicesMain/4/
+  echo "Copying saved state files to the update Node"
+}
+
+parseNewConfig() {
+  CONFIG_FILE_PATH="../HapiApp2.0/config.txt"
+  mapfile -t addressLinesArray < <(grep -Po '^address.*$' $CONFIG_FILE_PATH)
+  NODE0_IP_ADDRESS=$(cut -d',' -f7 <<<${addressLinesArray[0]})
+  UPDATE_NODE_IP_ADDRESS=$(cut -d',' -f7 <<<${addressLinesArray[${#addressLinesArray[@]} - 1]})
+  UPDATE_NODE_IP_ADDRESS=`echo $UPDATE_NODE_IP_ADDRESS`
+  echo "Update Node IpAddress $UPDATE_NODE_IP_ADDRESS and Address of Node0 $NODE0_IP_ADDRESS"
+}
+
+parseNewConfig
+copyFilesToUpdateNode
