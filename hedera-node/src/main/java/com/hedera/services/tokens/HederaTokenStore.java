@@ -32,7 +32,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -405,7 +404,7 @@ public class HederaTokenStore implements TokenStore {
 		supplyKey.ifPresent(pendingCreation::setSupplyKey);
 		if (request.hasAutoRenewAccount()) {
 			pendingCreation.setAutoRenewAccount(ofNullableAccountId(request.getAutoRenewAccount()));
-			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod());
+			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod().getSeconds());
 		}
 
 		return success(pendingId);
@@ -454,7 +453,7 @@ public class HederaTokenStore implements TokenStore {
 
 	private long expiryOf(TokenCreateTransactionBody request, long now) {
 		return request.hasAutoRenewAccount()
-				? now + request.getAutoRenewPeriod()
+				? now + request.getAutoRenewPeriod().getSeconds()
 				: request.getExpiry();
 	}
 
@@ -522,8 +521,9 @@ public class HederaTokenStore implements TokenStore {
 				appliedValidity.set(INVALID_EXPIRATION_TIME);
 			}
 			if (hasAutoRenewAccount || token.hasAutoRenewAccount()) {
-				if ((changes.getAutoRenewPeriod() != 0 || !token.hasAutoRenewAccount())
-						&& !isValidAutoRenewPeriod(changes.getAutoRenewPeriod())) {
+				long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
+				if ((changedAutoRenewPeriod != 0 || !token.hasAutoRenewAccount()) &&
+						!isValidAutoRenewPeriod(changedAutoRenewPeriod)) {
 					appliedValidity.set(INVALID_RENEWAL_PERIOD);
 				}
 			}
@@ -557,8 +557,9 @@ public class HederaTokenStore implements TokenStore {
 				token.setAutoRenewAccount(ofNullableAccountId(changes.getAutoRenewAccount()));
 			}
 			if (token.hasAutoRenewAccount()) {
-				if (changes.getAutoRenewPeriod() > 0) {
-					token.setAutoRenewPeriod(changes.getAutoRenewPeriod());
+				long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
+				if (changedAutoRenewPeriod > 0) {
+					token.setAutoRenewPeriod(changedAutoRenewPeriod);
 				}
 			}
 			if (changes.hasFreezeKey()) {
@@ -604,7 +605,7 @@ public class HederaTokenStore implements TokenStore {
 				!op.hasAutoRenewAccount() &&
 				op.getSymbol().length() == 0 &&
 				op.getName().length() == 0 &&
-				op.getAutoRenewPeriod() == 0;
+				op.getAutoRenewPeriod().getSeconds() == 0;
 	}
 
 	private ResponseCodeEnum fullySanityChecked(

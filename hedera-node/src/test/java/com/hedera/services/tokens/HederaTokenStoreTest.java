@@ -34,10 +34,10 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -795,7 +795,7 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
 		var op = updateWith(NO_KEYS, true, true, false, false, false);
-		op = op.toBuilder().setAutoRenewPeriod(-1L).build();
+		op = op.toBuilder().setAutoRenewPeriod(enduring(-1L)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -1108,7 +1108,7 @@ class HederaTokenStoreTest {
 			op.setAutoRenewAccount(newAutoRenewAccount);
 		}
 		if (useNewAutoRenewPeriod) {
-			op.setAutoRenewPeriod(newAutoRenewPeriod);
+			op.setAutoRenewPeriod(enduring(newAutoRenewPeriod));
 		}
 		for (KeyType key : keys) {
 			switch (key) {
@@ -1526,7 +1526,7 @@ class HederaTokenStoreTest {
 		var req = fullyValidAttempt()
 				.setExpiry(0)
 				.setAutoRenewAccount(autoRenewAccount)
-				.setAutoRenewPeriod(autoRenewPeriod)
+				.setAutoRenewPeriod(enduring(autoRenewPeriod))
 				.build();
 
 		// when:
@@ -1579,7 +1579,7 @@ class HederaTokenStoreTest {
 		// given:
 		var req = fullyValidAttempt()
 				.setAutoRenewAccount(autoRenewAccount)
-				.setAutoRenewPeriod(1000L)
+				.setAutoRenewPeriod(enduring(1000L))
 				.build();
 
 		// when:
@@ -1677,5 +1677,9 @@ class HederaTokenStoreTest {
 				.setTreasury(treasury)
 				.setDecimals(decimals)
 				.setFreezeDefault(freezeDefault);
+	}
+
+	private Duration enduring(long secs) {
+		return Duration.newBuilder().setSeconds(secs).build();
 	}
 }

@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenCreateUsage;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -199,8 +200,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							if (autoRenewAccount.isPresent()) {
 								var id = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(id);
-								b.setAutoRenewPeriod(autoRenewPeriod
-										.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds()));
+								long secs = autoRenewPeriod.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds());
+								b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
 							}
 							expiry.ifPresent(b::setExpiry);
 							wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));

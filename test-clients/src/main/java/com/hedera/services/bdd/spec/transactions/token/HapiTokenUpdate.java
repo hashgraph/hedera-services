@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.token.TokenUpdateUsage;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -244,7 +245,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 								b.setAutoRenewAccount(autoRenewId);
 							}
 							expiry.ifPresent(b::setExpiry);
-							autoRenewPeriod.ifPresent(b::setAutoRenewPeriod);
+							autoRenewPeriod.ifPresent(secs ->
+									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build()));
 						});
 		return b -> b.setTokenUpdate(opBody);
 	}
