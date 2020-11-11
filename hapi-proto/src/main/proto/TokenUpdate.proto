@@ -26,6 +26,7 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 import "BasicTypes.proto";
+import "Duration.proto";
 
 /* At consensus, updates an already created token to the given values.
 
@@ -47,6 +48,6 @@ message TokenUpdateTransactionBody {
     Key wipeKey = 8; // The new Wipe key of the Token. If the Token does not have currently a Wipe key, transaction will resolve to TOKEN_HAS_NO_WIPE_KEY.
     Key supplyKey = 9; // The new Supply key of the Token. If the Token does not have currently a Supply key, transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.
     AccountID autoRenewAccount = 10; // The new account which will be automatically charged to renew the token's expiration, at autoRenewPeriod interval.
-    uint64 autoRenewPeriod = 11; // The new interval at which the auto-renew account will be charged to extend the token's expiry.
+    Duration autoRenewPeriod = 11; // The new interval at which the auto-renew account will be charged to extend the token's expiry.
     uint64 expiry = 12; // The new expiry time of the token. Expiry can be updated even if admin key is not set. If the provided expiry is earlier than the current token expiry, transaction wil resolve to INVALID_EXPIRATION_TIME
 }

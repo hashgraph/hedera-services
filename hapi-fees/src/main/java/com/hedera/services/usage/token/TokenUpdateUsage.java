@@ -131,7 +131,7 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 
 	private long noRbImpactBytes(TokenUpdateTransactionBody op) {
 		return ((op.getExpiry() > 0) ? AMOUNT_REPR_BYTES : 0) +
-				((op.getAutoRenewPeriod() > 0) ? AMOUNT_REPR_BYTES : 0) +
+				((op.getAutoRenewPeriod().getSeconds() > 0) ? AMOUNT_REPR_BYTES : 0) +
 				(op.hasTreasury() ? BASIC_ENTITY_ID_SIZE : 0) +
 				(op.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
 	}
