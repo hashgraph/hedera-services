@@ -887,7 +887,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "15 17,4 * * *"
+          cron: "15 4 * * *"
           filters:
             branches:
               only:
@@ -904,35 +904,14 @@ workflows:
                 at: /
           workflow-name: "nightly-basic-suiterunner-regression"
 
-  nightly-performance-regression:
-    triggers:
-      - schedule:
-          cron: "30 17,4 * * *"
-          filters:
-            branches:
-              only:
-                - Disable_4N_Perf_JRS_Regression_master
-    jobs:
-      - build-platform-and-services
-      - run-performance-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "nightly-performance-regression"
-
   weekly-crypto-transfer-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "32 20 * * *"
+          cron: "0 5 * * 6,0"
           filters:
             branches:
               only:
-#                - master
-                - 00753-D-extend-weekly-perf-to-4hrs
+                - master
     jobs:
       - build-platform-and-services
       - weekly-run-crypto-transfer-start-from-saved-state-regression:
@@ -948,7 +927,7 @@ workflows:
   weekly-HCS-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "0 8 * * *"
+          cron: "0 10 * * 6,0"
           filters:
             branches:
               only:
@@ -969,7 +948,7 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "45 17,4 * * *"
+          cron: "15 5 * * *"
           filters:
             branches:
               only:
@@ -990,7 +969,7 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "30 6,18 * * *"
+              cron: "30 5 * * *"
               filters:
                 branches:
                   only:
@@ -1033,7 +1012,7 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "30 18,5 * * *"
+          cron: "0 6 * * *"
           filters:
             branches:
               only:
@@ -1053,7 +1032,7 @@ workflows:
   nightly-state-recover-regression:
     triggers:
       - schedule:
-          cron: "40 18,5 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
@@ -1073,7 +1052,7 @@ workflows:
   nightly-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "30 5,20 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
@@ -1090,30 +1069,10 @@ workflows:
                 at: /
           workflow-name: "nightly-start-from-saved-state-regression"
 
-  custom-migration:
-    triggers:
-      - schedule:
-          cron: "0 4 * * *"
-          filters:
-            branches:
-              only:
-                - X-disable-master
-    jobs:
-      - fast-build-artifact:
-          context: Slack
-      - start-singlejob-testnet:
-          context: Slack
-          requires:
-            - fast-build-artifact
-          workflow-name: "custom-migration"
-      - run-custom-migration:
-          context: Slack
-          requires:
-            - start-singlejob-testnet
   nightly-simulate-network-outage:
     triggers:
         - schedule:
-            cron: "0 0,12 * * *"
+            cron: "0 6 * * *"
             filters:
               branches:
                 only:
@@ -1174,6 +1133,7 @@ workflows:
           pre-steps:
             - attach_workspace:
                 at: /
+
   feature-update-regression:
     triggers:
         - schedule:
@@ -1343,7 +1303,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00753-D-extend-weekly-perf-to-4hrs
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -1865,7 +1824,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 00753-D-increasee-weekly-perf-to-4-hrs;
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2354,23 +2313,3 @@ jobs:
           name: Show logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/show_logs.sh
-
-  run-custom-migration:
-    parameters:
-      custom-migration-params:
-        type: string
-        description: parameters for customMigration script
-        default: '/repo/.circleci/scripts/resources/customMigrationConfig.json'
-    executor:
-      name: ci-test-executor
-      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
-      use_existing_network: "1"
-    parallelism: 1
-    steps:
-      - attach_workspace:
-          at: /
-      - run:
-          name: Run Custom Migration Script
-          command: |
-            /repo/.circleci/scripts/run-custom-migration-script.sh
