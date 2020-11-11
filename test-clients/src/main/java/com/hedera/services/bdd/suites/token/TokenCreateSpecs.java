@@ -32,6 +32,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -60,8 +62,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-						wtf(),
+		return List.of(new HapiApiSpec[] {
 						creationValidatesSymbol(),
 						treasuryHasCorrectBalance(),
 						creationRequiresAppropriateSigs(),
@@ -78,14 +79,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationWithoutKYCSetsCorrectStatus(),
 						creationValidatesExpiry(),
 						creationValidatesFreezeDefaultWithNoFreezeKey()
+				}
 		);
-	}
-
-	public HapiApiSpec wtf() {
-		return defaultHapiSpec("WhatAreTheApiPermissions??")
-				.given( ).when( ).then(
-						getFileContents(API_PERMISSIONS).logged()
-				);
 	}
 
 	public HapiApiSpec autoRenewValidationWorks() {
@@ -325,6 +320,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec creationValidatesSymbol() {
 		String firstToken = "FIRSTMOVER" + TxnUtils.randomUppercase(5);
+		String reallyLongSymbol = IntStream.range(0, 101).mapToObj(ignore -> "A").collect(Collectors.joining());
 
 		return defaultHapiSpec("CreationValidatesSymbol")
 				.given(
@@ -345,7 +341,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasPrecheck(INVALID_TOKEN_SYMBOL),
 						tokenCreate("tooLong")
 								.payingWith("payer")
-								.symbol("ABCDEZABCDEZABCDEZABCDEZABCDEZABCDEZ")
+								.symbol(reallyLongSymbol)
 								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG),
 						tokenCreate("firstMoverAdvantage")
 								.symbol(firstToken)

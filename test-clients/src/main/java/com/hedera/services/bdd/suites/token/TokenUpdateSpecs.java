@@ -57,7 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
 	private static final int MAX_NAME_LENGTH = 100;
-	private static final int MAX_SYMBOL_LENGTH = 32;
+	private static final int MAX_SYMBOL_LENGTH = 100;
 	private static final long A_HUNDRED_SECONDS = 100;
 
 	private static String TOKEN_TREASURY = "treasury";
