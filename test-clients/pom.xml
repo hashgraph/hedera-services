@@ -72,6 +72,16 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
+            <id>copy</id>
+            <phase>install</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <stripVersion>true</stripVersion>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-dependencies</id>
             <phase>package</phase>
             <goals>
