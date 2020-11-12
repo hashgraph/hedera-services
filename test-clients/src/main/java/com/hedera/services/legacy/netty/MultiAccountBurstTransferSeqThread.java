@@ -66,7 +66,7 @@ import org.apache.logging.log4j.Logger;
 import org.spongycastle.util.Arrays;
 
 /**
- * Does this 1) Creates 2 accounts and performs N transfers at X TPS 2) Tallies the last transfer &
+ * Does this 1) Creates 2 accounts and performs N transfers at X TPS 2) Tallies the last transfer and
  * gets Receipts 3) Repeats Step 1-2 for Z iterations
  *
  * @author oc
