@@ -18,10 +18,68 @@
   </organization>
 
   <scm>
+    <url>https://github.com/hashgraph/hedera-services</url>
     <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
     <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
+
+  <developers>
+    <developer>
+      <name>Anirudh Ghanta</name>
+      <email>Anirudh.Ghanta@hedera.com</email>
+      <organization>Hedera Hashgraph, LLC</organization>
+      <organizationUrl>https://hedera.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Cesar Vazquez</name>
+      <email>cesarvazquez@swirlds.com</email>
+      <organization>Swirlds, Inc</organization>
+      <organizationUrl>https://www.swirlds.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Jeffrey Tang</name>
+      <email>jeffrey@swirlds.com</email>
+      <organization>Swirlds, Inc</organization>
+      <organizationUrl>https://www.swirlds.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Leo Jiang</name>
+      <email>Leo.Jiang@hedera.com</email>
+      <organization>Hedera Hashgraph, LLC</organization>
+      <organizationUrl>https://hedera.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Michael Tinker</name>
+      <email>michael.tinker@hedera.com</email>
+      <organization>Hedera Hashgraph, LLC</organization>
+      <organizationUrl>https://hedera.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Neeharika Sompalli</name>
+      <email>Neeharika.Sompalli@hedera.com</email>
+      <organization>Hedera Hashgraph, LLC</organization>
+      <organizationUrl>https://hedera.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Nosh Mody</name>
+      <email>nosh@swirlds.com</email>
+      <organization>Swirlds, Inc.</organization>
+      <organizationUrl>https://www.swirlds.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Qian Qu</name>
+      <email>qianqu@swirlds.com</email>
+      <organization>Swirlds, Inc.</organization>
+      <organizationUrl>https://www.swirlds.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Quan Nguyen</name>
+      <email>quannguyen@swirlds.com</email>
+      <organization>Swirlds, Inc.</organization>
+      <organizationUrl>https://www.swirlds.com</organizationUrl>
+    </developer>
+  </developers>
 
   <ciManagement>
     <system>CircleCI</system>
@@ -384,6 +442,22 @@ ${git.signoff}
       <id>release</id>
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>deploy</phase>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
