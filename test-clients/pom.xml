@@ -69,6 +69,18 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -83,7 +95,7 @@
           </execution>
           <execution>
             <id>copy-dependencies</id>
-            <phase>package</phase>
+            <phase>install</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -122,9 +134,6 @@
                   <mainClass>com.hedera.services.bdd.suites.utils.sysfiles.SysFilesUpdate</mainClass>
                 </manifest>
               </archive>
-<!--              <descriptorRefs>-->
-<!--                <descriptorRef>jar-with-dependencies</descriptorRef>-->
-<!--              </descriptorRefs>-->
               <descriptors>
                 <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
@@ -143,11 +152,6 @@
                   <mainClass>com.hedera.services.bdd.suites.utils.validation.ValidationScenarios</mainClass>
                 </manifest>
               </archive>
-				<!--
-              <descriptorRefs>
-                <descriptorRef>jar-with-dependencies</descriptorRef>
-              </descriptorRefs>
-              -->
               <descriptors>
                 <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
@@ -155,7 +159,6 @@
           </execution>
           <execution>
             <id>suite-runner-jar</id>
-            <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
@@ -169,18 +172,6 @@
               </archive>
               <descriptors>
                 <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <appendAssemblyId>false</appendAssemblyId>
-              <descriptors>
-                <descriptor>src/main/resource/zip.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
