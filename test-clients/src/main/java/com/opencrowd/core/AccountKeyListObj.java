@@ -26,6 +26,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import java.io.Serializable;
 import java.util.List;
 
+/**
+ * @author OC
+ */
 public class AccountKeyListObj implements Serializable {
 	private static final long serialVersionUID = -4429672793456228453L;
 

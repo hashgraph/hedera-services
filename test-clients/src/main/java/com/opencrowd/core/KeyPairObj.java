@@ -39,12 +39,10 @@ import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
-
+/**
+ * @author OC
+ */
 public class KeyPairObj implements Serializable {
-
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = 9146375644904969927L;
 	private String publicKey;
 
