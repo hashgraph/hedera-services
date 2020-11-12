@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.9.0-rc.3-SNAPSHOT</version>
+    <version>0.9.0-rc.2-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -90,6 +90,14 @@
           </execution>
         </executions>
         <configuration>
+          <artifactItems>
+            <artifactItem>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>${project.artifactId}</artifactId>
+              <version>${project.version}</version>
+              <type>${project.packaging}</type>
+            </artifactItem>
+          </artifactItems>
           <outputDirectory>${project.build.directory}/extLib</outputDirectory>
           <overWriteReleases>false</overWriteReleases>
           <overWriteSnapshots>false</overWriteSnapshots>
@@ -229,12 +237,12 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hedera-protobuf-java-api</artifactId>
-      <version>0.9.0-rc.3-SNAPSHOT</version>
+      <version>0.9.0-rc.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.9.0-rc.3-SNAPSHOT</version>
+      <version>0.9.0-rc.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
