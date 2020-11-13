@@ -270,7 +270,7 @@ class StateViewTest {
 		var info = subject.infoForToken(tokenId).get();
 
 		// then:
-		assertTrue(info.getIsDeleted());
+		assertTrue(info.getDeleted());
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
