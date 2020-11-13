@@ -57,7 +57,7 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
 		}
 		var lifetime = op.hasAutoRenewAccount()
 				? op.getAutoRenewPeriod().getSeconds()
-				: ESTIMATOR_UTILS.relativeLifetime(this.op, op.getExpiry());
+				: ESTIMATOR_UTILS.relativeLifetime(this.op, op.getExpiry().getSeconds());
 
 		usageEstimator.addBpt(baseSize);
 		usageEstimator.addRbs(baseSize * lifetime);

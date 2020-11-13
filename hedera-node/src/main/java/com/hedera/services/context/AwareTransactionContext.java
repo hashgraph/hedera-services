@@ -228,7 +228,7 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public void setCreated(TokenID id) {
-		receiptConfig = receipt -> receipt.setTokenId(id);
+		receiptConfig = receipt -> receipt.setTokenID(id);
 	}
 
 	@Override

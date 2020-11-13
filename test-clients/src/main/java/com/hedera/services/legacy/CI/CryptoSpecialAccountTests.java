@@ -65,8 +65,6 @@ import org.junit.Assert;
  * 5. Special Account update Negative when payer account is NOT Genesis Account
  * 6. Special Account update Negative when payer account
  * is it self (Special Account)
- *
- * @
  */
 public class CryptoSpecialAccountTests extends BaseClient {
 

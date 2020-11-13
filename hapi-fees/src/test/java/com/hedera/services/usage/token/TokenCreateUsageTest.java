@@ -134,7 +134,7 @@ public class TokenCreateUsageTest {
 
 	private void givenExpiryBasedOp() {
 		op = TokenCreateTransactionBody.newBuilder()
-				.setExpiry(expiry)
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setSymbol(symbol)
 				.setName(name)
 				.setKycKey(kycKey)

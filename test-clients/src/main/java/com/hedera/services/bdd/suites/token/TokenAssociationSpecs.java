@@ -75,11 +75,11 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						treasuryAssociationIsAutomatic(),
-//						associateHasExpectedSemantics(),
-//						dissociateHasExpectedSemantics(),
-//						accountInfoQueriesAsExpected(),
-//						contractInfoQueriesAsExpected(),
+						treasuryAssociationIsAutomatic(),
+						dissociateHasExpectedSemantics(),
+						accountInfoQueriesAsExpected(),
+						contractInfoQueriesAsExpected(),
+						associateHasExpectedSemantics(),
 						associatedContractsMustHaveAdminKeys(),
 				}
 		);

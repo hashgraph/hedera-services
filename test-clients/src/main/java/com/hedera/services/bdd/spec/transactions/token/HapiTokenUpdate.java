@@ -31,6 +31,7 @@ import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -69,6 +70,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
+	private boolean useImproperEmptyKey = false;
 	private boolean useEmptyAdminKeyList = false;
 
 	@Override
@@ -145,6 +147,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return this;
 	}
 
+	public HapiTokenUpdate improperlyEmptyingAdminKey() {
+		useImproperEmptyKey = true;
+		return this;
+	}
+
 	public HapiTokenUpdate properlyEmptyingAdminKey() {
 		useEmptyAdminKeyList = true;
 		return this;
@@ -176,7 +183,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				if (info.hasWipeKey()) {
 					estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
 				}
-				estimate.givenCurrentExpiry(info.getExpiry())
+				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
 						.givenCurrentName(info.getName())
 						.givenCurrentSymbol(info.getSymbol());
 				if (info.hasAutoRenewAccount()) {
@@ -222,7 +229,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							b.setToken(id);
 							newSymbol.ifPresent(b::setSymbol);
 							newName.ifPresent(b::setName);
-							if (useEmptyAdminKeyList) {
+							if (useImproperEmptyKey) {
+								b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+							} else if (useEmptyAdminKeyList) {
 								b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
 							} else {
 								newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
@@ -236,7 +245,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 								var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(autoRenewId);
 							}
-							expiry.ifPresent(b::setExpiry);
+							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
 							autoRenewPeriod.ifPresent(secs ->
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build()));
 						});

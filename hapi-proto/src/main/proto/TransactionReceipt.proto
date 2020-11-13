@@ -99,5 +99,5 @@ message TransactionReceipt {
     uint64 topicRunningHashVersion = 9;
 
     // In the receipt of a CreateToken, the id of the newly created token
-    TokenID tokenId = 10;
+    TokenID tokenID = 10;
 }

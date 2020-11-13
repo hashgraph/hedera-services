@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -739,7 +740,7 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// given:
 		var op = updateWith(NO_KEYS, true, true, false);
-		op = op.toBuilder().setExpiry(expiry - 1).build();
+		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -768,7 +769,7 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// given:
 		var op = updateWith(NO_KEYS, false, false, false);
-		op = op.toBuilder().setExpiry(expiry + 1_234).build();
+		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -970,7 +971,7 @@ class HederaTokenStoreTest {
 		givenUpdateTarget(ALL_KEYS);
 		// and:
 		var op = updateWith(ALL_KEYS, true, true, true);
-		op = op.toBuilder().setExpiry(0).build();
+		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(0)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -1017,7 +1018,7 @@ class HederaTokenStoreTest {
 		givenUpdateTarget(ALL_KEYS);
 		// and:
 		var op = updateWith(ALL_KEYS, true, true, true);
-		op = op.toBuilder().setExpiry(newExpiry).build();
+		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(newExpiry)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -1524,7 +1525,7 @@ class HederaTokenStoreTest {
 
 		// given:
 		var req = fullyValidAttempt()
-				.setExpiry(0)
+				.setExpiry(Timestamp.newBuilder().setSeconds(0))
 				.setAutoRenewAccount(autoRenewAccount)
 				.setAutoRenewPeriod(enduring(autoRenewPeriod))
 				.build();
@@ -1665,7 +1666,7 @@ class HederaTokenStoreTest {
 
 	TokenCreateTransactionBody.Builder fullyValidAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
-				.setExpiry(expiry)
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setAdminKey(adminKey)
 				.setKycKey(kycKey)
 				.setFreezeKey(freezeKey)

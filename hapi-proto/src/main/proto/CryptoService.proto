@@ -46,7 +46,7 @@ service CryptoService {
     rpc deleteLiveHash (Transaction) returns (TransactionResponse);
     // (NOT CURRENTLY SUPPORTED) Retrieves a livehash for an account
     rpc getLiveHash (Query) returns (Response);
-    // Retrieves the 25-hour records stored for an account
+    // Returns all transactions in the last 180s of consensus time for which the given account was the effective payer <b>and</b> network property <tt>ledger.keepRecordsInState</tt> was <tt>true</tt>.
     rpc getAccountRecords (Query) returns (Response);
     // Retrieves the balance of an account
     rpc cryptoGetBalance (Query) returns (Response);
