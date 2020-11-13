@@ -177,7 +177,7 @@ public class TxnFactory {
 			builder.setDecimals(setup.defaultTokenDecimals());
 			builder.setInitialSupply(setup.defaultTokenInitialSupply());
 			builder.setSymbol(TxnUtils.randomUppercase(8));
-			builder.setExpiry(defaultExpiry().getSeconds());
+			builder.setExpiry(defaultExpiry());
 		};
 	}
 

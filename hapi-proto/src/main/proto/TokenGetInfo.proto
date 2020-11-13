@@ -29,6 +29,7 @@ import "BasicTypes.proto";
 import "QueryHeader.proto";
 import "ResponseHeader.proto";
 import "Timestamp.proto";
+import "Duration.proto";
 
 /* Gets information about Token instance */
 message TokenGetInfoQuery {
@@ -53,7 +54,7 @@ message TokenInfo {
     TokenKycStatus defaultKycStatus = 13; // The default KYC status (KycNotApplicable or Revoked) of Hedera accounts relative to this token. KycNotApplicable is returned if KYC key is not set, otherwise Revoked
     bool isDeleted = 14; // Specifies whether the token was deleted or not
     AccountID autoRenewAccount = 15; // An account which will be automatically charged to renew the token's expiration, at autoRenewPeriod interval
-    uint64 autoRenewPeriod = 16; // The interval at which the auto-renew account will be charged to extend the token's expiry
+    Duration autoRenewPeriod = 16; // The interval at which the auto-renew account will be charged to extend the token's expiry
     Timestamp expiry = 17; // The epoch second at which the token will expire
 }
 

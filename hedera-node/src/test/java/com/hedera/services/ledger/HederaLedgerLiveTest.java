@@ -39,6 +39,7 @@ import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -273,7 +274,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				.setName(tokenName)
 				.setInitialSupply(0)
 				.setTreasury(account)
-				.setExpiry(2 * thisSecond)
+				.setExpiry(Timestamp.newBuilder().setSeconds(2 * thisSecond))
 				.setDecimals(0)
 				.setFreezeDefault(false)
 				.build();

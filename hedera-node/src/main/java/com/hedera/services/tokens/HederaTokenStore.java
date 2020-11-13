@@ -454,7 +454,7 @@ public class HederaTokenStore implements TokenStore {
 	private long expiryOf(TokenCreateTransactionBody request, long now) {
 		return request.hasAutoRenewAccount()
 				? now + request.getAutoRenewPeriod().getSeconds()
-				: request.getExpiry();
+				: request.getExpiry().getSeconds();
 	}
 
 	@Override
@@ -516,7 +516,7 @@ public class HederaTokenStore implements TokenStore {
 
 		var appliedValidity = new AtomicReference<>(OK);
 		apply(tId, token -> {
-			var candidateExpiry = changes.getExpiry();
+			var candidateExpiry = changes.getExpiry().getSeconds();
 			if (candidateExpiry != 0 && candidateExpiry < token.expiry()) {
 				appliedValidity.set(INVALID_EXPIRATION_TIME);
 			}
@@ -588,8 +588,9 @@ public class HederaTokenStore implements TokenStore {
 				token.setTreasury(treasuryId);
 				addKnownTreasury(changes.getTreasury(), tId);
 			}
-			if (changes.getExpiry() != 0) {
-				token.setExpiry(changes.getExpiry());
+			var expiry = changes.getExpiry().getSeconds();
+			if (expiry != 0) {
+				token.setExpiry(expiry);
 			}
 		});
 		return appliedValidity.get();
