@@ -48,12 +48,6 @@ public class FreezeUpdateOnly extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				postiveTests()
-		);
-	}
-
-	private List<HapiApiSpec> postiveTests() {
 		return Arrays.asList(
 				FreezeUpdateOnly()
 		);

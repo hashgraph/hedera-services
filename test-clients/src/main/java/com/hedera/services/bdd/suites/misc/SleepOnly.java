@@ -16,6 +16,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 public class SleepOnly extends HapiApiSuite {
 	private static final Logger log =
 			LogManager.getLogger(com.hedera.services.bdd.suites.misc.SleepOnly.class);
+	private int sleepMin = 1;
 
 	public static void main(String... args) {
 		new SleepOnly().runSuiteSync();
@@ -28,21 +29,12 @@ public class SleepOnly extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				postiveTests()
-		);
-	}
-
-	private List<HapiApiSpec> postiveTests() {
 		return Arrays.asList(
 				SleepOnly()
 		);
 	}
 
-	private int sleepMin = 1;
-
 	private HapiApiSpec SleepOnly() {
-
 		return defaultHapiSpec("SleepOnly")
 				.given(
 						withOpContext((spec, opLog) -> {
