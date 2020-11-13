@@ -310,7 +310,7 @@ public class ProtectedEntityTests extends BaseClient {
    * Tests system delete and undelete of files and contracts according the following requirements:
    * A/c 0.0.59 - System Deletes (HAPI Transaction)
    * A/c 0.0.60 - System UnDeletes (HAPI Transaction)
-   * System Deleted & Undelete - For accounts 59 & 60, no wacl needed; accounts 2 and 50 are authorized, but need wacl to sign
+   * System Deleted and Undelete - For accounts 59 and 60, no wacl needed; accounts 2 and 50 are authorized, but need wacl to sign
    */
   public void systemDeleteUndeleteTests() throws Throwable {
     AccountID nodeID = defaultListeningNodeAccountID;
@@ -483,12 +483,10 @@ public class ProtectedEntityTests extends BaseClient {
   /**
    * Deletes a file.
    *
-   * @param scenario test scenario string
    * @param fid the ID of the file to be updated
    * @param payerID the fee payer ID
    * @param nodeID the node ID
    * @param waclKeyList the file creation WACL public key list
-   * @return FileInfo object if success or null if failed
    */
   protected void deleteFile(FileID fid, AccountID payerID,
       AccountID nodeID, List<Key> waclKeyList, ResponseCodeEnum expectedPrecheckCode, ResponseCodeEnum expectedPostcheckCode) throws Throwable {
@@ -1261,7 +1259,7 @@ public class ProtectedEntityTests extends BaseClient {
   /**
    * Tests address file updates as follows:
     A/c 0.0.55 - Update Address Book files (0.0.101/102)
-    2 x Address book - Accounts 55 & 50: no signing by existing file wacl
+    2 x Address book - Accounts 55 and 50: no signing by existing file wacl
    */
   public void updateAddressFileTests() throws Throwable {
     AccountID nodeID = defaultListeningNodeAccountID;
@@ -1345,7 +1343,7 @@ public class ProtectedEntityTests extends BaseClient {
   /**
    * Tests Exchange Rate file updates as follows:
     A/c 0.0.57 - Update Exchange Rate (0.0.112) - This transaction should be FREE
-    Exchange Rate - Account 57 & 50: no file wacl required
+    Exchange Rate - Account 57 and 50: no file wacl required
    */
   public void updateExchangeRateFileTests() throws Throwable {
     AccountID nodeID = defaultListeningNodeAccountID;
@@ -1576,8 +1574,7 @@ public class ProtectedEntityTests extends BaseClient {
   
   /**
    * Generates a valid exchange rate file with small changes to the current server exchange rate.
-   * @return the byte string of the generated exchange rate file.
-   * @throws Throwable 
+   * @throws Throwable
    */
   public void smallChangeOnExchangeTest() throws Throwable {
     ExchangeRateSet serverRates = getExchangeRateFromServer();
@@ -1597,35 +1594,6 @@ public class ProtectedEntityTests extends BaseClient {
     Assert.assertEquals(c1n <= (c1 + c1*B/100), c1Change);
   }
 
-  /**
-   * Is the new exchange rate valid? The exchange rate of newC tiny cents per newH tinybars is valid
-   * if it increases by no more than bound percent, nor decreases by more than the inverse amount.
-   *
-   * It is defined to be valid iff (for infinite-precision real numbers):
-   * <pre>
-   *    oldC/oldH * (1 + bound/100)
-   * >= newC/newH
-   * >= oldC/oldH * 1/(1 + bound/100)
-   * </pre>
-   *
-   * Equivalently, it is valid iff both of the following are true:
-   * <pre>
-   * oldC * newH * (100 + bound) - newC * oldH * 100 >= 0
-   * oldH * newC * (100 + bound) - newH * oldC * 100 >= 0
-   * </pre>
-   *
-   * The expression above is for infinite-precision real numbers. This method actually performs the
-   * computations in a way that completely avoids overflow and roundoff errors.
-   *
-   * All parameters much be positive. There are 100 million tinybars in an hbar, and 100 million
-   * tinycents in a USD cent.
-   *
-   * @param bound max increase is by a factor of (1+bound/100), decrease by 1 over that
-   * @param oldC the old exchange rate is for this many tinycents
-   * @param oldH the old exchange rate is for this many tinybars
-   * @param newC the new exchange rate is for this many tinycents
-   * @param newH the new exchange rate is for this many tinybars
-   */
   public boolean isSmallChange(long bound, long oldC, long oldH, long newC, long newH) {
     BigInteger k100 = BigInteger.valueOf(100);
     BigInteger b100 = BigInteger.valueOf(bound).add(k100);
@@ -1684,7 +1652,7 @@ public class ProtectedEntityTests extends BaseClient {
   /**
    * Generates a modified version of the address book file by removing one of the elements of the source address book file.
    * 
-   * @param sourceNodeDetails the source address book file
+   * @param sourceAddressBook the source address book file
    * @param isRandom if true, remove a random element from the source address book file, otherwise remove the last element
    * 
    * @return modified address book file

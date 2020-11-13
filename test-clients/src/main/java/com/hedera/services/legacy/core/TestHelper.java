@@ -90,10 +90,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Stream;
 
-/**
- * @author Akshay
- * @Date : 8/14/2018
- */
 public class TestHelper {
 
   private static final org.apache.log4j.Logger log = LogManager.getLogger(TestHelper.class);

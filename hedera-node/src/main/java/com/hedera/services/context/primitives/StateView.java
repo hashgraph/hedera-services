@@ -225,13 +225,13 @@ public class StateView {
 			var token = tokenStore.get(id);
 			var info = TokenInfo.newBuilder()
 					.setTokenId(id)
-					.setIsDeleted(token.isDeleted())
+					.setDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
 					.setName(token.name())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setTotalSupply(token.totalSupply())
 					.setDecimals(token.decimals())
-					.setExpiry(token.expiry());
+					.setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
 
 			var adminCandidate = token.adminKey();
 			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
@@ -255,7 +255,7 @@ public class StateView {
 
 			if (token.hasAutoRenewAccount()) {
 				info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());
-				info.setAutoRenewPeriod(token.autoRenewPeriod());
+				info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
 			}
 
 			return Optional.of(info.build());

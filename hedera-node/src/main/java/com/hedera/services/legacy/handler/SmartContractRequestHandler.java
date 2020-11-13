@@ -789,8 +789,6 @@ public class SmartContractRequestHandler {
 	 * @param consensusTime
 	 * 		Platform consensus time
 	 * @return Details of contract deletion result
-	 * @throws Exception
-	 * 		Passes through lower-level exceptions; does not generate any.
 	 */
 	public TransactionRecord deleteContract(TransactionBody transaction, Instant consensusTime) {
 		TransactionReceipt transactionReceipt;

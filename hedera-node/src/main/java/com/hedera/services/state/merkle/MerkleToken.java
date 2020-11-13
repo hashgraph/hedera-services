@@ -40,7 +40,6 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
-
 	static final int MAX_CONCEIVABLE_SYMBOL_NAME_LENGTH = 256;
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;

@@ -32,7 +32,6 @@ import org.junit.Test;
 
 /**
  * @author Akshay
- * @Date : 7/27/2018
  */
 public class TransactionIDCacheTest {
 

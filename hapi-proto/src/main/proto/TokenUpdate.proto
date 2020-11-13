@@ -26,21 +26,29 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 import "BasicTypes.proto";
+import "Duration.proto";
+import "Timestamp.proto";
 
-/* Updates an already created Token.
- If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token created without an adminKey), only the expiry may be updated. Setting any other field in that case will cause the transaction status to resolve to TOKEN_IS_IMMUTABLE. A new admin key must sign the transaction. The key associated to a new treasury account must sign the transaction.
- */
+/* At consensus, updates an already created token to the given values.
+
+If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token without an admin key), only the expiry may be updated. Setting any other field in that case will cause the transaction status to resolve to TOKEN_IS_IMMUTABLE.
+
+--- Signing Requirements ---
+1. Whether or not a token has an admin key, its expiry can be extended with only the transaction payer's signature.
+2. Updating any other field of a mutable token requires the admin key's signature.
+3. If a new admin key is set, this new key must sign <b>unless</b> it is exactly an empty <tt>KeyList</tt>. This special sentinel key removes the existing admin key and causes the token to become immutable. (Other <tt>Key</tt> structures without a constituent <tt>Ed25519</tt> key will be rejected with <tt>INVALID_ADMIN_KEY</tt>.)
+4. If a new treasury is set, the new treasury account's key must sign the transaction. */
 message TokenUpdateTransactionBody {
     TokenID token = 1; // The Token to be updated
     string symbol = 2; // The new Symbol of the Token. Must be UTF-8 capitalized alphabetical string identifying the token.
     string name = 3; // The new Name of the Token. Must be a string of ASCII characters.
     AccountID treasury = 4; // The new Treasury account of the Token. If the provided treasury account is not existing or deleted, the response will be INVALID_TREASURY_ACCOUNT_FOR_TOKEN. If successful, the Token balance held in the previous Treasury Account is transferred to the new one.
-    Key adminKey = 5; // The new Admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE.
+    Key adminKey = 5; // The new admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE.
     Key kycKey = 6; // The new KYC key of the Token. If Token does not have currently a KYC key, transaction will resolve to TOKEN_HAS_NO_KYC_KEY.
     Key freezeKey = 7; // The new Freeze key of the Token. If the Token does not have currently a Freeze key, transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY.
     Key wipeKey = 8; // The new Wipe key of the Token. If the Token does not have currently a Wipe key, transaction will resolve to TOKEN_HAS_NO_WIPE_KEY.
     Key supplyKey = 9; // The new Supply key of the Token. If the Token does not have currently a Supply key, transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.
     AccountID autoRenewAccount = 10; // The new account which will be automatically charged to renew the token's expiration, at autoRenewPeriod interval.
-    uint64 autoRenewPeriod = 11; // The new interval at which the auto-renew account will be charged to extend the token's expiry.
-    uint64 expiry = 12; // The new expiry time of the token. Expiry can be updated even if admin key is not set. If the provided expiry is earlier than the current token expiry, transaction wil resolve to INVALID_EXPIRATION_TIME
+    Duration autoRenewPeriod = 11; // The new interval at which the auto-renew account will be charged to extend the token's expiry.
+    Timestamp expiry = 12; // The new expiry time of the token. Expiry can be updated even if admin key is not set. If the provided expiry is earlier than the current token expiry, transaction wil resolve to INVALID_EXPIRATION_TIME
 }
