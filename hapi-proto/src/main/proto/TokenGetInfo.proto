@@ -28,6 +28,7 @@ option java_multiple_files = true;
 import "BasicTypes.proto";
 import "QueryHeader.proto";
 import "ResponseHeader.proto";
+import "Timestamp.proto";
 
 /* Gets information about Token instance */
 message TokenGetInfoQuery {
@@ -53,7 +54,7 @@ message TokenInfo {
     bool isDeleted = 14; // Specifies whether the token was deleted or not
     AccountID autoRenewAccount = 15; // An account which will be automatically charged to renew the token's expiration, at autoRenewPeriod interval
     uint64 autoRenewPeriod = 16; // The interval at which the auto-renew account will be charged to extend the token's expiry
-    uint64 expiry = 17; // The epoch second at which the token will expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod
+    Timestamp expiry = 17; // The epoch second at which the token will expire
 }
 
 /* Response when the client sends the node TokenGetInfoQuery */
