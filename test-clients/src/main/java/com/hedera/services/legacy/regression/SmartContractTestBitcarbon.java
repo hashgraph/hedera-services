@@ -680,7 +680,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
     // Marker message for regression report
     log.info("-------------- RESULTS OF SmartContractTestBitCarbon ----------------------");
-    log.info("SmartContractTestBitCarbon Regression summary: This run is successful.");
+    log.info("SmartContractTestBitCarbon Regression summary: This run is successful. status=PASSED");
   }
 
   private void setUp() {
