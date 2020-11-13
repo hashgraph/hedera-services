@@ -64,7 +64,6 @@ import org.junit.Assert;
  * get account records.
  *
  * @author Akshay
- * @Date : 8/13/2018
  */
 
 public class MultipleCryptoTransfers {

@@ -45,7 +45,6 @@ public class CustomProperties {
    * Read custom properties from a file located in the project classpath root folder.
    *
    * @param file the properties file to be read
-   * @param isResource the properties file can be loaded as a resource, i.e. on classpath
    */
   public CustomProperties(String file) {
     this(file, true);

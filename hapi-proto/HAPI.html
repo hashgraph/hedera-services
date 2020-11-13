@@ -4462,7 +4462,7 @@ If unspecified, no change. </p></td>
 
       
         <h3 id="proto.ContractUpdateTransactionBody">ContractUpdateTransactionBody</h3>
-        <p>At consensus, updates the fields of a smart contract to the given values.</p><p>If no value is given for a field, that field is left unchanged on the contract. For an immutable smart contract (that is, a contract created without an adminKey), only the expirationTime may be updated; setting any other field in this case will cause the transaction status to resolve to MODIFYING_IMMUTABLE_CONTRACT.</p><p>--- Signing Requirements ---</p><p>1. Whether or not a contract has an adminKey, its expirationTime can be extended with only the transaction payer's signature.</p><p>2. Updating any other field of a mutable contract requires the adminKey's signature.</p><p>3. If the update transaction includes a new adminKey, this new key must also sign <b>unless</b> it is exactly an empty <tt>KeyList</tt>. This special sentinel key removes the existing admin key and causes the contract to become immutable.</p>
+        <p>At consensus, updates the fields of a smart contract to the given values.</p><p>If no value is given for a field, that field is left unchanged on the contract. For an immutable smart contract (that is, a contract created without an adminKey), only the expirationTime may be updated; setting any other field in this case will cause the transaction status to resolve to MODIFYING_IMMUTABLE_CONTRACT.</p><p>--- Signing Requirements ---</p><p>1. Whether or not a contract has an admin Key, its expiry can be extended with only the transaction payer's signature.</p><p>2. Updating any other field of a mutable contract requires the admin key's signature.</p><p>3. If the update transaction includes a new admin key, this new key must also sign <b>unless</b> it is exactly an empty <tt>KeyList</tt>. This special sentinel key removes the existing admin key and causes the contract to become immutable. (Other <tt>Key</tt> structures without a constituent <tt>Ed25519</tt> key will be rejected with <tt>INVALID_ADMIN_KEY</tt>.)</p>
 
         
           <table class="field-table">
@@ -5581,7 +5581,7 @@ If unspecified, no change. </p></td>
                 <td>getAccountRecords</td>
                 <td><a href="#proto.Query">Query</a></td>
                 <td><a href="#proto.Response">Response</a></td>
-                <td><p>Retrieves the 25-hour records stored for an account</p></td>
+                <td><p>Returns all transactions in the last 180s of consensus time for which the given account was the effective payer &lt;b&gt;and&lt;/b&gt; network property &lt;tt&gt;ledger.keepRecordsInState&lt;/tt&gt; was &lt;tt&gt;true&lt;/tt&gt;.</p></td>
               </tr>
             
               <tr>
@@ -8439,7 +8439,7 @@ by HAPI.</p></td>
                 <td>getTxRecordByContractID</td>
                 <td><a href="#proto.Query">Query</a></td>
                 <td><a href="#proto.Response">Response</a></td>
-                <td><p>Retrieves the 25-hour records stored for a contract</p></td>
+                <td><p>Always returns an empty record list, as contract accounts are never effective payers for transactions</p></td>
               </tr>
             
               <tr>
@@ -8466,6 +8466,27 @@ by HAPI.</p></td>
           </tbody>
         </table>
 
+        
+          
+          
+          <h4>Methods with deprecated option</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Option</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              <tr>
+                <td>getTxRecordByContractID</td>
+                <td><p>true</p></td>
+              </tr>
+            
+            </tbody>
+          </table>
+          
         
     
       
@@ -9498,7 +9519,7 @@ by HAPI.</p></td>
 
       
         <h3 id="proto.TokenUpdateTransactionBody">TokenUpdateTransactionBody</h3>
-        <p>At consensus, updates an already created token to the given values.</p><p>If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token without an admin key), only the expiry may be updated. Setting any other field in that case will cause the transaction status to resolve to TOKEN_IS_IMMUTABLE.</p><p>--- Signing Requirements ---</p><p>1. Whether or not a token has an admin key, its expiry can be extended with only the transaction payer's signature.</p><p>2. Updating any other field of a mutable token requires the admin key's signature.</p><p>3. If a new admin key is set, this new key must sign <b>unless</b> it is exactly an empty <tt>KeyList</tt>. This special sentinel key removes the existing admin key and causes the token to become immutable.</p><p>4. If a new treasury is set, the new treasury account's key must sign the transaction.</p>
+        <p>At consensus, updates an already created token to the given values.</p><p>If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token without an admin key), only the expiry may be updated. Setting any other field in that case will cause the transaction status to resolve to TOKEN_IS_IMMUTABLE.</p><p>--- Signing Requirements ---</p><p>1. Whether or not a token has an admin key, its expiry can be extended with only the transaction payer's signature.</p><p>2. Updating any other field of a mutable token requires the admin key's signature.</p><p>3. If a new admin key is set, this new key must sign <b>unless</b> it is exactly an empty <tt>KeyList</tt>. This special sentinel key removes the existing admin key and causes the token to become immutable. (Other <tt>Key</tt> structures without a constituent <tt>Ed25519</tt> key will be rejected with <tt>INVALID_ADMIN_KEY</tt>.)</p><p>4. If a new treasury is set, the new treasury account's key must sign the transaction.</p>
 
         
           <table class="field-table">
@@ -9539,7 +9560,7 @@ by HAPI.</p></td>
                   <td>adminKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
-                  <td><p>The new Admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE. </p></td>
+                  <td><p>The new admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE. </p></td>
                 </tr>
               
                 <tr>
