@@ -57,7 +57,7 @@ public class ContractStorageSpec extends HapiApiSuite {
 	private static final String PATH_TO_CONTRACT_STORAGE_BYTECODE = "src/main/resource/testfiles/ContractStorage.bin";
 
 	/* Default the size of the array to 4KB */
-	private static final int SIZE=16;
+	private static final int SIZE=4;
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -102,7 +102,7 @@ public class ContractStorageSpec extends HapiApiSuite {
 				)
 				.then(
 						withOpContext((spec, opLog) -> {
-							long numberOfIterations = 1000;
+							long numberOfIterations = 100;
 							List<HapiSpecOperation> subOps = new ArrayList<>();
 
 							for (int i = 0; i < numberOfIterations; i++) {
