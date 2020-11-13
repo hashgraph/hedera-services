@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.9.1-SNAPSHOT</version>
+    <version>0.9.0-rc.3-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -270,12 +270,12 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.9.1-SNAPSHOT</version>
+      <version>0.9.0-rc.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hedera-protobuf-java-api</artifactId>
-      <version>0.9.1-SNAPSHOT</version>
+      <version>0.9.0-rc.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
