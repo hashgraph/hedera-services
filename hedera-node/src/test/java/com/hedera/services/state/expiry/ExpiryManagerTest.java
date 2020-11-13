@@ -138,7 +138,7 @@ class ExpiryManagerTest {
 	}
 
 	@Test
-	public void resumesTrackingAsExpected() {
+	public void restartsTrackingAsExpected() {
 		givenAccount(a, aPayer);
 		givenAccount(b, bPayer);
 
