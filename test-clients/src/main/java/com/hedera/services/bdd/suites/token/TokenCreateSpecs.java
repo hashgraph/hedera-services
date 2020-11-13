@@ -74,11 +74,11 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationRequiresAppropriateSigs(),
 						creationValidatesTreasuryAccount(),
 						autoRenewValidationWorks(),
-						creationSetsCorrectExpiry(),
-						creationHappyPath(),
 						creationWithoutKYCSetsCorrectStatus(),
 						creationValidatesExpiry(),
-						creationValidatesFreezeDefaultWithNoFreezeKey()
+						creationValidatesFreezeDefaultWithNoFreezeKey(),
+						creationSetsCorrectExpiry(),
+						creationHappyPath(),
 				}
 		);
 	}
