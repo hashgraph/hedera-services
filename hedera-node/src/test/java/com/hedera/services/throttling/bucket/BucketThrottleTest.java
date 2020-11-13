@@ -21,6 +21,7 @@ package com.hedera.services.throttling.bucket;
  */
 
 import com.swirlds.common.throttle.Throttle;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -52,6 +53,20 @@ class BucketThrottleTest {
 		subject = new BucketThrottle("P", p);
 		overflow = new BucketThrottle("O", o);
 		spillover = new BucketThrottle("S", s);
+	}
+
+	@Test
+	public void autoReconfiguresWhenInsufficientCapacity() {
+		// given:
+		subject = new BucketThrottle("T", new Throttle(0.358, 2.6));
+
+		// when:
+		var avail = subject.hasAvailableCapacity(1.0);
+
+		// then:
+		assertTrue(avail);
+		Assertions.assertEquals(2.8, subject.primary.getBurstPeriod(), 0.01);
+		Assertions.assertEquals(.358, subject.primary.getTps(), 0.01);
 	}
 
 	@Test
