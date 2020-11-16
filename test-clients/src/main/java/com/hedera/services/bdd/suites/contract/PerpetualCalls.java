@@ -20,16 +20,18 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.suites.contract.ContractStorageSpec.*;
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,8 +40,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -52,6 +52,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class PerpetualCalls extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(PerpetualCalls.class);
 
+	final int NUM_KB_TO_USE = 8;
 	final String PATH_TO_TARGET_BYTECODE = "src/main/resource/testfiles/ExtMultiPurpose.bin";
 
 	private static final String GET_TRADITIONAL_VALUE_ABI = "{\"constant\":true,\"inputs\":[]," +
@@ -93,15 +94,38 @@ public class PerpetualCalls extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						fileCreate("bytecode").path(PATH_TO_TARGET_BYTECODE),
-						contractCreate("extMulti").bytecode("bytecode")
+						fileCreate("extMultiBytecode").path(PATH_TO_TARGET_BYTECODE),
+						contractCreate("extMulti").bytecode("extMultiBytecode"),
+						fileCreate("storageBytecode").path(PATH_TO_CONTRACT_STORAGE_BYTECODE),
+						contractCreate("storage").bytecode("storageBytecode"),
+						fileUpdate(APP_PROPERTIES)
+								.overridingProps(Map.of(
+										"maxGasLimit", "" + 3_000_000L
+								)).payingWith(ADDRESS_BOOK_CONTROL),
+						contractCall("storage", SETSIZE_ABI, NUM_KB_TO_USE)
+								.payingWith(GENESIS)
+								.gas(300_000L)
+								.logged(),
+						contractCall("storage", SETCONTENT_ABI, 42, NUM_KB_TO_USE)
+								.payingWith(GENESIS)
+								.gas(3_000_000L)
+								.logged()
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
 //				var op = contractCall("extMulti", GET_TRADITIONAL_VALUE_ABI).deferStatusResolution();
-				var op = contractCall("extMulti", LUCKY_NO_LOOKUP_ABI).deferStatusResolution();
+//				var op = contractCall("extMulti", LUCKY_NO_LOOKUP_ABI).deferStatusResolution();
+//				var op = contractCall( "storage", SETCONTENT_ABI, 42, NUM_KB_TO_SET)
+//						.payingWith(GENESIS)
+//						.gas(3_000_000L)
+//						.logged();
+				var op = contractCall("storage", GETCONTENT_ABI, NUM_KB_TO_USE)
+						.deferStatusResolution()
+						.payingWith(GENESIS)
+						.gas(3_000_000L)
+						.logged();
 				return Optional.of(op);
 			}
 		};
