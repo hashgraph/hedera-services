@@ -30,6 +30,7 @@ import com.hedera.services.fees.bootstrap.JsonToProtoSerdeTest;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.mocks.MockAppender;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -45,16 +46,12 @@ import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -208,14 +205,14 @@ class AwareFcfsUsagePricesTest {
 
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, actual);
-		assertEquals(1, mockAppender.messages.size());
+		assertEquals(1, mockAppender.size());
 		assertEquals("WARN - Only default usage prices available for function UNRECOGNIZED @ 1970-01-15T06:56:06Z! (java.lang.NullPointerException)",
-				mockAppender.messages.get(0));
+				mockAppender.get(0));
 
 		// tearDown:
 		log.setLevel(levelForReset);
 		log.removeAppender(mockAppender);
-		mockAppender.messages.clear();
+		mockAppender.clear();
 	}
 
 	@Test
@@ -275,18 +272,5 @@ class AwareFcfsUsagePricesTest {
 
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, prices);
-	}
-
-	public static class MockAppender extends AbstractAppender {
-		List<String> messages = new ArrayList<>();
-
-		protected MockAppender() {
-			super("MockAppender", null, null, true, null);
-		}
-
-		@Override
-		public void append(LogEvent event) {
-			messages.add(String.format("%s - %s", event.getLevel(), event.getMessage().getFormattedMessage()));
-		}
 	}
 }
