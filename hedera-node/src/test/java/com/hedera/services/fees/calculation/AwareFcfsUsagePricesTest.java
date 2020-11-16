@@ -45,6 +45,8 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.junit.jupiter.api.BeforeEach;
@@ -190,6 +192,13 @@ class AwareFcfsUsagePricesTest {
 
 	@Test
 	public void returnsDefaultUsagePricesForUnsupported() throws Exception {
+		// setup:
+		MockAppender mockAppender = new MockAppender();
+		var log = (org.apache.logging.log4j.core.Logger) LogManager.getLogger(AwareFcfsUsagePrices.class);
+		log.addAppender(mockAppender);
+		Level levelForReset = log.getLevel();
+		log.setLevel(Level.WARN);
+
 		// given:
 		subject.loadPriceSchedules();
 		Timestamp at = Timestamp.newBuilder()
@@ -201,6 +210,14 @@ class AwareFcfsUsagePricesTest {
 
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, actual);
+		assertEquals(1, mockAppender.message.size());
+		assertEquals("Only default usage prices available for function UNRECOGNIZED @ 1970-01-15T06:56:06Z!",
+				mockAppender.message.get(0));
+
+		// tearDown:
+		log.setLevel(levelForReset);
+		log.removeAppender(mockAppender);
+		mockAppender.message.clear();
 	}
 
 	@Test
