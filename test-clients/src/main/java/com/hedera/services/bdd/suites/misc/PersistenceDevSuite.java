@@ -29,7 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 
 public class PersistenceDevSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(PersistenceDevSuite.class);
@@ -51,7 +53,9 @@ public class PersistenceDevSuite extends HapiApiSuite {
 		return customHapiSpec("TestEntityLoading").withProperties(Map.of(
 				"persistentEntities.dir.path", "persistent-entities/"
 		)).given(
-				getTokenInfo("knownToken").logged()
+				getTokenInfo("knownToken").logged(),
+				getTopicInfo("knownTopic").logged(),
+				getAccountInfo("knownAccount").logged()
 		).when(
 		).then(
 		);

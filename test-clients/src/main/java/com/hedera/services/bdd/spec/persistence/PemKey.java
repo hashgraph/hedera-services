@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.persistence;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
+import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hederahashgraph.api.proto.java.Key;
@@ -41,9 +42,27 @@ public class PemKey {
 	static final Logger log = LogManager.getLogger(PemKey.class);
 
 	private static final String DEFAULT_PASSPHRASE = "swirlds";
+	private static final boolean GENERATE_IF_MISSING = true;
 
 	String pemLoc = "";
 	String passphrase = DEFAULT_PASSPHRASE;
+	boolean generateIfMissing = GENERATE_IF_MISSING;
+
+	public String getPassphrase() {
+		return passphrase;
+	}
+
+	public void setPassphrase(String passphrase) {
+		this.passphrase = passphrase;
+	}
+
+	public boolean isGenerateIfMissing() {
+		return generateIfMissing;
+	}
+
+	public void setGenerateIfMissing(boolean generateIfMissing) {
+		this.generateIfMissing = generateIfMissing;
+	}
 
 	public String getPemLoc() {
 		return pemLoc;
@@ -57,6 +76,21 @@ public class PemKey {
 		KeyPair keyPair;
 		Ed25519KeyStore keyStore;
 		var aes256EncryptedPkcs8Pem = new File(pemLoc);
+
+		if (!aes256EncryptedPkcs8Pem.exists()) {
+			if (!generateIfMissing) {
+				throw new IllegalStateException(String.format("File missing at PEM loc '%s'!", pemLoc));
+			}
+			Key simpleKey = spec.keys().generate(KeyFactory.KeyType.SIMPLE);
+			forms.completeIntake(spec.registry(), simpleKey);
+			try {
+				spec.keys().exportSimpleKey(pemLoc, forms.name(), passphrase);
+				log.info("Created new simple key at PEM loc '{}'.", pemLoc);
+			} catch (KeyStoreException e) {
+				throw new IllegalStateException(String.format("Cannot generate key to PEM loc '%s'!", pemLoc), e);
+			}
+			return;
+		}
 
 		try {
 			keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
@@ -150,5 +184,9 @@ public class PemKey {
 
 	public static String freezeKeyFor(String name) {
 		return name + "Freeze";
+	}
+
+	public static String submitKeyFor(String name) {
+		return name + "Submit";
 	}
 }

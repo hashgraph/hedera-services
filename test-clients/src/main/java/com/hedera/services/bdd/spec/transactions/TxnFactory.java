@@ -63,21 +63,59 @@ import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.UTF8Mode.TRUE;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class TxnFactory {
 	KeyFactory keys;
 	HapiSpecSetup setup;
 
+	private static final int BANNER_WIDTH = 80;
+	private static final int BANNER_BOUNDARY_THICKNESS = 2;
 	private static final double TXN_ID_SAMPLE_PROBABILITY = 1.0 / 500;
+
 	AtomicReference<TransactionID> sampleTxnId = new AtomicReference<>(TransactionID.getDefaultInstance());
 	SplittableRandom r = new SplittableRandom();
+
+	public static String bannerWith(String... msgs) {
+		var sb = new StringBuilder();
+		var partial = IntStream.range(0, BANNER_BOUNDARY_THICKNESS).mapToObj(ignore -> "*").collect(joining());
+		int printableWidth = BANNER_WIDTH - 2 * (partial.length() + 1);
+		addFullBoundary(sb);
+		List<String> allMsgs = Stream.concat(Stream.of(""), Stream.concat(Arrays.stream(msgs), Stream.of("")))
+				.collect(toList());
+		for (String msg : allMsgs) {
+			int rightPaddingLen = printableWidth - msg.length();
+			var rightPadding = IntStream.range(0, rightPaddingLen).mapToObj(ignore -> " ").collect(joining());
+			sb.append(partial + " ")
+					.append(msg)
+					.append(rightPadding)
+					.append(" " + partial)
+					.append("\n");
+		}
+		addFullBoundary(sb);
+		return sb.toString();
+	}
+
+	private static void addFullBoundary(StringBuilder sb) {
+		var full = IntStream.range(0, BANNER_WIDTH).mapToObj(ignore -> "*").collect(joining());
+		for (int i = 0; i < BANNER_BOUNDARY_THICKNESS; i++) {
+			sb.append(full).append("\n");
+		}
+	}
 
 	public TxnFactory(HapiSpecSetup setup, KeyFactory keys) {
 		this.keys = keys;

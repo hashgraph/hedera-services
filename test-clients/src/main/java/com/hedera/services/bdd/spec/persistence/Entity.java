@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.persistence;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 
 import java.util.Optional;
 
@@ -29,21 +30,41 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
 public class Entity {
 	private static final Token UNSPECIFIED_TOKEN = null;
+	private static final Topic UNSPECIFIED_TOPIC = null;
+	private static final Account UNSPECIFIED_ACCOUNT = null;
 	private static final EntityId UNCREATED_ENTITY_ID = null;
+
+	public static final PemKey UNUSED_KEY = null;
+	public static final HapiSpecOperation UNNEEDED_CREATE_OP = null;
 
 	private String name;
 	private EntityId id = UNCREATED_ENTITY_ID;
+	private Topic topic = UNSPECIFIED_TOPIC;
 	private Token token = UNSPECIFIED_TOKEN;
+	private Account account = UNSPECIFIED_ACCOUNT;
+	private HapiSpecOperation createOp = UNNEEDED_CREATE_OP;
 
 	public void registerWhatIsKnown(HapiApiSpec spec) {
 		if (token != UNSPECIFIED_TOKEN) {
 			token.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
 		}
+		if (topic != UNSPECIFIED_TOPIC) {
+			topic.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		}
+		if (account != UNSPECIFIED_ACCOUNT) {
+			account.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		}
 	}
 
 	public HapiSpecOperation createOp() {
 		if (token != UNSPECIFIED_TOKEN) {
-			return token.createOp(name);
+			return (createOp = token.createOp(name));
+		}
+		if (topic != UNSPECIFIED_TOPIC) {
+			return (createOp = topic.createOp(name));
+		}
+		if (account != UNSPECIFIED_ACCOUNT) {
+			return (createOp = account.createOp(name));
 		}
 		return assertionsHold((spec, opLog) -> {});
 	}
@@ -74,5 +95,30 @@ public class Entity {
 
 	public void setToken(Token token) {
 		this.token = token;
+	}
+
+	public Topic getTopic() {
+		return topic;
+	}
+
+	public void setTopic(Topic topic) {
+		this.topic = topic;
+	}
+
+	public Account getAccount() {
+		return account;
+	}
+
+	public void setAccount(Account account) {
+		this.account = account;
+	}
+
+	@SuppressWarnings("unchecked")
+	public HapiTxnOp getCreateOp() {
+		return (HapiTxnOp)createOp;
+	}
+
+	public void setCreateOp(HapiSpecOperation createOp) {
+		this.createOp = createOp;
 	}
 }

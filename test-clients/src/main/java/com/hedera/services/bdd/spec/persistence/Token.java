@@ -42,35 +42,34 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 public class Token {
 	static final Logger log = LogManager.getLogger(Token.class);
 
-	private static final PemKey UNUSED_KEY = null;
-	private static final String DEFAULT_SYMBOL = "SMNLNT";
+	private static final String DEFAULT_SYMBOL = "S6T";
 	private static final String DEFAULT_HEDERA_NAME = "SOMNOLENT";
 	private static final String UNSPECIFIED_TREASURY = null;
 
-	private PemKey kycKey = UNUSED_KEY;
-	private PemKey wipeKey = UNUSED_KEY;
-	private PemKey adminKey = UNUSED_KEY;
-	private PemKey supplyKey = UNUSED_KEY;
-	private PemKey freezeKey = UNUSED_KEY;
+	private PemKey kycKey = Entity.UNUSED_KEY;
+	private PemKey wipeKey = Entity.UNUSED_KEY;
+	private PemKey adminKey = Entity.UNUSED_KEY;
+	private PemKey supplyKey = Entity.UNUSED_KEY;
+	private PemKey freezeKey = Entity.UNUSED_KEY;
 
 	private String symbol = DEFAULT_SYMBOL;
 	private String hederaName = DEFAULT_HEDERA_NAME;
 	private String tokenTreasury = UNSPECIFIED_TREASURY;
 
 	public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
-		if (kycKey != UNUSED_KEY) {
+		if (kycKey != Entity.UNUSED_KEY) {
 			kycKey.registerWith(spec, asKycKeyFor(name));
 		}
-		if (wipeKey != UNUSED_KEY) {
+		if (wipeKey != Entity.UNUSED_KEY) {
 			wipeKey.registerWith(spec, asWipeKeyFor(name));
 		}
-		if (adminKey != UNUSED_KEY) {
+		if (adminKey != Entity.UNUSED_KEY) {
 			adminKey.registerWith(spec, asAdminKeyFor(name));
 		}
-		if (supplyKey != UNUSED_KEY) {
+		if (supplyKey != Entity.UNUSED_KEY) {
 			supplyKey.registerWith(spec, asSupplyKeyFor(name));
 		}
-		if (freezeKey != UNUSED_KEY) {
+		if (freezeKey != Entity.UNUSED_KEY) {
 			freezeKey.registerWith(spec, asFreezeKeyFor(name));
 		}
 		entityId.ifPresent(id -> {
@@ -82,6 +81,7 @@ public class Token {
 
 	public HapiSpecOperation createOp(String name) {
 		var op = tokenCreate(name)
+				.advertisingCreation()
 				.symbol(symbol)
 				.name(hederaName);
 
@@ -89,19 +89,19 @@ public class Token {
 			op.treasury(tokenTreasury);
 		}
 
-		if (kycKey != UNUSED_KEY) {
+		if (kycKey != Entity.UNUSED_KEY) {
 			op.kycKey(kycKeyFor(name));
 		}
-		if (wipeKey != UNUSED_KEY) {
+		if (wipeKey != Entity.UNUSED_KEY) {
 			op.wipeKey(wipeKeyFor(name));
 		}
-		if (adminKey != UNUSED_KEY) {
+		if (adminKey != Entity.UNUSED_KEY) {
 			op.adminKey(adminKeyFor(name));
 		}
-		if (freezeKey != UNUSED_KEY) {
+		if (freezeKey != Entity.UNUSED_KEY) {
 			op.freezeKey(freezeKeyFor(name));
 		}
-		if (supplyKey != UNUSED_KEY) {
+		if (supplyKey != Entity.UNUSED_KEY) {
 			op.supplyKey(supplyKeyFor(name));
 		}
 
