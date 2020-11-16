@@ -208,14 +208,14 @@ class AwareFcfsUsagePricesTest {
 
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, actual);
-		assertEquals(1, mockAppender.message.size());
+		assertEquals(1, mockAppender.messages.size());
 		assertEquals("WARN - Only default usage prices available for function UNRECOGNIZED @ 1970-01-15T06:56:06Z! (java.lang.NullPointerException)",
-				mockAppender.message.get(0));
+				mockAppender.messages.get(0));
 
 		// tearDown:
 		log.setLevel(levelForReset);
 		log.removeAppender(mockAppender);
-		mockAppender.message.clear();
+		mockAppender.messages.clear();
 	}
 
 	@Test
@@ -278,7 +278,7 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	public static class MockAppender extends AbstractAppender {
-		List<String> message = new ArrayList<>();
+		List<String> messages = new ArrayList<>();
 
 		protected MockAppender() {
 			super("MockAppender", null, null, true, null);
@@ -286,7 +286,7 @@ class AwareFcfsUsagePricesTest {
 
 		@Override
 		public void append(LogEvent event) {
-			message.add(String.format("%s - %s", event.getLevel(), event.getMessage().getFormattedMessage()));
+			messages.add(String.format("%s - %s", event.getLevel(), event.getMessage().getFormattedMessage()));
 		}
 	}
 }
