@@ -163,9 +163,7 @@ public class ContextOptionValidator implements OptionValidator {
 		if (symbol.length() > dynamicProperties.maxTokenSymbolLength()) {
 			return TOKEN_SYMBOL_TOO_LONG;
 		}
-		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isUpperCase)
-				? OK
-				: INVALID_TOKEN_SYMBOL;
+		return OK;
 	}
 
 	@Override

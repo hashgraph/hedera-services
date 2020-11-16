@@ -46,8 +46,10 @@ service SmartContractService {
     rpc ContractGetBytecode (Query) returns (Response);
     // Retrieves a contract by its Solidity address
     rpc getBySolidityID (Query) returns (Response);
-    // Retrieves the 25-hour records stored for a contract
-    rpc getTxRecordByContractID (Query) returns (Response);
+    // Always returns an empty record list, as contract accounts are never effective payers for transactions
+    rpc getTxRecordByContractID (Query) returns (Response) {
+        option deprecated = true;
+    };
     // Deletes a contract instance and transfers any remaining hbars to a specified receiver
     rpc deleteContract (Transaction) returns (TransactionResponse);
     // Deletes a contract if the submitting account has network admin privileges

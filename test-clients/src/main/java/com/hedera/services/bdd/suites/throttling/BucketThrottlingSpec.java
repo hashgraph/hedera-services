@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateToNewThrottlePropsFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -79,7 +80,8 @@ public class BucketThrottlingSpec extends HapiApiSuite {
 							defaultProps.set(contents);
 						}),
 						cryptoCreate("civilian").balance(10_000_000_000L),
-						updateToNewThrottlePropsFrom(propertiesLocFor(SuiteRunner.expectedNetworkSize))
+						updateToNewThrottlePropsFrom(propertiesLocFor(SuiteRunner.expectedNetworkSize)),
+						sleepFor(3_000L)
 				).when(
 						/* Default transaction bucket. */
 						cryptoCreate("ok")
@@ -103,14 +105,15 @@ public class BucketThrottlingSpec extends HapiApiSuite {
 						getFileInfo(APP_PROPERTIES)
 								.payingWith("civilian")
 								.hasAnswerOnlyPrecheck(BUSY),
-						UtilVerbs.sleepFor(1_000L),
+						sleepFor(1_000L),
 						sanityCheckReceiptThrottling()
 				).then(
-						UtilVerbs.sleepFor(2_000L),
+						sleepFor(2_000L),
 						// cleanup:
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.contents(ignore -> defaultProps.get())
+								.contents(ignore -> defaultProps.get()),
+						sleepFor(3_000L)
 				);
 	}
 

@@ -226,7 +226,7 @@ public class TokenUpdateUsageTest {
 	private void givenOp() {
 		op = TokenUpdateTransactionBody.newBuilder()
 				.setToken(id)
-				.setExpiry(expiry)
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setTreasury(treasury)
 				.setAutoRenewAccount(autoRenewAccount)
 				.setSymbol(symbol)

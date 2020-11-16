@@ -63,9 +63,6 @@ import org.junit.Assert;
  * Check Response failure response is :: INVALID_SIGNATURE Transfer more than balance ::
  * INSUFFICIENT_ACCOUNT_BALANCE Invalid account amount. result for sum of account amount is not zero
  * :: INVALID_ACCOUNT_AMOUNTS Invalid signature :: INVALID_SIGNATURE
- *
- * @author Akshay/Tirupathi
- * @Date : 8/15/2018
  */
 public class NegativeTransferTest {
 

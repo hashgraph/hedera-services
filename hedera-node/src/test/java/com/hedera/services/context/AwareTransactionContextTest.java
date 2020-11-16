@@ -438,7 +438,7 @@ public class AwareTransactionContextTest {
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(tokenCreated, record.getReceipt().getTokenId());
+		assertEquals(tokenCreated, record.getReceipt().getTokenID());
 	}
 
 	@Test

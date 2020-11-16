@@ -53,12 +53,6 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 
-/**
- * The tested feature is not yet implemented.
- *
- * @author Akshay
- * @Date : 10/9/2018
- */
 public class FastTxRecordTest {
 
   private static final Logger log = LogManager.getLogger(FastTxRecordTest.class);

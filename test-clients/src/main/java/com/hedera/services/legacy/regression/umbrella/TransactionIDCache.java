@@ -35,7 +35,6 @@ import com.hederahashgraph.builder.RequestBuilder;
  * A time sensitive data structure for maintaining transaction ID.
  *
  * @author Hua, Akshay
- * @Date : 7/27/2018
  */
 public class TransactionIDCache {
 

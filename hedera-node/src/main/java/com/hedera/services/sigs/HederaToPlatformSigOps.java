@@ -62,12 +62,12 @@ import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
  *     for the wrapped gRPC txn to be valid; and creates the cryptographic signatures
  *     at the bases of the signing hierarchies for these keys. It then asks the
  *     Platform to efficiently verify these cryptographic signatures, by setting them
- *     in the sigs list of the platform txn.
- *     </li> Next, {@code rationalizeIn} checks if the relevant Hedera keys have changed
+ *     in the sigs list of the platform txn. </li>
+ *     <li> Next, {@code rationalizeIn} checks if the relevant Hedera keys have changed
  *     since the call to {@code expandIn}. If they have changed, it replays the logic
  *     from {@code expandIn} to update the sigs list of the platform txn. In any case,
- *     {@rationalizeIn} then uses synchronous verifications to ensure no sig in the list
- *     is left with an {@code UNKNOWN} verification status.
+ *     {@code rationalizeIn} then uses synchronous verifications to ensure no sig in the list
+ *     is left with an {@code UNKNOWN} verification status. </li>
  * </ol>
  * The behavior on exceptional conditions varies a bit between {@code expandIn} and
  * {@code rationalizeIn}, and is given in detail below.
