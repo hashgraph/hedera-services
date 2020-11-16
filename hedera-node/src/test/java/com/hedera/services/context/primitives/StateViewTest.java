@@ -47,6 +47,7 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -269,7 +270,7 @@ class StateViewTest {
 		var info = subject.infoForToken(tokenId).get();
 
 		// then:
-		assertTrue(info.getIsDeleted());
+		assertTrue(info.getDeleted());
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
@@ -281,8 +282,8 @@ class StateViewTest {
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
 		assertEquals(MISC_ACCOUNT_KT.asKey(), info.getWipeKey());
 		assertEquals(autoRenew, info.getAutoRenewAccount());
-		assertEquals(autoRenewPeriod, info.getAutoRenewPeriod());
-		assertEquals(expiry, info.getExpiry());
+		assertEquals(Duration.newBuilder().setSeconds(autoRenewPeriod).build(), info.getAutoRenewPeriod());
+		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
 		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
 	}

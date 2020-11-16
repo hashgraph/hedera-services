@@ -21,6 +21,7 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -31,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -48,6 +50,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 public class TokenListChecks {
+    static Predicate<Key> ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
+
     public static boolean repeatsItself(List<TokenID> tokens) {
         return new HashSet<>(tokens).size() < tokens.size();
     }
@@ -110,9 +114,9 @@ public class TokenListChecks {
             boolean hasSupplyKey, Key supplyKey,
             boolean hasFreezeKey, Key freezeKey
     ) {
-        ResponseCodeEnum validity;
+        ResponseCodeEnum validity = OK;
 
-        if (hasAdminKey) {
+        if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
             if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
                 return validity;
             }
@@ -138,7 +142,7 @@ public class TokenListChecks {
             }
         }
 
-        return OK;
+        return validity;
     }
 
     public static ResponseCodeEnum checkKey(Key key, ResponseCodeEnum failure) {

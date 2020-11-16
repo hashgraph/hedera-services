@@ -168,6 +168,7 @@ public class SuiteRunner {
 //				new Issue2144Spec()));
 		put("CiTokenJob", aof(
 				new TokenAssociationSpecs(),
+				new TokenUpdateSpecs(),
 				new TokenCreateSpecs(),
 				new TokenDeleteSpecs(),
 				new TokenManagementSpecs(),

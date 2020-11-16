@@ -56,8 +56,8 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
 			baseSize += BASIC_ENTITY_ID_SIZE;
 		}
 		var lifetime = op.hasAutoRenewAccount()
-				? op.getAutoRenewPeriod()
-				: ESTIMATOR_UTILS.relativeLifetime(this.op, op.getExpiry());
+				? op.getAutoRenewPeriod().getSeconds()
+				: ESTIMATOR_UTILS.relativeLifetime(this.op, op.getExpiry().getSeconds());
 
 		usageEstimator.addBpt(baseSize);
 		usageEstimator.addRbs(baseSize * lifetime);

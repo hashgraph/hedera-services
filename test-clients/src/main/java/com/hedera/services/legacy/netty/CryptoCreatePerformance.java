@@ -57,7 +57,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 /**
- * Single Thread of a performance test that connects to a node & creates X accounts (command line
+ * Single Thread of a performance test that connects to a node and creates X accounts (command line
  * args), fetches records every 20 accounts and winds up the test.
  *
  * @author oc

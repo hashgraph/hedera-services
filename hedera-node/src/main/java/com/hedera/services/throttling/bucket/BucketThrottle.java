@@ -26,9 +26,12 @@ import com.swirlds.common.throttle.Throttle;
 import java.util.Optional;
 
 public class BucketThrottle {
+	private static final double RESCALE_BUFFER = 0.01;
+
 	private final String name;
-	private final Throttle primary;
 	private Optional<BucketThrottle> overflow = Optional.empty();
+
+	Throttle primary;
 
 	static final double EFFECTIVELY_UNLIMITED_CAPACITY = 1_000_000.0;
 
@@ -43,6 +46,12 @@ public class BucketThrottle {
 	}
 
 	public boolean hasAvailableCapacity(double amount) {
+		if (amount > primary.getCapacity()) {
+			double targetTps = amount / primary.getBurstPeriod();
+			double networkSizeRatio = amount / primary.getCapacity();
+			double rescaledTargetTps = targetTps / networkSizeRatio;
+			primary = new Throttle(rescaledTargetTps, amount / rescaledTargetTps + RESCALE_BUFFER);
+		}
 		return primary.allow(amount) || overflow.map(b -> b.hasAvailableCapacity(amount)).orElse(false);
 	}
 

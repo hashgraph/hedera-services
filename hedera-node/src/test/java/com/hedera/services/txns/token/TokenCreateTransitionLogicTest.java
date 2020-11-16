@@ -32,6 +32,7 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -462,7 +463,7 @@ class TokenCreateTransitionLogicTest {
 						.setTreasury(treasury)
 						.setAdminKey(key)
 						.setAutoRenewAccount(renewAccount)
-						.setExpiry(thisSecond + thisSecond));
+						.setExpiry(Timestamp.newBuilder().setSeconds(thisSecond + thisSecond)));
 		if (withFreeze) {
 			builder.getTokenCreationBuilder().setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
 		}
@@ -573,7 +574,7 @@ class TokenCreateTransitionLogicTest {
 						.setInitialSupply(initialSupply)
 						.setDecimals(decimals)
 						.setTreasury(treasury)
-						.setExpiry(-1))
+						.setExpiry(Timestamp.newBuilder().setSeconds(-1)))
 				.build();
 	}
 
@@ -584,7 +585,7 @@ class TokenCreateTransitionLogicTest {
 						.setDecimals(decimals)
 						.setTreasury(treasury)
 						.setAdminKey(key)
-						.setExpiry(thisSecond + Instant.now().getEpochSecond()))
+						.setExpiry(Timestamp.newBuilder().setSeconds(thisSecond + Instant.now().getEpochSecond())))
 				.build();
 	}
 

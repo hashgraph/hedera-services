@@ -133,8 +133,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 					id,
 					replacedTreasury.get(),
 					op.getTreasury(),
-					replacedTreasuryBalance,
-					true);
+					replacedTreasuryBalance);
 		}
 		if (outcome != OK) {
 			abortWith(outcome);
