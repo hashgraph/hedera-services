@@ -62,9 +62,6 @@ import org.junit.Assert;
  * Behaviour : transfer 1000 coins between 1st and 2nd account  and at the same time send request
  * for transfer 1000 coins between 1st and 3rd account. Expected : 1st transfer should be success
  * and 2nd transfer should return INSUFFICIENT_ACCOUNT_BALANCE
- *
- * @author Akshay
- * @Date : 8/15/2018
  */
 public class DoubleSpendingTest {
 

@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.times;
 
 @RunWith(JUnitPlatform.class)
 class CapacityTestTest {
@@ -56,7 +57,7 @@ class CapacityTestTest {
 		// then:
 		assertTrue(flag);
 		// and:
-		verify(bucket).hasAvailableCapacity(req);
+		verify(bucket, times(2)).hasAvailableCapacity(req);
 	}
 
 	@Test

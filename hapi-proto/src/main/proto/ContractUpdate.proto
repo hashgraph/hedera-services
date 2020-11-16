@@ -35,9 +35,9 @@ At consensus, updates the fields of a smart contract to the given values.
 If no value is given for a field, that field is left unchanged on the contract. For an immutable smart contract (that is, a contract created without an adminKey), only the expirationTime may be updated; setting any other field in this case will cause the transaction status to resolve to MODIFYING_IMMUTABLE_CONTRACT.
 
 --- Signing Requirements ---
-1. Whether or not a contract has an adminKey, its expirationTime can be extended with only the transaction payer's signature.
-2. Updating any other field of a mutable contract requires the adminKey's signature.
-3. If the update transaction includes a new adminKey, this new key must also sign. */
+1. Whether or not a contract has an admin Key, its expiry can be extended with only the transaction payer's signature.
+2. Updating any other field of a mutable contract requires the admin key's signature.
+3. If the update transaction includes a new admin key, this new key must also sign <b>unless</b> it is exactly an empty <tt>KeyList</tt>. This special sentinel key removes the existing admin key and causes the contract to become immutable. (Other <tt>Key</tt> structures without a constituent <tt>Ed25519</tt> key will be rejected with <tt>INVALID_ADMIN_KEY</tt>.) */
 message ContractUpdateTransactionBody {
     // The id of the contract to be updated
     ContractID contractID = 1;

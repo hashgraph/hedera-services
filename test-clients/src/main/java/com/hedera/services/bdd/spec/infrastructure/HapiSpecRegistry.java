@@ -240,12 +240,15 @@ public class HapiSpecRegistry {
 	public void removeTimestamp(String label) {
 		try {
 			remove(label, Timestamp.class);
-		} catch (Exception ignore) {
-		}
+		} catch (Exception ignore) { }
 	}
 
 	public void saveKey(String name, Key key) {
 		put(name, key, Key.class);
+	}
+
+	public void forgetAdminKey(String name) {
+		remove(name + "Admin", Key.class);
 	}
 
 	public void saveAdminKey(String name, Key key) { put(name + "Admin", key, Key.class); }

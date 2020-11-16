@@ -95,10 +95,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
 import static com.swirlds.common.PlatformStatus.ACTIVE;
 
-/**
- * @author Akshay
- * @Date : 7/23/2018
- */
 @Deprecated
 public class TransactionHandler {
   public static final String GET_TOPIC_INFO_QUERY_NAME = "getTopicInfo";

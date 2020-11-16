@@ -175,11 +175,10 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		}
 
 		if (op.hasAutoRenewAccount()) {
-			validity = validator.isValidAutoRenewPeriod(Duration.newBuilder()
-					.setSeconds(op.getAutoRenewPeriod()).build()) ? OK : INVALID_RENEWAL_PERIOD;
+			validity = validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()) ? OK : INVALID_RENEWAL_PERIOD;
 			return validity;
 		} else {
-			if (op.getExpiry() <= txnCtx.consensusTime().getEpochSecond()) {
+			if (op.getExpiry().getSeconds() <= txnCtx.consensusTime().getEpochSecond()) {
 				return INVALID_EXPIRATION_TIME;
 			}
 		}

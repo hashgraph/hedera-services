@@ -36,7 +36,9 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.evm.SolidityExecutor;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stats.MiscRunningAvgs;
@@ -799,8 +801,6 @@ public class SmartContractRequestHandler {
 	 * @param consensusTime
 	 * 		Platform consensus time
 	 * @return Details of contract deletion result
-	 * @throws Exception
-	 * 		Passes through lower-level exceptions; does not generate any.
 	 */
 	public TransactionRecord deleteContract(TransactionBody transaction, Instant consensusTime) {
 		TransactionReceipt transactionReceipt;

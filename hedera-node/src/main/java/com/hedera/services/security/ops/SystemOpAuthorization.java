@@ -28,11 +28,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 /**
  * The relationship of an operation to its required system privileges, if any.
  *
- * The {@link SystemOpAuthorization#asStatus()} method returns a
- * {@link ResponseCodeEnum} that is appropriate for use as the
- * precheck status in a HAPI {@link com.hederahashgraph.api.proto.java.TransactionResponse}.
- * Therefore both {@link SystemOpAuthorization#UNNECESSARY#asStatus()} and
- * {@link SystemOpAuthorization#AUTHORIZED#asStatus()} return {@link ResponseCodeEnum#OK},
+ * The {@code SystemOpAuthorization#asStatus()} method returns a
+ * {@code ResponseCodeEnum} that is appropriate for use as the
+ * precheck status in a HAPI {@code com.hederahashgraph.api.proto.java.TransactionResponse}.
+ * Therefore both {@code SystemOpAuthorization#UNNECESSARY#asStatus()} and
+ * {@code SystemOpAuthorization#AUTHORIZED#asStatus()} return {@code ResponseCodeEnum#OK},
  * since in either case the operation should pass precheck---at least
  * based on its required system privileges.
  */
