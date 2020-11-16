@@ -328,12 +328,8 @@ public class HederaLedger {
 			TokenID tId,
 			AccountID from,
 			AccountID to,
-			long adjustment,
-			boolean skipTokenCheck
+			long adjustment
 	) {
-		if (!skipTokenCheck && !tokenStore.exists(tId)) {
-			return INVALID_TOKEN_ID;
-		}
 		var validity = OK;
 		validity = adjustTokenBalance(from, tId, -adjustment);
 		if (validity == OK) {

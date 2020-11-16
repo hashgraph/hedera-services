@@ -32,7 +32,6 @@ import org.apache.commons.lang3.SerializationUtils;
  * Custom Serializer for JKey structure.
  * 
  * @author Nathan Klick
- * @Date : 11/30/2018
  */
 public class JKeySerializer {
   private static final long LEGACY_VERSION = 1;

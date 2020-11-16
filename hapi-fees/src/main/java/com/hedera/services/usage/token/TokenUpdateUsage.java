@@ -106,17 +106,24 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 		var op = this.op.getTokenUpdate();
 
 		long newMutableRb = 0;
-		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasKycKey, TokenUpdateTransactionBody::getKycKey);
-		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasWipeKey, TokenUpdateTransactionBody::getWipeKey);
-		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasAdminKey, TokenUpdateTransactionBody::getAdminKey);
-		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasSupplyKey, TokenUpdateTransactionBody::getSupplyKey);
-		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasFreezeKey, TokenUpdateTransactionBody::getFreezeKey);
+		newMutableRb += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasKycKey, TokenUpdateTransactionBody::getKycKey);
+		newMutableRb += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasWipeKey, TokenUpdateTransactionBody::getWipeKey);
+		newMutableRb += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasAdminKey, TokenUpdateTransactionBody::getAdminKey);
+		newMutableRb += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasSupplyKey, TokenUpdateTransactionBody::getSupplyKey);
+		newMutableRb += keySizeIfPresent(
+				op, TokenUpdateTransactionBody::hasFreezeKey, TokenUpdateTransactionBody::getFreezeKey);
 		if (!removesAutoRenewAccount(op) && (currentlyUsingAutoRenew || op.hasAutoRenewAccount())) {
 			newMutableRb += BASIC_ENTITY_ID_SIZE;
 		}
 		newMutableRb += (op.getName().length() > 0) ? op.getName().length() : currentNameLen;
 		newMutableRb += (op.getSymbol().length() > 0) ? op.getSymbol().length() : currentSymbolLen;
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(this.op, Math.max(op.getExpiry(), currentExpiry));
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
+				this.op,
+				Math.max(op.getExpiry().getSeconds(), currentExpiry));
 		long rbsDelta = Math.max(0, newLifetime * (newMutableRb - currentMutableRb));
 		if (rbsDelta > 0) {
 			usageEstimator.addRbs(rbsDelta);
@@ -130,8 +137,8 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 	}
 
 	private long noRbImpactBytes(TokenUpdateTransactionBody op) {
-		return ((op.getExpiry() > 0) ? AMOUNT_REPR_BYTES : 0) +
-				((op.getAutoRenewPeriod() > 0) ? AMOUNT_REPR_BYTES : 0) +
+		return ((op.getExpiry().getSeconds() > 0) ? AMOUNT_REPR_BYTES : 0) +
+				((op.getAutoRenewPeriod().getSeconds() > 0) ? AMOUNT_REPR_BYTES : 0) +
 				(op.hasTreasury() ? BASIC_ENTITY_ID_SIZE : 0) +
 				(op.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
 	}

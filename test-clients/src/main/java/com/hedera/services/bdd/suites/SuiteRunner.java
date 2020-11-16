@@ -34,6 +34,7 @@ import com.hedera.services.bdd.suites.contract.ChildStorageSpec;
 import com.hedera.services.bdd.suites.contract.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
+import com.hedera.services.bdd.suites.contract.ContractStorageSpec;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.contract.OCTokenSpec;
@@ -159,6 +160,7 @@ public class SuiteRunner {
 //				new Issue2144Spec()));
 		put("CiTokenJob", aof(
 				new TokenAssociationSpecs(),
+				new TokenUpdateSpecs(),
 				new TokenCreateSpecs(),
 				new TokenDeleteSpecs(),
 				new TokenManagementSpecs(),
@@ -246,6 +248,7 @@ public class SuiteRunner {
 		put("SmartContractInlineAssemblyCheck", aof(new SmartContractInlineAssemblySpec()));
 		put("SmartContractSelfDestructSpec", aof(new SmartContractSelfDestructSpec()));
 		put("SmartContractPaySpec", aof(new SmartContractPaySpec()));
+		put("ContractStorageSpec", aof(new ContractStorageSpec()));
 		/* Functional tests - MIXED (record emphasis) */
 		put("ThresholdRecordCreationSpecs", aof(new RecordCreationSuite()));
 		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));

@@ -20,6 +20,7 @@ package com.hedera.services.legacy.initialization;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
@@ -66,7 +67,9 @@ public class ExportExistingAccounts {
 				cryptoAccount.put("shardID", currKey.getShard());
 				cryptoAccount.put("realmID", currKey.getRealm());
 				cryptoAccount.put("accountNum", currKey.getNum());
-				String key = Hex.encodeHexString(SerializationUtils.serialize(mapValue.getKey()));
+				String key = Hex.encodeHexString(JKey.mapJKey(mapValue.getKey()).toByteArray());
+//				String key = JKey.mapJKey(mapValue.getKey()).toString();
+//				String key = mapValue.getKey().toString();
 				cryptoAccount.put("key", key);
 			} catch (Exception e) {
 				log.error("Exception occurred while fetching Accounts from Account FCMap", e);

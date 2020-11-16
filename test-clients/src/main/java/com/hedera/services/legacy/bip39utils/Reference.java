@@ -96,7 +96,7 @@ public class Reference {
 	}
 
 	/**
-	 * Pass to the constructor a string representing the data. If the string starts and ends in <> and
+	 * Pass to the constructor a string representing the data. If the string starts and ends in brackets and
 	 * contains only letters and digits in between, then it is considered a base62 encoding. Otherwise, it
 	 * is considered a list of words.
 	 * 
@@ -233,7 +233,7 @@ public class Reference {
 	}
 
 	/**
-	 * Return the base-62 encoding, inside of <brackets>.
+	 * Return the base-62 encoding, inside of brackets.
 	 */
 	
 	@Override
@@ -310,7 +310,6 @@ public class Reference {
 	 * Return a string representing the reference, made up of multiple lines of 4 words each, broken into
 	 * groups of 4 lines. The last group may have fewer lines, and its last line may have fewer words.
 	 * 
-	 * @indent a string inserted at the start of each line
 	 * @return the result as one string
 	 */
 	

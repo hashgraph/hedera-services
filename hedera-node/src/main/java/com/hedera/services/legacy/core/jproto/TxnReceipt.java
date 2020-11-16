@@ -333,7 +333,7 @@ public class TxnReceipt implements SelfSerializable {
 		EntityId jContractID =
 				grpc.hasContractID() ? EntityId.ofNullableContractId(grpc.getContractID()) : null;
 		EntityId topicId = grpc.hasTopicID() ? EntityId.ofNullableTopicId(grpc.getTopicID()) : null;
-		EntityId tokenId = grpc.hasTokenId() ? EntityId.ofNullableTokenId(grpc.getTokenId()) : null;
+		EntityId tokenId = grpc.hasTokenID() ? EntityId.ofNullableTokenId(grpc.getTokenID()) : null;
 		long runningHashVersion = Math.max(MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
 		return new TxnReceipt(
 				status,
@@ -374,7 +374,7 @@ public class TxnReceipt implements SelfSerializable {
 					txReceipt.getContractId().shard()));
 		}
 		if (txReceipt.getTokenId() != null) {
-			builder.setTokenId(txReceipt.getTokenId().toGrpcTokenId());
+			builder.setTokenID(txReceipt.getTokenId().toGrpcTokenId());
 		}
 		if (txReceipt.getExchangeRates() != null) {
 			builder.setExchangeRate(txReceipt.exchangeRates.toGrpc());

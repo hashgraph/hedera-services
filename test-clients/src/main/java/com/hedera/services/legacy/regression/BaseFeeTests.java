@@ -45,17 +45,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
-/**
- * Test Client for various fee tests
- *
- * @author Tirupathi Mandala Created on 2019-06-12
- */
-
-/**
- * Fee Tests
- *
- * @
- */
 public class BaseFeeTests extends BaseClient {
 
   private static final Logger log = LogManager.getLogger(BaseFeeTests.class);

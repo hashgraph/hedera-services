@@ -55,7 +55,6 @@ import org.junit.Assert;
  * Crypto Fee Test
  *
  * @author Tirupathi Mandala
- * @Date : 4/3/2019
  */
 
 public class CryptoFeeTest {

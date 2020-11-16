@@ -25,7 +25,9 @@ package proto;
 option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
+import "Duration.proto";
 import "BasicTypes.proto";
+import "Timestamp.proto";
 
 /*
 Create a new token. After the token is created, the Token ID for it is in the receipt.
@@ -50,7 +52,7 @@ message TokenCreateTransactionBody {
     Key wipeKey = 9; // The key which can wipe the token balance of an account. If empty, wipe is not possible
     Key supplyKey = 10; // The key which can change the supply of a token. The key is used to sign Token Mint/Burn operations
     bool freezeDefault = 11; // The default Freeze status (frozen or unfrozen) of Hedera accounts relative to this token. If true, an account must be unfrozen before it can receive the token
-    uint64 expiry = 13; // The epoch second at which the token should expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod
+    Timestamp expiry = 13; // The epoch second at which the token should expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod
     AccountID autoRenewAccount = 14; // An account which will be automatically charged to renew the token's expiration, at autoRenewPeriod interval
-    uint64 autoRenewPeriod = 15; // The interval at which the auto-renew account will be charged to extend the token's expiry
+    Duration autoRenewPeriod = 15; // The interval at which the auto-renew account will be charged to extend the token's expiry
 }
