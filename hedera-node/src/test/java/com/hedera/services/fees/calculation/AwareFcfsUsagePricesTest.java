@@ -45,12 +45,16 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -256,5 +260,18 @@ class AwareFcfsUsagePricesTest {
 
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, prices);
+	}
+
+	public static class MockAppender extends AbstractAppender {
+		List<String> message = new ArrayList<>();
+
+		protected MockAppender() {
+			super("MockAppender", null, null, true, null);
+		}
+
+		@Override
+		public void append(LogEvent event) {
+			message.add(event.getMessage().getFormattedMessage());
+		}
 	}
 }
