@@ -23,7 +23,6 @@ package com.hedera.services.grpc.controllers;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -49,21 +48,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 
 public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	private static final Logger log = LogManager.getLogger(TokenController.class);
-
-	public static final String TOKEN_MINT_METRIC = "mintToken";
-	public static final String TOKEN_BURN_METRIC = "burnToken";
-	public static final String TOKEN_CREATE_METRIC = "createToken";
-	public static final String TOKEN_DELETE_METRIC = "deleteToken";
-	public static final String TOKEN_UPDATE_METRIC = "updateToken";
-	public static final String TOKEN_FREEZE_METRIC = "freezeTokenAccount";
-	public static final String TOKEN_UNFREEZE_METRIC = "unfreezeTokenAccount";
-	public static final String TOKEN_GRANT_KYC_METRIC = "grantKycToTokenAccount";
-	public static final String TOKEN_REVOKE_KYC_METRIC = "revokeKycFromTokenAccount";
-	public static final String TOKEN_WIPE_ACCOUNT_METRIC = "wipeTokenAccount";
-	public static final String TOKEN_ASSOCIATE_METRIC = "associateTokens";
-	public static final String TOKEN_DISSOCIATE_METRIC = "dissociateTokens";
-
-	public static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
 
 	private final TokenAnswers tokenAnswers;
 	private final TxnResponseHelper txnHelper;

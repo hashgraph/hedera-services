@@ -20,41 +20,27 @@ package com.hedera.services.legacy.handler;
  * ‍
  */
 
-import com.google.common.annotations.VisibleForTesting;
-
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Supplier;
-
+import com.google.protobuf.ByteString;
+import com.google.protobuf.TextFormat;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.SolidityLifecycle;
 import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.txns.validation.PureValidation;
-
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.evm.SolidityExecutor;
-import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.ethereum.core.Transaction;
-import org.ethereum.db.ServicesRepositoryRoot;
-import org.ethereum.util.ByteUtil;
-import org.ethereum.vm.program.Program;
-import org.spongycastle.pqc.math.linearalgebra.ByteUtils;
-import org.spongycastle.util.encoders.DecoderException;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.TextFormat;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.txns.validation.PureValidation;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
@@ -63,7 +49,6 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -79,28 +64,48 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.legacy.config.PropertiesLoader;
+import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ethereum.core.Transaction;
+import org.ethereum.db.ServicesRepositoryRoot;
+import org.ethereum.util.ByteUtil;
+import org.spongycastle.pqc.math.linearalgebra.ByteUtils;
+import org.spongycastle.util.encoders.DecoderException;
+
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import static com.hedera.services.contracts.execution.DomainUtils.fakeBlock;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
+import static com.hedera.services.legacy.core.jproto.JKey.convertKey;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_SYSTEM_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.builder.RequestBuilder.getTimestamp;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionRecord;
-import static com.hedera.services.legacy.core.jproto.JKey.convertKey;
 
 /**
  * Post-consensus execution of smart contract api calls
@@ -108,58 +113,43 @@ import static com.hedera.services.legacy.core.jproto.JKey.convertKey;
 public class SmartContractRequestHandler {
 	private static final Logger log = LogManager.getLogger(SmartContractRequestHandler.class);
 
-	private Map<byte[], byte[]> storageView;
-	private Map<byte[], byte[]> bytecodeView;
 	private Map<EntityId, Long> entityExpiries;
 
-	private AccountID funding;
 	private HederaLedger ledger;
-	private LedgerAccountsSource ledgerSource;
 	private ServicesRepositoryRoot repository;
 	private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
-	private Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage;
 	private HbarCentExchange exchange;
 	private TransactionContext txnCtx;
 	private UsagePricesProvider usagePrices;
-	private PropertySource properties;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private SolidityLifecycle lifecycle;
 	private SoliditySigsVerifier sigsVerifier;
+	private GlobalDynamicProperties dynamicProperties;
 
 	public SmartContractRequestHandler(
 			ServicesRepositoryRoot repository,
-			AccountID funding,
 			HederaLedger ledger,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
-			LedgerAccountsSource ledgerSource,
 			TransactionContext txnCtx,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
-			PropertySource properties,
 			Supplier<ServicesRepositoryRoot> newPureRepo,
 			SolidityLifecycle lifecycle,
 			SoliditySigsVerifier sigsVerifier,
-			Map<EntityId, Long> entityExpiries
+			Map<EntityId, Long> entityExpiries,
+			GlobalDynamicProperties dynamicProperties
 	) {
 		this.repository = repository;
 		this.newPureRepo = newPureRepo;
 		this.accounts = accounts;
-		this.funding = funding;
 		this.ledger = ledger;
 		this.exchange = exchange;
-		this.storage = storage;
-		this.ledgerSource = ledgerSource;
 		this.txnCtx = txnCtx;
 		this.usagePrices = usagePrices;
-		this.properties = properties;
 		this.lifecycle = lifecycle;
 		this.sigsVerifier = sigsVerifier;
 		this.entityExpiries = entityExpiries;
-
-		var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, storage);
-		storageView = storageMapFrom(blobStore);
-		bytecodeView = bytecodeMapFrom(blobStore);
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	/**
@@ -188,12 +178,12 @@ public class SmartContractRequestHandler {
 		AccountID senderAccount = transactionID.getAccountID();
 		String senderAccountEthAddress = asSolidityAddressHex(senderAccount);
 		BigInteger gas;
-		if (createContract.getGas() <= PropertiesLoader.getMaxGasLimit()) {
+		if (createContract.getGas() <= dynamicProperties.maxGas()) {
 			gas = BigInteger.valueOf(createContract.getGas());
 		} else {
-			gas = BigInteger.valueOf(PropertiesLoader.getMaxGasLimit());
+			gas = BigInteger.valueOf(dynamicProperties.maxGas());
 			log.debug("Gas offered: {} reduced to maxGasLimit: {} in create",
-					() -> createContract.getGas(), () -> PropertiesLoader.getMaxGasLimit());
+					() -> createContract.getGas(), () -> dynamicProperties.maxGas());
 		}
 		String contractByteCodeString = new String(contractByteCode);
 		if (createContract.getConstructorParameters() != null && !createContract.getConstructorParameters().isEmpty()) {
@@ -321,7 +311,8 @@ public class SmartContractRequestHandler {
 				getContractCallSbhInTinyBars(mockConsensusTime),
 				txnCtx,
 		true,
-				sigsVerifier);
+				sigsVerifier,
+				dynamicProperties);
 
 		var result = lifecycle.runPure(maxResultSize, executor);
 
@@ -348,7 +339,7 @@ public class SmartContractRequestHandler {
 				this.repository,
 				fakeBlock(consensusTime),
 				payerAddress,
-				asSolidityAddressHex(this.funding),
+				asSolidityAddressHex(dynamicProperties.fundingAccount()),
 				txn,
 				startTime,
 				sequenceNum,
@@ -356,7 +347,8 @@ public class SmartContractRequestHandler {
 				sbh,
 				txnCtx,
 				false,
-				sigsVerifier);
+				sigsVerifier,
+				dynamicProperties);
 		var result = lifecycle.run(executor, repository);
 
 		var receiptBuilder = RequestBuilder.getTransactionReceipt(
@@ -450,12 +442,12 @@ public class SmartContractRequestHandler {
 		ResponseCodeEnum callResponseStatus = validateContractExistence(contractCall.getContractID());
 		if (callResponseStatus == ResponseCodeEnum.OK) {
 			BigInteger gas;
-			if (contractCall.getGas() <= PropertiesLoader.getMaxGasLimit()) {
+			if (contractCall.getGas() <= dynamicProperties.maxGas()) {
 				gas = BigInteger.valueOf(contractCall.getGas());
 			} else {
-				gas = BigInteger.valueOf(PropertiesLoader.getMaxGasLimit());
+				gas = BigInteger.valueOf(dynamicProperties.maxGas());
 				log.debug("Gas offered: {} reduced to maxGasLimit: {} in call", () -> contractCall.getGas(),
-						() -> PropertiesLoader.getMaxGasLimit());
+						() -> dynamicProperties.maxGas());
 			}
 
 			String data = "";
@@ -556,12 +548,12 @@ public class SmartContractRequestHandler {
 				validateContractExistence(transactionContractCallLocal.getContractID());
 		if (callResponseStatus == ResponseCodeEnum.OK) {
 			BigInteger gas;
-			if (transactionContractCallLocal.getGas() <= PropertiesLoader.getMaxGasLimit()) {
+			if (transactionContractCallLocal.getGas() <= dynamicProperties.maxGas()) {
 				gas = BigInteger.valueOf(transactionContractCallLocal.getGas());
 			} else {
-				gas = BigInteger.valueOf(PropertiesLoader.getMaxGasLimit());
+				gas = BigInteger.valueOf(dynamicProperties.maxGas());
 				log.debug("Gas offered: {} reduced to maxGasLimit: {} in local call",
-						() -> transactionContractCallLocal.getGas(), () -> PropertiesLoader.getMaxGasLimit());
+						() -> transactionContractCallLocal.getGas(), () -> dynamicProperties.maxGas());
 			}
 			String data = "";
 			if (transactionContractCallLocal.getFunctionParameters() != null
@@ -635,10 +627,18 @@ public class SmartContractRequestHandler {
 						var hasAcceptableAdminKey = true;
 						if (op.hasAdminKey()) {
 							JKey newAdminKey = convertKey(op.getAdminKey(), 1);
-							if (!newAdminKey.isValid()) {
+							if (canCustomizeWith(newAdminKey)) {
+								if (newAdminKey.isEmpty()) {
+									/* Make the contract immutable. */
+									customizer.key(new JContractIDKey(
+										cid.getShardNum(),
+										cid.getRealmNum(),
+										cid.getContractNum()));
+								} else {
+									customizer.key(newAdminKey);
+								}
+							} else {
 								hasAcceptableAdminKey = false;
-							} else if (!(newAdminKey instanceof JContractIDKey)) {
-								customizer.key(newAdminKey);
 							}
 						}
 						if (hasAcceptableAdminKey) {
@@ -665,6 +665,14 @@ public class SmartContractRequestHandler {
 				transaction.getTransactionID(),
 				getTimestamp(consensusTime),
 				receipt).build();
+	}
+
+	private boolean canCustomizeWith(JKey newAdminKey) {
+		if ((newAdminKey instanceof JKeyList) && newAdminKey.isEmpty()) {
+			return true;
+		} else {
+			return newAdminKey.isValid() && !(newAdminKey instanceof JContractIDKey);
+		}
 	}
 
 	/**
@@ -781,8 +789,6 @@ public class SmartContractRequestHandler {
 	 * @param consensusTime
 	 * 		Platform consensus time
 	 * @return Details of contract deletion result
-	 * @throws Exception
-	 * 		Passes through lower-level exceptions; does not generate any.
 	 */
 	public TransactionRecord deleteContract(TransactionBody transaction, Instant consensusTime) {
 		TransactionReceipt transactionReceipt;
@@ -791,7 +797,7 @@ public class SmartContractRequestHandler {
 		ContractID cid = op.getContractID();
 		ResponseCodeEnum validity = validateContractExistence(cid);
 		if (validity == ResponseCodeEnum.OK) {
-			AccountID beneficiary = Optional.ofNullable(getBeneficiary(op)).orElse(funding);
+			AccountID beneficiary = Optional.ofNullable(getBeneficiary(op)).orElse(dynamicProperties.fundingAccount());
 			validity = validateContractDelete(op);
 			if (validity == SUCCESS) {
 				validity = ledger.exists(beneficiary) ? SUCCESS : OBTAINER_DOES_NOT_EXIST;

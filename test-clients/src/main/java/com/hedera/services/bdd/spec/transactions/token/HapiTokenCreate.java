@@ -24,12 +24,12 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenCreateUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,7 +47,6 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -200,10 +199,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							if (autoRenewAccount.isPresent()) {
 								var id = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(id);
-								b.setAutoRenewPeriod(autoRenewPeriod
-										.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds()));
+								long secs = autoRenewPeriod.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds());
+								b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
 							}
-							expiry.ifPresent(b::setExpiry);
+							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
 							wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							treasury.ifPresent(a -> {
@@ -238,7 +237,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		var registry = spec.registry();
 		registry.saveSymbol(token, symbol.orElse(token));
 		registry.saveName(token, name.orElse(token));
-		registry.saveTokenId(token, lastReceipt.getTokenId());
+		registry.saveTokenId(token, lastReceipt.getTokenID());
 
 		adminKey.ifPresent(k -> registry.saveAdminKey(token, registry.getKey(k)));
 		kycKey.ifPresent(k -> registry.saveKycKey(token, registry.getKey(k)));
@@ -254,8 +253,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		Optional
 				.ofNullable(lastReceipt)
 				.ifPresent(receipt -> {
-					if (receipt.getTokenId().getTokenNum() != 0) {
-						helper.add("created", receipt.getTokenId().getTokenNum());
+					if (receipt.getTokenID().getTokenNum() != 0) {
+						helper.add("created", receipt.getTokenID().getTokenNum());
 					}
 				});
 		return helper;

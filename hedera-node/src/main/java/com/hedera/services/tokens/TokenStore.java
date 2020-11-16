@@ -45,12 +45,13 @@ public interface TokenStore {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
-	void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 	void setHederaLedger(HederaLedger ledger);
+	void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 
 	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean exists(TokenID id);
 	boolean isKnownTreasury(AccountID id);
+	boolean associationExists(AccountID aId, TokenID tId);
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
 	MerkleToken get(TokenID id);
 
@@ -66,10 +67,10 @@ public interface TokenStore {
 	ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
-	TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
 	void commitCreation();
 	void rollbackCreation();
 	boolean isCreationPending();
+	TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

@@ -152,25 +152,13 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void tokenTransferRejectsForMissingId() {
-		// setup
-		given(tokenStore.exists(tokenId)).willReturn(false);
-
-		// when:
-		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 1_000, false);
-
-		// then:
-		assertEquals(INVALID_TOKEN_ID, outcome);
-	}
-
-	@Test
-	public void tokenTransferSkipTokenCheckWorks() {
+	public void tokenTransferHappyPathWOrks() {
 		// setup
 		given(subject.adjustTokenBalance(misc, tokenId, -1_000)).willReturn(OK);
 		given(subject.adjustTokenBalance(rand, tokenId, 1_000)).willReturn(OK);
 
 		// when:
-		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 1_000, true);
+		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 1_000);
 
 		// then:
 		assertEquals(OK, outcome);
@@ -184,7 +172,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// given:
-		var status = subject.doTokenTransfer(tokenId, misc, rand, 555, true);
+		var status = subject.doTokenTransfer(tokenId, misc, rand, 555);
 
 		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
@@ -203,7 +191,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// given:
-		var status = subject.doTokenTransfer(tokenId, misc, rand, 555, true);
+		var status = subject.doTokenTransfer(tokenId, misc, rand, 555);
 
 		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
@@ -221,7 +209,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		givenAdjustBalanceUpdatingTokenXfers(rand, tokenId, 555);
 
 		// given
-		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 555, true);
+		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 555);
 		var netXfers = subject.netTokenTransfersInTxn();
 
 		assertEquals(OK, outcome);

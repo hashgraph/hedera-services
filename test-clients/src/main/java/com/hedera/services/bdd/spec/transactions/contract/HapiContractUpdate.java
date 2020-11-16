@@ -56,6 +56,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private Optional<String> newKey = Optional.empty();
 	private Optional<String> newMemo = Optional.empty();
 	private boolean wipeToThresholdKey = false;
+	private boolean useEmptyAdminKeyList = false;
 
 	public HapiContractUpdate(String contract) {
 		this.contract = contract;
@@ -86,8 +87,12 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		useDeprecatedAdminKey = true;
 		return this;
 	}
-	public HapiContractUpdate emptyingAdminKey() {
+	public HapiContractUpdate improperlyEmptyingAdminKey() {
 		wipeToThresholdKey = true;
+		return this;
+	}
+	public HapiContractUpdate properlyEmptyingAdminKey() {
+		useEmptyAdminKeyList = true;
 		return this;
 	}
 
@@ -98,6 +103,9 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		}
 		if (!useDeprecatedAdminKey) {
 			newKey.ifPresent(k -> spec.registry().saveKey(contract, spec.registry().getKey(k)));
+		}
+		if (useEmptyAdminKeyList) {
+			spec.registry().forgetAdminKey(contract);
 		}
 	}
 
@@ -113,6 +121,8 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
 							} else if (wipeToThresholdKey) {
 								b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+							} else if (useEmptyAdminKeyList) {
+								b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
 							} else {
 								key.ifPresent(k -> b.setAdminKey(k));
 							}

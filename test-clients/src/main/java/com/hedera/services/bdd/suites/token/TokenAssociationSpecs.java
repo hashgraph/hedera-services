@@ -76,10 +76,10 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						treasuryAssociationIsAutomatic(),
-						associateHasExpectedSemantics(),
 						dissociateHasExpectedSemantics(),
 						accountInfoQueriesAsExpected(),
 						contractInfoQueriesAsExpected(),
+						associateHasExpectedSemantics(),
 						associatedContractsMustHaveAdminKeys(),
 				}
 		);
@@ -91,8 +91,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("AssociatedContractsMustHaveAdminKeys")
 				.given(
-						newKeyNamed("simple"),
-						tokenCreate(misc).adminKey("simple")
+						tokenCreate(misc)
 				).when(
 						contractCreate(contract).omitAdminKey()
 				).then(

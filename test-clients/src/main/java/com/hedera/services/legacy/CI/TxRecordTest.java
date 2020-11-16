@@ -54,9 +54,6 @@ import org.junit.Assert;
  * This test covers : 1. Create a/c with generate Record = true and assert response from tx record
  * by tx id and account record api 2. Create a/c with generate Record = false and assert response
  * from tx record by tx id and account record api
- *
- * @author Akshay
- * @Date : 10/9/2018
  */
 public class TxRecordTest {
 

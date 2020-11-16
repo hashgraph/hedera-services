@@ -565,14 +565,6 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsInvalidTokenSymbol() {
-		given(dynamicProperties.maxTokenSymbolLength()).willReturn(3);
-
-		// expect:
-		assertEquals(INVALID_TOKEN_SYMBOL, subject.tokenSymbolCheck("!!!"));
-	}
-
-	@Test
 	public void acceptsReasonableTokenName() {
 		given(dynamicProperties.maxTokenNameLength()).willReturn(100);
 

@@ -27,6 +27,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -36,8 +37,10 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -57,6 +60,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
@@ -412,6 +416,20 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void realAssociationsExist() {
+		// expect:
+		assertTrue(subject.associationExists(sponsor, misc));
+	}
+
+	@Test
+	public void noAssociationsWithMissingAccounts() {
+		given(accountsLedger.exists(sponsor)).willReturn(false);
+
+		// expect:
+		assertFalse(subject.associationExists(sponsor, misc));
+	}
+
+	@Test
 	public void dissociatingRejectsUnassociatedTokens() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
@@ -722,7 +740,7 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// given:
 		var op = updateWith(NO_KEYS, true, true, false);
-		op = op.toBuilder().setExpiry(expiry - 1).build();
+		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -751,7 +769,7 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// given:
 		var op = updateWith(NO_KEYS, false, false, false);
-		op = op.toBuilder().setExpiry(expiry + 1_234).build();
+		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -778,7 +796,7 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
 		var op = updateWith(NO_KEYS, true, true, false, false, false);
-		op = op.toBuilder().setAutoRenewPeriod(-1L).build();
+		op = op.toBuilder().setAutoRenewPeriod(enduring(-1L)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -953,7 +971,7 @@ class HederaTokenStoreTest {
 		givenUpdateTarget(ALL_KEYS);
 		// and:
 		var op = updateWith(ALL_KEYS, true, true, true);
-		op = op.toBuilder().setExpiry(0).build();
+		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(0)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -964,6 +982,27 @@ class HederaTokenStoreTest {
 		// and:
 		assertFalse(subject.knownTreasuries.containsKey(treasury));
 		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);
+	}
+
+	@Test
+	public void updateRemovesAdminKeyWhenAppropos() {
+		// setup:
+		subject.addKnownTreasury(treasury, misc);
+
+		Set<TokenID> tokenSet = new HashSet<>();
+		tokenSet.add(misc);
+
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(EnumSet.noneOf(KeyType.class));
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), false, false, false);
+
+		// when:
+		var outcome = subject.update(op, thisSecond);
+		// then:
+		assertEquals(OK, outcome);
+		verify(token).setAdminKey(MerkleToken.UNUSED_KEY);
 	}
 
 	@Test
@@ -979,7 +1018,7 @@ class HederaTokenStoreTest {
 		givenUpdateTarget(ALL_KEYS);
 		// and:
 		var op = updateWith(ALL_KEYS, true, true, true);
-		op = op.toBuilder().setExpiry(newExpiry).build();
+		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(newExpiry)).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -1020,11 +1059,11 @@ class HederaTokenStoreTest {
 	}
 
 	enum KeyType {
-		WIPE, FREEZE, SUPPLY, KYC, ADMIN
+		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN
 	}
 
 	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
-	private static EnumSet<KeyType> ALL_KEYS = EnumSet.allOf(KeyType.class);
+	private static EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
 
 	private TokenUpdateTransactionBody updateWith(
 			EnumSet<KeyType> keys,
@@ -1033,16 +1072,6 @@ class HederaTokenStoreTest {
 			boolean useNewTreasury
 	) {
 		return updateWith(keys, useNewName, useNewSymbol, useNewTreasury, false, false);
-	}
-
-	private TokenUpdateTransactionBody updateWith(
-			EnumSet<KeyType> keys,
-			boolean useNewSymbol,
-			boolean useNewName,
-			boolean useNewTreasury,
-			boolean setInvalidKeys
-	) {
-		return updateWith(keys, useNewSymbol, useNewName, useNewTreasury, false, false, setInvalidKeys);
 	}
 
 	private TokenUpdateTransactionBody updateWith(
@@ -1080,7 +1109,7 @@ class HederaTokenStoreTest {
 			op.setAutoRenewAccount(newAutoRenewAccount);
 		}
 		if (useNewAutoRenewPeriod) {
-			op.setAutoRenewPeriod(newAutoRenewPeriod);
+			op.setAutoRenewPeriod(enduring(newAutoRenewPeriod));
 		}
 		for (KeyType key : keys) {
 			switch (key) {
@@ -1098,6 +1127,9 @@ class HederaTokenStoreTest {
 					break;
 				case ADMIN:
 					op.setAdminKey(setInvalidKeys ? invalidKey : newKey);
+					break;
+				case EMPTY_ADMIN:
+					op.setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY);
 					break;
 			}
 		}
@@ -1493,9 +1525,9 @@ class HederaTokenStoreTest {
 
 		// given:
 		var req = fullyValidAttempt()
-				.setExpiry(0)
+				.setExpiry(Timestamp.newBuilder().setSeconds(0))
 				.setAutoRenewAccount(autoRenewAccount)
-				.setAutoRenewPeriod(autoRenewPeriod)
+				.setAutoRenewPeriod(enduring(autoRenewPeriod))
 				.build();
 
 		// when:
@@ -1548,7 +1580,7 @@ class HederaTokenStoreTest {
 		// given:
 		var req = fullyValidAttempt()
 				.setAutoRenewAccount(autoRenewAccount)
-				.setAutoRenewPeriod(1000L)
+				.setAutoRenewPeriod(enduring(1000L))
 				.build();
 
 		// when:
@@ -1634,7 +1666,7 @@ class HederaTokenStoreTest {
 
 	TokenCreateTransactionBody.Builder fullyValidAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
-				.setExpiry(expiry)
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setAdminKey(adminKey)
 				.setKycKey(kycKey)
 				.setFreezeKey(freezeKey)
@@ -1646,5 +1678,9 @@ class HederaTokenStoreTest {
 				.setTreasury(treasury)
 				.setDecimals(decimals)
 				.setFreezeDefault(freezeDefault);
+	}
+
+	private Duration enduring(long secs) {
+		return Duration.newBuilder().setSeconds(secs).build();
 	}
 }

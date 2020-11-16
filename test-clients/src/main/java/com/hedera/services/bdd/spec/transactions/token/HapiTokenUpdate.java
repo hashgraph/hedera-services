@@ -28,8 +28,10 @@ import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.token.TokenUpdateUsage;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -68,7 +70,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
-	private boolean wipeToEmptyThresholdKey = false;
+	private boolean useImproperEmptyKey = false;
+	private boolean useEmptyAdminKeyList = false;
 
 	@Override
 	public HederaFunctionality type() {
@@ -77,11 +80,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate(String token) {
 		this.token = token;
-	}
-
-	public HapiTokenUpdate emptyingWipeKey() {
-		wipeToEmptyThresholdKey = true;
-		return this;
 	}
 
 	public HapiTokenUpdate freezeKey(String name) {
@@ -149,6 +147,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return this;
 	}
 
+	public HapiTokenUpdate improperlyEmptyingAdminKey() {
+		useImproperEmptyKey = true;
+		return this;
+	}
+
+	public HapiTokenUpdate properlyEmptyingAdminKey() {
+		useEmptyAdminKeyList = true;
+		return this;
+	}
+
 	@Override
 	protected HapiTokenUpdate self() {
 		return this;
@@ -175,7 +183,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				if (info.hasWipeKey()) {
 					estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
 				}
-				estimate.givenCurrentExpiry(info.getExpiry())
+				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
 						.givenCurrentName(info.getName())
 						.givenCurrentSymbol(info.getSymbol());
 				if (info.hasAutoRenewAccount()) {
@@ -221,22 +229,25 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							b.setToken(id);
 							newSymbol.ifPresent(b::setSymbol);
 							newName.ifPresent(b::setName);
-							newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
+							if (useImproperEmptyKey) {
+								b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+							} else if (useEmptyAdminKeyList) {
+								b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
+							} else {
+								newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
+							}
 							newTreasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
-							if (wipeToEmptyThresholdKey) {
-								b.setWipeKey(TxnUtils.EMPTY_THRESHOLD_KEY);
-							} else {
-								newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
-							}
+							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							newFreezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
 								var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(autoRenewId);
 							}
-							expiry.ifPresent(b::setExpiry);
-							autoRenewPeriod.ifPresent(b::setAutoRenewPeriod);
+							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
+							autoRenewPeriod.ifPresent(secs ->
+									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build()));
 						});
 		return b -> b.setTokenUpdate(opBody);
 	}
@@ -269,6 +280,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 			return;
 		}
 		var registry = spec.registry();
+		if (useEmptyAdminKeyList) {
+			registry.forgetAdminKey(token);
+		}
 		newAdminKey.ifPresent(n -> registry.saveAdminKey(token, registry.getKey(n)));
 		newSymbol.ifPresent(s -> registry.saveSymbol(token, s));
 		newName.ifPresent(s -> registry.saveName(token, s));

@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -51,12 +52,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
 	private static final int MAX_NAME_LENGTH = 100;
-	private static final int MAX_SYMBOL_LENGTH = 32;
+	private static final int MAX_SYMBOL_LENGTH = 100;
 	private static final long A_HUNDRED_SECONDS = 100;
 
 	private static String TOKEN_TREASURY = "treasury";
@@ -74,7 +74,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						validatesMissingAdminKey(),
 						tooLongNameCheckHolds(),
 						tooLongSymbolCheckHolds(),
-						numericSymbolCheckHolds(),
 						nameChanges(),
 						keysChange(),
 						validatesAlreadyDeletedToken(),
@@ -85,6 +84,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						invalidTreasuryCheckHolds(),
 						updateHappyPath(),
 						newTreasuryMustSign(),
+						newTreasuryMustBeAssociated(),
+						tokensCanBeMadeImmutableWithEmptyKeyList(),
 				}
 		);
 	}
@@ -101,6 +102,26 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				).when().then(
 						tokenUpdate("tbd")
 								.hasKnownStatus(TOKEN_WAS_DELETED)
+				);
+	}
+
+	private HapiApiSpec tokensCanBeMadeImmutableWithEmptyKeyList() {
+		return defaultHapiSpec("TokensCanBeMadeImmutableWithEmptyKeyList")
+				.given(
+						newKeyNamed("initialAdmin"),
+						cryptoCreate("neverToBe"),
+						tokenCreate("mutableForNow").adminKey("initialAdmin")
+				).when(
+						tokenUpdate("mutableForNow")
+								.improperlyEmptyingAdminKey()
+								.hasPrecheck(INVALID_ADMIN_KEY),
+						tokenUpdate("mutableForNow").properlyEmptyingAdminKey()
+				).then(
+						getTokenInfo("mutableForNow"),
+						tokenUpdate("mutableForNow")
+								.treasury("neverToBe")
+								.signedBy(GENESIS, "neverToBe")
+								.hasKnownStatus(TOKEN_IS_IMMUTABLE)
 				);
 	}
 
@@ -198,6 +219,22 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						wipeTokenAccount("tbu", "misc", 5)
 								.signedBy(GENESIS, "supplyThenWipeKey"),
 						getAccountInfo(TOKEN_TREASURY).logged()
+				);
+	}
+
+	public HapiApiSpec newTreasuryMustBeAssociated() {
+		return defaultHapiSpec("NewTreasuryMustBeAssociated")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate("oldTreasury"),
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury("oldTreasury")
+				).when(
+						cryptoCreate("newTreasury")
+				).then(
+						tokenUpdate("tbu")
+								.treasury("newTreasury").hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
 				);
 	}
 
@@ -317,7 +354,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec tooLongNameCheckHolds() {
-		var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(MAX_NAME_LENGTH+1);
+		var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(MAX_NAME_LENGTH + 1);
 
 		return defaultHapiSpec("TooLongNameCheckHolds")
 				.given(
@@ -335,7 +372,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec tooLongSymbolCheckHolds() {
-		var tooLongSymbol = TxnUtils.randomUppercase(MAX_SYMBOL_LENGTH+1);
+		var tooLongSymbol = TxnUtils.randomUppercase(MAX_SYMBOL_LENGTH + 1);
 
 		return defaultHapiSpec("TooLongSymbolCheckHolds")
 				.given(
@@ -349,24 +386,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate("tbu")
 								.symbol(tooLongSymbol)
 								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG)
-				);
-	}
-
-	public HapiApiSpec numericSymbolCheckHolds() {
-		var numericSymbol = "1234a";
-
-		return defaultHapiSpec("NumericSymbolCheckHolds")
-				.given(
-						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY)
-				).when(
-						tokenCreate("tbu")
-								.adminKey("adminKey")
-								.treasury(TOKEN_TREASURY)
-				).then(
-						tokenUpdate("tbu")
-								.symbol(numericSymbol)
-								.hasPrecheck(INVALID_TOKEN_SYMBOL)
 				);
 	}
 

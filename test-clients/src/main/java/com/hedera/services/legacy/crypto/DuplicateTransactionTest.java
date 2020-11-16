@@ -62,12 +62,6 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 
-/**
- * Test duplicate transactions
- *
- * @author Akshay
- * @Date : 8/15/2018
- */
 public class DuplicateTransactionTest {
 
 
