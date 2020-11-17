@@ -33,6 +33,7 @@ import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.queries.token.TokenAnswers;
@@ -42,6 +43,7 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -471,5 +473,26 @@ public class ServicesContextTest {
 		assertThat(ctx.accountsExporter(), instanceOf(DefaultAccountsExporter.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
+	}
+
+	@Test
+	public void testSystemFilesManager() throws Exception{
+		var diskFs = mock(MerkleDiskFs.class);
+		var storage = mock(FCMap.class);
+		var blob = mock(MerkleOptionalBlob.class);
+		byte[] fileInfo = new JFileInfo(false, StateView.EMPTY_WACL, 1_234_567L).serialize();
+		byte[] fileContents = new byte[0];
+		given(state.diskFs()).willReturn(diskFs);
+		given(state.storage()).willReturn(storage);
+		given(storage.containsKey(any())).willReturn(true);
+		given(storage.get(any())).willReturn(blob);
+		given(blob.getData()).willReturn(fileInfo);
+		given(diskFs.contains(any())).willReturn(true);
+		given(diskFs.contentsOf(any())).willReturn(fileContents);
+
+		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		var subject = ctx.systemFilesManager();
+
+		subject.loadFeeSchedules();
 	}
 }
