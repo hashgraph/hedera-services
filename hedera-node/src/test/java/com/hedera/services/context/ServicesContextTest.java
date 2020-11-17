@@ -477,12 +477,10 @@ public class ServicesContextTest {
 	public void shouldInitFees() throws Exception {
 		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
 		var diskFs = mock(MerkleDiskFs.class);
-		var storage = mock(FCMap.class);
 		var blob = mock(MerkleOptionalBlob.class);
 		byte[] fileInfo = new JFileInfo(false, StateView.EMPTY_WACL, 1_234_567L).serialize();
 		byte[] fileContents = new byte[0];
 		given(state.diskFs()).willReturn(diskFs);
-		given(state.storage()).willReturn(storage);
 		given(storage.containsKey(any())).willReturn(true);
 		given(storage.get(any())).willReturn(blob);
 		given(blob.getData()).willReturn(fileInfo);
