@@ -41,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -127,6 +128,12 @@ public class SmartContractRequestHandler {
 	private SolidityLifecycle lifecycle;
 	private SoliditySigsVerifier sigsVerifier;
 	private GlobalDynamicProperties dynamicProperties;
+
+	public void setRunningAvgs(MiscRunningAvgs runningAvgs) {
+		this.runningAvgs = runningAvgs;
+	}
+
+	private MiscRunningAvgs runningAvgs;
 
 	public SmartContractRequestHandler(
 			ServicesRepositoryRoot repository,
@@ -483,6 +490,7 @@ public class SmartContractRequestHandler {
 			try {
 				rbhInTinybars = getContractCallRbhInTinyBars(consensusTimeStamp);
 				sbhInTinybars = getContractCallSbhInTinyBars(consensusTimeStamp);
+				long before = System.nanoTime();
 				var record = run(
 					tx,
 					senderAccountEthAddress,
@@ -493,6 +501,8 @@ public class SmartContractRequestHandler {
 					rbhInTinybars,
 					sbhInTinybars,
 					false);
+				long after = System.nanoTime();
+				runningAvgs.recordContractCallMicros((after - before) / 1_000);
 				setParentPropertiesForChildrenContracts(
 						receiverAccount,
 						record.getContractCallResult().getCreatedContractIDsList());

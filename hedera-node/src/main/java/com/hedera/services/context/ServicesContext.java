@@ -1390,6 +1390,7 @@ public class ServicesContext {
 					soliditySigsVerifier(),
 					entityExpiries(),
 					globalDynamicProperties());
+			contracts.setRunningAvgs(runningAvgs());
 		}
 		return contracts;
 	}

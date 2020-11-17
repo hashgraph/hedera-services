@@ -45,16 +45,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 public class ContractStorageSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractStorageSpec.class);
 
-	private static final String SETSIZE_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_howManyKB\"," +
+	public static final String SETSIZE_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_howManyKB\"," +
 			"\"type\":\"uint256\"}],\"name\":\"setSizeInKB\",\"outputs\":[],\"payable\":false," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String SETCONTENT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_value\"," +
+	public static final String SETCONTENT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_value\"," +
 			"\"type\":\"uint256\"},{\"name\":\"_size\",\"type\":\"uint256\"}],\"name\":\"changeArray\",\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String GETCONTENT_ABI = "{\"constant\":true,\"inputs\":[{\"name\":\"_index\"," +
+	public static final String GETCONTENT_ABI = "{\"constant\":true,\"inputs\":[{\"name\":\"_index\"," +
 			"\"type\":\"uint256\"}],\"name\":\"getData\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String PATH_TO_CONTRACT_STORAGE_BYTECODE = "src/main/resource/testfiles/ContractStorage.bin";
+	public static final String PATH_TO_CONTRACT_STORAGE_BYTECODE = "src/main/resource/testfiles/ContractStorage.bin";
 
 	/* Default the size of the array to 4KB */
 	private static final int SIZE=4;

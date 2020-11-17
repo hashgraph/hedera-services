@@ -31,6 +31,7 @@ public class MiscRunningAvgs {
 	StatsRunningAverage accountLookupRetries;
 	StatsRunningAverage recordStreamQueueSize;
 	StatsRunningAverage handledSubmitMessageSize;
+	StatsRunningAverage contractCallMicros;
 
 	public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
 		this.runningAvg = runningAvg;
@@ -41,6 +42,7 @@ public class MiscRunningAvgs {
 		accountLookupRetries = new StatsRunningAverage(halfLife);
 		recordStreamQueueSize = new StatsRunningAverage(halfLife);
 		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
+		contractCallMicros = new StatsRunningAverage(halfLife);
 	}
 
 	public void registerWith(Platform platform) {
@@ -64,6 +66,11 @@ public class MiscRunningAvgs {
 						Names.HANDLED_SUBMIT_MESSAGE_SIZE,
 						Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
 						handledSubmitMessageSize));
+		platform.addAppStatEntry(
+				runningAvg.from(
+						Names.CONTRACT_CALL_MICROS,
+						Descriptions.CONTRACT_CALL_MICROS,
+						contractCallMicros));
 	}
 
 	public void recordAccountLookupRetries(int num) {
@@ -82,11 +89,16 @@ public class MiscRunningAvgs {
 		handledSubmitMessageSize.recordValue(bytes);
 	}
 
+	public void recordContractCallMicros(long time) {
+		contractCallMicros.recordValue(time);
+	}
+
 	static class Names {
 		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
 		public static final String RECORD_STREAM_QUEUE_SIZE = "recordStreamQueueSize";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
+		public static final String CONTRACT_CALL_MICROS = "avgContractCallMicros";
 	}
 
 	static class Descriptions {
@@ -98,5 +110,7 @@ public class MiscRunningAvgs {
 				"size of the queue from which we take records and write to RecordStream file";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
 				"average size of the handled HCS submit message transaction";
+		public static final String CONTRACT_CALL_MICROS =
+				"average microseconds needed to run an EVM transaction";
 	}
 }
