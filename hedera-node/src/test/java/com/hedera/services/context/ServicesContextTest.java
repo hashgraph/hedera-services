@@ -494,6 +494,6 @@ public class ServicesContextTest {
 		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
 		var subject = ctx.systemFilesManager();
 
-		subject.loadFeeSchedules();
+		assertDoesNotThrow(() -> subject.loadFeeSchedules());
 	}
 }
