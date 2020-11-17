@@ -139,12 +139,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -476,7 +474,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void testSystemFilesManager() throws Exception {
+	public void shouldInitFees() throws Exception {
 		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
 		var diskFs = mock(MerkleDiskFs.class);
 		var storage = mock(FCMap.class);
