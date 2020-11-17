@@ -476,7 +476,8 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void testSystemFilesManager() throws Exception{
+	public void testSystemFilesManager() throws Exception {
+		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
 		var diskFs = mock(MerkleDiskFs.class);
 		var storage = mock(FCMap.class);
 		var blob = mock(MerkleOptionalBlob.class);
