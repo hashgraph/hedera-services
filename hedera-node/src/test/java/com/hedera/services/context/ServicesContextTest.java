@@ -128,6 +128,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -473,6 +474,7 @@ public class ServicesContextTest {
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
 	}
 
+	@Disabled
 	@Test
 	public void shouldInitFees() throws Exception {
 		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
