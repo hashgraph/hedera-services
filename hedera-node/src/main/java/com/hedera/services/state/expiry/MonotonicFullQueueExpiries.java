@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 
 import java.util.ArrayDeque;
 import java.util.Deque;

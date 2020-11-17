@@ -135,6 +135,11 @@ class ExpiryManagerTest {
 		// then:
 		verify(recordCache).reset();
 		verify(txnHistories).clear();
+		assertEquals(expiry, subject.payerExpiries.now);
+		assertEquals(1, subject.payerExpiries.allExpiries.size());
+		var expiryEvent = subject.payerExpiries.allExpiries.getFirst();
+		assertEquals(2, expiryEvent.getId());
+		assertEquals(expiry, expiryEvent.getExpiry());
 	}
 
 	@Test
