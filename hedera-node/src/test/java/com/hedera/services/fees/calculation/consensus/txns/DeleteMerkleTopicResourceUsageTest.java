@@ -75,7 +75,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
         FeeData feeData = subject.usageGiven(txBody, sigValueObj, view);
 
         // expect:
-        int expectedExtraBpt = 24; // + 24 for topicId
+        int expectedExtraBpt = 21;
         checkServicesFee(feeData, 0);
         checkNetworkFee(feeData, expectedExtraBpt, 0);
         checkNodeFee(feeData, expectedExtraBpt);

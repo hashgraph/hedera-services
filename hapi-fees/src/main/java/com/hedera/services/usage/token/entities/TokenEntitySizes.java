@@ -29,8 +29,8 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 public enum TokenEntitySizes {
 	TOKEN_ENTITY_SIZES;
 
-	/* { deleted, accountsFrozenByDefault } */
-	static int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 2;
+	/* { deleted, accountsFrozenByDefault, accountsKycGrantedByDefault } */
+	static int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 3;
 	/* { decimals } */
 	static int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
 	/* { expiry, totalSupply, autoRenewPeriod } */
