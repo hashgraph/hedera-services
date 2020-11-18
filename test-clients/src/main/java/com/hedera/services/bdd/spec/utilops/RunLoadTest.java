@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -133,17 +132,13 @@ public class RunLoadTest extends UtilOp {
 		int totalOps = 0;
 		float currentTPS = 0;
 		Stopwatch duration = createStarted();
-		long defaultSleepMS = (long) (opSource.get().length * 1000 / _targetTps);
 
 		boolean reported = false;
 		Stopwatch statDuration = duration;
 		int submitOps = 0; // submitted tran during the stat window
 		while (duration.elapsed(_ofUnit) < _testDuration) {
-			int numOpsThen = spec.numLedgerOps();
 			HapiSpecOperation[] ops = opSource.get();
 			allRunFor(spec, ops);
-			int numOpsNow = spec.numLedgerOps();
-			//should not use spec.numLedgerOps() since spec shared by all load test threads
 			submitOps += ops.length;
 			totalOps += ops.length;
 

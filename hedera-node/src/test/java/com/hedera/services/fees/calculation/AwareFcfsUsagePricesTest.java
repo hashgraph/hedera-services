@@ -25,12 +25,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZE
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.io.Files;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.bootstrap.JsonToProtoSerdeTest;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.mocks.MockAppender;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -39,12 +39,13 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -186,6 +187,13 @@ class AwareFcfsUsagePricesTest {
 
 	@Test
 	public void returnsDefaultUsagePricesForUnsupported() throws Exception {
+		// setup:
+		MockAppender mockAppender = new MockAppender();
+		var log = (org.apache.logging.log4j.core.Logger) LogManager.getLogger(AwareFcfsUsagePrices.class);
+		log.addAppender(mockAppender);
+		Level levelForReset = log.getLevel();
+		log.setLevel(Level.WARN);
+
 		// given:
 		subject.loadPriceSchedules();
 		Timestamp at = Timestamp.newBuilder()
@@ -197,6 +205,14 @@ class AwareFcfsUsagePricesTest {
 
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, actual);
+		assertEquals(1, mockAppender.size());
+		assertEquals("WARN - Only default usage prices available for function UNRECOGNIZED @ 1970-01-15T06:56:06Z! (java.lang.NullPointerException)",
+				mockAppender.get(0));
+
+		// tearDown:
+		log.setLevel(levelForReset);
+		log.removeAppender(mockAppender);
+		mockAppender.clear();
 	}
 
 	@Test

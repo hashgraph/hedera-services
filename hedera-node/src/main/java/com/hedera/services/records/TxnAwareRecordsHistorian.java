@@ -101,6 +101,6 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public void reviewExistingRecords() {
-		expiries.resumeTrackingFrom(accounts.get());
+		expiries.restartTrackingFrom(accounts.get());
 	}
 }

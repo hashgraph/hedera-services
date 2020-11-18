@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -29,6 +28,12 @@ import java.util.Deque;
 public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 	long now = 0L;
 	Deque<ExpiryEvent> allExpiries = new ArrayDeque<>();
+
+	@Override
+	public void reset() {
+		now = 0L;
+		allExpiries.clear();
+	}
 
 	@Override
 	public void track(K id, long expiry) {

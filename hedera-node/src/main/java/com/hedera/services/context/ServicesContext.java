@@ -468,6 +468,15 @@ public class ServicesContext {
 		queryableTokenAssociations().set(tokenAssociations());
 	}
 
+	public void rebuildBackingStoresIfPresent() {
+		if (backingTokenRels != null) {
+			backingTokenRels.rebuildFromSources();
+		}
+		if (backingAccounts != null) {
+			backingAccounts.rebuildFromSources();
+		}
+	}
+
 	public HapiOpCounters opCounters() {
 		if (opCounters == null) {
 			opCounters = new HapiOpCounters(new CounterFactory() {}, runningAvgs(), txnCtx(), MiscUtils::baseStatNameOf);
@@ -1425,6 +1434,7 @@ public class ServicesContext {
 							midnightRates().replaceWith(rates);
 						}
 					},
+					schedules -> fees().init(),
 					config -> {
 						((StandardizedPropertySources) propertySources()).reloadFrom(config);
 						globalDynamicProperties().reload();
@@ -1675,5 +1685,13 @@ public class ServicesContext {
 
 	public MerkleDiskFs diskFs() {
 		return state.diskFs();
+	}
+
+	void setBackingTokenRels(BackingTokenRels backingTokenRels) {
+		this.backingTokenRels = backingTokenRels;
+	}
+
+	void setBackingAccounts(FCMapBackingAccounts backingAccounts) {
+		this.backingAccounts = backingAccounts;
 	}
 }
