@@ -28,6 +28,8 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -184,7 +186,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 			Assert.assertEquals(
 					"Wrong auto renew period!",
 					expectedAutoRenewPeriod.getAsLong(),
-					actualInfo.getAutoRenewPeriod());
+					actualInfo.getAutoRenewPeriod().getSeconds());
 		}
 
 		if (expectedTotalSupply.isPresent()) {
@@ -220,7 +222,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		assertFor(
 				actualInfo.getExpiry(),
 				expectedExpiry,
-				(n, r) -> r.getTokenExpiry(token),
+				(n, r) -> Timestamp.newBuilder().setSeconds(r.getTokenExpiry(token)).build(),
 				"Wrong token expiry!",
 				registry);
 

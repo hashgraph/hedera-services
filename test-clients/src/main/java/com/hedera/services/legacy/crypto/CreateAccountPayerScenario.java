@@ -53,9 +53,6 @@ import org.junit.Assert;
  * <p>
  * Expected Behaviour :: Account shouldn't be created and receipt status should be
  * INSUFFICIENT_PAYER_BALANCE
- *
- * @author Akshay
- * @Date : 12/12/2018
  */
 public class CreateAccountPayerScenario {
 

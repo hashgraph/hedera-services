@@ -29,6 +29,8 @@ public class CapacityTest {
 	public CapacityTest(double capacityRequired, BucketThrottle bucket) {
 		this.capacityRequired = capacityRequired;
 		this.bucket = bucket;
+		/* Ensure the bucket re-configures its primary throttle if necessary. */
+		bucket.hasAvailableCapacity(capacityRequired);
 	}
 
 	public boolean isAvailable() {

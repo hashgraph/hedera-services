@@ -112,7 +112,7 @@ class BootstrapPropertiesTest {
 			entry("precheck.account.maxLookupRetries", 10),
 			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
 			entry("tokens.maxPerAccount", 1_000),
-			entry("tokens.maxSymbolLength", 32),
+			entry("tokens.maxSymbolLength", 100),
 			entry("tokens.maxTokenNameLength",100),
 			entry("files.maxSizeKb", 1024),
 			entry("cache.records.ttl", 180),
