@@ -71,8 +71,8 @@ class SubmitMessageResourceUsageTest extends TopicResourceUsageTestBase {
 
     @ParameterizedTest
     @CsvSource({
-            "x, 22",  // 24 (topicId) + 1 (message)
-            "x12345, 27", // +5 bpt (message)
+            "x, 25",  // 24 (topicId) + 1 (message)
+            "x12345, 30", // +5 bpt (message)
     })
     public void feeDataAsExpected(String message, int expectedExtraBpt) throws Exception {
         // setup:

@@ -40,7 +40,7 @@ public class FeeBuilder {
   public static final int LONG_SIZE = 8;
   public static final int FEE_MATRICES_CONST = 1;
   public static final int INT_SIZE = 4;
-  public static final int BOOL_SIZE = 1;
+  public static final int BOOL_SIZE = 4;
   public static final int SOLIDITY_ADDRESS = 20;
   public static final int KEY_SIZE = 32;
   public static final int TX_HASH_SIZE = 48;
