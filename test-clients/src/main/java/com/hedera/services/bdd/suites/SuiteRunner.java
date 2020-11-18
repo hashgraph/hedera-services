@@ -321,11 +321,7 @@ public class SuiteRunner {
 					"" + EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
 			otherOverrides.forEach((k,v)-> log.info("otherOverrides {} {}", k, v));
-			if (otherOverrides.containsKey("skipCreatePayer")) {
-				log.info("Skip create payer");
-			} else {
-				createPayerAccount(System.getenv("NODES"), args[1]);
-			}
+			createPayerAccount(System.getenv("NODES"), args[1]);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
 					payerId,
