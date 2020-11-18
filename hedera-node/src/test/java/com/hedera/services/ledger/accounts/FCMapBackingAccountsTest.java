@@ -81,6 +81,30 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
+	public void rebuildsFromChangedSources() {
+		// setup:
+		map = new FCMap<>();
+		map.put(aKey, aValue);
+		map.put(bKey, bValue);
+		// and:
+		subject = new FCMapBackingAccounts(() -> map);
+
+		// when:
+		map.clear();
+		map.put(cKey, cValue);
+		map.put(dKey, dValue);
+		// and:
+		subject.rebuildFromSources();
+
+		// then:
+		assertFalse(subject.existingAccounts.contains(a));
+		assertFalse(subject.existingAccounts.contains(b));
+		// and:
+		assertTrue(subject.existingAccounts.contains(c));
+		assertTrue(subject.existingAccounts.contains(d));
+	}
+
+	@Test
 	public void containsDelegatesToKnownActive() {
 		// setup:
 		subject.existingAccounts = Set.of(a, b);

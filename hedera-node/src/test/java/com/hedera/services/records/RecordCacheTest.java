@@ -122,6 +122,17 @@ class RecordCacheTest {
 	}
 
 	@Test
+	public void resetsHistoriesIfRequested() {
+		subject.recordExpiries = mock(MonotonicFullQueueExpiries.class);
+
+		// when:
+		subject.reset();
+
+		// then:
+		verify(subject.recordExpiries).reset();
+	}
+
+	@Test
 	public void expiresOtherForgottenHistory() {
 		// setup:
 		subject = new RecordCache(ctx, receiptCache, new HashMap<>());

@@ -140,8 +140,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			long balance = response.getCryptogetAccountBalance().getBalance();
 			long TINYBARS_PER_HBAR = 100_000_000L;
 			long hBars = balance / TINYBARS_PER_HBAR;
-			log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance
-					+ " tinyBars (" + hBars + "ħ)");
+			if (!loggingOff) {
+				log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance + " tinyBars (" + hBars + "ħ)");
+			}
 		}
 	}
 

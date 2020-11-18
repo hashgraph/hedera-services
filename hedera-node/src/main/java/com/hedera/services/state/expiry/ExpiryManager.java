@@ -56,7 +56,11 @@ public class ExpiryManager {
 		payerExpiries.track(owner.getAccountNum(), expiry);
 	}
 
-	public void resumeTrackingFrom(FCMap<MerkleEntityId, MerkleAccount> accounts) {
+	public void restartTrackingFrom(FCMap<MerkleEntityId, MerkleAccount> accounts) {
+		recordCache.reset();
+		txnHistories.clear();
+		payerExpiries.reset();
+
 		var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		accounts.forEach((id, account) -> {
 			addUniqueExpiries(id.getNum(), account.records(), _payerExpiries);

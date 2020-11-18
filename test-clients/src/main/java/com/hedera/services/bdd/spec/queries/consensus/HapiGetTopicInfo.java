@@ -50,6 +50,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 	private OptionalLong seqNo = OptionalLong.empty();
 	private Optional<LongSupplier> seqNoFn = Optional.empty();
 	private Optional<byte[]> runningHash = Optional.empty();
+	private Optional<String> runningHashEntry = Optional.empty();
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong autoRenewPeriod = OptionalLong.empty();
 	private boolean hasNoAdminKey = false;
@@ -62,12 +63,12 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		this.topic = topic;
 	}
 
-	public HapiGetTopicInfo hasMemo(String memo)	{
+	public HapiGetTopicInfo hasMemo(String memo) {
 		topicMemo = Optional.of(memo);
 		return this;
 	}
 
-	public HapiGetTopicInfo hasSeqNo(long exp)	{
+	public HapiGetTopicInfo hasSeqNo(long exp) {
 		seqNo = OptionalLong.of(exp);
 		return this;
 	}
@@ -77,8 +78,13 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		return this;
 	}
 
-	public HapiGetTopicInfo hasRunningHash(byte[] exp)	{
+	public HapiGetTopicInfo hasRunningHash(byte[] exp) {
 		runningHash = Optional.of(exp);
+		return this;
+	}
+
+	public HapiGetTopicInfo hasRunningHash(String registryEntry) {
+		runningHashEntry = Optional.of(registryEntry);
 		return this;
 	}
 
@@ -86,7 +92,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		expiry = OptionalLong.of(exp);
 		return this;
 	}
-	public HapiGetTopicInfo hasAutoRenewPeriod(long exp)	{
+	public HapiGetTopicInfo hasAutoRenewPeriod(long exp) {
 		autoRenewPeriod = OptionalLong.of(exp);
 		return this;
 	}
@@ -136,6 +142,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 			seqNo = OptionalLong.of(seqNoFn.get().getAsLong());
 		}
 		seqNo.ifPresent(exp -> assertEquals("Bad sequence number!", exp, info.getSequenceNumber()));
+		runningHashEntry.ifPresent(entry -> runningHash = Optional.of(spec.registry().getBytes(entry)));
 		runningHash.ifPresent(exp -> assertArrayEquals("Bad running hash!", exp,
 				info.getRunningHash().toByteArray()));
 		expiry.ifPresent(exp -> assertEquals("Bad expiry!", exp, info.getExpirationTime().getSeconds()));

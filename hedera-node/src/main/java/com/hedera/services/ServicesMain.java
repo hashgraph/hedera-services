@@ -150,8 +150,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("Platform is configured.");
 		migrateStateIfNeeded();
 		log.info("Migrations complete.");
-		loadPropertiesAndPermissions();
-		log.info("Initialized properties and permissions.");
 		startRecordStreamThread();
 		log.info("Record stream started.");
 		startNettyIfAppropriate();
@@ -164,10 +162,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("System files rationalized.");
 		exportAccountsIfDesired();
 		log.info("Accounts exported.");
-		reviewRecordExpirations();
-		log.info("Record expiration reviewed.");
-		loadFeeSchedule();
-		log.info("Fee schedule loaded.");
 		initializeStats();
 		log.info("Stats initialized.");
 
@@ -191,20 +185,10 @@ public class ServicesMain implements SwirldMain {
 		try {
 			ctx.systemFilesManager().createAddressBookIfMissing();
 			ctx.systemFilesManager().createNodeDetailsIfMissing();
-			ctx.systemFilesManager().loadFeeSchedules();
 			ctx.systemFilesManager().loadExchangeRates();
 			ctx.systemFilesManager().createUpdateZipFileIfMissing();
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not create system files!", e);
-		}
-	}
-
-	private void loadPropertiesAndPermissions() {
-		try {
-			ctx.systemFilesManager().loadApplicationProperties();
-			ctx.systemFilesManager().loadApiPermissions();
-		} catch (Exception e) {
-			throw new IllegalStateException("Could not create Config Properties system files!", e);
 		}
 	}
 
@@ -281,10 +265,6 @@ public class ServicesMain implements SwirldMain {
 		if (ctx.nodeAccount() == null) {
 			throw new IllegalStateException("Unknown ledger account!");
 		}
-	}
-
-	private void reviewRecordExpirations() {
-		ctx.recordsHistorian().reviewExistingRecords();
 	}
 
 	void logInfoWithConsoleEcho(String s) {

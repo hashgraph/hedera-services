@@ -42,6 +42,15 @@ public class PerfTestLoadSettings {
 
 	private HapiPropertySource ciProps = null;
 
+	public PerfTestLoadSettings() {
+	}
+
+	public PerfTestLoadSettings(int tps, int mins, int threads) {
+		this.tps = tps;
+		this.mins = mins;
+		this.threads = threads;
+	}
+
 	public int getTps() {
 		return tps;
 	}

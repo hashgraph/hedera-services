@@ -37,6 +37,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
+import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
@@ -45,8 +46,11 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -91,8 +95,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiApiSuite.MASTER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class UtilVerbs {
@@ -104,15 +110,15 @@ public class UtilVerbs {
 	public static InBlockingOrder blockingOrder(HapiSpecOperation... ops) {
 		return new InBlockingOrder(ops);
 	}
-
+	public static NodeLivenessTimeout withLiveNode(String node) {
+		return new NodeLivenessTimeout(node);
+	}
 	public static HapiSpecSleep sleepFor(long timeMs) {
 		return new HapiSpecSleep(timeMs);
 	}
-
 	public static HapiSpecWaitUntil waitUntil(String timeOfDay) throws ParseException {
 		return new HapiSpecWaitUntil(timeOfDay);
 	}
-
 	public static UsableTxnId usableTxnIdNamed(String txnId) {
 		return new UsableTxnId(txnId);
 	}
@@ -329,6 +335,37 @@ public class UtilVerbs {
 
 			CustomSpecAssert.allRunFor(spec, opsList);
 		});
+	}
+
+	public static HapiSpecOperation makeFree(HederaFunctionality function) {
+		return withOpContext((spec, opLog) -> {
+			var query = getFileContents(FEE_SCHEDULE).payingWith(MASTER);
+			allRunFor(spec, query);
+			byte[] rawSchedules = query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
+			var zeroTfs = zeroFor(function);
+			var schedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules);
+			var perturbedSchedules = CurrentAndNextFeeSchedule.newBuilder();
+			schedules.getCurrentFeeSchedule()
+					.getTransactionFeeScheduleList()
+					.stream()
+					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
+					.forEach(perturbedSchedules.getCurrentFeeScheduleBuilder()::addTransactionFeeSchedule);
+			schedules.getNextFeeSchedule()
+					.getTransactionFeeScheduleList()
+					.stream()
+					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
+					.forEach(perturbedSchedules.getNextFeeScheduleBuilder()::addTransactionFeeSchedule);
+			perturbedSchedules.getCurrentFeeScheduleBuilder()
+					.setExpiryTime(schedules.getCurrentFeeSchedule().getExpiryTime());
+			perturbedSchedules.getNextFeeScheduleBuilder()
+					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
+			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
+			allRunFor(spec, updateLargeFile(MASTER, FEE_SCHEDULE, rawPerturbedSchedules));
+		});
+	}
+
+	private static TransactionFeeSchedule zeroFor(HederaFunctionality function) {
+		return TransactionFeeSchedule.newBuilder().setHederaFunctionality(function).build();
 	}
 
 	public static HapiSpecOperation updateLargeFile(
