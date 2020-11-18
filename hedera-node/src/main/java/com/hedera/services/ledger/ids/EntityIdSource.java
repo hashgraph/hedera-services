@@ -56,8 +56,6 @@ public interface EntityIdSource {
 
 	/**
 	 * Reclaims the last id issued.
-	 *
-	 * @return an appropriate id to use
 	 */
 	void reclaimLastId();
 }

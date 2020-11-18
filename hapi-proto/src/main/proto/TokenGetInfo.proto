@@ -28,6 +28,8 @@ option java_multiple_files = true;
 import "BasicTypes.proto";
 import "QueryHeader.proto";
 import "ResponseHeader.proto";
+import "Timestamp.proto";
+import "Duration.proto";
 
 /* Gets information about Token instance */
 message TokenGetInfoQuery {
@@ -50,10 +52,10 @@ message TokenInfo {
     Key supplyKey = 11; // The key which can change the supply of a token. The key is used to sign Token Mint/Burn operations
     TokenFreezeStatus defaultFreezeStatus = 12; // The default Freeze status (not applicable, frozen or unfrozen) of Hedera accounts relative to this token. FreezeNotApplicable is returned if Token Freeze Key is empty. Frozen is returned if Token Freeze Key is set and defaultFreeze is set to true. Unfrozen is returned if Token Freeze Key is set and defaultFreeze is set to false
     TokenKycStatus defaultKycStatus = 13; // The default KYC status (KycNotApplicable or Revoked) of Hedera accounts relative to this token. KycNotApplicable is returned if KYC key is not set, otherwise Revoked
-    bool isDeleted = 14; // Specifies whether the token was deleted or not
+    bool deleted = 14; // Specifies whether the token was deleted or not
     AccountID autoRenewAccount = 15; // An account which will be automatically charged to renew the token's expiration, at autoRenewPeriod interval
-    uint64 autoRenewPeriod = 16; // The interval at which the auto-renew account will be charged to extend the token's expiry
-    uint64 expiry = 17; // The epoch second at which the token will expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod
+    Duration autoRenewPeriod = 16; // The interval at which the auto-renew account will be charged to extend the token's expiry
+    Timestamp expiry = 17; // The epoch second at which the token will expire
 }
 
 /* Response when the client sends the node TokenGetInfoQuery */

@@ -2,13 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.hedera.services</groupId>
+  <groupId>com.hedera.hashgraph</groupId>
   <artifactId>test-clients</artifactId>
   <description>Test clients for Hedera Services</description>
   <name>Hedera Services Test Clients</name>
 
   <parent>
-    <groupId>com.hedera.services</groupId>
+    <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
     <version>0.9.1-SNAPSHOT</version>
   </parent>
@@ -69,22 +69,52 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
+            <id>copy</id>
+            <phase>install</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <stripVersion>true</stripVersion>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-dependencies</id>
-            <phase>package</phase>
+            <phase>install</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/extLib</outputDirectory>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>false</overWriteSnapshots>
-              <overWriteIfNewer>true</overWriteIfNewer>
-            </configuration>
           </execution>
         </executions>
+        <configuration>
+          <artifactItems>
+            <artifactItem>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>${project.artifactId}</artifactId>
+              <version>${project.version}</version>
+              <type>${project.packaging}</type>
+            </artifactItem>
+          </artifactItems>
+          <outputDirectory>${project.build.directory}/extLib</outputDirectory>
+          <overWriteReleases>false</overWriteReleases>
+          <overWriteSnapshots>false</overWriteSnapshots>
+          <overWriteIfNewer>true</overWriteIfNewer>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -104,9 +134,6 @@
                   <mainClass>com.hedera.services.bdd.suites.utils.sysfiles.SysFilesUpdate</mainClass>
                 </manifest>
               </archive>
-<!--              <descriptorRefs>-->
-<!--                <descriptorRef>jar-with-dependencies</descriptorRef>-->
-<!--              </descriptorRefs>-->
               <descriptors>
                 <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
@@ -125,11 +152,6 @@
                   <mainClass>com.hedera.services.bdd.suites.utils.validation.ValidationScenarios</mainClass>
                 </manifest>
               </archive>
-				<!--
-              <descriptorRefs>
-                <descriptorRef>jar-with-dependencies</descriptorRef>
-              </descriptorRefs>
-              -->
               <descriptors>
                 <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
@@ -151,18 +173,6 @@
               </archive>
               <descriptors>
                 <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <appendAssemblyId>false</appendAssemblyId>
-              <descriptors>
-                <descriptor>src/main/resource/zip.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
@@ -222,7 +232,7 @@
       <version>0.9.1-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>com.hedera.services</groupId>
+      <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
       <version>0.9.1-SNAPSHOT</version>
     </dependency>
@@ -258,4 +268,20 @@
       <version>${snakeyaml.version}</version>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-deploy-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

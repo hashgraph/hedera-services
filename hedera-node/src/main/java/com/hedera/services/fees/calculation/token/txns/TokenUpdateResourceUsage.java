@@ -50,7 +50,7 @@ public class TokenUpdateResourceUsage implements TxnResourceUsageEstimator {
 		if (optionalInfo.isPresent()) {
 			var info = optionalInfo.get();
 			var estimate = factory.apply(txn, sigUsage)
-					.givenCurrentExpiry(info.getExpiry())
+					.givenCurrentExpiry(info.getExpiry().getSeconds())
 					.givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
 					.givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
 					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))

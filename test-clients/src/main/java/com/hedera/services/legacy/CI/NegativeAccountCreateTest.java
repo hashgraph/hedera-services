@@ -64,9 +64,6 @@ import org.junit.Assert;
  * 7. send invalid duration time
  * 8. send memo more than 100 byte size
  * 9. invalid signature
- *
- * @author Akshay
- * @Date : 8/15/2018
  */
 public class NegativeAccountCreateTest {
 

@@ -62,7 +62,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -175,7 +174,7 @@ class TokenUpdateTransitionLogicTest {
 
 		// then:
 		verify(ledger).dropPendingTokenChanges();
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
 		// and:
 		verify(txnCtx).setStatus(INVALID_TOKEN_SYMBOL);
 	}
@@ -195,7 +194,7 @@ class TokenUpdateTransitionLogicTest {
 		// and:
 		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		// and:
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
 	}
 
 	@Test
@@ -214,7 +213,7 @@ class TokenUpdateTransitionLogicTest {
 		// and:
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 		// and:
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
 	}
 
 	@Test
@@ -270,7 +269,7 @@ class TokenUpdateTransitionLogicTest {
 		// then:
 		verify(ledger, never()).getTokenBalance(oldTreasury, target);
 		// and:
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
 		// and:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
@@ -286,7 +285,7 @@ class TokenUpdateTransitionLogicTest {
 		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
 		given(store.update(any(), anyLong())).willReturn(OK);
 		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
-		given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance, true)).willReturn(OK);
+		given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance)).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
@@ -295,7 +294,7 @@ class TokenUpdateTransitionLogicTest {
 		verify(ledger).unfreeze(newTreasury, target);
 		verify(ledger).grantKyc(newTreasury, target);
 		verify(ledger).getTokenBalance(oldTreasury, target);
-		verify(ledger).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance, true);
+		verify(ledger).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
 		// and:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
@@ -307,7 +306,7 @@ class TokenUpdateTransitionLogicTest {
 		givenToken(false, false);
 		// and:
 		given(store.update(any(), anyLong())).willReturn(OK);
-		given(ledger.doTokenTransfer(eq(target), eq(oldTreasury), eq(newTreasury), anyLong(), eq(true))).willReturn(OK);
+		given(ledger.doTokenTransfer(eq(target), eq(oldTreasury), eq(newTreasury), anyLong())).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
