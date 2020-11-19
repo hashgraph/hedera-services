@@ -904,6 +904,26 @@ workflows:
                 at: /
           workflow-name: "nightly-basic-suiterunner-regression"
 
+  nightly-update-feature-regression:
+    triggers:
+      - schedule:
+          cron: "30 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-update-node-tests:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-update-feature-regression"
+
   weekly-crypto-transfer-perf-start-from-saved-state-regression:
     triggers:
       - schedule:
@@ -1542,6 +1562,30 @@ jobs:
           command: |
               aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
               tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-update-node-tests:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run update node test
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Crypto-Update-5N-1C.json /repo
+
+      - run:
+          name: Sync results of update node tests to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
 
       - store_artifacts:
           path: /results.tar.gz

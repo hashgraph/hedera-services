@@ -61,4 +61,25 @@ updateServiceMainJava()
 
 }
 
-updateServiceMainJava
+updateConfig(){
+  TARGET_DIR=../test-clients/updateFiles
+  rm -rf $TARGET_DIR
+  mkdir -p $TARGET_DIR
+
+  # copy the new config.txt which is already created by platform JRS with update nodes in it to updateFiles directory
+  cp "$PLATFORM_REGRESSION_PATH/tmp/config.txt" $TARGET_DIR
+  echo "Update files after build have been copied to $TARGET_DIR"
+
+  ls -ltr $TARGET_DIR
+  cd ../test-clients
+}
+
+PLATFORM_REGRESSION_PATH=""
+if [[ $1 == 'updateNode' ]]; then
+  echo "Check if updateNode Test $1"
+  echo "Hedera repo path $2"
+  PLATFORM_REGRESSION_PATH=$2
+  updateConfig
+else
+  updateServiceMainJava
+fi
