@@ -204,6 +204,36 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
+	public void loadsEverything() {
+		// setup:
+		SystemFilesManager sub = mock(SystemFilesManager.class);
+
+		willCallRealMethod().given(sub).loadAllSystemFiles();
+
+		// when:
+		sub.loadAllSystemFiles();
+
+		// then:
+		verify(sub).loadApplicationProperties();
+		verify(sub).loadApiPermissions();
+		verify(sub).loadFeeSchedules();
+		verify(sub).loadExchangeRates();
+		verify(sub).setFilesLoaded();
+	}
+
+	@Test
+	public void tracksFileLoading() {
+		// expect:
+		assertFalse(subject.areFilesLoaded());
+
+		// when:
+		subject.setFilesLoaded();
+
+		// then:
+		assertTrue(subject.areFilesLoaded());
+	}
+
+	@Test
 	public void doesntCreateAddressBookIfPresent() {
 		given(hfs.exists(bookId)).willReturn(true);
 

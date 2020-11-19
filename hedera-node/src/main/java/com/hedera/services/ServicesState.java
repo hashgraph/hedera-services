@@ -39,6 +39,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -80,6 +81,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	static Supplier<AddressBook> legacyTmpBookSupplier = AddressBook::new;
+	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
 	NodeId nodeId = null;
 	boolean skipDiskFsHashCheck = false;
@@ -236,21 +238,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		* history. This history has two main uses: Purging expired records, and
 		* classifying duplicate transactions. */
 		ctx.recordsHistorian().reviewExistingRecords();
-
-		/* Ensure files 0.0.121 and 0.0.122 exist in state, creating them from
-		* the application.properties and api-permission.properties assets if they
-		* are missing. (The {@code SystemFilesManager} will signal interested
-		* components of the loaded files via a callback.) */
-		ctx.systemFilesManager().loadApplicationProperties();
-		ctx.systemFilesManager().loadApiPermissions();
-
-		/* Ensure files 0.0.111 and 0.0.112 exist in state, creating them
-		* from the FeeSchedules.json and bootstrap.properties resources/files
-		* if they are missing. (The {@code SystemFilesManager} will signal interested
-		* components of the loaded files via a callback.) */
-		ctx.systemFilesManager().loadFeeSchedules();
-
-		ctx.systemFilesManager().loadExchangeRates();
+		if (!blobStoreSupplier.get().isInitializing()) {
+			ctx.systemFilesManager().loadAllSystemFiles();
+		}
 	}
 
 	@Override
