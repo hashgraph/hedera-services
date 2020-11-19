@@ -61,7 +61,6 @@ updateServiceMainJava()
 
 }
 
-PLATFORM_REGRESSION_REPO_PATH=""
 updateConfig(){
   TARGET_DIR=../test-clients/updateFiles
   rm -rf $TARGET_DIR
