@@ -134,7 +134,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "10000",
+								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "4000",
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0")),
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
 								.withRecharging()
