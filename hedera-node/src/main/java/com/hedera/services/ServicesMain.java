@@ -185,8 +185,10 @@ public class ServicesMain implements SwirldMain {
 		try {
 			ctx.systemFilesManager().createAddressBookIfMissing();
 			ctx.systemFilesManager().createNodeDetailsIfMissing();
-			ctx.systemFilesManager().loadExchangeRates();
 			ctx.systemFilesManager().createUpdateZipFileIfMissing();
+			if (!ctx.systemFilesManager().areFilesLoaded()) {
+				ctx.systemFilesManager().loadAllSystemFiles();
+			}
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not create system files!", e);
 		}

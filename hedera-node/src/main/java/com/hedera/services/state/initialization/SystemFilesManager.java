@@ -25,9 +25,28 @@ public interface SystemFilesManager {
 	void createNodeDetailsIfMissing();
 	void createUpdateZipFileIfMissing();
 
+	/* Ensure files 0.0.111 and 0.0.112 exist in state, creating them
+	 * from the FeeSchedules.json and bootstrap.properties resources/files
+	 * if they are missing. (The {@code HfsSystemFilesManager} will signal interested
+	 * components of the loaded files via a callback.) */
 	void loadExchangeRates();
 	void loadFeeSchedules();
 
+	/* Ensure files 0.0.121 and 0.0.122 exist in state, creating them from
+	 * the application.properties and api-permission.properties assets if they
+	 * are missing. (The {@code HfsSystemFilesManager} will signal interested
+	 * components of the loaded files via a callback.) */
 	void loadApiPermissions();
 	void loadApplicationProperties();
+
+	default void loadAllSystemFiles() {
+		loadApplicationProperties();
+		loadApiPermissions();
+		loadFeeSchedules();
+		loadExchangeRates();
+
+		setFilesLoaded();
+	}
+	void setFilesLoaded();
+	boolean areFilesLoaded();
 }

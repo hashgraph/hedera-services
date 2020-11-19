@@ -351,16 +351,35 @@ public class ServicesMainTest {
 		// then:
 		verify(grpc).start(intThat(i -> i == 50212), intThat(i -> i == 50213), any());
 	}
-	
+
 	@Test
-	public void managesSystemFiles() {
+	public void loadsSystemFilesIfNotAlreadyDone() {
+		given(systemFilesManager.areFilesLoaded()).willReturn(true);
+
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
 		verify(systemFilesManager).createAddressBookIfMissing();
 		verify(systemFilesManager).createNodeDetailsIfMissing();
-		verify(systemFilesManager).loadExchangeRates();
+		verify(systemFilesManager).createUpdateZipFileIfMissing();
+		// and:
+		verify(systemFilesManager, never()).loadAllSystemFiles();
+	}
+
+	@Test
+	public void managesSystemFiles() {
+		given(systemFilesManager.areFilesLoaded()).willReturn(false);
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemFilesManager).createAddressBookIfMissing();
+		verify(systemFilesManager).createNodeDetailsIfMissing();
+		verify(systemFilesManager).createUpdateZipFileIfMissing();
+		// and:
+		verify(systemFilesManager).loadAllSystemFiles();
 	}
 
 	@Test
