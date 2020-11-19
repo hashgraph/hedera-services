@@ -128,7 +128,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -474,14 +473,16 @@ public class ServicesContextTest {
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
 	}
 
-	@Disabled
 	@Test
 	public void shouldInitFees() throws Exception {
 		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
+		given(properties.getIntProperty("cache.records.ttl")).willReturn(180);
+		var book = mock(AddressBook.class);
 		var diskFs = mock(MerkleDiskFs.class);
 		var blob = mock(MerkleOptionalBlob.class);
 		byte[] fileInfo = new JFileInfo(false, StateView.EMPTY_WACL, 1_234_567L).serialize();
 		byte[] fileContents = new byte[0];
+		given(state.addressBook()).willReturn(book);
 		given(state.diskFs()).willReturn(diskFs);
 		given(storage.containsKey(any())).willReturn(true);
 		given(storage.get(any())).willReturn(blob);
