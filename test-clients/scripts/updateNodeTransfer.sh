@@ -10,13 +10,13 @@ CONFIG_FILE_PATH=""
 copyFilesToUpdateNode() {
   # copy config.txt , File0.0.150 and saved state to update nodes to start from the state
   set -x
-  sudo scp -o StrictHostKeyChecking=no -i services-regression.pem -p $CONFIG_FILE_PATH ubuntu@$UPDATE_NODE_IP_ADDRESS:/home/ubuntu/remoteExperiment
+  scp -o StrictHostKeyChecking=no -i services-regression.pem -p $CONFIG_FILE_PATH ubuntu@$UPDATE_NODE_IP_ADDRESS:/home/ubuntu/remoteExperiment
   echo "Copying config.txt to the update Node"
   ssh -t -t -o StrictHostKeyChecking=no  -i services-regression.pem  ubuntu@$UPDATE_NODE_IP_ADDRESS "mkdir -p  /home/ubuntu/remoteExperiment/data/diskFs/0.0.7"
-  sudo scp -o StrictHostKeyChecking=no -i services-regression.pem -r -p data/diskFs/0.0.3/* ubuntu@$UPDATE_NODE_IP_ADDRESS:/home/ubuntu/remoteExperiment/data/diskFs/0.0.7
+  scp -o StrictHostKeyChecking=no -i services-regression.pem -r -p data/diskFs/0.0.3/* ubuntu@$UPDATE_NODE_IP_ADDRESS:/home/ubuntu/remoteExperiment/data/diskFs/0.0.7
   echo "Copying File0.0.150 to the update Node"
   ssh -t -t -o StrictHostKeyChecking=no  -i services-regression.pem  ubuntu@$UPDATE_NODE_IP_ADDRESS "mkdir -p  /home/ubuntu/remoteExperiment/data/saved/com.hedera.services.ServicesMain/4/"
-  sudo scp -o StrictHostKeyChecking=no -i services-regression.pem -r -p data/saved/com.hedera.services.ServicesMain/0/123/ \
+  scp -o StrictHostKeyChecking=no -i services-regression.pem -r -p data/saved/com.hedera.services.ServicesMain/0/123/ \
     ubuntu@$UPDATE_NODE_IP_ADDRESS:~/remoteExperiment/data/saved/com.hedera.services.ServicesMain/4/
   echo "Copying saved state files to the update Node"
 }
