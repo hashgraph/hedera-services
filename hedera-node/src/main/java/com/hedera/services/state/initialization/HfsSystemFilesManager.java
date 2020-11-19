@@ -65,7 +65,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private static final String FEE_SCHEDULES_TAG = "fee schedules";
 
 	private JKey systemKey;
-
+	private boolean filesLoaded = false;
 	private final AddressBook currentBook;
 	private final FileNumbers fileNumbers;
 	private final PropertySource properties;
@@ -145,6 +145,16 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				schedulesCb,
 				CurrentAndNextFeeSchedule::parseFrom,
 				() -> defaultSchedules().toByteArray());
+	}
+
+	@Override
+	public void setFilesLoaded() {
+		filesLoaded = true;
+	}
+
+	@Override
+	public boolean areFilesLoaded() {
+		return filesLoaded;
 	}
 
 	@Override
