@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
@@ -130,6 +132,10 @@ public class SubmitMessageLoadTest extends LoadTest {
 								sleepFor(100),
 						logIt(ignore -> settings.toString())
 				).when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "10000",
+										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0")),
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
 								.withRecharging()
 								.rechargeWindow(30)
