@@ -1555,7 +1555,7 @@ jobs:
           name: Run various suites in SuiteRunner
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Misc-6_2N-1C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Basic-4N-1C.json /repo
 
       - run:
           name: Sync results of SuiteRunner suites to AWS
