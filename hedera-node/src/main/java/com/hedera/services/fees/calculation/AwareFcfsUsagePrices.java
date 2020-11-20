@@ -118,7 +118,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			return usagePrices;
 		} catch (Exception e) {
 			log.warn(
-					"Only default usage prices available for function {} @ {}!",
+					"Default usage price will be used, no specific usage prices available for function {} @ {}!",
 					function,
 					Instant.ofEpochSecond(at.getSeconds(), at.getNanos())
 					);
