@@ -43,7 +43,12 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 
 	public FCMapBackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
 		this.delegate = delegate;
+		rebuildFromSources();
+	}
 
+	@Override
+	public void rebuildFromSources() {
+		existingAccounts.clear();
 		delegate.get().keySet().stream()
 				.map(MerkleEntityId::toAccountId)
 				.forEach(existingAccounts::add);

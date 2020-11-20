@@ -77,9 +77,19 @@ import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
 import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
-import com.hedera.services.bdd.suites.reconnect.GetAccountBalanceAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
+import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
+import com.hedera.services.bdd.suites.reconnect.MixedValidationsAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.SubmitMessagesBeforeReconnect;
+import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
@@ -119,7 +129,6 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.groupingBy;
@@ -200,8 +209,18 @@ public class SuiteRunner {
 		put("MixedTransferCallAndSubmitLoadTest", aof(new MixedTransferCallAndSubmitLoadTest()));
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
 		/* Functional tests - RECONNECT */
+		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
+		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
+		put("SubmitMessagesBeforeReconnect", aof(new SubmitMessagesBeforeReconnect()));
+		put("CreateFilesBeforeReconnect", aof(new CreateFilesBeforeReconnect()));
 		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
-		put("GetAccountBalanceAfterReconnect", aof(new GetAccountBalanceAfterReconnect()));
+		put("MixedValidationsAfterReconnect", aof(new MixedValidationsAfterReconnect()));
+		put("UpdateApiPermissionsDuringReconnect", aof(new UpdateApiPermissionsDuringReconnect()));
+		put("ValidateDuplicateTransactionAfterReconnect", aof(new ValidateDuplicateTransactionAfterReconnect()));
+		put("ValidateApiPermissionStateAfterReconnect", aof(new ValidateApiPermissionStateAfterReconnect()));
+		put("ValidateAppPropertiesStateAfterReconnect", aof(new ValidateAppPropertiesStateAfterReconnect()));
+		put("ValidateFeeScheduleStateAfterReconnect", aof(new ValidateFeeScheduleStateAfterReconnect()));
+		put("ValidateExchangeRateStateAfterReconnect", aof(new ValidateExchangeRateStateAfterReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));

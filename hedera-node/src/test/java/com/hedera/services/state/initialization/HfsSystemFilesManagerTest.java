@@ -30,6 +30,7 @@ import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -112,6 +113,7 @@ class HfsSystemFilesManagerTest {
 	Consumer<ServicesConfigurationList> propertiesCb;
 	Consumer<ServicesConfigurationList> permissionsCb;
 	Consumer<ExchangeRateSet> ratesCb;
+	Consumer<CurrentAndNextFeeSchedule> schedulesCb;
 
 	HfsSystemFilesManager subject;
 
@@ -185,6 +187,7 @@ class HfsSystemFilesManagerTest {
 				.willReturn("R4FeeSchedule.json");
 
 		ratesCb = mock(Consumer.class);
+		schedulesCb = mock(Consumer.class);
 		propertiesCb = mock(Consumer.class);
 		permissionsCb = mock(Consumer.class);
 
@@ -195,8 +198,39 @@ class HfsSystemFilesManagerTest {
 				hfs,
 				() -> masterKey,
 				ratesCb,
+				schedulesCb,
 				propertiesCb,
 				permissionsCb);
+	}
+
+	@Test
+	public void loadsEverything() {
+		// setup:
+		SystemFilesManager sub = mock(SystemFilesManager.class);
+
+		willCallRealMethod().given(sub).loadAllSystemFiles();
+
+		// when:
+		sub.loadAllSystemFiles();
+
+		// then:
+		verify(sub).loadApplicationProperties();
+		verify(sub).loadApiPermissions();
+		verify(sub).loadFeeSchedules();
+		verify(sub).loadExchangeRates();
+		verify(sub).setFilesLoaded();
+	}
+
+	@Test
+	public void tracksFileLoading() {
+		// expect:
+		assertFalse(subject.areFilesLoaded());
+
+		// when:
+		subject.setFilesLoaded();
+
+		// then:
+		assertTrue(subject.areFilesLoaded());
 	}
 
 	@Test
@@ -339,13 +373,13 @@ class HfsSystemFilesManagerTest {
 
 		// then:
 		verify(hfs).exists(schedulesId);
+		verify(schedulesCb).accept(proto);
 	}
 
 	@Test
 	public void createsSchedulesFromResourcesIfMissing() throws IOException {
 		// setup:
 		byte[] schedules = Files.readAllBytes(Paths.get(R4_FEE_SCHEDULE_REPR_PATH));
-		var proto = CurrentAndNextFeeSchedule.parseFrom(schedules);
 
 		given(hfs.exists(schedulesId)).willReturn(false);
 		given(hfs.cat(schedulesId)).willReturn(schedules);

@@ -33,6 +33,7 @@ import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.queries.token.TokenAnswers;
@@ -42,6 +43,7 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -137,6 +139,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -326,6 +329,30 @@ public class ServicesContextTest {
 	}
 
 	@Test
+	public void rebuildsBackingAccountsIfNonNull() {
+		// setup:
+		BackingTokenRels tokenRels = mock(BackingTokenRels.class);
+		FCMapBackingAccounts backingAccounts = mock(FCMapBackingAccounts.class);
+
+		// given:
+		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+
+		// expect:
+		assertDoesNotThrow(ctx::rebuildBackingStoresIfPresent);
+
+		// and given:
+		ctx.setBackingAccounts(backingAccounts);
+		ctx.setBackingTokenRels(tokenRels);
+
+		// when:
+		ctx.rebuildBackingStoresIfPresent();
+
+		// then:
+		verify(tokenRels).rebuildFromSources();
+		verify(backingAccounts).rebuildFromSources();
+	}
+
+	@Test
 	public void hasExpectedStakedInfrastructure() {
 		// setup:
 		Address address = mock(Address.class);
@@ -444,5 +471,28 @@ public class ServicesContextTest {
 		assertThat(ctx.accountsExporter(), instanceOf(DefaultAccountsExporter.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
+	}
+
+	@Test
+	public void shouldInitFees() throws Exception {
+		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
+		given(properties.getIntProperty("cache.records.ttl")).willReturn(180);
+		var book = mock(AddressBook.class);
+		var diskFs = mock(MerkleDiskFs.class);
+		var blob = mock(MerkleOptionalBlob.class);
+		byte[] fileInfo = new JFileInfo(false, StateView.EMPTY_WACL, 1_234_567L).serialize();
+		byte[] fileContents = new byte[0];
+		given(state.addressBook()).willReturn(book);
+		given(state.diskFs()).willReturn(diskFs);
+		given(storage.containsKey(any())).willReturn(true);
+		given(storage.get(any())).willReturn(blob);
+		given(blob.getData()).willReturn(fileInfo);
+		given(diskFs.contains(any())).willReturn(true);
+		given(diskFs.contentsOf(any())).willReturn(fileContents);
+
+		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		var subject = ctx.systemFilesManager();
+
+		assertDoesNotThrow(() -> subject.loadFeeSchedules());
 	}
 }

@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
@@ -82,17 +83,18 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 
 	@Override
 	public void loadPriceSchedules() {
-		var feeSchedules_fileID = fileNumbers.toFid(fileNumbers.feeSchedules());
-		if (!hfs.exists(feeSchedules_fileID)) {
+		var feeSchedulesId = fileNumbers.toFid(fileNumbers.feeSchedules());
+		if (!hfs.exists(feeSchedulesId)) {
 			throw new IllegalStateException(
-					String.format( "No fee schedule available at %s!", readableId(feeSchedules)));
+					String.format( "No fee schedule available at %s!", readableId(this.feeSchedules)));
 		}
 		try {
-			setFeeSchedules(CurrentAndNextFeeSchedule.parseFrom(hfs.cat(feeSchedules_fileID)));
+			var schedules = CurrentAndNextFeeSchedule.parseFrom(hfs.cat(feeSchedulesId));
+			setFeeSchedules(schedules);
 		} catch (InvalidProtocolBufferException e) {
-			log.warn("Corrupt fee schedules file at {}, may require remediation!", readableId(feeSchedules), e);
+			log.warn("Corrupt fee schedules file at {}, may require remediation!", readableId(this.feeSchedules), e);
 			throw new IllegalStateException(
-					String.format( "Fee schedule %s is corrupt!", readableId(feeSchedules)));
+					String.format( "Fee schedule %s is corrupt!", readableId(this.feeSchedules)));
 		}
 	}
 
@@ -114,12 +116,12 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			FeeData usagePrices = functionUsagePrices.get(function);
 			Objects.requireNonNull(usagePrices);
 			return usagePrices;
-		} catch (Exception ignore) {
+		} catch (Exception e) {
 			log.warn(
-					"Only default usage prices available for function {} @ {}.{}!",
+					"Only default usage prices available for function {} @ {}! ({})",
 					function,
-					at.getSeconds(),
-					at.getNanos());
+					Instant.ofEpochSecond(at.getSeconds(), at.getNanos()),
+					e);
 		}
 		return DEFAULT_USAGE_PRICES;
 	}

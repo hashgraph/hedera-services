@@ -60,7 +60,12 @@ public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, Token
 
 	public BackingTokenRels(Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> delegate) {
 		this.delegate = delegate;
+		rebuildFromSources();
+	}
 
+	@Override
+	public void rebuildFromSources() {
+		existingRels.clear();
 		delegate.get().keySet().stream()
 				.map(MerkleEntityAssociation::asAccountTokenRel)
 				.forEach(existingRels::add);

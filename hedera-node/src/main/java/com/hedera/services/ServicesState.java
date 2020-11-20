@@ -39,6 +39,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -80,6 +81,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	static Supplier<AddressBook> legacyTmpBookSupplier = AddressBook::new;
+	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
 	NodeId nodeId = null;
 	boolean skipDiskFsHashCheck = false;
@@ -185,7 +187,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX,
-					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart), new ExchangeRates()));
+					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart),
+							new ExchangeRates()));
 			setChild(ChildIndices.TOPICS,
 					new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
 			setChild(ChildIndices.STORAGE,
@@ -216,10 +219,28 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			printHashes();
 		}
 
-		ctx.update(this);
+		initializeContext(ctx);
 		CONTEXTS.store(ctx);
 
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
+		log.info("ServicesState init with {} accounts", () -> this.accounts().size());
+		log.info("ServicesState init with {} topics", () -> this.topics().size());
+	}
+
+	private void initializeContext(final ServicesContext ctx) {
+		/* Set the primitive state in the context and signal the managing stores (if
+		* they are already constructed) to rebuild their auxiliary views of the state.
+		* All the initialization that follows will be a function of the primitive state. */
+		ctx.update(this);
+		ctx.rebuildBackingStoresIfPresent();
+
+		/* Use any payer records stored in state to rebuild the recent transaction
+		* history. This history has two main uses: Purging expired records, and
+		* classifying duplicate transactions. */
+		ctx.recordsHistorian().reviewExistingRecords();
+		if (!blobStoreSupplier.get().isInitializing()) {
+			ctx.systemFilesManager().loadAllSystemFiles();
+		}
 	}
 
 	@Override

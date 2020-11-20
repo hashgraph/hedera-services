@@ -128,7 +128,7 @@ public class TxnAwareRecordsHistorianTest {
 		subject.reviewExistingRecords();
 
 		// then:
-		verify(expiries).resumeTrackingFrom(accounts);
+		verify(expiries).restartTrackingFrom(accounts);
 	}
 
 	@Test

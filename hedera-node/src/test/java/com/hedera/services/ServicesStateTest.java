@@ -23,6 +23,9 @@ package com.hedera.services;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -49,6 +52,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
@@ -73,7 +78,9 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static java.util.Collections.EMPTY_LIST;
@@ -94,6 +101,8 @@ import static org.mockito.BDDMockito.verify;
 @RunWith(JUnitPlatform.class)
 class ServicesStateTest {
 	Consumer<MerkleNode> mockDigest;
+	Supplier<BinaryObjectStore> mockBlobStoreSupplier;
+	BinaryObjectStore blobStore;
 	Instant now = Instant.now();
 	Transaction platformTxn;
 	Address address;
@@ -103,6 +112,7 @@ class ServicesStateTest {
 	ProcessLogic logic;
 	PropertySources propertySources;
 	ServicesContext ctx;
+	AccountRecordsHistorian historian;
 	FCMap<MerkleEntityId, MerkleTopic> topics;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
@@ -123,6 +133,8 @@ class ServicesStateTest {
 	SerializableDataInputStream in;
 	SerializableDataOutputStream out;
 	SystemExits systemExits;
+	SystemFilesManager systemFilesManager;
+	Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
 	ServicesState subject;
 
@@ -131,6 +143,11 @@ class ServicesStateTest {
 		CONTEXTS.clear();
 		mockDigest = (Consumer<MerkleNode>)mock(Consumer.class);
 		ServicesState.merkleDigest = mockDigest;
+		blobStore = mock(BinaryObjectStore.class);
+		mockBlobStoreSupplier = (Supplier<BinaryObjectStore>) mock(Supplier.class);
+		given(mockBlobStoreSupplier.get()).willReturn(blobStore);
+		ServicesState.blobStoreSupplier = mockBlobStoreSupplier;
+		given(blobStore.isInitializing()).willReturn(false);
 
 		out = mock(SerializableDataOutputStream.class);
 		in = mock(SerializableDataInputStream.class);
@@ -147,6 +164,10 @@ class ServicesStateTest {
 		ctx = mock(ServicesContext.class);
 		given(ctx.id()).willReturn(self);
 		given(ctx.logic()).willReturn(logic);
+
+		systemFilesManager = mock(SystemFilesManager.class);
+		historian = mock(AccountRecordsHistorian.class);
+		txnHistories = mock(Map.class);
 
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
@@ -182,12 +203,16 @@ class ServicesStateTest {
 		given(platform.getSelfId()).willReturn(self);
 
 		given(ctx.platform()).willReturn(platform);
+		given(ctx.recordsHistorian()).willReturn(historian);
+		given(ctx.txnHistories()).willReturn(txnHistories);
 		given(ctx.propertySources()).willReturn(propertySources);
+		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
 
 		systemExits = mock(SystemExits.class);
 
 		subject = new ServicesState();
 	}
+
 
 	@Test
 	void ensuresNonNullTokenFcmsAfterReadingFromLegacySavedState() {
@@ -257,14 +282,42 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void lookupForContext() {
+	public void initializesContext() {
+		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager);
+
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
+		// and:
 		CONTEXTS.store(ctx);
 
+		// when:
 		subject.init(platform, book);
-		InOrder inOrder = inOrder(ctx);
+
+		// then:
 		inOrder.verify(ctx).nodeAccount();
 		inOrder.verify(ctx).update(subject);
+		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
+		inOrder.verify(historian).reviewExistingRecords();
+		inOrder.verify(systemFilesManager).loadAllSystemFiles();
+	}
+
+	@Test
+	public void doesntInitializeFilesIfStoreStillInitializing() {
+		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager);
+
+		given(blobStore.isInitializing()).willReturn(true);
+		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
+		// and:
+		CONTEXTS.store(ctx);
+
+		// when:
+		subject.init(platform, book);
+
+		// then:
+		inOrder.verify(ctx).nodeAccount();
+		inOrder.verify(ctx).update(subject);
+		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
+		inOrder.verify(historian).reviewExistingRecords();
+		inOrder.verify(systemFilesManager, never()).loadAllSystemFiles();
 	}
 
 	@Test
@@ -666,5 +719,6 @@ class ServicesStateTest {
 	public void cleanup() {
 		CONTEXTS.clear();
 		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
+		ServicesState.blobStoreSupplier = BinaryObjectStore::getInstance;
 	}
 }

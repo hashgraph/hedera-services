@@ -29,8 +29,8 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 public enum TokenEntitySizes {
 	TOKEN_ENTITY_SIZES;
 
-	/* { deleted, accountsFrozenByDefault } */
-	static int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 2;
+	/* { deleted, accountsFrozenByDefault, accountsKycGrantedByDefault } */
+	static int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 3;
 	/* { decimals } */
 	static int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
 	/* { expiry, totalSupply, autoRenewPeriod } */
@@ -39,7 +39,7 @@ public enum TokenEntitySizes {
 	static int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
 
 	public int fixedBytesInTokenRepr() {
-		return NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 1
+		return NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * BOOL_SIZE
 				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * INT_SIZE
 				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;

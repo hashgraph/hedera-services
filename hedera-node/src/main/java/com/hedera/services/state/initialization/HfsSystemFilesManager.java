@@ -65,13 +65,14 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private static final String FEE_SCHEDULES_TAG = "fee schedules";
 
 	private JKey systemKey;
-
+	private boolean filesLoaded = false;
 	private final AddressBook currentBook;
 	private final FileNumbers fileNumbers;
 	private final PropertySource properties;
 	private final TieredHederaFs hfs;
 	private final Supplier<JKey> keySupplier;
 	private final Consumer<ExchangeRateSet> ratesCb;
+	private final Consumer<CurrentAndNextFeeSchedule> schedulesCb;
 	private final Consumer<ServicesConfigurationList> propertiesCb;
 	private final Consumer<ServicesConfigurationList> permissionsCb;
 
@@ -82,6 +83,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 			TieredHederaFs hfs,
 			Supplier<JKey> keySupplier,
 			Consumer<ExchangeRateSet> ratesCb,
+			Consumer<CurrentAndNextFeeSchedule> schedulesCb,
 			Consumer<ServicesConfigurationList> propertiesCb,
 			Consumer<ServicesConfigurationList> permissionsCb
 	) {
@@ -92,6 +94,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		this.keySupplier = keySupplier;
 
 		this.ratesCb = ratesCb;
+		this.schedulesCb = schedulesCb;
 		this.propertiesCb = propertiesCb;
 		this.permissionsCb = permissionsCb;
 	}
@@ -139,9 +142,19 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		loadProtoWithSupplierFallback(
 				fileNumbers.feeSchedules(),
 				FEE_SCHEDULES_TAG,
-				schedules -> {},
+				schedulesCb,
 				CurrentAndNextFeeSchedule::parseFrom,
 				() -> defaultSchedules().toByteArray());
+	}
+
+	@Override
+	public void setFilesLoaded() {
+		filesLoaded = true;
+	}
+
+	@Override
+	public boolean areFilesLoaded() {
+		return filesLoaded;
 	}
 
 	@Override

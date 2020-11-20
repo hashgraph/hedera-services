@@ -78,6 +78,19 @@ class MonotonicFullQueueExpiriesTest {
 	}
 
 	@Test
+	public void resetWorks() {
+		// given:
+		subject.track(k1, expiry1);
+
+		// when:
+		subject.reset();
+
+		// then:
+		assertTrue(subject.allExpiries.isEmpty());
+		assertEquals(0L, subject.now);
+	}
+
+	@Test
 	public void throwsIfNextExpiryIsFuture() {
 		// given:
 		subject.track(k1, expiry1);

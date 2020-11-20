@@ -151,6 +151,21 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
+	public void rebuildsFromChangedSources() {
+		// when:
+		rels.clear();
+		rels.put(cKey, cValue);
+		// and:
+		subject.rebuildFromSources();
+
+		// then:
+		assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
+		assertFalse(subject.existingRels.contains(asTokenRel(b, bt)));
+		// and:
+		assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
+	}
+
+	@Test
 	public void containsWorks() {
 		// expect:
 		assertTrue(subject.contains(asTokenRel(a, at)));
