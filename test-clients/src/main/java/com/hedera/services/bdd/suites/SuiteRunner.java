@@ -339,7 +339,6 @@ public class SuiteRunner {
 					NETWORK_SIZE_ARG,
 					"" + EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
-			otherOverrides.forEach((k,v)-> log.info("otherOverrides {} {}", k, v));
 			createPayerAccount(System.getenv("NODES"), args[1]);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
