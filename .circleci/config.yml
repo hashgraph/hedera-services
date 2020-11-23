@@ -1069,6 +1069,26 @@ workflows:
                 at: /
           workflow-name: "nightly-state-recover-regression"
 
+  nightly-basic-performance-regression:
+    triggers:
+      - schedule:
+          cron: "30 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-basic-performance-regression"
+
   nightly-start-from-saved-state-regression:
     triggers:
       - schedule:
