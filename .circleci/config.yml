@@ -1321,6 +1321,7 @@ workflows:
           filters:
             branches:
               ignore:
+                - 0731-M-AddSpecPersistence
                 - /.*-PERF/
                 - /.*-REGRESSION/
           workflow-name: "Continuous integration"

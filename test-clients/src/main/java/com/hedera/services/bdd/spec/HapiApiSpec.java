@@ -255,9 +255,7 @@ public class HapiApiSpec implements Runnable {
 		tearDown();
 		log.info(logPrefix() + "final status: " + status + "!");
 
-		if (status == PASSED) {
-			entities.updateCreatedEntityManifests();
-		}
+		entities.updateCreatedEntityManifests();
 
 		if(saveContextFlag) {
 			persistContext();

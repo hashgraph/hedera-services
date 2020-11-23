@@ -42,7 +42,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import static com.hedera.services.bdd.spec.persistence.Entity.UNNEEDED_CREATE_OP;
 import static java.util.stream.Collectors.toList;
 
 public class EntityManager {
@@ -92,32 +94,38 @@ public class EntityManager {
 				.filter(EntityMeta::neededCreation)
 				.forEach(meta -> {
 					var entity = meta.getEntity();
-					var createdId = extractCreated(entity.getCreateOp());
-					entity.setId(createdId);
-					entity.setCreateOp(Entity.UNNEEDED_CREATE_OP);
-					var yamlOut = new Yaml(new SkipNullRepresenter());
-					var doc = yamlOut.dumpAs(meta.getEntity(), Tag.MAP, null);
-					try {
-						var writer = Files.newBufferedWriter(Paths.get(meta.manifestLoc));
-						writer.write(doc);
-						writer.close();
-					} catch (IOException e) {
-						log.warn("Could not update {} with created entity id!", entity.getName(), e);
-					}
+					var optionalCreatedId = extractCreated(entity.getCreateOp());
+					optionalCreatedId.ifPresent(createdId -> {
+						entity.setId(createdId);
+						entity.setCreateOp(UNNEEDED_CREATE_OP);
+						var yamlOut = new Yaml(new SkipNullRepresenter());
+						var doc = yamlOut.dumpAs(meta.getEntity(), Tag.MAP, null);
+						try {
+							var writer = Files.newBufferedWriter(Paths.get(meta.getManifestLoc()));
+							writer.write(doc);
+							writer.close();
+						} catch (IOException e) {
+							log.warn("Could not update {} with created entity id!", entity.getName(), e);
+						}
+					});
 				});
 	}
 
-	private EntityId extractCreated(HapiTxnOp creationOp) {
+	private Optional<EntityId> extractCreated(HapiTxnOp creationOp) {
 		var receipt = creationOp.getLastReceipt();
+		EntityId createdEntityId = null;
 		if (receipt.hasAccountID()) {
-			return new EntityId(HapiPropertySource.asAccountString(receipt.getAccountID()));
+			createdEntityId = new EntityId(HapiPropertySource.asAccountString(receipt.getAccountID()));
 		} else if (receipt.hasTokenID()) {
-			return new EntityId(HapiPropertySource.asTokenString(receipt.getTokenID()));
+			createdEntityId = new EntityId(HapiPropertySource.asTokenString(receipt.getTokenID()));
 		} else if (receipt.hasTopicID()) {
-			return new EntityId(HapiPropertySource.asTopicString(receipt.getTopicID()));
-		} else {
-			throw new AssertionError("Unsupported entity type!");
+			createdEntityId = new EntityId(HapiPropertySource.asTopicString(receipt.getTopicID()));
+		} else if (receipt.hasContractID()) {
+			createdEntityId = new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
+		} else if (receipt.hasFileID()) {
+			createdEntityId = new EntityId(HapiPropertySource.asFileString(receipt.getFileID()));
 		}
+		return Optional.ofNullable(createdEntityId);
 	}
 
 	public List<HapiSpecOperation> requiredCreations() {
