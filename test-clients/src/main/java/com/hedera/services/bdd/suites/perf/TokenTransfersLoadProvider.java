@@ -120,7 +120,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						(sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
 				List<HapiSpecOperation> initializers = new ArrayList<>();
 				initializers.add(
-						fileUpdate(APP_PROPERTIES)
+						fileUpdate(API_PERMISSIONS)
 								.payingWith(GENESIS)
 								.overridingProps(Map.ofEntries(
 										entry("tokenCreate", "0-*"),
@@ -135,7 +135,13 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 										entry("tokenUpdate", "0-*"),
 										entry("tokenGetInfo", "0-*"),
 										entry("tokenAssociateToAccount", "0-*"),
-										entry("tokenDissociateFromAccount", "0-*"),
+										entry("tokenDissociateFromAccount", "0-*")
+								))
+				);
+				initializers.add(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.ofEntries(
 										entry("hapi.throttling.buckets.fastOpBucket.capacity", "4000")
 								))
 				);
