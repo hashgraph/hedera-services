@@ -20,13 +20,17 @@ package com.hedera.services.bdd.spec.infrastructure.meta;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+
 public class ContractResources {
 	public static final String SIMPLE_STORAGE_BYTECODE_PATH = bytecodePath("simpleStorage");
 	public static final String PAYABLE_CONTRACT_BYTECODE_PATH = bytecodePath("PayReceivable");
 	public static final String DELEGATING_CONTRACT_BYTECODE_PATH = bytecodePath("CreateTrivial");
 	public static final String BALANCE_LOOKUP_BYTECODE_PATH = bytecodePath("BalanceLookup");
 	public static final String CIRCULAR_TRANSFERS_BYTECODE_PATH = bytecodePath("CircularTransfers");
-	public static final String INLINE_TEST_BYTECODE_PATH = bytecodePath("InlineTest.bin");
+	public static final String INLINE_TEST_BYTECODE_PATH = bytecodePath("InlineTest");
+	public static final String INVALID_BYTECODE_PATH = bytecodePath("CorruptOne");
+	public static final String VALID_BYTECODE_PATH = HapiSpecSetup.getDefaultInstance().defaultContractPath();
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\",\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
