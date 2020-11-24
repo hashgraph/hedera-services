@@ -55,6 +55,9 @@ public class ContractResources {
 			"\"name\":\"keepAmountDivisor\",\"type\":\"uint32\"},{\"internalType\":\"uint256\"," +
 			"\"name\":\"stopBalance\",\"type\":    \"uint256\"}],\"name\":\"receiveAndSend\",\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String LOOKUP_ABI = "{\"constant\":true,\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"accountNum\"," +
+			"\"type\":\"uint64\"}],\"name\":\"lookup\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\"," +
+			"\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
