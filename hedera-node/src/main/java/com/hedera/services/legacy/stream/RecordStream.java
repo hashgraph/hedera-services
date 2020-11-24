@@ -85,7 +85,7 @@ public class RecordStream implements Runnable {
 	Platform platform;
 	MiscRunningAvgs runningAvgs;
 	boolean inFreeze;
-	public final String recordStreamsDirectory;
+	final String recordStreamsDirectory;
 
 	private final PropertySource properties;
 
@@ -393,6 +393,10 @@ public class RecordStream implements Runnable {
 			return 0;
 		}
 		return recordBuffer.size();
+	}
+
+	public String getRecordStreamsDirectory() {
+		return recordStreamsDirectory;
 	}
 
 	/**
