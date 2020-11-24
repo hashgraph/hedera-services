@@ -85,7 +85,7 @@ public class RecordStream implements Runnable {
 	Platform platform;
 	MiscRunningAvgs runningAvgs;
 	boolean inFreeze;
-	String recordStreamsDirectory;
+	public final String recordStreamsDirectory;
 
 	private final PropertySource properties;
 
