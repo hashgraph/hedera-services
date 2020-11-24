@@ -73,7 +73,7 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 				).when(
 						contractCallLocal(
 								"contract",
-								ContractResources.LOOKUP_ABI,
+								ContractResources.BALANCE_LOOKUP_ABI,
 								spec -> new Object[] {
 										spec.registry().getContractId("contract").getContractNum()
 								}).recordNodePaymentAs("cost"),
@@ -82,7 +82,7 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 						UtilVerbs.inParallel(asOpArray(NUM_CALLS, ignore ->
 										contractCallLocal(
 												"contract",
-												ContractResources.LOOKUP_ABI,
+												ContractResources.BALANCE_LOOKUP_ABI,
 												spec -> new Object[] {
 														spec.registry().getContractId("contract").getContractNum()
 												}).nodePayment(spec -> spec.registry().getAmount("cost")))),

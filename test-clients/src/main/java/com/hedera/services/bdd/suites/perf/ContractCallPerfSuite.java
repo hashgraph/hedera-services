@@ -91,13 +91,13 @@ public class ContractCallPerfSuite extends HapiApiSuite {
 								.gatedByQuery(() ->
 										contractCallLocal(
 												"balanceLookup",
-												ContractResources.LOOKUP_ABI,
+												ContractResources.BALANCE_LOOKUP_ABI,
 												spec -> new Object[] {
 													spec.registry().getContractId("perf").getContractNum()
 												}
 										).has(
 												resultWith().resultThruAbi(
-														ContractResources.LOOKUP_ABI,
+														ContractResources.BALANCE_LOOKUP_ABI,
 														isLiteralResult(
 																new Object[] { BigInteger.valueOf(ENDING_BALANCE) }
 														)

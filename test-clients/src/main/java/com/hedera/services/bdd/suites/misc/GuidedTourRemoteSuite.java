@@ -87,13 +87,13 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 						   a shard and realm of 0; accepts just the sequence number of an account. */
 						contractCallLocal(
 								"balanceLookup",
-								ContractResources.LOOKUP_ABI,
+								ContractResources.BALANCE_LOOKUP_ABI,
 								spec -> new Object[] {
 										spec.registry().getAccountID("targetAccount").getAccountNum()
 								}
 						).has(
 								resultWith().resultThruAbi(
-										ContractResources.LOOKUP_ABI,
+										ContractResources.BALANCE_LOOKUP_ABI,
 										isLiteralResult(new Object[] { BigInteger.valueOf(ACTUAL_BALANCE) })
 								)
 						)
