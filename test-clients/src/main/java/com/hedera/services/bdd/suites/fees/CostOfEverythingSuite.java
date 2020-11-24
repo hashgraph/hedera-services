@@ -32,19 +32,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-/* --------------------------- SPEC STATIC IMPORTS --------------------------- */
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
 import static com.hedera.services.bdd.spec.keys.KeyShape.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.*;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.*;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.*;
-/* --------------------------------------------------------------------------- */
 
 public class CostOfEverythingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CostOfEverythingSuite.class);
@@ -253,7 +250,4 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
-
-	private final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/PayReceivable.bin";
-	private final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 }
