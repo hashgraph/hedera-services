@@ -43,10 +43,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class ContractCallLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(ContractCallLoadTest.class);
-	final String ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\"," +
-			"\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"}," +
-			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\",\"outputs\":[]," +
-			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		parseArgs(args);
@@ -77,7 +73,7 @@ public class ContractCallLoadTest extends LoadTest {
 		Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[] {
 				inParallel(IntStream.range(0, settings.getBurstSize())
 						.mapToObj(i ->
-								contractCall("perf", ABI, i + 1, 0, DEPOSIT_MEMO)
+								contractCall("perf", ContractResources.VERBOSE_DEPOSIT_ABI, i + 1, 0, DEPOSIT_MEMO)
 										.sending(i + 1)
 										.noLogging()
 										.suppressStats(true)
