@@ -20,19 +20,20 @@ package com.hedera.services.bdd.spec.infrastructure.meta;
  * ‍
  */
 
-import org.springframework.remoting.support.SimpleHttpServerFactoryBean;
-
 import java.math.BigInteger;
 import java.util.List;
 
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractCallDetails.*;
-
 public enum SupportedContract {
-	SIMPLE_STORAGE(inPath("simpleStorage"), List.of(
-			new ContractCallDetails(SIMPLE_STORAGE_SETTER_ABI, new Object[] { BigInteger.valueOf(1) })
-	), List.of(
-			new ContractCallDetails(SIMPLE_STORAGE_GETTER_ABI, new Object[] {})
-	));
+	SIMPLE_STORAGE(ContractResources.getPathTo(ContractResources.SIMPLE_STORAGE_BYTECODE),
+			List.of(
+					new ContractCallDetails(
+							ContractResources.SIMPLE_STORAGE_SETTER_ABI,
+							new Object[] { BigInteger.valueOf(1) })
+			),
+			List.of(
+					new ContractCallDetails(ContractResources.SIMPLE_STORAGE_GETTER_ABI, new Object[] {})
+			)
+	);
 
 	private final String pathToBytecode;
 	private final List<ContractCallDetails> callDetails;
@@ -57,9 +58,5 @@ public enum SupportedContract {
 
 	public String getPathToBytecode() {
 		return pathToBytecode;
-	}
-
-	public static String inPath(String basename) {
-		return String.format("src/main/resource/testfiles/%s.bin", basename);
 	}
 }

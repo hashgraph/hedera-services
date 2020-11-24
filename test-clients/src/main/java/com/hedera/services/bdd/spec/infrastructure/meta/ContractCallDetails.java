@@ -36,13 +36,4 @@ public class ContractCallDetails {
 	public Object[] getExampleArgs() {
 		return exampleArgs;
 	}
-
-	public static final String SIMPLE_STORAGE_SETTER_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\"," +
-			"\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String SIMPLE_STORAGE_GETTER_ABI = "{\"constant\":true," +
-			"\"inputs\":[],\"name\":\"get\"," +
-			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 }
