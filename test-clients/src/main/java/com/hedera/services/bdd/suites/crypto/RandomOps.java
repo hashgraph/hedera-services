@@ -80,8 +80,7 @@ public class RandomOps extends HapiApiSuite {
 						cryptoCreate("sponsor").sendThreshold(1L),
 						cryptoCreate("beneficiary"),
 						cryptoCreate("tbd"),
-						fileCreate("bytecode")
-								.path(ContractResources.getPathTo(ContractResources.SIMPLE_STORAGE_BYTECODE)),
+						fileCreate("bytecode").path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
 						contractCreate("simpleStorage").bytecode("bytecode")
 				).when(
 						contractCall("simpleStorage",

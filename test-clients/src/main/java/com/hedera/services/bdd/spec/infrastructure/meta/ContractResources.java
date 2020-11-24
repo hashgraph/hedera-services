@@ -21,9 +21,9 @@ package com.hedera.services.bdd.spec.infrastructure.meta;
  */
 
 public class ContractResources {
-	public static final String SIMPLE_STORAGE_BYTECODE = "simpleStorage";
-	public static final String PAYABLE_CONTRACT_BYTECODE = "PayReceivable";
-	public static final String DELEGATING_CONTRACT_BYTECODE = "CreateTrivial";
+	public static final String SIMPLE_STORAGE_BYTECODE_PATH = bytecodePath("simpleStorage");
+	public static final String PAYABLE_CONTRACT_BYTECODE_PATH = bytecodePath("PayReceivable");
+	public static final String DELEGATING_CONTRACT_BYTECODE_PATH = bytecodePath("CreateTrivial");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\",\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
@@ -40,7 +40,7 @@ public class ContractResources {
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 
-	public static final String getPathTo(String bytecode) {
+	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
 	}
 }

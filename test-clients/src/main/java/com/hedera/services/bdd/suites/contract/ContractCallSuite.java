@@ -124,7 +124,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate("payer")
 								.balance(10 * A_HUNDRED_HBARS),
 						fileCreate("bytecode")
-								.path(ContractResources.getPathTo(ContractResources.SIMPLE_STORAGE_BYTECODE))
+								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH)
 								.payingWith("payer")
 				).when(
 						contractCreate("immutableContract")
@@ -227,8 +227,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec depositSuccess() {
 		return defaultHapiSpec("DepositSuccess")
 				.given(
-						fileCreate("payableBytecode")
-								.path(ContractResources.getPathTo(ContractResources.PAYABLE_CONTRACT_BYTECODE)),
+						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
 				).when(
 						contractCall("payableContract", ContractResources.DEPOSIT_ABI, 1_000L)
@@ -242,8 +241,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec multipleDepositSuccess() {
 		return defaultHapiSpec("DepositSuccess")
 				.given(
-						fileCreate("payableBytecode")
-								.path(ContractResources.getPathTo(ContractResources.PAYABLE_CONTRACT_BYTECODE)),
+						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
 				)
 				.when()
@@ -264,8 +262,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec depositDeleteSuccess() {
 		return defaultHapiSpec("DepositSuccess")
 				.given(
-						fileCreate("payableBytecode")
-								.path(ContractResources.getPathTo(ContractResources.PAYABLE_CONTRACT_BYTECODE)),
+						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
 				).when(
 						contractCall("payableContract", ContractResources.DEPOSIT_ABI, 1_000L)
@@ -282,8 +279,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec payableSuccess() {
 		return defaultHapiSpec("PayableSuccess")
 				.given(
-						fileCreate("payableBytecode")
-								.path(ContractResources.getPathTo(ContractResources.PAYABLE_CONTRACT_BYTECODE)),
+						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
 				).when(
 						contractCall("payableContract").via("payTxn").sending(1_000L)
@@ -298,8 +294,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec vanillaSuccess() {
 		return defaultHapiSpec("VanillaSuccess")
 				.given(
-						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.getPathTo(ContractResources.DELEGATING_CONTRACT_BYTECODE)),
+						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD),
 						getContractInfo("parentDelegate").saveToRegistry("parentInfo")
 				).when(
@@ -332,7 +327,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("InsufficientGas")
 				.given(
 						fileCreate("simpleStorageBytecode")
-								.path(ContractResources.getPathTo(ContractResources.SIMPLE_STORAGE_BYTECODE)),
+								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
 						contractCreate("simpleStorage").bytecode("simpleStorageBytecode").adminKey(THRESHOLD),
 						getContractInfo("simpleStorage").saveToRegistry("simpleStorageInfo")
 				).when().then(
@@ -347,7 +342,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate("accountToPay"),
 						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.getPathTo(ContractResources.DELEGATING_CONTRACT_BYTECODE)),
+								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when().then(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).fee(0L)
@@ -359,7 +354,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("NonPayable")
 				.given(
 						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.getPathTo(ContractResources.DELEGATING_CONTRACT_BYTECODE)),
+								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("callTxn").sending(1_000L)
@@ -384,7 +379,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("InvalidAbi")
 				.given(
 						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.getPathTo(ContractResources.DELEGATING_CONTRACT_BYTECODE)),
+								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when().then(
 						contractCall("parentDelegate", ContractResources.SEND_FUNDS_ABI)

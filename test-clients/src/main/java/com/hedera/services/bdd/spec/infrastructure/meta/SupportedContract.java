@@ -24,7 +24,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 public enum SupportedContract {
-	SIMPLE_STORAGE(ContractResources.getPathTo(ContractResources.SIMPLE_STORAGE_BYTECODE),
+	SIMPLE_STORAGE(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH,
 			List.of(
 					new ContractCallDetails(
 							ContractResources.SIMPLE_STORAGE_SETTER_ABI,
