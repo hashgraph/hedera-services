@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -57,10 +58,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
  */
 public class MigrationValidationPreSteps extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(MigrationValidationPreSteps.class);
-
-    final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/testfiles/simpleStorage.bin";
-    final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-    final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
     final int VALUE_TO_SET = 123;
     final long amount1 = 100L;
@@ -176,16 +173,16 @@ public class MigrationValidationPreSteps extends HapiApiSuite {
     private HapiSpecOperation[] doSmartContractActions() {
         return new HapiSpecOperation[]{
                 TxnVerbs.fileCreate(smartContractFileName)
-                        .path(PATH_TO_SIMPLE_STORAGE_BYTECODE).key(GENESIS),
+                        .path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH).key(GENESIS),
                 sleepFor(2_000L),
                 TxnVerbs.contractCreate(MIGRATION_SMART_CONTRACT).bytecode(smartContractFileName).adminKey(GENESIS).fee(20_00_000_000L),
                 sleepFor(2_000L),
-                TxnVerbs.contractCall(MIGRATION_SMART_CONTRACT, SC_SET_ABI, VALUE_TO_SET),
+                TxnVerbs.contractCall(MIGRATION_SMART_CONTRACT, ContractResources.SIMPLE_STORAGE_SETTER_ABI, VALUE_TO_SET),
                 sleepFor(2_000L),
-                TxnVerbs.contractCall(MIGRATION_SMART_CONTRACT, SC_GET_ABI).via(SC_getValue),
+                TxnVerbs.contractCall(MIGRATION_SMART_CONTRACT, ContractResources.SIMPLE_STORAGE_GETTER_ABI).via(SC_getValue),
                 sleepFor(2_000L),
                 QueryVerbs.getTxnRecord(SC_getValue).hasPriority(TransactionRecordAsserts.recordWith().contractCallResult(
-                        ContractFnResultAsserts.resultWith().resultThruAbi(SC_GET_ABI, ContractFnResultAsserts.isLiteralResult(
+                        ContractFnResultAsserts.resultWith().resultThruAbi(ContractResources.SIMPLE_STORAGE_GETTER_ABI, ContractFnResultAsserts.isLiteralResult(
                                 new Object[]{
                                         BigInteger.valueOf(VALUE_TO_SET)
                                 }
