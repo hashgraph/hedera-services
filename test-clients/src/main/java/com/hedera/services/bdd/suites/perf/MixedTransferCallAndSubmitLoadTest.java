@@ -22,11 +22,10 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -52,10 +51,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MixedTransferCallAndSubmitLoadTest.class);
-
-	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/testfiles/simpleStorage.bin";
-	final String SETTER_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}]," +
-			"\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		MixedTransferCallAndSubmitLoadTest suite = new MixedTransferCallAndSubmitLoadTest();
@@ -89,7 +84,7 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 								.toArray(n -> new HapiSpecOperation[n]),
 						IntStream.range(0, settings.getBurstSize() / 25)
 								.mapToObj(i ->
-										contractCall("simpleStorage", SETTER_ABI, i)
+										contractCall("simpleStorage", ContractResources.SIMPLE_STORAGE_SETTER_ABI, i)
 												.noLogging()
 												.hasPrecheckFrom(
 													OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
@@ -119,7 +114,7 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 						createTopic("topic"),
 						cryptoCreate("sender").balance(999_999_999_999_999L),
 						cryptoCreate("receiver"),
-						fileCreate("bytecode").path(PATH_TO_SIMPLE_STORAGE_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
 						contractCreate("simpleStorage").bytecode("bytecode")
 				).then(
 						runLoadTest(transferBurst)
