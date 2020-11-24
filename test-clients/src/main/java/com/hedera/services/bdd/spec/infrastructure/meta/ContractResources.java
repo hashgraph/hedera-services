@@ -43,4 +43,6 @@ public class ContractResources {
 	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
 	}
+
+	public static final int CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 }
