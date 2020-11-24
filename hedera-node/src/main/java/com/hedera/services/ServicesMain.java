@@ -161,7 +161,7 @@ public class ServicesMain implements SwirldMain {
 		initializeStats();
 		log.info("Stats initialized.");
 		startRecordStreamThread();
-		log.info("Record stream started in directory {}.", ctx.recordStream().recordStreamsDirectory);
+		log.info("Record stream started in directory {}.", ctx.recordStream().getRecordStreamsDirectory());
 		startNettyIfAppropriate();
 		log.info("Netty started.");
 
