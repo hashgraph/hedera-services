@@ -21,20 +21,20 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.SuiteRunner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -75,33 +75,53 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 						"default.node", "0.0." + defaultNode
 				)).given().when().then(
 						withOpContext((spec, log) -> {
-									// If payer account creation is not success submits a new transaction for the
-									// creation
-									while (true) {
-										var cryptoCreateOp = cryptoCreate("payerAccount")
-												.balance(initialBalance)
-												.withRecharging()
-												.rechargeWindow(3)
-												.key(GENESIS)
-												.payingWith(GENESIS)
-												.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
-														PLATFORM_TRANSACTION_NOT_CREATED).
-														via("txn");
-										var getRecordOp = getTxnRecord("txn")
-												.saveTxnRecordToRegistry("savedTxnRcd").logged();
-										CustomSpecAssert.allRunFor(spec, cryptoCreateOp, getRecordOp);
-										if (spec.registry().getTransactionRecord(
-												"savedTxnRcd").getReceipt().getStatus() == SUCCESS) {
-											break;
-										}
+									var createdAuditablePayer = false;
+									while (!createdAuditablePayer) {
+										try {
+											var cryptoCreateOp = cryptoCreate("payerAccount")
+													.balance(initialBalance)
+													.withRecharging()
+													.rechargeWindow(3)
+													.key(GENESIS)
+													.payingWith(GENESIS)
+													.hasRetryPrecheckFrom(
+															BUSY,
+															DUPLICATE_TRANSACTION,
+															PLATFORM_TRANSACTION_NOT_CREATED)
+													.via("txn");
+											allRunFor(spec, cryptoCreateOp);
+											var gotCreationRecord = false;
+											while (!gotCreationRecord) {
+												try {
+													var getRecordOp = getTxnRecord("txn")
+															.saveTxnRecordToRegistry("savedTxnRcd")
+															.logged();
+													allRunFor(spec, getRecordOp);
+													gotCreationRecord = true;
+												} catch (Throwable ignoreAndRetry) { }
+											}
+											createdAuditablePayer = true;
+										} catch (Throwable ignoreAgainAndRetry) { }
+									}
+									var status = spec.registry()
+											.getTransactionRecord("savedTxnRcd")
+											.getReceipt()
+											.getStatus();
+									Assert.assertEquals("Failed to create payer account!", SUCCESS, status);
+
+									var gotPayerInfo = false;
+									while (!gotPayerInfo) {
+										try {
+											var payerAccountInfo = getAccountInfo("payerAccount")
+													.saveToRegistry("payerAccountInfo")
+													.logged();
+											allRunFor(spec, payerAccountInfo);
+											gotPayerInfo = true;
+										} catch (Throwable ignoreAndRetry) { }
 									}
 
-									var payerAccountInfo = getAccountInfo("payerAccount")
-											.saveToRegistry("payerAccountInfo").logged();
-									CustomSpecAssert.allRunFor(spec, payerAccountInfo);
-
 									//TODO Should be modified in a different way to avoid setting a static variable of
-							// other class
+									// other class
 									SuiteRunner.setPayerId(String.format("0.0.%s", spec.registry()
 											.getAccountInfo("payerAccountInfo")
 											.getAccountID().getAccountNum()));

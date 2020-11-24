@@ -121,6 +121,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				List<HapiSpecOperation> initializers = new ArrayList<>();
 				initializers.add(
 						fileUpdate(API_PERMISSIONS)
+								.fee(9_999_999_999L)
 								.payingWith(GENESIS)
 								.overridingProps(Map.ofEntries(
 										entry("tokenCreate", "0-*"),
@@ -140,6 +141,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				);
 				initializers.add(
 						fileUpdate(APP_PROPERTIES)
+								.fee(9_999_999_999L)
 								.payingWith(GENESIS)
 								.overridingProps(Map.ofEntries(
 										entry("hapi.throttling.buckets.fastOpBucket.capacity", "4000")
