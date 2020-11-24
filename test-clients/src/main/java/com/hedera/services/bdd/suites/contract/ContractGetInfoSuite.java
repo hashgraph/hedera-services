@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -32,13 +33,11 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 
 public class ContractGetInfoSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractGetInfoSuite.class);
-	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "testfiles/CreateTrivial.bin";
 
 	public static void main(String... args) {
 		new ContractGetInfoSuite().runSuiteSync();
@@ -67,7 +66,7 @@ public class ContractGetInfoSuite extends HapiApiSuite {
 	private HapiApiSpec vanillaSucceeds() {
 		return defaultHapiSpec("VanillaSuceeds")
 				.given(
-						fileCreate("parentDelegateBytecode").path(PATH_TO_DELEGATING_CONTRACT_BYTECODE),
+						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate")
 								.bytecode("parentDelegateBytecode").memo("This is a test.").autoRenewSecs(555L)
 				).when().then(
