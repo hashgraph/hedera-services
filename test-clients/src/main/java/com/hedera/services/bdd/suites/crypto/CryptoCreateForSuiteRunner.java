@@ -33,12 +33,10 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -84,10 +82,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 													.rechargeWindow(3)
 													.key(GENESIS)
 													.payingWith(GENESIS)
-													.hasRetryPrecheckFrom(
-															BUSY,
-															DUPLICATE_TRANSACTION,
-															PLATFORM_TRANSACTION_NOT_CREATED)
+													.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 													.via("txn");
 											allRunFor(spec, cryptoCreateOp);
 											var gotCreationRecord = false;

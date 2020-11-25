@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
@@ -45,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
@@ -142,26 +142,18 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 			TransactionResponse response = null;
 			try {
-				if(fiddler.isPresent()) {
+				if (fiddler.isPresent()) {
 					txn = fiddler.get().apply(txn);
 				}
 				response = timedCall(spec, txn);
 			} catch (StatusRuntimeException e) {
-				if (e.toString().contains("NO_ERROR")) {
-					// GRPC server broke the connection with error HTTP/2 error code: NO_ERROR Received Goaway
-					// do nothing just reissue rpc request
-					log.info("GRPC ERROR: <{}>， no need to reconnect, retry ", e);
+				var msg = e.toString();
+				if (isRecognizedRecoverable(msg)) {
+					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
-				} else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
-					log.info("submitOp Received unexpected EOS on DATA frame from server, retry");
-					continue;
-				} else if (e.toString().contains("REFUSED_STREAM")) {
-					log.info("submitOp Received REFUSED_STREAM from server, retry");
-					continue;
-				} else {
-					// Severe GRPC exception, rethrow
-					throw (e);
 				}
+				log.error("Status resolution failed with unrecognized exception", e);
+				Assert.fail("Unable to resolve op status!");
 			}
 
 			/* Used by superclass to perform standard housekeeping. */
@@ -384,32 +376,38 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	private Response statusResponse(HapiApiSpec spec, Query receiptQuery) throws Throwable {
 		long before = System.currentTimeMillis();
 		Response response = null;
-		while (true) {
+		int allowedUnrecognizedExceptions = 10;
+		while (response == null) {
 			try {
-				response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(
-						receiptQuery);
-			} catch (StatusRuntimeException e) {
-				if (e.toString().contains("NO_ERROR")) {
-					// GRPC server broke the connection with error HTTP/2 error code: NO_ERROR Received Goaway
-					// do nothing just reissue rpc request
-					log.info("GRPC ERROR: <{}>， no need to reconnect, retry ", e);
-					continue;
-				} else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
-					log.info("statusResponse Received unexpected EOS on DATA frame from server, retry");
-					continue;
-				} else if (e.toString().contains("REFUSED_STREAM")) {
-					log.info("statusResponse Received REFUSED_STREAM from server, retry");
+				response = spec.clients()
+						.getCryptoSvcStub(targetNodeFor(spec), useTls)
+						.getTransactionReceipts(receiptQuery);
+			} catch (Exception e) {
+				var msg = e.toString();
+				if (isRecognizedRecoverable(msg)) {
+					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				}
+				log.warn("Status resolution failed with unrecognized exception", e);
+				allowedUnrecognizedExceptions--;
+				if (allowedUnrecognizedExceptions == 0) {
+					response = Response.newBuilder()
+							.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
+									.setReceipt(TransactionReceipt.newBuilder()
+											.setStatus(UNKNOWN)))
+							.build();
+				}
 			}
-			break;
 		}
 		long after = System.currentTimeMillis();
-		ResponseCodeEnum queryResult = reflectForPrecheck(response);
-		// no need to check here, since response will be checked in resolvedStatusOfSubmission
-//		Assert.assertEquals(OK, queryResult);
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
 		return response;
+	}
+
+	private boolean isRecognizedRecoverable(String msg) {
+		return msg.contains("NO_ERROR") ||
+				msg.contains("Received unexpected EOS on DATA frame from server") ||
+				msg.contains("REFUSED_STREAM");
 	}
 
 	private void considerRecordingAdHocReceiptQueryStats(HapiSpecRegistry registry, long responseLatency) {
@@ -609,6 +607,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		fiddler = Optional.of(func);
 		return self();
 	}
+
 	public T asTxnWithOnlySigMap() {
 		asTxnWithOnlySigMap = true;
 		return self();

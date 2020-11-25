@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -41,6 +42,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_STATUSES;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -49,9 +52,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.Map.entry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -174,7 +174,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				}
 
 				for (HapiSpecOperation op : initializers) {
-					((HapiTxnOp) op).hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED);
+					((HapiTxnOp)op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
 				}
 
 				return initializers;
@@ -200,7 +200,8 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						}
 					}
 					op = cryptoTransfer(xfers)
-							.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 							.noLogging()
 							.deferStatusResolution();
 					firstDir.set(Boolean.FALSE);
@@ -218,7 +219,8 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						}
 					}
 					op = cryptoTransfer(xfers)
-							.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
 							.noLogging()
 							.deferStatusResolution();
 					firstDir.set(Boolean.TRUE);
@@ -232,6 +234,4 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
-
-
 }
