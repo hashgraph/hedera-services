@@ -38,7 +38,6 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -71,7 +70,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationYieldsExpectedToken(),
 						creationSetsExpectedName(),
 						creationValidatesName(),
-						creationRequiresAppropriateSigs(),
 						creationValidatesTreasuryAccount(),
 						autoRenewValidationWorks(),
 						creationWithoutKYCSetsCorrectStatus(),
@@ -86,8 +84,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec autoRenewValidationWorks() {
 		return defaultHapiSpec("AutoRenewValidationWorks")
 				.given(
-						cryptoCreate("autoRenew"),
-						cryptoCreate("deletingAccount")
+						cryptoCreate("autoRenew").balance(0L),
+						cryptoCreate("deletingAccount").balance(0L)
 				).when(
 						cryptoDelete("deletingAccount"),
 						tokenCreate("primary")
@@ -116,8 +114,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec creationYieldsExpectedToken() {
 		return defaultHapiSpec("CreationYieldsExpectedToken")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						newKeyNamed("freeze")
 				).when(
 						tokenCreate("primary")
@@ -137,8 +134,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		String saltedName = salted("primary");
 		return defaultHapiSpec("CreationSetsExpectedName")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate("primary")
 								.name(saltedName)
@@ -155,7 +151,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		String saltedName = salted("primary");
 		return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
 				.given(
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate("primary")
 								.name(saltedName)
@@ -173,8 +169,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		String saltedName = salted("primary");
 		return defaultHapiSpec("CreationHappyPath")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("autoRenewAccount"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("autoRenewAccount").balance(0L),
 						newKeyNamed("adminKey"),
 						newKeyNamed("freezeKey"),
 						newKeyNamed("kycKey"),
@@ -229,8 +225,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec creationSetsCorrectExpiry() {
 		return defaultHapiSpec("CreationSetsCorrectExpiry")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("autoRenew")
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("autoRenew").balance(0L)
 				).when(
 						tokenCreate("primary")
 								.autoRenewAccount("autoRenew")
@@ -275,10 +271,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		String longName = "a".repeat(MAX_NAME_LENGTH + 1);
 		return defaultHapiSpec("CreationValidatesName")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY)
-				).when(
-				).then(
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
+				).when( ).then(
 						tokenCreate("primary")
 								.name("")
 								.logged()
@@ -296,8 +290,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("NumAccountsAllowedIsDynamic")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -313,8 +306,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
 						)),
-						tokenCreate(salted("secondary"))
-								.treasury(TOKEN_TREASURY)
+						tokenCreate(salted("secondary")).treasury(TOKEN_TREASURY)
 				);
 	}
 
@@ -324,28 +316,24 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("CreationValidatesSymbol")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate("missingSymbol")
-								.payingWith("payer")
 								.symbol("")
 								.hasPrecheck(MISSING_TOKEN_SYMBOL),
 						tokenCreate("tooLong")
-								.payingWith("payer")
 								.symbol(reallyLongSymbol)
 								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG),
 						tokenCreate("firstMoverAdvantage")
 								.symbol(firstToken)
-								.payingWith("payer")
 				).then();
 	}
 
 	public HapiApiSpec creationRequiresAppropriateSigs() {
 		return defaultHapiSpec("CreationRequiresAppropriateSigs")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("payer"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						newKeyNamed("adminKey")
 				).when().then(
 						tokenCreate("shouldntWork")
@@ -367,7 +355,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec creationValidatesTreasuryAccount() {
 		return defaultHapiSpec("CreationValidatesTreasuryAccount")
 				.given(
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						cryptoDelete(TOKEN_TREASURY)
 				).then(
@@ -379,24 +367,17 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec initialSupplyMustBeSane() {
 		return defaultHapiSpec("InitialSupplyMustBeSane")
-				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
-				).when(
-				).then(
+				.given( ).when( ).then(
 						tokenCreate("sinking")
-								.payingWith("payer")
 								.initialSupply(-1L)
 								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY),
 						tokenCreate("bad decimals")
-								.payingWith("payer")
 								.decimals(-1)
 								.hasPrecheck(INVALID_TOKEN_DECIMALS),
 						tokenCreate("bad decimals")
-								.payingWith("payer")
 								.decimals(1 << 31)
 								.hasPrecheck(INVALID_TOKEN_DECIMALS),
 						tokenCreate("bad initial supply")
-								.payingWith("payer")
 								.initialSupply(1L << 63)
 								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY)
 				);
@@ -410,17 +391,15 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("TreasuryHasCorrectBalance")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY).balance(A_HUNDRED_HBARS)
+						cryptoCreate(TOKEN_TREASURY).balance(1L)
 				).when(
 						tokenCreate(token)
 								.treasury(TOKEN_TREASURY)
 								.decimals(decimals)
 								.initialSupply(initialSupply)
-								.payingWith("payer")
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTinyBars(A_HUNDRED_HBARS)
+								.hasTinyBars(1L)
 								.hasTokenBalance(token, initialSupply)
 				);
 	}

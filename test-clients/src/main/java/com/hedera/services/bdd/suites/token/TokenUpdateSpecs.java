@@ -94,7 +94,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("ValidatesAlreadyDeletedToken")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate("tbd")
 								.adminKey("adminKey")
 								.treasury(TOKEN_TREASURY),
@@ -109,7 +109,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("TokensCanBeMadeImmutableWithEmptyKeyList")
 				.given(
 						newKeyNamed("initialAdmin"),
-						cryptoCreate("neverToBe"),
+						cryptoCreate("neverToBe").balance(0L),
 						tokenCreate("mutableForNow").adminKey("initialAdmin")
 				).when(
 						tokenUpdate("mutableForNow")
@@ -147,7 +147,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	private HapiApiSpec validatesMissingRef() {
 		return defaultHapiSpec("UpdateValidatesRef")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
+						cryptoCreate("payer")
 				).when().then(
 						tokenUpdate("1.2.3")
 								.payingWith("payer")
@@ -159,9 +159,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	private HapiApiSpec validatesMissingAdminKey() {
 		return defaultHapiSpec("ValidatesMissingAdminKey")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("payer")
-								.balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("payer"),
 						tokenCreate("tbd")
 								.freezeDefault(false)
 								.treasury(TOKEN_TREASURY)
@@ -183,8 +182,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newKeyNamed("freezeThenKycKey"),
 						newKeyNamed("wipeThenSupplyKey"),
 						newKeyNamed("supplyThenWipeKey"),
-						cryptoCreate("misc"),
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("misc").balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate("tbu")
 								.treasury(TOKEN_TREASURY)
 								.freezeDefault(true)
@@ -226,12 +225,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("NewTreasuryMustBeAssociated")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate("oldTreasury"),
+						cryptoCreate("oldTreasury").balance(0L),
 						tokenCreate("tbu")
 								.adminKey("adminKey")
 								.treasury("oldTreasury")
 				).when(
-						cryptoCreate("newTreasury")
+						cryptoCreate("newTreasury").balance(0L)
 				).then(
 						tokenUpdate("tbu")
 								.treasury("newTreasury").hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
@@ -242,8 +241,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("NewTreasuryMustSign")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate("oldTreasury"),
-						cryptoCreate("newTreasury"),
+						cryptoCreate("oldTreasury").balance(0L),
+						cryptoCreate("newTreasury").balance(0L),
 						tokenCreate("tbu")
 								.adminKey("adminKey")
 								.treasury("oldTreasury")
@@ -267,8 +266,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newKeyNamed("adminKey"),
 						newKeyNamed("kycKey"),
 						newKeyNamed("freezeKey"),
-						cryptoCreate("oldTreasury"),
-						cryptoCreate("newTreasury"),
+						cryptoCreate("oldTreasury").balance(0L),
+						cryptoCreate("newTreasury").balance(0L),
 						tokenCreate("tbu")
 								.adminKey("adminKey")
 								.freezeDefault(true)
@@ -293,8 +292,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		long firstPeriod = 500_000, secondPeriod = 600_000;
 		return defaultHapiSpec("AutoRenewInfoChanges")
 				.given(
-						cryptoCreate("autoRenew"),
-						cryptoCreate("newAutoRenew"),
+						cryptoCreate("autoRenew").balance(0L),
+						cryptoCreate("newAutoRenew").balance(0L),
 						newKeyNamed("adminKey")
 				).when(
 						tokenCreate("tbu")
@@ -320,7 +319,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("SymbolChanges")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate("tbu")
 								.adminKey("adminKey")
@@ -341,7 +340,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("NameChanges")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate("tbu")
 								.adminKey("adminKey")
@@ -359,7 +358,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("TooLongNameCheckHolds")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate("tbu")
 								.adminKey("adminKey")
@@ -377,7 +376,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("TooLongSymbolCheckHolds")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate("tbu")
 								.adminKey("adminKey")
@@ -393,8 +392,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("DeletedAutoRenewAccountCheckHolds")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate("autoRenewAccount"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate("autoRenewAccount").balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						cryptoDelete("autoRenewAccount"),
 						tokenCreate("tbu")
@@ -411,8 +410,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("RenewalPeriodCheckHolds")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("autoRenewAccount")
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("autoRenewAccount").balance(0L)
 				).when(
 						tokenCreate("tbu")
 								.adminKey("adminKey")
@@ -443,8 +442,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("InvalidTreasuryCheckHolds")
 				.given(
 						newKeyNamed("adminKey"),
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("invalidTreasury")
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("invalidTreasury").balance(0L)
 				).when(
 						cryptoDelete("invalidTreasury"),
 						tokenCreate("tbu")
@@ -462,10 +461,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		String newSaltedName = salted("primary");
 		return defaultHapiSpec("UpdateHappyPath")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("newTokenTreasury"),
-						cryptoCreate("autoRenewAccount"),
-						cryptoCreate("newAutoRenewAccount"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("newTokenTreasury").balance(0L),
+						cryptoCreate("autoRenewAccount").balance(0L),
+						cryptoCreate("newAutoRenewAccount").balance(0L),
 						newKeyNamed("adminKey"),
 						newKeyNamed("freezeKey"),
 						newKeyNamed("newFreezeKey"),
