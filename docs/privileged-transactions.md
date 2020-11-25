@@ -2,28 +2,29 @@
 
 The Hedera network reserves the first 
 [`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L37) 
-entity numbers for use by the system. 
+entity numbers for its own uses. 
 An account with a number in the reserved range is called a **system account**. 
 A file with a number in the reserved range is called a **system file**. 
 
 ## System account roles
 
-Certain system accounts have predefined roles in the network. For the purposes of this document,
-we primarily care about the the following:
- - The **treasury account**, which upon network creation receives all minted ℏ except those
+Certain system accounts have predefined roles in the network. 
+
+For the purposes of this document, we care about the the following:
+ - The **treasury**, which upon network creation receives all minted ℏ except those
  explicitly designated for a network node account. 
- - The **address book admin account**, used to manage metadata on network nodes 
+ - The **address book admin**, used to manage metadata on network nodes 
  such as their id numbers, IP addresses, TLS certificate information, and signing keys.
- - The **fee schedules admin account**, used to set the prices of resources consumed 
+ - The **fee schedules admin**, used to set the prices of resources consumed 
  by HAPI operations.
- - The **exchange rates admin account**, used to set the network's active conversion
+ - The **exchange rates admin**, used to set the network's active conversion
  ratio between USD and ℏ.
- - The **freeze admin account**, used to schedule maintenance periods during which the 
+ - The **freeze admin**, used to schedule maintenance periods during which the 
  network stops accepting new transactions.
- - The **system delete admin account**, used to delete files or contracts which may 
+ - The **system delete admin**, used to delete files or contracts which may 
  have been created on the network with illicit storage contents. (Note that crypto 
  accounts, topics, and tokens are untouchable.)
- - The **system undelete admin account**, used to reverse provisional actions of the 
+ - The **system undelete admin**, used to reverse provisional actions of the 
  system delete admin account under certain conditions. 
  - The **system admin**, used primarily to manage the keys of the above admin accounts;
  or substitute for them in circumstances where they have been compromised or rendered
