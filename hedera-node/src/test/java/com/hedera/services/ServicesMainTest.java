@@ -243,6 +243,7 @@ public class ServicesMainTest {
 	public void initializesSanelyGivenPreconditions() {
 		// given:
 		InOrder inOrder = inOrder(
+				systemFilesManager,
 				propertySources,
 				platform,
 				stateMigrations,
@@ -257,14 +258,15 @@ public class ServicesMainTest {
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		inOrder.verify(platform).addSignedStateListener(any(IssListener.class));
 		inOrder.verify(propertySources).assertSourcesArePresent();
-		inOrder.verify(platform).setSleepAfterSync(0L);
+		inOrder.verify(systemFilesManager).loadAllSystemFiles();
 		inOrder.verify(stateMigrations).runAllFor(ctx);
-		inOrder.verify(recordStreamThread).start();
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
+		inOrder.verify(platform).setSleepAfterSync(0L);
+		inOrder.verify(platform).addSignedStateListener(any(IssListener.class));
 		inOrder.verify(statsManager).initializeFor(platform);
+		inOrder.verify(recordStreamThread).start();
 	}
 
 	@Test
