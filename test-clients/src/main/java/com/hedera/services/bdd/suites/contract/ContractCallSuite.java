@@ -269,9 +269,9 @@ public class ContractCallSuite extends HapiApiSuite {
 								.via("payTxn").sending(1_000L)
 
 				).then(
-						balanceSnapshot("payerBefore", GENESIS),
-						contractDelete("payableContract").transferAccount(GENESIS),
-						getAccountBalance(GENESIS)
+						balanceSnapshot("payerBefore", MASTER),
+						contractDelete("payableContract").transferAccount(MASTER),
+						getAccountBalance(MASTER)
 								.hasTinyBars(changeFromSnapshot("payerBefore", +1_000L))
 						);
 	}
