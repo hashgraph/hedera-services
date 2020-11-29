@@ -239,7 +239,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec multipleDepositSuccess() {
-		return defaultHapiSpec("DepositSuccess")
+		return defaultHapiSpec("MultipleDepositSuccess")
 				.given(
 						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
@@ -260,7 +260,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec depositDeleteSuccess() {
-		return defaultHapiSpec("DepositSuccess")
+		return defaultHapiSpec("DepositDeleteSuccess")
 				.given(
 						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
