@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.records;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -50,13 +51,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
 public class CharacterizationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CharacterizationSuite.class);
-
-	final String PATH_TO_VERBOSE_CONTRACT_BYTECODE = "src/main/resource/testfiles/VerboseDeposit.bin";
-	final String VERBOSE_DEPOSIT = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\"," +
-			"\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"}," +
-			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\"," +
-			"\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"payable\":true," +
-			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		new CharacterizationSuite().runSuiteSync();
@@ -97,15 +91,15 @@ public class CharacterizationSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ResultSizeAffectsFees")
 				.given(
-						TxnVerbs.fileCreate("bytecode").path(PATH_TO_VERBOSE_CONTRACT_BYTECODE),
+						TxnVerbs.fileCreate("bytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
 						TxnVerbs.contractCreate("testContract").bytecode("bytecode")
 				).when(
 						TxnVerbs.contractCall(
-								"testContract", VERBOSE_DEPOSIT,
+								"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
 									TRANSFER_AMOUNT, 0, "So we out-danced thought...")
 								.via("noLogsCallTxn").sending(TRANSFER_AMOUNT),
 						TxnVerbs.contractCall(
-								"testContract", VERBOSE_DEPOSIT,
+								"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
 								TRANSFER_AMOUNT, 5, "So we out-danced thought...")
 								.via("loggedCallTxn").sending(TRANSFER_AMOUNT)
 
