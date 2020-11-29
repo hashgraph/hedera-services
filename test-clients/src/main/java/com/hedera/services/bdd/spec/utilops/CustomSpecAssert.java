@@ -38,7 +38,6 @@ public class CustomSpecAssert extends UtilOp {
 			Optional<Throwable>	error = op.execFor(spec);
 			if (error.isPresent()) {
 				Assert.fail("Operation '" + op.toString() + "' :: " + error.get().getMessage());
-				error.get().printStackTrace();
 			}
 		}
 	}

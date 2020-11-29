@@ -135,7 +135,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						tokenCreate("b"),
 						tokenCreate("c"),
 						tokenCreate("tbd").adminKey("simple"),
-						cryptoCreate("account")
+						cryptoCreate("account").balance(0L)
 				).when(
 						tokenAssociate("account", "a", "b", "c", "tbd"),
 						getAccountInfo("account")
@@ -158,8 +158,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	public HapiApiSpec dissociateHasExpectedSemantics() {
 		return defaultHapiSpec("DissociateHasExpectedSemantics")
 				.given(flattened(
-						basicKeysAndTokens(),
-						cryptoCreate("payer")
+						basicKeysAndTokens()
 				)).when(
 						tokenCreate("tkn1")
 								.treasury(TOKEN_TREASURY),
@@ -192,10 +191,9 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	public HapiApiSpec associateHasExpectedSemantics() {
 		return defaultHapiSpec("AssociateHasExpectedSemantics")
 				.given(flattened(
-						basicKeysAndTokens(),
-						cryptoCreate("payer")
+						basicKeysAndTokens()
 				)).when(
-						cryptoCreate("misc"),
+						cryptoCreate("misc").balance(0L),
 						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT),
 						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
 								.hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
@@ -267,7 +265,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		return new HapiSpecOperation[] {
 				newKeyNamed("kycKey"),
 				newKeyNamed("freezeKey"),
-				cryptoCreate(TOKEN_TREASURY),
+				cryptoCreate(TOKEN_TREASURY).balance(0L),
 				tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
 						.treasury(TOKEN_TREASURY)
 						.freezeKey("freezeKey")

@@ -87,8 +87,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	private HapiApiSpec prechecksWork() {
 		return defaultHapiSpec("PrechecksWork")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate(FIRST_USER)
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(FIRST_USER).balance(0L)
 				).when(
 						tokenCreate(A_TOKEN)
 								.initialSupply(100)
@@ -145,7 +145,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec balancesAreChecked() {
 		return defaultHapiSpec("BalancesAreChecked")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate("payer"),
 						cryptoCreate("firstTreasury"),
 						cryptoCreate("secondTreasury"),
 						cryptoCreate("beneficiary")
@@ -173,9 +173,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue() {
 		return defaultHapiSpec("AccountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue")
 				.given(
-						cryptoCreate("randomBeneficiary"),
-						cryptoCreate("treasury"),
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate("randomBeneficiary").balance(0L),
+						cryptoCreate("treasury").balance(0L),
+						cryptoCreate("payer"),
 						newKeyNamed("freezeKey")
 				).when(
 						tokenCreate(A_TOKEN)
@@ -207,9 +207,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec allRequiredSigsAreChecked() {
 		return defaultHapiSpec("SenderSigsAreChecked")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate("firstTreasury"),
-						cryptoCreate("secondTreasury"),
+						cryptoCreate("payer"),
+						cryptoCreate("firstTreasury").balance(0L),
+						cryptoCreate("secondTreasury").balance(0L),
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary").receiverSigRequired(true)
 				).when(
@@ -253,9 +253,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec senderSigsAreValid() {
 		return defaultHapiSpec("SenderSigsAreValid")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate("firstTreasury"),
-						cryptoCreate("secondTreasury"),
+						cryptoCreate("payer"),
+						cryptoCreate("firstTreasury").balance(0L),
+						cryptoCreate("secondTreasury").balance(0L),
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
@@ -287,11 +287,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec tokenPlusHbarTxnsAreAtomic() {
 		return defaultHapiSpec("TokenPlusHbarTxnsAreAtomic")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate("firstTreasury"),
-						cryptoCreate("secondTreasury"),
+						cryptoCreate("payer"),
+						cryptoCreate("firstTreasury").balance(0L),
+						cryptoCreate("secondTreasury").balance(0L),
 						cryptoCreate("beneficiary"),
-						cryptoCreate("tbd")
+						cryptoCreate("tbd").balance(0L)
 				).when(
 						cryptoDelete("tbd"),
 						tokenCreate(A_TOKEN)
@@ -323,9 +323,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec tokenOnlyTxnsAreAtomic() {
 		return defaultHapiSpec("TokenOnlyTxnsAreAtomic")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate("firstTreasury"),
-						cryptoCreate("secondTreasury"),
+						cryptoCreate("payer"),
+						cryptoCreate("firstTreasury").balance(0L),
+						cryptoCreate("secondTreasury").balance(0L),
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
@@ -353,8 +353,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec duplicateAccountsInTokenTransferRejected() {
 		return defaultHapiSpec("DuplicateAccountsInTokenTransferRejected")
 				.given(
-						cryptoCreate("firstTreasury"),
-						cryptoCreate("beneficiary")
+						cryptoCreate("firstTreasury").balance(0L),
+						cryptoCreate("beneficiary").balance(0L)
 				).when(
 						tokenCreate(A_TOKEN)
 				).then(
@@ -368,7 +368,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec nonZeroTransfersRejected() {
 		return defaultHapiSpec("NonZeroTransfersRejected")
 				.given(
-						cryptoCreate("firstTreasury")
+						cryptoCreate("firstTreasury").balance(0L)
 				).when(
 						tokenCreate(A_TOKEN)
 				).then(
@@ -384,9 +384,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec balancesChangeOnTokenTransfer() {
 		return defaultHapiSpec("BalancesChangeOnTokenTransfer")
 				.given(
-						cryptoCreate(FIRST_USER),
-						cryptoCreate(SECOND_USER),
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(FIRST_USER).balance(0L),
+						cryptoCreate(SECOND_USER).balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(A_TOKEN)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
