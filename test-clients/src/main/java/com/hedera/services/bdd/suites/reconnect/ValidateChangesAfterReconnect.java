@@ -70,25 +70,15 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 								.setNode("0.0.6")
 								.unavailableNode(),
 
-						fileUpdate(API_PERMISSIONS)
-								.overridingProps(Map.of("updateFile", "1-1011"))
-								.payingWith(MASTER)
-								.logged(),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("minimumAutoRenewDuration", "20")),
 
 						fileCreate("effectivelyImmutable")
 								.contents("Can't touch me!"),
 						fileUpdate(API_PERMISSIONS)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("updateFile", "2-50")),
-
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("minimumAutoRenewDuration", "20")),
-
-						cryptoCreate("repeatedTransaction")
-								.payingWith(MASTER)
-								.validDurationSecs(180)
-								.via(transactionId),
 
 						fileUpdate(EXCHANGE_RATES)
 								.contents(
@@ -143,13 +133,6 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 								.autoRenewSecs(15)
 								.setNode("0.0.6")
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
-
-						cryptoCreate("repeatedTransaction")
-								.payingWith(MASTER)
-								.txnId(transactionId)
-								.validDurationSecs(180)
-								.hasPrecheck(DUPLICATE_TRANSACTION)
-								.setNode("0.0.6"),
 
 						cryptoCreate("civilian")
 								.via(transactionFeeid)
