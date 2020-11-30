@@ -46,13 +46,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
-public class SmartContratCreateContractSpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SmartContratCreateContractSpec.class);
+public class SmartContractCreateContractSpec extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(SmartContractCreateContractSpec.class);
 
 	public static void main(String... args) {
 		new org.ethereum.crypto.HashUtil();
 
-		new SmartContratCreateContractSpec().runSuiteSync();
+		new SmartContractCreateContractSpec().runSuiteSync();
 	}
 
 	@Override
