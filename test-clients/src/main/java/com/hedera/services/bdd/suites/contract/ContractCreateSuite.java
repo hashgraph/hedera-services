@@ -126,11 +126,13 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec rejectsInsufficientFee() {
 		return defaultHapiSpec("RejectsInsufficientFee")
 				.given(
+						TxnVerbs.cryptoCreate("payer"),
 						TxnVerbs.fileCreate("contractFile")
 								.path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
 						TxnVerbs.contractCreate("testContract")
 								.bytecode("contractFile")
+								.payingWith("payer")
 								.fee(1L)
 								.hasPrecheck(INSUFFICIENT_TX_FEE)
 				);
