@@ -32,7 +32,8 @@ public class ContractResources {
 	public static final String INVALID_BYTECODE_PATH = bytecodePath("CorruptOne");
 	public static final String VALID_BYTECODE_PATH = HapiSpecSetup.getDefaultInstance().defaultContractPath();
 	public static final String VERBOSE_DEPOSIT_BYTECODE_PATH = bytecodePath("VerboseDeposit");
-	public static final String BIG_ARRAY_BYTECODE_PATH = bytecodePath("GrowArray");
+	public static final String GROW_ARRAY_BYTECODE_PATH = bytecodePath("GrowArray");
+	public static final String BIG_ARRAY_BYTECODE_PATH = bytecodePath("BigArray");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -99,6 +100,10 @@ public class ContractResources {
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String BIG_ARRAY_GROW_TO_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"growTo\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String BIG_ARRAY_SET_SIZE_IN_KB_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"_howManyKB\",\"type\":\"uint256\"}],\"name\":\"setSizeInKB\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 

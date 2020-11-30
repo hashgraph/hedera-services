@@ -70,7 +70,7 @@ public class BigArraySpec extends HapiApiSuite {
 										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED
 								)).payingWith(ADDRESS_BOOK_CONTROL),
 						TxnVerbs.fileCreate("bigArrayContractFile")
-								.path(ContractResources.BIG_ARRAY_BYTECODE_PATH),
+								.path(ContractResources.GROW_ARRAY_BYTECODE_PATH),
 						TxnVerbs.contractCreate("bigArrayContract")
 								.bytecode("bigArrayContractFile")
 				)
