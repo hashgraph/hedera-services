@@ -69,6 +69,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractCallSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
+	private static final long depositAmount = 1000;
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -230,8 +231,8 @@ public class ContractCallSuite extends HapiApiSuite {
 						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
 				).when(
-						contractCall("payableContract", ContractResources.DEPOSIT_ABI, 1_000L)
-								.via("payTxn").sending(1_000L)
+						contractCall("payableContract", ContractResources.DEPOSIT_ABI, depositAmount)
+								.via("payTxn").sending(depositAmount)
 				).then(
 						getTxnRecord("payTxn")
 								.hasPriority(recordWith().contractCallResult(
@@ -249,10 +250,10 @@ public class ContractCallSuite extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							for (int i = 0; i < 10; i++) {
 								var subOp1 = balanceSnapshot("payerBefore", "payableContract");
-								var subOp2 = contractCall("payableContract", ContractResources.DEPOSIT_ABI, 1_000L)
-										.via("payTxn").sending(1_000L);
+								var subOp2 = contractCall("payableContract", ContractResources.DEPOSIT_ABI, depositAmount)
+										.via("payTxn").sending(depositAmount);
 								var subOp3 = getAccountBalance("payableContract")
-										.hasTinyBars(changeFromSnapshot("payerBefore", +1_000L));
+										.hasTinyBars(changeFromSnapshot("payerBefore", +depositAmount));
 								CustomSpecAssert.allRunFor(spec, subOp1, subOp2, subOp3);
 							}
 						})
@@ -260,19 +261,21 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec depositDeleteSuccess() {
+		long initBalance = 7890;
 		return defaultHapiSpec("DepositDeleteSuccess")
 				.given(
+						cryptoCreate("beneficiary").balance(initBalance),
 						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
 				).when(
-						contractCall("payableContract", ContractResources.DEPOSIT_ABI, 1_000L)
-								.via("payTxn").sending(1_000L)
+						contractCall("payableContract", ContractResources.DEPOSIT_ABI, depositAmount)
+								.via("payTxn").sending(depositAmount)
 
 				).then(
-						balanceSnapshot("payerBefore", MASTER),
-						contractDelete("payableContract").transferAccount(MASTER),
-						getAccountBalance(MASTER)
-								.hasTinyBars(changeFromSnapshot("payerBefore", +1_000L))
+//						balanceSnapshot("payerBefore", MASTER),
+						contractDelete("payableContract").transferAccount("beneficiary"),
+						getAccountBalance("beneficiary")
+								.hasTinyBars(initBalance + depositAmount)
 						);
 	}
 
@@ -282,13 +285,13 @@ public class ContractCallSuite extends HapiApiSuite {
 						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
 				).when(
-						contractCall("payableContract").via("payTxn").sending(1_000L)
+						contractCall("payableContract").via("payTxn").sending(depositAmount)
 				).then(
 						getTxnRecord("payTxn")
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(
 												inOrder(
-														logWith().longAtBytes(1_000L, 24))))));
+														logWith().longAtBytes(depositAmount, 24))))));
 	}
 
 	HapiApiSpec vanillaSuccess() {
@@ -357,7 +360,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("callTxn").sending(1_000L)
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("callTxn").sending(depositAmount)
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				).then(
 						getTxnRecord("callTxn").hasPriority(
