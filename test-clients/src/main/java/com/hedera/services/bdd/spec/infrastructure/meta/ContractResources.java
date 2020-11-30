@@ -33,14 +33,38 @@ public class ContractResources {
 	public static final String VALID_BYTECODE_PATH = HapiSpecSetup.getDefaultInstance().defaultContractPath();
 	public static final String VERBOSE_DEPOSIT_BYTECODE_PATH = bytecodePath("VerboseDeposit");
 
-	public static final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\",\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String GET_CHILD_ADDRESS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getAddress\",\"outputs\":[{\"name\":\"retval\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String SEND_FUNDS_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"receiver\",\"type\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"sendFunds\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	public static final String GET_CODE_SIZE_ABI = "{\"constant\":true,\"inputs\":[{\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"getCodeSize\",\"outputs\":[{\"name\":\"_size\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String GET_STORE_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getStore\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String SET_STORE_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"inVal\",\"type\":\"bytes32\"}],\"name\":\"setStore\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
+			"\"inputs\":[],\"name\":\"create\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String GET_CHILD_RESULT_ABI = "{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"getIndirect\"," +
+			"\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String GET_CHILD_ADDRESS_ABI = "{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"getAddress\"," +
+			"\"outputs\":[{\"name\":\"retval\",\"type\":\"address\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String SEND_FUNDS_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"receiver\",\"type\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"sendFunds\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String DEPOSIT_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\"," +
+			"\"outputs\":[]," +
+			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String GET_CODE_SIZE_ABI = "{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"getCodeSize\"," +
+			"\"outputs\":[{\"name\":\"_size\",\"type\":\"uint256\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String GET_STORE_ABI = "{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"getStore\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String SET_STORE_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"inVal\",\"type\":\"bytes32\"}],\"name\":\"setStore\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String SIMPLE_STORAGE_SETTER_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\"," +
 			"\"outputs\":[]," +
@@ -49,19 +73,24 @@ public class ContractResources {
 			"\"inputs\":[],\"name\":\"get\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String SET_NODES_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint64[]\",\"name\":\"accounts\"," +
-			"\"type\":\"uint64[]\"}],\"name\":\"setNodes\",\"outputs\":[],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\"    ,\"type\":\"function\"}";
-	public static final String RECEIVE_AND_SEND_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\"," +
-			"\"name\":\"keepAmountDivisor\",\"type\":\"uint32\"},{\"internalType\":\"uint256\"," +
-			"\"name\":\"stopBalance\",\"type\":    \"uint256\"}],\"name\":\"receiveAndSend\",\"outputs\":[]," +
+	public static final String SET_NODES_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"internalType\":\"uint64[]\",\"name\":\"accounts\",\"type\":\"uint64[]\"}],\"name\":\"setNodes\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String RECEIVE_AND_SEND_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"keepAmountDivisor\",\"type\":\"uint32\"}," +
+			"{\"internalType\":\"uint256\",\"name\":\"stopBalance\",\"type\":\"uint256\"}],\"name\":\"receiveAndSend\"," +
+			"\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	public static final String BALANCE_LOOKUP_ABI = "{\"constant\":true,\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"accountNum\"," +
-			"\"type\":\"uint64\"}],\"name\":\"lookup\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\"," +
-			"\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String VERBOSE_DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\"," +
-			"\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"}," +
-			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\",\"outputs\":[]," +
+	public static final String BALANCE_LOOKUP_ABI = "{\"constant\":true," +
+			"\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"accountNum\",\"type\":\"uint64\"}],\"name\":\"lookup\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String VERBOSE_DEPOSIT_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\",\"type\":\"uint32\"}," +
+			"{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"}," +
+			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\"," +
+			"\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	public static final String bytecodePath(String bytecode) {
