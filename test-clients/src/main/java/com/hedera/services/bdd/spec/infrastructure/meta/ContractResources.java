@@ -34,6 +34,7 @@ public class ContractResources {
 	public static final String VERBOSE_DEPOSIT_BYTECODE_PATH = bytecodePath("VerboseDeposit");
 	public static final String GROW_ARRAY_BYTECODE_PATH = bytecodePath("GrowArray");
 	public static final String BIG_ARRAY_BYTECODE_PATH = bytecodePath("BigArray");
+	public static final String EMIT_EVENT_BYTECODE_PATH = bytecodePath("EmitEvent");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
