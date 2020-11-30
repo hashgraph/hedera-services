@@ -66,10 +66,6 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 								.unavailableNode()
 				)
 				.when(
-						getAccountBalance(GENESIS)
-								.setNode("0.0.6")
-								.unavailableNode(),
-
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("minimumAutoRenewDuration", "20")),
