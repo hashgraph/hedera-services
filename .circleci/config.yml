@@ -1058,16 +1058,36 @@ workflows:
               only:
                 - master
     jobs:
-      - build-platform-and-services-temporary
+      - build-platform-and-services
       - run-state-recover-regression:
           context: Slack
           requires:
-            - build-platform-and-services-temporary
+            - build-platform-and-services
           pre-steps:
             - install-tools
             - attach_workspace:
                 at: /
           workflow-name: "nightly-state-recover-regression"
+
+  nightly-basic-performance-regression:
+    triggers:
+      - schedule:
+          cron: "30 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-basic-performance-regression"
 
   nightly-start-from-saved-state-regression:
     triggers:
@@ -1088,6 +1108,26 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "nightly-start-from-saved-state-regression"
+
+  nightly-reconnect-regression:
+    triggers:
+      - schedule:
+          cron: "0 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-reconnect-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-reconnect-regression"
 
   nightly-simulate-network-outage:
     triggers:
@@ -1738,7 +1778,7 @@ jobs:
           no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/AWS-Services-Daily-StateRecover-4N-1C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Recovery-4N-1C.json /repo
 
       - run:
           name: Sync results of state recover regression to AWS
@@ -1771,6 +1811,31 @@ jobs:
 
       - run:
           name: Sync results of software update regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-reconnect-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run reconnect regression tests
+          no_output_timeout: 30m
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Reconnect-4N-1C.json /repo
+
+      - run:
+          name: Sync results of reconnect regression to AWS
           command: |
             aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
@@ -1870,48 +1935,6 @@ jobs:
             git submodule update --init --recursive --checkout;
             cd regression;
             cd ..;
-            mvn --no-transfer-progress clean install -DskipTests;
-
-      - run:
-          name: Save PEM file to keys folder
-          command: |
-            cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
-
-      - persist_to_workspace:
-          root: /
-          paths:
-            - repo/
-            - swirlds-platform/
-
-  build-platform-and-services-temporary:
-    parameters:
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: build-executor
-    steps:
-      - attach_workspace:
-          at: /
-      - add_ssh_keys:
-          fingerprints:
-            - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
-            - "14:21:e9:81:1f:ae:df:ec:11:60:4a:49:e0:b9:bb:58"
-            - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
-      - checkout
-      - run:
-          name: Build hedera-services repo
-          command: |
-                mvn --no-transfer-progress clean install -DskipTests
-      - run:
-          name: Checkout swirlds-platform repos and build
-          command: |
-            sed -i -e 's/Host services-jrs-regression/Host services-jrs-regression\n HostName github.com/g' ~/.ssh/config
-            cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
-            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
-            cd /swirlds-platform; git checkout services-regression;
-            sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
-            git submodule update --init --recursive --checkout;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:

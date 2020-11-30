@@ -69,7 +69,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 		return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
 				.given(
 						newKeyNamed("tokenAdmin"),
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate("firstTbd")
 								.adminKey("tokenAdmin")
 								.treasury(TOKEN_TREASURY),
@@ -92,7 +92,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 		return defaultHapiSpec("DeletionValidatesAlreadyDeletedToken")
 				.given(
 						newKeyNamed("multiKey"),
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate("tbd")
 								.adminKey("multiKey")
 								.treasury(TOKEN_TREASURY),
@@ -107,9 +107,8 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 		return defaultHapiSpec("DeletionValidatesMissingAdminKey")
 				.given(
 						newKeyNamed("multiKey"),
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("payer")
-								.balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("payer"),
 						tokenCreate("tbd")
 								.freezeDefault(false)
 								.treasury(TOKEN_TREASURY)
@@ -126,9 +125,8 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 		return defaultHapiSpec("DeletionWorksAsExpected")
 				.given(
 						newKeyNamed("multiKey"),
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("payer")
-								.balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("payer"),
 						tokenCreate("tbd")
 								.adminKey("multiKey")
 								.freezeKey("multiKey")
@@ -149,8 +147,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						tokenUnfreeze("tbd", GENESIS),
 						cryptoTransfer(moving(1, "tbd")
 								.between(TOKEN_TREASURY, GENESIS)),
-						tokenDelete("tbd")
-								.payingWith("payer")
+						tokenDelete("tbd").payingWith("payer")
 				).then(
 						getTokenInfo("tbd").logged(),
 						getAccountInfo(TOKEN_TREASURY).logged(),
@@ -175,7 +172,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 	public HapiApiSpec deletionValidatesRef() {
 		return defaultHapiSpec("DeletionValidatesRef")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
+						cryptoCreate("payer")
 				).when().then(
 						tokenDelete("1.2.3")
 								.payingWith("payer")

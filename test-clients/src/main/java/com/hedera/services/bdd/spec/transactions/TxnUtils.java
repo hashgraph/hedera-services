@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -77,6 +78,11 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransact
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopic;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
@@ -88,8 +94,16 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 public class TxnUtils {
+	private static final Logger log = LogManager.getLogger(TxnUtils.class);
+
+	public static final ResponseCodeEnum[] NOISY_RETRY_PRECHECKS = {
+			BUSY, PLATFORM_TRANSACTION_NOT_CREATED, DUPLICATE_TRANSACTION
+	};
+	public final static ResponseCodeEnum[] NOISY_ALLOWED_STATUSES = {
+			OK, SUCCESS, DUPLICATE_TRANSACTION
+	};
+
 	public static final int BYTES_4K = 4 * (1 << 10);
-	static final Logger log = LogManager.getLogger(TxnUtils.class);
 
 	private static Pattern ID_LITERAL_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
 	private static Pattern PORT_LITERAL_PATTERN = Pattern.compile("\\d+");
