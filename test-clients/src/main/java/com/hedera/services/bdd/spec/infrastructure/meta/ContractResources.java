@@ -35,6 +35,7 @@ public class ContractResources {
 	public static final String GROW_ARRAY_BYTECODE_PATH = bytecodePath("GrowArray");
 	public static final String BIG_ARRAY_BYTECODE_PATH = bytecodePath("BigArray");
 	public static final String EMIT_EVENT_BYTECODE_PATH = bytecodePath("EmitEvent");
+	public static final String BIG_BIG_BYTECODE_PATH = bytecodePath("BigBig");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -107,6 +108,10 @@ public class ContractResources {
 			"\"inputs\":[{\"name\":\"_howManyKB\",\"type\":\"uint256\"}],\"name\":\"setSizeInKB\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PICK_A_BIG_RESULT_ABI = "{\"constant\":true," +
+			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"how\",\"type\":\"uint32\"}],\"name\":\"pick\"," +
+			"\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}]," +
+			"\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"}";
 
 	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);

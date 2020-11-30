@@ -21,7 +21,7 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,13 +37,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 
 public class BigRecordSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(BigRecordSpec.class);
-
-	final String PATH_TO_BIG_BIG_BYTECODE = "src/main/resource/testfiles/BigBig.bin";
-
-	private static final String PICK_A_BIG_RESULT =
-			"{\"constant\":true,\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"how\",\"type\":\"uint32\"}]," +
-					"\"name\":\"pick\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}]," +
-					"\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -66,11 +59,11 @@ public class BigRecordSpec extends HapiApiSuite {
 				.given(
 						cryptoCreate("payer").balance( 10 * A_HUNDRED_HBARS),
 						fileCreate("bytecode")
-								.path(PATH_TO_BIG_BIG_BYTECODE),
+								.path(ContractResources.BIG_BIG_BYTECODE_PATH),
 						contractCreate("bigBig")
 								.bytecode("bytecode")
 				).when(
-						contractCall("bigBig", PICK_A_BIG_RESULT, byteArraySize)
+						contractCall("bigBig", ContractResources.PICK_A_BIG_RESULT_ABI, byteArraySize)
 								.payingWith("payer")
 								.gas(300_000L)
 								.via("bigCall")
