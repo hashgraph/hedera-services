@@ -42,6 +42,7 @@ public class ContractResources {
 	public static final String CHILD_STORAGE_BYTECODE_PATH = bytecodePath("ChildStorage");
 	public static final String ABANDONING_PARENT_BYTECODE_PATH = bytecodePath("AbandoningParent");
 	public static final String PAY_TEST_SELF_DESTRUCT_BYTECODE_PATH = bytecodePath("PayTestSelfDestruct");
+	public static final String PAY_RECEIVABLE_AMOUNT_BYTECODE_PATH = bytecodePath("PayReceivableAmount");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
