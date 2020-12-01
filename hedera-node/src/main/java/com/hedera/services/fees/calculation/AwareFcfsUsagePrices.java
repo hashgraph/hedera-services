@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -118,10 +118,10 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			return usagePrices;
 		} catch (Exception e) {
 			log.warn(
-					"Only default usage prices available for function {} @ {}! ({})",
+					"Default usage price will be used, no specific usage prices available for function {} @ {}!",
 					function,
-					Instant.ofEpochSecond(at.getSeconds(), at.getNanos()),
-					e);
+					Instant.ofEpochSecond(at.getSeconds(), at.getNanos())
+					);
 		}
 		return DEFAULT_USAGE_PRICES;
 	}

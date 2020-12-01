@@ -23,10 +23,7 @@ package com.hedera.services.bdd.spec.transactions.file;
 import com.google.common.base.MoreObjects;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.GeneratedMessage;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -48,6 +45,7 @@ import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.io.File;
 import java.time.Instant;
@@ -290,9 +288,26 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			if (!file.equals(HapiApiSuite.API_PERMISSIONS) && !file.equals(HapiApiSuite.APP_PROPERTIES)) {
 				throw new IllegalStateException("Property overrides make no sense for file '" + file + "'!");
 			}
-			HapiGetFileContents subOp = getFileContents(file);
-			payer.ifPresent(name -> subOp.payingWith(payerToUse(name, spec)));
-			allRunFor(spec, subOp);
+			int getsRemaining = 10;
+			var gotFileContents = false;
+			HapiGetFileContents subOp = null;
+			while (!gotFileContents) {
+				try {
+					var candSubOp = getFileContents(file);
+					payer.ifPresent(name -> candSubOp.payingWith(payerToUse(name, spec)));
+					allRunFor(spec, candSubOp);
+					gotFileContents = true;
+					subOp = candSubOp;
+				} catch (Throwable ignore) {
+					getsRemaining--;
+				}
+				if (getsRemaining == 0) {
+					break;
+				}
+			}
+			if (!gotFileContents) {
+				Assert.fail("Unable to use 'overridingProps', couldn't get existing file contents!");
+			}
 			try {
 				byte[] bytes = subOp.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 				ServicesConfigurationList defaults = ServicesConfigurationList.parseFrom(bytes);

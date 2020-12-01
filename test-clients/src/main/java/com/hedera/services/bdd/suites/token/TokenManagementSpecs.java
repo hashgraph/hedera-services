@@ -95,7 +95,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				.given(
 						newKeyNamed("supplyKey"),
 						newKeyNamed("freezeKey"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate("supple")
 								.freezeKey("freezeKey")
@@ -124,7 +124,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				.given(
 						newKeyNamed("supplyKey"),
 						newKeyNamed("kycKey"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate("supple")
 								.kycKey("kycKey")
@@ -157,8 +157,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 		return defaultHapiSpec("BurnTokenFailsDueToInsufficientTreasuryBalance")
 				.given(
 						newKeyNamed("burnKey"),
-						cryptoCreate("misc"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate("misc").balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate(BURN_TOKEN)
 								.treasury(TOKEN_TREASURY)
@@ -194,8 +194,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 		return defaultHapiSpec("WipeAccountSuccessCasesWork")
 				.given(
 						newKeyNamed("wipeKey"),
-						cryptoCreate("misc"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate("misc").balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate(wipeableToken)
 								.treasury(TOKEN_TREASURY)
@@ -231,8 +231,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 		return defaultHapiSpec("WipeAccountFailureCasesWork")
 				.given(
 						newKeyNamed("wipeKey"),
-						cryptoCreate("misc"),
-						cryptoCreate(TOKEN_TREASURY)
+						cryptoCreate("misc").balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						tokenCreate(unwipeableToken)
 								.treasury(TOKEN_TREASURY),
@@ -273,7 +273,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 		return defaultHapiSpec("KycMgmtFailureCasesWork")
 				.given(
 						newKeyNamed("oneKyc"),
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(withoutKycKey)
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(withKycKey)
@@ -310,8 +310,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 		return defaultHapiSpec("FreezeMgmtFailureCasesWork")
 				.given(
 						newKeyNamed("oneFreeze"),
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("go"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("go").balance(0L),
 						tokenCreate(unfreezableToken)
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(freezableToken)
@@ -351,8 +351,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("FreezeMgmtSuccessCasesWork")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("misc"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("misc").balance(0L),
 						newKeyNamed("oneFreeze"),
 						newKeyNamed("twoFreeze"),
 						tokenCreate(withPlusDefaultFalse)
@@ -385,8 +385,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("KycMgmtSuccessCasesWork")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("misc"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate("misc").balance(0L),
 						newKeyNamed("oneKyc"),
 						newKeyNamed("twoKyc"),
 						tokenCreate(withKycKey)
@@ -421,7 +421,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	public HapiApiSpec supplyMgmtSuccessCasesWork() {
 		return defaultHapiSpec("SupplyMgmtSuccessCasesWork")
 				.given(
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						newKeyNamed("supplyKey"),
 						tokenCreate("supple")
 								.supplyKey("supplyKey")
