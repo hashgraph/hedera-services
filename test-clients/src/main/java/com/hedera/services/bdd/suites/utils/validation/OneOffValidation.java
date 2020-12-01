@@ -21,10 +21,9 @@ package com.hedera.services.bdd.suites.utils.validation;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.sysfiles.SysFilesUpdate;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +34,6 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -97,7 +95,7 @@ public class OneOffValidation extends HapiApiSuite {
 
 	private HapiApiSpec createAContract() {
 		return defaultHapiSpec("CreateAContract").given(
-				fileCreate("bytecode").path("src/main/resource/Multipurpose.bin")
+				fileCreate("bytecode").path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
 		).when(
 				contractCreate("something").bytecode("bytecode").via("createTxn")
 		).then(
