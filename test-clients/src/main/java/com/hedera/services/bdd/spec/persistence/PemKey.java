@@ -73,35 +73,25 @@ public class PemKey {
 	}
 
 	public void registerWith(HapiApiSpec spec, RegistryForms forms) {
-		KeyPair keyPair;
-		Ed25519KeyStore keyStore;
-		var aes256EncryptedPkcs8Pem = new File(pemLoc);
-
+		var qPemLoc = qualifiedPemLoc(pemLoc, spec);
+		var aes256EncryptedPkcs8Pem = new File(qPemLoc);
 		if (!aes256EncryptedPkcs8Pem.exists()) {
 			if (!generateIfMissing) {
-				throw new IllegalStateException(String.format("File missing at PEM loc '%s'!", pemLoc));
+				throw new IllegalStateException(String.format("File missing at PEM loc '%s'!", qPemLoc));
 			}
 			Key simpleKey = spec.keys().generate(KeyFactory.KeyType.SIMPLE);
 			forms.completeIntake(spec.registry(), simpleKey);
 			try {
-				spec.keys().exportSimpleKey(pemLoc, forms.name(), passphrase);
-				log.info("Created new simple key at PEM loc '{}'.", pemLoc);
+				spec.keys().exportSimpleKey(qPemLoc, forms.name(), passphrase);
+				log.info("Created new simple key at PEM loc '{}'.", qPemLoc);
 			} catch (KeyStoreException e) {
-				throw new IllegalStateException(String.format("Cannot generate key to PEM loc '%s'!", pemLoc), e);
+				throw new IllegalStateException(String.format("Cannot generate key to PEM loc '%s'!", qPemLoc), e);
 			}
 			return;
 		}
 
-		try {
-			keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
-			keyPair = keyStore.get(0);
-		} catch (KeyStoreException kse) {
-			throw new IllegalStateException(
-					String.format("Unusable key at alleged PEM loc '%s'!", pemLoc), kse);
-		}
-
+		var keyPair = readFirstKp(aes256EncryptedPkcs8Pem, passphrase);
 		var publicKey = (EdDSAPublicKey) keyPair.getPublic();
-
 		var hederaKey = asSimpleHederaKey(publicKey.getAbyte());
 		forms.completeIntake(spec.registry(), hederaKey);
 		/* When we incorporate the key into the spec's key factory, it will:
@@ -112,6 +102,20 @@ public class PemKey {
 				encodeHexString(publicKey.getAbyte()),
 				keyPair.getPrivate(),
 				SigControl.ON);
+	}
+
+	private String qualifiedPemLoc(String loc, HapiApiSpec spec) {
+		return String.format("%s/keys/%s", spec.setup().persistentEntitiesDirPath(), loc);
+	}
+
+	public static KeyPair readFirstKp(File pem, String passphrase) {
+		try {
+			var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), pem);
+			return keyStore.get(0);
+		} catch (KeyStoreException kse) {
+			throw new IllegalStateException(
+					String.format("Unusable key at alleged PEM loc '%s'!", pem.getPath()), kse);
+		}
 	}
 
 	private Key asSimpleHederaKey(byte[] A) {

@@ -193,6 +193,12 @@ public class HapiSpecSetup {
 	public long defaultNodePaymentTinyBars() {
 		return props.getLong("default.nodePayment.tinyBars");
 	}
+	public String defaultPayerPemKeyLoc() {
+		return props.get("default.payer.pemKeyLoc");
+	}
+	public String defaultPayerPemKeyPassphrase() {
+		return props.get("default.payer.pemKeyPassphrase");
+	}
 	public AccountID defaultPayer() {
 		return props.getAccount("default.payer");
 	}

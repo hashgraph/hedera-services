@@ -1,6 +1,5 @@
 package com.hedera.services.bdd.suites.validation;
 
-import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.validation.domain.PuvConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,7 +33,7 @@ public class PostUpgradeValidation implements Callable<Integer> {
 	String target;
 
 	@Override
-	public Integer call() throws Exception {
+	public Integer call() {
 		loadConfig();
 		if (config == null) {
 			return 1;
@@ -48,7 +47,7 @@ public class PostUpgradeValidation implements Callable<Integer> {
 			return 1;
 		}
 
-		var networkInfo = config.getNetworks().get(target);
+		var networkInfo = config.getNetworks().get(target).named(target);
 		if (validateTokenService) {
 			var tokenPuv = new TokenPuvSuite(networkInfo);
 			var outcome = tokenPuv.runSuiteSync();

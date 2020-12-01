@@ -39,4 +39,9 @@ public class Node {
 	public void setIpv4Addr(String ipv4Addr) {
 		this.ipv4Addr = ipv4Addr;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s:0.0.%d", ipv4Addr, account);
+	}
 }
