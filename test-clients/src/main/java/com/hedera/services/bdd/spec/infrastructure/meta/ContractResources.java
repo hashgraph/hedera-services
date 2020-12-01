@@ -119,20 +119,25 @@ public class ContractResources {
 			"\"inputs\":[],\"name\":\"light\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static String CONSPICUOUS_DONATION_ABI = "{\"constant\":false," +
+	public static final String CONSPICUOUS_DONATION_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"toNum\",\"type\":\"uint32\"}," +
 			"{\"internalType\":\"string\",\"name\":\"saying\",\"type\":\"string\"}],\"name\":\"donate\"," +
 			"\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	public static String TRACKING_SEND_ABI = "{\"constant\":false," +
+	public static final String TRACKING_SEND_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"toNum\",\"type\":\"uint32\"}," +
 			"{\"internalType\":\"uint32\",\"name\":\"amount\",\"type\":\"uint32\"}],\"name\":\"uncheckedTransfer\"," +
 			"\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	public static String HOW_MUCH_ABI = "{\"constant\":true," +
+	public static final String HOW_MUCH_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"howMuch\"," +
 			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String LUCKY_NO_LOOKUP_ABI = "{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"pick\"," +
+			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+
 
 	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
