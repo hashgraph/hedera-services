@@ -23,6 +23,8 @@ package com.hedera.services.bdd.suites.perf;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -40,13 +42,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_STATUSES;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static java.util.Map.entry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class TokenTransfersLoadProvider extends HapiApiSuite {
@@ -110,8 +116,37 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				sendingAccountsPerToken.set(ciProps.getInteger("sendingAccountsPerToken"));
 				receivingAccountsPerToken.set(ciProps.getInteger("receivingAccountsPerToken"));
 
-				var initialSupply = (sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
+				var initialSupply =
+						(sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
 				List<HapiSpecOperation> initializers = new ArrayList<>();
+				initializers.add(
+						fileUpdate(API_PERMISSIONS)
+								.fee(9_999_999_999L)
+								.payingWith(GENESIS)
+								.overridingProps(Map.ofEntries(
+										entry("tokenCreate", "0-*"),
+										entry("tokenFreezeAccount", "0-*"),
+										entry("tokenUnfreezeAccount", "0-*"),
+										entry("tokenGrantKycToAccount", "0-*"),
+										entry("tokenRevokeKycFromAccount", "0-*"),
+										entry("tokenDelete", "0-*"),
+										entry("tokenMint", "0-*"),
+										entry("tokenBurn", "0-*"),
+										entry("tokenAccountWipe", "0-*"),
+										entry("tokenUpdate", "0-*"),
+										entry("tokenGetInfo", "0-*"),
+										entry("tokenAssociateToAccount", "0-*"),
+										entry("tokenDissociateFromAccount", "0-*")
+								))
+				);
+				initializers.add(
+						fileUpdate(APP_PROPERTIES)
+								.fee(9_999_999_999L)
+								.payingWith(GENESIS)
+								.overridingProps(Map.ofEntries(
+										entry("hapi.throttling.buckets.fastOpBucket.capacity", "4000")
+								))
+				);
 				for (int i = 0; i < tokensPerTxn.get(); i++) {
 					var token = "token" + i;
 					var treasury = "treasury" + i;
@@ -138,6 +173,10 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 					}
 				}
 
+				for (HapiSpecOperation op : initializers) {
+					((HapiTxnOp)op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
+				}
+
 				return initializers;
 			}
 
@@ -160,7 +199,11 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 									.distributing(token + "sender" + j, receivers);
 						}
 					}
-					op = cryptoTransfer(xfers).noLogging().deferStatusResolution();
+					op = cryptoTransfer(xfers)
+							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+							.noLogging()
+							.deferStatusResolution();
 					firstDir.set(Boolean.FALSE);
 				} else {
 					var xfers = new TokenMovement[numTokens * numReceivers];
@@ -175,7 +218,11 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 									.distributing(token + "receiver" + j, senders);
 						}
 					}
-					op = cryptoTransfer(xfers).noLogging().deferStatusResolution();
+					op = cryptoTransfer(xfers)
+							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+							.noLogging()
+							.deferStatusResolution();
 					firstDir.set(Boolean.TRUE);
 				}
 				return Optional.of(op);
@@ -187,6 +234,4 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
-
-
 }

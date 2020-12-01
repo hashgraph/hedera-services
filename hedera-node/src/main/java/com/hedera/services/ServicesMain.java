@@ -142,28 +142,28 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void contextDrivenInit() {
-		registerIssListener();
-		log.info("Platform callbacks registered.");
 		checkPropertySources();
 		log.info("Property sources are available.");
-		configurePlatform();
-		log.info("Platform is configured.");
+		initSystemFiles();
+		log.info("System files rationalized.");
+		createSystemAccountsIfNeeded();
+		log.info("System accounts initialized.");
 		migrateStateIfNeeded();
 		log.info("Migrations complete.");
-		startRecordStreamThread();
-		log.info("Record stream started.");
-		startNettyIfAppropriate();
-		log.info("Netty started.");
-		createSystemAccountsIfNeeded();
-		log.info("System accounts rationalized.");
 		validateLedgerState();
 		log.info("Ledger state ok.");
-		createSystemFilesIfNeeded();
-		log.info("System files rationalized.");
+		configurePlatform();
+		log.info("Platform is configured.");
+		registerIssListener();
+		log.info("Platform callbacks registered.");
 		exportAccountsIfDesired();
 		log.info("Accounts exported.");
 		initializeStats();
 		log.info("Stats initialized.");
+		startRecordStreamThread();
+		log.info("Record stream started in directory {}.", ctx.recordStream().getRecordStreamsDirectory());
+		startNettyIfAppropriate();
+		log.info("Netty started.");
 
 		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
 	}
@@ -181,7 +181,7 @@ public class ServicesMain implements SwirldMain {
 		}
 	}
 
-	private void createSystemFilesIfNeeded() {
+	private void initSystemFiles() {
 		try {
 			ctx.systemFilesManager().createAddressBookIfMissing();
 			ctx.systemFilesManager().createNodeDetailsIfMissing();
@@ -236,10 +236,6 @@ public class ServicesMain implements SwirldMain {
 		String myNodeAccount = ctx.addressBook().getAddress(ctx.id().getId()).getMemo();
 		String blessedNodeAccount = ctx.properties().getStringProperty("dev.defaultListeningNodeAccount");
 		return myNodeAccount.equals(blessedNodeAccount);
-	}
-
-	private void loadFeeSchedule() {
-		ctx.fees().init();
 	}
 
 	private void initializeStats() {
