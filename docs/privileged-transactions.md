@@ -80,7 +80,9 @@ Next we consider `FileUpdate` and `FileAppend` transactions when targeting one o
 | [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) |   |   | X |   |
 | [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) |   | X |   | X |
 
-For the `CryptoUpdate` transaction, we have the following table.
+For the `CryptoUpdate` transaction, we have the table below. (In words, it says the following: the treasury can
+update _any_ system account; the system admin can update only a specific _range_ of system accounts; and all other system 
+accounts can update themselves.)
 
 | Payer | All accounts [`<= `ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L37) | Accounts between [`accounts.systemAdmin.firstManaged=51`](../hedera-node/src/main/resources/bootstrap.properties#L26) and [`accounts.systemAdmin.lastManaged=80`](../hedera-node/src/main/resources/bootstrap.properties#L27)| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) | [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) | [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) | [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22) |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | 
@@ -107,5 +109,6 @@ are essentially identical to the authorization privileges in the tables above.
 # Miscellanea
 
 - The network charges no fees to privileged transactions. 
-- Note with the default settings of `accounts.systemAdmin=50` and `accounts.systemAdmin.firstManaged=51`, the 
+- With the default settings of `accounts.systemAdmin=50` and `accounts.systemAdmin.firstManaged=51`, 
+the system admin account is unique in being unable to update itself.
 
