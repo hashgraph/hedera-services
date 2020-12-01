@@ -146,6 +146,16 @@ public class ContractResources {
 			"\"inputs\":[],\"name\":\"getMyValue\"," +
 			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_get\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String SET_ZERO_READ_ONE_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"setZeroReadOne\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_getOne\",\"type\":\"uint256\"}]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String GROW_CHILD_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_childId\",\"type\":\"uint256\"}," +
+			"{\"internalType\":\"uint256\",\"name\":\"_howManyKB\",\"type\":\"uint256\"}," +
+			"{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"growChild\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
