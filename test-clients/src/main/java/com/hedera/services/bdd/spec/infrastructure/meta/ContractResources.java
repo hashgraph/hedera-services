@@ -43,6 +43,7 @@ public class ContractResources {
 	public static final String ABANDONING_PARENT_BYTECODE_PATH = bytecodePath("AbandoningParent");
 	public static final String PAY_TEST_SELF_DESTRUCT_BYTECODE_PATH = bytecodePath("PayTestSelfDestruct");
 	public static final String PAY_RECEIVABLE_AMOUNT_BYTECODE_PATH = bytecodePath("PayReceivableAmount");
+	public static final String OC_TOKEN_BYTECODE_PATH = bytecodePath("octoken");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -175,6 +176,35 @@ public class ContractResources {
 			"\"inputs\":[{\"name\":\"beneficiary\",\"type\":\"address\"}],\"name\":\"killMe\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TOKEN_ERC20_CONSTRUCTOR_ABI = "{" +
+			"\"inputs\":[{\"name\":\"initialSupply\",\"type\":\"uint256\"},{\"name\":\"tokenName\",\"type\":\"string\"},{\"name\":\"tokenSymbol\",\"type\":\"string\"}]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
+	public static final String BALANCE_OF_ABI = "{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"balanceOf\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String TRANSFER_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transfer\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String APPROVE_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"approve\"," +
+			"\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRANSFER_FROM_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"}," +
+			"{\"name\":\"_to\",\"type\":\"address\"}," +
+			"{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\"," +
+			"\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String SYMBOL_ABI = "{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"symbol\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"string\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String DECIMALS_ABI = "{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"decimals\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
