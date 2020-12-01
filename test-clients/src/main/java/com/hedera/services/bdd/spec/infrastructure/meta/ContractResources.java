@@ -39,6 +39,7 @@ public class ContractResources {
 	public static final String FUSE_BYTECODE_PATH = bytecodePath("Fuse");
 	public static final String LAST_TRACKING_SENDER_BYTECODE_PATH = bytecodePath("LastTrackingSender");
 	public static final String MULTIPURPOSE_BYTECODE_PATH = bytecodePath("Multipurpose");
+	public static final String CHILD_STORAGE_BYTECODE_PATH = bytecodePath("ChildStorage");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -141,7 +142,10 @@ public class ContractResources {
 			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"no\",\"type\":\"uint32\"}],\"name\":\"believeIn\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-
+	public static final String GET_MY_VALUE_ABI = "{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"getMyValue\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_get\",\"type\":\"uint256\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static final String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);

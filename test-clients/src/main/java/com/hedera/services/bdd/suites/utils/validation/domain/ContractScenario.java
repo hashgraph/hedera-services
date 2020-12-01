@@ -20,8 +20,6 @@ package com.hedera.services.bdd.suites.utils.validation.domain;
  * ‍
  */
 
-import com.hedera.services.bdd.suites.utils.validation.domain.PersistentFile;
-
 public class ContractScenario {
 	public static String NOVEL_CONTRACT_NAME = "novelContract";
 	public static String PERSISTENT_CONTRACT_NAME = "persistentContract";
