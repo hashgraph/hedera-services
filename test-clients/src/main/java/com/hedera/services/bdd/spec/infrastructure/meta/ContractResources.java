@@ -137,6 +137,10 @@ public class ContractResources {
 			"\"inputs\":[],\"name\":\"pick\"," +
 			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String BELIEVE_IN_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"no\",\"type\":\"uint32\"}],\"name\":\"believeIn\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 
 	public static final String bytecodePath(String bytecode) {
