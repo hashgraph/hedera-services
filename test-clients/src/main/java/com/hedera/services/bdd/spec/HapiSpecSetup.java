@@ -317,6 +317,9 @@ public class HapiSpecSetup {
 		return props.getNodeSelector("node.selector");
 	}
 	public Integer numOpFinisherThreads() { return props.getInteger("num.opFinisher.threads"); }
+	public String persistentEntitiesDirPath() {
+		return props.get("persistentEntities.dir.path");
+	}
 	public Integer port() {
 		return props.getInteger("port");
 	}

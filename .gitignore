@@ -65,6 +65,8 @@ hapi-proto/src/main/proto/doc/index.html
 evm-adapter/output/
 evm-adapter/target/
 test-clients/logs/
+test-clients/persistent-entities/
+test-clients/keys/
 test-clients/*.bin
 test-clients/output/
 test-clients/devops-utils/validation-scenarios/fees/

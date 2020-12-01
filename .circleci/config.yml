@@ -1361,6 +1361,7 @@ workflows:
           filters:
             branches:
               ignore:
+                - 0731-M-AddSpecPersistence
                 - /.*-PERF/
                 - /.*-REGRESSION/
                 - finish-txn-privileges-doc

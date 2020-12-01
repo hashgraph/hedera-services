@@ -46,6 +46,7 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -54,6 +55,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	private String token;
 
+	private boolean advertiseCreation = false;
 	private OptionalInt decimals = OptionalInt.empty();
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong initialSupply = OptionalLong.empty();
@@ -78,6 +80,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate(String token) {
 		this.token = token;
+	}
+
+	public HapiTokenCreate advertisingCreation() {
+		advertiseCreation = true;
+		return this;
 	}
 
 	public HapiTokenCreate initialSupply(long initialSupply) {
@@ -204,7 +211,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
 							wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
-							treasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
+							treasury.ifPresent(a -> {
+								var treasuryId = TxnUtils.asId(a, spec);
+								b.setTreasury(treasuryId);
+							});
 						});
 		return b -> b.setTokenCreation(opBody);
 	}
@@ -240,6 +250,13 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		wipeKey.ifPresent(k -> registry.saveWipeKey(token, registry.getKey(k)));
 		supplyKey.ifPresent(k -> registry.saveSupplyKey(token, registry.getKey(k)));
 		freezeKey.ifPresent(k -> registry.saveFreezeKey(token, registry.getKey(k)));
+
+		if (advertiseCreation) {
+			String banner = "\n\n" + bannerWith(
+					String.format(
+							"Created token '%s' with id '0.0.%d'.", token, lastReceipt.getTokenID().getTokenNum()));
+			log.info(banner);
+		}
 	}
 
 	@Override

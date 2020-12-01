@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.keys;
 import com.google.common.io.Files;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
+import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -97,6 +98,14 @@ public class KeyFactory implements Serializable {
 		exportSimpleKey(loc, name, key -> key.getEd25519().toByteArray());
 	}
 
+	public void exportSimpleKey(
+			String loc,
+			String name,
+			String passphrase
+	) throws KeyStoreException {
+		exportSimpleKey(loc, name, key -> key.getEd25519().toByteArray(), passphrase);
+	}
+
 	public void exportSimpleWacl(
 			String loc,
 			String name
@@ -109,10 +118,19 @@ public class KeyFactory implements Serializable {
 			String name,
 			Function<Key, byte[]> targetKeyExtractor
 	) throws KeyStoreException {
+		exportSimpleKey(loc, name, targetKeyExtractor, PEM_PASSPHRASE);
+	}
+
+	public void exportSimpleKey(
+			String loc,
+			String name,
+			Function<Key, byte[]> targetKeyExtractor,
+			String passphrase
+	) throws KeyStoreException {
 		var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
 		var privateKey = pkMap.get(Hex.encodeHexString(pubKeyBytes));
 
-		var store = new Ed25519KeyStore.Builder().withPassword(PEM_PASSPHRASE.toCharArray()).build();
+		var store = new Ed25519KeyStore.Builder().withPassword(passphrase.toCharArray()).build();
 		store.insertNewKeyPair(Ed25519PrivateKey.fromBytes(privateKey.getEncoded()));
 		store.write(new File(loc));
 	}
@@ -332,6 +350,10 @@ public class KeyFactory implements Serializable {
 								.collect(toList()))
 					.build();
 		}
+	}
+
+	public Key generate(KeyType type) {
+		return generate(type, KeyExpansion::genSingleEd25519KeyByteEncodePubKey);
 	}
 
 	public Key generate(KeyType type, KeyGenerator keyGen) {

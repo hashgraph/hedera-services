@@ -26,6 +26,7 @@ import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
+import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
@@ -87,6 +88,7 @@ public class HapiApiSpec implements Runnable {
 	SpecStatus status;
 	TxnFactory txnFactory;
 	KeyFactory keyFactory;
+	EntityManager entities;
 	FeeCalculator feeCalculator;
 	FeesAndRatesProvider ratesProvider;
 	HapiSpecSetup hapiSetup;
@@ -199,6 +201,11 @@ public class HapiApiSpec implements Runnable {
 				return false;
 			}
 		}
+		entities = new EntityManager(this);
+		if (!entities.init()) {
+			status = ERROR;
+			return false;
+		}
 		return true;
 	}
 
@@ -214,6 +221,11 @@ public class HapiApiSpec implements Runnable {
 			return;
 		}
 
+		List<HapiSpecOperation> creationOps = entities.requiredCreations();
+		if (!creationOps.isEmpty()) {
+			log.info("Inserting {} required creations to establish persistent entities.", creationOps.size());
+			ops = Stream.concat(creationOps.stream(), ops.stream()).collect(toList());
+		}
 		status = RUNNING;
 		if (hapiSetup.statusDeferredResolvesDoAsync()) {
 			startFinalizingOps();
@@ -242,6 +254,8 @@ public class HapiApiSpec implements Runnable {
 		}
 		tearDown();
 		log.info(logPrefix() + "final status: " + status + "!");
+
+		entities.updateCreatedEntityManifests();
 
 		if(saveContextFlag) {
 			persistContext();
