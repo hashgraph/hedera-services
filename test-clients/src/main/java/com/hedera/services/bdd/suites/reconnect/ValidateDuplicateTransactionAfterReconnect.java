@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.reconnect;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,9 +65,6 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 								.unavailableNode()
 				)
 				.when(
-						getAccountBalance(GENESIS)
-								.setNode("0.0.6")
-								.unavailableNode(),
 						cryptoCreate("repeatedTransaction")
 								.payingWith(MASTER)
 								.validDurationSecs(180)
@@ -77,9 +75,14 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 				)
 				.then(
 						withLiveNode("0.0.6")
-								.within(180, TimeUnit.SECONDS)
-								.loggingAvailabilityEvery(30)
-								.sleepingBetweenRetriesFor(10),
+								.within(60, TimeUnit.SECONDS)
+								.loggingAvailabilityEvery(10)
+								.sleepingBetweenRetriesFor(5),
+						UtilVerbs.sleepFor(30 * 1000),
+						withLiveNode("0.0.6")
+								.within(60, TimeUnit.SECONDS)
+								.loggingAvailabilityEvery(10)
+								.sleepingBetweenRetriesFor(5),
 						cryptoCreate("repeatedTransaction")
 								.payingWith(MASTER)
 								.txnId(transactionId)
