@@ -103,8 +103,8 @@ out" of performing their system roles. For example, even if we lose the key to t
 rates file, the exchange rates admin can still issue a `FileUpdate` transaction to change 
 this file.
 
-The waived signature privileges for `FileUpdate`, `FileAppend`, and `CryptoUpdate` operations 
-are essentially identical to the authorization privileges in the tables above. 
+At present, the waived signature privileges for the `FileUpdate`, `FileAppend`, and `CryptoUpdate` 
+operations are identical to the corresponding authorization privileges in the tables above. 
 
 # Miscellanea
 
