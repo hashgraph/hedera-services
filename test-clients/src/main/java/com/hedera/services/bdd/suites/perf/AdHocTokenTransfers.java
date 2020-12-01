@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.perf;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,15 +59,15 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement
 import static java.util.Map.entry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class TokenTransfersLoadProvider extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(TokenTransfersLoadProvider.class);
+public class AdHocTokenTransfers extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(AdHocTokenTransfers.class);
 
-	private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
+	private AtomicLong duration = new AtomicLong(10L);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
 	public static void main(String... args) {
-		new TokenTransfersLoadProvider().runSuiteSync();
+		new AdHocTokenTransfers().runSuiteSync();
 	}
 
 	@Override
@@ -73,19 +75,52 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[] {
 						runTokenTransfers(),
+//						oneOff(),
 				}
 		);
 	}
 
+	private HapiApiSpec oneOff() {
+		return HapiApiSpec.customHapiSpec("OneOff").withProperties(
+				Map.of(
+						"nodes", "34.74.82.254:0.0.3,35.245.216.12:0.0.4,146.148.65.62:0.0.5,34.83.73.160:0.0.6,34.94.104.178:0.0.7,35.203.2.132:0.0.8,34.77.1.188:0.0.9,35.246.68.126:0.0.10,35.234.74.241:0.0.11,35.204.223.190:0.0.12,35.194.125.44:0.0.13,34.97.26.91:0.0.14,35.187.159.128:0.0.15,34.90.203.246:0.0.16",
+						"startupAccounts.literal", LITERAL_STARTUP_ACCOUNT,
+						"ci.properties.map", Optional.ofNullable(System.getenv("CI_PROPS")).orElse(DEFAULT_CI_PROPS)
+				)
+		).given(
+//				fileUpdate(APP_PROPERTIES)
+//						.fee(9_999_999_999L)
+//						.payingWith(GENESIS)
+//						.overridingProps(Map.ofEntries(
+//								entry("hapi.throttling.buckets.fastOpBucket.capacity", "4000")
+//						))
+		).when().then(
+				QueryVerbs.getFileContents(APP_PROPERTIES).logged()
+		);
+	}
+
 	private HapiApiSpec runTokenTransfers() {
-		return HapiApiSpec.defaultHapiSpec("RunTokenTransfers")
-				.given(
+		return HapiApiSpec.customHapiSpec("RunTokenTransfers").withProperties(
+						Map.of(
+								"nodes", "34.74.82.254:0.0.3,35.245.216.12:0.0.4,146.148.65.62:0.0.5,34.83.73.160:0.0.6,34.94.104.178:0.0.7,35.203.2.132:0.0.8,34.77.1.188:0.0.9,35.246.68.126:0.0.10,35.234.74.241:0.0.11,35.204.223.190:0.0.12,35.194.125.44:0.0.13,34.97.26.91:0.0.14,35.187.159.128:0.0.15,34.90.203.246:0.0.16",
+								"startupAccounts.literal", LITERAL_STARTUP_ACCOUNT,
+								"ci.properties.map", Optional.ofNullable(System.getenv("CI_PROPS")).orElse(DEFAULT_CI_PROPS)
+						)
+				).given(
 						stdMgmtOf(duration, unit, maxOpsPerSec)
 				).when().then(
+						withOpContext((spec, opLog) -> {
+							opLog.info("Targeting node " + targetNodeAccount());
+						}),
 						runWithProvider(tokenTransfersFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)
 				);
+	}
+
+	private String targetNodeAccount() {
+		int targetNode = Integer.parseInt(Optional.ofNullable(System.getenv("TARGET")).orElse("3"));
+		return String.format("0.0.%d", targetNode);
 	}
 
 	private Function<HapiApiSpec, OpProvider> tokenTransfersFactory() {
@@ -97,6 +132,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 		List<String> treasuries = new ArrayList<>();
 		Map<String, List<String>> senders = new HashMap<>();
 		Map<String, List<String>> receivers = new HashMap<>();
+		String targetAccount = targetNodeAccount();
 
 		return spec -> new OpProvider() {
 			@Override
@@ -110,15 +146,6 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				var initialSupply =
 						(sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
 				List<HapiSpecOperation> initializers = new ArrayList<>();
-				initializers.add(tokenOpsEnablement());
-				initializers.add(
-						fileUpdate(APP_PROPERTIES)
-								.fee(9_999_999_999L)
-								.payingWith(GENESIS)
-								.overridingProps(Map.ofEntries(
-										entry("hapi.throttling.buckets.fastOpBucket.capacity", "4000")
-								))
-				);
 				for (int i = 0; i < tokensPerTxn.get(); i++) {
 					var token = "token" + i;
 					var treasury = "treasury" + i;
@@ -146,7 +173,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				}
 
 				for (HapiSpecOperation op : initializers) {
-					((HapiTxnOp)op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
+					((HapiTxnOp)op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS).setNode(targetAccount);
 				}
 
 				return initializers;
@@ -174,6 +201,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 					op = cryptoTransfer(xfers)
 							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
 							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+							.setNode(targetAccount)
 							.noLogging()
 							.deferStatusResolution();
 					firstDir.set(Boolean.FALSE);
@@ -191,8 +219,9 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						}
 					}
 					op = cryptoTransfer(xfers)
-							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+							.setNode(targetAccount)
 							.noLogging()
 							.deferStatusResolution();
 					firstDir.set(Boolean.TRUE);
@@ -206,4 +235,8 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
+
+	private static final String LITERAL_STARTUP_ACCOUNT = "rO0ABXNyABFqYXZhLnV0aWwuQ29sbFNlcleOq7Y6G6gRAwABSQADdGFneHAAAAADdwQAAAACdAANU1RBUlRfQUNDT1VOVHNxAH4AAAAAAAF3BAAAAAFzcgAxY29tLmhlZGVyYS5zZXJ2aWNlcy5sZWdhY3kuY29yZS5BY2NvdW50S2V5TGlzdE9iasKGpBBS1EebAgACTAAJYWNjb3VudElkdAAuTGNvbS9oZWRlcmFoYXNoZ3JhcGgvYXBpL3Byb3RvL2phdmEvQWNjb3VudElEO0wAC2tleVBhaXJMaXN0dAAQTGphdmEvdXRpbC9MaXN0O3hwc3IAN2NvbS5nb29nbGUucHJvdG9idWYuR2VuZXJhdGVkTWVzc2FnZUxpdGUkU2VyaWFsaXplZEZvcm0AAAAAAAAAAAIAA1sAB2FzQnl0ZXN0AAJbQkwADG1lc3NhZ2VDbGFzc3QAEUxqYXZhL2xhbmcvQ2xhc3M7TAAQbWVzc2FnZUNsYXNzTmFtZXQAEkxqYXZhL2xhbmcvU3RyaW5nO3hwdXIAAltCrPMX+AYIVOACAAB4cAAAAAIYAnZyACxjb20uaGVkZXJhaGFzaGdyYXBoLmFwaS5wcm90by5qYXZhLkFjY291bnRJRAAAAAAAAAAAAgAESgALYWNjb3VudE51bV9CABVtZW1vaXplZElzSW5pdGlhbGl6ZWRKAAlyZWFsbU51bV9KAAlzaGFyZE51bV94cgAmY29tLmdvb2dsZS5wcm90b2J1Zi5HZW5lcmF0ZWRNZXNzYWdlVjMAAAAAAAAAAQIAAUwADXVua25vd25GaWVsZHN0ACVMY29tL2dvb2dsZS9wcm90b2J1Zi9Vbmtub3duRmllbGRTZXQ7eHB0ACxjb20uaGVkZXJhaGFzaGdyYXBoLmFwaS5wcm90by5qYXZhLkFjY291bnRJRHNxAH4AAAAAAAF3BAAAAAFzcgAqY29tLmhlZGVyYS5zZXJ2aWNlcy5sZWdhY3kuY29yZS5LZXlQYWlyT2Jqfu50MIDYVscCAANMAAdwcml2S2V5dAAaTGphdmEvc2VjdXJpdHkvUHJpdmF0ZUtleTtMAApwcml2YXRlS2V5cQB+AAtMAAlwdWJsaWNLZXlxAH4AC3hwcHQAYDMwMmUwMjAxMDAzMDA1MDYwMzJiNjU3MDA0MjIwNDIwOTExMzIxNzhlNzIwNTdhMWQ3NTI4MDI1OTU2ZmUzOWIwYjg0N2YyMDBhYjU5YjJmZGQzNjcwMTdmMzA4NzEzN3QAWDMwMmEzMDA1MDYwMzJiNjU3MDAzMjEwMDBhYThlMjEwNjRjNjFlYWI4NmUyYTljMTY0NTY1YjRlN2E5YTQxNDYxMDZlMGE2Y2QwM2E4YzM5NWExMTBlOTJ4eHg=";
+
+	private static final String DEFAULT_CI_PROPS = "duration=10,unit=MINUTES,maxOpsPerSec=705,tokensPerTxn=1,sendingAccountsPerToken=1,receivingAccountsPerToken=1,balanceInit=10000";
 }

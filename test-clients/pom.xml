@@ -122,6 +122,24 @@
         <version>${maven-assembly.version}</version>
         <executions>
           <execution>
+            <id>adhoc-jar</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>TokenTransfers</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifest>
+                  <mainClass>com.hedera.services.bdd.suites.perf.AdHocTokenTransfers</mainClass>
+                </manifest>
+              </archive>
+              <descriptors>
+                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
             <id>tools-jar</id>
             <goals>
               <goal>single</goal>

@@ -21,24 +21,20 @@ package com.hedera.services.bdd.spec.utilops.pauses;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 
 public class NodeLivenessTimeout extends UtilOp {
 	static final Logger log = LogManager.getLogger(NodeLivenessTimeout.class);
 
 	private int duration = 30;
-	private String node;
+	private final String node;
 	private TimeUnit unit = TimeUnit.SECONDS;
 	private int logIntervalDuration = 1;
 	private int retryIntervalDuration = 1;
