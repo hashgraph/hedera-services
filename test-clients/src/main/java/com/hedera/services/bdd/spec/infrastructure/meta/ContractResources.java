@@ -41,6 +41,7 @@ public class ContractResources {
 	public static final String MULTIPURPOSE_BYTECODE_PATH = bytecodePath("Multipurpose");
 	public static final String CHILD_STORAGE_BYTECODE_PATH = bytecodePath("ChildStorage");
 	public static final String ABANDONING_PARENT_BYTECODE_PATH = bytecodePath("AbandoningParent");
+	public static final String PAY_TEST_SELF_DESTRUCT_BYTECODE_PATH = bytecodePath("PayTestSelfDestruct");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -163,6 +164,14 @@ public class ContractResources {
 			"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_childId\",\"type\":\"uint256\"}," +
 			"{\"internalType\":\"uint256\",\"name\":\"_howManyKB\",\"type\":\"uint256\"}," +
 			"{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"growChild\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String GET_BALANCE_ABI = "{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"getBalance\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String KILL_ME_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"beneficiary\",\"type\":\"address\"}],\"name\":\"killMe\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
