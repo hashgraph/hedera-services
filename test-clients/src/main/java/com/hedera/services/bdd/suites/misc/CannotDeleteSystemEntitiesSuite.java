@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALL
 public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CannotDeleteSystemEntitiesSuite.class);
 
-	final Integer[] sysFileIds = {101,102,111,112,121,122,150};
+	final int[] sysFileIds = {101,102,111,112,121,122,150};
 
 	public static void main(String... args) {
 		CannotDeleteSystemEntitiesSuite suite = new CannotDeleteSystemEntitiesSuite();
@@ -112,13 +112,13 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec systemUserCannotDeleteSystemFiles(Integer[] fileIds, String sysUser) {
+	private HapiApiSpec systemUserCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
 		return defaultHapiSpec("systemUserCannotDeleteSystemFiles")
 				.given()
 				.when()
 				.then(
 						inParallel(
-								Arrays.stream(fileIds).map(id ->
+								Arrays.stream(fileIds).mapToObj(id ->
 										cryptoDelete("0.0." + id)
 												.payingWith(sysUser)
 												.signedBy(sysUser)
@@ -128,7 +128,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec normalUserCannotDeleteSystemFiles(Integer[] fileIds) {
+	private HapiApiSpec normalUserCannotDeleteSystemFiles(int[] fileIds) {
 		return defaultHapiSpec("normalUserCannotDeleteSystemFiles")
 				.given(
 						newKeyNamed("normalKey")
@@ -138,7 +138,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 								.balance(1_000_000_000L))
 				.then(
 						inParallel(
-								Arrays.stream(fileIds).map(id ->
+								Arrays.stream(fileIds).mapToObj(id ->
 										fileDelete("0.0." + id)
 												.payingWith("normalUser")
 												.signedBy("normalKey")
@@ -149,13 +149,13 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 	}
 
 
-	private HapiApiSpec systemDeleteCannotDeleteSystemFiles(Integer[] fileIds, String sysUser) {
+	private HapiApiSpec systemDeleteCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
 		return defaultHapiSpec("systemDeleteCannotDeleteSystemFiles")
 				.given()
 				.when()
 				.then(
 						inParallel(
-								Arrays.stream(fileIds).map(id ->
+								Arrays.stream(fileIds).mapToObj(id ->
 										systemFileDelete("0.0." + id)
 												.payingWith(sysUser)
 												.signedBy(sysUser)
