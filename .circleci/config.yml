@@ -884,7 +884,7 @@ executors:
     working_directory: /repo
 
 workflows:
-  nightly-basic-suiterunner-regression:
+  AWS-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
           cron: "15 4 * * *"
@@ -902,9 +902,9 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-basic-suiterunner-regression"
+          workflow-name: "AWS-Daily-Services-Comp-Basic-4N-1C"
 
-  nightly-update-feature-regression:
+  AWS-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
           cron: "30 4 * * *"
@@ -922,9 +922,9 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-update-feature-regression"
+          workflow-name: "AWS-Daily-Services-Crypto-Update-5N-1C"
 
-  weekly-crypto-transfer-perf-start-from-saved-state-regression:
+  AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
           cron: "0 5 * * 6,0"
@@ -942,9 +942,9 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "weekly-crypto-transfer-perf-start-from-saved-state-regression"
+          workflow-name: "AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C"
 
-  weekly-HCS-perf-start-from-saved-state-regression:
+  AWS-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
           cron: "0 10 * * 6,0"
@@ -962,10 +962,10 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "weekly-HCS-perf-start-from-saved-state-regression"
+          workflow-name: "AWS-Weekly-Services-HCS-Restart-Performance-15N-15C"
 
 
-  nightly-network-error-regression:
+  AWS-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
           cron: "15 5 * * *"
@@ -983,10 +983,10 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-network-error-regression"
+          workflow-name: "AWS-Daily-Services-Comp-NetError-4N-1C"
 
 # This workflow will be running normally in master branch on a daily basis
-  nightly-public-testnet-migration-regression:
+  AWS-Daily-Services-Crypto-Migration-4N-1C:
     triggers:
           - schedule:
               cron: "30 5 * * *"
@@ -1004,7 +1004,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-public-testnet-migration-regression"
+          workflow-name: "AWS-Daily-Services-Crypto-Migration-4N-1C"
 
 # The mainnet migration test needs to be run in a 13-node test network.
 # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
@@ -1029,7 +1029,7 @@ workflows:
                 at: /
           workflow-name: "nightly-mainnet-migration-regression"
 
-  nightly-software-update-regression:
+  AWS-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
           cron: "0 6 * * *"
@@ -1047,9 +1047,9 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-software-update-regression"
+          workflow-name: "AWS-Daily-Services-Crypto-Restart-4N-1C"
 
-  nightly-state-recover-regression:
+  AWS-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
           cron: "30 6 * * *"
@@ -1067,9 +1067,9 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-state-recover-regression"
+          workflow-name: "AWS-Daily-Services-Recovery-4N-1C"
 
-  nightly-basic-performance-regression:
+  AWS-Daily-Services-Comp-Basic-Performance-4N-4C:
     triggers:
       - schedule:
           cron: "30 5 * * *"
@@ -1087,9 +1087,9 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-basic-performance-regression"
+          workflow-name: "AWS-Daily-Services-Comp-Basic-Performance-4N-4C"
 
-  nightly-start-from-saved-state-regression:
+  AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
       - schedule:
           cron: "30 6 * * *"
@@ -1107,9 +1107,9 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-start-from-saved-state-regression"
+          workflow-name: "AWS-Daily-Services-Comp-Restart-Performance-6N-6C"
 
-  nightly-reconnect-regression:
+  AWS-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
       - schedule:
           cron: "0 7 * * *"
@@ -1127,7 +1127,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-reconnect-regression"
+          workflow-name: "AWS-Daily-Services-Comp-Reconnect-4N-1C"
 
   nightly-simulate-network-outage:
     triggers:
