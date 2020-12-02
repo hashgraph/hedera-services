@@ -64,6 +64,7 @@ import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.issues.Issue2144Spec;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
+import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.ContractQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.CryptoQueriesStressTests;
@@ -281,6 +282,7 @@ public class SuiteRunner {
 		put("ControlAccountsExemptForUpdates", aof(new SpecialAccountsAreExempted()));
 		/* System files. */
 		put("FetchSystemFiles", aof(new FetchSystemFiles()));
+		put("CannotDeleteSystemEntitiesSuite", aof(new CannotDeleteSystemEntitiesSuite()));
 		/* Throttling */
 		put("BucketThrottlingSpec", aof(new BucketThrottlingSpec()));
 		/* Network metadata. */

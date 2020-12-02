@@ -2043,6 +2043,8 @@ jobs:
           dsl-args: "CryptoRecordSanityChecks"
       - run-eet-suites:
           dsl-args: "SuperusersAreNeverThrottled"
+      - run-eet-suites:
+          dsl-args: "CannotDeleteSystemEntitiesSuite"
 
   run-token-scenarios:
     parameters:

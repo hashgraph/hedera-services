@@ -1,0 +1,173 @@
+package com.hedera.services.bdd.suites.misc;
+
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
+
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
+
+public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(CannotDeleteSystemEntitiesSuite.class);
+
+	final Integer[] sysFileIds = {101,102,111,112,121,122,150};
+
+	public static void main(String... args) {
+		CannotDeleteSystemEntitiesSuite suite = new CannotDeleteSystemEntitiesSuite();
+		suite.runSuiteSync();
+	}
+
+	@Override
+	protected List<HapiApiSpec> getSpecsInSuite() {
+		return List.of(new HapiApiSpec[]{
+				systemUserCannotDeleteSystemAccounts(1,100, GENESIS),
+				systemUserCannotDeleteSystemAccounts(900,999, GENESIS),
+				systemUserCannotDeleteSystemAccounts(1,100, MASTER),
+				systemUserCannotDeleteSystemAccounts(900,999, MASTER),
+				systemUserCannotDeleteSystemAccounts(1,100, SYSTEM_DELETE_ADMIN),
+				systemUserCannotDeleteSystemAccounts(900,999, SYSTEM_DELETE_ADMIN),
+				normalUserCannotDeleteSystemAccounts(1,100),
+				normalUserCannotDeleteSystemAccounts(900,999),
+
+				systemUserCannotDeleteSystemFiles(sysFileIds, GENESIS),
+				systemUserCannotDeleteSystemFiles(sysFileIds,MASTER),
+				systemUserCannotDeleteSystemFiles(sysFileIds,SYSTEM_DELETE_ADMIN),
+
+				normalUserCannotDeleteSystemFiles(sysFileIds),
+				systemDeleteCannotDeleteSystemFiles(sysFileIds, GENESIS),
+				systemDeleteCannotDeleteSystemFiles(sysFileIds, MASTER),
+				systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN)
+		});
+	}
+
+	private HapiApiSpec systemUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount, String sysUser) {
+		return defaultHapiSpec("systemUserCannotDeleteSystemAccounts")
+				.given()
+				.when()
+				.then(
+						inParallel(
+								IntStream.rangeClosed(firstAccount, lastAccount)
+										.mapToObj(id ->
+														cryptoDelete("0.0." + id)
+																.payingWith(sysUser)
+																.signedBy(sysUser)
+																.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
+										)
+										.toArray(HapiSpecOperation[]::new)
+						)
+				);
+	}
+
+	private HapiApiSpec normalUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount) {
+		return defaultHapiSpec("normalUserCannotDeleteSystemAccounts")
+				.given(
+						newKeyNamed("normalKey")
+				).when(
+						cryptoCreate("normalUser")
+								.key("normalKey")
+								.balance(1_000_000_000L))
+				.then(
+						inParallel(
+								IntStream.rangeClosed(firstAccount, lastAccount)
+										.mapToObj(id ->
+												cryptoDelete("0.0." + id)
+														.payingWith("normalUser")
+														.signedBy("normalKey")
+														.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
+										)
+										.toArray(HapiSpecOperation[]::new)
+						)
+				);
+	}
+
+	private HapiApiSpec systemUserCannotDeleteSystemFiles(Integer[] fileIds, String sysUser) {
+		return defaultHapiSpec("systemUserCannotDeleteSystemFiles")
+				.given()
+				.when()
+				.then(
+						inParallel(
+								Arrays.stream(fileIds).map(id ->
+										cryptoDelete("0.0." + id)
+												.payingWith(sysUser)
+												.signedBy(sysUser)
+												.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
+								).toArray(HapiSpecOperation[]::new)
+						)
+				);
+	}
+
+	private HapiApiSpec normalUserCannotDeleteSystemFiles(Integer[] fileIds) {
+		return defaultHapiSpec("normalUserCannotDeleteSystemFiles")
+				.given(
+						newKeyNamed("normalKey")
+				).when(
+						cryptoCreate("normalUser")
+								.key("normalKey")
+								.balance(1_000_000_000L))
+				.then(
+						inParallel(
+								Arrays.stream(fileIds).map(id ->
+										fileDelete("0.0." + id)
+												.payingWith("normalUser")
+												.signedBy("normalKey")
+												.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
+								).toArray(HapiSpecOperation[]::new)
+						)
+				);
+	}
+
+
+	private HapiApiSpec systemDeleteCannotDeleteSystemFiles(Integer[] fileIds, String sysUser) {
+		return defaultHapiSpec("systemDeleteCannotDeleteSystemFiles")
+				.given()
+				.when()
+				.then(
+						inParallel(
+								Arrays.stream(fileIds).map(id ->
+										systemFileDelete("0.0." + id)
+												.payingWith(sysUser)
+												.signedBy(sysUser)
+												.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
+								)
+										.toArray(HapiSpecOperation[]::new)
+						)
+				);
+	}
+
+	@Override
+	protected Logger getResultsLogger() {
+		return log;
+	}
+}
