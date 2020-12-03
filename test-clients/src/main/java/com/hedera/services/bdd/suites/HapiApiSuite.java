@@ -109,7 +109,6 @@ public abstract class HapiApiSuite {
 	public static final String FEE_SCHEDULE = HapiSpecSetup.getDefaultInstance().feeScheduleName();
 	public static final String APP_PROPERTIES = HapiSpecSetup.getDefaultInstance().appPropertiesFile();
 	public static final String API_PERMISSIONS = HapiSpecSetup.getDefaultInstance().apiPermissionsFile();
-	public static final String PATH_TO_LOOKUP_BYTECODE = bytecodePath("BalanceLookup");
 	public static final HapiSpecSetup DEFAULT_PROPS = HapiSpecSetup.getDefaultInstance();
 	public static final long ADEQUATE_FUNDS = 10_000_000_000L;
 
@@ -255,10 +254,6 @@ public abstract class HapiApiSuite {
 				.map(CompletableFuture::runAsync)
 				.toArray(n -> new CompletableFuture[n]);
 		CompletableFuture.allOf(futures).join();
-	}
-
-	public static final String bytecodePath(String contract) {
-		return String.format("src/main/resource/contract/bytecodes/%s.bin", contract);
 	}
 
 	public static boolean cacheRecordsAreAddedToState() {

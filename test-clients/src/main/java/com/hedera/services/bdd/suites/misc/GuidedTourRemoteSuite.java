@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -49,11 +50,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 
 public class GuidedTourRemoteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(GuidedTourRemoteSuite.class);
-
-	final String PATH_TO_LOOKUP_BYTECODE = "src/main/resource/contract/bytecodes/BalanceLookup.bin";
-	final String LOOKUP_ABI = "{\"constant\":true,\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"accountNum\"," +
-			"\"type\":\"uint64\"}],\"name\":\"lookup\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\"," +
-			"\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		new GuidedTourRemoteSuite().runSuiteSync();
@@ -84,20 +80,20 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 				.withProperties(Map.of("host", "34.74.191.8"))
 				.given(
 						cryptoCreate("targetAccount").balance(ACTUAL_BALANCE),
-						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						contractCreate("balanceLookup").bytecode("bytecode")
 				).when().then(
 						/* This contract (c.f. src/main/resource/solidity/BalanceLookup.sol) assumes
 						   a shard and realm of 0; accepts just the sequence number of an account. */
 						contractCallLocal(
 								"balanceLookup",
-								LOOKUP_ABI,
+								ContractResources.BALANCE_LOOKUP_ABI,
 								spec -> new Object[] {
 										spec.registry().getAccountID("targetAccount").getAccountNum()
 								}
 						).has(
 								resultWith().resultThruAbi(
-										LOOKUP_ABI,
+										ContractResources.BALANCE_LOOKUP_ABI,
 										isLiteralResult(new Object[] { BigInteger.valueOf(ACTUAL_BALANCE) })
 								)
 						)

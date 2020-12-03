@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -37,9 +38,6 @@ import java.util.List;
 public class NewOpInConstructorSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(NewOpInConstructorSuite.class);
 
-	final String PATH_TO_CHILD_STORAGE_BYTECODE = "contract/bytecodes/ChildStorage.bin";
-	final String PATH_TO_ABANDONING_PARENT_BYTECODE = "contract/bytecodes/AbandoningParent.bin";
-
 	public static void main(String... args) {
 		new NewOpInConstructorSuite().runSuiteSync();
 	}
@@ -47,8 +45,8 @@ public class NewOpInConstructorSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				contractCreateWithNewOpInConstructor("ChildStorage", PATH_TO_CHILD_STORAGE_BYTECODE, 2),
-				contractCreateWithNewOpInConstructor("AbandoningParent", PATH_TO_ABANDONING_PARENT_BYTECODE, 5)
+				contractCreateWithNewOpInConstructor("ChildStorage", ContractResources.CHILD_STORAGE_BYTECODE_PATH, 2),
+				contractCreateWithNewOpInConstructor("AbandoningParent", ContractResources.ABANDONING_PARENT_BYTECODE_PATH, 5)
 		});
 	}
 

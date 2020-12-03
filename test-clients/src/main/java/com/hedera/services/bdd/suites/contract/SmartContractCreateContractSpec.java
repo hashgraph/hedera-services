@@ -21,15 +21,12 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
@@ -37,37 +34,25 @@ import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
-public class SmartContratCreateContractSpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SmartContratCreateContractSpec.class);
-
-	final String PATH_TO_CREATE_TRIVIAL_BIN_BYTECODE = "src/main/resource/contract/bytecodes/CreateTrivial.bin";
-
-	private static final int CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
-
-	private static final String SC_CT_CREATE_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String SC_CT_GETINDIRECT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\",\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String SC_CT_GETADDRESS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getAddress\",\"outputs\":[{\"name\":\"retval\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-
+public class SmartContractCreateContractSpec extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(SmartContractCreateContractSpec.class);
 
 	public static void main(String... args) {
 		new org.ethereum.crypto.HashUtil();
 
-		new SmartContratCreateContractSpec().runSuiteSync();
+		new SmartContractCreateContractSpec().runSuiteSync();
 	}
 
 	@Override
@@ -84,7 +69,7 @@ public class SmartContratCreateContractSpec extends HapiApiSuite {
 						cryptoCreate("payer")
 								.balance( 10_000_000_000L),
 						fileCreate("createTrivialBytecode")
-								.path(PATH_TO_CREATE_TRIVIAL_BIN_BYTECODE)
+								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH)
 				).when(
 						contractCreate("firstContract")
 								.payingWith("payer")
@@ -94,19 +79,19 @@ public class SmartContratCreateContractSpec extends HapiApiSuite {
 
 				).then(
 						assertionsHold((spec, ctxLog) -> {
-							var subop1 = contractCall("firstContract", SC_CT_CREATE_ABI)
+							var subop1 = contractCall("firstContract", ContractResources.CREATE_CHILD_ABI)
 									.payingWith("payer")
 									.gas(300_000L)
 									.via("createContractTxn");
 
 							// First contract calls created contract and get an integer return value
-							var subop2 = contractCallLocal("firstContract", SC_CT_GETINDIRECT_ABI)
+							var subop2 = contractCallLocal("firstContract", ContractResources.GET_CHILD_RESULT_ABI)
 									.saveResultTo("contractCallContractResultBytes")
 									.gas(300_000L);
 							CustomSpecAssert.allRunFor(spec,  subop1, subop2);
 
 							byte[] 	resultBytes = spec.registry().getBytes("contractCallContractResultBytes");
-							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(SC_CT_GETINDIRECT_ABI);
+							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(ContractResources.GET_CHILD_RESULT_ABI);
 
 							int contractCallReturnVal = 0;
 							if(resultBytes != null && resultBytes.length > 0) {
@@ -120,18 +105,18 @@ public class SmartContratCreateContractSpec extends HapiApiSuite {
 							ctxLog.info("This contract call contract return value {}", contractCallReturnVal);
 							Assert.assertEquals(
 									"This contract call contract return value should be 7",
-									CREATED_TRIVIAL_CONTRACT_RETURNS, contractCallReturnVal);
+									ContractResources.CREATED_TRIVIAL_CONTRACT_RETURNS, contractCallReturnVal);
 
 
 							// Get created contract's info with call to first contract
-							var subop3 = contractCallLocal("firstContract", SC_CT_GETADDRESS_ABI)
+							var subop3 = contractCallLocal("firstContract", ContractResources.GET_CHILD_ADDRESS_ABI)
 									.saveResultTo("getCreatedContractInfoResultBytes")
 									.gas(300_000L);
 							CustomSpecAssert.allRunFor(spec,  subop3);
 
 							resultBytes = spec.registry().getBytes("getCreatedContractInfoResultBytes");
 
-							function = CallTransaction.Function.fromJsonInterface(SC_CT_GETADDRESS_ABI);
+							function = CallTransaction.Function.fromJsonInterface(ContractResources.GET_CHILD_ADDRESS_ABI);
 
 							Object[] retResults = function.decodeResult(resultBytes);
 							String contractIDString = null;

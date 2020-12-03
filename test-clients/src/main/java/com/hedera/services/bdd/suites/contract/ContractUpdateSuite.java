@@ -21,16 +21,13 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -56,7 +53,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("UpdateWithPendingNewKeySucceeds")
 				.given(
 						newKeyNamed("newKey"),
-						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						contractCreate("target").bytecode("bytecode")
 				).when(
 						contractUpdate("target").newKey("newKey").deferStatusResolution()

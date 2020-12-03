@@ -32,6 +32,14 @@ import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.APPROVE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_OF_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DECIMALS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OC_TOKEN_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SYMBOL_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -44,22 +52,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class OCTokenSpec extends HapiApiSuite  {
+public class OCTokenSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(OCTokenSpec.class);
-
-	final String PATH_TO_OC_TOKEN_BYTECODE = "src/main/resource/contract/bytecodes/octoken.bin";
-
-	private static final String TOKEN_ERC20_CONSTRUCTOR_ABI = "{\"inputs\":[{\"name\":\"initialSupply\",\"type\":\"uint256\"},{\"name\":\"tokenName\",\"type\":\"string\"},{\"name\":\"tokenSymbol\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
-	private static final String BALANCE_OF_ABI = "{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String TRANSFER_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String APPROVE_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String TRANSFER_FROM_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String SYMBOL_ABI =   "{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String DECIMALS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}] ,\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		new org.ethereum.crypto.HashUtil();
-
 		new OCTokenSpec().runSuiteSync();
 	}
 
@@ -82,7 +79,6 @@ public class OCTokenSpec extends HapiApiSuite  {
 	}
 
 	HapiApiSpec ocToken() {
-
 		return defaultHapiSpec("ocToken")
 				.given(
 						cryptoCreate("tokenIssuer").balance(1_000_000_000_000L),
@@ -98,7 +94,7 @@ public class OCTokenSpec extends HapiApiSuite  {
 						getAccountInfo("Dave").saveToRegistry("DaveAcctInfo"),
 
 						fileCreate("bytecode")
-								.path(PATH_TO_OC_TOKEN_BYTECODE),
+								.path(OC_TOKEN_BYTECODE_PATH),
 
 						contractCreate("tokenContract", TOKEN_ERC20_CONSTRUCTOR_ABI,
 								1_000_000L, "OpenCrowd Token", "OCT")
@@ -106,7 +102,6 @@ public class OCTokenSpec extends HapiApiSuite  {
 								.payingWith("tokenIssuer")
 								.bytecode("bytecode")
 								.via("tokenCreateTxn").logged()
-
 				).when(
 						assertionsHold((spec, ctxLog) -> {
 							String issuerEthAddress = spec.registry().getAccountInfo("tokenIssuerAcctInfo")
@@ -148,7 +143,6 @@ public class OCTokenSpec extends HapiApiSuite  {
 							Assert.assertEquals(
 									"TokenIssuer's symbol should be fixed value",
 									"", symbol); // should be "OCT" as expected
-
 
 							CallTransaction.Function funcDecimals = CallTransaction.Function.fromJsonInterface(DECIMALS_ABI);
 

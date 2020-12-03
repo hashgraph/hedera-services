@@ -20,10 +20,8 @@ package com.hedera.services.bdd.suites.records;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountRecords;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,17 +29,12 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Map;
 
-/* --------------------------- SPEC STATIC IMPORTS --------------------------- */
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
-import static org.junit.Assert.assertEquals;
-/* --------------------------------------------------------------------------- */
 
 public class RecordCreationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
@@ -88,10 +81,10 @@ public class RecordCreationSuite extends HapiApiSuite {
 	private HapiApiSpec calledContractNoLongerGetsRecord() {
 		return defaultHapiSpec("CalledContractNoLongerGetsRecord")
 				.given(
-						fileCreate("bytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE)
+						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH)
 				).when(
 						contractCreate("contract").bytecode("bytecode").via("createTxn"),
-						contractCall("contract", DEPOSIT_ABI, 1_000L).via("callTxn").sending(1_000L)
+						contractCall("contract", ContractResources.DEPOSIT_ABI, 1_000L).via("callTxn").sending(1_000L)
 				).then(
 						getContractRecords("contract").has(inOrder())
 				);
@@ -100,7 +93,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	private HapiApiSpec newlyCreatedContractNoLongerGetsRecord() {
 		return defaultHapiSpec("NewlyCreatedContractNoLongerGetsRecord")
 				.given(
-						fileCreate("bytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE)
+						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH)
 				).when(
 						contractCreate("contract").bytecode("bytecode").via("createTxn")
 				).then(
@@ -142,8 +135,4 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
-
-	private final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/PayReceivable.bin";
-	private final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}]," +
-			"\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 }

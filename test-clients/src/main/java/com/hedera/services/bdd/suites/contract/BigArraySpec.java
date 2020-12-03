@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -33,18 +34,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class BigArraySpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(BigArraySpec.class);
-
-	private static final String BA_CHANGEARRAY_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"changeArray\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String BA_GROWTO_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"growTo\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String PATH_TO_BIG_ARRAY_BYTECODE = "src/main/resource/contract/bytecodes/GrowArray.bin";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -75,7 +70,7 @@ public class BigArraySpec extends HapiApiSuite {
 										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED
 								)).payingWith(ADDRESS_BOOK_CONTROL),
 						TxnVerbs.fileCreate("bigArrayContractFile")
-								.path(PATH_TO_BIG_ARRAY_BYTECODE),
+								.path(ContractResources.GROW_ARRAY_BYTECODE_PATH),
 						TxnVerbs.contractCreate("bigArrayContract")
 								.bytecode("bigArrayContractFile")
 				)
@@ -86,7 +81,7 @@ public class BigArraySpec extends HapiApiSuite {
 
 							for (int sizeNow = kbPerStep; sizeNow < MAX_CONTRACT_STORAGE_ALLOWED; sizeNow += kbPerStep) {
 								var subOp1 = contractCall(
-										"bigArrayContract", BA_GROWTO_ABI, sizeNow)
+										"bigArrayContract", ContractResources.BIG_ARRAY_GROW_TO_ABI, sizeNow)
 										.gas(300_000L)
 										.logged();
 								subOps.add(subOp1);
@@ -101,7 +96,7 @@ public class BigArraySpec extends HapiApiSuite {
 
 							for (int i = 0; i < numberOfIterations; i++) {
 								var subOp1 = contractCall(
-										"bigArrayContract", BA_CHANGEARRAY_ABI,
+										"bigArrayContract", ContractResources.BIG_ARRAY_CHANGE_ARRAY_ABI,
 										ThreadLocalRandom.current().nextInt(1000))
 										.logged();
 								subOps.add(subOp1);

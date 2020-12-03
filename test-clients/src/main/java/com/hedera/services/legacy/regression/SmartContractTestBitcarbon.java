@@ -563,8 +563,12 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   public void demo(String grpcHost, AccountID nodeAccount) throws Exception {
     log.info("-------------- STARTING SmartContractTestBitCarbon Regression");
     setUp();
-    host = grpcHost;
-    SmartContractTestBitcarbon.nodeAccount = nodeAccount;
+    if (null != grpcHost) {
+      host = grpcHost;
+    }
+    if (null != nodeAccount) {
+      SmartContractTestBitcarbon.nodeAccount = nodeAccount;
+    }
     loadGenesisAndNodeAcccounts();
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)

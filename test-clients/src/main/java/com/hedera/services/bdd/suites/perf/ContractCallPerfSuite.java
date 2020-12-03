@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -42,14 +43,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 
 public class ContractCallPerfSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallPerfSuite.class);
-
-	final String PATH_TO_VERBOSE_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/VerboseDeposit.bin";
-	final String ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"},{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-
-	final String PATH_TO_LOOKUP_BYTECODE = "src/main/resource/contract/bytecodes/BalanceLookup.bin";
-	final String LOOKUP_ABI = "{\"constant\":true,\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"accountNum\"," +
-			"\"type\":\"uint64\"}],\"name\":\"lookup\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\"," +
-			"\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -82,29 +75,29 @@ public class ContractCallPerfSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ContractCallPerf")
 				.given(
-						fileCreate("contractBytecode").path(PATH_TO_VERBOSE_CONTRACT_BYTECODE),
+						fileCreate("contractBytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
 						contractCreate("perf").bytecode("contractBytecode"),
-						fileCreate("lookupBytecode").path(PATH_TO_LOOKUP_BYTECODE),
+						fileCreate("lookupBytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						contractCreate("balanceLookup").bytecode("lookupBytecode").balance(1L)
 				).when(
 						getContractInfo("perf").hasExpectedInfo().logged(),
 						UtilVerbs.startThroughputObs("contractCall").msToSaturateQueues(50L)
 				).then(
 						UtilVerbs.inParallel(asOpArray(NUM_CALLS, i ->
-								contractCall("perf", ABI, i + 1, 0, DEPOSIT_MEMO)
+								contractCall("perf", ContractResources.VERBOSE_DEPOSIT_ABI, i + 1, 0, DEPOSIT_MEMO)
 										.sending(i + 1)
 										.deferStatusResolution())),
 						UtilVerbs.finishThroughputObs("contractCall")
 								.gatedByQuery(() ->
 										contractCallLocal(
 												"balanceLookup",
-												LOOKUP_ABI,
+												ContractResources.BALANCE_LOOKUP_ABI,
 												spec -> new Object[] {
 													spec.registry().getContractId("perf").getContractNum()
 												}
 										).has(
 												resultWith().resultThruAbi(
-														LOOKUP_ABI,
+														ContractResources.BALANCE_LOOKUP_ABI,
 														isLiteralResult(
 																new Object[] { BigInteger.valueOf(ENDING_BALANCE) }
 														)

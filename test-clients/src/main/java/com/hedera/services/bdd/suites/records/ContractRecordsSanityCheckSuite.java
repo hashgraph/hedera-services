@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.records;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
@@ -69,7 +70,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractDeleteRecordSanityChecks")
 				.given(flattened(
 						fileCreate("bytecodeWithPayableConstructor")
-								.path(PATH_TO_LOOKUP_BYTECODE),
+								.path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						contractCreate("toBeDeleted")
 								.bytecode("bytecodeWithPayableConstructor")
 								.balance(1_000L),
@@ -88,7 +89,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 	private HapiApiSpec contractCreateRecordSanityChecks() {
 		return defaultHapiSpec("ContractCreateRecordSanityChecks")
 				.given(flattened(
-						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
 						contractCreate("test")
@@ -104,11 +105,11 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 	private HapiApiSpec contractCallWithSendRecordSanityChecks() {
 		return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
 				.given(flattened(
-						fileCreate("bytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("test").bytecode("bytecode"),
 						UtilVerbs.takeBalanceSnapshots("test", FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
-						contractCall("test", DEPOSIT_ABI, 1_000L).via("txn").sending(1_000L)
+						contractCall("test", ContractResources.DEPOSIT_ABI, 1_000L).via("txn").sending(1_000L)
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, "test")),
 						validateRecordTransactionFees("txn")
@@ -129,7 +130,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CircularTransfersRecordSanityChecks")
 				.given(flattened(
-						fileCreate("bytecode").path(PATH_TO_CIRCULAR_TRANSFERS_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.CIRCULAR_TRANSFERS_BYTECODE_PATH),
 						Stream.of(altruists)
 								.map(name -> contractCreate(name).bytecode("bytecode"))
 								.toArray(n -> new HapiSpecOperation[n]),
@@ -137,7 +138,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 								.map(name ->
 										contractCall(
 											name,
-											SET_NODES_ABI,
+											ContractResources.SET_NODES_ABI,
 											spec -> new Object[] {
 												Stream.of(altruists)
 														.map(a -> spec.registry().getContractId(a).getContractNum())
@@ -150,7 +151,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 										.flatMap(identity()).toArray(n -> new String[n])
 						)
 				)).when(
-						contractCall(altruists[0], RECEIVE_AND_SEND_ABI, INIT_KEEP_AMOUNT_DIVISOR, STOP_BALANCE)
+						contractCall(altruists[0], ContractResources.RECEIVE_AND_SEND_ABI, INIT_KEEP_AMOUNT_DIVISOR, STOP_BALANCE)
 								.via("altruisticTxn")
 				).then(
 						validateTransferListForBalances(
@@ -186,7 +187,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractUpdateRecordSanityChecks")
 				.given(flattened(
 						newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
-						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						contractCreate("test").bytecode("bytecode").balance(1_000L),
 						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
@@ -197,24 +198,9 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 				);
 	}
 
-
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
 	}
-
-	final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/PayReceivable.bin";
-	final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-
-	final String PATH_TO_LOOKUP_BYTECODE = bytecodePath("BalanceLookup");
-
-	final String PATH_TO_CIRCULAR_TRANSFERS_BYTECODE = bytecodePath("CircularTransfers");
-	final String SET_NODES_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint64[]\",\"name\":\"accounts\"," +
-			"\"type\":\"uint64[]\"}],\"name\":\"setNodes\",\"outputs\":[],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\"    ,\"type\":\"function\"}";
-	final String RECEIVE_AND_SEND_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\"," +
-			"\"name\":\"keepAmountDivisor\",\"type\":\"uint32\"},{\"internalType\":\"uint256\"," +
-			"\"name\":\"stopBalance\",\"type\":    \"uint256\"}],\"name\":\"receiveAndSend\",\"outputs\":[]," +
-			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 }
 

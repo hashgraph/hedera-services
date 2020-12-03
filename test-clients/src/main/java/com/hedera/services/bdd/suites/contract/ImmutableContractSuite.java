@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +39,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 public class ImmutableContractSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ImmutableContractSuite.class);
-	final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/PayReceivable.bin";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -70,7 +70,7 @@ public class ImmutableContractSuite extends HapiApiSuite {
 	private HapiApiSpec cannotDeleteImmutableContract() {
 		return defaultHapiSpec("CannotDeleteImmutableContract")
 				.given(
-						fileCreate("bytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("immutableContract").bytecode("bytecode").omitAdminKey()
 				).when().then(
 						contractDelete("immutableContract").hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT)
@@ -81,7 +81,7 @@ public class ImmutableContractSuite extends HapiApiSuite {
 		return defaultHapiSpec("CannotUpdateKeyOnImmutableContract")
 				.given(
 						newKeyNamed("shouldBeUnusable"),
-						fileCreate("bytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("immutableContract").bytecode("bytecode").omitAdminKey()
 				).when().then(
 						contractUpdate("immutableContract")
@@ -93,7 +93,7 @@ public class ImmutableContractSuite extends HapiApiSuite {
 	private HapiApiSpec canExtendExpiryForImmutableContract() {
 		return defaultHapiSpec("CanExtendExpiryForImmutableContract")
 				.given(
-						fileCreate("bytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
 						contractCreate("immutableContract").bytecode("bytecode").omitAdminKey()
 				).when().then(
 						contractUpdate("immutableContract").newExpirySecs(DEFAULT_PROPS.defaultExpirationSecs() * 2)
