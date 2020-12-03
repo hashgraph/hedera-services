@@ -23,6 +23,8 @@ package com.hedera.services.bdd.suites.reconnect;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -48,7 +50,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -61,6 +62,10 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 	public static void main(String... args) {
 		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
 	}
+
+	private static final String APP_FILE_REGISTRY = "AppPropertiesInRegistry";
+
+	private static final String API_FILE_REGISTRY = "ApiPropertiesInRegistry";
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
@@ -86,6 +91,8 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 								.unavailableNode()
 				)
 				.when(
+						saveApiPermissionsInRegistry(),
+						saveAppPropertiesInRegistry(),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("minimumAutoRenewDuration", "20")),
@@ -163,8 +170,46 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 								.payingWith("civilian")
 								.nodePayment(0L)
 								.setNode("0.0.6")
-								.hasAnswerOnlyPrecheck(OK)
+								.hasAnswerOnlyPrecheck(OK),
+
+						restoreApiPermissionsFromRegistry(),
+						restoreAppPropertiesFromRegistry()
 				);
+	}
+
+	private HapiGetFileContents saveApiPermissionsInRegistry() {
+		return getFileContents(API_PERMISSIONS)
+				.logged()
+				.setNode("0.0.3")
+				.payingWith(MASTER)
+				.saveToRegistry(API_FILE_REGISTRY);
+	}
+
+	private HapiFileUpdate restoreApiPermissionsFromRegistry() {
+		return fileUpdate(API_PERMISSIONS)
+				.logged()
+				.setNode("0.0.3")
+				.payingWith(MASTER)
+				.contents(spec ->
+						ByteString.copyFrom(spec.registry().getBytes(API_FILE_REGISTRY)));
+	}
+
+	private HapiGetFileContents saveAppPropertiesInRegistry() {
+		return getFileContents(APP_PROPERTIES)
+				.logged()
+				.setNode("0.0.3")
+				.payingWith(MASTER)
+				.saveToRegistry(APP_FILE_REGISTRY);
+	}
+
+
+	private HapiFileUpdate restoreAppPropertiesFromRegistry() {
+		return fileUpdate(APP_PROPERTIES)
+				.logged()
+				.setNode("0.0.3")
+				.payingWith(MASTER)
+				.contents(spec ->
+						ByteString.copyFrom(spec.registry().getBytes(APP_FILE_REGISTRY)));
 	}
 
 	@Override
