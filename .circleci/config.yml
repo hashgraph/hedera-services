@@ -1132,11 +1132,11 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "15 4 * * *"
+          cron: "54 23 * * *"
           filters:
             branches:
               only:
-                - setup-gcp
+                - set-up-gcp
     jobs:
       - build-platform-and-services
       - gcp-basic-suiterunner-tests:
