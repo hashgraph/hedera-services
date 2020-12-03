@@ -1357,7 +1357,7 @@ workflows:
   nightly-comprehensive-functional-regression:
     triggers:
       - schedule:
-          cron: "35 18 * * *"
+          cron: "32 19 * * *"
           filters:
             branches:
               only:
@@ -2448,8 +2448,8 @@ jobs:
           dsl-args: "CryptoRecordSanityChecks -TLS=on"
       - run-eet-suites:
           dsl-args: "SignedTransactionBytesRecordsSuite -TLS=on"
-      - run-eet-suites:
-          dsl-args: "SuperusersAreNeverThrottled"
+#      - run-eet-suites:
+#          dsl-args: "SuperusersAreNeverThrottled"
       - run-eet-suites:
           dsl-args: "FileRecordSanityChecks"
       - run-eet-suites:
