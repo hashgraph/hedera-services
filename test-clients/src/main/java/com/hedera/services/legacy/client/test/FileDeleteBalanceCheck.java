@@ -45,7 +45,7 @@ import java.util.Random;
 
 public class FileDeleteBalanceCheck extends ClientBaseThread {
 
-  private final static Logger log = LogManager.getLogger(ContractCall.class);
+  private final static Logger log = LogManager.getLogger(FileDeleteBalanceCheck.class);
 
   public static String INITIAL_ACCOUNTS_FILE = TestHelper.getStartUpFile();
   private static final String LARGE_BINARY_BIN = "RandomLargeBinary.bin";

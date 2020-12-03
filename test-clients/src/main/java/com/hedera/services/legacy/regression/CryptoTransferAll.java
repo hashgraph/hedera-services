@@ -62,7 +62,7 @@ public class CryptoTransferAll {
 
 	public static final long TOTAL_AMOUNT = 500_000L;
 	private static long DAY_SEC = 24 * 60 * 60; // secs in a day
-	  private final Logger log = LogManager.getLogger(SmartContractPay.class);
+	  private final Logger log = LogManager.getLogger(CryptoTransferAll.class);
 
 
 	  private static final int MAX_RECEIPT_RETRIES = 60;
