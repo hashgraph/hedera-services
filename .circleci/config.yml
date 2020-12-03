@@ -1357,11 +1357,11 @@ workflows:
   nightly-comprehensive-functional-regression:
     triggers:
       - schedule:
-          cron: "12 21 * * *"
+          cron: "15 4 * * *"
           filters:
             branches:
               only:
-                - 00836-D-move-basic-tests-out-of-JRS
+                - master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1401,7 +1401,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00836-D-move-basic-tests-out-of-JRS
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
