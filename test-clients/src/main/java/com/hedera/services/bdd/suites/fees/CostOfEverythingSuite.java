@@ -254,6 +254,6 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 		return log;
 	}
 
-	private final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/PayReceivable.bin";
+	private final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/PayReceivable.bin";
 	private final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 }

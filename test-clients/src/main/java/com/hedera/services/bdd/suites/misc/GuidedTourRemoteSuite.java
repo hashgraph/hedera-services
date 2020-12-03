@@ -50,7 +50,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 public class GuidedTourRemoteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(GuidedTourRemoteSuite.class);
 
-	final String PATH_TO_LOOKUP_BYTECODE = "src/main/resource/testfiles/BalanceLookup.bin";
+	final String PATH_TO_LOOKUP_BYTECODE = "src/main/resource/contract/bytecodes/BalanceLookup.bin";
 	final String LOOKUP_ABI = "{\"constant\":true,\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"accountNum\"," +
 			"\"type\":\"uint64\"}],\"name\":\"lookup\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\"," +
 			"\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";

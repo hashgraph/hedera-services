@@ -152,7 +152,7 @@ public class SystemDeleteIT {
     }
     
     // create a random file
-    String fileName = "PayTest.bin";
+    String fileName = "contract/bytecodes/PayTest.bin";
     FileID simpleStorageFileId = LargeFileUploadIT
         .uploadFile(genesisAccount, fileName, Collections.singletonList(genesisPrivateKey));
     System.out.println(simpleStorageFileId + "is the file ID");

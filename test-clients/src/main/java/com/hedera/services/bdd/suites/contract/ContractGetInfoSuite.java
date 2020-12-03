@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 
 public class ContractGetInfoSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractGetInfoSuite.class);
-	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "testfiles/CreateTrivial.bin";
+	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "contract/bytecodes/CreateTrivial.bin";
 
 	public static void main(String... args) {
 		new ContractGetInfoSuite().runSuiteSync();

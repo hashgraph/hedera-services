@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 public class BigRecordSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(BigRecordSpec.class);
 
-	final String PATH_TO_BIG_BIG_BYTECODE = "src/main/resource/testfiles/BigBig.bin";
+	final String PATH_TO_BIG_BIG_BYTECODE = "src/main/resource/contract/bytecodes/BigBig.bin";
 
 	private static final String PICK_A_BIG_RESULT =
 			"{\"constant\":true,\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"how\",\"type\":\"uint32\"}]," +

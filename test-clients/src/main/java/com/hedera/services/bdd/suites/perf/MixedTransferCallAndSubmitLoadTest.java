@@ -53,7 +53,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MixedTransferCallAndSubmitLoadTest.class);
 
-	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/testfiles/simpleStorage.bin";
+	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/contract/bytecodes/simpleStorage.bin";
 	final String SETTER_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}]," +
 			"\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 

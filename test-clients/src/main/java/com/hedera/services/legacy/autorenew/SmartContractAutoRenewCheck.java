@@ -611,7 +611,7 @@ public class SmartContractAutoRenewCheck {
     KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
     AccountID crAccount = createAccount(crAccountKeyPair, genesisAccount, INITIAL_BALANCE);
     log.info("Account created successfully " + crAccount.getAccountNum());
-    String fileName = "simpleStorage.bin";
+    String fileName = "contract/bytecodes/simpleStorage.bin";
     if (crAccount != null) {
 
       FileID simpleStorageFileId = LargeFileUploadIT

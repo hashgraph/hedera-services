@@ -310,7 +310,7 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
 						cryptoCreate("civilian").balance(INITIAL_BALANCE).withRecharging(),
-						fileCreate("bytecode").path("src/main/resource/Multipurpose.bin"),
+						fileCreate("bytecode").path("src/main/resource/contract/bytecodes/Multipurpose.bin"),
 						contractCreate("multi").bytecode("bytecode")
 				);
 			}

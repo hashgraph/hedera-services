@@ -45,7 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_S
 
 public class ChildStorageSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ChildStorageSpec.class);
-	final String PATH_TO_CHILD_STORAGE_BYTECODE = "src/main/resource/testfiles/ChildStorage.bin";
+	final String PATH_TO_CHILD_STORAGE_BYTECODE = "src/main/resource/contract/bytecodes/ChildStorage.bin";
 
 	private static final String GET_MY_VALUE_ABI =
 			"{\"constant\":true,\"inputs\":[],\"name\":\"getMyValue\"," +

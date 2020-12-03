@@ -83,9 +83,9 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
 
   private static final int MAX_RECEIPT_RETRIES = 60;
-  public static final String ADDRESS_BOOK_BIN = "testfiles/AddressBook.bin";
-  public static final String JURISDICTIONS_BIN = "testfiles/Jurisdictions.bin";
-  public static final String MINTERS_BIN = "testfiles/Minters.bin";
+  public static final String ADDRESS_BOOK_BIN = "contract/bytecodes/AddressBook.bin";
+  public static final String JURISDICTIONS_BIN = "contract/bytecodes/Jurisdictions.bin";
+  public static final String MINTERS_BIN = "contract/bytecodes/Minters.bin";
 
   private static final String SC_JUR_CONSTRUCTOR_ABI = "{\"inputs\":[{\"name\":\"_admin\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}\n";
   private static final String SC_JUR_ADD_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"taxRate\",\"type\":\"uint256\"},{\"name\":\"inventory\",\"type\":\"address\"},{\"name\":\"reserve\",\"type\":\"address\"}],\"name\":\"add\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";

@@ -455,7 +455,7 @@ public class DynamicRestartTest extends TestHelperComplex {
      */
     protected static Response createContract(long autoRenewPeriod, long balance) throws Exception{
         KeyPair fileAccountKeyPair = genesisAccountList.get(0).getKeyPairList().get(0).getKeyPair();
-        String fileName = "simpleStorage.bin";
+        String fileName = "contract/bytecodes/simpleStorage.bin";
         FileID simpleStorageFileId = LargeFileUploadIT
                 .uploadFile(genesisAccountID, fileName, fileAccountKeyPair);
         Assert.assertNotNull("Storage file id is null.", simpleStorageFileId);

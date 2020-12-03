@@ -60,6 +60,6 @@ public enum SupportedContract {
 	}
 
 	public static String inPath(String basename) {
-		return String.format("src/main/resource/testfiles/%s.bin", basename);
+		return String.format("src/main/resource/contract/bytecodes/%s.bin", basename);
 	}
 }

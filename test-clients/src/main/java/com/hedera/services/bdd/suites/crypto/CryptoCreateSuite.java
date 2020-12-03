@@ -89,7 +89,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	private HapiApiSpec xferRequiresCrypto() {
 		return defaultHapiSpec("XferRequiresCrypto")
 				.given(
-						fileCreate("bytecode").fromResource("Multipurpose.bin"),
+						fileCreate("bytecode").fromResource("contract/bytecodes/Multipurpose.bin"),
 						contractCreate("multiAdmin")
 								.bytecode("bytecode")
 								.balance(1_234),

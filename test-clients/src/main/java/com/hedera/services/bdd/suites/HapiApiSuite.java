@@ -258,7 +258,7 @@ public abstract class HapiApiSuite {
 	}
 
 	public static final String bytecodePath(String contract) {
-		return String.format("src/main/resource/testfiles/%s.bin", contract);
+		return String.format("src/main/resource/contract/bytecodes/%s.bin", contract);
 	}
 
 	public static boolean cacheRecordsAreAddedToState() {

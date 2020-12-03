@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class SmartContractSelfDestructSpec  extends HapiApiSuite  {
 	private static final Logger log = LogManager.getLogger(SmartContractSelfDestructSpec.class);
 
-	final String PATH_TO_PAY_TEST_SELF_DESTRUCT_BYTECODE = "src/main/resource/PayTestSelfDestruct.bin";
+	final String PATH_TO_PAY_TEST_SELF_DESTRUCT_BYTECODE = "src/main/resource/contract/bytecodes/PayTestSelfDestruct.bin";
 
 	private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 	private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";

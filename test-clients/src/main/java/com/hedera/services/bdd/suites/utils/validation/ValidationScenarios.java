@@ -253,7 +253,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							withOpContext((spec, opLog) -> {
 								if (feeSnapshots.getOpsConfig().getBytecode() == null) {
 									var bytecodeCreate = fileCreate("unusedName")
-											.fromResource("Multipurpose.bin");
+											.fromResource("contract/bytecodes/Multipurpose.bin");
 									allRunFor(spec, bytecodeCreate);
 									feeSnapshots.getOpsConfig().setBytecode(bytecodeCreate.numOfCreatedFile());
 								}

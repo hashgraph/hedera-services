@@ -33,7 +33,7 @@ import java.util.List;
 public class IssueXXXXSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(IssueXXXXSpec.class);
 
-	final String PATH_TO_FUSE_BYTECODE = "src/main/resource/testfiles/Fuse.bin";
+	final String PATH_TO_FUSE_BYTECODE = "src/main/resource/contract/bytecodes/Fuse.bin";
 	final String LIGHT_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"light\",\"outputs\":[],\"payable\":false," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 

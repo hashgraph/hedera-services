@@ -48,8 +48,8 @@ import static com.hedera.services.bdd.spec.keys.ControlForKey.*;
 public class ContractCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
-	final String PATH_TO_INVALID_BYTECODE = "src/main/resource/testfiles/CorruptOne.bin";
-	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/testfiles/simpleStorage.bin";
+	final String PATH_TO_INVALID_BYTECODE = "src/main/resource/contract/bytecodes/CorruptOne.bin";
+	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/contract/bytecodes/simpleStorage.bin";
 	final String PATH_TO_VALID_BYTECODE = HapiSpecSetup.getDefaultInstance().defaultContractPath();
 
 	public static void main(String... args) {

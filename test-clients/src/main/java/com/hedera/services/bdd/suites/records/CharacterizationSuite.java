@@ -51,7 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 public class CharacterizationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CharacterizationSuite.class);
 
-	final String PATH_TO_VERBOSE_CONTRACT_BYTECODE = "src/main/resource/testfiles/VerboseDeposit.bin";
+	final String PATH_TO_VERBOSE_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/VerboseDeposit.bin";
 	final String VERBOSE_DEPOSIT = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\"," +
 			"\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"}," +
 			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\"," +

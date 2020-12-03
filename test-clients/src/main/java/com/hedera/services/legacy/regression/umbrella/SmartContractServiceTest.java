@@ -80,8 +80,8 @@ public class SmartContractServiceTest extends FileServiceTest {
   private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
   private static final String SC_GET_BALANCE = "{\"constant\":true,\"inputs\":[],\"name\":\"getBalance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
   private static final String SC_DEPOSIT = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-  private static final String CONTRACT_PAY_NAME = "PayTest.bin";
-  private static final String CONTRACT_STORAGE_NAME = "simpleStorage.bin";
+  private static final String CONTRACT_PAY_NAME = "contract/bytecodes/PayTest.bin";
+  private static final String CONTRACT_STORAGE_NAME = "contract/bytecodes/simpleStorage.bin";
   private String[] smartContractFiles = {CONTRACT_STORAGE_NAME, CONTRACT_PAY_NAME};
   private long DEFAULT_CONTRACT_OP_GAS = 1000L;
   private long DEFAULT_CREATE_CONTRACT_OP_GAS = 1000L;

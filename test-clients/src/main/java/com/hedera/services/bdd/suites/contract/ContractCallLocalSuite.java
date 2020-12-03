@@ -50,7 +50,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
-	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "src/main/resource/testfiles/CreateTrivial.bin";
+	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/CreateTrivial.bin";
 	final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\"," +

@@ -900,7 +900,7 @@ public class TransactionInsufficientFeeCost {
             TestHelper.getCryptoMaxFee() * 5);
     log.info("Account created successfully " + crAccount.getAccountNum());
 
-    String fileName = "simpleStorage.bin";
+    String fileName = "contract/bytecodes/simpleStorage.bin";
     FileID simpleStorageFileId = LargeFileUploadIT
         .uploadFile(crAccount, fileName, crAccountKeyPair);
     Assert.assertNotNull(simpleStorageFileId);

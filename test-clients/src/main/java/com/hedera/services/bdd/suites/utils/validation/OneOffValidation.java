@@ -97,7 +97,7 @@ public class OneOffValidation extends HapiApiSuite {
 
 	private HapiApiSpec createAContract() {
 		return defaultHapiSpec("CreateAContract").given(
-				fileCreate("bytecode").path("src/main/resource/Multipurpose.bin")
+				fileCreate("bytecode").path("src/main/resource/contract/bytecodes/Multipurpose.bin")
 		).when(
 				contractCreate("something").bytecode("bytecode").via("createTxn")
 		).then(

@@ -173,7 +173,7 @@ public class R5BugChecks extends HapiApiSuite {
 	}
 
 	private HapiApiSpec enforcesSigRequirements() {
-		var bytecodeLoc = "src/main/resource/testfiles/LastTrackingSender.bin";
+		var bytecodeLoc = "src/main/resource/contract/bytecodes/LastTrackingSender.bin";
 		KeyShape complexSrShape = listOf(SIMPLE, threshOf(1, 3));
 		SigControl activeSig = complexSrShape.signedWith(sigs(ON, sigs(OFF, OFF, ON)));
 		SigControl inactiveSig = complexSrShape.signedWith(sigs(OFF, sigs(ON, ON, ON)));
@@ -239,7 +239,7 @@ public class R5BugChecks extends HapiApiSuite {
 
 
 	private HapiApiSpec cannotTransferToDeleted() {
-		var bytecodeLoc = "src/main/resource/testfiles/LastTrackingSender.bin";
+		var bytecodeLoc = "src/main/resource/contract/bytecodes/LastTrackingSender.bin";
 
 		return defaultHapiSpec("CannotTransferToDeleted")
 				.given(

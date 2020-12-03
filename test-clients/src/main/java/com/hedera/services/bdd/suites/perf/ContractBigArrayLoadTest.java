@@ -52,7 +52,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class ContractBigArrayLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(ContractBigArrayLoadTest.class);
-	private final String PATH_TO_BIGARRAY_CONTRACT_BYTECODE = "src/main/resource/testfiles/BigArray.bin";
+	private final String PATH_TO_BIGARRAY_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/BigArray.bin";
 
 	private static final String BA_SETSIZEINKB_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_howManyKB\"," +
 			"\"type\":\"uint256\"}],\"name\":\"setSizeInKB\",\"outputs\":[],\"payable\":false," +

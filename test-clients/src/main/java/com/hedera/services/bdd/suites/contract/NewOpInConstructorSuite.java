@@ -37,8 +37,8 @@ import java.util.List;
 public class NewOpInConstructorSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(NewOpInConstructorSuite.class);
 
-	final String PATH_TO_CHILD_STORAGE_BYTECODE = "testfiles/ChildStorage.bin";
-	final String PATH_TO_ABANDONING_PARENT_BYTECODE = "testfiles/AbandoningParent.bin";
+	final String PATH_TO_CHILD_STORAGE_BYTECODE = "contract/bytecodes/ChildStorage.bin";
+	final String PATH_TO_ABANDONING_PARENT_BYTECODE = "contract/bytecodes/AbandoningParent.bin";
 
 	public static void main(String... args) {
 		new NewOpInConstructorSuite().runSuiteSync();

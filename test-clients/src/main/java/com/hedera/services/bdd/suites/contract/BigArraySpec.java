@@ -44,7 +44,7 @@ public class BigArraySpec extends HapiApiSuite {
 
 	private static final String BA_CHANGEARRAY_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"changeArray\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	private static final String BA_GROWTO_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"growTo\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String PATH_TO_BIG_ARRAY_BYTECODE = "src/main/resource/testfiles/GrowArray.bin";
+	private static final String PATH_TO_BIG_ARRAY_BYTECODE = "src/main/resource/contract/bytecodes/GrowArray.bin";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */

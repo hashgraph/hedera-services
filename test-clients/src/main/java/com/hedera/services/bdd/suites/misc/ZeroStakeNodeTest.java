@@ -67,7 +67,7 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 				.given(
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary"),
-						fileCreate("bytecode").fromResource("Multipurpose.bin"),
+						fileCreate("bytecode").fromResource("contract/bytecodes/Multipurpose.bin"),
 						contractCreate("multi").bytecode("bytecode"),
 						contractCreate("impossible")
 								.setNode("0.0.7")

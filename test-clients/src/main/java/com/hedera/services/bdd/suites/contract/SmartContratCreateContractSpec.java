@@ -55,7 +55,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 public class SmartContratCreateContractSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SmartContratCreateContractSpec.class);
 
-	final String PATH_TO_CREATE_TRIVIAL_BIN_BYTECODE = "src/main/resource/testfiles/CreateTrivial.bin";
+	final String PATH_TO_CREATE_TRIVIAL_BIN_BYTECODE = "src/main/resource/contract/bytecodes/CreateTrivial.bin";
 
 	private static final int CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 

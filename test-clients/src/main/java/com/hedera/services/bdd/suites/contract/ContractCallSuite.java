@@ -68,9 +68,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractCallSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
-	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/testfiles/simpleStorage.bin";
-	final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/PayReceivable.bin";
-	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "src/main/resource/testfiles/CreateTrivial.bin";
+	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/contract/bytecodes/simpleStorage.bin";
+	final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/PayReceivable.bin";
+	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/CreateTrivial.bin";
 	final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\",\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 	final String GET_CHILD_ADDRESS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getAddress\",\"outputs\":[{\"name\":\"retval\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";

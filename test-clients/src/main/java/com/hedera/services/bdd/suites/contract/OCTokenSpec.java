@@ -47,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class OCTokenSpec extends HapiApiSuite  {
 	private static final Logger log = LogManager.getLogger(OCTokenSpec.class);
 
-	final String PATH_TO_OC_TOKEN_BYTECODE = "src/main/resource/octoken.bin";
+	final String PATH_TO_OC_TOKEN_BYTECODE = "src/main/resource/contract/bytecodes/octoken.bin";
 
 	private static final String TOKEN_ERC20_CONSTRUCTOR_ABI = "{\"inputs\":[{\"name\":\"initialSupply\",\"type\":\"uint256\"},{\"name\":\"tokenName\",\"type\":\"string\"},{\"name\":\"tokenSymbol\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
 	private static final String BALANCE_OF_ABI = "{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";

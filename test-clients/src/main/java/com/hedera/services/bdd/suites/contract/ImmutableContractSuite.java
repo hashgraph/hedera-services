@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 public class ImmutableContractSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ImmutableContractSuite.class);
-	final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/PayReceivable.bin";
+	final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/PayReceivable.bin";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */

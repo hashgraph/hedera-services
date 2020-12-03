@@ -47,13 +47,13 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class ContractCallLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(ContractCallLoadTest.class);
-	final String PATH_TO_VERBOSE_CONTRACT_BYTECODE = "src/main/resource/testfiles/VerboseDeposit.bin";
+	final String PATH_TO_VERBOSE_CONTRACT_BYTECODE = "src/main/resource/contract/bytecodes/VerboseDeposit.bin";
 	final String ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\"," +
 			"\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"}," +
 			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\",\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
-	final String PATH_TO_LOOKUP_BYTECODE = "src/main/resource/testfiles/BalanceLookup.bin";
+	final String PATH_TO_LOOKUP_BYTECODE = "src/main/resource/contract/bytecodes/BalanceLookup.bin";
 
 
 	public static void main(String... args) {

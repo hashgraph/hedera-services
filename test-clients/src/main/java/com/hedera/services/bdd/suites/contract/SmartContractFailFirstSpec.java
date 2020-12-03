@@ -45,7 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class SmartContractFailFirstSpec extends HapiApiSuite  {
 	private static final Logger log = LogManager.getLogger(SmartContractFailFirstSpec.class);
 
-	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/simpleStorage.bin";
+	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/contract/bytecodes/simpleStorage.bin";
 
 	private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 	private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
