@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -89,7 +90,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	private HapiApiSpec xferRequiresCrypto() {
 		return defaultHapiSpec("XferRequiresCrypto")
 				.given(
-						fileCreate("bytecode").fromResource("Multipurpose.bin"),
+						fileCreate("bytecode").path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
 						contractCreate("multiAdmin")
 								.bytecode("bytecode")
 								.balance(1_234),

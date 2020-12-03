@@ -20,13 +20,11 @@ package com.hedera.services.bdd.suites.utils.validation.domain;
  * ‍
  */
 
-import com.hedera.services.bdd.suites.utils.validation.domain.PersistentFile;
-
 public class ContractScenario {
 	public static String NOVEL_CONTRACT_NAME = "novelContract";
 	public static String PERSISTENT_CONTRACT_NAME = "persistentContract";
-	public static String DEFAULT_CONTRACT_RESOURCE = "validation-scenarios/Multipurpose.sol";
-	public static String DEFAULT_BYTECODE_RESOURCE = "validation-scenarios/Multipurpose.bin";
+	public static String DEFAULT_CONTRACT_RESOURCE = "contract/solidity/Multipurpose.sol";
+	public static String DEFAULT_BYTECODE_RESOURCE = "contract/bytecodes/Multipurpose.bin";
 	public static int DEFAULT_LUCKY_NUMBER = 42;
 
 	PersistentContract persistent;

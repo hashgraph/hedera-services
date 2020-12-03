@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -48,9 +49,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
  */
 public class MigrationValidationPostSteps extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(MigrationValidationPostSteps.class);
-
-    final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-    final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
     final int VALUE_TO_SET = 123;
     final long amount1 = 100L;
@@ -118,12 +116,12 @@ public class MigrationValidationPostSteps extends HapiApiSuite {
 
     private HapiSpecOperation[] verifySmartContractActions() {
         return new HapiSpecOperation[] {
-                TxnVerbs.contractCall(MIGRATION_SMART_CONTRACT, SC_SET_ABI, VALUE_TO_SET + 1).gas(15000),
+                TxnVerbs.contractCall(MIGRATION_SMART_CONTRACT, ContractResources.SIMPLE_STORAGE_SETTER_ABI, VALUE_TO_SET + 1).gas(15000),
                 sleepFor(2_000L),
-                TxnVerbs.contractCall(MIGRATION_SMART_CONTRACT, SC_GET_ABI).via(SC_getValue).gas(20000),
+                TxnVerbs.contractCall(MIGRATION_SMART_CONTRACT, ContractResources.SIMPLE_STORAGE_GETTER_ABI).via(SC_getValue).gas(20000),
                 sleepFor(2_000L),
                 QueryVerbs.getTxnRecord(SC_getValue).hasPriority(TransactionRecordAsserts.recordWith().contractCallResult(
-                        ContractFnResultAsserts.resultWith().resultThruAbi(SC_GET_ABI, ContractFnResultAsserts.isLiteralResult(
+                        ContractFnResultAsserts.resultWith().resultThruAbi(ContractResources.SIMPLE_STORAGE_GETTER_ABI, ContractFnResultAsserts.isLiteralResult(
                                 new Object[]{
                                         BigInteger.valueOf(VALUE_TO_SET+1)
                                 }

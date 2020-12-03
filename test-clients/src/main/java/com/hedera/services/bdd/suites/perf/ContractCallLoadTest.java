@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,26 +36,13 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class ContractCallLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(ContractCallLoadTest.class);
-	final String PATH_TO_VERBOSE_CONTRACT_BYTECODE = "src/main/resource/testfiles/VerboseDeposit.bin";
-	final String ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\"," +
-			"\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"}," +
-			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\",\"outputs\":[]," +
-			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-
-	final String PATH_TO_LOOKUP_BYTECODE = "src/main/resource/testfiles/BalanceLookup.bin";
-
 
 	public static void main(String... args) {
 		parseArgs(args);
@@ -85,7 +73,7 @@ public class ContractCallLoadTest extends LoadTest {
 		Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[] {
 				inParallel(IntStream.range(0, settings.getBurstSize())
 						.mapToObj(i ->
-								contractCall("perf", ABI, i + 1, 0, DEPOSIT_MEMO)
+								contractCall("perf", ContractResources.VERBOSE_DEPOSIT_ABI, i + 1, 0, DEPOSIT_MEMO)
 										.sending(i + 1)
 										.noLogging()
 										.suppressStats(true)
@@ -102,9 +90,9 @@ public class ContractCallLoadTest extends LoadTest {
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when(
-						fileCreate("contractBytecode").path(PATH_TO_VERBOSE_CONTRACT_BYTECODE),
+						fileCreate("contractBytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
 						contractCreate("perf").bytecode("contractBytecode"),
-						fileCreate("lookupBytecode").path(PATH_TO_LOOKUP_BYTECODE),
+						fileCreate("lookupBytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						contractCreate("balanceLookup").bytecode("lookupBytecode").balance(1L),
 						getContractInfo("perf").hasExpectedInfo().logged()
 
