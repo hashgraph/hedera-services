@@ -1129,6 +1129,25 @@ workflows:
                 at: /
           workflow-name: "AWS-Daily-Services-Comp-Reconnect-4N-1C"
 
+  GCP-Daily-Services-Comp-Basic-4N-1C:
+    triggers:
+      - schedule:
+          cron: "15 4 * * *"
+          filters:
+            branches:
+              only:
+                - setup-gcp
+    jobs:
+      - build-platform-and-services
+      - gcp-basic-suiterunner-tests:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-Basic-4N-1C"
   nightly-simulate-network-outage:
     triggers:
         - schedule:
@@ -1602,6 +1621,30 @@ jobs:
           command: |
               aws s3 sync /swirlds-platform/regression/results/4N_1C/Basic/ s3://hedera-service-regression-jrs;
               tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Basic/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  gcp-basic-suiterunner-tests:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run GCP various suites in SuiteRunner
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh configs/services/suites/daily/GCP-Daily-Services-Comp-Basic-4N-1C.json /repo
+
+      - run:
+          name: Sync results of SuiteRunner suites to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/4N_1C/Basic/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Basic/*
 
       - store_artifacts:
           path: /results.tar.gz
