@@ -94,7 +94,8 @@ public class Issue2144Spec extends HapiApiSuite {
 	private HapiApiSpec superusersAreNeverThrottledOnTransfers() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnTransfers")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(ADDRESS_BOOK_CONTROL, MASTER, 1_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L))
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -114,7 +115,8 @@ public class Issue2144Spec extends HapiApiSuite {
 	private HapiApiSpec superusersAreNeverThrottledOnMiscTxns() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnMiscTxns")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(ADDRESS_BOOK_CONTROL, MASTER, 1_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L))
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -133,7 +135,8 @@ public class Issue2144Spec extends HapiApiSuite {
 	private HapiApiSpec superusersAreNeverThrottledOnHcsTxns() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnHcsTxns")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(ADDRESS_BOOK_CONTROL, MASTER, 1_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L))
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -152,7 +155,8 @@ public class Issue2144Spec extends HapiApiSuite {
 	private HapiApiSpec superusersAreNeverThrottledOnMiscQueries() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnMiscQueries")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L))
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -170,7 +174,8 @@ public class Issue2144Spec extends HapiApiSuite {
 	private HapiApiSpec superusersAreNeverThrottledOnHcsQueries() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnHcsQueries")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(ADDRESS_BOOK_CONTROL, MASTER, 1_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L)),
 						createTopic("misc")
 				).when(
 						fileUpdate(APP_PROPERTIES)
