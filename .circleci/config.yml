@@ -1132,7 +1132,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "54 23 * * *"
+          cron: "58 23 * * *"
           filters:
             branches:
               only:
@@ -1976,7 +1976,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout services-gcp-regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
