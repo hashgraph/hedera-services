@@ -24,7 +24,7 @@ commands:
             pip3 install awscli;
       - run:
           name: Install gcloud cli
-            command: |
+          command: |
               cd ~/google-cloud-sdk; ./install.sh ;
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
