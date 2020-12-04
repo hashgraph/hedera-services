@@ -1135,7 +1135,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "0 17 * * *"
+          cron: "9 17 * * *"
           filters:
             branches:
               only:
@@ -1953,7 +1953,8 @@ jobs:
           path: /results.tar.gz
 
   install_and_configure_gcp_cli:
-    executor: gcp-cli/default
+    executor:
+      name: build-executor
     steps:
       - gcp-cli/install_and_initialize_cli:
           context: Slack
