@@ -1153,12 +1153,6 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-4N-1C"
 
-  install_and_configure_gcp_cli:
-    jobs:
-      - gcp-cli/install_and_initialize_cli:
-          context: Slack
-          executor: gcp-cli/default
-
   nightly-simulate-network-outage:
     triggers:
         - schedule:
@@ -1958,6 +1952,12 @@ jobs:
       - store_artifacts:
           path: /results.tar.gz
 
+  install_and_configure_gcp_cli:
+    executor: gcp-cli/default
+    steps:
+      - gcp-cli/install_and_initialize_cli:
+          context: Slack
+          executor: gcp-cli/default
 
   build-platform-and-services:
     parameters:
