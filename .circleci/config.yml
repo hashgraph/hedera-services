@@ -25,9 +25,11 @@ commands:
       - run:
           name: Install gcloud cli
           command: |
-            wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-307.0.0-linux-x86_64.tar.gz;
-            tar –xvzf google-cloud-sdk-307.0.0-linux-x86_64.tar.gz;
-            cd ~/google-cloud-sdk; CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./install.sh;
+             curl https://sdk.cloud.google.com > install.sh;
+             bash install.sh --disable-prompts;
+#            wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-307.0.0-linux-x86_64.tar.gz;
+#            tar –xvzf google-cloud-sdk-307.0.0-linux-x86_64.tar.gz;
+#            cd ~/google-cloud-sdk; CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./install.sh;
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
     steps:
@@ -1142,17 +1144,17 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "23 19 * * *"
+          cron: "30 19 * * *"
           filters:
             branches:
               only:
                 - set-up-gcp
     jobs:
-#      - build-platform-and-services
+      - build-platform-and-services
       - gcp-basic-suiterunner-tests:
           context: Slack
-#          requires:
-#            - build-platform-and-services
+          requires:
+            - build-platform-and-services
           pre-steps:
             - install-tools
             - attach_workspace:
