@@ -27,6 +27,7 @@ commands:
           command: |
              curl https://sdk.cloud.google.com > install.sh;
              bash install.sh --disable-prompts;
+             exec bash -l;
 #            wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-307.0.0-linux-x86_64.tar.gz;
 #            tar –xvzf google-cloud-sdk-307.0.0-linux-x86_64.tar.gz;
 #            cd ~/google-cloud-sdk; CLOUDSDK_CORE_DISABLE_PROMPTS=1 ./install.sh;
@@ -1144,7 +1145,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "30 19 * * *"
+          cron: "10 20 * * *"
           filters:
             branches:
               only:
