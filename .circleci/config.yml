@@ -884,26 +884,6 @@ executors:
     working_directory: /repo
 
 workflows:
-  AWS-Daily-Services-Comp-Basic-4N-1C:
-    triggers:
-      - schedule:
-          cron: "15 4 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-X-master
-    jobs:
-      - build-platform-and-services
-      - run-basic-suiterunner-tests:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Basic-4N-1C"
-
   AWS-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
@@ -1618,31 +1598,7 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
-
-  run-basic-suiterunner-tests:
-    parameters:
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: build-executor
-      workflow-name:  << parameters.workflow-name >>
-    steps:
-      - run:
-          name: Run various suites in SuiteRunner
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Basic-4N-1C.json /repo
-
-      - run:
-          name: Sync results of SuiteRunner suites to AWS
-          command: |
-              aws s3 sync /swirlds-platform/regression/results/4N_1C/Basic/ s3://hedera-service-regression-jrs;
-              tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Basic/*
-
-      - store_artifacts:
-          path: /results.tar.gz
-
+            
   run-update-node-tests:
     parameters:
       workflow-name:
