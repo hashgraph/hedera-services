@@ -22,6 +22,10 @@ commands:
             pip3 -q install matplotlib;
             sudo apt-get install -y python3-setuptools;
             pip3 install awscli;
+      - run:
+          name: Install gcloud cli
+            command: |
+              cd ~/google-cloud-sdk; ./install.sh ;
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
     steps:
@@ -1136,15 +1140,13 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "22 17 * * *"
+          cron: "32 17 * * *"
           filters:
             branches:
               only:
                 - set-up-gcp
     jobs:
       - build-platform-and-services
-#      - install_and_configure_gcp_cli
-      - gcp-cli/install
       - gcp-basic-suiterunner-tests:
           context: Slack
           requires:
@@ -1954,11 +1956,13 @@ jobs:
       - store_artifacts:
           path: /results.tar.gz
 
-  install_and_configure_gcp_cli:
-    executor:
-      name: build-executor
-    steps:
-      - gcp-cli/install
+#  install_and_configure_gcp_cli:
+#    executor:
+#      name: build-executor
+#    steps:
+#      - run:
+#
+##      - gcp-cli/install
 
   build-platform-and-services:
     parameters:
