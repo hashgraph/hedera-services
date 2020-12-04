@@ -884,26 +884,6 @@ executors:
     working_directory: /repo
 
 workflows:
-  AWS-Daily-Services-Comp-Basic-4N-1C:
-    triggers:
-      - schedule:
-          cron: "15 4 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - run-basic-suiterunner-tests:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Basic-4N-1C"
-
   AWS-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
@@ -1354,6 +1334,43 @@ workflows:
       - aws-summary:
           context: Slack
 
+  nightly-comprehensive-functional-regression:
+    triggers:
+      - schedule:
+          cron: "15 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - fast-build-artifact:
+          context: Slack
+          workflow-name: "nightly-comprehensive-functional-regression"
+      - start-singlejob-testnet:
+          context: Slack
+          requires:
+            - fast-build-artifact
+          workflow-name: "nightly-comprehensive-functional-regression"
+      - run-comprehensive-functional-test:
+          context: Slack
+          requires:
+            - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "nightly-comprehensive-functional-regression"
+
+      - cleanup-singlejob-testnet:
+          context: Slack
+          requires:
+            - run-comprehensive-functional-test
+          pre-steps:
+            - attach_workspace:
+                at: /
+
   continuous-integration:
     jobs:
       - build-artifact:
@@ -1581,31 +1598,7 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
-
-  run-basic-suiterunner-tests:
-    parameters:
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: build-executor
-      workflow-name:  << parameters.workflow-name >>
-    steps:
-      - run:
-          name: Run various suites in SuiteRunner
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Basic-4N-1C.json /repo
-
-      - run:
-          name: Sync results of SuiteRunner suites to AWS
-          command: |
-              aws s3 sync /swirlds-platform/regression/results/4N_1C/Basic/ s3://hedera-service-regression-jrs;
-              tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Basic/*
-
-      - store_artifacts:
-          path: /results.tar.gz
-
+            
   run-update-node-tests:
     parameters:
       workflow-name:
@@ -2380,3 +2373,78 @@ jobs:
           name: Show logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/show_logs.sh
+
+  run-comprehensive-functional-test:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run-eet-suites:
+          dsl-args: "BucketAndLegacyThrottlingSpec"
+      - run-eet-suites:
+          dsl-args: "ControlAccountsExemptForUpdates"
+      - run-eet-suites:
+          dsl-args: "TopicCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "SubmitMessageSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicUpdateSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicGetInfoSpecs"
+      - run-eet-suites:
+          dsl-args: "CryptoCreateSuite -TLS=on"
+      - run-eet-suites:
+          dsl-args: "CryptoRecordSanityChecks -TLS=on"
+      - run-eet-suites:
+          dsl-args: "SignedTransactionBytesRecordsSuite -TLS=on"
+      - run-eet-suites:
+          dsl-args: "SuperusersAreNeverThrottled"
+      - run-eet-suites:
+          dsl-args: "FileRecordSanityChecks"
+      - run-eet-suites:
+          dsl-args: "VersionInfoSpec"
+      - run-eet-suites:
+          dsl-args: "PermissionSemanticsSpec"
+      - run-eet-suites:
+          dsl-args: "SysDelSysUndelSpec"
+      - run-eet-suites:
+          dsl-args: "NewOpInConstructorSpecs"
+      - run-eet-suites:
+          dsl-args: "MultipleSelfDestructsAreSafe"
+      - run-eet-suites:
+          dsl-args: "FetchSystemFiles"
+      - run-eet-suites:
+          dsl-args: "ChildStorageSpecs"
+      - run-eet-suites:
+          dsl-args: "DeprecatedContractKeySpecs"
+      - run-eet-suites:
+          dsl-args: "ThresholdRecordCreationSpecs"
+      - run-eet-suites:
+          dsl-args: "ContractRecordSanityChecks"
+      - run-eet-suites:
+          dsl-args: "TopicDeleteSpecs"
+      - run-eet-suites:
+          dsl-args: "ProtectedFilesUpdateSuite"
+      - run-eet-suites:
+          dsl-args: "TokenCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "TokenUpdateSpecs"
+      - run-eet-suites:
+          dsl-args: "TokenDeleteSpecs"
+      - run-eet-suites:
+          dsl-args: "TokenTransactSpecs"
+      - run-eet-suites:
+          dsl-args: "TokenManagementSpecs"
+      - run-eet-suites:
+          dsl-args: "TokenAssociationSpecs"
+      - run-eet-suites:
+          dsl-args: "CannotDeleteSystemEntitiesSuite"
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
