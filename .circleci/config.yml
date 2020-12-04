@@ -1365,13 +1365,12 @@ workflows:
     jobs:
       - fast-build-artifact:
           context: Slack
-          workflow-name: freeze restart
+          workflow-name: "nightly-comprehensive-functional-regression"
       - start-singlejob-testnet:
           context: Slack
           requires:
             - fast-build-artifact
           workflow-name: "nightly-comprehensive-functional-regression"
-          infra-branch: services-with-platform070
       - run-comprehensive-functional-test:
           context: Slack
           requires:
