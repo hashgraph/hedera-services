@@ -1135,7 +1135,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "13 12 * * *"
+          cron: "16 12 * * *"
           filters:
             branches:
               only:
