@@ -1135,14 +1135,14 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "41 16 * * *"
+          cron: "0 17 * * *"
           filters:
             branches:
               only:
                 - set-up-gcp
     jobs:
-      - install_and_configure_gcp_cli
       - build-platform-and-services
+      - install_and_configure_gcp_cli
       - gcp-basic-suiterunner-tests:
           context: Slack
           requires:
