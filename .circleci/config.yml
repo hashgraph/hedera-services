@@ -1135,16 +1135,13 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "24 16 * * *"
+          cron: "41 16 * * *"
           filters:
             branches:
               only:
                 - set-up-gcp
     jobs:
-      - gcp-cli/install
-#          google-project-id: my_project_id
-#          context: Slack
-#          executor: gcp-cli/default
+      - install_and_configure_gcp_cli
       - build-platform-and-services
       - gcp-basic-suiterunner-tests:
           context: Slack
@@ -1155,6 +1152,13 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-4N-1C"
+
+  install_and_configure_gcp_cli:
+    jobs:
+      - gcp-cli/install_and_initialize_cli:
+        context: Slack
+        executor: gcp-cli/default
+
   nightly-simulate-network-outage:
     triggers:
         - schedule:
@@ -1389,6 +1393,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - set-up-gcp
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
