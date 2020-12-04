@@ -85,7 +85,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
   private static final int MAX_RECEIPT_RETRIES = 60;
   public static final String ADDRESS_BOOK_BIN = ContractResources.ADDRESS_BOOK_BYTECODE_PATH;
-  public static final String JURISDICTIONS_BIN = ContractResources.JURIDICTIONS_BYTECODE_PATH;
+  public static final String JURISDICTIONS_BIN = ContractResources.JURISDICTIONS_BYTECODE_PATH;
   public static final String MINTERS_BIN = ContractResources.MINTERS_BYTECODE_PATH;
 
   private static AccountID nodeAccount;
@@ -243,7 +243,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getJurisdictionsConstructorFunction() {
-    String funcJson =  ContractResources.JURIDICTION_CONSTRUCTOR_ABI.replaceAll("'", "\"");
+    String funcJson =  ContractResources.JURISDICTION_CONSTRUCTOR_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -256,7 +256,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getJurisdictionsAddFunction() {
-    String funcJson = ContractResources.JURIDICTION_ADD_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.JURISDICTION_ADD_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -268,7 +268,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getJurisdictionsIsValidFunction() {
-    String funcJson = ContractResources.JURIDICTION_ISVALID_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.JURISDICTION_ISVALID_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -720,7 +720,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
   private static Event getJurisAddEvent() {
     if (jurisAddEvent == null) {
-      Abi abi = Abi.fromJson(ContractResources.JURIDICTION_ABI);
+      Abi abi = Abi.fromJson(ContractResources.JURISDICTION_ABI);
       Predicate<Event> searchEventPredicate = sep -> {
         return sep.name.equals("JurisdictionAdded");
       };

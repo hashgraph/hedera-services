@@ -583,7 +583,7 @@ public class SmartContractServiceTest extends FileServiceTest {
   }
 
   private CallTransaction.Function getDepositFunction() {
-    String funcJson = ContractResources.PAY_TEST_DEPOSIT.replaceAll("'", "\"");
+    String funcJson = ContractResources.DEPOSIT_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -643,7 +643,7 @@ public class SmartContractServiceTest extends FileServiceTest {
   }
 
   private CallTransaction.Function getGetBalanceFunction() {
-    String funcJson = ContractResources.PAY_TEST_GET_BALANCE.replaceAll("'", "\"");
+    String funcJson = ContractResources.GET_BALANCE_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }

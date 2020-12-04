@@ -45,7 +45,7 @@ public class ContractResources {
 	public static final String PAY_RECEIVABLE_AMOUNT_BYTECODE_PATH = bytecodePath("PayReceivableAmount");
 	public static final String OC_TOKEN_BYTECODE_PATH = bytecodePath("octoken");
 	public static final String ADDRESS_BOOK_BYTECODE_PATH = bytecodePath("AddressBook");
-	public static final String JURIDICTIONS_BYTECODE_PATH = bytecodePath("Jurisdictions");
+	public static final String JURISDICTIONS_BYTECODE_PATH = bytecodePath("Jurisdictions");
 	public static final String MINTERS_BYTECODE_PATH = bytecodePath("Minters");
 	public static final String PAY_TEST_BYTECODE_PATH = bytecodePath("PayTest");
 
@@ -209,121 +209,127 @@ public class ContractResources {
 			"\"inputs\":[],\"name\":\"decimals\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String JURIDICTION_CONSTRUCTOR_ABI = "{\"inputs\":[{\"name\":\"_admin\",\"type\":\"address\"}]," +
+	public static final String JURISDICTION_CONSTRUCTOR_ABI = "{" +
+			"\"inputs\":[{\"name\":\"_admin\",\"type\":\"address\"}]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}\n";
-	public static final String JURIDICTION_ADD_ABI = "{\"constant\":false,\"inputs\":" +
-			"[{\"name\":\"name\",\"type\":\"string\"}," +
+	public static final String JURISDICTION_ADD_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"name\",\"type\":\"string\"}," +
 			"{\"name\":\"taxRate\",\"type\":\"uint256\"}," +
 			"{\"name\":\"inventory\",\"type\":\"address\"}," +
-			"{\"name\":\"reserve\",\"type\":\"address\"}]," +
-			"\"name\":\"add\",\"outputs\":[],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String JURIDICTION_ISVALID_ABI = "{\"constant\":true,\"inputs\":" +
-			"[{\"name\":\"code\",\"type\":\"bytes32\"}]," +
-			"\"name\":\"isValid\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}]," +
+			"{\"name\":\"reserve\",\"type\":\"address\"}],\"name\":\"add\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String JURISDICTION_ISVALID_ABI = "{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"isValid\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String JURIDICTION_ABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}]," +
-			"\"name\":\"getInventory\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}," +
-			"{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"}," +
+	public static final String JURISDICTION_ABI = "[{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"getInventory\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"name\",\"type\":\"string\"}," +
 			"{\"name\":\"taxRate\",\"type\":\"uint256\"}," +
 			"{\"name\":\"inventory\",\"type\":\"address\"}," +
-			"{\"name\":\"reserve\",\"type\":\"address\"}]," +
-			"\"name\":\"add\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}," +
+			"{\"name\":\"reserve\",\"type\":\"address\"}],\"name\":\"add\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}," +
 			"{\"name\":\"taxRate\",\"type\":\"uint256\"}," +
 			"{\"name\":\"reserve\",\"type\":\"address\"}," +
-			"{\"name\":\"inventory\",\"type\":\"address\"}]," +
-			"\"name\":\"setJurisdictionParams\",\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}," +
-			"{\"constant\":true,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}]," +
-			"\"name\":\"getReserve\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}," +
-			"{\"constant\":true,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}]," +
-			"\"name\":\"isValid\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}," +
-			"{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}," +
-			"{\"constant\":false,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}]," +
-			"\"name\":\"remove\",\"outputs\":[],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}," +
-			"{\"constant\":true,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}]," +
-			"\"name\":\"getTaxRate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}," +
-			"{\"constant\":true,\"inputs\":[{\"name\":\"priceCents\",\"type\":\"uint256\"}," +
-			"{\"name\":\"code\",\"type\":\"bytes32\"}]," +
-			"\"name\":\"getTaxes\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}," +
+			"{\"name\":\"inventory\",\"type\":\"address\"}],\"name\":\"setJurisdictionParams\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"getReserve\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"isValid\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"owner\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"remove\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"getTaxRate\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"priceCents\",\"type\":\"uint256\"}," +
+			"{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"getTaxes\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}," +
 			"{\"name\":\"\",\"type\":\"uint256\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}," +
-			"{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"}]," +
-			"\"name\":\"jurisdictions\",\"outputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}," +
-			"{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"taxRate\",\"type\":\"uint256\"}," +
-			"{\"name\":\"inventory\",\"type\":\"address\"},{\"name\":\"reserve\",\"type\":\"address\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}," +
-			"{\"constant\":true,\"inputs\":[],\"name\":\"getCodes\"," +
-			"\"outputs\":[{\"name\":\"\",\"type\":\"bytes32[]\"}],\"payable\"" +
-			":false,\"stateMutability\":\"view\",\"type\":\"function\"}," +
-			"{\"constant\":false,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}," +
-			"{\"name\":\"taxRate\",\"type\":\"uint256\"}],\"name\":\"setTaxRate\",\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}," +
-			"{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
-			"\"name\":\"isBitcarbon\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false," +
-			"\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"jurisdictions\"," +
+			"\"outputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}," +
+			"{\"name\":\"name\",\"type\":\"string\"}," +
+			"{\"name\":\"taxRate\",\"type\":\"uint256\"}," +
+			"{\"name\":\"inventory\",\"type\":\"address\"}," +
+			"{\"name\":\"reserve\",\"type\":\"address\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"getCodes\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"bytes32[]\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}," +
+			"{\"name\":\"taxRate\",\"type\":\"uint256\"}],\"name\":\"setTaxRate\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"isBitcarbon\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false," +
 			"\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\"," +
-			"\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}," +
-			"{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"bitcarbonJurisdiction\"," +
-			"\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\"," +
-			"\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"inventory\",\"type\":\"address\"}]," +
-			"\"name\":\"getPendingTokens\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}," +
-			"{\"inputs\":[{\"name\":\"_admin\",\"type\":\"address\"}],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"bitcarbonJurisdiction\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"inventory\",\"type\":\"address\"}],\"name\":\"getPendingTokens\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{" +
+			"\"inputs\":[{\"name\":\"_admin\",\"type\":\"address\"}]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false," +
 			"\"inputs\":[{\"indexed\":false,\"name\":\"code\",\"type\":\"bytes32\"}," +
-			"{\"indexed\":false,\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"name\":\"taxRate\"," +
-			"\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"inventory\",\"type\":\"address\"}," +
+			"{\"indexed\":false,\"name\":\"name\",\"type\":\"string\"}," +
+			"{\"indexed\":false,\"name\":\"taxRate\",\"type\":\"uint256\"}," +
+			"{\"indexed\":false,\"name\":\"inventory\",\"type\":\"address\"}," +
 			"{\"indexed\":false,\"name\":\"reserve\",\"type\":\"address\"}," +
-			"{\"indexed\":false,\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"JurisdictionAdded\"," +
-			"\"type\":\"event\"},{\"anonymous\":false," +
+			"{\"indexed\":false,\"name\":\"timestamp\",\"type\":\"uint256\"}]," +
+			"\"name\":\"JurisdictionAdded\",\"type\":\"event\"},{\"anonymous\":false," +
 			"\"inputs\":[{\"indexed\":false,\"name\":\"code\",\"type\":\"bytes32\"}," +
 			"{\"indexed\":false,\"name\":\"timestamp\",\"type\":\"uint256\"}]," +
-			"\"name\":\"JurisdictionRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[" +
-			"{\"indexed\":false,\"name\":\"oldTaxRate\",\"type\":\"uint256\"}," +
+			"\"name\":\"JurisdictionRemoved\",\"type\":\"event\"},{\"anonymous\":false," +
+			"\"inputs\":[{\"indexed\":false,\"name\":\"oldTaxRate\",\"type\":\"uint256\"}," +
 			"{\"indexed\":false,\"name\":\"newTaxRate\",\"type\":\"uint256\"}," +
 			"{\"indexed\":false,\"name\":\"timestamp\",\"type\":\"uint256\"}]," +
-			"\"name\":\"TaxRateChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[" +
-			"{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"}," +
+			"\"name\":\"TaxRateChanged\",\"type\":\"event\"},{\"anonymous\":false," +
+			"\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"}," +
 			"{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}]," +
 			"\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]";
-	public static final String MINT_CONSTRUCTOR_ABI = "{\"inputs\":[" +
-			"{\"name\":\"_jurisdictions\",\"type\":\"address\"}," +
+	public static final String MINT_CONSTRUCTOR_ABI = "{" +
+			"\"inputs\":[{\"name\":\"_jurisdictions\",\"type\":\"address\"}," +
 			"{\"name\":\"_admin\",\"type\":\"address\"}]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
-	public static final String MINT_ADD_ABI = "{\"constant\":false,\"inputs\":[" +
-			"{\"name\":\"minter\",\"type\":\"address\"}," +
+	public static final String MINT_ADD_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"minter\",\"type\":\"address\"}," +
 			"{\"name\":\"name\",\"type\":\"string\"}," +
-			"{\"name\":\"jurisdiction\",\"type\":\"bytes32\"}]," +
-			"\"name\":\"add\",\"outputs\":[],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String MINT_ISVALID_ABI = "{\"constant\":true,\"inputs\":[" +
-			"{\"name\":\"minter\",\"type\":\"address\"}],\"name\":\"isValid\",\"outputs\":[" +
-			"{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String MINT_SEVEN_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"seven\"," +
-			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String MINT_OWNER_ABI ="{\"constant\":true,\"inputs\":[]," +
-			"\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String MINT_CONFIGURE_ABI = "{\"constant\":false,\"inputs\":[" +
-			"{\"name\":\"_jurisdictions\",\"type\":\"address\"}]," +
-			"\"name\":\"configureJurisdictionContract\",\"outputs\":[]," +
+			"{\"name\":\"jurisdiction\",\"type\":\"bytes32\"}],\"name\":\"add\"," +
+			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String PAY_TEST_GET_BALANCE = "{\"constant\":true,\"inputs\":[],\"name\":\"getBalance\"," +
+	public static final String MINT_ISVALID_ABI = "{\"constant\":true," +
+			"\"inputs\":[{\"name\":\"minter\",\"type\":\"address\"}],\"name\":\"isValid\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String MINT_SEVEN_ABI = "{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"seven\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	public static final String PAY_TEST_DEPOSIT = "{\"constant\":false,\"inputs\":[" +
-			"{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[]," +
-			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-
+	public static final String MINT_OWNER_ABI ="{\"constant\":true," +
+			"\"inputs\":[],\"name\":\"owner\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String MINT_CONFIGURE_ABI = "{\"constant\":false," +
+			"\"inputs\":[{\"name\":\"_jurisdictions\",\"type\":\"address\"}],\"name\":\"configureJurisdictionContract\"," +
+			"\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 
 	public static final String bytecodePath(String bytecode) {
