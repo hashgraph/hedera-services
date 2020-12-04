@@ -25,18 +25,17 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,15 +47,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_S
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
-import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
-import static java.util.Map.entry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class AdHocTokenTransfers extends HapiApiSuite {
@@ -155,7 +151,12 @@ public class AdHocTokenTransfers extends HapiApiSuite {
 					for (int j = 0; j < sendingAccountsPerToken.get(); j++) {
 						var sender = token + "sender" + j;
 						senders.computeIfAbsent(token, ignore -> new ArrayList<>()).add(sender);
-						initializers.add(cryptoCreate(sender));
+						initializers.add(
+								cryptoCreate(sender)
+										.balance(5_000_000_000_000L)
+										.withRecharging()
+										.rechargeWindow(3)
+						);
 						initializers.add(tokenAssociate(sender, token));
 						initializers.add(cryptoTransfer(
 								moving(balanceInit.get(), token)
@@ -164,7 +165,12 @@ public class AdHocTokenTransfers extends HapiApiSuite {
 					for (int j = 0; j < receivingAccountsPerToken.get(); j++) {
 						var receiver = token + "receiver" + j;
 						receivers.computeIfAbsent(token, ignore -> new ArrayList<>()).add(receiver);
-						initializers.add(cryptoCreate(receiver));
+						initializers.add(
+								cryptoCreate(receiver)
+										.balance(5_000_000_000_000L)
+										.withRecharging()
+										.rechargeWindow(3)
+						);
 						initializers.add(tokenAssociate(receiver, token));
 						initializers.add(cryptoTransfer(
 								moving(balanceInit.get(), token)
@@ -185,6 +191,8 @@ public class AdHocTokenTransfers extends HapiApiSuite {
 				var numTokens = tokensPerTxn.get();
 				var numSenders = sendingAccountsPerToken.get();
 				var numReceivers = receivingAccountsPerToken.get();
+				String effPayer = null;
+				var now = "" + Instant.now();
 				if (firstDir.get()) {
 					var xfers = new TokenMovement[numTokens * numSenders];
 					for (int i = 0; i < numTokens; i++) {
@@ -194,13 +202,19 @@ public class AdHocTokenTransfers extends HapiApiSuite {
 							for (int k = 0; k < numReceivers; k++) {
 								receivers[k] = token + "receiver" + k;
 							}
+							var source = token + "sender" + j;
+							if (effPayer == null) {
+								effPayer = source;
+							}
 							xfers[i * numSenders + j] = moving(numReceivers, token)
-									.distributing(token + "sender" + j, receivers);
+									.distributing(source, receivers);
 						}
 					}
 					op = cryptoTransfer(xfers)
 							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
 							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+							.memo(now)
+							.payingWith(effPayer)
 							.setNode(targetAccount)
 							.noLogging()
 							.deferStatusResolution();
@@ -214,13 +228,19 @@ public class AdHocTokenTransfers extends HapiApiSuite {
 							for (int k = 0; k < numSenders; k++) {
 								senders[k] = token + "sender" + k;
 							}
+							var source = token + "receiver" + j;
+							if (effPayer == null) {
+								effPayer = source;
+							}
 							xfers[i * numReceivers + j] = moving(numSenders, token)
-									.distributing(token + "receiver" + j, senders);
+									.distributing(source, senders);
 						}
 					}
 					op = cryptoTransfer(xfers)
 							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
 							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+							.memo(now)
+							.payingWith(effPayer)
 							.setNode(targetAccount)
 							.noLogging()
 							.deferStatusResolution();

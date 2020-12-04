@@ -244,6 +244,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		registry.saveSymbol(token, symbol.orElse(token));
 		registry.saveName(token, name.orElse(token));
 		registry.saveTokenId(token, lastReceipt.getTokenID());
+		registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
 
 		adminKey.ifPresent(k -> registry.saveAdminKey(token, registry.getKey(k)));
 		kycKey.ifPresent(k -> registry.saveKycKey(token, registry.getKey(k)));

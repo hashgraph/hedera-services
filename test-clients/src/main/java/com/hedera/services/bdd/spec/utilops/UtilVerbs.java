@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.utilops;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -80,18 +79,20 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
@@ -334,6 +335,33 @@ public class UtilVerbs {
 			}
 
 			CustomSpecAssert.allRunFor(spec, opsList);
+		});
+	}
+
+	public static HapiSpecOperation ensureDissociated(String account, List<String> tokens) {
+		return withOpContext((spec, opLog) -> {
+			var query = getAccountBalance(account);
+			allRunFor(spec, query);
+			var answer = query.getResponse().getCryptogetAccountBalance().getTokenBalancesList();
+			for (String token : tokens) {
+				var tid = spec.registry().getTokenID(token);
+				var match =	answer.stream().filter(tb -> tb.getTokenId().equals(tid)).findAny();
+				if (match.isPresent()) {
+					var tb = match.get();
+					opLog.info(
+							"Account '{}' is associated to token '{}' ({})",
+							account, token, HapiPropertySource.asTokenString(tid));
+					if (tb.getBalance() > 0) {
+						opLog.info("  -->> Balance is {}, transferring to treasury", tb.getBalance());
+						var treasury = spec.registry().getTreasury(token);
+						var xfer = cryptoTransfer(moving(tb.getBalance(), token).between(account, treasury));
+						allRunFor(spec, xfer);
+					}
+					opLog.info("  -->> Dissociating '{}' from '{}' now", account, token);
+					var dis = tokenDissociate(account, token);
+					allRunFor(spec, dis);
+				}
+			}
 		});
 	}
 

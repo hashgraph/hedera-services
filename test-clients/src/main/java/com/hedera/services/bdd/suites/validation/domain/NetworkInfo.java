@@ -1,5 +1,7 @@
 package com.hedera.services.bdd.suites.validation.domain;
 
+import com.hedera.services.bdd.suites.validation.MiscConfig;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -12,7 +14,7 @@ public class NetworkInfo {
 	private static final String DEFAULT_NAME = "default";
 	private static final String DEFAULT_BOOTSTRAP_PEM_KEY_LOC_TPL = "%s/keys/account%d.pem";
 	private static final String DEFAULT_BOOTSTRAP_PEM_KEY_PASSPHRASE = "swirlds";
-	private static final String DEFAULT_PERSISTENT_ENTITIES_DIR_TPL = "%s-persistence";
+	private static final String DEFAULT_PERSISTENT_ENTITIES_DIR_TPL = "%s-entities";
 
 	private Long bootstrapAccount = DEFAULT_BOOTSTRAP_ACCOUNT;
 	private Long startupNodeAccount = DEFAULT_STARTUP_NODE_ACCOUNT;
@@ -27,12 +29,13 @@ public class NetworkInfo {
 		return this;
 	}
 
-	public Map<String, String> toCustomProperties() {
+	public Map<String, String> toCustomProperties(MiscConfig miscConfig) {
 		return Map.of(
 				"nodes", nodes.stream().map(Object::toString).collect(joining(",")),
 				"default.payer.pemKeyLoc", effBootstrapPemKeyLoc(),
 				"default.payer.pemKeyPassphrase", bootstrapPemKeyPassphrase,
 				"persistentEntities.dir.path", effPersistentEntitiesDir(),
+				"persistentEntities.updateCreatedManifests", miscConfig.updateCreatedManifests(),
 				"default.node", String.format("0.0.%d", startupNodeAccount)
 		);
 	}
@@ -45,7 +48,7 @@ public class NetworkInfo {
 						bootstrapAccount));
 	}
 
-	private String effPersistentEntitiesDir() {
+	public String effPersistentEntitiesDir() {
 		return Optional.ofNullable(persistentEntitiesDir)
 				.orElseGet(() -> String.format(DEFAULT_PERSISTENT_ENTITIES_DIR_TPL, name));
 	}

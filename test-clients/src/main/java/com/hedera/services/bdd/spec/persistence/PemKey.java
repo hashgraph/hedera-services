@@ -48,6 +48,15 @@ public class PemKey {
 	String passphrase = DEFAULT_PASSPHRASE;
 	boolean generateIfMissing = GENERATE_IF_MISSING;
 
+	public PemKey() {
+	}
+
+	public static PemKey prefixedAt(String pemLoc) {
+		var key = new PemKey();
+		key.setPemLoc(pemLoc + ".pem");
+		return key;
+	}
+
 	public String getPassphrase() {
 		return passphrase;
 	}

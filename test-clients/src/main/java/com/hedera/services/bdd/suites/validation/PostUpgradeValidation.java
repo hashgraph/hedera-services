@@ -28,6 +28,8 @@ public class PostUpgradeValidation implements Callable<Integer> {
 
 	@Option(names = { "-t", "--token" }, description =  "include token service")
 	boolean validateTokenService;
+	@Option(names = { "--no-touch" }, description =  "don't update manifests for created entities", defaultValue = "false")
+	boolean leaveManifestsAlone;
 
 	@Parameters(index = "0", description = "network to target")
 	String target;
@@ -39,6 +41,8 @@ public class PostUpgradeValidation implements Callable<Integer> {
 			return 1;
 		}
 
+		var miscConfig = new MiscConfig(leaveManifestsAlone);
+
 		if (!config.getNetworks().containsKey(target)) {
 			log.error(
 					"Config only includes networks {}, not '{}'!",
@@ -49,7 +53,8 @@ public class PostUpgradeValidation implements Callable<Integer> {
 
 		var networkInfo = config.getNetworks().get(target).named(target);
 		if (validateTokenService) {
-			var tokenPuv = new TokenPuvSuite(networkInfo);
+			var tokenPuv = new TokenPuvSuite(miscConfig, networkInfo);
+			tokenPuv.initEntitiesIfNeeded();
 			var outcome = tokenPuv.runSuiteSync();
 			if (outcome == SUITE_FAILED) {
 				return 1;

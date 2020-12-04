@@ -27,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
+import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
 import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.asAdminKeyFor;
 import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.asFreezeKeyFor;
 import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.asKycKeyFor;
@@ -46,36 +47,41 @@ public class Token {
 	private static final String DEFAULT_HEDERA_NAME = "SOMNOLENT";
 	private static final String UNSPECIFIED_TREASURY = null;
 
-	private PemKey kycKey = Entity.UNUSED_KEY;
-	private PemKey wipeKey = Entity.UNUSED_KEY;
-	private PemKey adminKey = Entity.UNUSED_KEY;
-	private PemKey supplyKey = Entity.UNUSED_KEY;
-	private PemKey freezeKey = Entity.UNUSED_KEY;
+	private boolean frozenByDefault = true;
 
+	private PemKey kycKey = UNUSED_KEY;
+	private PemKey wipeKey = UNUSED_KEY;
+	private PemKey adminKey = UNUSED_KEY;
+	private PemKey supplyKey = UNUSED_KEY;
+	private PemKey freezeKey = UNUSED_KEY;
+
+	private String name = DEFAULT_HEDERA_NAME;
 	private String symbol = DEFAULT_SYMBOL;
-	private String hederaName = DEFAULT_HEDERA_NAME;
-	private String tokenTreasury = UNSPECIFIED_TREASURY;
+	private String treasury = UNSPECIFIED_TREASURY;
 
 	public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
-		if (kycKey != Entity.UNUSED_KEY) {
+		if (kycKey != UNUSED_KEY) {
 			kycKey.registerWith(spec, asKycKeyFor(name));
 		}
-		if (wipeKey != Entity.UNUSED_KEY) {
+		if (wipeKey != UNUSED_KEY) {
 			wipeKey.registerWith(spec, asWipeKeyFor(name));
 		}
-		if (adminKey != Entity.UNUSED_KEY) {
+		if (adminKey != UNUSED_KEY) {
 			adminKey.registerWith(spec, asAdminKeyFor(name));
 		}
-		if (supplyKey != Entity.UNUSED_KEY) {
+		if (supplyKey != UNUSED_KEY) {
 			supplyKey.registerWith(spec, asSupplyKeyFor(name));
 		}
-		if (freezeKey != Entity.UNUSED_KEY) {
+		if (freezeKey != UNUSED_KEY) {
 			freezeKey.registerWith(spec, asFreezeKeyFor(name));
 		}
 		entityId.ifPresent(id -> {
-			spec.registry().saveName(name, hederaName);
+			spec.registry().saveName(name, this.name);
 			spec.registry().saveSymbol(name, symbol);
 			spec.registry().saveTokenId(name, id.asToken());
+			if (treasury != UNSPECIFIED_TREASURY) {
+				spec.registry().saveTreasury(name, treasury);
+			}
 		});
 	}
 
@@ -83,37 +89,40 @@ public class Token {
 		var op = tokenCreate(name)
 				.advertisingCreation()
 				.symbol(symbol)
-				.name(hederaName);
+				.name(this.name);
 
-		if (tokenTreasury != UNSPECIFIED_TREASURY) {
-			op.treasury(tokenTreasury);
+		if (treasury != UNSPECIFIED_TREASURY) {
+			op.treasury(treasury);
 		}
 
-		if (kycKey != Entity.UNUSED_KEY) {
+		if (kycKey != UNUSED_KEY) {
 			op.kycKey(kycKeyFor(name));
 		}
-		if (wipeKey != Entity.UNUSED_KEY) {
+		if (wipeKey != UNUSED_KEY) {
 			op.wipeKey(wipeKeyFor(name));
 		}
-		if (adminKey != Entity.UNUSED_KEY) {
+		if (adminKey != UNUSED_KEY) {
 			op.adminKey(adminKeyFor(name));
 		}
-		if (freezeKey != Entity.UNUSED_KEY) {
+		if (freezeKey != UNUSED_KEY) {
 			op.freezeKey(freezeKeyFor(name));
+			if (frozenByDefault) {
+				op.freezeDefault(true);
+			}
 		}
-		if (supplyKey != Entity.UNUSED_KEY) {
+		if (supplyKey != UNUSED_KEY) {
 			op.supplyKey(supplyKeyFor(name));
 		}
 
 		return op;
 	}
 
-	public String getTokenTreasury() {
-		return tokenTreasury;
+	public String getTreasury() {
+		return treasury;
 	}
 
-	public void setTokenTreasury(String tokenTreasury) {
-		this.tokenTreasury = tokenTreasury;
+	public void setTreasury(String treasury) {
+		this.treasury = treasury;
 	}
 
 	public PemKey getKycKey() {
@@ -154,5 +163,29 @@ public class Token {
 
 	public void setFreezeKey(PemKey freezeKey) {
 		this.freezeKey = freezeKey;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getSymbol() {
+		return symbol;
+	}
+
+	public void setSymbol(String symbol) {
+		this.symbol = symbol;
+	}
+
+	public boolean isFrozenByDefault() {
+		return frozenByDefault;
+	}
+
+	public void setFrozenByDefault(boolean frozenByDefault) {
+		this.frozenByDefault = frozenByDefault;
 	}
 }

@@ -326,6 +326,9 @@ public class HapiSpecSetup {
 	public String persistentEntitiesDirPath() {
 		return props.get("persistentEntities.dir.path");
 	}
+	public boolean updateManifestsForCreatedPersistentEntities() {
+		return props.getBoolean("persistentEntities.updateCreatedManifests");
+	}
 	public Integer port() {
 		return props.getInteger("port");
 	}

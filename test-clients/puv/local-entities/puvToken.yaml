@@ -1,0 +1,6 @@
+name: puvToken
+token:
+  kycKey: { pemLoc: puvKyc.pem }
+  symbol: PUV
+  name: PostUpdateValidation
+  treasury: puvTokenSender

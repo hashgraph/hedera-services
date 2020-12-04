@@ -28,7 +28,10 @@ import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
-public class Entity {
+public class Entity implements Comparable<Entity> {
+	enum Type {
+		ACCOUNT, TOKEN, UNKNOWN
+	}
 	private static final Token UNSPECIFIED_TOKEN = null;
 	private static final Topic UNSPECIFIED_TOPIC = null;
 	private static final Account UNSPECIFIED_ACCOUNT = null;
@@ -38,11 +41,53 @@ public class Entity {
 	public static final HapiSpecOperation UNNEEDED_CREATE_OP = null;
 
 	private String name;
+	private String manifestAbsPath = "<N/A>";
 	private EntityId id = UNCREATED_ENTITY_ID;
 	private Topic topic = UNSPECIFIED_TOPIC;
 	private Token token = UNSPECIFIED_TOKEN;
 	private Account account = UNSPECIFIED_ACCOUNT;
 	private HapiSpecOperation createOp = UNNEEDED_CREATE_OP;
+
+	public static Entity from(String name, Token token) {
+		var it = new Entity();
+		it.setName(name);
+		it.setToken(token);
+		return it;
+	}
+
+	public static Entity from(String name, Account account) {
+		var it = new Entity();
+		it.setName(name);
+		it.setAccount(account);
+		return it;
+	}
+
+	@Override
+	public int compareTo(Entity that) {
+		return Integer.compare(this.specifiedEntityPriority(), that.specifiedEntityPriority());
+	}
+
+	private int specifiedEntityPriority() {
+		return specified().ordinal();
+	}
+
+	private Type specified() {
+		if (token != UNSPECIFIED_TOKEN) {
+			return Type.TOKEN;
+		} else if (account != UNSPECIFIED_ACCOUNT) {
+			return Type.ACCOUNT;
+		} else {
+			return Type.UNKNOWN;
+		}
+	}
+
+	public void setManifestAbsPath(String manifestAbsPath) {
+		this.manifestAbsPath = manifestAbsPath;
+	}
+
+	public String getManifestAbsPath() {
+		return manifestAbsPath;
+	}
 
 	public void registerWhatIsKnown(HapiApiSpec spec) {
 		if (token != UNSPECIFIED_TOKEN) {

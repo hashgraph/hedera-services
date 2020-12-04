@@ -24,21 +24,19 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.suites.utils.validation.ValidationScenarios;
+import com.hedera.services.bdd.suites.validation.YamlHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
-import org.yaml.snakeyaml.introspector.Property;
-import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.Tag;
-import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,23 +64,30 @@ public class EntityManager {
 		}
 		File[] yaml = entitiesDir.listFiles(f -> f.getAbsolutePath().endsWith(".yaml"));
 		var yamlIn = new Yaml(new Constructor(Entity.class));
+		List<Entity> candEntities = new ArrayList<>();
 		for (File manifest : yaml) {
 			try {
 				log.info("Attempting to register an entity from '{}'", manifest.getPath());
 				Entity entity = yamlIn.load(Files.newInputStream(manifest.toPath()));
-				var name = entity.getName();
-				if (registeredEntityMeta.containsKey(name)) {
-					log.warn("Skipping entity from '{}', name '{}' already used!", manifest.getPath(), name);
-				} else {
-					entity.registerWhatIsKnown(spec);
-					entities.add(entity);
-					registeredEntityMeta.put(
-							name,
-							new EntityMeta(entity, manifest.getAbsolutePath(), entity.needsCreation()));
-				}
+				entity.setManifestAbsPath(manifest.getAbsolutePath());
+				candEntities.add(entity);
 			} catch (IOException e) {
 				log.error("Could not deserialize entity from '{}'!", manifest.getPath(), e);
 				return false;
+			}
+		}
+
+		Collections.sort(candEntities);
+		for (Entity entity : candEntities) {
+			var name = entity.getName();
+			if (registeredEntityMeta.containsKey(name)) {
+				log.warn("Skipping entity from '{}', name '{}' already used!", entity.getManifestAbsPath(), name);
+			} else {
+				entity.registerWhatIsKnown(spec);
+				entities.add(entity);
+				registeredEntityMeta.put(
+						name,
+						new EntityMeta(entity, entity.needsCreation()));
 			}
 		}
 		return true;
@@ -98,15 +103,7 @@ public class EntityManager {
 					optionalCreatedId.ifPresent(createdId -> {
 						entity.setId(createdId);
 						entity.setCreateOp(UNNEEDED_CREATE_OP);
-						var yamlOut = new Yaml(new SkipNullRepresenter());
-						var doc = yamlOut.dumpAs(meta.getEntity(), Tag.MAP, null);
-						try {
-							var writer = Files.newBufferedWriter(Paths.get(meta.getManifestLoc()));
-							writer.write(doc);
-							writer.close();
-						} catch (IOException e) {
-							log.warn("Could not update {} with created entity id!", entity.getName(), e);
-						}
+						YamlHelper.serializeEntity(entity, meta.getManifestLoc());
 					});
 				});
 	}
@@ -137,17 +134,15 @@ public class EntityManager {
 
 	static class EntityMeta {
 		private final Entity entity;
-		private final String manifestLoc;
 		private final boolean needsCreation;
 
-		public EntityMeta(Entity entity, String manifestLoc, boolean needsCreation) {
+		public EntityMeta(Entity entity, boolean needsCreation) {
 			this.entity = entity;
-			this.manifestLoc = manifestLoc;
 			this.needsCreation = needsCreation;
 		}
 
 		public String getManifestLoc() {
-			return manifestLoc;
+			return entity.getManifestAbsPath();
 		}
 
 		public boolean neededCreation() {
@@ -159,19 +154,4 @@ public class EntityManager {
 		}
 	}
 
-	private static class SkipNullRepresenter extends Representer {
-		@Override
-		protected NodeTuple representJavaBeanProperty(
-				Object javaBean,
-				Property property,
-				Object propertyValue,
-				Tag customTag
-		) {
-			if (propertyValue == null) {
-				return null;
-			} else {
-				return super.representJavaBeanProperty(javaBean, property, propertyValue, customTag);
-			}
-		}
-	}
 }

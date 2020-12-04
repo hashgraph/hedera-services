@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -75,9 +75,11 @@ import static java.util.stream.Collectors.toList;
 public class HapiApiSpec implements Runnable {
 	static final Logger log = LogManager.getLogger(HapiApiSpec.class);
 
-	public enum SpecStatus { PENDING, RUNNING, PASSED, FAILED, FAILED_AS_EXPECTED, PASSED_UNEXPECTEDLY, ERROR }
-	public enum CostSnapshotMode { OFF, TAKE, COMPARE }
-	public enum UTF8Mode { FALSE, TRUE }
+	public enum SpecStatus {PENDING, RUNNING, PASSED, FAILED, FAILED_AS_EXPECTED, PASSED_UNEXPECTEDLY, ERROR}
+
+	public enum CostSnapshotMode {OFF, TAKE, COMPARE}
+
+	public enum UTF8Mode {FALSE, TRUE}
 
 	List<Payment> costs = new ArrayList<>();
 	List<Payment> costSnapshot = Collections.EMPTY_LIST;
@@ -117,19 +119,24 @@ public class HapiApiSpec implements Runnable {
 	public int numPendingOps() {
 		return pendingOps.size();
 	}
+
 	public int numLedgerOps() {
 		return numLedgerOpsExecuted.get();
 	}
+
 	public synchronized void addLedgerOpCountCallback(Consumer<Integer> callback) {
 		ledgerOpCountCallbacks.add(callback);
 	}
+
 	public void incrementNumLedgerOps() {
 		int newNumLedgerOps = numLedgerOpsExecuted.incrementAndGet();
 		ledgerOpCountCallbacks.stream().forEach(c -> c.accept(newNumLedgerOps));
 	}
+
 	public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {
 		precheckStatusCounts.computeIfAbsent(finalStatus, ignore -> new AtomicInteger(0)).incrementAndGet();
 	}
+
 	public void updateResolvedCounts(ResponseCodeEnum finalStatus) {
 		finalizedStatusCounts.computeIfAbsent(finalStatus, ignore -> new AtomicInteger(0)).incrementAndGet();
 	}
@@ -145,15 +152,19 @@ public class HapiApiSpec implements Runnable {
 	public String getName() {
 		return name;
 	}
+
 	public String logPrefix() {
 		return "'" + name + "' - ";
 	}
+
 	public SpecStatus getStatus() {
 		return status;
 	}
+
 	public SpecStatus getExpectedFinalStatus() {
 		return setup().expectedFinalStatus();
 	}
+
 	public void setSuitePrefix(String suitePrefix) {
 		this.suitePrefix = suitePrefix;
 	}
@@ -161,6 +172,7 @@ public class HapiApiSpec implements Runnable {
 	public static boolean OK(HapiApiSpec spec) {
 		return spec.getStatus() == spec.getExpectedFinalStatus();
 	}
+
 	public static boolean NOT_OK(HapiApiSpec spec) {
 		return !OK(spec);
 	}
@@ -231,7 +243,7 @@ public class HapiApiSpec implements Runnable {
 			startFinalizingOps();
 		}
 		for (HapiSpecOperation op : ops) {
-			Optional<Throwable>	error = op.execFor(this);
+			Optional<Throwable> error = op.execFor(this);
 			if (error.isPresent()) {
 				status = FAILED;
 				break;
@@ -255,9 +267,11 @@ public class HapiApiSpec implements Runnable {
 		tearDown();
 		log.info(logPrefix() + "final status: " + status + "!");
 
-		entities.updateCreatedEntityManifests();
+		if (hapiSetup.updateManifestsForCreatedPersistentEntities()) {
+			entities.updateCreatedEntityManifests();
+		}
 
-		if(saveContextFlag) {
+		if (saveContextFlag) {
 			persistContext();
 		}
 	}
@@ -289,7 +303,8 @@ public class HapiApiSpec implements Runnable {
 									} else {
 										try {
 											Thread.sleep(500L);
-										} catch (InterruptedException irrelevant) {}
+										} catch (InterruptedException irrelevant) {
+										}
 									}
 								}
 							}
@@ -312,24 +327,31 @@ public class HapiApiSpec implements Runnable {
 	public void offerFinisher(HapiSpecOpFinisher finisher) {
 		pendingOps.offer(finisher);
 	}
+
 	public FeeCalculator fees() {
 		return feeCalculator;
 	}
+
 	public TxnFactory txns() {
 		return txnFactory;
 	}
+
 	public KeyFactory keys() {
 		return keyFactory;
 	}
+
 	public HapiSpecRegistry registry() {
 		return hapiRegistry;
 	}
+
 	public HapiSpecSetup setup() {
 		return hapiSetup;
 	}
+
 	public HapiApiClients clients() {
 		return hapiClients;
 	}
+
 	public FeesAndRatesProvider ratesProvider() {
 		return ratesProvider;
 	}
@@ -343,6 +365,7 @@ public class HapiApiSpec implements Runnable {
 	private static String defaultNodeAccount;
 	private static Map<String, String> otherOverrides;
 	private static boolean runningInCi = false;
+
 	public static void runInCiMode(
 			String nodes,
 			String payer,
@@ -361,6 +384,7 @@ public class HapiApiSpec implements Runnable {
 		nodeSelectorFromCi = envNodeSelector;
 		otherOverrides = overrides;
 	}
+
 	public static Def.Given defaultHapiSpec(String name) {
 		Stream prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
 		return customizedHapiSpec(name, prioritySource).withProperties();
@@ -386,13 +410,13 @@ public class HapiApiSpec implements Runnable {
 			String ciPropertiesMap = Optional.ofNullable(System.getenv("CI_PROPERTIES_MAP")).orElse("");
 			log.info("CI_PROPERTIES_MAP: " + ciPropertiesMap);
 			ciPropsSource = new HashMap<String, String>() {{
-					this.put("node.selector", nodeSelectorFromCi);
-					this.put("nodes", dynamicNodes);
-					this.put("default.payer", defaultPayer);
-					this.put("default.node", defaultNodeAccount);
-					this.put("ci.properties.map", ciPropertiesMap);
-					this.put("tls", tlsFromCi);
-					this.put("txn", txnFromCi);
+				this.put("node.selector", nodeSelectorFromCi);
+				this.put("nodes", dynamicNodes);
+				this.put("default.payer", defaultPayer);
+				this.put("default.node", defaultNodeAccount);
+				this.put("ci.properties.map", ciPropertiesMap);
+				this.put("tls", tlsFromCi);
+				this.put("txn", txnFromCi);
 			}};
 			ciPropsSource.putAll(otherOverrides);
 		}
@@ -402,30 +426,35 @@ public class HapiApiSpec implements Runnable {
 	public static Def.Given defaultFailingHapiSpec(String name) {
 		return customizedHapiSpec(name, Stream.of(Map.of("expected.final.status", "FAILED"))).withProperties();
 	}
+
 	public static Def.Sourced customHapiSpec(String name) {
 		Stream prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
 		return customizedHapiSpec(name, prioritySource);
 	}
+
 	public static Def.Sourced customFailingHapiSpec(String name) {
 		Stream prioritySource = runningInCi
 				? Stream.of(ciPropOverrides(), Map.of("expected.final.status", "FAILED"))
 				: Stream.empty();
 		return customizedHapiSpec(name, prioritySource);
 	}
+
 	private static Def.Sourced customizedHapiSpec(String name, Stream<Object> prioritySource) {
 		return (Object... sources) -> {
 			Object[] allSources = Stream.of(
-							prioritySource,
-							Stream.of(sources),
-							Stream.of(HapiSpecSetup.getDefaultPropertySource()))
+					prioritySource,
+					Stream.of(sources),
+					Stream.of(HapiSpecSetup.getDefaultPropertySource()))
 					.flatMap(Function.identity()).toArray();
 			return hapiSpec(name).withSetup(setupFrom(allSources));
 		};
 
 	}
+
 	private static HapiSpecSetup setupFrom(Object... objs) {
 		return new HapiSpecSetup(inPriorityOrder(asSources(objs)));
 	}
+
 	public static Def.Setup hapiSpec(String name) {
 		return setup -> given -> when -> then ->
 				new HapiApiSpec(name, setup, given, when, then);
@@ -449,7 +478,7 @@ public class HapiApiSpec implements Runnable {
 					txnFactory, keyFactory, hapiSetup, hapiClients, hapiRegistry);
 			feeCalculator = new FeeCalculator(hapiSetup, scheduleProvider);
 			this.ratesProvider = scheduleProvider;
-			if(restoreContextFlag) {
+			if (restoreContextFlag) {
 				restoreContext();
 				restoreContextFlag = false;
 			}
@@ -461,15 +490,29 @@ public class HapiApiSpec implements Runnable {
 
 	interface Def {
 		@FunctionalInterface
-		interface Sourced { Given withProperties(Object... sources); }
+		interface Sourced {
+			Given withProperties(Object... sources);
+		}
+
 		@FunctionalInterface
-		interface Setup { Given withSetup(HapiSpecSetup setup); }
+		interface Setup {
+			Given withSetup(HapiSpecSetup setup);
+		}
+
 		@FunctionalInterface
-		interface Given { When given(HapiSpecOperation... ops); }
+		interface Given {
+			When given(HapiSpecOperation... ops);
+		}
+
 		@FunctionalInterface
-		interface When { Then when(HapiSpecOperation... ops); }
+		interface When {
+			Then when(HapiSpecOperation... ops);
+		}
+
 		@FunctionalInterface
-		interface Then { HapiApiSpec then(HapiSpecOperation... ops); }
+		interface Then {
+			HapiApiSpec then(HapiSpecOperation... ops);
+		}
 	}
 
 	@Override
@@ -534,14 +577,14 @@ public class HapiApiSpec implements Runnable {
 		final ByteSource source = Files.asByteSource(new File(loc));
 		try (InputStream inStream = source.openBufferedStream()) {
 			serializedCosts.load(inStream);
-		} catch (IOException ie)  {
+		} catch (IOException ie) {
 			log.error("Couldn't load cost snapshots as requested!", ie);
 			throw new IllegalArgumentException(ie);
 		}
 		Map<Integer, Payment> costsByOrder = new HashMap<>();
 		serializedCosts.forEach((a, b) -> {
-			String meta = (String)a;
-			long amount = Long.valueOf((String)b);
+			String meta = (String) a;
+			long amount = Long.valueOf((String) b);
 			int i = meta.indexOf(".");
 			costsByOrder.put(
 					Integer.valueOf(meta.substring(0, i)),
@@ -592,8 +635,7 @@ public class HapiApiSpec implements Runnable {
 
 
 	public HapiApiSpec withContext(String migrationPath) {
-		if (migrationPath.isEmpty())
-		{
+		if (migrationPath.isEmpty()) {
 			restoreContextFlag = true;
 		}
 		return this;
