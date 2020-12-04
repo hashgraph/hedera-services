@@ -21,6 +21,7 @@ package com.hedera.services.legacy.regression;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -83,20 +84,9 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
 
   private static final int MAX_RECEIPT_RETRIES = 60;
-  public static final String ADDRESS_BOOK_BIN = "contract/bytecodes/AddressBook.bin";
-  public static final String JURISDICTIONS_BIN = "contract/bytecodes/Jurisdictions.bin";
-  public static final String MINTERS_BIN = "contract/bytecodes/Minters.bin";
-
-  private static final String SC_JUR_CONSTRUCTOR_ABI = "{\"inputs\":[{\"name\":\"_admin\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}\n";
-  private static final String SC_JUR_ADD_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"taxRate\",\"type\":\"uint256\"},{\"name\":\"inventory\",\"type\":\"address\"},{\"name\":\"reserve\",\"type\":\"address\"}],\"name\":\"add\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-  private static final String SC_JUR_ISVALID_ABI = "{\"constant\":true,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"isValid\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-  private static final String SC_JUR_ABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"getInventory\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"taxRate\",\"type\":\"uint256\"},{\"name\":\"inventory\",\"type\":\"address\"},{\"name\":\"reserve\",\"type\":\"address\"}],\"name\":\"add\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"},{\"name\":\"taxRate\",\"type\":\"uint256\"},{\"name\":\"reserve\",\"type\":\"address\"},{\"name\":\"inventory\",\"type\":\"address\"}],\"name\":\"setJurisdictionParams\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"getReserve\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"isValid\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"remove\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"getTaxRate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"priceCents\",\"type\":\"uint256\"},{\"name\":\"code\",\"type\":\"bytes32\"}],\"name\":\"getTaxes\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"jurisdictions\",\"outputs\":[{\"name\":\"code\",\"type\":\"bytes32\"},{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"taxRate\",\"type\":\"uint256\"},{\"name\":\"inventory\",\"type\":\"address\"},{\"name\":\"reserve\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getCodes\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"code\",\"type\":\"bytes32\"},{\"name\":\"taxRate\",\"type\":\"uint256\"}],\"name\":\"setTaxRate\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"isBitcarbon\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"bitcarbonJurisdiction\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"inventory\",\"type\":\"address\"}],\"name\":\"getPendingTokens\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_admin\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"code\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"name\":\"taxRate\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"inventory\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"reserve\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"JurisdictionAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"code\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"JurisdictionRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"oldTaxRate\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"newTaxRate\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"TaxRateChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]";
-  private static final String SC_MINT_CONSTRUCTOR_ABI = "{\"inputs\":[{\"name\":\"_jurisdictions\",\"type\":\"address\"},{\"name\":\"_admin\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
-  private static final String SC_MINT_ADD_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"minter\",\"type\":\"address\"},{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"jurisdiction\",\"type\":\"bytes32\"}],\"name\":\"add\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-  private static final String SC_MINT_ISVALID_ABI = "{\"constant\":true,\"inputs\":[{\"name\":\"minter\",\"type\":\"address\"}],\"name\":\"isValid\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-  private static final String SC_MINT_SEVEN_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"seven\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-  private static final String SC_MINT_OWNER_ABI ="{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-  private static final String SC_MINT_CONFIGURE_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_jurisdictions\",\"type\":\"address\"}],\"name\":\"configureJurisdictionContract\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+  public static final String ADDRESS_BOOK_BIN = ContractResources.ADDRESS_BOOK_BYTECODE_PATH;
+  public static final String JURISDICTIONS_BIN = ContractResources.JURIDICTIONS_BYTECODE_PATH;
+  public static final String MINTERS_BIN = ContractResources.MINTERS_BYTECODE_PATH;
 
   private static AccountID nodeAccount;
   private static long node_account_number;
@@ -253,7 +243,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getJurisdictionsConstructorFunction() {
-    String funcJson = SC_JUR_CONSTRUCTOR_ABI.replaceAll("'", "\"");
+    String funcJson =  ContractResources.JURIDICTION_CONSTRUCTOR_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -266,7 +256,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getJurisdictionsAddFunction() {
-    String funcJson = SC_JUR_ADD_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.JURIDICTION_ADD_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -278,7 +268,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getJurisdictionsIsValidFunction() {
-    String funcJson = SC_JUR_ISVALID_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.JURIDICTION_ISVALID_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -304,7 +294,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getMintersConstructorFunction() {
-    String funcJson = SC_MINT_CONSTRUCTOR_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.MINT_CONSTRUCTOR_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -316,7 +306,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getMintersIsValidFunction() {
-    String funcJson = SC_MINT_ISVALID_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.MINT_ISVALID_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -328,7 +318,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getMintersSevenFunction() {
-    String funcJson = SC_MINT_SEVEN_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.MINT_SEVEN_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -351,7 +341,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getMintersOwnerFunction() {
-    String funcJson = SC_MINT_OWNER_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.MINT_OWNER_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -373,7 +363,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getMintersAddFunction() {
-    String funcJson = SC_MINT_ADD_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.MINT_ADD_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -385,7 +375,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
   }
 
   public static CallTransaction.Function getMintersConfigureFunction() {
-    String funcJson = SC_MINT_CONFIGURE_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.MINT_CONFIGURE_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -730,7 +720,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
   private static Event getJurisAddEvent() {
     if (jurisAddEvent == null) {
-      Abi abi = Abi.fromJson(SC_JUR_ABI);
+      Abi abi = Abi.fromJson(ContractResources.JURIDICTION_ABI);
       Predicate<Event> searchEventPredicate = sep -> {
         return sep.name.equals("JurisdictionAdded");
       };
