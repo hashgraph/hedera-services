@@ -1156,8 +1156,8 @@ workflows:
   install_and_configure_gcp_cli:
     jobs:
       - gcp-cli/install_and_initialize_cli:
-        context: Slack
-        executor: gcp-cli/default
+          context: Slack
+          executor: gcp-cli/default
 
   nightly-simulate-network-outage:
     triggers:
