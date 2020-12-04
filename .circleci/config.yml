@@ -853,6 +853,7 @@ executors:
           POSTGRES_USER: swirlds
           POSTGRES_PASSWORD: password
           POSTGRES_DB: fcfs
+      - image: circleci/node
     environment:
       MAVEN_OPTS: -Xmx3200m
       IN_CIRCLE_CI: true
@@ -1135,14 +1136,15 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "9 17 * * *"
+          cron: "22 17 * * *"
           filters:
             branches:
               only:
                 - set-up-gcp
     jobs:
       - build-platform-and-services
-      - install_and_configure_gcp_cli
+#      - install_and_configure_gcp_cli
+      - gcp-cli/install
       - gcp-basic-suiterunner-tests:
           context: Slack
           requires:
@@ -1956,9 +1958,7 @@ jobs:
     executor:
       name: build-executor
     steps:
-      - gcp-cli/install_and_initialize_cli:
-          context: Slack
-          executor: gcp-cli/default
+      - gcp-cli/install
 
   build-platform-and-services:
     parameters:
