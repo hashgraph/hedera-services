@@ -1154,7 +1154,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "17 17 * * *"
+          cron: "49 17 * * *"
           filters:
             branches:
               only:
@@ -1662,7 +1662,7 @@ jobs:
           name: Run GCP various suites in SuiteRunner
           command: |
             cd /swirlds-platform/regression;
-            source /root/.bashrc;
+            source /root/.bashrc; cat /root/.bashrc;
             ./regression_services_circleci.sh configs/services/suites/daily/GCP-Daily-Services-Comp-Basic-4N-1C.json /repo
 
       - run:
