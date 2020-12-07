@@ -74,7 +74,6 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 
 	private HapiApiSpec validateChangesAfterReconnect() {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
-		final String transactionId = "specialTransactionId";
 		final String transactionFeeid = "authorizedTxn";
 		final long newFee = 159_588_904;
 
@@ -86,6 +85,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 						saveFileToRegistry(APP_PROPERTIES, APP_FILE_REGISTRY),
 						saveFileToRegistry(API_PERMISSIONS, API_FILE_REGISTRY),
 						saveFileToRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY),
+
 						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
