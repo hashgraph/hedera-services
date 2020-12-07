@@ -25,6 +25,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import org.junit.jupiter.api.Assertions;
@@ -122,6 +123,35 @@ public class TxnReceiptTest {
   }
 
   @Test
+  public void postConsensusTokenMintBurnWipeInterconversionWorks() {
+    final var totalSupply = 12345L;
+
+    final var receipt = TransactionReceipt.newBuilder()
+            .setExchangeRate(new ExchangeRates().toGrpc())
+            .setNewTotalSupply(totalSupply)
+            .build();
+    final var cut = TxnReceipt.fromGrpc(receipt);
+    final var back = TxnReceipt.convert(cut);
+
+    assertEquals(receipt, back);
+  }
+
+  @Test
+  public void postConsensusTokenCreationInterconversionWorks() {
+    final TokenID.Builder tokenIdBuilder = TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0);
+
+    final var receipt = TransactionReceipt.newBuilder()
+            .setExchangeRate(new ExchangeRates().toGrpc())
+            .setTokenID(tokenIdBuilder)
+            .build();
+    final var cut = TxnReceipt.fromGrpc(receipt);
+    final var back = TxnReceipt.convert(cut);
+
+    assertEquals(receipt, back);
+  }
+
+
+  @Test
   public void convertToJTransactionReceiptPostConsensusSubmitMessage() {
     final var topicSequenceNumber = 4444L;
     final var topicRunningHash = getSha384Hash();
@@ -213,4 +243,32 @@ public class TxnReceiptTest {
     assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
             () -> assertNotNull(cut.toString()));
   }
+  @Test
+  public void tokenConstructorWithTokenId() {
+    final var tokenId = EntityId.ofNullableTokenId(
+            TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
+    final var cut = new TxnReceipt(
+            "SUCCESS", null, null, null, tokenId, null,
+            null, 0L, null);
+
+    assertEquals(tokenId, cut.getTokenId());
+
+    assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
+            () -> assertNotNull(cut.toString()));
+  }
+
+  @Test
+  public void tokenConstructorWithTotalSupply() {
+    final var tokenId = EntityId.ofNullableTokenId(
+            TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
+    final var cut = new TxnReceipt(
+            "SUCCESS", null, null, null, null, null,
+            null, 0L, null, TxnReceipt.MISSING_RUNNING_HASH_VERSION, 1000L);
+
+    assertEquals(1000L, cut.getNewTotalSupply());
+
+    assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
+            () -> assertNotNull(cut.toString()));
+  }
+
 }

@@ -57,6 +57,7 @@ public class TxnReceipt implements SelfSerializable {
 
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
+	static final int RELEASE_090_VERSION = 3;
 	static final int MERKLE_VERSION = RELEASE_080_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x65ef569a77dcf125L;
 
@@ -108,6 +109,9 @@ public class TxnReceipt implements SelfSerializable {
 				receipt.runningHashVersion = in.readLong();
 			}
 
+			if(version > RELEASE_090_VERSION) {
+				receipt.newTotalSupply = in.readLong();
+			}
 			return receipt;
 		}
 	}
@@ -122,6 +126,7 @@ public class TxnReceipt implements SelfSerializable {
 	EntityId tokenId;
 	EntityId contractId;
 	ExchangeRates exchangeRates;
+	Long newTotalSupply = -1L;
 
 	public TxnReceipt() { }
 
@@ -155,11 +160,38 @@ public class TxnReceipt implements SelfSerializable {
 			@Nullable EntityId fileId,
 			@Nullable EntityId contractId,
 			@Nullable EntityId tokenId,
+			@Nullable ExchangeRates exchangeRates,
+			@Nullable EntityId topicId,
+			long topicSequenceNumber,
+			@Nullable byte[] topicRunningHash,
+			long    runningHashVersion
+	) {
+		this(
+				status,
+				accountId,
+				fileId,
+				contractId,
+				tokenId,
+				exchangeRates,
+				topicId,
+				topicSequenceNumber,
+				topicRunningHash,
+				runningHashVersion,
+				RELEASE_070_VERSION);
+	}
+
+	public TxnReceipt(
+			@Nullable String status,
+			@Nullable EntityId accountId,
+			@Nullable EntityId fileId,
+			@Nullable EntityId contractId,
+			@Nullable EntityId tokenId,
 			@Nullable ExchangeRates exchangeRate,
 			@Nullable EntityId topicId,
 			long topicSequenceNumber,
 			@Nullable byte[] topicRunningHash,
-			long runningHashVersion
+			long runningHashVersion,
+			long newTotalSupply
 	) {
 		this.status = status;
 		this.accountId = accountId;
@@ -173,6 +205,7 @@ public class TxnReceipt implements SelfSerializable {
 				? topicRunningHash
 				: MISSING_RUNNING_HASH;
 		this.runningHashVersion = runningHashVersion;
+		this.newTotalSupply = newTotalSupply;
 	}
 
 	/* --- SelfSerializable --- */
@@ -204,6 +237,7 @@ public class TxnReceipt implements SelfSerializable {
 			out.writeLong(runningHashVersion);
 			out.writeByteArray(topicRunningHash);
 		}
+		out.writeLong(newTotalSupply);
 	}
 
 	@Override
@@ -222,6 +256,9 @@ public class TxnReceipt implements SelfSerializable {
 			topicSequenceNumber = in.readLong();
 			runningHashVersion = in.readLong();
 			topicRunningHash = in.readByteArray(MAX_RUNNING_HASH_BYTES);
+		}
+		if(version > RELEASE_090_VERSION) {
+			newTotalSupply = in.readLong();
 		}
 	}
 
@@ -265,6 +302,10 @@ public class TxnReceipt implements SelfSerializable {
 		return topicRunningHash;
 	}
 
+	public long getNewTotalSupply() {
+		return newTotalSupply;
+	}
+
 	/* --- Object --- */
 
 	@Override
@@ -284,7 +325,8 @@ public class TxnReceipt implements SelfSerializable {
 				Objects.equals(topicId, that.topicId) &&
 				Objects.equals(tokenId, that.tokenId) &&
 				Objects.equals(topicSequenceNumber, that.topicSequenceNumber) &&
-				Arrays.equals(topicRunningHash, that.topicRunningHash);
+				Arrays.equals(topicRunningHash, that.topicRunningHash) &&
+				Objects.equals(newTotalSupply, that.newTotalSupply);
 	}
 
 	@Override
@@ -292,7 +334,8 @@ public class TxnReceipt implements SelfSerializable {
 		return Objects.hash(
 				runningHashVersion, status,
 				accountId, fileId, contractId, topicId, tokenId,
-				topicSequenceNumber, Arrays.hashCode(topicRunningHash));
+				topicSequenceNumber, Arrays.hashCode(topicRunningHash),
+				newTotalSupply);
 	}
 
 	@Override
@@ -320,6 +363,7 @@ public class TxnReceipt implements SelfSerializable {
 			helper.add("topicRunningHash", Hex.encodeHexString(topicRunningHash));
 			helper.add("runningHashVersion", runningHashVersion);
 		}
+		helper.add("newTotalTokenSupply", newTotalSupply);
 		return helper.toString();
 	}
 
@@ -335,6 +379,7 @@ public class TxnReceipt implements SelfSerializable {
 		EntityId topicId = grpc.hasTopicID() ? EntityId.ofNullableTopicId(grpc.getTopicID()) : null;
 		EntityId tokenId = grpc.hasTokenID() ? EntityId.ofNullableTokenId(grpc.getTokenID()) : null;
 		long runningHashVersion = Math.max(MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
+		long newTotalSupply = grpc.getNewTotalSupply();
 		return new TxnReceipt(
 				status,
 				accountId,
@@ -345,7 +390,8 @@ public class TxnReceipt implements SelfSerializable {
 				topicId,
 				grpc.getTopicSequenceNumber(),
 				grpc.getTopicRunningHash().toByteArray(),
-				runningHashVersion);
+				runningHashVersion,
+				newTotalSupply);
 	}
 
 	public TransactionReceipt toGrpc() {
@@ -393,6 +439,9 @@ public class TxnReceipt implements SelfSerializable {
 		}
 		if (txReceipt.getRunningHashVersion() != MISSING_RUNNING_HASH_VERSION) {
 			builder.setTopicRunningHashVersion(txReceipt.getRunningHashVersion());
+		}
+		if(txReceipt.getNewTotalSupply() >= 0) {
+			builder.setNewTotalSupply(txReceipt.newTotalSupply);
 		}
 		return builder.build();
 	}
