@@ -75,6 +75,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 	private HapiApiSpec validateChangesAfterReconnect() {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
 		final String transactionFeeid = "authorizedTxn";
+		final String nonUpdatableFile = "nonUpdatableFile";
 		final long newFee = 159_588_904;
 
 		return customHapiSpec("validateChangesAfterReconnect")
@@ -95,12 +96,12 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("minimumAutoRenewDuration", "20")),
-
-						fileCreate("effectivelyImmutable")
-								.contents("Can't touch me!"),
 						fileUpdate(API_PERMISSIONS)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("updateFile", "2-50")),
+
+						fileCreate(nonUpdatableFile)
+								.contents("Cannot update file because of the new api permissions"),
 
 						fileUpdate(EXCHANGE_RATES)
 								.contents(
@@ -142,7 +143,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 								.payingWith(MASTER)
 								.hasContents(fileInfoRegistry),
 
-						fileUpdate("effectivelyImmutable")
+						fileUpdate(nonUpdatableFile)
 								.setNode("0.0.6")
 								.hasPrecheck(NOT_SUPPORTED),
 
