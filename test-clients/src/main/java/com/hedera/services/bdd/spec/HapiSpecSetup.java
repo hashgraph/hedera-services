@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -325,6 +326,9 @@ public class HapiSpecSetup {
 	public Integer numOpFinisherThreads() { return props.getInteger("num.opFinisher.threads"); }
 	public String persistentEntitiesDirPath() {
 		return props.get("persistentEntities.dir.path");
+	}
+	public boolean requiresPersistentEntities() {
+		return StringUtils.isNotEmpty(persistentEntitiesDirPath());
 	}
 	public boolean updateManifestsForCreatedPersistentEntities() {
 		return props.getBoolean("persistentEntities.updateCreatedManifests");

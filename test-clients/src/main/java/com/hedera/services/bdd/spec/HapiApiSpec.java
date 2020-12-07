@@ -213,10 +213,12 @@ public class HapiApiSpec implements Runnable {
 				return false;
 			}
 		}
-		entities = new EntityManager(this);
-		if (!entities.init()) {
-			status = ERROR;
-			return false;
+		if (hapiSetup.requiresPersistentEntities()) {
+			entities = new EntityManager(this);
+			if (!entities.init()) {
+				status = ERROR;
+				return false;
+			}
 		}
 		return true;
 	}
@@ -233,11 +235,14 @@ public class HapiApiSpec implements Runnable {
 			return;
 		}
 
-		List<HapiSpecOperation> creationOps = entities.requiredCreations();
-		if (!creationOps.isEmpty()) {
-			log.info("Inserting {} required creations to establish persistent entities.", creationOps.size());
-			ops = Stream.concat(creationOps.stream(), ops.stream()).collect(toList());
+		if (hapiSetup.requiresPersistentEntities()) {
+			List<HapiSpecOperation> creationOps = entities.requiredCreations();
+			if (!creationOps.isEmpty()) {
+				log.info("Inserting {} required creations to establish persistent entities.", creationOps.size());
+				ops = Stream.concat(creationOps.stream(), ops.stream()).collect(toList());
+			}
 		}
+
 		status = RUNNING;
 		if (hapiSetup.statusDeferredResolvesDoAsync()) {
 			startFinalizingOps();
@@ -267,7 +272,7 @@ public class HapiApiSpec implements Runnable {
 		tearDown();
 		log.info(logPrefix() + "final status: " + status + "!");
 
-		if (hapiSetup.updateManifestsForCreatedPersistentEntities()) {
+		if (hapiSetup.requiresPersistentEntities() && hapiSetup.updateManifestsForCreatedPersistentEntities()) {
 			entities.updateCreatedEntityManifests();
 		}
 
