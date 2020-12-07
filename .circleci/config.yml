@@ -1,7 +1,7 @@
 version: 2.1
 
-orbs:
-  gcp-cli: circleci/gcp-cli@2.1.0
+#orbs:
+#  gcp-cli: circleci/gcp-cli@2.1.0
 
 commands:
   install-tools:
@@ -32,9 +32,8 @@ commands:
           name: Authenticate gcloud cli
           command: |
             echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
-            echo "export PATH=/root/google-cloud-sdk/bin:$PATH" >> $BASH_ENV
-            source /root/.bashrc;
-            source /root/google-cloud-sdk/completion.bash.inc;
+#            echo "export PATH=/root/google-cloud-sdk/bin:$PATH" >> $BASH_ENV
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc;
             source /root/google-cloud-sdk/path.bash.inc;
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
@@ -911,11 +910,11 @@ workflows:
   AWS-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "15 4 * * *"
+          cron: "37 22 * * *"
           filters:
             branches:
               only:
-                - master
+                - set-up-gcp
     jobs:
       - build-platform-and-services
       - run-basic-suiterunner-tests:
@@ -927,6 +926,7 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Daily-Services-Comp-Basic-4N-1C"
+          test-name: "AWS-Daily-Services-Comp-Basic-4N-1C.json"
 
   AWS-Daily-Services-Crypto-Update-5N-1C:
     triggers:
@@ -1156,14 +1156,14 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "20 21 * * *"
+          cron: "38 22 * * *"
           filters:
             branches:
               only:
                 - set-up-gcp
     jobs:
       - build-platform-and-services
-      - gcp-basic-suiterunner-tests:
+      - run-basic-suiterunner-tests:
           context: Slack
           requires:
             - build-platform-and-services
@@ -1632,6 +1632,9 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Daily-Services-Comp-Basic-4N-1C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
@@ -1640,7 +1643,10 @@ jobs:
           name: Run various suites in SuiteRunner
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Basic-4N-1C.json /repo
+            source /root/.bashrc;
+            source /root/google-cloud-sdk/completion.bash.inc;
+            source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.test-name >> /repo
 
       - run:
           name: Sync results of SuiteRunner suites to AWS
