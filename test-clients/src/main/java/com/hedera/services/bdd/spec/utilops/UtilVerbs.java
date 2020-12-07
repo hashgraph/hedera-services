@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.utilops;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -86,7 +85,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
@@ -428,6 +426,19 @@ public class UtilVerbs {
 			ByteString bt = ByteString.copyFrom(spec.registry().getBytes(registryEntry));
 			CustomSpecAssert.allRunFor(spec, updateLargeFile(payer, fileName, bt));
 		});
+	}
+
+	public static HapiSpecOperation saveFileToRegistry(String fileName, String registryEntry) {
+		return getFileContents(fileName)
+				.payingWith(GENESIS)
+				.saveToRegistry(registryEntry);
+	}
+
+	public static HapiSpecOperation restoreFileFromRegistry(String fileName, String registryEntry) {
+		return fileUpdate(fileName)
+				.payingWith(GENESIS)
+				.contents(spec ->
+						ByteString.copyFrom(spec.registry().getBytes(registryEntry)));
 	}
 
 	public static HapiSpecOperation contractListWithPropertiesInheritedFrom(
