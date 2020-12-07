@@ -25,6 +25,7 @@ commands:
       - run:
           name: Install gcloud cli
           command: |
+            apt-get update || apt-get update;
             curl https://sdk.cloud.google.com > install.sh;
             bash install.sh --disable-prompts;
             source ~/google-cloud-sdk/path.bash.inc;
@@ -1150,17 +1151,17 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "14 15 * * *"
+          cron: "35 15 * * *"
           filters:
             branches:
               only:
                 - set-up-gcp
     jobs:
-      - build-platform-and-services
+#      - build-platform-and-services
       - gcp-basic-suiterunner-tests:
           context: Slack
-          requires:
-            - build-platform-and-services
+#          requires:
+#            - build-platform-and-services
           pre-steps:
             - install-tools
             - attach_workspace:
