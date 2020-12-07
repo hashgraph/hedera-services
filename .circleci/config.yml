@@ -1154,7 +1154,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "33 16 * * *"
+          cron: "59 16 * * *"
           filters:
             branches:
               only:
@@ -1661,6 +1661,8 @@ jobs:
       - run:
           name: Run GCP various suites in SuiteRunner
           command: |
+            echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
+            source /root/.bashrc;
             cd /swirlds-platform/regression;
             ./regression_services_circleci.sh configs/services/suites/daily/GCP-Daily-Services-Comp-Basic-4N-1C.json /repo
 
