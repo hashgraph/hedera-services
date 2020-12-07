@@ -28,7 +28,9 @@ commands:
             apt-get update || apt-get update;
             curl https://sdk.cloud.google.com > install.sh;
             bash install.sh --disable-prompts;
-            source ~/google-cloud-sdk/path.bash.inc;
+            echo 'export PATH = $PATH:/go/google-cloud-sdk/bin' >>$BASH_ENV;
+            source /root/google-cloud-sdk/completion.bash.inc;
+            source /root/google-cloud-sdk/path.bash.inc;
       - run:
           name: Authenticate gcloud cli
           command: |
@@ -1151,7 +1153,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "35 15 * * *"
+          cron: "57 15 * * *"
           filters:
             branches:
               only:
