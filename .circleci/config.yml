@@ -38,7 +38,7 @@ commands:
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
             gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
-             cloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
+            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
 
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
@@ -1154,17 +1154,17 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "27 16 * * *"
+          cron: "33 16 * * *"
           filters:
             branches:
               only:
                 - set-up-gcp
     jobs:
-#      - build-platform-and-services
+      - build-platform-and-services
       - gcp-basic-suiterunner-tests:
           context: Slack
-#          requires:
-#            - build-platform-and-services
+          requires:
+            - build-platform-and-services
           pre-steps:
             - install-tools
             - attach_workspace:
