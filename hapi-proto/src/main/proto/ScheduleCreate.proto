@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package proto;
+
+/*-
+ * ‌
+ * Hedera Network Services Protobuf
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import "BasicTypes.proto";
+import "Timestamp.proto";
+
+message ScheduleCreateTransactionBody {
+  bytes transactionBody = 1; // The transaction serialized into bytes that must be signed
+  Key adminKey = 2; // (optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed)
+  Signers signers = 3; // The accounts which are able to authorise and sign the scheduled transaction. This could be a Threshold list of accounts or a simple Account list. Serves as definition to who should sign this scheduled TX in order for it to be executed.
+  SignatureMap signatureMap = 4; // (optional) The signature map containing the signature of at least one key defined in the singKey `KeyList` on transaction creation
+  bool executeImmediately = 5; // The indicator that sets whether the transaction must be executed as soon as possible (once signatures are gathered)
+  Timestamp executeAtTime = 6; // NOT SUPPORTED IN MVP!!! The time at which the transaction will be attempted to be executed
+}
+
+message Signers {
+  oneof signers {
+    ThresholdAccounts thresholdAccounts = 1;
+    AccountsList accounts = 2;
+  }
+}
+
+message ThresholdAccounts {
+  uint32 threshold = 1;
+  AccountsList accounts = 2;
+}
+
+message AccountsList {
+  repeated AccountID accounts = 1; // List of accounts
+}
