@@ -32,9 +32,10 @@ commands:
           name: Authenticate gcloud cli
           command: |
             echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
+            echo "export PATH=/root/google-cloud-sdk/bin:$PATH" >> $BASH_ENV
             source /root/.bashrc;
-            source /root/google-cloud-sdk/completion.bash.inc;
-            source /root/google-cloud-sdk/path.bash.inc;
+#            source /root/google-cloud-sdk/completion.bash.inc;
+#            source /root/google-cloud-sdk/path.bash.inc;
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
             gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
@@ -877,6 +878,7 @@ executors:
       IN_CIRCLE_CI: true
       REPO: /repo
       WORKFLOW-NAME: << parameters.workflow-name >>
+      BASH_ENV: /root/.bashrc
     working_directory: /repo
 
   ci-test-executor:
@@ -1154,7 +1156,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "49 17 * * *"
+          cron: "33 18 * * *"
           filters:
             branches:
               only:
