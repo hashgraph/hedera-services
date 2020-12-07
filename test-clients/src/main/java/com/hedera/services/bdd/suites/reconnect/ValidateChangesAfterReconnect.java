@@ -94,10 +94,10 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 				)
 				.when(
 						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
+								.payingWith(GENESIS)
 								.overridingProps(Map.of("minimumAutoRenewDuration", "20")),
 						fileUpdate(API_PERMISSIONS)
-								.payingWith(ADDRESS_BOOK_CONTROL)
+								.payingWith(GENESIS)
 								.overridingProps(Map.of("updateFile", "2-50")),
 
 						fileCreate(nonUpdatableFile)
@@ -149,7 +149,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 
 						fileCreate("contractFile")
 								.setNode("0.0.6")
-								.payingWith(ADDRESS_BOOK_CONTROL)
+								.payingWith(GENESIS)
 								.path(ContractResources.VALID_BYTECODE_PATH),
 						contractCreate("testContract")
 								.bytecode("contractFile")
