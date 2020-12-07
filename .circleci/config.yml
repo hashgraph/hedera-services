@@ -29,12 +29,12 @@ commands:
             bash install.sh --disable-prompts;
             source ~/google-cloud-sdk/path.bash.inc;
       - run:
-        name: Authenticate gcloud cli
-        command: |
-            echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
-            gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
-            gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
-            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
+          name: Authenticate gcloud cli
+          command: |
+             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
+             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
+             gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
+             gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
 
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
@@ -1150,7 +1150,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "12 15 * * *"
+          cron: "14 15 * * *"
           filters:
             branches:
               only:
