@@ -22,9 +22,7 @@ package com.hedera.services.bdd.suites.reconnect;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
-import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -46,6 +44,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.makeFree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restoreFileFromRegistry;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.saveFileToRegistry;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
@@ -57,15 +57,13 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(ValidateChangesAfterReconnect.class);
 
-	final String PATH_TO_VALID_BYTECODE = HapiSpecSetup.getDefaultInstance().defaultContractPath();
-
 	public static void main(String... args) {
 		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
 	}
 
 	private static final String APP_FILE_REGISTRY = "AppPropertiesInRegistry";
-
 	private static final String API_FILE_REGISTRY = "ApiPropertiesInRegistry";
+	private static final String RATES_FILE_REGISTRY = "ExchangeRatesInRegistry";
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
@@ -85,14 +83,15 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 						"txn.start.offset.secs", "-5")
 				)
 				.given(
+						saveFileToRegistry(APP_PROPERTIES, APP_FILE_REGISTRY),
+						saveFileToRegistry(API_PERMISSIONS, API_FILE_REGISTRY),
+						saveFileToRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY),
 						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode()
 				)
 				.when(
-						saveApiPermissionsInRegistry(),
-						saveAppPropertiesInRegistry(),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("minimumAutoRenewDuration", "20")),
@@ -150,7 +149,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 						fileCreate("contractFile")
 								.setNode("0.0.6")
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.path(PATH_TO_VALID_BYTECODE),
+								.path(ContractResources.VALID_BYTECODE_PATH),
 						contractCreate("testContract")
 								.bytecode("contractFile")
 								.autoRenewSecs(15)
@@ -172,44 +171,10 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 								.setNode("0.0.6")
 								.hasAnswerOnlyPrecheck(OK),
 
-						restoreApiPermissionsFromRegistry(),
-						restoreAppPropertiesFromRegistry()
+						restoreFileFromRegistry(APP_PROPERTIES, APP_FILE_REGISTRY),
+						restoreFileFromRegistry(API_PERMISSIONS, API_FILE_REGISTRY),
+						restoreFileFromRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY)
 				);
-	}
-
-	private HapiGetFileContents saveApiPermissionsInRegistry() {
-		return getFileContents(API_PERMISSIONS)
-				.logged()
-				.setNode("0.0.3")
-				.payingWith(MASTER)
-				.saveToRegistry(API_FILE_REGISTRY);
-	}
-
-	private HapiFileUpdate restoreApiPermissionsFromRegistry() {
-		return fileUpdate(API_PERMISSIONS)
-				.logged()
-				.setNode("0.0.3")
-				.payingWith(MASTER)
-				.contents(spec ->
-						ByteString.copyFrom(spec.registry().getBytes(API_FILE_REGISTRY)));
-	}
-
-	private HapiGetFileContents saveAppPropertiesInRegistry() {
-		return getFileContents(APP_PROPERTIES)
-				.logged()
-				.setNode("0.0.3")
-				.payingWith(MASTER)
-				.saveToRegistry(APP_FILE_REGISTRY);
-	}
-
-
-	private HapiFileUpdate restoreAppPropertiesFromRegistry() {
-		return fileUpdate(APP_PROPERTIES)
-				.logged()
-				.setNode("0.0.3")
-				.payingWith(MASTER)
-				.contents(spec ->
-						ByteString.copyFrom(spec.registry().getBytes(APP_FILE_REGISTRY)));
 	}
 
 	@Override
