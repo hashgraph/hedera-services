@@ -28,7 +28,8 @@ commands:
             apt-get update || apt-get update;
             curl https://sdk.cloud.google.com > install.sh;
             bash install.sh --disable-prompts;
-            echo 'export PATH = $PATH:/go/google-cloud-sdk/bin' >>$BASH_ENV;
+            export PATH="/root/google-cloud-sdk/bin:$PATH";
+            source /root/.bashrc;
             source /root/google-cloud-sdk/completion.bash.inc;
             source /root/google-cloud-sdk/path.bash.inc;
       - run:
