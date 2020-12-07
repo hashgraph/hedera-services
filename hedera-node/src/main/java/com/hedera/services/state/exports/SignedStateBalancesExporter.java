@@ -119,7 +119,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 					expectedFloat));
 		}
 
-		var csvLoc = lastUsedExportDir + when + "_Balances.csv";
+		var csvLoc = lastUsedExportDir + (when + "_Balances.csv").replace(":", "_");
 		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, when);
 		if (exportSucceeded) {
 			tryToSign(csvLoc);
