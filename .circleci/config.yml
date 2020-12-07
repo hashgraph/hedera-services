@@ -28,7 +28,7 @@ commands:
             curl https://sdk.cloud.google.com > install.sh;
             bash install.sh --disable-prompts;
             source ~/google-cloud-sdk/path.bash.inc;
-      run:
+      - run:
         name: Authenticate gcloud cli
         command: |
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
@@ -1150,7 +1150,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "9 15 * * *"
+          cron: "12 15 * * *"
           filters:
             branches:
               only:
