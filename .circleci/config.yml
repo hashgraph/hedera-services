@@ -1,8 +1,5 @@
 version: 2.1
 
-#orbs:
-#  gcp-cli: circleci/gcp-cli@2.1.0
-
 commands:
   install-tools:
     description: Install tools for JRS regression
@@ -32,7 +29,7 @@ commands:
           name: Authenticate gcloud cli
           command: |
             echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
-#            echo "export PATH=/root/google-cloud-sdk/bin:$PATH" >> $BASH_ENV
+            echo "export PATH=/root/google-cloud-sdk/bin:$PATH" >> $BASH_ENV
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc;
             source /root/google-cloud-sdk/path.bash.inc;
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
@@ -910,7 +907,7 @@ workflows:
   AWS-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "37 22 * * *"
+          cron: "40 22 * * *"
           filters:
             branches:
               only:
@@ -1156,7 +1153,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "38 22 * * *"
+          cron: "41 22 * * *"
           filters:
             branches:
               only:
@@ -1980,14 +1977,6 @@ jobs:
 
       - store_artifacts:
           path: /results.tar.gz
-
-#  install_and_configure_gcp_cli:
-#    executor:
-#      name: build-executor
-#    steps:
-#      - run:
-#
-##      - gcp-cli/install
 
   build-platform-and-services:
     parameters:
