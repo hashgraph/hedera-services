@@ -31,7 +31,7 @@ commands:
       - run:
           name: Authenticate gcloud cli
           command: |
-            export PATH="/root/google-cloud-sdk/bin:$PATH";
+            echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
             source /root/.bashrc;
             source /root/google-cloud-sdk/completion.bash.inc;
             source /root/google-cloud-sdk/path.bash.inc;
@@ -1154,7 +1154,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "22 16 * * *"
+          cron: "27 16 * * *"
           filters:
             branches:
               only:
