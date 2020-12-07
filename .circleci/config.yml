@@ -33,7 +33,7 @@ commands:
           command: |
             echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
             echo "export PATH=/root/google-cloud-sdk/bin:$PATH" >> $BASH_ENV
-            source /root/.bashrc; source /root/.bash_profile;
+            source /root/.bashrc;
             source /root/google-cloud-sdk/completion.bash.inc;
             source /root/google-cloud-sdk/path.bash.inc;
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
@@ -1156,7 +1156,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "45 18 * * *"
+          cron: "57 18 * * *"
           filters:
             branches:
               only:
@@ -1664,7 +1664,7 @@ jobs:
           name: Run GCP various suites in SuiteRunner
           command: |
             cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/.bash_profile;
+            source /root/.bashrc;
             source /root/google-cloud-sdk/completion.bash.inc;
             source /root/google-cloud-sdk/path.bash.inc;
             ./regression_services_circleci.sh configs/services/suites/daily/GCP-Daily-Services-Comp-Basic-4N-1C.json /repo
