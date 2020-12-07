@@ -28,17 +28,17 @@ commands:
             apt-get update || apt-get update;
             curl https://sdk.cloud.google.com > install.sh;
             bash install.sh --disable-prompts;
+      - run:
+          name: Authenticate gcloud cli
+          command: |
             export PATH="/root/google-cloud-sdk/bin:$PATH";
             source /root/.bashrc;
             source /root/google-cloud-sdk/completion.bash.inc;
             source /root/google-cloud-sdk/path.bash.inc;
-      - run:
-          name: Authenticate gcloud cli
-          command: |
-             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
-             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
-             gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
-             gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
+            echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
+            gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
+            gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
+             cloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
 
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
@@ -1154,7 +1154,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "12 16 * * *"
+          cron: "22 16 * * *"
           filters:
             branches:
               only:
