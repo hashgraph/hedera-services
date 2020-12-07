@@ -26,6 +26,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +56,7 @@ public class DeprecatedContractKeySuite extends HapiApiSuite {
 	private HapiApiSpec createWithDeprecatedKeyCreatesImmutableContract() {
 		return defaultHapiSpec("CreateWithDeprecatedKeyCreatesImmutableContract")
 				.given(
-						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE)
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH)
 				).when(
 						contractCreate("target").bytecode("bytecode").useDeprecatedAdminKey()
 				).then(
@@ -65,7 +67,7 @@ public class DeprecatedContractKeySuite extends HapiApiSuite {
 	private HapiApiSpec givenAdminKeyMustBeValid() {
 		return defaultHapiSpec("GivenAdminKeyMustBeValid")
 				.given(
-						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						contractCreate("target").bytecode("bytecode")
 				).when(
 						getContractInfo("target").logged()

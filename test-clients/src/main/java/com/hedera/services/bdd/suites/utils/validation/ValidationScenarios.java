@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.fees.Payment;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -152,21 +153,8 @@ import static java.util.stream.Collectors.toMap;
 
 public class ValidationScenarios extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
-
 	private static final String DEFAULT_CONFIG_LOC = "config.yml";
-
-	private static long TINYBARS_PER_HBAR = 100_000_000L;
-
-	private static String LUCKY_NO_LOOKUP_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"pick\"," +
-			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false," +
-			"\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static String BELIEVE_IN_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\"," +
-			"\"name\":\"no\",\"type\":\"uint32\"}],\"na    me\":\"believeIn\",\"outputs\":[],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static String CONSPICUOUS_DONATION_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\"," +
-			"\"name\":\"toNum\",\"type\":\"uint32\"},{\"internalType\":\"string\",\"name\":\"saying\"," +
-			"\"type\":\"string\"}],\"name\":\"donate\",\"outputs\":[],\"payable\":true," +
-			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	private static final long TINYBARS_PER_HBAR = 100_000_000L;
 
 	enum Scenario {
 		CRYPTO, FILE, CONTRACT, CONSENSUS,
@@ -253,7 +241,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							withOpContext((spec, opLog) -> {
 								if (feeSnapshots.getOpsConfig().getBytecode() == null) {
 									var bytecodeCreate = fileCreate("unusedName")
-											.fromResource("Multipurpose.bin");
+											.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH);
 									allRunFor(spec, bytecodeCreate);
 									feeSnapshots.getOpsConfig().setBytecode(bytecodeCreate.numOfCreatedFile());
 								}
@@ -452,7 +440,7 @@ public class ValidationScenarios extends HapiApiSuite {
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME)
 									.sending(1L),
-							contractCallLocal("contractTbd", LUCKY_NO_LOOKUP_ABI),
+							contractCallLocal("contractTbd", ContractResources.LUCKY_NO_LOOKUP_ABI),
 							contractUpdate("contractTbd")
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME)
@@ -1185,7 +1173,7 @@ public class ValidationScenarios extends HapiApiSuite {
 									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.sending(1L),
-							contractCall(PERSISTENT_CONTRACT_NAME, CONSPICUOUS_DONATION_ABI, donationArgs)
+							contractCall(PERSISTENT_CONTRACT_NAME, ContractResources.CONSPICUOUS_DONATION_ABI, donationArgs)
 									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.via("donation"),
@@ -1269,11 +1257,11 @@ public class ValidationScenarios extends HapiApiSuite {
 				allRunFor(spec, bytecodeCheck);
 
 				Object[] expected = new Object[] { BigInteger.valueOf(luckyNo) };
-				var luckyNoCheck = contractCallLocal(literal, LUCKY_NO_LOOKUP_ABI)
+				var luckyNoCheck = contractCallLocal(literal, ContractResources.LUCKY_NO_LOOKUP_ABI)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.has(resultWith()
 								.resultThruAbi(
-										LUCKY_NO_LOOKUP_ABI,
+										ContractResources.LUCKY_NO_LOOKUP_ABI,
 										isLiteralResult(expected)));
 				allRunFor(spec, luckyNoCheck);
 
@@ -1319,7 +1307,7 @@ public class ValidationScenarios extends HapiApiSuite {
 
 				Integer numberToUse = (luckyNo == null) ? DEFAULT_LUCKY_NUMBER : luckyNo;
 				Object[] args = new Object[] { Integer.valueOf(numberToUse) };
-				var setLucky = contractCall(PERSISTENT_CONTRACT_NAME, BELIEVE_IN_ABI, args);
+				var setLucky = contractCall(PERSISTENT_CONTRACT_NAME, ContractResources.BELIEVE_IN_ABI, args);
 				allRunFor(spec, setLucky);
 
 				var createdNo = create.numOfCreatedContract();

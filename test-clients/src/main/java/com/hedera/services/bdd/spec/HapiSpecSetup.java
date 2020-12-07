@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -154,7 +155,7 @@ public class HapiSpecSetup {
 		return props.getLong("default.contract.balance.tinyBars");
 	}
 	public String defaultContractPath() {
-		return props.get("default.contract.path");
+		return ContractResources.bytecodePath(props.get("default.contract.bytecode"));
 	}
 	public long defaultCreateGas() {
 		return props.getLong("default.create.gas");

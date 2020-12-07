@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -43,20 +44,8 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import org.ethereum.core.CallTransaction;
 import org.junit.Assert;
 
-
 public class SmartContractInlineAssemblySpec extends HapiApiSuite {
-
 	private static final Logger log = LogManager.getLogger(SmartContractFailFirstSpec.class);
-
-	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/simpleStorage.bin";
-	final String PATH_TO_INLINE_TEST_BYTECODE = "src/main/resource/inlineTest.bin";
-
-	private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-
-	private static final String SC_GET_CODE_SIZE_ABI="{\"constant\":true,\"inputs\":[{\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"getCodeSize\",\"outputs\":[{\"name\":\"_size\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String SC_GET_STORE_ABI="{\"constant\":true,\"inputs\":[],\"name\":\"getStore\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String SC_SET_STORE_ABI="{\"constant\":false,\"inputs\":[{\"name\":\"inVal\",\"type\":\"bytes32\"}],\"name\":\"setStore\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		new org.ethereum.crypto.HashUtil();
@@ -78,9 +67,9 @@ public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 						cryptoCreate("payer")
 								.balance( 10_000_000_000_000L),
 						fileCreate("simpleStorageByteCode")
-								.path(PATH_TO_SIMPLE_STORAGE_BYTECODE),
+								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
 						fileCreate("inlineTestByteCode")
-								.path(PATH_TO_INLINE_TEST_BYTECODE)
+								.path(ContractResources.INLINE_TEST_BYTECODE_PATH)
 
 				).when(
 						contractCreate("simpleStorageContract")
@@ -108,7 +97,7 @@ public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 							ContractInfo simpleStorageContractInfo = spec.registry().getContractInfo("simpleStorageKey");
 							String contractAddress = simpleStorageContractInfo.getContractAccountID();
 
-							var subop3 = contractCallLocal("inlineTestContract", SC_GET_CODE_SIZE_ABI, contractAddress)
+							var subop3 = contractCallLocal("inlineTestContract", ContractResources.GET_CODE_SIZE_ABI, contractAddress)
 									.saveResultTo("simpleStorageContractCodeSizeBytes")
 									.gas(300_000L);
 
@@ -116,7 +105,7 @@ public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 
 							byte[] 	result = spec.registry().getBytes("simpleStorageContractCodeSizeBytes");
 
-							String funcJson = SC_GET_CODE_SIZE_ABI.replaceAll("'", "\"");
+							String funcJson = ContractResources.GET_CODE_SIZE_ABI.replaceAll("'", "\"");
 							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
 
 							int codeSize = 0;
@@ -137,7 +126,7 @@ public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 							AccountInfo payerAccountInfo = spec.registry().getAccountInfo("payerAccountInfo");
 							String acctAddress = payerAccountInfo.getContractAccountID();
 
-							var subop4 = contractCallLocal("inlineTestContract", SC_GET_CODE_SIZE_ABI, acctAddress)
+							var subop4 = contractCallLocal("inlineTestContract", ContractResources.GET_CODE_SIZE_ABI, acctAddress)
 									.saveResultTo("fakeCodeSizeBytes")
 									.gas(300_000L);
 
