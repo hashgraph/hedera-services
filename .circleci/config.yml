@@ -867,6 +867,7 @@ executors:
           POSTGRES_USER: swirlds
           POSTGRES_PASSWORD: password
           POSTGRES_DB: fcfs
+      - image: google/cloud-sdk
     environment:
       MAVEN_OPTS: -Xmx3200m
       IN_CIRCLE_CI: true
@@ -1149,7 +1150,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-4N-1C:
     triggers:
       - schedule:
-          cron: "51 20 * * *"
+          cron: "9 15 * * *"
           filters:
             branches:
               only:
