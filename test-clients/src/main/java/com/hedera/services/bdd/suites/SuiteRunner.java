@@ -64,6 +64,7 @@ import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.issues.Issue2144Spec;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
+import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.ContractQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.CryptoQueriesStressTests;
@@ -77,6 +78,7 @@ import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.perf.TokenRelStatusChanges;
 import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
 import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
@@ -129,6 +131,7 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.groupingBy;
@@ -146,7 +149,7 @@ public class SuiteRunner {
 
 	private static final int EXPECTED_DEV_NETWORK_SIZE = 3;
 	private static final int EXPECTED_CI_NETWORK_SIZE = 4;
-	private static final String DEFAULT_PAYER_ID = "2";
+	private static final String DEFAULT_PAYER_ID = "0.0.2";
 
 	public static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
 
@@ -201,6 +204,7 @@ public class SuiteRunner {
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
 		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
+		put("TokenRelChangesLoad", aof(new TokenRelStatusChanges()));
 		put("FileUpdateLoadTest", aof(new FileUpdateLoadTest()));
 		put("ContractCallLoadTest", aof(new ContractCallLoadTest()));
 		put("SubmitMessageLoadTest", aof(new SubmitMessageLoadTest()));
@@ -281,6 +285,7 @@ public class SuiteRunner {
 		put("ControlAccountsExemptForUpdates", aof(new SpecialAccountsAreExempted()));
 		/* System files. */
 		put("FetchSystemFiles", aof(new FetchSystemFiles()));
+		put("CannotDeleteSystemEntitiesSuite", aof(new CannotDeleteSystemEntitiesSuite()));
 		/* Throttling */
 		put("BucketThrottlingSpec", aof(new BucketThrottlingSpec()));
 		/* Network metadata. */
@@ -374,6 +379,9 @@ public class SuiteRunner {
 			Thread.sleep(r.nextInt(5000));
 			new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
 			Thread.sleep(2000);
+			if(!isIdLiteral(payerId)){
+				payerId = DEFAULT_PAYER_ID;
+			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

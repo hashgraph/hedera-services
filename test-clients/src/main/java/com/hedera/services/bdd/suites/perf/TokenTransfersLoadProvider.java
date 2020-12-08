@@ -52,6 +52,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
+import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static java.util.Map.entry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -78,18 +80,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 	private HapiApiSpec runTokenTransfers() {
 		return HapiApiSpec.defaultHapiSpec("RunTokenTransfers")
 				.given(
-						withOpContext((spec, opLog) -> {
-							var ciProps = spec.setup().ciPropertiesMap();
-							if (ciProps.has("duration")) {
-								duration.set(ciProps.getLong("duration"));
-							}
-							if (ciProps.has("unit")) {
-								unit.set(ciProps.getTimeUnit("unit"));
-							}
-							if (ciProps.has("maxOpsPerSec")) {
-								maxOpsPerSec.set(ciProps.getInteger("maxOpsPerSec"));
-							}
-						})
+						stdMgmtOf(duration, unit, maxOpsPerSec)
 				).when().then(
 						runWithProvider(tokenTransfersFactory())
 								.lasting(duration::get, unit::get)
@@ -119,26 +110,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				var initialSupply =
 						(sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
 				List<HapiSpecOperation> initializers = new ArrayList<>();
-				initializers.add(
-						fileUpdate(API_PERMISSIONS)
-								.fee(9_999_999_999L)
-								.payingWith(GENESIS)
-								.overridingProps(Map.ofEntries(
-										entry("tokenCreate", "0-*"),
-										entry("tokenFreezeAccount", "0-*"),
-										entry("tokenUnfreezeAccount", "0-*"),
-										entry("tokenGrantKycToAccount", "0-*"),
-										entry("tokenRevokeKycFromAccount", "0-*"),
-										entry("tokenDelete", "0-*"),
-										entry("tokenMint", "0-*"),
-										entry("tokenBurn", "0-*"),
-										entry("tokenAccountWipe", "0-*"),
-										entry("tokenUpdate", "0-*"),
-										entry("tokenGetInfo", "0-*"),
-										entry("tokenAssociateToAccount", "0-*"),
-										entry("tokenDissociateFromAccount", "0-*")
-								))
-				);
+				initializers.add(tokenOpsEnablement());
 				initializers.add(
 						fileUpdate(APP_PROPERTIES)
 								.fee(9_999_999_999L)

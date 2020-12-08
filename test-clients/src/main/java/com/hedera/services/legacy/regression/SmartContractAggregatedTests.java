@@ -21,7 +21,6 @@ package com.hedera.services.legacy.regression;
  */
 
 
-import com.hedera.services.legacy.smartcontract.OCTokenIT;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.builder.RequestBuilder;
 
