@@ -413,7 +413,6 @@ public class UtilVerbs {
 		String loc = "../hedera-node/src/main/resources/FeeSchedule.json";
 		try {
 			var stylized = Files.readString(Paths.get(loc));
-			System.out.println(stylized);
 			return ByteString.copyFrom(serde.toRawFile(stylized));
 		} catch (IOException e) {
 			throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);

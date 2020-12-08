@@ -146,7 +146,6 @@ public class FeesAndRatesProvider {
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
 		CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
 		feeSchedule = wrapper.getCurrentFeeSchedule();
-		System.out.println(feeSchedule);
 		log.info("The fee schedule covers " + feeSchedule.getTransactionFeeScheduleList().size() + " ops.");
 	}
 

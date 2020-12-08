@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.perf;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -112,7 +113,11 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						(sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
 				List<HapiSpecOperation> initializers = new ArrayList<>();
 				initializers.add(tokenOpsEnablement());
-				initializers.add(uploadDefaultFeeSchedules(GENESIS));
+				/* Temporary, can be removed after the public testnet state used in
+				   restart tests includes a fee schedule with HTS resource prices. */
+				if (spec.setup().defaultNode().equals(HapiPropertySource.asAccount("0.0.3"))) {
+					initializers.add(uploadDefaultFeeSchedules(GENESIS));
+				}
 				initializers.add(
 						fileUpdate(APP_PROPERTIES)
 								.fee(9_999_999_999L)
