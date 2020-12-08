@@ -458,6 +458,19 @@ public class UtilVerbs {
 		});
 	}
 
+	public static HapiSpecOperation saveFileToRegistry(String fileName, String registryEntry) {
+		return getFileContents(fileName)
+				.payingWith(GENESIS)
+				.saveToRegistry(registryEntry);
+	}
+
+	public static HapiSpecOperation restoreFileFromRegistry(String fileName, String registryEntry) {
+		return fileUpdate(fileName)
+				.payingWith(GENESIS)
+				.contents(spec ->
+						ByteString.copyFrom(spec.registry().getBytes(registryEntry)));
+	}
+
 	public static HapiSpecOperation contractListWithPropertiesInheritedFrom(
 			final String contractList,
 			final long expectedSize,
