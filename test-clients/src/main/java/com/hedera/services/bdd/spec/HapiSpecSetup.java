@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -194,6 +195,12 @@ public class HapiSpecSetup {
 	public long defaultNodePaymentTinyBars() {
 		return props.getLong("default.nodePayment.tinyBars");
 	}
+	public String defaultPayerPemKeyLoc() {
+		return props.get("default.payer.pemKeyLoc");
+	}
+	public String defaultPayerPemKeyPassphrase() {
+		return props.get("default.payer.pemKeyPassphrase");
+	}
 	public AccountID defaultPayer() {
 		return props.getAccount("default.payer");
 	}
@@ -318,6 +325,15 @@ public class HapiSpecSetup {
 		return props.getNodeSelector("node.selector");
 	}
 	public Integer numOpFinisherThreads() { return props.getInteger("num.opFinisher.threads"); }
+	public String persistentEntitiesDirPath() {
+		return props.get("persistentEntities.dir.path");
+	}
+	public boolean requiresPersistentEntities() {
+		return StringUtils.isNotEmpty(persistentEntitiesDirPath());
+	}
+	public boolean updateManifestsForCreatedPersistentEntities() {
+		return props.getBoolean("persistentEntities.updateCreatedManifests");
+	}
 	public Integer port() {
 		return props.getInteger("port");
 	}

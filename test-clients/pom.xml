@@ -19,6 +19,7 @@
     <bcpkix-jdk15on.version>1.61</bcpkix-jdk15on.version>
     <bcprov-jdk15on.version>1.61</bcprov-jdk15on.version>
     <BIP39.version>2019.01.27</BIP39.version>
+    <picocli.version>4.5.2</picocli.version>
     <commons-collections4.version>4.1</commons-collections4.version>
     <sshj.version>0.27.0</sshj.version>
     <snakeyaml.version>1.26</snakeyaml.version>
@@ -66,6 +67,18 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>info.picocli</groupId>
+              <artifactId>picocli-codegen</artifactId>
+              <version>${picocli.version}</version>
+            </path>
+          </annotationProcessorPaths>
+          <compilerArgs>
+            <arg>-Aproject=${project.groupId}/${project.artifactId}</arg>
+          </compilerArgs>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -121,6 +134,42 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <version>${maven-assembly.version}</version>
         <executions>
+          <execution>
+            <id>adhoc-jar</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>TokenTransfers</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifest>
+                  <mainClass>com.hedera.services.bdd.suites.perf.AdHocTokenTransfers</mainClass>
+                </manifest>
+              </archive>
+              <descriptors>
+                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
+            <id>puv-jar</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>puv</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifest>
+                  <mainClass>com.hedera.services.bdd.suites.validation.PostUpgradeValidation</mainClass>
+                </manifest>
+              </archive>
+              <descriptors>
+                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
           <execution>
             <id>tools-jar</id>
             <goals>
@@ -198,6 +247,11 @@
   </repositories>
 
   <dependencies>
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>${picocli.version}</version>
+    </dependency>
     <dependency>
       <groupId>io.github.novacrypto</groupId>
       <artifactId>BIP39</artifactId>

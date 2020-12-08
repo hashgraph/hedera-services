@@ -34,7 +34,7 @@ import static java.util.Map.*;
 public class MapPropertySource implements HapiPropertySource {
 	private static final Logger log = LogManager.getLogger(MapPropertySource.class);
 	private static final Set<String> KEYS_TO_CENSOR = Set.of(
-		"startupAccounts.literal"
+		"startupAccounts.literal", "default.payer.pemKeyPassphrase"
 	);
 
 	private final Map props;
