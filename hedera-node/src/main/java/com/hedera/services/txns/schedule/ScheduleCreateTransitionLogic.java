@@ -18,6 +18,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+// TODO: Implement store, validator, etc.
 public class ScheduleCreateTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
