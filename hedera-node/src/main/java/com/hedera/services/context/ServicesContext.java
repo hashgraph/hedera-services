@@ -1220,14 +1220,6 @@ public class ServicesContext {
 
 	public ScheduleStore scheduleStore() {
 		if (scheduleStore == null) {
-			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
-					new TransactionalLedger<>(
-							TokenRelProperty.class,
-							MerkleTokenRelStatus::new,
-							backingTokenRels(),
-							new ChangeSummaryManager<>());
-			tokenRelsLedger.setKeyComparator(RELATIONSHIP_COMPARATOR);
-			tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 			scheduleStore = new HederaScheduleStore();
 		}
 		return scheduleStore;
