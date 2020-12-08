@@ -94,6 +94,12 @@ public class SpecUtils {
 		return CommonUtils.base64encode(baos.toByteArray());
 	}
 
+	public static KeyPairObj asLegacyKp(KeyPair keyPair) {
+		var hexPublicKey = Hex.encodeHexString(keyPair.getPublic().getEncoded());
+		var hexPrivateKey = Hex.encodeHexString(keyPair.getPrivate().getEncoded());
+		return new KeyPairObj(hexPublicKey, hexPrivateKey);
+	}
+
 	public static void main(String... args) throws Exception {
 		var pemLoc = new File("pretend-genesis.pem");
 		var passphrase = "guessAgain";
