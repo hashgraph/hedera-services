@@ -527,6 +527,22 @@ commands:
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
                 '/repo/.circleci/scripts/scan-logs-for-iss.sh \
                     << parameters.iss-pattern-sh >>'
+
+  run-jrs-experiment:
+    description: Run JRS experiment json
+    parameters:
+      experiment-name:
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: Run experiment << parameters.experiment-name >>
+          no_output_timeout: 30m
+          command: |
+            cd /swirlds-platform/regression;
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.experiment-name >> /repo
+
   run-eet-suites:
     description: Run end-to-end tests
     parameters:
@@ -1838,12 +1854,8 @@ jobs:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run update node test
-          command: |
-            cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.test-name >> /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of update node tests to AWS
@@ -1866,12 +1878,8 @@ jobs:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - run:
-          name: Performance regression
-          command: |
-            cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.test-name >> /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of performance regression to AWS
@@ -1894,12 +1902,8 @@ jobs:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run network error regression tests
-          command: |
-            cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.test-name >> /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of network error regression to AWS
@@ -1987,13 +1991,8 @@ jobs:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run Software Update regression tests
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.test-name >> /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of software update regression to AWS
@@ -2016,13 +2015,8 @@ jobs:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run state recover regression tests
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.test-name >> /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of state recover regression to AWS
@@ -2049,13 +2043,9 @@ jobs:
           name: Modify Payer account for Public testnet start from saved state test
           command: |
             echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
-      - run:
-          name: Run start from saved state regression tests
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.test-name >> /repo
+
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of software update regression to AWS
@@ -2078,13 +2068,8 @@ jobs:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run reconnect regression tests
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.test-name >> /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of reconnect regression to AWS
