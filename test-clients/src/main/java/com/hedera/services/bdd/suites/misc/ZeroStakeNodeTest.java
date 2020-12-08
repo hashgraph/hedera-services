@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,11 +43,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_A
 public class ZeroStakeNodeTest extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ZeroStakeNodeTest.class);
 
-	private static final String LUCKY_NO_LOOKUP_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"pick\"," +
-			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false," +
-			"\"stateMutability\":\"view\",\"type\":\"function\"}";
-
-
 	public static void main(String... args) throws Exception {
 		new ZeroStakeNodeTest().runSuiteSync();
 	}
@@ -67,7 +63,7 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 				.given(
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary"),
-						fileCreate("bytecode").fromResource("Multipurpose.bin"),
+						fileCreate("bytecode").path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
 						contractCreate("multi").bytecode("bytecode"),
 						contractCreate("impossible")
 								.setNode("0.0.7")
@@ -97,13 +93,13 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 								.nodePayment(0L)
 								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)
 				).then(
-						contractCallLocal("multi", LUCKY_NO_LOOKUP_ABI)
+						contractCallLocal("multi", ContractResources.LUCKY_NO_LOOKUP_ABI)
 								.setNode("0.0.7")
 								.payingWith("sponsor")
 								.nodePayment(0L)
 								.has(resultWith()
 										.resultThruAbi(
-												LUCKY_NO_LOOKUP_ABI,
+												ContractResources.LUCKY_NO_LOOKUP_ABI,
 												isLiteralResult(new Object[] { BigInteger.valueOf(42) }))),
 						getContractInfo("multi")
 								.setNode("0.0.7")

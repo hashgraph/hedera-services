@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.compose;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,7 +32,6 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,22 +42,12 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class PerpetualLocalCalls extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(PerpetualLocalCalls.class);
-
-	final String PATH_TO_CHILD_STORAGE_BYTECODE = "src/main/resource/testfiles/ChildStorage.bin";
-
-	private static final String GET_MY_VALUE_ABI =
-			"{\"constant\":true,\"inputs\":[],\"name\":\"getMyValue\"," +
-					"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_get\",\"type\":\"uint256\"}]," +
-					"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}\n";
 
 	private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
@@ -91,17 +81,17 @@ public class PerpetualLocalCalls extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						fileCreate("bytecode").path(PATH_TO_CHILD_STORAGE_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
 						contractCreate("childStorage").bytecode("bytecode")
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				var op = contractCallLocal("childStorage", GET_MY_VALUE_ABI)
+				var op = contractCallLocal("childStorage", ContractResources.GET_MY_VALUE_ABI)
 								.noLogging()
 								.has(resultWith().resultThruAbi(
-										GET_MY_VALUE_ABI,
+										ContractResources.GET_MY_VALUE_ABI,
 										isLiteralResult(new Object[] { BigInteger.valueOf(73) })));
 				var soFar = totalBeforeFailure.getAndIncrement();
 				if (soFar % 1000 == 0) {

@@ -64,7 +64,7 @@ public class LargeFileUploadIT extends FileServiceIT {
 
 //		String filePath = "spring-core-4.2.0.RELEASE-1mb-jar"; 
 //		String filePath = "overview-frame.html"; 
-    String filePath = "octoken.bin";
+    String filePath = "contract/bytecodes/octoken.bin";
     localPath = UPLOAD_PATH + filePath;
 
     uploadFile(genesisAccountID, localPath, tester.getGenesisPrivateKeyList());

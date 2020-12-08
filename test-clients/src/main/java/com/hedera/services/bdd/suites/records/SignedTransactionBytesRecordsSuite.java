@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.records;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,9 +67,9 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 								.via("failedCryptoTransaction")
 								.asTxnWithOnlySigMap()
 								.hasPrecheck(INVALID_TRANSACTION_BODY),
-						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						fileUpdate("bytecode")
-								.path(PATH_TO_LOOKUP_BYTECODE)
+								.path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH)
 								.via("failedFileTransaction")
 								.asTxnWithOnlySigMap()
 								.hasPrecheck(INVALID_TRANSACTION_BODY)

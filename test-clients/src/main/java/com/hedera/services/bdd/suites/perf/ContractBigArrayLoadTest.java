@@ -22,15 +22,14 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -38,29 +37,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
-import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class ContractBigArrayLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(ContractBigArrayLoadTest.class);
-	private final String PATH_TO_BIGARRAY_CONTRACT_BYTECODE = "src/main/resource/testfiles/BigArray.bin";
-
-	private static final String BA_SETSIZEINKB_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_howManyKB\"," +
-			"\"type\":\"uint256\"}],\"name\":\"setSizeInKB\",\"outputs\":[],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String BA_CHANGEARRAY_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"_value\"," +
-			"\"type\":\"uint256\"}],\"name\":\"changeArray\",\"outputs\":[],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-
 	private static int sizeInKb = 4;
 
 	public static void main(String... args) {
@@ -95,7 +81,7 @@ public class ContractBigArrayLoadTest extends LoadTest {
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
 		long setValue = 0x1234abdeL;
 		Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[] {
-				contractCall("perf", BA_CHANGEARRAY_ABI, setValue)
+				contractCall("perf", ContractResources.BIG_ARRAY_CHANGE_ARRAY_ABI, setValue)
 						.noLogging()
 						.payingWith("sender")
 						.suppressStats(true)
@@ -113,14 +99,14 @@ public class ContractBigArrayLoadTest extends LoadTest {
 								.withRecharging()
 								.rechargeWindow(3)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-						fileCreate("contractBytecode").path(PATH_TO_BIGARRAY_CONTRACT_BYTECODE)
+						fileCreate("contractBytecode").path(ContractResources.BIG_ARRAY_BYTECODE_PATH)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						contractCreate("perf").bytecode("contractBytecode")
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						getContractInfo("perf").hasExpectedInfo().logged(),
 
 						// Initialize storage size
-						contractCall("perf", BA_SETSIZEINKB_ABI, sizeInKb)
+						contractCall("perf", ContractResources.BIG_ARRAY_SET_SIZE_IN_KB_ABI, sizeInKb)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 								.gas(600000)
 
@@ -134,5 +120,3 @@ public class ContractBigArrayLoadTest extends LoadTest {
 		return log;
 	}
 }
-
-

@@ -21,35 +21,22 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
@@ -69,18 +56,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelet
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileUndelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromMnemonic;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.utils.validation.domain.Network.SCENARIO_PAYER_NAME;
 
 public class OneOfEveryTransaction extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(OneOfEveryTransaction.class);
-
-	private static String LUCKY_NO_LOOKUP_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"pick\"," +
-			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false," +
-			"\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static void main(String... args) throws Exception {
 		new OneOfEveryTransaction().runSuiteSync();
@@ -118,7 +97,7 @@ public class OneOfEveryTransaction extends HapiApiSuite {
 				/* Contract resources */
 				newKeyNamed("contractFirstKey").shape(complexContract),
 				newKeyNamed("contractSecondKey"),
-				fileCreate("bytecode").fromResource("Multipurpose.bin"),
+				fileCreate("bytecode").path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
 				/* Network resources */
 				fileCreate("misc").lifetime(2_000_000)
 		).when(
@@ -164,7 +143,7 @@ public class OneOfEveryTransaction extends HapiApiSuite {
 						.balance(1),
 				contractCall("contractTbd")
 						.sending(1L),
-				contractCallLocal("contractTbd", LUCKY_NO_LOOKUP_ABI),
+				contractCallLocal("contractTbd", ContractResources.LUCKY_NO_LOOKUP_ABI),
 				contractUpdate("contractTbd")
 						.newKey("contractSecondKey"),
 				contractDelete("contractTbd").transferAccount(GENESIS),

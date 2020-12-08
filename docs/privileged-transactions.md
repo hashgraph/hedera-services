@@ -47,8 +47,7 @@ There are two kinds of privileges,
   1. _Authorization_ - some transaction types, such as `Freeze`, require authorization to submit to the network. All such transactions will be rejected with the status `UNAUTHORIZED` unless they are privileged.
   2. _Waived signing requirements_ - all unprivileged `CryptoUpdate` and `FileUpdate` transactions must be signed with the target entity's key, or they will fail with status `INVALID_SIGNATURE`. The network waives this requirement for certain privileged updates.
 
-This document lists all cases of privileged transactions 
-currently recognized by the Hedera network. 
+This document lists all cases of privileged transactions currently recognized by the Hedera network. 
 
 ## Authorization privileges
 
@@ -77,9 +76,39 @@ Next we consider `FileUpdate` and `FileAppend` transactions when targeting one o
 | --- | :---: | :---: | :---: | :---: | 
 | [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X | X |
 | [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) | X | X | X | X |
+| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) | X | X | |   |
 | [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) |   |   | X |   |
 | [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) |   | X |   | X |
 
-## Waived signature privileges
+For the `CryptoUpdate` transaction, we have the table below. (In words, it says the following: the treasury can
+update _any_ system account; the system admin can update only a specific _range_ of system accounts; and all other system 
+accounts can update themselves.)
 
+| Payer | All accounts [`<= ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L37) | Accounts between [`accounts.systemAdmin.firstManaged=51`](../hedera-node/src/main/resources/bootstrap.properties#L26) and [`accounts.systemAdmin.lastManaged=80`](../hedera-node/src/main/resources/bootstrap.properties#L27)| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) | [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) | [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) | [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22) |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | 
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X | X | X | X |
+| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) |   | X |  |  |  | |
+| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) |   |   | X |  |  |  |
+| [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) |  |  |  | X |  |  |
+| [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) |  |  |  |  | X |  |
+| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22)|  |  |  |  |   | X |
+
+## Waived signing requirements
+
+The next class of privileges apply to certain `CryptoUpdate` and `FileUpdate`/`FileAppend`
+operations whose target is a system account or file. These privileges waive the normal 
+requirement that the key associated to an entity sign any transaction that updates it.
+The network grants these privileges so the admin accounts can never be "locked 
+out" of performing their system roles. For example, even if we lose the key to the exchange 
+rates file, the exchange rates admin can still issue a `FileUpdate` transaction to change 
+this file.
+
+At present, the waived signature privileges for the `FileUpdate`, `FileAppend`, and `CryptoUpdate` 
+operations are identical to the corresponding authorization privileges in the tables above. 
+
+# Miscellanea
+
+- The network charges no fees to privileged transactions. 
+- With the default settings of `accounts.systemAdmin=50` and `accounts.systemAdmin.firstManaged=51`, 
+the system admin account is unique in being unable to update itself.
 

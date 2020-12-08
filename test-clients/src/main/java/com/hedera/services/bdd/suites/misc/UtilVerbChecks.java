@@ -21,6 +21,8 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,8 +31,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureDissociated;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.makeFree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
@@ -48,7 +56,8 @@ public class UtilVerbChecks extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						testLivenessTimeout(),
-						testMakingFree(),
+//						testMakingFree(),
+						testDissociation(),
 				}
 		);
 	}
@@ -71,6 +80,25 @@ public class UtilVerbChecks extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec testDissociation() {
+		return defaultHapiSpec("TestDissociation")
+				.given(
+						cryptoCreate("t"),
+						tokenCreate("a").treasury("t"),
+						tokenCreate("b").treasury("t"),
+						cryptoCreate("somebody"),
+						tokenAssociate("somebody", "a", "b"),
+						cryptoTransfer(moving(1, "a").between("t", "somebody")),
+						cryptoTransfer(moving(2, "b").between("t", "somebody"))
+				).when(
+						ensureDissociated("somebody", List.of("a", "b"))
+				).then(
+						getAccountInfo("somebody")
+								.hasNoTokenRelationship("a")
+								.hasNoTokenRelationship("b")
+				);
+	}
+
 	private HapiApiSpec testLivenessTimeout() {
 		return defaultHapiSpec("TestLivenessTimeout")
 				.given().when().then(
@@ -80,6 +108,7 @@ public class UtilVerbChecks extends HapiApiSuite {
 								.sleepingBetweenRetriesFor(10)
 				);
 	}
+
 
 	@Override
 	protected Logger getResultsLogger() {

@@ -38,7 +38,6 @@ import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static java.util.Map.entry;
 
 public class ScreenedNodeFileProps implements PropertySource {

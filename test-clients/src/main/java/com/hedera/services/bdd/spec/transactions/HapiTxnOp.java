@@ -622,4 +622,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		asTxnWithSignedTxnBytesAndBodyBytes = true;
 		return self();
 	}
+
+	public TransactionReceipt getLastReceipt() {
+		return lastReceipt;
+	}
 }
