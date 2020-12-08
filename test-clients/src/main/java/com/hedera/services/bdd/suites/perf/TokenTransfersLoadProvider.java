@@ -24,10 +24,14 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,6 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_STATUSES;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -51,6 +56,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -115,8 +121,25 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				initializers.add(tokenOpsEnablement());
 				/* Temporary, can be removed after the public testnet state used in
 				   restart tests includes a fee schedule with HTS resource prices. */
-				if (spec.setup().defaultNode().equals(HapiPropertySource.asAccount("0.0.3"))) {
+				if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
 					initializers.add(uploadDefaultFeeSchedules(GENESIS));
+				} else {
+					initializers.add(withOpContext((spec, opLog) -> {
+						boolean hasKnownHtsFeeSchedules = false;
+						SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
+						while (!hasKnownHtsFeeSchedules) {
+							var query = QueryVerbs.getFileContents(FEE_SCHEDULE);
+							try {
+								allRunFor(spec, query);
+								var contents = query.getResponse().getFileGetContents().getFileContents().getContents();
+								var schedules = serde.fromRawFile(contents.toByteArray());
+								hasKnownHtsFeeSchedules = schedules.contains("TokenCreate");
+							} catch (Exception e) {
+								log.warn("Couldn't check for HTS fee schedules, {}", e.toString());
+							}
+							TimeUnit.SECONDS.sleep(3);
+						}
+					}));
 				}
 				initializers.add(
 						fileUpdate(APP_PROPERTIES)
@@ -154,7 +177,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 
 				for (HapiSpecOperation op : initializers) {
 					if (op instanceof HapiTxnOp) {
-						((HapiTxnOp)op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
+						((HapiTxnOp) op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
 					}
 				}
 
