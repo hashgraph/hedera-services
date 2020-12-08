@@ -42,6 +42,8 @@ import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
 import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -59,6 +61,7 @@ import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.junit.Assert;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -394,6 +397,27 @@ public class UtilVerbs {
 
 	private static TransactionFeeSchedule zeroFor(HederaFunctionality function) {
 		return TransactionFeeSchedule.newBuilder().setHederaFunctionality(function).build();
+	}
+
+	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
+		return withOpContext((spec, opLog) -> {
+			allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, defaultFeeSchedules()));
+			if (!spec.tryReinitializingFees()) {
+				throw new IllegalStateException("New fee schedules won't be available, dying!");
+			}
+		});
+	}
+
+	private static ByteString defaultFeeSchedules() {
+		SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
+		String loc = "../hedera-node/src/main/resources/FeeSchedule.json";
+		try {
+			var stylized = Files.readString(Paths.get(loc));
+			System.out.println(stylized);
+			return ByteString.copyFrom(serde.toRawFile(stylized));
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
+		}
 	}
 
 	public static HapiSpecOperation updateLargeFile(

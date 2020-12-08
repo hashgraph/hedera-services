@@ -63,13 +63,16 @@ public class FeesAndRatesProvider {
 	private HapiSpecSetup setup;
 	private HapiApiClients clients;
 	private HapiSpecRegistry registry;
-	private Instant lastRatesUpdate;
 	static private FeeSchedule feeSchedule;
 	static private ExchangeRateSet rateSet;
-	static private ExchangeRateSet midnightRateSet;
 
-	public FeesAndRatesProvider(TxnFactory txns, KeyFactory keys, HapiSpecSetup setup,
-			HapiApiClients clients, HapiSpecRegistry registry) {
+	public FeesAndRatesProvider(
+			TxnFactory txns,
+			KeyFactory keys,
+			HapiSpecSetup setup,
+			HapiApiClients clients,
+			HapiSpecRegistry registry
+	) {
 		this.txns = txns;
 		this.keys = keys;
 		this.setup = setup;
@@ -117,7 +120,6 @@ public class FeesAndRatesProvider {
 		File f = new File(setup.clientExchangeRatesPath());
 		byte[] bytes = Files.readAllBytes(f.toPath());
 		rateSet = ExchangeRateSet.parseFrom(bytes);
-		lastRatesUpdate = Instant.now();
 		log.info("The exchange rates from '" + f.getAbsolutePath() + "' are :: " + rateSetAsString(rateSet));
 	}
 
@@ -126,7 +128,6 @@ public class FeesAndRatesProvider {
 		FileGetContentsResponse response = downloadWith(queryFee,false, setup.exchangeRatesId());
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
 		rateSet = ExchangeRateSet.parseFrom(bytes);
-		lastRatesUpdate = Instant.now();
 		log.info("The exchange rates are :: " + rateSetAsString(rateSet));
 	}
 
@@ -145,6 +146,7 @@ public class FeesAndRatesProvider {
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
 		CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
 		feeSchedule = wrapper.getCurrentFeeSchedule();
+		System.out.println(feeSchedule);
 		log.info("The fee schedule covers " + feeSchedule.getTransactionFeeScheduleList().size() + " ops.");
 	}
 

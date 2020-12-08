@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
@@ -111,6 +112,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						(sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
 				List<HapiSpecOperation> initializers = new ArrayList<>();
 				initializers.add(tokenOpsEnablement());
+				initializers.add(uploadDefaultFeeSchedules(GENESIS));
 				initializers.add(
 						fileUpdate(APP_PROPERTIES)
 								.fee(9_999_999_999L)
@@ -146,7 +148,9 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				}
 
 				for (HapiSpecOperation op : initializers) {
-					((HapiTxnOp)op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
+					if (op instanceof HapiTxnOp) {
+						((HapiTxnOp)op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
+					}
 				}
 
 				return initializers;
