@@ -98,6 +98,13 @@ message TokenID {
     int64 tokenNum = 3; // A nonnegative token number
 }
 
+/* Unique identifier for a Schedule */
+message ScheduleID {
+    int64 shardNum = 1; // A nonnegative shard number
+    int64 realmNum = 2; // A nonnegative realm number
+    int64 scheduleNum = 3; // A nonnegative schedule number
+}
+
 /* Possible Freeze statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship */
 enum TokenFreezeStatus {
     FreezeNotApplicable = 0;

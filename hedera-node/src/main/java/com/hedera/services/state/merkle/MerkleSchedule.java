@@ -40,7 +40,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     private JKey adminKey = UNUSED_KEY;
     private HashSet<JKey> signers = new HashSet<>();
     private Map<JKey, byte[]> signatures = new HashMap<>();
-    private boolean executedImmediately;
+    private boolean executeImmediately;
     private boolean deleted;
 
     @Deprecated
@@ -50,10 +50,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     public MerkleSchedule(
             byte[] transactionBody,
+            JKey adminKey,
             HashSet<JKey> signers,
             Map<JKey, byte[]> signatures
     ) {
         this.transactionBody = transactionBody;
+        this.adminKey = adminKey;
         this.signers = signers;
         this.signatures = signatures;
     }
@@ -78,7 +80,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
         var that = (MerkleSchedule) o;
         return this.deleted == that.deleted &&
-                this.executedImmediately == that.executedImmediately &&
+                this.executeImmediately == that.executeImmediately &&
                 Arrays.areEqual(this.transactionBody, that.transactionBody) &&
                 equalUpToDecodability(this.adminKey, that.adminKey) &&
                 signersMatch(this.signers, that.signers) &&
@@ -90,7 +92,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         return Objects.hash(
                 deleted,
                 transactionBody,
-                executedImmediately,
+                executeImmediately,
                 adminKey,
                 signers,
                 signatures);
@@ -101,7 +103,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         return MoreObjects.toStringHelper(MerkleSchedule.class)
                 .add("deleted", deleted)
                 .add("transactionBody", hex(transactionBody))
-                .add("executedImmediately", executedImmediately)
+                .add("executedImmediately", executeImmediately)
                 .add("adminKey", describe(adminKey))
                 .add("signers", readableSigners())
                 .add("signatures", readableSignatures())
@@ -113,7 +115,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         deleted = in.readBoolean();
         int txBodyLength = in.readInt();
         transactionBody = in.readByteArray(txBodyLength);
-        executedImmediately = in.readBoolean();
+        executeImmediately = in.readBoolean();
         adminKey = serdes.readNullable(in, serdes::deserializeKey);
         deserializeSigners(in);
         deserializeSignatures(in);
@@ -124,7 +126,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         out.writeBoolean(deleted);
         out.writeInt(transactionBody.length);
         out.writeByteArray(transactionBody);
-        out.writeBoolean(executedImmediately);
+        out.writeBoolean(executeImmediately);
         serdes.writeNullable(adminKey, out, serdes::serializeKey);
         serializeSigners(out);
         serializeSignatures(out);
@@ -149,12 +151,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
         var fc = new MerkleSchedule(
                 transactionBody,
+                adminKey,
                 signersCopy,
                 signaturesCopy
         );
 
         fc.setDeleted(deleted);
-        fc.setExecutedImmediately(executedImmediately);
+        fc.setExecuteImmediately(executeImmediately);
         if (adminKey != UNUSED_KEY) {
             fc.setAdminKey(adminKey);
         }
@@ -190,9 +193,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         this.deleted = deleted;
     }
 
-    public boolean isExecutedImmediately() { return executedImmediately; }
+    public boolean isExecuteImmediately() { return executeImmediately; }
 
-    public void setExecutedImmediately(boolean executedImmediately) { this.executedImmediately = executedImmediately; }
+    public void setExecuteImmediately(boolean executeImmediately) { this.executeImmediately = executeImmediately; }
 
     public Map<JKey, byte[]> signatures() { return signatures; }
 
