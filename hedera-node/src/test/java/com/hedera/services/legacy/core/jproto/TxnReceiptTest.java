@@ -21,22 +21,60 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+//import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 @RunWith(JUnitPlatform.class)
 public class TxnReceiptTest {
+  private static final int MAX_STATUS_BYTES = 128;
+//  private static final int MAX_RUNNING_HASH_BYTES = 1024;
+  DomainSerdes serdes;
+  ExchangeRates mockRates;
+
+  TxnReceipt subject;
+
+
   private TopicID getTopicId(long shard, long realm, long num) {
     return TopicID.newBuilder().setShardNum(shard).setRealmNum(realm).setTopicNum(num).build();
   }
@@ -52,6 +90,29 @@ public class TxnReceiptTest {
     }
     return hash;
   }
+
+  @BeforeEach
+  public void setup() {
+    subject = new TxnReceipt();
+
+//    din = mock(DataInputStream.class);
+//
+    serdes = mock(DomainSerdes.class);
+    mockRates = mock(ExchangeRates.class);
+//    legacyTxnIdProvider = mock(TxnId.Provider.class);
+//    legacyReceiptProvider = mock(TxnReceipt.Provider.class);
+//    legacyInstantProvider = mock(RichInstant.Provider.class);
+//    legacyFnResultProvider = mock(SolidityFnResult.Provider.class);
+//    legacyAdjustmentsProvider = mock(CurrencyAdjustments.Provider.class);
+//
+//    ExpirableTxnRecord.legacyAdjustmentsProvider = legacyAdjustmentsProvider;
+//    ExpirableTxnRecord.legacyFnResultProvider = legacyFnResultProvider;
+//    ExpirableTxnRecord.legacyInstantProvider = legacyInstantProvider;
+//    ExpirableTxnRecord.legacyReceiptProvider = legacyReceiptProvider;
+//    ExpirableTxnRecord.legacyTxnIdProvider = legacyTxnIdProvider;
+    TxnReceipt.serdes = serdes;
+  }
+
 
   @Test
   public void constructorPostConsensusCreateTopic() {
@@ -269,6 +330,84 @@ public class TxnReceiptTest {
 
     assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
             () -> assertNotNull(cut.toString()));
+  }
+
+
+  @Test
+  public void testSerialize() throws IOException {
+    // setup:
+    SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
+    // and:
+    InOrder inOrder = Mockito.inOrder(serdes, fout);
+
+    subject = new TxnReceipt("SUCCESS", null, null,
+            null,null,mockRates,
+            null, -1, null, -1, 100);
+    // when:
+    subject.serialize(fout);
+
+    // then:
+    inOrder.verify(fout).writeNormalisedString(subject.getStatus());
+    inOrder.verify(fout).writeSerializable(mockRates, true);
+    inOrder.verify(serdes, times(5)).writeNullableSerializable(subject.getAccountId(), fout);
+    inOrder.verify(fout).writeBoolean(false);
+    inOrder.verify(fout).writeLong(subject.getNewTotalSupply());
+  }
+
+
+  @Test
+  public void testDeserialize() throws IOException {
+    // setup:
+    SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
+    // and:
+    InOrder inOrder = Mockito.inOrder(serdes, fout);
+
+    subject = new TxnReceipt("SUCCESS", null, null,
+            null,null,mockRates,
+            null, -1, null, -1, 100);
+    // when:
+    subject.serialize(fout);
+
+    // then:
+    inOrder.verify(fout).writeNormalisedString(subject.getStatus());
+    inOrder.verify(fout).writeSerializable(mockRates, true);
+    inOrder.verify(serdes, times(5)).writeNullableSerializable(subject.getAccountId(), fout);
+    inOrder.verify(fout).writeBoolean(false);
+    inOrder.verify(fout).writeLong(subject.getNewTotalSupply());
+  }
+
+
+  @Test
+  public void v0100DeserializeWorks() throws IOException {
+    // setup:
+    SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+    subject = new TxnReceipt("SUCCESS", null, null,
+            null,null,mockRates,
+            null, 0, null, 0, 100);
+
+    given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());
+    given(fin.readSerializable(anyBoolean(), any())).willReturn(mockRates);
+    given(serdes.readNullableSerializable(fin))
+            .willReturn(subject.getAccountId())
+            .willReturn(subject.getFileId())
+            .willReturn(subject.getContractId())
+            .willReturn(subject.getTopicId())
+            .willReturn(subject.getTokenId());
+    given(fin.readBoolean()).willReturn(true);
+    given(fin.readLong()).willReturn(subject.getTopicSequenceNumber());
+    given(fin.readLong()).willReturn(subject.getRunningHashVersion());
+    given(fin.readAllBytes()).willReturn(subject.getTopicRunningHash());
+    given(fin.readLong()).willReturn(subject.getNewTotalSupply());
+
+    // and:
+    TxnReceipt txnReceipt = new TxnReceipt();
+
+    // when:
+    txnReceipt.deserialize(fin, TxnReceipt.RELEASE_0100_VERSION);
+
+    // then:
+    assertEquals(subject.getNewTotalSupply(), txnReceipt.getNewTotalSupply());
+
   }
 
 }

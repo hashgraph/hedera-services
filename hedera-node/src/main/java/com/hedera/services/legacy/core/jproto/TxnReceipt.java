@@ -58,7 +58,8 @@ public class TxnReceipt implements SelfSerializable {
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_090_VERSION = 3;
-	static final int MERKLE_VERSION = RELEASE_080_VERSION;
+	static final int RELEASE_0100_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0100_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x65ef569a77dcf125L;
 
 	static DomainSerdes serdes = new DomainSerdes();
