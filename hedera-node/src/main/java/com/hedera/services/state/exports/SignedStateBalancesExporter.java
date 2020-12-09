@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
@@ -45,8 +46,6 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -120,14 +119,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 					summary.getTotalFloat(),
 					expectedFloat));
 		}
-		var csvLoc = lastUsedExportDir + new DateTimeFormatterBuilder()
-				.appendPattern("yyyy-MM-dd")
-				.appendLiteral('T')
-				.appendPattern("HH_mm_ss")
-				.appendLiteral('.')
-				.toFormatter()
-				.withZone(ZoneId.of("UTC"))
-				.format(when) + String.format("%09d", when.getNano()) + "Z_Balances.csv";
+		var csvLoc = lastUsedExportDir + HederaDateTimeFormatter.format(when) + "_Balances.csv";
 		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, when);
 		if (exportSucceeded) {
 			tryToSign(csvLoc);

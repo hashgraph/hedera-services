@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
@@ -52,10 +53,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.b64Encode;
@@ -109,7 +110,7 @@ class SignedStateBalancesExporterTest {
 
 	GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
-	Instant now = Instant.EPOCH.plusNanos(123456789);
+	Instant now = Instant.now();
 	Instant shortlyAfter = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() / 2);
 	Instant anEternityLater = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() * 2);
 
@@ -231,6 +232,8 @@ class SignedStateBalancesExporterTest {
 	public void usesNewFormatWhenExportingTokenBalances() throws IOException {
 		// setup:
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		Pattern CSV_NAME_PATTERN = Pattern.compile(
+				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.csv");
 		// and:
 		var loc = expectedExportLoc();
 
@@ -262,7 +265,7 @@ class SignedStateBalancesExporterTest {
 		// and:
 		verify(mockLog).debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig"));
 		// and:
-		assertEquals(expectedExportLoc(), captor.getValue());
+		assertTrue(CSV_NAME_PATTERN.matcher(captor.getValue()).matches());
 
 		// cleanup:
 		new File(loc).delete();
@@ -313,7 +316,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	private String expectedBalancesName() {
-		return DateTimeFormatter.ISO_INSTANT.format(now).replace(":", "_") + "_Balances.csv";
+		return HederaDateTimeFormatter.format(now) + "_Balances.csv";
 	}
 
 	@Test
