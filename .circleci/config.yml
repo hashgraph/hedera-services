@@ -2108,7 +2108,8 @@ jobs:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
     steps:
-      - name: Run continuous integration tests
+      - run:
+          name: Run continuous integration tests
           no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
