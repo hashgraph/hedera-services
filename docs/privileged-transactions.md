@@ -116,6 +116,3 @@ above.
 # Miscellanea
 
 - When privileges are granted based on the payer, the network charges no fees. 
-- With the default settings of `accounts.systemAdmin=50` and `accounts.systemAdmin.firstManaged=51`, 
-the system admin account is unique in being unable to update itself.
-
