@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -161,7 +162,7 @@ public class RecordStream implements Runnable {
 			}
 
 			// replace ":" with "_" so that the file can also be created in Windows OS
-			fileName = recordStreamsDirectory + File.separator + timestamp.toString().replace(":", "_") + ".rcd";
+			fileName = recordStreamsDirectory + File.separator + HederaDateTimeFormatter.format(timestamp) + ".rcd";
 			try {
 				file = new File(fileName);
 
