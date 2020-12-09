@@ -2116,9 +2116,8 @@ jobs:
             ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json /repo
 
       - run:
-          name: Sync results of reconnect regression to AWS
+          name: Sync results of continuous integration to circelCI job
           command: |
-            aws s3 sync /swirlds-platform/regression/results/4N_1C/CI/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/CI/*
 
       - store_artifacts:
