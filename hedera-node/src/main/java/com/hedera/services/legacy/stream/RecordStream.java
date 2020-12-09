@@ -162,7 +162,7 @@ public class RecordStream implements Runnable {
 			}
 
 			// replace ":" with "_" so that the file can also be created in Windows OS
-			fileName = recordStreamsDirectory + File.separator + HederaDateTimeFormatter.format(timestamp) + ".rcd";
+			fileName = recordStreamsDirectory + File.separator + timestamp.toString().replace(":", "_") + ".rcd";
 			try {
 				file = new File(fileName);
 

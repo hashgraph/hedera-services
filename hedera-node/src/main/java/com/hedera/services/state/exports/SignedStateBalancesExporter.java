@@ -119,7 +119,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 					summary.getTotalFloat(),
 					expectedFloat));
 		}
-		var csvLoc = lastUsedExportDir + HederaDateTimeFormatter.format(when) + "_Balances.csv";
+		var csvLoc = lastUsedExportDir + when.toString().replace(":", "_") + "_Balances.csv";
 		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, when);
 		if (exportSucceeded) {
 			tryToSign(csvLoc);
