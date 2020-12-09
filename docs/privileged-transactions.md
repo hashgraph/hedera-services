@@ -87,16 +87,17 @@ For the `CryptoUpdate` transaction, we have the table below. (In words, it says 
 update _any_ system account; the system admin can update a smaller subset of system accounts; and all other system 
 accounts can update themselves.) 
 
-Here we have the exception mentioned above. That is, no matter the payer, if the treasury or system admin sign a
-`CryptoUpdate` targeting a system account with number up to [`ledger.numReservedSystemAccounts=100`](../hedera-node/src/main/resources/bootstrap.properties#L37),
-the necessary authorization will be granted.
+Here we have the exception mentioned above. That is, no matter the payer, if the treasury, system admin, or account
+itself sign a `CryptoUpdate` targeting a system account with number up to 
+[`ledger.numReservedSystemAccounts=100`](../hedera-node/src/main/resources/bootstrap.properties#L37), the necessary 
+authorization will be granted.
 
 | Payer | All accounts [`<= ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L38) | Accounts [`<= ledger.numReservedSystemAccounts=100`](../hedera-node/src/main/resources/bootstrap.properties#L37) | Account `0.0.N` with `N <= ledger.numReservedSystemEntities=1000` | 
 | --- | :---: | :---: | :---: | 
 | [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X |
 | [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) |   | X |  |
 | `0.0.N` |   |  | X |
-| `0.0.M` for any `M` |  | X _if treasury or system admin also sign_ |  |
+| `0.0.M` for any `M` |  | X _if the treasury, system admin, or `0.0.N` also sign_ |  |
 
 ## Waived signing requirements
 
@@ -109,13 +110,12 @@ rates file, the exchange rates admin can still issue a `FileUpdate` transaction 
 this file.
 
 The waived signature privileges for `FileUpdate`, `FileAppend`, and `CryptoUpdate` 
-operations are identical to the corresponding authorization privileges in the tables above; 
-_except_ that non-payer signatures on a `CryptoUpdate` do not suffice to waive 
-signing requirements. (So the last row of the `CryptoUpdate` table doesn't apply.)
+operations are identical to the corresponding authorization privileges in the tables 
+above. 
 
 # Miscellanea
 
-- The network charges no fees to privileged transactions. 
+- When privileges are granted based on the payer, the network charges no fees. 
 - With the default settings of `accounts.systemAdmin=50` and `accounts.systemAdmin.firstManaged=51`, 
 the system admin account is unique in being unable to update itself.
 
