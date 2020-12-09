@@ -97,7 +97,7 @@ authorization will be granted.
 | [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X |
 | [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) |   | X |  |
 | `0.0.N` |   |  | X |
-| `0.0.M` for any `M` |  | X _if the treasury, system admin, or `0.0.N` also sign_ |  |
+| `0.0.M` for any `M` |  | X _if the treasury, system admin, or target account also sign_ |  |
 
 ## Waived signing requirements
 
