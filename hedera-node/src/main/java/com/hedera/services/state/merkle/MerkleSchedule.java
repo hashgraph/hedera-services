@@ -264,18 +264,10 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     }
 
     private boolean signaturesMatch(Map<EntityId, byte[]> a, Map<EntityId, byte[]> b) {
-        var aKeys = a.keySet();
-        var bKeys = b.keySet();
-        if (!aKeys.equals(bKeys)) {
+        if (a.size() != b.size()) {
             return false;
         }
-
-        for (EntityId aKey : aKeys) {
-            if (!Arrays.areEqual(a.get(aKey), b.get(aKey))) {
-                return false;
-            }
-        }
-
-        return true;
+        return a.entrySet().stream()
+                .allMatch(e -> Arrays.areEqual(e.getValue(), b.get(e.getKey())));
     }
 }
