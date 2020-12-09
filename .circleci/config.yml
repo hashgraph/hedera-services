@@ -1614,6 +1614,25 @@ workflows:
             - attach_workspace:
                 at: /
 
+  continuous-integration-gcp:
+      jobs:
+        - build-platform-and-services
+        - run-continuous-integration:
+            context: Slack
+            requires:
+              - build-platform-and-services
+            pre-steps:
+              - install-tools
+              - attach_workspace:
+                  at: /
+            workflow-name: "Continuous Integration GCP"
+            test-name: "GCP-Commit-Services-Comp-Basic-4N-1C.json"
+            filters:
+              branches:
+                ignore:
+                  - /.*-PERF/
+                  - /.*-REGRESSION/
+
   continuous-integration:
     jobs:
       - build-artifact:
@@ -2080,6 +2099,31 @@ jobs:
       - store_artifacts:
           path: /results.tar.gz
 
+  run-continuous-integration:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - name: Run continuous integration tests
+          no_output_timeout: 30m
+          command: |
+            cd /swirlds-platform/regression;
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/ci/<< parameters.test-name >> /repo
+
+      - run:s
+          name: Sync results of reconnect regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/4N_1C/CI/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/CI/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
   weekly-run-crypto-transfer-start-from-saved-state-regression:
     parameters:
       workflow-name:
@@ -2177,7 +2221,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 707-D-ServicesCI-To-GCP;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
