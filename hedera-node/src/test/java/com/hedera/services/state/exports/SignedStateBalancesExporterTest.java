@@ -109,7 +109,7 @@ class SignedStateBalancesExporterTest {
 
 	GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
-	Instant now = Instant.now();
+	Instant now = Instant.EPOCH.plusNanos(123456789);
 	Instant shortlyAfter = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() / 2);
 	Instant anEternityLater = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() * 2);
 

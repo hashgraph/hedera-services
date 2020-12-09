@@ -45,7 +45,8 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -55,7 +56,6 @@ import java.util.function.UnaryOperator;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
 public class SignedStateBalancesExporter implements BalancesExporter {
 	static Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
@@ -120,8 +120,14 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 					summary.getTotalFloat(),
 					expectedFloat));
 		}
-
-		var csvLoc = lastUsedExportDir + ISO_INSTANT.format(when).replace(":", "_") + "_Balances.csv";
+		var csvLoc = lastUsedExportDir + new DateTimeFormatterBuilder()
+				.appendPattern("yyyy-MM-dd")
+				.appendLiteral('T')
+				.appendPattern("HH_mm_ss")
+				.appendLiteral('.')
+				.toFormatter()
+				.withZone(ZoneId.of("UTC"))
+				.format(when) + String.format("%09d", when.getNano()) + "Z_Balances.csv";
 		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, when);
 		if (exportSucceeded) {
 			tryToSign(csvLoc);
