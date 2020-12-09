@@ -89,6 +89,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 											while (!gotCreationRecord) {
 												try {
 													var getRecordOp = getTxnRecord("txn")
+															.assertingNothing()
 															.saveTxnRecordToRegistry("savedTxnRcd")
 															.logged();
 													allRunFor(spec, getRecordOp);

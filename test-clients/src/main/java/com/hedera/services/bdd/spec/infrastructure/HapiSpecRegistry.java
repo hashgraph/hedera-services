@@ -456,6 +456,14 @@ public class HapiSpecRegistry {
 		put(asTokenString(id), name);
 	}
 
+	public void saveTreasury(String token, String treasury) {
+		put(token + "Treasury", treasury);
+	}
+
+	public String getTreasury(String token) {
+		return get(token + "Treasury", String.class);
+	}
+
 	public void setRecharging(String account, long amount) {
 		put(account, Boolean.TRUE);
 		put(account + "Recharge", amount);
