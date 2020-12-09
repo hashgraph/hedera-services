@@ -1,0 +1,4 @@
+account:
+  key: {generateIfMissing: true, passphrase: swirlds, pemLoc: puvTacoBeneficiary.pem}
+id: {num: 1018, realm: 0, shard: 0}
+name: puvTacoBeneficiary

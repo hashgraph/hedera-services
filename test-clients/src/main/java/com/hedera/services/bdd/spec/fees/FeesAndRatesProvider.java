@@ -161,7 +161,7 @@ public class FeesAndRatesProvider {
 		ResponseCodeEnum status;
 		FileGetContentsResponse response;
 		do {
-			var payment = genesisSponsored(queryFee);
+			var payment = defaultPayerSponsored(queryFee);
 			var query = downloadQueryWith(payment, costOnly, fid);
 			response = clients
 					.getFileSvcStub(setup.defaultNode(), setup.getConfigTLS())
@@ -193,7 +193,7 @@ public class FeesAndRatesProvider {
 		return Query.newBuilder().setFileGetContents(costQuery).build();
 	}
 
-	private Transaction genesisSponsored(long queryFee) throws Throwable {
+	private Transaction defaultPayerSponsored(long queryFee) throws Throwable {
 		TransferList transfers = asTransferList(
 				tinyBarsFromTo(queryFee, setup.defaultPayer(), setup.defaultNode()));
 		CryptoTransferTransactionBody opBody = txns

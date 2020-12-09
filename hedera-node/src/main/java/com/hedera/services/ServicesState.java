@@ -355,7 +355,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 						"  Tokens            :: %s\n" +
 						"  TokenAssociations :: %s\n" +
 						"  DiskFs            :: %s\n" +
-						"  ScheduleTxs       :: %s\n" +
+						"  ScheduledTxs      :: %s\n" +
 						"  NetworkContext    :: %s\n" +
 						"  AddressBook       :: %s",
 				getHash(),
