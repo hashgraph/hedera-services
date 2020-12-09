@@ -1,4 +1,4 @@
-package com.hedera.services.schedule;
+package com.hedera.services.store.schedule;
 
 /*
  * ‌
@@ -24,6 +24,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -33,8 +34,8 @@ import com.swirlds.fcmap.FCMap;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
+import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.schedule.ScheduleCreationResult.success;
 
 /**
  * Provides a managing store for Scheduled Entities.
@@ -78,7 +79,7 @@ public class HederaScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public ScheduleCreationResult createProvisionally(byte[] bodyBytes, JKey adminKey, JKey signKey, AccountID sponsor) {
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, JKey adminKey, JKey signKey, AccountID sponsor) {
 
 		pendingId = ids.newScheduleId(sponsor);
 //		pendingCreation = new MerkleSchedule(

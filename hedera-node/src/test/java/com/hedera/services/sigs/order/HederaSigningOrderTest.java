@@ -35,7 +35,7 @@ import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;

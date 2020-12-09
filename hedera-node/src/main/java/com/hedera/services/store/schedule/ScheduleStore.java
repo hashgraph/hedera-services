@@ -1,4 +1,4 @@
-package com.hedera.services.schedule;
+package com.hedera.services.store.schedule;
 
 /*-
  * ‌
@@ -22,6 +22,8 @@ package com.hedera.services.schedule;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.store.CreationResult;
+import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -37,18 +39,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_D
  *
  * @author Daniel Ivanov
  */
-public interface ScheduleStore {
+public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
 
-	MerkleSchedule get(ScheduleID sID);
-	boolean exists (ScheduleID id);
-
-	ScheduleCreationResult createProvisionally(byte[] bodyBytes, JKey adminKey, JKey signKey, AccountID sponsor);
+	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, JKey adminKey, JKey signKey, AccountID sponsor);
 	ResponseCodeEnum addSignature(ScheduleID sID, SignatureMap signatures);
-
-	void commitCreation();
-	void rollbackCreation();
-	boolean isCreationPending();
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;
@@ -72,5 +67,4 @@ public interface ScheduleStore {
 //		apply(id, DELETION);
 		return OK;
 	}
-
 }

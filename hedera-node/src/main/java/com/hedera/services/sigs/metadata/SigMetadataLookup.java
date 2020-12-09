@@ -21,7 +21,7 @@ package com.hedera.services.sigs.metadata;
  */
 
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -33,7 +33,6 @@ import java.util.function.Function;
 import static com.hedera.services.sigs.metadata.TokenSigningMetadata.from;
 import static com.hedera.services.sigs.metadata.lookups.SafeLookupResult.failure;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 
 /**
  * Defines a type able to look up metadata associated to the signing activities

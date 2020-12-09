@@ -1,4 +1,4 @@
-package com.hedera.services.tokens;
+package com.hedera.services.store.tokens;
 
 /*-
  * ‌
@@ -60,7 +60,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;

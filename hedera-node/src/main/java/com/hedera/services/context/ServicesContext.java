@@ -175,8 +175,8 @@ import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRI
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
 
-import com.hedera.services.tokens.HederaTokenStore;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -245,7 +245,7 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytec
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
-import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 

@@ -1,4 +1,4 @@
-package com.hedera.services.tokens;
+package com.hedera.services.store.tokens;
 
 /*-
  * ‌
@@ -25,6 +25,8 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.CreationResult;
+import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -41,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
  *
  * @author Michael Tinker
  */
-public interface TokenStore {
+public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
@@ -49,11 +51,9 @@ public interface TokenStore {
 	void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 
 	void apply(TokenID id, Consumer<MerkleToken> change);
-	boolean exists(TokenID id);
 	boolean isKnownTreasury(AccountID id);
 	boolean associationExists(AccountID aId, TokenID tId);
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
-	MerkleToken get(TokenID id);
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
 	ResponseCodeEnum mint(TokenID tId, long amount);
@@ -67,10 +67,7 @@ public interface TokenStore {
 	ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
-	void commitCreation();
-	void rollbackCreation();
-	boolean isCreationPending();
-	TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
+	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

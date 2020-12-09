@@ -1,4 +1,4 @@
-package com.hedera.services.schedule;
+package com.hedera.services.store.schedule;
 
 /*
  * ‌
@@ -22,6 +22,7 @@ package com.hedera.services.schedule;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -37,7 +38,7 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	public boolean exists(ScheduleID id) { throw new UnsupportedOperationException(); }
 
 	@Override
-	public ScheduleCreationResult createProvisionally(byte[] bodyBytes, JKey adminKey, JKey signKey, AccountID sponsor) { throw new UnsupportedOperationException(); }
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, JKey adminKey, JKey signKey, AccountID sponsor) { throw new UnsupportedOperationException(); }
 
 	@Override
 	public ResponseCodeEnum addSignature(ScheduleID sID, SignatureMap signatures) { throw new UnsupportedOperationException(); }
