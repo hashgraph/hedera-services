@@ -92,7 +92,7 @@ Here we have the exception mentioned above. That is, no matter the payer, if the
 the necessary authorization will be granted.
 
 | Payer | All accounts [`<= ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L38) | Accounts [`<= ledger.numReservedSystemAccounts=100`](../hedera-node/src/main/resources/bootstrap.properties#L37) | Account `0.0.N` with `N <= ledger.numReservedSystemEntities=1000` | 
-| --- | :---: | :---: | :---: | :---: | 
+| --- | :---: | :---: | :---: | 
 | [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X |
 | [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) |   | X |  |
 | `0.0.N` |   |  | X |
