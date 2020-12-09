@@ -1,7 +1,7 @@
 # System accounts and files
 
 The Hedera network reserves the first 
-[`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L37) 
+[`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L38) 
 entity numbers for its own uses. 
 An account with a number in the reserved range is called a **system account**. 
 A file with a number in the reserved range is called a **system file**. 
@@ -39,8 +39,11 @@ resource. For example, using the mainnet configuration, the treasury account is 
 
 When a system account is the designated payer for a transaction, there 
 are cases in which the network grants special **privileges** to the transaction. 
-(It is crucial to understand the relevant system account must be the _payer_ of 
-the transaction for privileges to be granted; that is, it must be the `AccountID`
+(There is one exception in which authorization privileges may be granted based on a 
+valid _non-payer_ signature; this occurs for  a `CryptoUpdate` targeting an account 
+with number no greater than [`ledger.numReservedSystemAccounts=100`](../hedera-node/src/main/resources/bootstrap.properties#L37). 
+But in general, it is crucial to understand the relevant system account must be the _payer_ of 
+the transaction for any privileges to be granted; that is, it must be the `AccountID`
 designated in the transaction's `TransactionID`.)
 
 There are two kinds of privileges, 
@@ -81,17 +84,19 @@ Next we consider `FileUpdate` and `FileAppend` transactions when targeting one o
 | [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) |   | X |   | X |
 
 For the `CryptoUpdate` transaction, we have the table below. (In words, it says the following: the treasury can
-update _any_ system account; the system admin can update only a specific _range_ of system accounts; and all other system 
-accounts can update themselves.)
+update _any_ system account; the system admin can update a smaller subset of system accounts; and all other system 
+accounts can update themselves.) 
 
-| Payer | All accounts [`<= ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L37) | Accounts between [`accounts.systemAdmin.firstManaged=51`](../hedera-node/src/main/resources/bootstrap.properties#L26) and [`accounts.systemAdmin.lastManaged=80`](../hedera-node/src/main/resources/bootstrap.properties#L27)| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) | [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) | [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) | [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22) |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: | 
-| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X | X | X | X |
-| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) |   | X |  |  |  | |
-| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) |   |   | X |  |  |  |
-| [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) |  |  |  | X |  |  |
-| [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) |  |  |  |  | X |  |
-| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22)|  |  |  |  |   | X |
+Here we have the exception mentioned above. That is, no matter the payer, if the treasury or system admin sign a
+`CryptoUpdate` targeting a system account with number up to [`ledger.numReservedSystemAccounts=100`](../hedera-node/src/main/resources/bootstrap.properties#L37),
+the necessary authorization will be granted.
+
+| Payer | All accounts [`<= ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L38) | Accounts [`<= ledger.numReservedSystemAccounts=100`](../hedera-node/src/main/resources/bootstrap.properties#L37) | Account `0.0.N` with `N <= ledger.numReservedSystemEntities=1000` | 
+| --- | :---: | :---: | :---: | :---: | 
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X |
+| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) |   | X |  |
+| `0.0.N` |   |  | X |
+| `0.0.M` for any `M` |  | X _if treasury or system admin also sign_ |  |
 
 ## Waived signing requirements
 
@@ -103,8 +108,10 @@ out" of performing their system roles. For example, even if we lose the key to t
 rates file, the exchange rates admin can still issue a `FileUpdate` transaction to change 
 this file.
 
-At present, the waived signature privileges for the `FileUpdate`, `FileAppend`, and `CryptoUpdate` 
-operations are identical to the corresponding authorization privileges in the tables above. 
+The waived signature privileges for `FileUpdate`, `FileAppend`, and `CryptoUpdate` 
+operations are identical to the corresponding authorization privileges in the tables above; 
+_except_ that non-payer signatures on a `CryptoUpdate` do not suffice to waive 
+signing requirements. (So the last row of the `CryptoUpdate` table doesn't apply.)
 
 # Miscellanea
 

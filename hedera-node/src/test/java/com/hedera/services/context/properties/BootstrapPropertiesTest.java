@@ -94,6 +94,7 @@ class BootstrapPropertiesTest {
 			entry("files.softwareUpdateZip", 150L),
 			entry("grpc.port", 50211),
 			entry("grpc.tlsPort", 50212),
+			entry("hedera.numReservedSystemAccounts", 100L),
 			entry("hedera.numReservedSystemEntities", 1_000L),
 			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),
