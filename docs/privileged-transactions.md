@@ -39,7 +39,7 @@ resource. For example, using the mainnet configuration, the treasury account is 
 
 When a system account is the designated payer for a transaction, there 
 are cases in which the network grants special **privileges** to the transaction. 
-(There is one exception in which authorization privileges may be granted based on a 
+(There is one exception in which privileges may be granted based on a 
 valid _non-payer_ signature; this occurs for  a `CryptoUpdate` targeting an account 
 with number no greater than [`ledger.numReservedSystemAccounts=100`](../hedera-node/src/main/resources/bootstrap.properties#L37). 
 But in general, it is crucial to understand the relevant system account must be the _payer_ of 
