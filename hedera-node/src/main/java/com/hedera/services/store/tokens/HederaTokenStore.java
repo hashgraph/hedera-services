@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.CreationResult;
+import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -102,12 +103,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
  *
  * @author Michael Tinker
  */
-public class HederaTokenStore implements TokenStore {
+public class HederaTokenStore extends HederaStore implements TokenStore {
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
 	static Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
 
-	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
@@ -115,10 +115,6 @@ public class HederaTokenStore implements TokenStore {
 			Map.Entry<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
-
-	private HederaLedger hederaLedger;
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-
 	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
 
 	TokenID pendingId = NO_PENDING_ID;
@@ -131,7 +127,7 @@ public class HederaTokenStore implements TokenStore {
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
-		this.ids = ids;
+		super(ids);
 		this.tokens = tokens;
 		this.validator = validator;
 		this.properties = properties;
@@ -150,12 +146,12 @@ public class HederaTokenStore implements TokenStore {
 	@Override
 	public void setHederaLedger(HederaLedger hederaLedger) {
 		hederaLedger.setTokenRelsLedger(tokenRelsLedger);
-		this.hederaLedger = hederaLedger;
+		super.setHederaLedger(hederaLedger);
 	}
 
 	@Override
 	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		this.accountsLedger = accountsLedger;
+		super.setAccountsLedger(accountsLedger);
 	}
 
 	@Override
@@ -664,13 +660,6 @@ public class HederaTokenStore implements TokenStore {
 		return knownTreasuries.get(aId).contains(tId);
 	}
 
-	private ResponseCodeEnum accountCheck(AccountID id, ResponseCodeEnum failure) {
-		if (!accountsLedger.exists(id) || (boolean) accountsLedger.get(id, AccountProperty.IS_DELETED)) {
-			return failure;
-		}
-		return OK;
-	}
-
 	private ResponseCodeEnum manageFlag(
 			AccountID aId,
 			TokenID tId,
@@ -735,11 +724,5 @@ public class HederaTokenStore implements TokenStore {
 			return validity;
 		}
 		return exists(tId) ? OK : INVALID_TOKEN_ID;
-	}
-
-	private ResponseCodeEnum checkAccountExistence(AccountID aId) {
-		return accountsLedger.exists(aId)
-				? (hederaLedger.isDeleted(aId) ? ACCOUNT_DELETED : OK)
-				: INVALID_ACCOUNT_ID;
 	}
 }

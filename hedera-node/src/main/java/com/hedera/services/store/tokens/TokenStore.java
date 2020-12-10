@@ -47,9 +47,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
-	void setHederaLedger(HederaLedger ledger);
-	void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
-
 	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean isKnownTreasury(AccountID id);
 	boolean associationExists(AccountID aId, TokenID tId);

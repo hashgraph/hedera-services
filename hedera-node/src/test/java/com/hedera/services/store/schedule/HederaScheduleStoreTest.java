@@ -1,4 +1,4 @@
-package com.hedera.services.store;
+package com.hedera.services.store.schedule;
 
 /*-
  * ‌
@@ -21,23 +21,17 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.swirlds.fcmap.FCMap;
 
-public interface Store<T, K> {
-    K get(T id);
-    boolean exists(T id);
+public class HederaScheduleStoreTest {
 
-    void setHederaLedger(HederaLedger ledger);
-    void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
+    EntityIdSource ids;
+    FCMap<MerkleEntityId, MerkleSchedule> schedules;
 
-    void commitCreation();
-    void rollbackCreation();
-    boolean isCreationPending();
+    HederaLedger hederaLedger;
 
-    T resolve(T id);
-    ResponseCodeEnum delete(T id);
+    MerkleSchedule schedule;
 }

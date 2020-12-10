@@ -22,15 +22,23 @@ package com.hedera.services.store.schedule;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.function.Consumer;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
 
@@ -41,9 +49,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_D
  */
 public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
+	Consumer<MerkleSchedule> DELETION = schedule -> schedule.setDeleted(true);
 
-	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, JKey adminKey, JKey signKey, AccountID sponsor);
-	ResponseCodeEnum addSignature(ScheduleID sID, SignatureMap signatures);
+	void apply(ScheduleID id, Consumer<MerkleSchedule> change);
+
+	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, HashSet<EntityId> signers, HashMap<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor);
+	ResponseCodeEnum putSignature(ScheduleID sID, AccountID aId, byte[] signature);
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;
@@ -63,8 +74,7 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 			return SCHEDULE_WAS_DELETED;
 		}
 
-		// TODO verify the deletion
-//		apply(id, DELETION);
+		apply(id, DELETION);
 		return OK;
 	}
 }

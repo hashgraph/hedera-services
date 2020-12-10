@@ -20,13 +20,23 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public enum ExceptionalScheduleStore implements ScheduleStore {
 	NOOP_SCHEDULE_STORE;
@@ -38,13 +48,27 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	public boolean exists(ScheduleID id) { throw new UnsupportedOperationException(); }
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, JKey adminKey, JKey signKey, AccountID sponsor) { throw new UnsupportedOperationException(); }
+	public void setHederaLedger(HederaLedger ledger) {
+		/* No-op */
+	}
 
 	@Override
-	public ResponseCodeEnum addSignature(ScheduleID sID, SignatureMap signatures) { throw new UnsupportedOperationException(); }
+	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		/* No-op */
+	}
 
 	@Override
-	public ResponseCodeEnum delete(ScheduleID sID) { throw new UnsupportedOperationException(); }
+	public void apply(ScheduleID id, Consumer<MerkleSchedule> change) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, HashSet<EntityId> signers, HashMap<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum putSignature(ScheduleID sID, AccountID aId, byte[] signature) { throw new UnsupportedOperationException(); }
 
 	@Override
 	public void commitCreation() { throw new UnsupportedOperationException(); }
