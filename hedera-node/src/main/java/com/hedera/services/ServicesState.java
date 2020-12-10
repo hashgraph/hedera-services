@@ -76,7 +76,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_090_VERSION = 3;
-	static final int MERKLE_VERSION = RELEASE_090_VERSION;
+	static final int RELEASE_0100_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0100_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
