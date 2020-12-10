@@ -70,7 +70,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						vanillaTransferSucceeds(),
 						complexKeyAcctPaysForOwnTransfer(),
 						twoComplexKeysRequired(),
-						systemBalancesCheck(),
+						specialAccountsBalanceCheck(),
 						transferToTopicReturnsInvalidAccountId(),
 				}
 		);
@@ -144,10 +144,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec systemBalancesCheck() {
-		return defaultHapiSpec("SystemBalancesCheck")
+	private HapiApiSpec specialAccountsBalanceCheck() {
+		return defaultHapiSpec("SpecialAccountsBalanceCheck")
 				.given().when().then(
-						IntStream.range(1, 101)
+						IntStream.concat(IntStream.range(1, 101), IntStream.range(900, 1001))
 								.mapToObj(i -> getAccountBalance("0.0." + i).logged())
 								.toArray(n -> new HapiSpecOperation[n])
 				);
