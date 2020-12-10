@@ -279,7 +279,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	private AccountID accountWith(long num) {
-		return IdUtils.asAccount(String.format("1.2.%d", num));
+		return IdUtils.asAccount(String.format("%d.%d.%d", shard, realm, num));
 	}
 
 	private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
