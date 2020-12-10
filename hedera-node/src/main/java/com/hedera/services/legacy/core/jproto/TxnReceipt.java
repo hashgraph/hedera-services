@@ -110,9 +110,6 @@ public class TxnReceipt implements SelfSerializable {
 				receipt.runningHashVersion = in.readLong();
 			}
 
-			if(version > RELEASE_090_VERSION) {
-				receipt.newTotalSupply = in.readLong();
-			}
 			return receipt;
 		}
 	}

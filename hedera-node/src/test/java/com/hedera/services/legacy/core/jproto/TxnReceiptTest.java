@@ -22,18 +22,11 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SolidityFnResult;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Assertions;
@@ -44,12 +37,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
-//import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
@@ -58,8 +46,6 @@ import static org.mockito.Mockito.times;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -68,10 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 @RunWith(JUnitPlatform.class)
 public class TxnReceiptTest {
   private static final int MAX_STATUS_BYTES = 128;
-//  private static final int MAX_RUNNING_HASH_BYTES = 1024;
   DomainSerdes serdes;
   ExchangeRates mockRates;
-
   TxnReceipt subject;
 
 
@@ -93,23 +77,9 @@ public class TxnReceiptTest {
 
   @BeforeEach
   public void setup() {
-    subject = new TxnReceipt();
-
-//    din = mock(DataInputStream.class);
-//
     serdes = mock(DomainSerdes.class);
     mockRates = mock(ExchangeRates.class);
-//    legacyTxnIdProvider = mock(TxnId.Provider.class);
-//    legacyReceiptProvider = mock(TxnReceipt.Provider.class);
-//    legacyInstantProvider = mock(RichInstant.Provider.class);
-//    legacyFnResultProvider = mock(SolidityFnResult.Provider.class);
-//    legacyAdjustmentsProvider = mock(CurrencyAdjustments.Provider.class);
-//
-//    ExpirableTxnRecord.legacyAdjustmentsProvider = legacyAdjustmentsProvider;
-//    ExpirableTxnRecord.legacyFnResultProvider = legacyFnResultProvider;
-//    ExpirableTxnRecord.legacyInstantProvider = legacyInstantProvider;
-//    ExpirableTxnRecord.legacyReceiptProvider = legacyReceiptProvider;
-//    ExpirableTxnRecord.legacyTxnIdProvider = legacyTxnIdProvider;
+
     TxnReceipt.serdes = serdes;
   }
 
@@ -323,7 +293,7 @@ public class TxnReceiptTest {
     final var tokenId = EntityId.ofNullableTokenId(
             TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
     final var cut = new TxnReceipt(
-            "SUCCESS", null, null, null, null, null,
+            "SUCCESS", null, null, null, tokenId, null,
             null, 0L, null, TxnReceipt.MISSING_RUNNING_HASH_VERSION, 1000L);
 
     assertEquals(1000L, cut.getNewTotalSupply());
@@ -334,7 +304,7 @@ public class TxnReceiptTest {
 
 
   @Test
-  public void testSerialize() throws IOException {
+  public void serializeWorks() throws IOException {
     // setup:
     SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
     // and:
@@ -353,37 +323,15 @@ public class TxnReceiptTest {
     inOrder.verify(fout).writeBoolean(false);
     inOrder.verify(fout).writeLong(subject.getNewTotalSupply());
   }
-
-
-  @Test
-  public void testDeserialize() throws IOException {
-    // setup:
-    SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
-    // and:
-    InOrder inOrder = Mockito.inOrder(serdes, fout);
-
-    subject = new TxnReceipt("SUCCESS", null, null,
-            null,null,mockRates,
-            null, -1, null, -1, 100);
-    // when:
-    subject.serialize(fout);
-
-    // then:
-    inOrder.verify(fout).writeNormalisedString(subject.getStatus());
-    inOrder.verify(fout).writeSerializable(mockRates, true);
-    inOrder.verify(serdes, times(5)).writeNullableSerializable(subject.getAccountId(), fout);
-    inOrder.verify(fout).writeBoolean(false);
-    inOrder.verify(fout).writeLong(subject.getNewTotalSupply());
-  }
-
 
   @Test
   public void v0100DeserializeWorks() throws IOException {
-    // setup:
+    final var tokenId = EntityId.ofNullableTokenId(
+            TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
     SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
     subject = new TxnReceipt("SUCCESS", null, null,
-            null,null,mockRates,
-            null, 0, null, 0, 100);
+            null,tokenId, mockRates,
+            null, -1, null, -1, 100);
 
     given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());
     given(fin.readSerializable(anyBoolean(), any())).willReturn(mockRates);
@@ -407,7 +355,8 @@ public class TxnReceiptTest {
 
     // then:
     assertEquals(subject.getNewTotalSupply(), txnReceipt.getNewTotalSupply());
-
+    assertEquals(subject.getStatus(), txnReceipt.getStatus());
+    assertEquals(subject.getExchangeRates(), txnReceipt.getExchangeRates());
+    assertEquals(subject.getTokenId(), txnReceipt.getTokenId());
   }
-
 }
