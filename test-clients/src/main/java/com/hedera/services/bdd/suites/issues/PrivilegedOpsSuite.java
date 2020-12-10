@@ -121,19 +121,23 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 								.hasPrecheck(AUTHORIZATION_FAILED)
 				).then(
 						fileUpdate(UPDATE_ZIP_FILE)
+								.fee(0L)
 								.via("updateTxn")
 								.payingWith(FREEZE_ADMIN)
 								.contents("Yuu"),
 						getTxnRecord("updateTxn").showsNoTransfers(),
 						fileAppend(UPDATE_ZIP_FILE)
+								.fee(0L)
 								.via("appendTxn")
 								.payingWith(FREEZE_ADMIN)
 								.content("upp"),
 						getTxnRecord("appendTxn").showsNoTransfers(),
 						fileUpdate(UPDATE_ZIP_FILE)
+								.fee(0L)
 								.payingWith(SYSTEM_ADMIN)
 								.contents("Yuuupp"),
 						fileAppend(UPDATE_ZIP_FILE)
+								.fee(0L)
 								.payingWith(GENESIS)
 								.content(new byte[0])
 				);
