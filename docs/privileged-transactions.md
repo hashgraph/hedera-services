@@ -84,7 +84,7 @@ Next we consider `FileUpdate` and `FileAppend` transactions when targeting one o
 | [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) | X | X | |   | |
 | [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) |   |   | X |   | |
 | [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) |   | X |   | X | |
-| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22) |   |   |   |   | | X |
+| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22) |   |   |   |   | X |
 
 ### Authorization for crypto updates
 
