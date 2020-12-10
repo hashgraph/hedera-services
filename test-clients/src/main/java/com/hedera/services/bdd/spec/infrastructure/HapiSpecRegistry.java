@@ -93,6 +93,8 @@ public class HapiSpecRegistry {
 		saveKey(setup.systemDeleteAdminName(), asKeyList(genesisKey));
 		saveAccountId(setup.systemUndeleteAdminName(), setup.systemUndeleteAdmin());
 		saveKey(setup.systemUndeleteAdminName(), asKeyList(genesisKey));
+		saveAccountId(setup.freezeAdminName(), setup.freezeAdminId());
+		saveKey(setup.freezeAdminName(), asKeyList(genesisKey));
 
 		/* (system file 1) :: Address Book */
 		saveFileId(setup.addressBookName(), setup.addressBookId());

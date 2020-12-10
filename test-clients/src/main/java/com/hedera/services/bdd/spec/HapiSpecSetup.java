@@ -277,7 +277,12 @@ public class HapiSpecSetup {
 		return props.getFile("fee.schedule.id");
 	}
 	public String feeScheduleName() { return props.get("fee.schedule.name"); }
-
+	public String freezeAdminName() {
+		return props.get("freeze.admin.name");
+	}
+	public AccountID freezeAdminId() {
+		return props.getAccount("freeze.admin.id");
+	}
 	public FileID updateFeatureId() {
 		return props.getFile("update.feature.id");
 	}

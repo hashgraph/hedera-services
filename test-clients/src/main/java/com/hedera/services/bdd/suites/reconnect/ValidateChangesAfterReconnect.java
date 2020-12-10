@@ -113,7 +113,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 											spec.registry().saveBytes("newRates", newRates);
 											return newRates;
 										}
-								).payingWith(MASTER),
+								).payingWith(SYSTEM_ADMIN),
 
 						makeFree(CryptoGetInfo),
 
@@ -135,12 +135,12 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.3")
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.saveToRegistry(fileInfoRegistry),
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.6")
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.hasContents(fileInfoRegistry),
 
 						fileUpdate(nonUpdatableFile)

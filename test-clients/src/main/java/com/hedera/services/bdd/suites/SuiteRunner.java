@@ -62,7 +62,7 @@ import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
-import com.hedera.services.bdd.suites.issues.Issue2144Spec;
+import com.hedera.services.bdd.suites.issues.PrivilegedOpsSuite;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
@@ -171,7 +171,7 @@ public class SuiteRunner {
 				new CryptoTransferSuite(),
 				new CryptoUpdateSuite(),
 				new CryptoRecordsSanityCheckSuite(),
-				new Issue2144Spec(),
+				new PrivilegedOpsSuite(),
 				new CannotDeleteSystemEntitiesSuite()));
 		put("CiTokenJob", aof(
 				new TokenAssociationSpecs(),
@@ -297,7 +297,7 @@ public class SuiteRunner {
 		put("VersionInfoSpec", aof(new VersionInfoSpec()));
 		put("FreezeSuite", aof(new FreezeSuite()));
 		/* Authorization. */
-		put("SuperusersAreNeverThrottled", aof(new Issue2144Spec()));
+		put("SuperusersAreNeverThrottled", aof(new PrivilegedOpsSuite()));
 		put("SysDelSysUndelSpec", aof(new SysDelSysUndelSpec()));
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));

@@ -214,6 +214,8 @@ public class SystemOpPolicies {
 			return canExchangeRatesAdminUpdate(nonAccountSystemEntity);
 		} else if (payer == entityNums.accounts().feeSchedulesAdmin()) {
 			return nonAccountSystemEntity == entityNums.files().feeSchedules();
+		} else if (payer == entityNums.accounts().freezeAdmin()) {
+			return nonAccountSystemEntity == entityNums.files().softwareUpdateZip();
 		} else {
 			return false;
 		}

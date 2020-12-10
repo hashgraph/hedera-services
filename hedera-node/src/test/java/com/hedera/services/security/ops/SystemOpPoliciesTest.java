@@ -449,6 +449,18 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
+	public void freezeAdminCanUpdateZipFile() throws InvalidProtocolBufferException {
+		// given:
+		var txn = freezeAdminTxn()
+				.setFileUpdate(FileUpdateTransactionBody
+						.newBuilder()
+						.setFileID(file(150)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+
+	@Test
 	public void fileUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
