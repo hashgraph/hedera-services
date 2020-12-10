@@ -2108,17 +2108,13 @@ jobs:
       workflow-name: << parameters.workflow-name >>
     steps:
       - run:
-          name: Build circleCI job message
-          command: |
-            echo "CircleCI Job ${CIRCLE_USERNAME} #${CIRCLE_BUILD_NUM}, Branch: ${CIRCLE_BRANCH}, Commit ID: ${CIRCLE_SHA1}" >> $BASH_ENV
-
-      - run:
           name: Run continuous integration tests
           no_output_timeout: 30m
           command: |
+            CI_DETAILS= echo "CircleCI Job ${CIRCLE_USERNAME} <${CIRCLE_BUILD_URL}|${CircleCI Job}>, Branch: ${CIRCLE_BRANCH}, Commit ID: ${CIRCLE_SHA1}";
             cd /swirlds-platform/regression;
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json /repo $BASH_ENV
+            ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json /repo CI_DETAILS
 
       - run:
           name: Sync results of continuous integration to circelCI job
