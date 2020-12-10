@@ -31,6 +31,7 @@ import matplotlib
 
 from datetime import datetime, timedelta, timezone
 
+
 def _parse_isoformat_date(dtstr):
     # It is assumed that this function will only be called with a
     # string of length exactly 10, and (though this is not used) ASCII-only
@@ -58,10 +59,10 @@ def _parse_hh_mm_ss_ff(tstr):
         if (len_str - pos) < 2:
             raise ValueError('Incomplete time component')
 
-        time_comps[comp] = int(tstr[pos:pos+2])
+        time_comps[comp] = int(tstr[pos:pos + 2])
 
         pos += 2
-        next_char = tstr[pos:pos+1]
+        next_char = tstr[pos:pos + 1]
 
         if not next_char or comp >= 2:
             break
@@ -96,7 +97,7 @@ def _parse_isoformat_time(tstr):
 
     # This is equivalent to re.search('[+-]', tstr), but faster
     tz_pos = (tstr.find('-') + 1 or tstr.find('+') + 1)
-    timestr = tstr[:tz_pos-1] if tz_pos > 0 else tstr
+    timestr = tstr[:tz_pos - 1] if tz_pos > 0 else tstr
 
     time_comps = _parse_hh_mm_ss_ff(timestr)
 
@@ -127,6 +128,7 @@ def _parse_isoformat_time(tstr):
 
     return time_comps
 
+
 def datetime_from_isformat(date_string):
     """Construct a datetime from the output of datetime.isoformat()."""
     if not isinstance(date_string, str):
@@ -151,6 +153,7 @@ def datetime_from_isformat(date_string):
 
     return datetime(*(date_components + time_components))
 
+
 # enable non-interactive mode if no DISPLAY defined in environment
 # this is for running script as backend to generate PDF, PNG, etc
 # must call use('Agg') before import plt
@@ -172,6 +175,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 pp = pprint.PrettyPrinter(indent=4)
 
 CONST_PAUSE = "GC Pauses"
+SEC_TRANS_H = "secTransH"
+SEC_TRANS_H_2SEC = "secTransH2Sec"
+
 
 
 #
@@ -1044,14 +1050,17 @@ def draw_subplot(stat_name, fig_count):
     global nodeid_ref
     LINE_STYLES = ['solid', 'dashed']
     NUM_STYLES = len(LINE_STYLES)
-    data_dict = stat_data_dict[stat_name]
+    stat_name_local = stat_name
+    if stat_name_local == SEC_TRANS_H_2SEC:
+        start_name_local = SEC_TRANS_H
+    data_dict = stat_data_dict[stat_name_local]
     if len(data_dict) > 0:
         row = math.floor(fig_count / fig_per_row)
         column = fig_count % fig_per_row
         sub_axes[row, column].clear()  # clear prev subplot
 
         # plot keywords count from swirlds.log
-        if stat_name in log_search_keys:
+        if stat_name_local in log_search_keys:
             data_list = []
             index = range(len(data_dict.keys()))
             for key in data_dict.keys():
@@ -1066,16 +1075,16 @@ def draw_subplot(stat_name, fig_count):
             # pp.pprint(data_dict.keys())
             # pp.pprint(data_list)
 
-        # plot statistci entries from csv
+        # plot statistic entries from csv
         else:
-            # print("Key ", stat_name)
+            print("Key ", stat_name_local)
             # pp.pprint(data_dict.keys())
             i = 0
             accumulated_values = []
             line_ref = []
             nodeid_ref = []
             for nodeid, values in data_dict.items():
-                if stat_name == CONST_PAUSE:
+                if stat_name_local == CONST_PAUSE:
                     timestamps = data_dict[nodeid]["time"]
                     values = data_dict[nodeid]["values"]
                 else:
@@ -1096,7 +1105,7 @@ def draw_subplot(stat_name, fig_count):
                 #     accumulated_values = [x + y for x, y in zip(accumulated_values, values)]
                 accumulated_values = accumulated_values + np.trim_zeros(values)
 
-                if stat_name == CONST_PAUSE:
+                if stat_name_local == CONST_PAUSE:
                     sampled_values = values
                     sampled_time = timestamps
                 else:
@@ -1104,7 +1113,26 @@ def draw_subplot(stat_name, fig_count):
                     sampled_values = values[::PARAMETER.arrayStep]
                     sampled_time = timestamps[::PARAMETER.arrayStep]
 
+                # now when stat is secTransH, we have to trim the first 2 seconds off as well.
+                secTransHTimeStampIndex = 0
+                if stat_name == SEC_TRANS_H_2SEC:
+                    # get the timeStamp for this non zero value in sampled_values
+                    nonZeroTimeStamp = sampled_time[0]
+                    for i in range(0, len(sampled_values)):
+                        if(sampled_values[i] != 0):
+                            nonZeroTimeStamp = sampled_time[i]
+                            break
+
+                    # increment 2 seconds to this and find the index in sampled_time
+                    for i in range(0, len(sampled_time)):
+                        if sampled_time[i] >= nonZeroTimeStamp+2:
+                            secTransHTimeStampIndex = i
+                            break
                 xlables_new = [x / 60 for x in sampled_time]  # seconds to epoch minutes
+
+                #skip starting 2 secs if index is set
+                xlables_new = xlables_new[secTransHTimeStampIndex:]
+                sampled_values = sampled_values[secTransHTimeStampIndex:]
 
                 # trim size if values and timestamp are not same size
                 if (len(xlables_new) < len(sampled_values)):
@@ -1128,11 +1156,15 @@ def draw_subplot(stat_name, fig_count):
             sub_axes[row, column].get_xaxis().set_visible(True)  # hide x-axis labels
 
             sub_axes[row, column].legend(line_ref, nodeid_ref)
-            number_array_min_max_avg(stat_name, accumulated_values)
+            number_array_min_max_avg(stat_name_local, accumulated_values)
 
-        sub_axes[row, column].set_title(stat_name)
+        if stat_name == SEC_TRANS_H_2SEC:
+            sub_axes[row, column].set_title(stat_name)
+        else:
+            sub_axes[row, column].set_title(stat_name_local)
+
     else:
-        print("No data for stat_name " + stat_name)
+        print("No data for stat_name " + stat_name_local)
 
 
 # update subplot on the page
@@ -1144,6 +1176,10 @@ def draw_page(page_num):
                 # find stat name by page and index
                 stat_key = list(stat_data_dict.keys())[index]
                 draw_subplot(stat_key, i)
+                if stat_key == SEC_TRANS_H:
+                    # skip a plot as we add a second plot for secTransH skipping first 2 seconds
+                    i = i + 1
+                    draw_subplot(SEC_TRANS_H_2SEC, i)
                 sub_axes[math.floor(i / fig_per_row), i % fig_per_row].set_visible(True)
             else:
                 # clear the subplot
@@ -1403,9 +1439,8 @@ def align_time_stamp():
             if first_value < min:
                 min = first_value
             print(" last UTC time string ", values[-1])
-        except IndexError:  #handle sometimes truncated CSV files
+        except IndexError:  # handle sometimes truncated CSV files
             pp.pprint(values)
-
 
     print(" find min UTC time ", min)
 
@@ -1469,6 +1504,8 @@ scan_csv_and_logs()
 
 # stat_data_dict contains both csv stat names and log key errors
 total_figures = len(stat_data_dict) - 1  # not including timestamp
+# increasing the number of figures by 1 as we are a plotting a new graph for secTransH skipping first 2 seconds
+total_figures = total_figures + 1
 
 num_pages = math.ceil(total_figures / fig_per_page)
 current_page = 0
