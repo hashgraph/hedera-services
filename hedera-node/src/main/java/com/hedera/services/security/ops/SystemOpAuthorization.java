@@ -65,15 +65,6 @@ public enum SystemOpAuthorization {
 		}
 	},
 	/**
-	 * The operation requires system privileges, and a non-payer signer may have those privileges.
-	 */
-	TENTATIVELY_AUTHORIZED {
-		@Override
-		public ResponseCodeEnum asStatus() {
-			return OK;
-		}
-	},
-	/**
 	 * The operation requires system privileges, and its payer has those privileges.
 	 */
 	AUTHORIZED {

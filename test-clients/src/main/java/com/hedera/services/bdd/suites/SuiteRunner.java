@@ -46,6 +46,7 @@ import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
+import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -156,20 +157,22 @@ public class SuiteRunner {
 
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
 		/* CI jobs */
-//		put("CiConsensusAndCryptoJob", aof(
-//				new DuplicateManagementTest(),
-//				new TopicCreateSuite(),
-//				new TopicUpdateSuite(),
-//				new TopicDeleteSuite(),
-//				new SubmitMessageSuite(),
-//				new ChunkingSuite(),
-//				new TopicGetInfoSuite(),
-//				new ConsensusThrottlesSuite(),
-//				new BucketThrottlingSpec(),
-//				new SpecialAccountsAreExempted(),
-//				new CryptoTransferSuite(),
-//				new CryptoRecordsSanityCheckSuite(),
-//				new Issue2144Spec()));
+		put("CiConsensusAndCryptoJob", aof(
+				new SignedTransactionBytesRecordsSuite(),
+				new DuplicateManagementTest(),
+				new TopicCreateSuite(),
+				new TopicUpdateSuite(),
+				new TopicDeleteSuite(),
+				new SubmitMessageSuite(),
+				new ChunkingSuite(),
+				new TopicGetInfoSuite(),
+				new BucketThrottlingSpec(),
+				new SpecialAccountsAreExempted(),
+				new CryptoTransferSuite(),
+				new CryptoUpdateSuite(),
+				new CryptoRecordsSanityCheckSuite(),
+				new Issue2144Spec(),
+				new CannotDeleteSystemEntitiesSuite()));
 		put("CiTokenJob", aof(
 				new TokenAssociationSpecs(),
 				new TokenUpdateSpecs(),
@@ -177,12 +180,12 @@ public class SuiteRunner {
 				new TokenDeleteSpecs(),
 				new TokenManagementSpecs(),
 				new TokenTransactSpecs()));
-//		put("CiFileJob", aof(
-//				new FileRecordsSanityCheckSuite(),
-//				new VersionInfoSpec(),
-//				new ProtectedFilesUpdateSuite(),
-//				new PermissionSemanticsSpec(),
-//				new SysDelSysUndelSpec()));
+		put("CiFileJob", aof(
+				new FileRecordsSanityCheckSuite(),
+				new VersionInfoSpec(),
+				new ProtectedFilesUpdateSuite(),
+				new PermissionSemanticsSpec(),
+				new SysDelSysUndelSpec()));
 //		put("CiSmartContractJob", aof(
 //				new NewOpInConstructorSuite(),
 //				new IssueXXXXSpec(),

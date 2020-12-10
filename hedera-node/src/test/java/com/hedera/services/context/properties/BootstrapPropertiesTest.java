@@ -76,8 +76,6 @@ class BootstrapPropertiesTest {
 			entry("accounts.feeSchedulesAdmin", 56L),
 			entry("accounts.freezeAdmin", 58L),
 			entry("accounts.systemAdmin", 50L),
-			entry("accounts.systemAdmin.firstManaged", 51L),
-			entry("accounts.systemAdmin.lastManaged", 80L),
 			entry("accounts.systemDeleteAdmin", 59L),
 			entry("accounts.systemUndeleteAdmin", 60L),
 			entry("accounts.treasury", 2L),

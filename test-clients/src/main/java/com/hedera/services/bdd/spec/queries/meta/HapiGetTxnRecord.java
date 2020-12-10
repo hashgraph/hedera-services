@@ -58,6 +58,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	String txn;
 	boolean assertNothing = false;
+	boolean assertNothingAboutHashes = false;
 	boolean useDefaultTxnId = false;
 	boolean requestDuplicates = false;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
@@ -88,6 +89,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord andAnyDuplicates() {
 		requestDuplicates = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord assertingNothingAboutHashes() {
+		assertNothingAboutHashes = true;
 		return this;
 	}
 
@@ -207,8 +213,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
 		assertPriority(spec, actualRecord);
 		assertDuplicates(spec);
-		assertTransactionHash(spec, actualRecord);
-		assertTopicRunningHash(spec, actualRecord);
+		if (!assertNothingAboutHashes) {
+			assertTransactionHash(spec, actualRecord);
+			assertTopicRunningHash(spec, actualRecord);
+		}
 	}
 
 	@Override

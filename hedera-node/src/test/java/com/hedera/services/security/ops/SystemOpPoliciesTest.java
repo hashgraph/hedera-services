@@ -62,75 +62,47 @@ class SystemOpPoliciesTest {
 	@Test
 	public void genesisCanUpdateEverything() {
 		// expect:
-		assertTrue(subject.canUpdate(2, 1));
-		assertTrue(subject.canUpdate(2, 2));
-		assertTrue(subject.canUpdate(2, 1001));
-	}
-
-	@Test
-	public void sysAdminCanUpdateOnlyManagedAccounts() {
-		// expect:
-		assertFalse(subject.canUpdate(50, 50));
-		assertFalse(subject.canUpdate(50, 81));
-		assertTrue(subject.canUpdate(50, 51));
-		assertTrue(subject.canUpdate(50, 80));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 1));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 2));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 1001));
 	}
 
 	@Test
 	public void sysAdminCanUpdateKnownSystemFiles() {
 		// expect:
-		assertTrue(subject.canUpdate(50, 101));
-		assertTrue(subject.canUpdate(50, 102));
-		assertTrue(subject.canUpdate(50, 111));
-		assertTrue(subject.canUpdate(50, 112));
-		assertTrue(subject.canUpdate(50, 121));
-		assertTrue(subject.canUpdate(50, 122));
-	}
-
-	@Test
-	public void specialAdminsCanUpdateThemselves() {
-		// expect:
-		assertTrue(subject.canUpdate(55, 55));
-		assertTrue(subject.canUpdate(56, 56));
-		assertTrue(subject.canUpdate(57, 57));
-		assertTrue(subject.canUpdate(58, 58));
-		assertTrue(subject.canUpdate(59, 59));
-		assertTrue(subject.canUpdate(60, 60));
+		assertTrue(subject.canPerformNonCryptoUpdate(50, 101));
+		assertTrue(subject.canPerformNonCryptoUpdate(50, 102));
+		assertTrue(subject.canPerformNonCryptoUpdate(50, 111));
+		assertTrue(subject.canPerformNonCryptoUpdate(50, 112));
+		assertTrue(subject.canPerformNonCryptoUpdate(50, 121));
+		assertTrue(subject.canPerformNonCryptoUpdate(50, 122));
 	}
 
 	@Test
 	public void addressBookAdminCanUpdateExpected() {
 		// expect:
-		assertTrue(subject.canUpdate(55, 101));
-		assertTrue(subject.canUpdate(55, 102));
-		assertTrue(subject.canUpdate(55, 121));
-		assertTrue(subject.canUpdate(55, 122));
-		assertFalse(subject.canUpdate(55, 111));
-	}
-
-	@Test
-	public void unspecializedSystemAccountCanUpdateOnlyItself() {
-		// expect:
-		for (long i = 1; i <= 1_000; i++) {
-			assertEquals((i == 58), subject.canUpdate(58, i));
-		}
+		assertTrue(subject.canPerformNonCryptoUpdate(55, 101));
+		assertTrue(subject.canPerformNonCryptoUpdate(55, 102));
+		assertTrue(subject.canPerformNonCryptoUpdate(55, 121));
+		assertTrue(subject.canPerformNonCryptoUpdate(55, 122));
+		assertFalse(subject.canPerformNonCryptoUpdate(55, 111));
 	}
 
 	@Test
 	public void feeSchedulesAdminCanUpdateExpected() {
 		// expect:
-		assertTrue(subject.canUpdate(56, 111));
-		assertFalse(subject.canUpdate(56, 112));
-		assertFalse(subject.canUpdate(56, 121));
+		assertTrue(subject.canPerformNonCryptoUpdate(56, 111));
+		assertFalse(subject.canPerformNonCryptoUpdate(56, 112));
+		assertFalse(subject.canPerformNonCryptoUpdate(56, 121));
 	}
 
 	@Test
 	public void exchangeRatesAdminCanUpdateExpected() {
 		// expect:
-		assertTrue(subject.canUpdate(57, 112));
-		assertTrue(subject.canUpdate(57, 121));
-		assertTrue(subject.canUpdate(57, 122));
-		assertFalse(subject.canUpdate(57, 111));
+		assertTrue(subject.canPerformNonCryptoUpdate(57, 112));
+		assertTrue(subject.canPerformNonCryptoUpdate(57, 121));
+		assertTrue(subject.canPerformNonCryptoUpdate(57, 122));
+		assertFalse(subject.canPerformNonCryptoUpdate(57, 111));
 	}
 
 	@Test
@@ -169,7 +141,7 @@ class SystemOpPoliciesTest {
 	@Test
 	public void cryptoUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
 		// given:
-		var txn = sysAdminTxn()
+		var txn = treasuryTxn()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
 						.newBuilder()
 						.setAccountIDToUpdate(account(75)));
@@ -178,7 +150,18 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void cryptoUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
+	public void cryptoUpdateRecognizesUnnecessaryForSystem() throws InvalidProtocolBufferException {
+		// given:
+		var txn = civilianTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(75)));
+		// expect:
+		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void cryptoUpdateRecognizesUnnecessaryForNonSystem() throws InvalidProtocolBufferException {
 		// given:
 		var txn = civilianTxn()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
@@ -189,14 +172,35 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
-	public void cryptoUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
+	public void cryptoUpdateRecognizesAuthorizedForTreasury() throws InvalidProtocolBufferException {
 		// given:
-		var txn = civilianTxn()
+		var selfUpdateTxn = treasuryTxn()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
 						.newBuilder()
-						.setAccountIDToUpdate(account(75)));
+						.setAccountIDToUpdate(account(2)));
+		var otherUpdateTxn = treasuryTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(50)));
 		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+		assertEquals(AUTHORIZED, subject.check(accessor(selfUpdateTxn)));
+		assertEquals(AUTHORIZED, subject.check(accessor(otherUpdateTxn)));
+	}
+
+	@Test
+	public void cryptoUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
+		// given:
+		var civilianTxn = civilianTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(2)));
+		var sysAdminTxn = sysAdminTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(2)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(civilianTxn)));
+		assertEquals(UNAUTHORIZED, subject.check(accessor(sysAdminTxn)));
 	}
 
 	@Test
@@ -420,17 +424,6 @@ class SystemOpPoliciesTest {
 						.setContractID(contract(123)));
 		// expect:
 		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
-	}
-
-	@Test
-	public void contractUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
-		// given:
-		var txn = sysAdminTxn()
-				.setContractUpdateInstance(ContractUpdateTransactionBody
-						.newBuilder()
-						.setContractID(contract(123)));
-		// expect:
-		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
 	}
 
 	@Test
