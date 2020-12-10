@@ -25,6 +25,6 @@ package proto;
 import "BasicTypes.proto";
 
 message ScheduleSignTransactionBody {
-  ScheduleID scheduleID = 1; // The ID of the Scheduled entity
+  ScheduleID schedule = 1; // The ID of the Scheduled entity
   SignatureMap sigMap = 2; // The signature map containing the signature(s) to authorise the transaction
 }

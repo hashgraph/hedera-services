@@ -80,6 +80,6 @@ message Query {
 
         TokenGetInfoQuery tokenGetInfo = 52; // Get all information about a token
 
-        ScheduleGetInfoQuery scheduleGetInfo = 53; // Get all information about a token
+        ScheduleGetInfoQuery scheduleGetInfo = 53; // Get all information about a scheduled entity
     }
 }

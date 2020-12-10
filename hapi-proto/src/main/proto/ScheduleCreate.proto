@@ -29,9 +29,9 @@ message ScheduleCreateTransactionBody {
   bytes transactionBody = 1; // The transaction serialized into bytes that must be signed
   Key adminKey = 2; // (optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed)
   Signers signers = 3; // The accounts which are able to authorise and sign the scheduled transaction. This could be a Threshold list of accounts or a simple Account list. Serves as definition to who should sign this scheduled TX in order for it to be executed.
-  SignatureMap signatureMap = 4; // (optional) The signature map containing the signature of at least one key defined in the singKey `KeyList` on transaction creation
-  bool executeImmediately = 5; // The indicator that sets whether the transaction must be executed as soon as possible (once signatures are gathered)
-  Timestamp executeAtTime = 6; // NOT SUPPORTED IN MVP!!! The time at which the transaction will be attempted to be executed
+  SignatureMap signatureMap = 4; // The signature map containing the signature of at least one account defined in the signers proto on transaction creation
+  bool executeImmediately = 5; // Whether to execute the transaction immediately when all required signatures are collected. Currently only executeImmediately=true is supported
+  Timestamp executeAtTime = 6; // The time at which the transaction will be attempted to be executed. Currently not supported.
 }
 
 message Signers {

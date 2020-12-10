@@ -836,14 +836,14 @@ public class ServicesContext {
 				entry(TokenAccountWipe, List.of(new TokenWipeResourceUsage())),
 				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
 				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
-				/* System */
-				entry(Freeze, List.of(new FreezeResourceUsage())),
-				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
-				entry(SystemUndelete, List.of(new SystemUndeleteFileResourceUsage(fileFees))),
 				/* Schedule */
 				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage())),
 				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage())),
-				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage()))
+				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage())),
+				/* System */
+				entry(Freeze, List.of(new FreezeResourceUsage())),
+				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
+				entry(SystemUndelete, List.of(new SystemUndeleteFileResourceUsage(fileFees)))
 		);
 		return estimatorsMap::get;
 	}

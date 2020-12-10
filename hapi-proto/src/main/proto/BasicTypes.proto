@@ -100,9 +100,9 @@ message TokenID {
 
 /* Unique identifier for a schedule entity */
 message ScheduleID {
-    int64 shardNum = 1; // A nonnegative shard number
-    int64 realmNum = 2; // A nonnegative realm number
-    int64 tokenNum = 3; // A nonnegative token number
+    int64 shardNum = 1;    // A nonnegative shard number
+    int64 realmNum = 2;    // A nonnegative realm number
+    int64 scheduleNum = 3; // A nonnegative schedule number
 }
 
 /* Possible Freeze statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship */
@@ -271,10 +271,10 @@ enum HederaFunctionality {
     TokenAccountWipe = 67; // Wipe token amount from Account holder
     TokenAssociateToAccount = 68; // Associate tokens to an account
     TokenDissociateFromAccount = 69; // Dissociate tokens from an account
-    ScheduleCreate = 70; // Create Schedule
-    ScheduleDelete = 71; // Delete Schedule
-    ScheduleSign = 72; // Sign Schedule
-    ScheduleGetInfo = 73; // Get Schedule Information
+    ScheduleCreate = 70; // Create Scheduled Transaction
+    ScheduleDelete = 71; // Delete Scheduled Transaction
+    ScheduleSign = 72; // Sign Scheduled Transaction
+    ScheduleGetInfo = 73; // Get Scheduled Transaction Information
 }
 
 /*

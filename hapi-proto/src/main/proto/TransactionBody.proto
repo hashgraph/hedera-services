@@ -122,8 +122,8 @@ message TransactionBody {
     TokenAssociateTransactionBody tokenAssociate = 40; // Associate tokens to an account
     TokenDissociateTransactionBody tokenDissociate = 41; // Dissociate tokens from an account
 
-    ScheduleCreateTransactionBody scheduleCreation = 42; //
-    ScheduleDeleteTransactionBody scheduleDelete = 43; //
-    ScheduleSignTransactionBody scheduleSign = 44; //
+    ScheduleCreateTransactionBody scheduleCreation = 42; // Creates a schedule entity instance
+    ScheduleDeleteTransactionBody scheduleDelete = 43; // Deletes a schedule entity instance
+    ScheduleSignTransactionBody scheduleSign = 44; // Signs a schedule entity instance
   }
 }

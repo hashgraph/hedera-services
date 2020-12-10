@@ -25,6 +25,5 @@ package proto;
 import "BasicTypes.proto";
 
 message ScheduleDeleteTransactionBody {
-  ScheduleID scheduleID = 1; // The ID of the Scheduled Entity
-  Key adminKey = 2;
+  ScheduleID schedule = 1; // The ID of the Scheduled Entity
 }

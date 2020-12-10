@@ -69,7 +69,7 @@ public class GetScheduleInfoAnswer implements AnswerService {
 
     @Override
     public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        var schedule = query.getScheduleGetInfo().getScheduleID();
+        var schedule = query.getScheduleGetInfo().getSchedule();
 
         return view.scheduleExists(schedule) ? OK : INVALID_SCHEDULE_ID;
     }
@@ -133,7 +133,7 @@ public class GetScheduleInfoAnswer implements AnswerService {
                 response.setScheduleInfo((ScheduleGetInfo.ScheduleInfo) ctx.get(SCHEDULE_INFO_CTX_KEY));
             }
         } else {
-            var info = view.infoForSchedule(op.getScheduleID());
+            var info = view.infoForSchedule(op.getSchedule());
             if (info.isEmpty()) {
                 response.setHeader(answerOnlyHeader(INVALID_SCHEDULE_ID));
             } else {
