@@ -1,7 +1,7 @@
 # System accounts and files
 
 The Hedera network reserves the first 
-[`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L37) 
+[`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties) 
 entity numbers for its own uses. 
 An account with a number in the reserved range is called a **system account**. 
 A file with a number in the reserved range is called a **system file**. 
@@ -20,7 +20,8 @@ For the purposes of this document, we care about the the following:
  - The **exchange rates admin**, used to set the network's active conversion
  ratio between USD and ℏ.
  - The **freeze admin**, used to schedule maintenance periods during which the 
- network stops accepting new transactions.
+ network stops accepting new transactions. In the future the freeze admin will
+ also be able to trigger an update to the network software or files.
  - The **system delete admin**, used to delete files or contracts which may 
  have been created on the network with illicit storage contents. (Note that crypto 
  accounts, topics, and tokens are untouchable.)
@@ -39,8 +40,8 @@ resource. For example, using the mainnet configuration, the treasury account is 
 
 When a system account is the designated payer for a transaction, there 
 are cases in which the network grants special **privileges** to the transaction. 
-(It is crucial to understand the relevant system account must be the _payer_ of 
-the transaction for privileges to be granted; that is, it must be the `AccountID`
+(It is crucial to understand that the relevant system account must be the _payer_ of 
+the transaction for any privileges to be granted; that is, it must be the `AccountID`
 designated in the transaction's `TransactionID`.)
 
 There are two kinds of privileges, 
@@ -62,36 +63,40 @@ First we consider the four transaction types that always require authorization t
   without enforcing standard prechecks. (The only real use cases for `UncheckedSubmit`
   are in development environments, where it can be invaluable for testing.)
 
+### Authorization privileges for special transactions
+
 | Payer | `Freeze` | `SystemDelete` | `SystemUndelete` | `UncheckedSubmit` |
 | --- | :---: | :---: | :---: | :---: | 
-| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X | X |
-| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) | X | X | X | X |
-| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22) | X |   |   |   |
-| [`accounts.systemDeleteAdmin=59`](../hedera-node/src/main/resources/bootstrap.properties#L24) |   | X |   |   |
-| [`accounts.systemUndeleteAdmin=60`](../hedera-node/src/main/resources/bootstrap.properties#L24) |   |   | X |   |
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X |
+| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X |
+| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties) | X |   |   |   |
+| [`accounts.systemDeleteAdmin=59`](../hedera-node/src/main/resources/bootstrap.properties) |   | X |   |   |
+| [`accounts.systemUndeleteAdmin=60`](../hedera-node/src/main/resources/bootstrap.properties) |   |   | X |   |
 
-Next we consider `FileUpdate` and `FileAppend` transactions when targeting one of the system files.
+### Authorization privileges for file updates and appends
 
-| Payer | [`files.addressBook=101`](../hedera-node/src/main/resources/bootstrap.properties#L29)/[`files.nodeDetails=102`](../hedera-node/src/main/resources/bootstrap.properties#L35) | [`files.networkProperties=121`](../hedera-node/src/main/resources/bootstrap.properties#L31)/[`files.hapiPermissions=122`](../hedera-node/src/main/resources/bootstrap.properties#L34)| [`files.feeSchedules=111`](../hedera-node/src/main/resources/bootstrap.properties#L33) | [`files.exchangeRates=112`](../hedera-node/src/main/resources/bootstrap.properties#L32)|
-| --- | :---: | :---: | :---: | :---: | 
-| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X | X |
-| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) | X | X | X | X |
-| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) | X | X | |   |
-| [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) |   |   | X |   |
-| [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) |   | X |   | X |
+Next we consider `FileUpdate` and `FileAppend` transactions when targeting one of the system files. 
 
-For the `CryptoUpdate` transaction, we have the table below. (In words, it says the following: the treasury can
-update _any_ system account; the system admin can update only a specific _range_ of system accounts; and all other system 
-accounts can update themselves.)
+| Payer | [`files.addressBook=101`](../hedera-node/src/main/resources/bootstrap.properties)/[`files.nodeDetails=102`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.networkProperties=121`](../hedera-node/src/main/resources/bootstrap.properties)/[`files.hapiPermissions=122`](../hedera-node/src/main/resources/bootstrap.properties)| [`files.feeSchedules=111`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.exchangeRates=112`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.softwareUpdateZip=150`](../hedera-node/src/main/resources/bootstrap.properties)|
+| --- | :---: | :---: | :---: | :---: | :---: | 
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X | X |
+| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X | X |
+| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | |   | |
+| [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties) |   |   | X |   | |
+| [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties) |   | X |   | X | |
+| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties) |   |   |   |   | X |
 
-| Payer | All accounts [`<= ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L37) | Accounts between [`accounts.systemAdmin.firstManaged=51`](../hedera-node/src/main/resources/bootstrap.properties#L26) and [`accounts.systemAdmin.lastManaged=80`](../hedera-node/src/main/resources/bootstrap.properties#L27)| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) | [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) | [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) | [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22) |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: | 
-| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L28) | X | X | X | X | X | X |
-| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) |   | X |  |  |  | |
-| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) |   |   | X |  |  |  |
-| [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) |  |  |  | X |  |  |
-| [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) |  |  |  |  | X |  |
-| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22)|  |  |  |  |   | X |
+### Authorization for crypto updates
+
+For the `CryptoUpdate` transaction, we have the minimal table below. The _only_ target account which 
+requires an authorized payer is account number [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties).
+(Note that before release `0.10.0`, a `CryptoUpdate` targeting _any_ system account required an 
+authorized payer. Since `0.10.0` it has been possible to, for example, update `0.0.88` with 
+`0.0.12345` as the payer, as long as the key for `0.0.88` signs the transaction.)
+
+| Payer | [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | 
+| --- | :---: | 
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X |
 
 ## Waived signing requirements
 
@@ -103,12 +108,17 @@ out" of performing their system roles. For example, even if we lose the key to t
 rates file, the exchange rates admin can still issue a `FileUpdate` transaction to change 
 this file.
 
-At present, the waived signature privileges for the `FileUpdate`, `FileAppend`, and `CryptoUpdate` 
-operations are identical to the corresponding authorization privileges in the tables above. 
+The waived signature privileges for `FileUpdate` and `FileAppend` are identical to 
+the corresponding authorization privileges in the tables above. The waived signature
+privileges for `CryptoUpdate` only apply to two authorized payers, as below.
+
+### Waived signing requirements for crypto updates
+
+| Payer | Accounts after [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) and up to [`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties) | 
+| --- | :---: | 
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X |
+| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties) | X |
 
 # Miscellanea
 
-- The network charges no fees to privileged transactions. 
-- With the default settings of `accounts.systemAdmin=50` and `accounts.systemAdmin.firstManaged=51`, 
-the system admin account is unique in being unable to update itself.
-
+- When privileges are granted based on the payer, the network charges no fees. 

@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.issues;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,10 +33,6 @@ import java.util.List;
 
 public class IssueXXXXSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(IssueXXXXSpec.class);
-
-	final String PATH_TO_FUSE_BYTECODE = "src/main/resource/testfiles/Fuse.bin";
-	final String LIGHT_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"light\",\"outputs\":[],\"payable\":false," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		new IssueXXXXSpec().runSuiteSync();
@@ -53,10 +50,10 @@ public class IssueXXXXSpec extends HapiApiSuite {
 	private HapiApiSpec multipleSelfDestructsAreSafe() {
 		return defaultHapiSpec("MultipleSelfDestructsAreSafe")
 				.given(
-						fileCreate("bytecode").path(PATH_TO_FUSE_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
 						contractCreate("fuse").bytecode("bytecode")
 				).when(
-						contractCall("fuse", LIGHT_ABI).via("lightTxn")
+						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
 				).then(
 						getTxnRecord("lightTxn").logged()
 				);

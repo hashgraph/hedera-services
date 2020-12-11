@@ -83,7 +83,7 @@ public class ValidateExchangeRateStateAfterReconnect extends HapiApiSuite {
 											spec.registry().saveBytes("newRates", newRates);
 											return newRates;
 										}
-								).payingWith(MASTER),
+								).payingWith(SYSTEM_ADMIN),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
 								.unavailableNode()

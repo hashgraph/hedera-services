@@ -29,7 +29,9 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -54,12 +56,13 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
 		return defaultHapiSpec("updateApiPermissionsDuringReconnect")
 				.given(
+						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode()
 				)
 				.when(
 						fileUpdate(API_PERMISSIONS)
 								.overridingProps(Map.of("updateFile", "1-1011"))
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.logged(),
 						getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode()
 				)
@@ -76,12 +79,12 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.3")
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.saveToRegistry(fileInfoRegistry),
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.6")
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.hasContents(fileInfoRegistry)
 				);
 	}

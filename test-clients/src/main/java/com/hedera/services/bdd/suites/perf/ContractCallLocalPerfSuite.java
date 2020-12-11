@@ -23,8 +23,8 @@ package com.hedera.services.bdd.suites.perf;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -33,18 +33,11 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 
 public class ContractCallLocalPerfSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalPerfSuite.class);
-
-	final String PATH_TO_LOOKUP_BYTECODE = "src/main/resource/testfiles/BalanceLookup.bin";
-	final String LOOKUP_ABI = "{\"constant\":true,\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"accountNum\"," +
-			"\"type\":\"uint64\"}],\"name\":\"lookup\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\"," +
-			"\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -75,12 +68,12 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ContractCallLocalPerf")
 				.given(
-						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						contractCreate("contract").bytecode("bytecode").balance(1_000L)
 				).when(
 						contractCallLocal(
 								"contract",
-								LOOKUP_ABI,
+								ContractResources.BALANCE_LOOKUP_ABI,
 								spec -> new Object[] {
 										spec.registry().getContractId("contract").getContractNum()
 								}).recordNodePaymentAs("cost"),
@@ -89,7 +82,7 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 						UtilVerbs.inParallel(asOpArray(NUM_CALLS, ignore ->
 										contractCallLocal(
 												"contract",
-												LOOKUP_ABI,
+												ContractResources.BALANCE_LOOKUP_ABI,
 												spec -> new Object[] {
 														spec.registry().getContractId("contract").getContractNum()
 												}).nodePayment(spec -> spec.registry().getAmount("cost")))),
@@ -102,4 +95,3 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 		return log;
 	}
 }
-

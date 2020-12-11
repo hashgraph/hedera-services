@@ -60,12 +60,6 @@ public class MockAccountNumbers extends AccountNumbers {
 	public long systemUndeleteAdmin() { return 60; }
 
 	@Override
-	public long firstManagedBySysAdmin() { return 51; }
-
-	@Override
-	public long lastManagedBySysAdmin() { return 80; }
-
-	@Override
 	public boolean isSuperuser(long num) {
 		return (num == 2) || (num == 50);
 	}

@@ -92,7 +92,8 @@ public abstract class HapiApiSuite {
 
 	public static final String HBAR_TOKEN_SENTINEL = "HBAR";
 
-	public static final String MASTER = HapiSpecSetup.getDefaultInstance().strongControlName();
+	public static final String SYSTEM_ADMIN = HapiSpecSetup.getDefaultInstance().strongControlName();
+	public static final String FREEZE_ADMIN = HapiSpecSetup.getDefaultInstance().freezeAdminName();
 	public static final String FUNDING = HapiSpecSetup.getDefaultInstance().fundingAccountName();
 	public static final String GENESIS = HapiSpecSetup.getDefaultInstance().genesisAccountName();
 	public static final String DEFAULT_PAYER = HapiSpecSetup.getDefaultInstance().defaultPayerName();
@@ -109,7 +110,7 @@ public abstract class HapiApiSuite {
 	public static final String FEE_SCHEDULE = HapiSpecSetup.getDefaultInstance().feeScheduleName();
 	public static final String APP_PROPERTIES = HapiSpecSetup.getDefaultInstance().appPropertiesFile();
 	public static final String API_PERMISSIONS = HapiSpecSetup.getDefaultInstance().apiPermissionsFile();
-	public static final String PATH_TO_LOOKUP_BYTECODE = bytecodePath("BalanceLookup");
+	public static final String UPDATE_ZIP_FILE = HapiSpecSetup.getDefaultInstance().updateFeatureName();
 	public static final HapiSpecSetup DEFAULT_PROPS = HapiSpecSetup.getDefaultInstance();
 	public static final long ADEQUATE_FUNDS = 10_000_000_000L;
 
@@ -255,10 +256,6 @@ public abstract class HapiApiSuite {
 				.map(CompletableFuture::runAsync)
 				.toArray(n -> new CompletableFuture[n]);
 		CompletableFuture.allOf(futures).join();
-	}
-
-	public static final String bytecodePath(String contract) {
-		return String.format("src/main/resource/testfiles/%s.bin", contract);
 	}
 
 	public static boolean cacheRecordsAreAddedToState() {

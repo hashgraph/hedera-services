@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.issues;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.issues;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -32,28 +33,33 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-public class Issue2144Spec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(Issue2144Spec.class);
+public class PrivilegedOpsSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(PrivilegedOpsSuite.class);
 
 	public static void main(String... args) {
-		new Issue2144Spec().runSuiteSync();
+		new PrivilegedOpsSuite().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				new HapiApiSpec[]{
+				new HapiApiSpec[] {
 						superusersAreNeverThrottledOnTransfers(),
 						superusersAreNeverThrottledOnMiscTxns(),
 						superusersAreNeverThrottledOnHcsTxns(),
 						superusersAreNeverThrottledOnMiscQueries(),
 						superusersAreNeverThrottledOnHcsQueries(),
+						systemAccountUpdatePrivilegesAsExpected(),
+						freezeAdminPrivilegesAsExpected(),
 				}
 		);
 	}
@@ -91,37 +97,125 @@ public class Issue2144Spec extends HapiApiSuite {
 					.payingWith(payer))
 			.toArray(n -> new HapiSpecOperation[n]);
 
+	private HapiApiSpec freezeAdminPrivilegesAsExpected() {
+		return defaultHapiSpec("FreezeAdminPrivilegesAsExpected")
+				.given(
+						cryptoCreate("civilian")
+				).when(
+
+						fileUpdate(UPDATE_ZIP_FILE)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.contents("Nope")
+								.hasPrecheck(AUTHORIZATION_FAILED),
+						fileUpdate(UPDATE_ZIP_FILE)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents("Nope")
+								.hasPrecheck(AUTHORIZATION_FAILED),
+						fileUpdate(UPDATE_ZIP_FILE)
+								.payingWith(FEE_SCHEDULE_CONTROL)
+								.contents("Nope")
+								.hasPrecheck(AUTHORIZATION_FAILED),
+						fileUpdate(UPDATE_ZIP_FILE)
+								.payingWith("civilian")
+								.contents("Nope")
+								.hasPrecheck(AUTHORIZATION_FAILED)
+				).then(
+						fileUpdate(UPDATE_ZIP_FILE)
+								.fee(0L)
+								.via("updateTxn")
+								.payingWith(FREEZE_ADMIN)
+								.contents("Yuu"),
+						getTxnRecord("updateTxn").showsNoTransfers(),
+						fileAppend(UPDATE_ZIP_FILE)
+								.fee(0L)
+								.via("appendTxn")
+								.payingWith(FREEZE_ADMIN)
+								.content("upp"),
+						getTxnRecord("appendTxn").showsNoTransfers(),
+						fileUpdate(UPDATE_ZIP_FILE)
+								.fee(0L)
+								.payingWith(SYSTEM_ADMIN)
+								.contents("Yuuupp"),
+						fileAppend(UPDATE_ZIP_FILE)
+								.fee(0L)
+								.payingWith(GENESIS)
+								.content(new byte[0])
+				);
+	}
+
+	private HapiApiSpec systemAccountUpdatePrivilegesAsExpected() {
+		return defaultHapiSpec("SystemAccountUpdatePrivilegesAsExpected")
+				.given(
+						newKeyNamed("new88"),
+						cryptoCreate("civilian")
+				).when(
+						cryptoUpdate("0.0.88")
+								.payingWith(GENESIS)
+								.signedBy(GENESIS, "new88")
+								.key("new88")
+				).then(
+						cryptoUpdate("0.0.2")
+								.receiverSigRequired(true)
+								.payingWith("civilian")
+								.signedBy("civilian", GENESIS)
+								.hasPrecheck(AUTHORIZATION_FAILED),
+						cryptoUpdate("0.0.2")
+								.receiverSigRequired(true)
+								.payingWith(SYSTEM_ADMIN)
+								.signedBy(SYSTEM_ADMIN, GENESIS)
+								.hasPrecheck(AUTHORIZATION_FAILED),
+						cryptoUpdate("0.0.2")
+								.receiverSigRequired(false)
+								.payingWith(GENESIS)
+								.signedBy(GENESIS),
+						cryptoUpdate("0.0.88")
+								.key(GENESIS)
+								.payingWith("civilian")
+								.signedBy("civilian", "new88", GENESIS),
+						cryptoUpdate("0.0.88")
+								.payingWith(GENESIS)
+								.signedBy(GENESIS, "new88")
+								.key("new88"),
+						cryptoUpdate("0.0.88")
+								.key(GENESIS)
+								.payingWith(SYSTEM_ADMIN)
+								.signedBy(SYSTEM_ADMIN, GENESIS)
+				);
+	}
+
 	private HapiApiSpec superusersAreNeverThrottledOnTransfers() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnTransfers")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(ADDRESS_BOOK_CONTROL, MASTER, 1_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("simpletransferTps", "1"))
+										Map.of("simpletransferTps", "1"))
 				).then(flattened(
-						transferBurstFn.apply(MASTER),
+						transferBurstFn.apply(SYSTEM_ADMIN),
 						transferBurstFn.apply(ADDRESS_BOOK_CONTROL),
 						sleepFor(5_000L),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("simpletransferTps", "0"))
+										Map.of("simpletransferTps", "0"))
 				));
 	}
 
 	private HapiApiSpec superusersAreNeverThrottledOnMiscTxns() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnMiscTxns")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(ADDRESS_BOOK_CONTROL, MASTER, 1_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("throttlingTps", "1"))
+										Map.of("throttlingTps", "1"))
 				).then(flattened(
-						miscTxnBurstFn.apply(MASTER),
+						miscTxnBurstFn.apply(SYSTEM_ADMIN),
 						miscTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
 						sleepFor(5_000L),
 						fileUpdate(APP_PROPERTIES)
@@ -133,33 +227,35 @@ public class Issue2144Spec extends HapiApiSuite {
 	private HapiApiSpec superusersAreNeverThrottledOnHcsTxns() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnHcsTxns")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(ADDRESS_BOOK_CONTROL, MASTER, 1_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("throttling.hcs.createTopic.tps", "0.5"))
+										Map.of("throttling.hcs.createTopic.tps", "0.5"))
 				).then(flattened(
-						hcsTxnBurstFn.apply(MASTER),
+						hcsTxnBurstFn.apply(SYSTEM_ADMIN),
 						hcsTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("throttling.hcs.createTopic.tps", "33.3"))
+										Map.of("throttling.hcs.createTopic.tps", "33.3"))
 				));
 	}
 
 	private HapiApiSpec superusersAreNeverThrottledOnMiscQueries() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnMiscQueries")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("queriesTps", "1"))
+										Map.of("queriesTps", "1"))
 				).then(flattened(
-						inParallel(miscQueryBurstFn.apply(MASTER)),
+						inParallel(miscQueryBurstFn.apply(SYSTEM_ADMIN)),
 						inParallel(miscQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -170,14 +266,15 @@ public class Issue2144Spec extends HapiApiSuite {
 	private HapiApiSpec superusersAreNeverThrottledOnHcsQueries() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnHcsQueries")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(ADDRESS_BOOK_CONTROL, MASTER, 1_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)),
 						createTopic("misc")
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("throttling.hcs.getTopicInfo.tps", "0.5"))
 				).then(flattened(
-						inParallel(hcsQueryBurstFn.apply(MASTER)),
+						inParallel(hcsQueryBurstFn.apply(SYSTEM_ADMIN)),
 						inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)

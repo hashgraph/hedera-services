@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -155,7 +156,7 @@ public class HapiSpecSetup {
 		return props.getLong("default.contract.balance.tinyBars");
 	}
 	public String defaultContractPath() {
-		return props.get("default.contract.path");
+		return ContractResources.bytecodePath(props.get("default.contract.bytecode"));
 	}
 	public long defaultCreateGas() {
 		return props.getLong("default.create.gas");
@@ -276,7 +277,15 @@ public class HapiSpecSetup {
 		return props.getFile("fee.schedule.id");
 	}
 	public String feeScheduleName() { return props.get("fee.schedule.name"); }
-
+	public int feesTokenTransferUsageMultiplier() {
+		return props.getInteger("fees.tokenTransferUsageMultiplier");
+	}
+	public String freezeAdminName() {
+		return props.get("freeze.admin.name");
+	}
+	public AccountID freezeAdminId() {
+		return props.getAccount("freeze.admin.id");
+	}
 	public FileID updateFeatureId() {
 		return props.getFile("update.feature.id");
 	}

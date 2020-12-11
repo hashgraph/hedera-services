@@ -21,6 +21,7 @@ package com.hedera.services.legacy.regression.umbrella;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -76,12 +77,8 @@ public class SmartContractServiceTest extends FileServiceTest {
   private static List<String> solidityIDList = new ArrayList<>();
   private static boolean isRandomSmartContract = true;
   protected static int CONTRACT_CALL_VALUE_BOUND = 1000;
-  private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-  private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-  private static final String SC_GET_BALANCE = "{\"constant\":true,\"inputs\":[],\"name\":\"getBalance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-  private static final String SC_DEPOSIT = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-  private static final String CONTRACT_PAY_NAME = "PayTest.bin";
-  private static final String CONTRACT_STORAGE_NAME = "simpleStorage.bin";
+  private static final String CONTRACT_PAY_NAME = ContractResources.PAY_TEST_BYTECODE_PATH;
+  private static final String CONTRACT_STORAGE_NAME = ContractResources.SIMPLE_STORAGE_BYTECODE_PATH;
   private String[] smartContractFiles = {CONTRACT_STORAGE_NAME, CONTRACT_PAY_NAME};
   private long DEFAULT_CONTRACT_OP_GAS = 1000L;
   private long DEFAULT_CREATE_CONTRACT_OP_GAS = 1000L;
@@ -459,13 +456,13 @@ public class SmartContractServiceTest extends FileServiceTest {
   }
 
   private CallTransaction.Function getGetValueFunction() {
-    String funcJson = SC_GET_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.SIMPLE_STORAGE_GETTER_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
 
   private CallTransaction.Function getSetFunction() {
-    String funcJson = SC_SET_ABI.replaceAll("'", "\"");
+    String funcJson = ContractResources.SIMPLE_STORAGE_SETTER_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -586,7 +583,7 @@ public class SmartContractServiceTest extends FileServiceTest {
   }
 
   private CallTransaction.Function getDepositFunction() {
-    String funcJson = SC_DEPOSIT.replaceAll("'", "\"");
+    String funcJson = ContractResources.DEPOSIT_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }
@@ -646,7 +643,7 @@ public class SmartContractServiceTest extends FileServiceTest {
   }
 
   private CallTransaction.Function getGetBalanceFunction() {
-    String funcJson = SC_GET_BALANCE.replaceAll("'", "\"");
+    String funcJson = ContractResources.GET_BALANCE_ABI.replaceAll("'", "\"");
     CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
     return function;
   }

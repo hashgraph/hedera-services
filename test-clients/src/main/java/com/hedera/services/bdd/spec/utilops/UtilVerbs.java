@@ -102,7 +102,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.MASTER;
+import static com.hedera.services.bdd.suites.HapiApiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class UtilVerbs {
@@ -370,7 +370,7 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation makeFree(HederaFunctionality function) {
 		return withOpContext((spec, opLog) -> {
-			var query = getFileContents(FEE_SCHEDULE).payingWith(MASTER);
+			var query = getFileContents(FEE_SCHEDULE).payingWith(SYSTEM_ADMIN);
 			allRunFor(spec, query);
 			byte[] rawSchedules = query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 			var zeroTfs = zeroFor(function);
@@ -391,7 +391,7 @@ public class UtilVerbs {
 			perturbedSchedules.getNextFeeScheduleBuilder()
 					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
-			allRunFor(spec, updateLargeFile(MASTER, FEE_SCHEDULE, rawPerturbedSchedules));
+			allRunFor(spec, updateLargeFile(SYSTEM_ADMIN, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
 	}
 
@@ -479,6 +479,19 @@ public class UtilVerbs {
 			ByteString bt = ByteString.copyFrom(spec.registry().getBytes(registryEntry));
 			CustomSpecAssert.allRunFor(spec, updateLargeFile(payer, fileName, bt));
 		});
+	}
+
+	public static HapiSpecOperation saveFileToRegistry(String fileName, String registryEntry) {
+		return getFileContents(fileName)
+				.payingWith(GENESIS)
+				.saveToRegistry(registryEntry);
+	}
+
+	public static HapiSpecOperation restoreFileFromRegistry(String fileName, String registryEntry) {
+		return fileUpdate(fileName)
+				.payingWith(GENESIS)
+				.contents(spec ->
+						ByteString.copyFrom(spec.registry().getBytes(registryEntry)));
 	}
 
 	public static HapiSpecOperation contractListWithPropertiesInheritedFrom(
