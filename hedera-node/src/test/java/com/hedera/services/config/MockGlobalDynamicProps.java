@@ -134,6 +134,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
 	@Override
 	public int feesTokenTransferUsageMultiplier() {
-		return 360;
+		return 380;
 	}
 }

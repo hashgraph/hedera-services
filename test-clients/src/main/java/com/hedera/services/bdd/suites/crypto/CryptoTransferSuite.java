@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -50,9 +49,9 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
@@ -76,14 +75,12 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						twoComplexKeysRequired(),
 						specialAccountsBalanceCheck(),
 						transferToTopicReturnsInvalidAccountId(),
-//						tokenTransferFeesScaleAsExpected(),
+						tokenTransferFeesScaleAsExpected(),
 				}
 		);
 	}
 
 	private HapiApiSpec tokenTransferFeesScaleAsExpected() {
-		final int TOKEN_XFER_USAGE_MULTIPLIER = 360;
-
 		return defaultHapiSpec("TokenTransferFeesScaleAsExpected")
 				.given(
 						cryptoCreate("a"),
@@ -94,13 +91,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoCreate("f").balance(0L),
 						tokenCreate("A").treasury("a"),
 						tokenCreate("B").treasury("b"),
-						tokenCreate("C").treasury("c"),
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"fees.tokenTransferUsageMultiplier", "" + TOKEN_XFER_USAGE_MULTIPLIER
-						)).payingWith(ADDRESS_BOOK_CONTROL),
-						withOpContext((spec, opLog) -> {
-							spec.fees().setTokenTransferUsageMultiplier(TOKEN_XFER_USAGE_MULTIPLIER);
-						})
+						tokenCreate("C").treasury("c")
 				).when(
 						tokenAssociate("b", "A", "C"),
 						tokenAssociate("c", "A", "B"),
@@ -205,6 +196,14 @@ public class CryptoTransferSuite extends HapiApiSuite {
 									sdec((1.0 * t2a6Fee / refFee), 1),
 									t3a6Fee, sdec(rates.toUsdWithActiveRates(t3a6Fee), 4),
 									sdec((1.0 * t3a6Fee / refFee), 1));
+
+							double pureHbarUsd = rates.toUsdWithActiveRates(refFee);
+							double pureOneTokenTwoAccountsUsd = rates.toUsdWithActiveRates(t1a2Fee);
+							double pureTwoTokensFourAccountsUsd = rates.toUsdWithActiveRates(t2a4Fee);
+							double pureThreeTokensSixAccountsUsd = rates.toUsdWithActiveRates(t3a6Fee);
+							Assert.assertEquals(10.0, pureOneTokenTwoAccountsUsd / pureHbarUsd, 1.0);
+							Assert.assertEquals(20.0, pureTwoTokensFourAccountsUsd / pureHbarUsd, 1.0);
+							Assert.assertEquals(30.0, pureThreeTokensSixAccountsUsd / pureHbarUsd, 1.0);
 						})
 				);
 	}
