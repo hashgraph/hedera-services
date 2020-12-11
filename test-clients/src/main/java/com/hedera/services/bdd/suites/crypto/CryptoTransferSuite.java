@@ -24,6 +24,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -61,6 +63,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
@@ -84,8 +87,142 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						twoComplexKeysRequired(),
 						systemBalancesCheck(),
 						transferToTopicReturnsInvalidAccountId(),
+//						tokenTransferFeesScaleAsExpected(),
 				}
 		);
+	}
+
+	private HapiApiSpec tokenTransferFeesScaleAsExpected() {
+		final int TOKEN_XFER_USAGE_MULTIPLIER = 360;
+
+		return defaultHapiSpec("TokenTransferFeesScaleAsExpected")
+				.given(
+						cryptoCreate("a"),
+						cryptoCreate("b"),
+						cryptoCreate("c").balance(0L),
+						cryptoCreate("d").balance(0L),
+						cryptoCreate("e").balance(0L),
+						cryptoCreate("f").balance(0L),
+						tokenCreate("A").treasury("a"),
+						tokenCreate("B").treasury("b"),
+						tokenCreate("C").treasury("c"),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"fees.tokenTransferUsageMultiplier", "" + TOKEN_XFER_USAGE_MULTIPLIER
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						withOpContext((spec, opLog) -> {
+							spec.fees().setTokenTransferUsageMultiplier(TOKEN_XFER_USAGE_MULTIPLIER);
+						})
+				).when(
+						tokenAssociate("b", "A", "C"),
+						tokenAssociate("c", "A", "B"),
+						tokenAssociate("d", "A", "B", "C"),
+						tokenAssociate("e", "A", "B", "C"),
+						tokenAssociate("f", "A", "B", "C"),
+						cryptoTransfer(tinyBarsFromTo("a", "b", 1))
+								.via("pureCrypto")
+								.payingWith("a"),
+						cryptoTransfer(moving(1, "A").between("a", "b"))
+								.via("oneTokenTwoAccounts")
+								.payingWith("a"),
+						cryptoTransfer(moving(2, "A").distributing("a", "b", "c"))
+								.via("oneTokenThreeAccounts")
+								.payingWith("a"),
+						cryptoTransfer(moving(3, "A").distributing("a", "b", "c", "d"))
+								.via("oneTokenFourAccounts")
+								.payingWith("a"),
+						cryptoTransfer(moving(4, "A").distributing("a", "b", "c", "d", "e"))
+								.via("oneTokenFiveAccounts")
+								.payingWith("a"),
+						cryptoTransfer(moving(5, "A").distributing("a", "b", "c", "d", "e", "f"))
+								.via("oneTokenSixAccounts")
+								.payingWith("a"),
+						cryptoTransfer(
+								moving(1, "A").between("a", "c"),
+								moving(1, "B").between("b", "d"))
+								.via("twoTokensFourAccounts")
+								.payingWith("a"),
+						cryptoTransfer(
+								moving(1, "A").between("a", "c"),
+								moving(2, "B").distributing("b", "d", "e"))
+								.via("twoTokensFiveAccounts")
+								.payingWith("a"),
+						cryptoTransfer(
+								moving(1, "A").between("a", "c"),
+								moving(3, "B").distributing("b", "d", "e", "f"))
+								.via("twoTokensSixAccounts")
+								.payingWith("a"),
+						cryptoTransfer(
+								moving(1, "A").between("a", "d"),
+								moving(1, "B").between("b", "e"),
+								moving(1, "C").between("c", "f"))
+								.via("threeTokensSixAccounts")
+								.payingWith("a")
+				).then(
+						withOpContext((spec, opLog) -> {
+							var ref = getTxnRecord("pureCrypto");
+							var t1a2 = getTxnRecord("oneTokenTwoAccounts");
+							var t1a3 = getTxnRecord("oneTokenThreeAccounts");
+							var t1a4 = getTxnRecord("oneTokenFourAccounts");
+							var t1a5 = getTxnRecord("oneTokenFiveAccounts");
+							var t1a6 = getTxnRecord("oneTokenSixAccounts");
+							var t2a4 = getTxnRecord("twoTokensFourAccounts");
+							var t2a5 = getTxnRecord("twoTokensFiveAccounts");
+							var t2a6 = getTxnRecord("twoTokensSixAccounts");
+							var t3a6 = getTxnRecord("threeTokensSixAccounts");
+							allRunFor(spec, ref, t1a2, t1a3, t1a4, t1a5, t1a6, t2a4, t2a5, t2a6, t3a6);
+
+							var refFee = ref.getResponseRecord().getTransactionFee();
+							var t1a2Fee = t1a2.getResponseRecord().getTransactionFee();
+							var t1a3Fee = t1a3.getResponseRecord().getTransactionFee();
+							var t1a4Fee = t1a4.getResponseRecord().getTransactionFee();
+							var t1a5Fee = t1a5.getResponseRecord().getTransactionFee();
+							var t1a6Fee = t1a6.getResponseRecord().getTransactionFee();
+							var t2a4Fee = t2a4.getResponseRecord().getTransactionFee();
+							var t2a5Fee = t2a5.getResponseRecord().getTransactionFee();
+							var t2a6Fee = t2a6.getResponseRecord().getTransactionFee();
+							var t3a6Fee = t3a6.getResponseRecord().getTransactionFee();
+
+							var rates = spec.ratesProvider();
+							opLog.info("\n0 tokens involved,\n" +
+											"  2 account adjustments: {} tb, ${}\n" +
+											"1 tokens involved,\n" +
+											"  2 account adjustments: {} tb, ${} (~{}x pure crypto)\n" +
+											"  3 account adjustments: {} tb, ${} (~{}x pure crypto)\n" +
+											"  4 account adjustments: {} tb, ${} (~{}x pure crypto)\n" +
+											"  5 account adjustments: {} tb, ${} (~{}x pure crypto)\n" +
+											"  6 account adjustments: {} tb, ${} (~{}x pure crypto)\n" +
+											"2 tokens involved,\n" +
+											"  4 account adjustments: {} tb, ${} (~{}x pure crypto)\n" +
+											"  5 account adjustments: {} tb, ${} (~{}x pure crypto)\n" +
+											"  6 account adjustments: {} tb, ${} (~{}x pure crypto)\n" +
+											"3 tokens involved,\n" +
+											"  6 account adjustments: {} tb, ${} (~{}x pure crypto)\n",
+									refFee, sdec(rates.toUsdWithActiveRates(refFee), 4),
+									t1a2Fee, sdec(rates.toUsdWithActiveRates(t1a2Fee), 4),
+									sdec((1.0 * t1a2Fee / refFee), 1),
+									t1a3Fee, sdec(rates.toUsdWithActiveRates(t1a3Fee), 4),
+									sdec((1.0 * t1a3Fee / refFee), 1),
+									t1a4Fee, sdec(rates.toUsdWithActiveRates(t1a4Fee), 4),
+									sdec((1.0 * t1a4Fee / refFee), 1),
+									t1a5Fee, sdec(rates.toUsdWithActiveRates(t1a5Fee), 4),
+									sdec((1.0 * t1a5Fee / refFee), 1),
+									t1a6Fee, sdec(rates.toUsdWithActiveRates(t1a6Fee), 4),
+									sdec((1.0 * t1a6Fee / refFee), 1),
+									t2a4Fee, sdec(rates.toUsdWithActiveRates(t2a4Fee), 4),
+									sdec((1.0 * t2a4Fee / refFee), 1),
+									t2a5Fee, sdec(rates.toUsdWithActiveRates(t2a5Fee), 4),
+									sdec((1.0 * t2a5Fee / refFee), 1),
+									t2a6Fee, sdec(rates.toUsdWithActiveRates(t2a6Fee), 4),
+									sdec((1.0 * t2a6Fee / refFee), 1),
+									t3a6Fee, sdec(rates.toUsdWithActiveRates(t3a6Fee), 4),
+									sdec((1.0 * t3a6Fee / refFee), 1));
+						})
+				);
+	}
+
+	private static String sdec(double d, int numDecimals) {
+		var fmt = String.format(".0%df", numDecimals);
+		return String.format("%" + fmt, d);
 	}
 
 	private HapiApiSpec transferToTopicReturnsInvalidAccountId() {
@@ -103,7 +240,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(spec -> tinyBarsFromTo(GENESIS, invalidAccountId.get(), 1L).apply((spec)))
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						cryptoTransfer(moving(1, "any")
-								.between(spec -> GENESIS, spec -> invalidAccountId.get()))
+								.between(spec -> DEFAULT_PAYER, spec -> invalidAccountId.get()))
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				);
 	}

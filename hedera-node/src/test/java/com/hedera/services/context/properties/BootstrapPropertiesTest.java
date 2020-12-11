@@ -113,6 +113,7 @@ class BootstrapPropertiesTest {
 			entry("tokens.maxSymbolLength", 100),
 			entry("tokens.maxTokenNameLength",100),
 			entry("files.maxSizeKb", 1024),
+			entry("fees.tokenTransferUsageMultiplier", 360),
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),

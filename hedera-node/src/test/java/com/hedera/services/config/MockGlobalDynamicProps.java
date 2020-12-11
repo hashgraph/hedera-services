@@ -131,4 +131,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int maxGas() {
 		return 300_000;
 	}
+
+	@Override
+	public int feesTokenTransferUsageMultiplier() {
+		return 360;
+	}
 }

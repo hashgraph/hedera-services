@@ -255,6 +255,7 @@ public class SuiteRunner {
 		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
 		put("TokenAssociationSpecs", aof(new TokenAssociationSpecs()));
 		/* Functional tests - CRYPTO */
+		put("CryptoTransferSuite", aof(new CryptoTransferSuite()));
 		put("CryptoDeleteSuite", aof(new CryptoDeleteSuite()));
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));

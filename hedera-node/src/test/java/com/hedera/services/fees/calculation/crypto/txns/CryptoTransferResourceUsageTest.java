@@ -20,7 +20,9 @@ package com.hedera.services.fees.calculation.crypto.txns;
  * ‍
  */
 
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.crypto.CryptoTransferUsage;
@@ -38,7 +40,8 @@ import java.util.function.BiFunction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
@@ -54,6 +57,7 @@ class CryptoTransferResourceUsageTest {
 	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
 
 	CryptoTransferUsage usage;
+	GlobalDynamicProperties props = new MockGlobalDynamicProps();
 	BiFunction<TransactionBody, SigUsage, CryptoTransferUsage> factory;
 
 	@BeforeEach
@@ -70,12 +74,13 @@ class CryptoTransferResourceUsageTest {
 		given(factory.apply(cryptoTransferTxn, sigUsage)).willReturn(usage);
 
 		usage = mock(CryptoTransferUsage.class);
+		given(usage.givenTokenMultiplier(anyInt())).willReturn(usage);
 		given(usage.get()).willReturn(MOCK_CRYPTO_TRANSFER_USAGE);
 
 		CryptoTransferResourceUsage.factory = factory;
 		given(factory.apply(cryptoTransferTxn, sigUsage)).willReturn(usage);
 
-		subject = new CryptoTransferResourceUsage();
+		subject = new CryptoTransferResourceUsage(props);
 	}
 
 	@Test
@@ -91,6 +96,8 @@ class CryptoTransferResourceUsageTest {
 		assertEquals(
 				MOCK_CRYPTO_TRANSFER_USAGE,
 				subject.usageGiven(cryptoTransferTxn, obj, view));
+		// and:
+		verify(usage).givenTokenMultiplier(props.feesTokenTransferUsageMultiplier());
 	}
 
 	public static final FeeData MOCK_CRYPTO_TRANSFER_USAGE = UsageEstimatorUtils.defaultPartitioning(
