@@ -28,18 +28,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.approxChangeFromSnapshot;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.*;
 
-import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.*;
-
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 
@@ -52,16 +45,11 @@ import static com.hedera.services.bdd.spec.keys.ControlForKey.*;
 
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -85,7 +73,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						vanillaTransferSucceeds(),
 						complexKeyAcctPaysForOwnTransfer(),
 						twoComplexKeysRequired(),
-						systemBalancesCheck(),
+						specialAccountsBalanceCheck(),
 						transferToTopicReturnsInvalidAccountId(),
 //						tokenTransferFeesScaleAsExpected(),
 				}
@@ -230,16 +218,16 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("TransferToTopicReturnsInvalidAccountId")
 				.given(
-						tokenCreate("any"),
+						tokenCreate("token"),
 						createTopic("something"),
 						withOpContext((spec, opLog) -> {
 							var topicId = spec.registry().getTopicID("something");
 							invalidAccountId.set(asTopicString(topicId));
 						})
 				).when().then(
-						cryptoTransfer(spec -> tinyBarsFromTo(GENESIS, invalidAccountId.get(), 1L).apply((spec)))
+						cryptoTransfer(spec -> tinyBarsFromTo(DEFAULT_PAYER, invalidAccountId.get(), 1L).apply((spec)))
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						cryptoTransfer(moving(1, "any")
+						cryptoTransfer(moving(1, "token")
 								.between(spec -> DEFAULT_PAYER, spec -> invalidAccountId.get()))
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				);
@@ -293,10 +281,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec systemBalancesCheck() {
-		return defaultHapiSpec("SystemBalancesCheck")
+	private HapiApiSpec specialAccountsBalanceCheck() {
+		return defaultHapiSpec("SpecialAccountsBalanceCheck")
 				.given().when().then(
-						IntStream.range(1, 101)
+						IntStream.concat(IntStream.range(1, 101), IntStream.range(900, 1001))
 								.mapToObj(i -> getAccountBalance("0.0." + i).logged())
 								.toArray(n -> new HapiSpecOperation[n])
 				);

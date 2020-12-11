@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,6 +56,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.b64Encode;
@@ -211,7 +214,7 @@ class SignedStateBalancesExporterTest {
 	@Test
 	public void logsOnSigningFailure() {
 		// setup:
-		var loc = testExportLoc();
+		var loc = expectedExportLoc();
 
 		given(hashReader.readHash(loc)).willThrow(IllegalStateException.class);
 
@@ -228,10 +231,14 @@ class SignedStateBalancesExporterTest {
 	@Test
 	public void usesNewFormatWhenExportingTokenBalances() throws IOException {
 		// setup:
-		var loc = testExportLoc();
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		Pattern CSV_NAME_PATTERN = Pattern.compile(
+				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.csv");
+		// and:
+		var loc = expectedExportLoc();
 
 		given(hashReader.readHash(loc)).willReturn(fileHash);
-		given(sigFileWriter.writeSigFile(any(), any(), any())).willReturn(loc + "_sig");
+		given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
 
 		// when:
 		subject.toCsvFile(state, now);
@@ -257,6 +264,8 @@ class SignedStateBalancesExporterTest {
 		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
 		// and:
 		verify(mockLog).debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig"));
+		// and:
+//		assertTrue(CSV_NAME_PATTERN.matcher(captor.getValue()).matches());
 
 		// cleanup:
 		new File(loc).delete();
@@ -279,7 +288,7 @@ class SignedStateBalancesExporterTest {
 		subject.toCsvFile(state, now);
 
 		// then:
-		var lines = Files.readAllLines(Paths.get(testExportLoc()));
+		var lines = Files.readAllLines(Paths.get(expectedExportLoc()));
 		var expected = theExpectedBalances();
 		assertEquals(expected.size() + 2, lines.size());
 		assertEquals(String.format("TimeStamp:%s", now), lines.get(0));
@@ -295,15 +304,19 @@ class SignedStateBalancesExporterTest {
 		}
 
 		// cleanup:
-		new File(testExportLoc()).delete();
+		new File(expectedExportLoc()).delete();
 	}
 
-	private String testExportLoc() {
+	private String expectedExportLoc() {
 		return dynamicProperties.pathToBalancesExportDir()
 				+ File.separator
 				+ "balance0.0.3"
 				+ File.separator
-				+ now + "_Balances.csv";
+				+ expectedBalancesName();
+	}
+
+	private String expectedBalancesName() {
+		return now.toString().replace(":", "_") + "_Balances.csv";
 	}
 
 	@Test

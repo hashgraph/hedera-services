@@ -442,6 +442,20 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
+	public void getsExpectedReceiptForTokenMintBurnWipe() {
+		// when:
+		final var newTotalSupply = 1000L;
+		subject.setNewTotalSupply(newTotalSupply);
+		record = subject.recordSoFar();
+
+		// then:
+		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
+		assertEquals(newTotalSupply, record.getReceipt().getNewTotalSupply());
+	}
+
+
+
+	@Test
 	public void getsExpectedReceiptForFileCreation() {
 		// when:
 		subject.setCreated(fileCreated);
