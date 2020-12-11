@@ -27,7 +27,9 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import proto.ScheduleGetInfo;
+import proto.ScheduleGetInfo.ScheduleGetInfoResponse;
+import proto.ScheduleGetInfo.ScheduleInfo;
+import proto.ScheduleGetInfo.ScheduleGetInfoQuery;
 
 import java.util.Map;
 import java.util.Optional;
@@ -98,7 +100,7 @@ public class GetScheduleInfoAnswer implements AnswerService {
             Optional<Map<String, Object>> queryCtx
     ) {
         var op = query.getScheduleGetInfo();
-        var response = proto.ScheduleGetInfo.ScheduleGetInfoResponse.newBuilder();
+        var response = ScheduleGetInfoResponse.newBuilder();
 
         var type = op.getHeader().getResponseType();
         if (validity != OK) {
@@ -118,9 +120,9 @@ public class GetScheduleInfoAnswer implements AnswerService {
 
     @SuppressWarnings("unchecked")
     private void setAnswerOnly(
-            proto.ScheduleGetInfo.ScheduleGetInfoResponse.Builder response,
+            ScheduleGetInfoResponse.Builder response,
             StateView view,
-            proto.ScheduleGetInfo.ScheduleGetInfoQuery op,
+            ScheduleGetInfoQuery op,
             long cost,
             Optional<Map<String, Object>> queryCtx
     ) {
@@ -130,7 +132,7 @@ public class GetScheduleInfoAnswer implements AnswerService {
                 response.setHeader(answerOnlyHeader(INVALID_SCHEDULE_ID));
             } else {
                 response.setHeader(answerOnlyHeader(OK, cost));
-                response.setScheduleInfo((ScheduleGetInfo.ScheduleInfo) ctx.get(SCHEDULE_INFO_CTX_KEY));
+                response.setScheduleInfo((ScheduleInfo) ctx.get(SCHEDULE_INFO_CTX_KEY));
             }
         } else {
             var info = view.infoForSchedule(op.getSchedule());

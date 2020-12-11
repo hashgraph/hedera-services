@@ -11,21 +11,24 @@ import java.util.Map;
 public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator {
     @Override
     public boolean applicableTo(Query query) {
-        return false;
+        return query.hasScheduleGetInfo();
     }
 
     @Override
     public FeeData usageGiven(Query query, StateView view) {
+        // TODO: Not in this scope
         return null;
     }
 
     @Override
     public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+        // TODO: Not in this scope
         return null;
     }
 
     @Override
     public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
+        // TODO: Not in this scope
         return null;
     }
 }

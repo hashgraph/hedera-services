@@ -51,6 +51,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     }
 
     private void transitionFor(ScheduleCreate.ScheduleCreateTransactionBody op) {
+        // TODO: Implement transitionFor() functionality
         var status = OK;
         if (status != OK) {
             abortWith(status);
@@ -63,6 +64,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     }
 
     private void abortWith(ResponseCodeEnum cause) {
+        // TODO: Implement abortWith() failure functionality
 //        if (store.isCreationPending()) {
 //            store.rollbackCreation();
 //        }
