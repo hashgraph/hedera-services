@@ -8841,7 +8841,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>expiry</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Timestamp">Timestamp</a></td>
                   <td></td>
                   <td><p>The epoch second at which the token should expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod </p></td>
                 </tr>
@@ -8855,7 +8855,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>autoRenewPeriod</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Duration">Duration</a></td>
                   <td></td>
                   <td><p>The interval at which the auto-renew account will be charged to extend the token&#39;s expiry </p></td>
                 </tr>
@@ -9173,7 +9173,7 @@ by HAPI.</p></td>
                 </tr>
               
                 <tr>
-                  <td>isDeleted</td>
+                  <td>deleted</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Specifies whether the token was deleted or not </p></td>
@@ -9188,16 +9188,16 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>autoRenewPeriod</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Duration">Duration</a></td>
                   <td></td>
                   <td><p>The interval at which the auto-renew account will be charged to extend the token&#39;s expiry </p></td>
                 </tr>
               
                 <tr>
                   <td>expiry</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Timestamp">Timestamp</a></td>
                   <td></td>
-                  <td><p>The epoch second at which the token will expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod </p></td>
+                  <td><p>The epoch second at which the token will expire </p></td>
                 </tr>
               
             </tbody>
@@ -9600,14 +9600,14 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>autoRenewPeriod</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Duration">Duration</a></td>
                   <td></td>
                   <td><p>The new interval at which the auto-renew account will be charged to extend the token&#39;s expiry. </p></td>
                 </tr>
               
                 <tr>
                   <td>expiry</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Timestamp">Timestamp</a></td>
                   <td></td>
                   <td><p>The new expiry time of the token. Expiry can be updated even if admin key is not set. If the provided expiry is earlier than the current token expiry, transaction wil resolve to INVALID_EXPIRATION_TIME </p></td>
                 </tr>
@@ -10512,10 +10512,17 @@ Otherwise, IF the topicRunningHashVersion is &#39;3&#39;, then the input data to
                 </tr>
               
                 <tr>
-                  <td>tokenId</td>
+                  <td>tokenID</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>In the receipt of a CreateToken, the id of the newly created token </p></td>
+                </tr>
+              
+                <tr>
+                  <td>newTotalSupply</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>In the receipt of TokenMint, TokenWipe, TokenBurn, the current total supply of this token </p></td>
                 </tr>
               
             </tbody>

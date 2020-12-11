@@ -3,7 +3,7 @@
 
   <groupId>com.hedera.hashgraph</groupId>
   <artifactId>hedera-services</artifactId>
-  <version>0.9.1-SNAPSHOT</version>
+  <version>0.10.0-rc.1</version>
   <description>
     Hedera Services (crypto, file, contract, consensus) on the Platform
   </description>
@@ -21,7 +21,7 @@
     <url>https://github.com/hashgraph/hedera-services</url>
     <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
     <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
-    <tag>release/0.10</tag>
+    <tag>v0.10.0-rc.1</tag>
   </scm>
 
   <developers>
