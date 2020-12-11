@@ -60,11 +60,15 @@ class SystemOpPoliciesTest {
 	SystemOpPolicies subject = new SystemOpPolicies(new MockEntityNumbers());
 
 	@Test
-	public void genesisCanUpdateEverything() {
+	public void treasuryCanUpdateAllNonAccountEntities() {
 		// expect:
-		assertTrue(subject.canPerformNonCryptoUpdate(2, 1));
-		assertTrue(subject.canPerformNonCryptoUpdate(2, 2));
-		assertTrue(subject.canPerformNonCryptoUpdate(2, 1001));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 101));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 102));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 111));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 112));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 121));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 122));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 150));
 	}
 
 	@Test
@@ -76,6 +80,7 @@ class SystemOpPoliciesTest {
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 112));
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 122));
+		assertTrue(subject.canPerformNonCryptoUpdate(50, 150));
 	}
 
 	@Test
@@ -86,23 +91,32 @@ class SystemOpPoliciesTest {
 		assertTrue(subject.canPerformNonCryptoUpdate(55, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(55, 122));
 		assertFalse(subject.canPerformNonCryptoUpdate(55, 111));
+		assertFalse(subject.canPerformNonCryptoUpdate(55, 112));
+		assertFalse(subject.canPerformNonCryptoUpdate(55, 150));
 	}
 
 	@Test
 	public void feeSchedulesAdminCanUpdateExpected() {
 		// expect:
 		assertTrue(subject.canPerformNonCryptoUpdate(56, 111));
-		assertFalse(subject.canPerformNonCryptoUpdate(56, 112));
+		assertFalse(subject.canPerformNonCryptoUpdate(56, 101));
+		assertFalse(subject.canPerformNonCryptoUpdate(56, 102));
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 121));
+		assertFalse(subject.canPerformNonCryptoUpdate(56, 122));
+		assertFalse(subject.canPerformNonCryptoUpdate(56, 112));
+		assertFalse(subject.canPerformNonCryptoUpdate(56, 150));
 	}
 
 	@Test
 	public void exchangeRatesAdminCanUpdateExpected() {
 		// expect:
-		assertTrue(subject.canPerformNonCryptoUpdate(57, 112));
 		assertTrue(subject.canPerformNonCryptoUpdate(57, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(57, 122));
+		assertTrue(subject.canPerformNonCryptoUpdate(57, 112));
 		assertFalse(subject.canPerformNonCryptoUpdate(57, 111));
+		assertFalse(subject.canPerformNonCryptoUpdate(57, 101));
+		assertFalse(subject.canPerformNonCryptoUpdate(57, 102));
+		assertFalse(subject.canPerformNonCryptoUpdate(57, 150));
 	}
 
 	@Test

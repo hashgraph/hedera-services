@@ -89,7 +89,10 @@ Next we consider `FileUpdate` and `FileAppend` transactions when targeting one o
 ### Authorization for crypto updates
 
 For the `CryptoUpdate` transaction, we have the minimal table below. The _only_ target account which 
-requires an authorized payer is account number [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26)
+requires an authorized payer is account number [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26).
+(Note that before release `0.10.0`, a `CryptoUpdate` targeting _any_ system account required an 
+authorized payer. Since `0.10.0` it has been possible to, for example, update `0.0.88` with 
+`0.0.12345` as the payer, as long as the key for `0.0.88` signs the transaction.)
 
 | Payer | [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26) | 
 | --- | :---: | 
