@@ -49,6 +49,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Arrays;
@@ -57,6 +58,9 @@ public class FeesAndRatesProvider {
 	private static final Logger log = LogManager.getLogger(FeesAndRatesProvider.class);
 
 	private static final int NUM_DOWNLOAD_ATTEMPTS = 10;
+
+	private static final BigDecimal USD_DIVISOR = BigDecimal.valueOf(100L);
+	private static final BigDecimal HBAR_DIVISOR = BigDecimal.valueOf(100_000_000L);
 
 	private TxnFactory txns;
 	private KeyFactory keys;
@@ -229,6 +233,14 @@ public class FeesAndRatesProvider {
 		log.info("Computed a new rate set :: " + rateSetAsString(perturbedSet));
 
 		return perturbedSet;
+	}
+
+	public double toUsdWithActiveRates(long tb) {
+		return BigDecimal.valueOf(tb).divide(HBAR_DIVISOR)
+				.divide(BigDecimal.valueOf(activeRates().getHbarEquiv()))
+				.multiply(BigDecimal.valueOf(activeRates().getCentEquiv()))
+				.divide(USD_DIVISOR)
+				.doubleValue();
 	}
 
 	public static String rateSetAsString(ExchangeRateSet set) {
