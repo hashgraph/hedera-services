@@ -31,11 +31,10 @@ import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public enum ExceptionalScheduleStore implements ScheduleStore {
@@ -63,7 +62,7 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, HashSet<EntityId> signers, HashMap<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Set<EntityId> signers, Map<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
 		throw new UnsupportedOperationException();
 	}
 

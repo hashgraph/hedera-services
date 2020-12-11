@@ -367,4 +367,6 @@ public interface TxnHandlingScenario {
 	KeyTree MISC_TOPIC_SUBMIT_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_ADMIN_KT = withRoot(ed25519());
 	KeyTree UPDATE_TOPIC_ADMIN_KT = withRoot(ed25519());
+
+	KeyTree SCHEDULE_ADMIN_KT = withRoot(ed25519());
 }

@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
-import com.swirlds.common.FCMElement;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -40,6 +39,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -58,7 +58,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     private byte[] transactionBody;
     private JKey adminKey = UNUSED_KEY;
-    private HashSet<EntityId> signers = new HashSet<>();
+    private Set<EntityId> signers = new HashSet<>();
     private Map<EntityId, byte[]> signatures = new HashMap<>();
     private boolean deleted;
 
@@ -69,7 +69,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     public MerkleSchedule(
             byte[] transactionBody,
-            HashSet<EntityId> signers,
+            Set<EntityId> signers,
             Map<EntityId, byte[]> signatures
     ) {
         this.transactionBody = transactionBody;
@@ -189,7 +189,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         this.adminKey = adminKey;
     }
 
-    public HashSet<EntityId> signers() { return signers; }
+    public Set<EntityId> signers() { return signers; }
 
     public boolean isDeleted() {
         return deleted;

@@ -34,23 +34,21 @@ import com.hedera.services.store.HederaStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.fcmap.FCMap;
 
-import javax.swing.text.html.parser.Entity;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
 
 /**
  * Provides a managing store for Scheduled Entities.
@@ -109,7 +107,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, HashSet<EntityId> signers, HashMap<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Set<EntityId> signers, Map<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
 		pendingId = ids.newScheduleId(sponsor);
 		pendingCreation = new MerkleSchedule(
 			bodyBytes,
@@ -130,12 +128,12 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 		var id = resolve(sID);
 		if (id == MISSING_SCHEDULE) {
-			return INVALID_TOKEN_ID;
+			return INVALID_SCHEDULE_ID;
 		}
 
 		var schedule = get(id);
 		if (schedule.isDeleted()) {
-			return TOKEN_WAS_DELETED;
+			return SCHEDULE_WAS_DELETED;
 		}
 
 		schedule.putSignature(EntityId.ofNullableAccountId(aId), signature);

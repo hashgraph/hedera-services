@@ -68,7 +68,6 @@ public class MerkleScheduleTest {
     Map<EntityId, byte[]> signatures, otherSignatures;
 
     boolean isDeleted = true, otherIsDeleted = false;
-    boolean executedImmediately = true, otherExecutedImmediately = false;
 
     MerkleSchedule subject;
     MerkleSchedule other;
@@ -274,21 +273,6 @@ public class MerkleScheduleTest {
 
         // when:
         other.setDeleted(otherIsDeleted);
-
-        // expect:
-        assertNotEquals(subject, other);
-        // and:
-        assertNotEquals(subject.hashCode(), other.hashCode());
-    }
-
-    @Test
-    public void failDifferentExecutedImmediately() {
-        // given:
-        other = new MerkleSchedule(transactionBody, signers, signatures);
-        setOptionalElements(other);
-
-        // when:
-        other.setDeleted(otherExecutedImmediately);
 
         // expect:
         assertNotEquals(subject, other);
