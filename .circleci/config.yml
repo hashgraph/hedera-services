@@ -1617,7 +1617,7 @@ workflows:
   continuous-integration-gcp:
       jobs:
         - build-platform-and-services
-        - run-continuous-integration:
+        - run-continuous-integration-gcp:
             context: Slack
             requires:
               - build-platform-and-services
@@ -2098,7 +2098,7 @@ jobs:
       - store_artifacts:
           path: /results.tar.gz
 
-  run-continuous-integration:
+  run-continuous-integration-gcp:
     parameters:
       workflow-name:
         type: string
