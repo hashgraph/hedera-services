@@ -88,10 +88,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 							invalidAccountId.set(asTopicString(topicId));
 						})
 				).when().then(
-						cryptoTransfer(spec -> tinyBarsFromTo(GENESIS, invalidAccountId.get(), 1L).apply((spec)))
+						cryptoTransfer(spec -> tinyBarsFromTo(DEFAULT_PAYER, invalidAccountId.get(), 1L).apply((spec)))
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						cryptoTransfer(moving(1, "token")
-								.between(spec -> GENESIS, spec -> invalidAccountId.get()))
+								.between(spec -> DEFAULT_PAYER, spec -> invalidAccountId.get()))
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				);
 	}
