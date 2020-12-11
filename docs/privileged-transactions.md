@@ -1,7 +1,7 @@
 # System accounts and files
 
 The Hedera network reserves the first 
-[`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L35) 
+[`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties) 
 entity numbers for its own uses. 
 An account with a number in the reserved range is called a **system account**. 
 A file with a number in the reserved range is called a **system file**. 
@@ -67,36 +67,36 @@ First we consider the four transaction types that always require authorization t
 
 | Payer | `Freeze` | `SystemDelete` | `SystemUndelete` | `UncheckedSubmit` |
 | --- | :---: | :---: | :---: | :---: | 
-| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26) | X | X | X | X |
-| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) | X | X | X | X |
-| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22) | X |   |   |   |
-| [`accounts.systemDeleteAdmin=59`](../hedera-node/src/main/resources/bootstrap.properties#L24) |   | X |   |   |
-| [`accounts.systemUndeleteAdmin=60`](../hedera-node/src/main/resources/bootstrap.properties#L25) |   |   | X |   |
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X |
+| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X |
+| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties) | X |   |   |   |
+| [`accounts.systemDeleteAdmin=59`](../hedera-node/src/main/resources/bootstrap.properties) |   | X |   |   |
+| [`accounts.systemUndeleteAdmin=60`](../hedera-node/src/main/resources/bootstrap.properties) |   |   | X |   |
 
 ### Authorization privileges for file updates and appends
 
 Next we consider `FileUpdate` and `FileAppend` transactions when targeting one of the system files. 
 
-| Payer | [`files.addressBook=101`](../hedera-node/src/main/resources/bootstrap.properties#L29)/[`files.nodeDetails=102`](../hedera-node/src/main/resources/bootstrap.properties#L35) | [`files.networkProperties=121`](../hedera-node/src/main/resources/bootstrap.properties#L31)/[`files.hapiPermissions=122`](../hedera-node/src/main/resources/bootstrap.properties#L34)| [`files.feeSchedules=111`](../hedera-node/src/main/resources/bootstrap.properties#L33) | [`files.exchangeRates=112`](../hedera-node/src/main/resources/bootstrap.properties#L32) | [`files.softwareUpdateZip=150`](../hedera-node/src/main/resources/bootstrap.properties#L34)|
+| Payer | [`files.addressBook=101`](../hedera-node/src/main/resources/bootstrap.properties)/[`files.nodeDetails=102`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.networkProperties=121`](../hedera-node/src/main/resources/bootstrap.properties)/[`files.hapiPermissions=122`](../hedera-node/src/main/resources/bootstrap.properties)| [`files.feeSchedules=111`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.exchangeRates=112`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.softwareUpdateZip=150`](../hedera-node/src/main/resources/bootstrap.properties)|
 | --- | :---: | :---: | :---: | :---: | :---: | 
-| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26) | X | X | X | X | X |
-| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) | X | X | X | X | X |
-| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties#L19) | X | X | |   | |
-| [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties#L21) |   |   | X |   | |
-| [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties#L20) |   | X |   | X | |
-| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties#L22) |   |   |   |   | X |
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X | X |
+| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X | X |
+| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | |   | |
+| [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties) |   |   | X |   | |
+| [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties) |   | X |   | X | |
+| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties) |   |   |   |   | X |
 
 ### Authorization for crypto updates
 
 For the `CryptoUpdate` transaction, we have the minimal table below. The _only_ target account which 
-requires an authorized payer is account number [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26).
+requires an authorized payer is account number [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties).
 (Note that before release `0.10.0`, a `CryptoUpdate` targeting _any_ system account required an 
 authorized payer. Since `0.10.0` it has been possible to, for example, update `0.0.88` with 
 `0.0.12345` as the payer, as long as the key for `0.0.88` signs the transaction.)
 
-| Payer | [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26) | 
+| Payer | [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | 
 | --- | :---: | 
-| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26) | X |
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X |
 
 ## Waived signing requirements
 
@@ -114,10 +114,10 @@ privileges for `CryptoUpdate` only apply to two authorized payers, as below.
 
 ### Waived signing requirements for crypto updates
 
-| Payer | Accounts after [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26) and up to [`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties#L35) | 
+| Payer | Accounts after [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) and up to [`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties) | 
 | --- | :---: | 
-| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties#L26) | X |
-| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties#L23) | X |
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X |
+| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties) | X |
 
 # Miscellanea
 
