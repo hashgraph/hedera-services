@@ -61,10 +61,12 @@ import static org.mockito.Mockito.times;
 public class MerkleScheduleTest {
     byte[] otherSignature = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
     byte[] transactionBody, otherTransactionBody;
+    int signersThreshold, otherSignersThreshold;
     JKey adminKey, otherKey;
     EntityId signer1, signer2, signer3;
+    boolean signer1submission, signer2submission, signer3submission;
     byte[] signature1, signature2, signature3;
-    HashSet<EntityId> signers, otherSigners;
+    Map<EntityId, Boolean> signers, otherSigners;
     Map<EntityId, byte[]> signatures, otherSignatures;
 
     boolean isDeleted = true, otherIsDeleted = false;
@@ -76,7 +78,10 @@ public class MerkleScheduleTest {
     @BeforeEach
     public void setup() {
         transactionBody = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES * 2);
-        otherTransactionBody = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);;
+        otherTransactionBody = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
+
+        signersThreshold = 2;
+        otherSignersThreshold = 3;
 
         adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
         otherKey = new JEd25519Key("not-a-real-other-key".getBytes());
@@ -89,13 +94,13 @@ public class MerkleScheduleTest {
         signer2 = new EntityId(2, 3, 4);
         signer3 = new EntityId(3, 4, 5);
 
-        signers = new HashSet<>();
-        signers.add(signer1);
-        signers.add(signer2);
+        signers = new HashMap<>();
+        signers.put(signer1, signer1submission);
+        signers.put(signer2, signer2submission);
 
-        otherSigners = new HashSet<>();
-        otherSigners.add(signer2);
-        otherSigners.add(signer3);
+        otherSigners = new HashMap<>();
+        otherSigners.put(signer2, signer2submission);
+        otherSigners.put(signer3, signer3submission);
 
         signatures = new HashMap<>();
         signatures.put(signer1, signature1);
@@ -104,7 +109,7 @@ public class MerkleScheduleTest {
         otherSignatures.put(signer2, signature2);
         otherSignatures.put(signer3, signature3);
 
-        subject = new MerkleSchedule(transactionBody, signers, signatures);
+        subject = new MerkleSchedule(transactionBody, signersThreshold, signers, signatures);
         this.setOptionalElements(subject);
 
         serdes = mock(DomainSerdes.class);
@@ -128,9 +133,13 @@ public class MerkleScheduleTest {
         assertEquals(transactionBody, subject.transactionBody());
         assertEquals(isDeleted, subject.isDeleted());
         assertEquals(signers, subject.signers());
+        assertEquals(signersThreshold, subject.signersThreshold());
         assertTrue(subject.hasAdminKey());
         assertTrue(equalUpToDecodability(adminKey, subject.adminKey().get()));
         assertTrue(subject.signatures().containsKey(signer1));
+        assertTrue(subject.signatures().containsKey(signer2));
+        assertTrue(subject.signers().containsKey(signer1));
+        assertTrue(subject.signers().containsKey(signer2));
     }
 
     @Test
@@ -166,9 +175,11 @@ public class MerkleScheduleTest {
         inOrder.verify(out).writeBoolean(true);
         inOrder.verify(out).writeInt(transactionBody.length);
         inOrder.verify(out).writeByteArray(transactionBody);
-        inOrder.verify(out).writeInt(signers.size());
+        inOrder.verify(out, times(2)).writeInt(signers.size());
         inOrder.verify(out).writeSerializable(signer1, true);
+        inOrder.verify(out).writeBoolean(signer1submission);
         inOrder.verify(out).writeSerializable(signer2, true);
+        inOrder.verify(out).writeBoolean(signer2submission);
         inOrder.verify(out).writeInt(signatures.size());
         inOrder.verify(out).writeSerializable(signer1, true);
         inOrder.verify(out).writeByteArray(signature1);
@@ -187,9 +198,12 @@ public class MerkleScheduleTest {
         given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
                 .willReturn(adminKey);
         given(fin.readBoolean())
-                .willReturn(subject.isDeleted());
+                .willReturn(subject.isDeleted())
+                .willReturn(signer1submission)
+                .willReturn(signer2submission);
         given(fin.readInt())
                 .willReturn(transactionBody.length)
+                .willReturn(signersThreshold)
                 .willReturn(signers.size())
                 .willReturn(signatures.size());
         given(fin.readByteArray(transactionBody.length))
@@ -216,7 +230,19 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentTransactionBody() {
         // given:
-        other = new MerkleSchedule(otherTransactionBody, signers, signatures);
+        other = new MerkleSchedule(otherTransactionBody, signersThreshold, signers, signatures);
+        setOptionalElements(other);
+
+        // expect:
+        assertNotEquals(subject, other);
+        // and:
+        assertNotEquals(subject.hashCode(), other.hashCode());
+    }
+
+    @Test
+    public void failDifferentSignersThreshold() {
+        // given:
+        other = new MerkleSchedule(transactionBody, otherSignersThreshold, signers, signatures);
         setOptionalElements(other);
 
         // expect:
@@ -229,7 +255,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentSignersLength() {
         // given:
-        other = new MerkleSchedule(transactionBody, new HashSet<>(), signatures);
+        other = new MerkleSchedule(transactionBody, signersThreshold, new HashMap<>(), signatures);
         setOptionalElements(other);
 
         // expect:
@@ -241,7 +267,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentSigners() {
         // given:
-        other = new MerkleSchedule(transactionBody, otherSigners, signatures);
+        other = new MerkleSchedule(transactionBody, signersThreshold, otherSigners, signatures);
         setOptionalElements(other);
 
         // expect:
@@ -253,7 +279,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentAdminKey() {
         // given:
-        other = new MerkleSchedule(transactionBody, signers, signatures);
+        other = new MerkleSchedule(transactionBody, signersThreshold, signers, signatures);
         setOptionalElements(other);
 
         // when:
@@ -268,7 +294,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentIsDeleted() {
         // given:
-        other = new MerkleSchedule(transactionBody, signers, signatures);
+        other = new MerkleSchedule(transactionBody, signersThreshold, signers, signatures);
         setOptionalElements(other);
 
         // when:
@@ -283,7 +309,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentSignaturesLength() {
         // given:
-        other = new MerkleSchedule(transactionBody, signers, new HashMap<>());
+        other = new MerkleSchedule(transactionBody, signersThreshold, signers, new HashMap<>());
         setOptionalElements(other);
 
         // expect:
@@ -295,7 +321,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentSignaturesKeys() {
         // given:
-        other = new MerkleSchedule(transactionBody, signers, otherSignatures);
+        other = new MerkleSchedule(transactionBody, signersThreshold, signers, otherSignatures);
         setOptionalElements(other);
 
         // expect:
@@ -311,7 +337,7 @@ public class MerkleScheduleTest {
         otherSignatures.put(signer1, signature1);
         otherSignatures.put(signer2, new byte[10]);
         // and:
-        other = new MerkleSchedule(transactionBody, signers, otherSignatures);
+        other = new MerkleSchedule(transactionBody, signersThreshold, signers, otherSignatures);
         setOptionalElements(other);
 
         // expect:
@@ -326,6 +352,7 @@ public class MerkleScheduleTest {
         assertEquals("MerkleSchedule{" +
                     "deleted=" + isDeleted + ", " +
                     "transactionBody=" + hex(transactionBody) + ", " +
+                    "signersThreshold=" + signersThreshold + ", " +
                     "adminKey=" + describe(adminKey) + ", " +
                     "signers=[" + signersToString() + "], " +
                     "signatures=[" + signaturesToString() +
@@ -338,12 +365,12 @@ public class MerkleScheduleTest {
         // given:
         var defaultSubject = new MerkleAccountState();
         // and:
-        var identicalSubject = new MerkleSchedule(transactionBody, signers, signatures);
+        var identicalSubject = new MerkleSchedule(transactionBody, signersThreshold, signers, signatures);
         setOptionalElements(identicalSubject);
         identicalSubject.setDeleted(isDeleted);
 
         // and:
-        other = new MerkleSchedule(transactionBody, signers, signatures);
+        other = new MerkleSchedule(transactionBody, signersThreshold, signers, signatures);
 
         // expect:
         assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
@@ -403,8 +430,9 @@ public class MerkleScheduleTest {
 
     private String signersToString() {
         return signers
+                .entrySet()
                 .stream()
-                .map(EntityId::toString)
+                .map(s -> s.getKey() + " : " + s.getValue())
                 .collect(Collectors.joining(", "));
     }
 
