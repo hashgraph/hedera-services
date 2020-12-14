@@ -8,11 +8,13 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
+import com.hederahashgraph.api.proto.java.ScheduleGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import proto.ScheduleGetInfo;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,13 +49,13 @@ public class GetScheduleInfoAnswerTest {
     StateView view;
     OptionValidator optionValidator;
 
-    ScheduleGetInfo.ScheduleInfo info;
+    ScheduleInfo info;
 
     GetScheduleInfoAnswer subject;
 
     @BeforeEach
     public void setup() {
-        info = ScheduleGetInfo.ScheduleInfo.newBuilder()
+        info = ScheduleInfo.newBuilder()
                 .setSchedule(scheduleID)
                 .setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
                 .build();
@@ -117,7 +119,7 @@ public class GetScheduleInfoAnswerTest {
         Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
         // then:
-        ScheduleGetInfo.ScheduleGetInfoResponse opResponse = response.getScheduleGetInfo();
+        ScheduleGetInfoResponse opResponse = response.getScheduleGetInfo();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
         assertEquals(INVALID_SCHEDULE_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
     }
@@ -131,7 +133,7 @@ public class GetScheduleInfoAnswerTest {
         Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
 
         // then:
-        ScheduleGetInfo.ScheduleGetInfoResponse opResponse = response.getScheduleGetInfo();
+        ScheduleGetInfoResponse opResponse = response.getScheduleGetInfo();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
         assertEquals(INVALID_SCHEDULE_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
         verify(view, never()).infoForSchedule(any());
@@ -193,7 +195,7 @@ public class GetScheduleInfoAnswerTest {
     public void getsValidity() {
         // given:
         Response response = Response.newBuilder().setScheduleGetInfo(
-                ScheduleGetInfo.ScheduleGetInfoResponse.newBuilder()
+                ScheduleGetInfoResponse.newBuilder()
                         .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED))).build();
 
         // expect:
@@ -228,7 +230,7 @@ public class GetScheduleInfoAnswerTest {
         QueryHeader.Builder header = QueryHeader.newBuilder()
                 .setPayment(this.paymentTxn)
                 .setResponseType(type);
-        ScheduleGetInfo.ScheduleGetInfoQuery.Builder op = ScheduleGetInfo.ScheduleGetInfoQuery.newBuilder()
+        ScheduleGetInfoQuery.Builder op = ScheduleGetInfoQuery.newBuilder()
                 .setHeader(header)
                 .setSchedule(id);
         return Query.newBuilder().setScheduleGetInfo(op).build();

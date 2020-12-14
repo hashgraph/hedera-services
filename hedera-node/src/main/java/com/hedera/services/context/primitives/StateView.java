@@ -22,7 +22,6 @@ package com.hedera.services.context.primitives;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.services.queries.crypto.GetAccountRecordsAnswer;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -56,7 +55,7 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import proto.ScheduleGetInfo;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -270,7 +269,7 @@ public class StateView {
 		}
 	}
 
-	public Optional<ScheduleGetInfo.ScheduleInfo> infoForSchedule(ScheduleID scheduleID) {
+	public Optional<ScheduleInfo> infoForSchedule(ScheduleID scheduleID) {
 		// TODO: Implement logic for getting information for schedule from store.
 		return Optional.empty();
 	}

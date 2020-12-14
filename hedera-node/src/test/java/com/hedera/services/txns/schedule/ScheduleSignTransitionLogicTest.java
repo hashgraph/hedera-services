@@ -10,15 +10,15 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.ThresholdAccount;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import proto.ScheduleCreate;
-import proto.ScheduleSign;
 
 import java.time.Instant;
 
@@ -32,8 +32,6 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class ScheduleSignTransitionLogicTest {
-    long thisSecond = 1_234_567L;
-    private Instant now = Instant.ofEpochSecond(thisSecond);
     private OptionValidator validator;
     private ScheduleStore store;
     private HederaLedger ledger;
@@ -51,7 +49,7 @@ public class ScheduleSignTransitionLogicTest {
     private final boolean yes = true;
 
     private SignatureMap sigMap;
-    private ScheduleCreate.ThresholdAccounts signers;
+    private ThresholdAccount signers;
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
@@ -106,14 +104,14 @@ public class ScheduleSignTransitionLogicTest {
         sigMap = SignatureMap.newBuilder().addSigPair(
                 SignaturePair.newBuilder().build()
         ).build();
-        var signersBuilder = ScheduleCreate.ThresholdAccounts.newBuilder()
+        var signersBuilder = ThresholdAccount.newBuilder()
                 .addAccounts(signer)
                 .addAccounts(anotherSigner);
         signers = signersBuilder
                 .build();
 
         var builder = TransactionBody.newBuilder();
-        var scheduleSign = ScheduleSign.ScheduleSignTransactionBody.newBuilder()
+        var scheduleSign = ScheduleSignTransactionBody.newBuilder()
                 .setSigMap(sigMap)
                 .setSchedule(schedule);
 
@@ -130,6 +128,5 @@ public class ScheduleSignTransitionLogicTest {
         scheduleSignTxn = builder.build();
         given(accessor.getTxn()).willReturn(scheduleSignTxn);
         given(txnCtx.accessor()).willReturn(accessor);
-        given(txnCtx.consensusTime()).willReturn(now);
     }
 }

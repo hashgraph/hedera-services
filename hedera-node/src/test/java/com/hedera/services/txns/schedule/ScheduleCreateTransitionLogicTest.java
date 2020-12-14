@@ -9,16 +9,15 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.ThresholdAccount;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import proto.ScheduleCreate;
-
-import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNERS_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -32,8 +31,6 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class ScheduleCreateTransitionLogicTest {
-    long thisSecond = 1_234_567L;
-    private Instant now = Instant.ofEpochSecond(thisSecond);
     private OptionValidator validator;
     private ScheduleStore store;
     private HederaLedger ledger;
@@ -52,7 +49,7 @@ public class ScheduleCreateTransitionLogicTest {
     private final boolean yes = true;
 
     private SignatureMap sigMap;
-    private ScheduleCreate.ThresholdAccounts signers;
+    private ThresholdAccount signers;
 
     private ScheduleCreateTransitionLogic subject;
 
@@ -65,7 +62,6 @@ public class ScheduleCreateTransitionLogicTest {
 
         txnCtx = mock(TransactionContext.class);
         given(txnCtx.activePayer()).willReturn(payer);
-        given(txnCtx.consensusTime()).willReturn(Instant.now());
 
         subject = new ScheduleCreateTransitionLogic(validator, store, ledger, txnCtx);
     }
@@ -142,14 +138,14 @@ public class ScheduleCreateTransitionLogicTest {
             boolean invalidThreshold
             ) {
         sigMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
-        var signersBuilder = ScheduleCreate.ThresholdAccounts.newBuilder()
+        var signersBuilder = ThresholdAccount.newBuilder()
                 .addAccounts(signer)
                 .addAccounts(anotherSigner);
         signers = signersBuilder
                 .build();
 
         var builder = TransactionBody.newBuilder();
-        var scheduleCreate = ScheduleCreate.ScheduleCreateTransactionBody.newBuilder()
+        var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
                 .setSigMap(sigMap)
                 .setSigners(signers)
                 .setAdminKey(key)
@@ -164,7 +160,7 @@ public class ScheduleCreateTransitionLogicTest {
         }
 
         if (invalidSigners) {
-            scheduleCreate.setSigners(ScheduleCreate.ThresholdAccounts.newBuilder());
+            scheduleCreate.setSigners(ThresholdAccount.newBuilder());
         }
 
         if (invalidThreshold) {
@@ -177,6 +173,5 @@ public class ScheduleCreateTransitionLogicTest {
         scheduleCreateTxn = builder.build();
         given(accessor.getTxn()).willReturn(scheduleCreateTxn);
         given(txnCtx.accessor()).willReturn(accessor);
-        given(txnCtx.consensusTime()).willReturn(now);
     }
 }

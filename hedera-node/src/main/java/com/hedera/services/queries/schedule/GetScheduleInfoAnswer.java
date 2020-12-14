@@ -27,9 +27,9 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import proto.ScheduleGetInfo.ScheduleGetInfoResponse;
-import proto.ScheduleGetInfo.ScheduleInfo;
-import proto.ScheduleGetInfo.ScheduleGetInfoQuery;
+import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
+import com.hederahashgraph.api.proto.java.ScheduleGetInfoResponse;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
 
 import java.util.Map;
 import java.util.Optional;

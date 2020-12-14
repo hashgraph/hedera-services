@@ -6,15 +6,15 @@ import com.hedera.services.schedules.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import proto.ScheduleCreate;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.validation.ScheduleListChecks.checkAdminKey;
+import static com.hedera.services.txns.validation.ScheduleList.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNERS_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -52,7 +52,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
         }
     }
 
-    private void transitionFor(ScheduleCreate.ScheduleCreateTransactionBody op) {
+    private void transitionFor(ScheduleCreateTransactionBody op) {
         // TODO: Implement transitionFor() functionality
     }
 
@@ -73,7 +73,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         var validity = OK;
 
-        ScheduleCreate.ScheduleCreateTransactionBody op = txnBody.getScheduleCreation();
+        ScheduleCreateTransactionBody op = txnBody.getScheduleCreation();
 
         if (!op.getExecuteImmediately()) {
             return NOT_SUPPORTED;

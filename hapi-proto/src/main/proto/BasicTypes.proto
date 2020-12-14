@@ -148,6 +148,11 @@ message ThresholdKey {
     KeyList keys = 2; // List of all the keys that can sign
 }
 
+message ThresholdAccount {
+    uint32 threshold = 1;
+    repeated AccountID accounts = 2;
+}
+
 /* A list of keys */
 message KeyList {
     repeated Key keys = 1; // list of keys
