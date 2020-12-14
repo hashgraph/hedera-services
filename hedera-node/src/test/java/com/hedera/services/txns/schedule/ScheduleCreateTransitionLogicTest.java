@@ -9,14 +9,15 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.ThresholdAccounts;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import proto.ScheduleCreate;
 
 import java.time.Instant;
 
@@ -52,7 +53,7 @@ public class ScheduleCreateTransitionLogicTest {
     private final boolean yes = true;
 
     private SignatureMap sigMap;
-    private ScheduleCreate.ThresholdAccounts signers;
+    private ThresholdAccounts signers;
 
     private ScheduleCreateTransitionLogic subject;
 
@@ -142,14 +143,14 @@ public class ScheduleCreateTransitionLogicTest {
             boolean invalidThreshold
             ) {
         sigMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
-        var signersBuilder = ScheduleCreate.ThresholdAccounts.newBuilder()
+        var signersBuilder = ThresholdAccounts.newBuilder()
                 .addAccounts(signer)
                 .addAccounts(anotherSigner);
         signers = signersBuilder
                 .build();
 
         var builder = TransactionBody.newBuilder();
-        var scheduleCreate = ScheduleCreate.ScheduleCreateTransactionBody.newBuilder()
+        var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
                 .setSigMap(sigMap)
                 .setSigners(signers)
                 .setAdminKey(key)
@@ -164,7 +165,7 @@ public class ScheduleCreateTransitionLogicTest {
         }
 
         if (invalidSigners) {
-            scheduleCreate.setSigners(ScheduleCreate.ThresholdAccounts.newBuilder());
+            scheduleCreate.setSigners(ThresholdAccounts.newBuilder());
         }
 
         if (invalidThreshold) {

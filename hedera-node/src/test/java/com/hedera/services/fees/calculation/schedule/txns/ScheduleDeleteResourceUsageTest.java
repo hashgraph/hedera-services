@@ -1,17 +1,10 @@
 package com.hedera.services.fees.calculation.schedule.txns;
 
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import proto.ScheduleDelete;
-import proto.ScheduleGetInfo;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,7 +19,7 @@ public class ScheduleDeleteResourceUsageTest {
     TransactionBody scheduleDeleteTxn;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    private void setup() {
         scheduleDeleteTxn = mock(TransactionBody.class);
         given(scheduleDeleteTxn.hasScheduleDelete()).willReturn(true);
 

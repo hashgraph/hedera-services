@@ -7,13 +7,13 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import proto.ScheduleDelete;
 
 import java.time.Instant;
 
@@ -81,7 +81,7 @@ public class ScheduleDeleteTransitionLogicTest {
             boolean invalidScheduleId
     ) {
         var builder = TransactionBody.newBuilder();
-        var scheduleDelete = ScheduleDelete.ScheduleDeleteTransactionBody.newBuilder()
+        var scheduleDelete = ScheduleDeleteTransactionBody.newBuilder()
                 .setSchedule(schedule);
 
         if (invalidScheduleId) {

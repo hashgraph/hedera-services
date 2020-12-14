@@ -10,15 +10,15 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.ThresholdAccounts;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import proto.ScheduleCreate;
-import proto.ScheduleSign;
 
 import java.time.Instant;
 
@@ -51,7 +51,7 @@ public class ScheduleSignTransitionLogicTest {
     private final boolean yes = true;
 
     private SignatureMap sigMap;
-    private ScheduleCreate.ThresholdAccounts signers;
+    private ThresholdAccounts signers;
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
@@ -106,14 +106,14 @@ public class ScheduleSignTransitionLogicTest {
         sigMap = SignatureMap.newBuilder().addSigPair(
                 SignaturePair.newBuilder().build()
         ).build();
-        var signersBuilder = ScheduleCreate.ThresholdAccounts.newBuilder()
+        var signersBuilder = ThresholdAccounts.newBuilder()
                 .addAccounts(signer)
                 .addAccounts(anotherSigner);
         signers = signersBuilder
                 .build();
 
         var builder = TransactionBody.newBuilder();
-        var scheduleSign = ScheduleSign.ScheduleSignTransactionBody.newBuilder()
+        var scheduleSign = ScheduleSignTransactionBody.newBuilder()
                 .setSigMap(sigMap)
                 .setSchedule(schedule);
 

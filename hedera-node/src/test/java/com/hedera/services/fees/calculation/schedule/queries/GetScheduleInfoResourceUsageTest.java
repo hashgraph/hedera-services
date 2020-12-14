@@ -4,10 +4,10 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import proto.ScheduleGetInfo;
 
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,7 +35,7 @@ public class GetScheduleInfoResourceUsageTest {
     }
 
     private Query scheduleInfoQuery(ScheduleID id, ResponseType type) {
-        ScheduleGetInfo.ScheduleGetInfoQuery.Builder op = ScheduleGetInfo.ScheduleGetInfoQuery.newBuilder()
+        ScheduleGetInfoQuery.Builder op = ScheduleGetInfoQuery.newBuilder()
                 .setSchedule(id)
                 .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder()

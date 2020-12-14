@@ -3,14 +3,14 @@ package com.hedera.services.txns.schedule;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.schedules.ScheduleStore;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleDelete;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import proto.ScheduleDelete;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,7 +50,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
         }
     }
 
-    private void transitionFor(ScheduleDelete.ScheduleDeleteTransactionBody op) {
+    private void transitionFor(ScheduleDeleteTransactionBody op) {
         // TODO: Implement transitionFor() functionality
     }
 
@@ -69,7 +69,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
-        ScheduleDelete.ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
+        ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
 
         if (!op.hasSchedule()) {
             return INVALID_SCHEDULE_ID;
