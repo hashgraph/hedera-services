@@ -14,11 +14,13 @@ import proto.ScheduleCreate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.txns.validation.ScheduleListChecks.checkAdminKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNERS_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_THRESHOLD;
 
-// TODO: Implement store, validator, etc.
 public class ScheduleCreateTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
@@ -52,29 +54,15 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
     private void transitionFor(ScheduleCreate.ScheduleCreateTransactionBody op) {
         // TODO: Implement transitionFor() functionality
-        var status = OK;
-        if (status != OK) {
-            abortWith(status);
-            return;
-        }
-
-//        store.commitCreation();
-//        txnCtx.setCreated(created);
-        txnCtx.setStatus(SUCCESS);
     }
 
     private void abortWith(ResponseCodeEnum cause) {
         // TODO: Implement abortWith() failure functionality
-//        if (store.isCreationPending()) {
-//            store.rollbackCreation();
-//        }
-        ledger.dropPendingTokenChanges();
-        txnCtx.setStatus(cause);
     }
 
     @Override
     public Predicate<TransactionBody> applicability() {
-        return null;
+        return TransactionBody::hasScheduleCreation;
     }
 
     @Override
@@ -83,6 +71,28 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
-        return OK;
+        var validity = OK;
+
+        ScheduleCreate.ScheduleCreateTransactionBody op = txnBody.getScheduleCreation();
+
+        if (!op.getExecuteImmediately()) {
+            return NOT_SUPPORTED;
+        }
+
+        validity = checkAdminKey(
+                op.hasAdminKey(), op.getAdminKey()
+        );
+        if (validity != OK) {
+            return validity;
+        }
+
+        var signers = op.getSigners().getAccountsList();
+        if (signers.isEmpty()) {
+            return EMPTY_SIGNERS_LIST;
+        }
+        if (signers.size() < op.getSigners().getThreshold()) {
+            return INVALID_SCHEDULE_THRESHOLD;
+        }
+        return validity;
     }
 }

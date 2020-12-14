@@ -1099,9 +1099,9 @@ public class ServicesContext {
 				entry(ScheduleCreate,
 						List.of(new ScheduleCreateTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
 				entry(ScheduleSign,
-						List.of(new ScheduleSignTransitionLogic())),
+						List.of(new ScheduleSignTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
 				entry(ScheduleDelete,
-						List.of(new ScheduleDeleteTransitionLogic())),
+						List.of(new ScheduleDeleteTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),

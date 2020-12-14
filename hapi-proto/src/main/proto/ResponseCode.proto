@@ -213,5 +213,9 @@ enum ResponseCodeEnum {
   EMPTY_TOKEN_TRANSFER_BODY = 199; // TokenTransfersTransactionBody has no TokenTransferList
   EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS = 200; // TokenTransfersTransactionBody has a TokenTransferList with no AccountAmounts
 
-  INVALID_SCHEDULE_ID = 201; // The schedule entity is invalid or does not exist
+  INVALID_SCHEDULE_ID = 201; // The scheduled transaction entity is invalid or does not exist
+  INVALID_SCHEDULE_THRESHOLD = 202; // The scheduled transaction entity's threshold for execution is bigger than provided signatures
+  EMPTY_SIGNERS_LIST = 203; // No signers have been passed with the scheduled transaction entity
+  EMPTY_SIGNATURES = 204; // No signers have been passed with the scheduled transaction entity
+  INVALID_EXECUTION_TIMESTAMP = 205; // The scheduled transaction entity has an invalid execution timestamp
 }

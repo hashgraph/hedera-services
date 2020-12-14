@@ -1,26 +1,83 @@
 package com.hedera.services.txns.schedule;
 
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.schedules.ScheduleStore;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import proto.ScheduleSign;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-// TODO: Implement Signing Transition Logic
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNATURES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 public class ScheduleSignTransitionLogic implements TransitionLogic {
+    private static final Logger log = LogManager.getLogger(ScheduleSignTransitionLogic.class);
+
+    private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+
+    OptionValidator validator;
+    ScheduleStore store;
+    HederaLedger ledger;
+    TransactionContext txnCtx;
+
+    public ScheduleSignTransitionLogic(
+            OptionValidator validator,
+            ScheduleStore store,
+            HederaLedger ledger,
+            TransactionContext txnCtx) {
+        this.validator = validator;
+        this.store = store;
+        this.ledger = ledger;
+        this.txnCtx = txnCtx;
+    }
+
     @Override
     public void doStateTransition() {
+        try {
+            transitionFor(txnCtx.accessor().getTxn().getScheduleSign());
+        } catch (Exception e) {
+            log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+            abortWith(FAIL_INVALID);
+        }
+    }
 
+    private void transitionFor(ScheduleSign.ScheduleSignTransactionBody op) {
+        // TODO: Implement transitionFor() functionality
+    }
+
+    private void abortWith(ResponseCodeEnum cause) {
+        // TODO: Implement abortWith() failure functionality
     }
 
     @Override
     public Predicate<TransactionBody> applicability() {
-        return null;
+        return TransactionBody::hasScheduleSign;
     }
 
     @Override
     public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
-        return null;
+        return SYNTAX_CHECK;
+    }
+
+    public ResponseCodeEnum validate(TransactionBody txnBody) {
+        ScheduleSign.ScheduleSignTransactionBody op = txnBody.getScheduleSign();
+
+        if (EntityId.ofNullableScheduleId(op.getSchedule()) == null) {
+            return INVALID_SCHEDULE_ID;
+        }
+        if (op.getSigMap().getSigPairList().isEmpty()) {
+            return EMPTY_SIGNATURES;
+        }
+        return OK;
     }
 }
