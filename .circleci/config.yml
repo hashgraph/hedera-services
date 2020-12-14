@@ -1946,7 +1946,7 @@ jobs:
       - run:
           name: Sync results of update node tests to AWS
           command: |
-            aws s3 sync /swirlds-platform/regression/results/5N_1C/Update/ s3://hedera-service-regression-jrs;
+            aws s3 sync /swirlds-platform/regression/results/5N_1C/Update/ --include "*" --exclude "*/data/*" s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/5N_1C/Update/*
 
       - store_artifacts:
