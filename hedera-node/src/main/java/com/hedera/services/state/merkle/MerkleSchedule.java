@@ -57,8 +57,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     public static final JKey UNUSED_KEY = null;
 
     private byte[] transactionBody;
+    private int signersThreshold;
     private JKey adminKey = UNUSED_KEY;
-    private HashSet<EntityId> signers = new HashSet<>();
+    private Map<EntityId, Boolean> signers = new HashMap<>();
     private Map<EntityId, byte[]> signatures = new HashMap<>();
     private boolean deleted;
 
@@ -69,10 +70,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     public MerkleSchedule(
             byte[] transactionBody,
-            HashSet<EntityId> signers,
+            int signersThreshold,
+            Map<EntityId, Boolean> signers,
             Map<EntityId, byte[]> signatures
     ) {
         this.transactionBody = transactionBody;
+        this.signersThreshold = signersThreshold;
         this.signers = signers;
         this.signatures = signatures;
     }
@@ -98,6 +101,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         var that = (MerkleSchedule) o;
         return this.deleted == that.deleted &&
                 Arrays.areEqual(this.transactionBody, that.transactionBody) &&
+                this.signersThreshold == that.signersThreshold &&
                 equalUpToDecodability(this.adminKey, that.adminKey) &&
                 this.signers.equals(that.signers) &&
                 signaturesMatch(this.signatures, that.signatures);
@@ -108,6 +112,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         return Objects.hash(
                 deleted,
                 transactionBody,
+                signersThreshold,
                 adminKey,
                 signers,
                 signatures);
@@ -118,6 +123,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         return MoreObjects.toStringHelper(MerkleSchedule.class)
                 .add("deleted", deleted)
                 .add("transactionBody", hex(transactionBody))
+                .add("signersThreshold", signersThreshold)
                 .add("adminKey", describe(adminKey))
                 .add("signers", readableSigners())
                 .add("signatures", readableSignatures())
@@ -129,6 +135,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         deleted = in.readBoolean();
         int txBodyLength = in.readInt();
         transactionBody = in.readByteArray(txBodyLength);
+        signersThreshold = in.readInt();
         deserializeSigners(in);
         deserializeSignatures(in);
         adminKey = serdes.readNullable(in, serdes::deserializeKey);
@@ -139,6 +146,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         out.writeBoolean(deleted);
         out.writeInt(transactionBody.length);
         out.writeByteArray(transactionBody);
+        out.writeInt(signersThreshold);
         serializeSigners(out);
         serializeSignatures(out);
         serdes.writeNullable(adminKey, out, serdes::serializeKey);
@@ -159,10 +167,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         var signaturesCopy = signatures.entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, HashMap::new));
-        var signersCopy = new HashSet<>(signers);
+        var signersCopy = signers.entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, HashMap::new));
 
         var fc = new MerkleSchedule(
                 transactionBody,
+                signersThreshold,
                 signersCopy,
                 signaturesCopy
         );
@@ -177,6 +188,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     public byte[] transactionBody() { return this.transactionBody; }
 
+    public int signersThreshold() { return this.signersThreshold; }
+
     public boolean hasAdminKey() {
         return adminKey != UNUSED_KEY;
     }
@@ -189,7 +202,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         this.adminKey = adminKey;
     }
 
-    public HashSet<EntityId> signers() { return signers; }
+    public Map<EntityId, Boolean> signers() { return signers; }
 
     public boolean isDeleted() {
         return deleted;
@@ -212,8 +225,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         var sb = new StringBuilder("[");
         sb.append(
                 signers
+                        .entrySet()
                         .stream()
-                        .map(EntityId::toString)
+                        .map(s -> s.getKey() + " : " + s.getValue())
                         .collect(Collectors.joining(", "))
         );
         return sb.append("]").toString();
@@ -233,9 +247,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     private void deserializeSigners(SerializableDataInputStream in) throws IOException {
         int signersSize = in.readInt();
-        signers = new HashSet<>();
+        signers = new HashMap<>();
         for (int i = 0; i < signersSize; i++) {
-            signers.add(in.readSerializable());
+            signers.put(in.readSerializable(), in.readBoolean());
         }
     }
 
@@ -250,8 +264,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     private void serializeSigners(SerializableDataOutputStream out) throws IOException {
         out.writeInt(signers.size());
-        for (EntityId id : signers) {
-           out.writeSerializable(id, true);
+        for (var entry : signers.entrySet()) {
+           out.writeSerializable(entry.getKey(), true);
+           out.writeBoolean(entry.getValue());
         }
     }
 
