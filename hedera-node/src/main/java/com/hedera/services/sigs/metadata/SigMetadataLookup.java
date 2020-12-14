@@ -21,15 +21,18 @@ package com.hedera.services.sigs.metadata;
  */
 
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.function.Function;
 
+import static com.hedera.services.sigs.metadata.ScheduleSigningMetadata.from;
 import static com.hedera.services.sigs.metadata.TokenSigningMetadata.from;
 import static com.hedera.services.sigs.metadata.lookups.SafeLookupResult.failure;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
@@ -49,8 +52,17 @@ public interface SigMetadataLookup {
 				? failure(MISSING_TOKEN)
 				: new SafeLookupResult<>(from(tokenStore.get(id)));
 	};
+	Function<
+			ScheduleStore,
+			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>>> SCHEDULE_REF_LOOKUP_FACTORY = scheduleStore -> ref -> {
+		ScheduleID id;
+		return ScheduleStore.MISSING_SCHEDULE.equals(id = scheduleStore.resolve(ref))
+				? failure(MISSING_TOKEN)
+				: new SafeLookupResult<>(from(scheduleStore.get(id)));
+	};
 
 	SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(FileID id);
+	SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(ScheduleID id);
 	SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id);
 	SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id);
 	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id);

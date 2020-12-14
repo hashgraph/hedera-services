@@ -2,7 +2,7 @@ package com.hedera.services.txns.schedule;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.schedules.ScheduleStore;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -17,9 +17,9 @@ import java.util.function.Predicate;
 import static com.hedera.services.txns.validation.ScheduleListChecks.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNERS_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_THRESHOLD;
 
 public class ScheduleCreateTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);

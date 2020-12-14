@@ -20,10 +20,12 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -34,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -239,6 +242,29 @@ public interface TxnHandlingScenario {
 		return tokenStore;
 	}
 
+	default ScheduleStore scheduleStore() {
+		var scheduleStore = mock(ScheduleStore.class);
+
+		var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
+
+		var immutableSchedule = new MerkleSchedule(null, 0, null, null);
+		given(scheduleStore.resolve(KNOWN_SCHEDULE_IMMUTABLE))
+				.willReturn(KNOWN_SCHEDULE_IMMUTABLE);
+		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE)).willReturn(immutableSchedule);
+
+		var vanillaSchedule = new MerkleSchedule(null, 0, null, null);
+		vanillaSchedule.setAdminKey(adminKey);
+		given(scheduleStore.resolve(KNOWN_SCHEDULE_ADMIN))
+				.willReturn(KNOWN_SCHEDULE_ADMIN);
+		given(scheduleStore.get(KNOWN_SCHEDULE_ADMIN)).willReturn(vanillaSchedule);
+
+
+		given(scheduleStore.resolve(UNKNOWN_SCHEDULE))
+				.willReturn(ScheduleStore.MISSING_SCHEDULE);
+
+		return scheduleStore;
+	}
+
 	String MISSING_ACCOUNT_ID = "1.2.3";
 	AccountID MISSING_ACCOUNT = asAccount(MISSING_ACCOUNT_ID);
 
@@ -367,6 +393,15 @@ public interface TxnHandlingScenario {
 	KeyTree MISC_TOPIC_SUBMIT_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_ADMIN_KT = withRoot(ed25519());
 	KeyTree UPDATE_TOPIC_ADMIN_KT = withRoot(ed25519());
+
+	String KNOWN_SCHEDULE_IMMUTABLE_ID = "0.0.789";
+	ScheduleID KNOWN_SCHEDULE_IMMUTABLE = asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID);
+
+	String KNOWN_SCHEDULE_ADMIN_ID = "0.0.456";
+	ScheduleID KNOWN_SCHEDULE_ADMIN = asSchedule(KNOWN_SCHEDULE_ADMIN_ID);
+
+	String UNKNOWN_SCHEDULE_ID = "0.0.123";
+	ScheduleID UNKNOWN_SCHEDULE = asSchedule(UNKNOWN_SCHEDULE_ID);
 
 	KeyTree SCHEDULE_ADMIN_KT = withRoot(ed25519());
 }
