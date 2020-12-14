@@ -64,6 +64,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 	private static final String APP_FILE_REGISTRY = "AppPropertiesInRegistry";
 	private static final String API_FILE_REGISTRY = "ApiPropertiesInRegistry";
 	private static final String RATES_FILE_REGISTRY = "ExchangeRatesInRegistry";
+	private static final String FEES_FILE_REGISTRY = "FeeSchedulesInRegistry";
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
@@ -86,6 +87,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 						saveFileToRegistry(APP_PROPERTIES, APP_FILE_REGISTRY),
 						saveFileToRegistry(API_PERMISSIONS, API_FILE_REGISTRY),
 						saveFileToRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY),
+						saveFileToRegistry(FEE_SCHEDULE, FEES_FILE_REGISTRY),
 
 						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
@@ -174,7 +176,8 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 
 						restoreFileFromRegistry(APP_PROPERTIES, APP_FILE_REGISTRY),
 						restoreFileFromRegistry(API_PERMISSIONS, API_FILE_REGISTRY),
-						restoreFileFromRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY)
+						restoreFileFromRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY),
+						restoreFileFromRegistry(FEE_SCHEDULE, FEES_FILE_REGISTRY)
 				);
 	}
 
