@@ -195,8 +195,8 @@ enum ResponseCodeEnum {
   CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT = 185; // The target of a wipe operation was the token treasury account
   INVALID_KYC_KEY = 186; // The provided KYC key was invalid.
   INVALID_WIPE_KEY = 187; // The provided wipe key was invalid.
-  INVALID_FREEZE_KEY = 188; // The provided wipe key was invalid.
-  INVALID_SUPPLY_KEY = 189; // The provided wipe key was invalid.
+  INVALID_FREEZE_KEY = 188; // The provided freeze key was invalid.
+  INVALID_SUPPLY_KEY = 189; // The provided supply key was invalid.
   MISSING_TOKEN_NAME = 190; // Token Name is not provided
   TOKEN_NAME_TOO_LONG = 191; // Token Name is too long
   INVALID_WIPING_AMOUNT = 192; // The provided wipe amount must not be negative, zero or bigger than the token holder balance
