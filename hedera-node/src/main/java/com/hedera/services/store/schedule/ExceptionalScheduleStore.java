@@ -62,12 +62,15 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Set<EntityId> signers, Map<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, int signersThreshold, Set<EntityId> signers, Map<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public ResponseCodeEnum putSignature(ScheduleID sID, AccountID aId, byte[] signature) { throw new UnsupportedOperationException(); }
+
+	@Override
+	public boolean thresholdReached(ScheduleID sID) { throw new UnsupportedOperationException(); }
 
 	@Override
 	public void commitCreation() { throw new UnsupportedOperationException(); }

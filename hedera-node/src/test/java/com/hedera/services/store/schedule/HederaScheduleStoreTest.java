@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
@@ -79,11 +80,14 @@ public class HederaScheduleStoreTest {
     MerkleAccount account;
 
     byte[] transactionBody;
+    int signersThreshold;
     Key adminKey;
     JKey adminJKey;
     EntityId signer1, signer2;
+    boolean signer1submission, signer2submission;
     byte[] signature1, signature2;
-    HashSet<EntityId> signers;
+    Set<EntityId> signers;
+    Map<EntityId, Boolean> signersMap;
     Map<EntityId, byte[]> signatures;
 
     ScheduleID created = IdUtils.asSchedule("1.2.333333");
@@ -94,6 +98,7 @@ public class HederaScheduleStoreTest {
     @BeforeEach
     public void setup() {
         transactionBody = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
+        signersThreshold = 2;
         adminKey = SCHEDULE_ADMIN_KT.asKey();
         adminJKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
 
@@ -102,6 +107,10 @@ public class HederaScheduleStoreTest {
         signers = new HashSet<>();
         signers.add(signer1);
         signers.add(signer2);
+
+        signersMap = new HashMap<>();
+        signersMap.put(signer1, signer1submission);
+        signersMap.put(signer2, signer2submission);
 
         signature1 = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
         signature2 = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
@@ -299,15 +308,17 @@ public class HederaScheduleStoreTest {
 
     @Test
     public void createProvisionallyWorks() {
-        var expected = new MerkleSchedule(transactionBody, signers, signatures);
+        var expected = new MerkleSchedule(transactionBody, signersThreshold, signersMap, signatures);
         expected.setAdminKey(adminJKey);
         // when:
         var outcome = subject
-                .createProvisionally(transactionBody,
-                    signers,
-                    signatures,
-                    Optional.of(adminJKey),
-                    sponsor);
+                .createProvisionally(
+                        transactionBody,
+                        signersThreshold,
+                        signers,
+                        signatures,
+                        Optional.of(adminJKey),
+                        sponsor);
 
         // then:
         assertEquals(OK, outcome.getStatus());

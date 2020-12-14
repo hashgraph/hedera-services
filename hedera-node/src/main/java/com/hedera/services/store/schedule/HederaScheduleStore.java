@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -49,6 +49,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
+import static com.swirlds.common.CommonUtils.hex;
 
 /**
  * Provides a managing store for Scheduled Entities.
@@ -59,8 +60,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
+	private Map<String, MerkleEntityId> txBodyToEntityId;
 
 	ScheduleID pendingId = NO_PENDING_ID;
+	String pendingTxHash = null;
 	MerkleSchedule pendingCreation;
 
 	public HederaScheduleStore(
@@ -69,6 +72,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	) {
 		super(ids);
 		this.schedules = schedules;
+		this.txBodyToEntityId = buildTxBodyMap(this.schedules);
 	}
 
 	@Override
@@ -101,17 +105,20 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			thrown = e;
 		}
 		schedules.get().replace(key, schedule);
+		txBodyToEntityId.remove(hex(schedule.transactionBody()));
 		if (thrown != null) {
 			throw new IllegalArgumentException("Token change failed unexpectedly!", thrown);
 		}
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Set<EntityId> signers, Map<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, int signersThreshold, Set<EntityId> signers, Map<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
 		pendingId = ids.newScheduleId(sponsor);
+		pendingTxHash = hex(bodyBytes);
 		pendingCreation = new MerkleSchedule(
 			bodyBytes,
-			signers,
+			signersThreshold,
+			toSignersMap(signers),
 			signatures
 		);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
@@ -159,8 +166,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	@Override
 	public void commitCreation() {
 		throwIfNoCreationPending();
+		var id = fromScheduleId(pendingId);
 
-		schedules.get().put(fromScheduleId(pendingId), pendingCreation);
+		schedules.get().put(id, pendingCreation);
+		txBodyToEntityId.put(pendingTxHash, id);
 		resetPendingCreation();
 	}
 
@@ -178,6 +187,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void resetPendingCreation() {
 		pendingId = NO_PENDING_ID;
+		pendingTxHash = null;
 		pendingCreation = null;
 	}
 
@@ -185,5 +195,43 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		if (pendingId == NO_PENDING_ID) {
 			throw new IllegalStateException("No pending schedule creation!");
 		}
+	}
+
+	private Map<EntityId, Boolean> toSignersMap(Set<EntityId> signers) {
+		var result = new HashMap<EntityId, Boolean>();
+		signers.forEach(e -> result.put(e, false));
+
+		return result;
+	}
+
+	private Map<String, MerkleEntityId> buildTxBodyMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
+		var result = new HashMap<String, MerkleEntityId>();
+		var schedulesMap = schedules.get();
+		schedulesMap.forEach((key, value) -> result.put(hex(value.transactionBody()), key));
+
+		return result;
+	}
+
+	private ScheduleID getScheduleIDByTransactionBody(byte[] bodyBytes) {
+		var txHash = hex(bodyBytes);
+
+		if (txHash.equals(pendingTxHash)) {
+			return pendingId;
+		}
+
+		if (txBodyToEntityId.containsKey(txHash)) {
+			return txBodyToEntityId.get(txHash).toScheduleId();
+		}
+
+		return null;
+	}
+
+	public boolean thresholdReached(ScheduleID id) {
+		// TODO: check if found
+
+		var schedule = get(id);
+
+		return schedule.signers()
+			.entrySet().stream().filter(Map.Entry::getValue).count() >= schedule.signersThreshold();
 	}
 }
