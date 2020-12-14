@@ -54,20 +54,20 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 		return List.of(new HapiApiSpec[]{
 				systemUserCannotDeleteSystemAccounts(1,100, GENESIS),
 				systemUserCannotDeleteSystemAccounts(900,999, GENESIS),
-				systemUserCannotDeleteSystemAccounts(1,100, MASTER),
-				systemUserCannotDeleteSystemAccounts(900,999, MASTER),
+				systemUserCannotDeleteSystemAccounts(1,100, SYSTEM_ADMIN),
+				systemUserCannotDeleteSystemAccounts(900,999, SYSTEM_ADMIN),
 				systemUserCannotDeleteSystemAccounts(1,100, SYSTEM_DELETE_ADMIN),
 				systemUserCannotDeleteSystemAccounts(900,999, SYSTEM_DELETE_ADMIN),
 				normalUserCannotDeleteSystemAccounts(1,100),
 				normalUserCannotDeleteSystemAccounts(900,999),
 
 				systemUserCannotDeleteSystemFiles(sysFileIds, GENESIS),
-				systemUserCannotDeleteSystemFiles(sysFileIds,MASTER),
+				systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN),
 				systemUserCannotDeleteSystemFiles(sysFileIds,SYSTEM_DELETE_ADMIN),
 
 				normalUserCannotDeleteSystemFiles(sysFileIds),
 				systemDeleteCannotDeleteSystemFiles(sysFileIds, GENESIS),
-				systemDeleteCannotDeleteSystemFiles(sysFileIds, MASTER),
+				systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN),
 				systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN)
 		});
 	}

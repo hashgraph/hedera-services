@@ -215,4 +215,10 @@ public interface TransactionContext {
 	 * @param sequenceNumber
 	 */
 	void setTopicRunningHash(byte[] runningHash, long sequenceNumber);
+
+	/**
+	 * Set this token's new total supply for mint/burn/wipe transaction
+	 * @param newTotalTokenSupply
+	 */
+	void setNewTotalSupply(long newTotalTokenSupply);
 }
