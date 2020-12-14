@@ -41,7 +41,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(
                     newSignedScheduleSign()
-                            .updating(KNOWN_SCHEDULE_IMMUTABLE)
+                            .updating(KNOWN_SCHEDULE_ADMIN)
                             .get()
             ));
         }
