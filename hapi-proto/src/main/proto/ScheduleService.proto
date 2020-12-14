@@ -22,7 +22,8 @@ package proto;
  * ‍
  */
 
-option java_package = "com.hederahashgraph.service.proto.java";
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
 
 import "Query.proto";
 import "Response.proto";

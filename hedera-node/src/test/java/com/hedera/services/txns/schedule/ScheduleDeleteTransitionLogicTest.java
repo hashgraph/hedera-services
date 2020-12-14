@@ -35,7 +35,6 @@ public class ScheduleDeleteTransitionLogicTest {
     private TransactionContext txnCtx;
 
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
-    private ScheduleID invalidSchedule = IdUtils.asSchedule("0.0.0");
 
     private AccountID payer = IdUtils.asAccount("1.2.3");
 
@@ -86,7 +85,7 @@ public class ScheduleDeleteTransitionLogicTest {
                 .setSchedule(schedule);
 
         if (invalidScheduleId) {
-            scheduleDelete.setSchedule(invalidSchedule);
+            scheduleDelete.clearSchedule();
         }
 
         builder.setScheduleDelete(scheduleDelete);

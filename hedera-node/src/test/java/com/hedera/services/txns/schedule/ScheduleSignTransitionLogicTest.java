@@ -55,7 +55,6 @@ public class ScheduleSignTransitionLogicTest {
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
-    private ScheduleID invalidSchedule = IdUtils.asSchedule("0.0.0");
 
     @BeforeEach
     private void setup() {
@@ -119,7 +118,7 @@ public class ScheduleSignTransitionLogicTest {
                 .setSchedule(schedule);
 
         if (invalidScheduleId) {
-            scheduleSign.setSchedule(invalidSchedule);
+            scheduleSign.clearSchedule();
         }
 
         if (invalidSigMap) {

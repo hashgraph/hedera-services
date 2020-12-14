@@ -71,7 +71,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         ScheduleDelete.ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
 
-        if (EntityId.ofNullableScheduleId(op.getSchedule()) == null) {
+        if (!op.hasSchedule()) {
             return INVALID_SCHEDULE_ID;
         }
         return OK;
