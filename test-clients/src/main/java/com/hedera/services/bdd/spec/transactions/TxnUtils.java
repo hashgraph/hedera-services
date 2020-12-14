@@ -22,6 +22,8 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.usage.SigUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -64,8 +66,11 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.SplittableRandom;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -74,6 +79,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopic;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -110,6 +116,32 @@ public class TxnUtils {
 
 	public static Key EMPTY_THRESHOLD_KEY = Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build();
 	public static Key EMPTY_KEY_LIST = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
+
+	/* TODO - use to replace some of the adhoc retry logic in various places. */
+	public static boolean retry(
+			int times,
+			long period,
+			TimeUnit unit,
+			HapiApiSpec spec,
+			Consumer<Throwable> observer,
+			Supplier<HapiSpecOperation> opFactory
+	) {
+			int attemptsLeft = (times + 1);
+			while (attemptsLeft > 0) {
+				var op = opFactory.get();
+				try {
+					allRunFor(spec, op);
+					return true;
+				} catch (Throwable t) {
+					observer.accept(t);
+					try {
+						unit.sleep(period);
+					} catch (InterruptedException ignore) { }
+				}
+				attemptsLeft--;
+			}
+			return false;
+	}
 
 	public static Key netOf(
 			HapiApiSpec spec,
@@ -198,15 +230,6 @@ public class TxnUtils {
 		return null;
 	}
 
-	public static String getTxnIDandType(Transaction txn) {
-		try {
-			return com.hedera.services.legacy.proto.utils.CommonUtils.toReadableTransactionID(txn);
-		} catch (InvalidProtocolBufferException e) {
-			log.error("Got Grpc protocol buffer error: ", e);
-		}
-		return null;
-	}
-
 	public static boolean inConsensusOrder(Timestamp t1, Timestamp t2) {
 		if (t1.getSeconds() < t2.getSeconds()) {
 			return true;
@@ -238,17 +261,6 @@ public class TxnUtils {
 		return new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 	}
 
-	public static Timestamp defaultTimestamp() {
-		return getUniqueTimestampPlusSecs(0L);
-	}
-
-	public static Timestamp defaultTimestampPlusSecs(long offsetSecs) {
-		Instant instant = Instant.now(Clock.systemUTC());
-		return Timestamp.newBuilder()
-				.setSeconds(instant.getEpochSecond() + offsetSecs)
-				.setNanos(instant.getNano() - nanosBehind.addAndGet(1)).build();
-	}
-
 	private static int NANOS_IN_A_SECOND = 1_000_000_000;
 	private static AtomicInteger NEXT_NANO = new AtomicInteger(0);
 	private static int NANO_OFFSET = (int) System.currentTimeMillis() % 1_000;
@@ -276,8 +288,6 @@ public class TxnUtils {
 				.setTransactionValidStart(validStart)
 				.setAccountID(payerID).build();
 	}
-
-	private static AtomicInteger nanosBehind = new AtomicInteger(0);
 
 	public static String solidityIdFrom(ContractID contract) {
 		return ByteUtil.toHexString(ByteUtil.merge(
@@ -489,7 +499,6 @@ public class TxnUtils {
 
 	public static Transaction replaceTxnNodeAccount(Transaction txn, AccountID newNodeAccount) {
 		log.info(String.format("Old Txn attr: %s", TxnUtils.txnToString(txn) ));
-		Transaction newTxn = Transaction.getDefaultInstance();
 		try {
 
 			TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());

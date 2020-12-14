@@ -53,10 +53,14 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 public class FeesAndRatesProvider {
 	private static final Logger log = LogManager.getLogger(FeesAndRatesProvider.class);
 
+	private static final int NUM_INIT_ATTEMPTS = 6;
+	private static final long INIT_ATTEMPT_RETRY_WAIT_DURATION = 10;
+	private static final TimeUnit INIT_ATTEMPT_RETRY_WAIT_UNIT = TimeUnit.SECONDS;
 	private static final int NUM_DOWNLOAD_ATTEMPTS = 10;
 
 	private static final BigDecimal USD_DIVISOR = BigDecimal.valueOf(100L);
@@ -144,13 +148,32 @@ public class FeesAndRatesProvider {
 				+ "' covers " + feeSchedule.getTransactionFeeScheduleList().size() + " ops.");
 	}
 
-	private void downloadFeeSchedule() throws Throwable {
-		long queryFee = lookupDownloadFee(setup.feeScheduleId());
-		FileGetContentsResponse response = downloadWith(queryFee,false, setup.feeScheduleId());
-		byte[] bytes = response.getFileContents().getContents().toByteArray();
-		CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
-		feeSchedule = wrapper.getCurrentFeeSchedule();
-		log.info("The fee schedule covers " + feeSchedule.getTransactionFeeScheduleList().size() + " ops.");
+	private void downloadFeeSchedule() {
+		int attemptsLeft = NUM_INIT_ATTEMPTS;
+		Throwable cause = null;
+		do {
+			try {
+				long queryFee = lookupDownloadFee(setup.feeScheduleId());
+				FileGetContentsResponse response = downloadWith(queryFee,false, setup.feeScheduleId());
+				byte[] bytes = response.getFileContents().getContents().toByteArray();
+				CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
+				feeSchedule = wrapper.getCurrentFeeSchedule();
+				log.info("The fee schedule covers " + feeSchedule.getTransactionFeeScheduleList().size() + " ops.");
+				return;
+			} catch (Throwable t) {
+				cause = t;
+				log.info("Need to retry fee schedule download...'{}'", cause.getMessage());
+				try {
+					INIT_ATTEMPT_RETRY_WAIT_UNIT.sleep(INIT_ATTEMPT_RETRY_WAIT_DURATION);
+				} catch (InterruptedException ignore) { }
+			}
+		} while (--attemptsLeft > 0);
+
+		if (cause != null) {
+			throw new IllegalStateException(String.format(
+					"Could not initialize fee schedule after %d attempts, terminating!",
+					NUM_INIT_ATTEMPTS), cause);
+		}
 	}
 
 	private long lookupDownloadFee(FileID fileId) throws Throwable {
