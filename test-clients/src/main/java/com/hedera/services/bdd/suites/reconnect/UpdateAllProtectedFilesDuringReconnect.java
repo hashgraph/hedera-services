@@ -53,9 +53,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class ValidateChangesAfterReconnect extends HapiApiSuite {
+public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 
-	private static final Logger log = LogManager.getLogger(ValidateChangesAfterReconnect.class);
+	private static final Logger log = LogManager.getLogger(UpdateAllProtectedFilesDuringReconnect.class);
 
 	public static void main(String... args) {
 		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
@@ -69,17 +69,17 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				validateChangesAfterReconnect()
+				updateAllProtectedFilesDuringReconnect()
 		);
 	}
 
-	private HapiApiSpec validateChangesAfterReconnect() {
+	private HapiApiSpec updateAllProtectedFilesDuringReconnect() {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
 		final String transactionFeeid = "authorizedTxn";
 		final String nonUpdatableFile = "nonUpdatableFile";
 		final long newFee = 159_588_904;
 
-		return customHapiSpec("validateChangesAfterReconnect")
+		return customHapiSpec("UpdateAllProtectedFilesDuringReconnect")
 				.withProperties(Map.of(
 						"txn.start.offset.secs", "-5")
 				)
