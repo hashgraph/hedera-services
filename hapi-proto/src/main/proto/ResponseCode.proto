@@ -216,4 +216,8 @@ enum ResponseCodeEnum {
   INVALID_SCHEDULE_ID = 201; // The Scheduled entity does not exist
   SCHEDULE_IS_IMMUTABLE = 202; // The Scheduled entity cannot be modified. Admin key not set
   SCHEDULE_WAS_DELETED = 203; // The Scheduled entity was already deleted
+  INVALID_SCHEDULE_THRESHOLD = 204; // The scheduled transaction entity's threshold for execution is bigger than provided signatures
+  EMPTY_SIGNERS_LIST = 205; // No signers have been passed with the scheduled transaction entity
+  EMPTY_SIGNATURES = 206; // No signers have been passed with the scheduled transaction entity
+  INVALID_EXECUTION_TIMESTAMP = 207; // The scheduled transaction entity has an invalid execution timestamp
 }

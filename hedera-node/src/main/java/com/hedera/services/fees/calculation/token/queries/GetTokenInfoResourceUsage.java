@@ -51,7 +51,7 @@ public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, query.getContractGetInfo().getHeader().getResponseType(), NO_QUERY_CTX);
+		return usageFor(query, view, query.getTokenGetInfo().getHeader().getResponseType(), NO_QUERY_CTX);
 	}
 
 	@Override
@@ -64,7 +64,7 @@ public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
 		return usageFor(
 				query,
 				view,
-				query.getContractGetInfo().getHeader().getResponseType(),
+				query.getTokenGetInfo().getHeader().getResponseType(),
 				Optional.of(queryCtx));
 	}
 
