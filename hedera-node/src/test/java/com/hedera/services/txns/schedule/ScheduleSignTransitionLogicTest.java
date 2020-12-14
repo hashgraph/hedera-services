@@ -22,7 +22,10 @@ import proto.ScheduleSign;
 
 import java.time.Instant;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNATURES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -52,6 +55,7 @@ public class ScheduleSignTransitionLogicTest {
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
+    private ScheduleID invalidSchedule = IdUtils.asSchedule("0.0.0");
 
     @BeforeEach
     private void setup() {
@@ -76,17 +80,53 @@ public class ScheduleSignTransitionLogicTest {
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
     }
 
+    @Test
+    public void failsOnInvalidScheduleId() {
+        givenCtx(true, false);
+
+        // expect:
+        assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
+    }
+
+    @Test
+    public void failsOnInvalidSigMap() {
+        givenCtx(false, true);
+
+        // expect:
+        assertEquals(EMPTY_SIGNATURES, subject.validate(scheduleSignTxn));
+    }
+
     private void givenValidTxnCtx() {
-        sigMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
-        signers = ScheduleCreate.ThresholdAccounts.newBuilder()
+        givenCtx(false, false);
+    }
+
+    private void givenCtx(
+            boolean invalidScheduleId,
+            boolean invalidSigMap
+    ) {
+        sigMap = SignatureMap.newBuilder().addSigPair(
+                SignaturePair.newBuilder().build()
+        ).build();
+        var signersBuilder = ScheduleCreate.ThresholdAccounts.newBuilder()
                 .addAccounts(signer)
-                .addAccounts(anotherSigner)
+                .addAccounts(anotherSigner);
+        signers = signersBuilder
                 .build();
 
-        var builder = TransactionBody.newBuilder()
-                .setScheduleSign(ScheduleSign.ScheduleSignTransactionBody.newBuilder()
-                        .setSigMap(sigMap)
-                        .setSchedule(schedule));
+        var builder = TransactionBody.newBuilder();
+        var scheduleSign = ScheduleSign.ScheduleSignTransactionBody.newBuilder()
+                .setSigMap(sigMap)
+                .setSchedule(schedule);
+
+        if (invalidScheduleId) {
+            scheduleSign.setSchedule(invalidSchedule);
+        }
+
+        if (invalidSigMap) {
+            scheduleSign.setSigMap(SignatureMap.newBuilder().build());
+        }
+
+        builder.setScheduleSign(scheduleSign);
 
         scheduleSignTxn = builder.build();
         given(accessor.getTxn()).willReturn(scheduleSignTxn);
