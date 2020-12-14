@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
@@ -61,6 +62,7 @@ import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.junit.Assert;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -114,15 +116,19 @@ public class UtilVerbs {
 	public static InBlockingOrder blockingOrder(HapiSpecOperation... ops) {
 		return new InBlockingOrder(ops);
 	}
+
 	public static NodeLivenessTimeout withLiveNode(String node) {
 		return new NodeLivenessTimeout(node);
 	}
+
 	public static HapiSpecSleep sleepFor(long timeMs) {
 		return new HapiSpecSleep(timeMs);
 	}
+
 	public static HapiSpecWaitUntil waitUntil(String timeOfDay) throws ParseException {
 		return new HapiSpecWaitUntil(timeOfDay);
 	}
+
 	public static UsableTxnId usableTxnIdNamed(String txnId) {
 		return new UsableTxnId(txnId);
 	}
@@ -221,7 +227,7 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation fundAnAccount(String account) {
 		return withOpContext((spec, ctxLog) -> {
-			if ( !asId(account, spec).equals(asId(GENESIS,spec)) ) {
+			if (!asId(account, spec).equals(asId(GENESIS, spec))) {
 				HapiCryptoTransfer subOp =
 						cryptoTransfer(tinyBarsFromTo(GENESIS, account, HapiApiSuite.ADEQUATE_FUNDS));
 				CustomSpecAssert.allRunFor(spec, subOp);
@@ -317,7 +323,8 @@ public class UtilVerbs {
 						.chunkInfo(totalChunks, currentChunk, initialTransactionID)
 						.payingWith(payer)
 						.hasKnownStatus(SUCCESS)
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
+						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
+								INSUFFICIENT_PAYER_BALANCE)
 						.noLogging()
 						.suppressStats(true);
 				if (1 == currentChunk) {
@@ -348,7 +355,7 @@ public class UtilVerbs {
 			var answer = query.getResponse().getCryptogetAccountBalance().getTokenBalancesList();
 			for (String token : tokens) {
 				var tid = spec.registry().getTokenID(token);
-				var match =	answer.stream().filter(tb -> tb.getTokenId().equals(tid)).findAny();
+				var match = answer.stream().filter(tb -> tb.getTokenId().equals(tid)).findAny();
 				if (match.isPresent()) {
 					var tb = match.get();
 					opLog.info(
@@ -372,7 +379,8 @@ public class UtilVerbs {
 		return withOpContext((spec, opLog) -> {
 			var query = getFileContents(FEE_SCHEDULE).payingWith(SYSTEM_ADMIN);
 			allRunFor(spec, query);
-			byte[] rawSchedules = query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
+			byte[] rawSchedules =
+					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 			var zeroTfs = zeroFor(function);
 			var schedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules);
 			var perturbedSchedules = CurrentAndNextFeeSchedule.newBuilder();
@@ -410,13 +418,20 @@ public class UtilVerbs {
 
 	private static ByteString defaultFeeSchedules() {
 		SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
-		String loc = "../hedera-node/src/main/resources/FeeSchedule.json";
+		var baos = new ByteArrayOutputStream();
 		try {
-			var stylized = Files.readString(Paths.get(loc));
-			return ByteString.copyFrom(serde.toRawFile(stylized));
+			var schedulesIn = HapiFileCreate.class.getClassLoader().getResourceAsStream("FeeSchedule.json");
+			if (schedulesIn == null) {
+				throw new IllegalStateException("No FeeSchedule.json resource available!");
+			}
+			schedulesIn.transferTo(baos);
+			baos.close();
+			baos.flush();
 		} catch (IOException e) {
-			throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
+			throw new IllegalArgumentException(e);
 		}
+		var stylized = new String(baos.toByteArray());
+		return ByteString.copyFrom(serde.toRawFile(stylized));
 	}
 
 	public static HapiSpecOperation updateLargeFile(

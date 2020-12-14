@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_STATUSES;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -123,8 +125,17 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				   restart tests includes a fee schedule with HTS resource prices. */
 				if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
 					initializers.add(uploadDefaultFeeSchedules(GENESIS));
+					initializers.add(
+							fileUpdate(APP_PROPERTIES)
+									.fee(9_999_999_999L)
+									.payingWith(GENESIS)
+									.overridingProps(Map.ofEntries(
+											entry("hapi.throttling.buckets.fastOpBucket.capacity", "4000")
+									))
+					);
 				} else {
 					initializers.add(withOpContext((spec, opLog) -> {
+						log.info("\n\n" + bannerWith("Waiting for a fee schedule with token ops!"));
 						boolean hasKnownHtsFeeSchedules = false;
 						SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
 						while (!hasKnownHtsFeeSchedules) {
@@ -135,20 +146,16 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 								var schedules = serde.fromRawFile(contents.toByteArray());
 								hasKnownHtsFeeSchedules = schedules.contains("TokenCreate");
 							} catch (Exception e) {
-								log.warn("Couldn't check for HTS fee schedules, {}", e.toString());
+								var msg = e.toString();
+								msg = msg.substring(msg.indexOf(":") + 2);
+								log.info( "Couldn't check for HTS fee schedules---'{}'", msg);
 							}
 							TimeUnit.SECONDS.sleep(3);
 						}
+						log.info("\n\n" + bannerWith("A fee schedule with token ops now available!"));
+						spec.tryReinitializingFees();
 					}));
 				}
-				initializers.add(
-						fileUpdate(APP_PROPERTIES)
-								.fee(9_999_999_999L)
-								.payingWith(GENESIS)
-								.overridingProps(Map.ofEntries(
-										entry("hapi.throttling.buckets.fastOpBucket.capacity", "4000")
-								))
-				);
 				for (int i = 0; i < tokensPerTxn.get(); i++) {
 					var token = "token" + i;
 					var treasury = "treasury" + i;
