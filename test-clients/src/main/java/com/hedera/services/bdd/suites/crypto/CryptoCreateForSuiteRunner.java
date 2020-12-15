@@ -83,7 +83,8 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 													.key(GENESIS)
 													.payingWith(GENESIS)
 													.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-													.via("txn");
+													.via("txn")
+													.ensuringResolvedStatusIsntFromDuplicate();
 											allRunFor(spec, cryptoCreateOp);
 											var gotCreationRecord = false;
 											while (!gotCreationRecord) {
