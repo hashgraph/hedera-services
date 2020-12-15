@@ -65,7 +65,11 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		try {
 			var op = txnCtx.accessor().getTxn().getTokenWipe();
 			var outcome = store.wipe(op.getAccount(), store.resolve(op.getToken()), op.getAmount(),false);
+			var id = store.resolve(op.getToken());
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+			if(outcome == OK) {
+				txnCtx.setNewTotalSupply(store.get(id).totalSupply());
+			}
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
 			txnCtx.setStatus(FAIL_INVALID);

@@ -84,25 +84,28 @@ public class CryptoTransferUsageTest {
 
 	@Test
 	public void createsExpectedDeltaForTransferLists() {
+		// setup:
+		int M = 60;
+
 		givenOp();
 		// and:
 		subject = CryptoTransferUsage.newEstimate(txn, sigUsage);
 
 		// when:
-		var actual = subject.get();
+		var actual = subject.givenTokenMultiplier(M).get();
 
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
-		verify(base).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE
-				+ 3 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
-				+ FeeBuilder.BASIC_ENTITY_ID_SIZE
-				+ 2 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
-				+ FeeBuilder.BASIC_ENTITY_ID_SIZE
-				+ 2 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
+		verify(base).addBpt(M * FeeBuilder.BASIC_ENTITY_ID_SIZE
+				+ 3 * M * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
+				+ M * FeeBuilder.BASIC_ENTITY_ID_SIZE
+				+ 2 * M * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
+				+ M * FeeBuilder.BASIC_ENTITY_ID_SIZE
+				+ 2 * M * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
 				+ 3 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8));
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(3, 7) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(3 * M, 7 * M) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 		verify(base).addRbs((3 * USAGE_PROPERTIES.accountAmountBytes()) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}

@@ -63,20 +63,6 @@ public class AccountNumbers {
 		return systemAdmin;
 	}
 
-	public long firstManagedBySysAdmin() {
-		if (firstManagedBySysAdmin == UNKNOWN_NUMBER) {
-			firstManagedBySysAdmin = properties.getLongProperty("accounts.systemAdmin.firstManaged");
-		}
-		return firstManagedBySysAdmin;
-	}
-
-	public long lastManagedBySysAdmin() {
-		if (lastManagedBySysAdmin == UNKNOWN_NUMBER) {
-			lastManagedBySysAdmin = properties.getLongProperty("accounts.systemAdmin.lastManaged");
-		}
-		return lastManagedBySysAdmin;
-	}
-
 	public long addressBookAdmin() {
 		if (addressBookAdmin == UNKNOWN_NUMBER) {
 			addressBookAdmin = properties.getLongProperty("accounts.addressBookAdmin");

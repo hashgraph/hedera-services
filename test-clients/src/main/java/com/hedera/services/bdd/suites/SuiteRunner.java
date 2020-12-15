@@ -46,6 +46,7 @@ import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
+import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -62,7 +63,7 @@ import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.FreezeUpdateOnly;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
-import com.hedera.services.bdd.suites.issues.Issue2144Spec;
+import com.hedera.services.bdd.suites.issues.PrivilegedOpsSuite;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
@@ -91,6 +92,7 @@ import com.hedera.services.bdd.suites.reconnect.SubmitMessagesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
@@ -157,20 +159,22 @@ public class SuiteRunner {
 
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
 		/* CI jobs */
-//		put("CiConsensusAndCryptoJob", aof(
-//				new DuplicateManagementTest(),
-//				new TopicCreateSuite(),
-//				new TopicUpdateSuite(),
-//				new TopicDeleteSuite(),
-//				new SubmitMessageSuite(),
-//				new ChunkingSuite(),
-//				new TopicGetInfoSuite(),
-//				new ConsensusThrottlesSuite(),
-//				new BucketThrottlingSpec(),
-//				new SpecialAccountsAreExempted(),
-//				new CryptoTransferSuite(),
-//				new CryptoRecordsSanityCheckSuite(),
-//				new Issue2144Spec()));
+		put("CiConsensusAndCryptoJob", aof(
+				new SignedTransactionBytesRecordsSuite(),
+				new DuplicateManagementTest(),
+				new TopicCreateSuite(),
+				new TopicUpdateSuite(),
+				new TopicDeleteSuite(),
+				new SubmitMessageSuite(),
+				new ChunkingSuite(),
+				new TopicGetInfoSuite(),
+				new BucketThrottlingSpec(),
+				new SpecialAccountsAreExempted(),
+				new CryptoTransferSuite(),
+				new CryptoUpdateSuite(),
+				new CryptoRecordsSanityCheckSuite(),
+				new PrivilegedOpsSuite(),
+				new CannotDeleteSystemEntitiesSuite()));
 		put("CiTokenJob", aof(
 				new TokenAssociationSpecs(),
 				new TokenUpdateSpecs(),
@@ -178,12 +182,12 @@ public class SuiteRunner {
 				new TokenDeleteSpecs(),
 				new TokenManagementSpecs(),
 				new TokenTransactSpecs()));
-//		put("CiFileJob", aof(
-//				new FileRecordsSanityCheckSuite(),
-//				new VersionInfoSpec(),
-//				new ProtectedFilesUpdateSuite(),
-//				new PermissionSemanticsSpec(),
-//				new SysDelSysUndelSpec()));
+		put("CiFileJob", aof(
+				new FileRecordsSanityCheckSuite(),
+				new VersionInfoSpec(),
+				new ProtectedFilesUpdateSuite(),
+				new PermissionSemanticsSpec(),
+				new SysDelSysUndelSpec()));
 //		put("CiSmartContractJob", aof(
 //				new NewOpInConstructorSuite(),
 //				new IssueXXXXSpec(),
@@ -227,6 +231,7 @@ public class SuiteRunner {
 		put("ValidateAppPropertiesStateAfterReconnect", aof(new ValidateAppPropertiesStateAfterReconnect()));
 		put("ValidateFeeScheduleStateAfterReconnect", aof(new ValidateFeeScheduleStateAfterReconnect()));
 		put("ValidateExchangeRateStateAfterReconnect", aof(new ValidateExchangeRateStateAfterReconnect()));
+		put("UpdateAllProtectedFilesDuringReconnect", aof(new UpdateAllProtectedFilesDuringReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
@@ -252,6 +257,7 @@ public class SuiteRunner {
 		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
 		put("TokenAssociationSpecs", aof(new TokenAssociationSpecs()));
 		/* Functional tests - CRYPTO */
+		put("CryptoTransferSuite", aof(new CryptoTransferSuite()));
 		put("CryptoDeleteSuite", aof(new CryptoDeleteSuite()));
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
@@ -294,7 +300,7 @@ public class SuiteRunner {
 		put("VersionInfoSpec", aof(new VersionInfoSpec()));
 		put("FreezeSuite", aof(new FreezeSuite()));
 		/* Authorization. */
-		put("SuperusersAreNeverThrottled", aof(new Issue2144Spec()));
+		put("SuperusersAreNeverThrottled", aof(new PrivilegedOpsSuite()));
 		put("SysDelSysUndelSpec", aof(new SysDelSysUndelSpec()));
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));
