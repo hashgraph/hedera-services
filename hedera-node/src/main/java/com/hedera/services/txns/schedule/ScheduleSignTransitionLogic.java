@@ -14,7 +14,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -73,9 +72,6 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
         if (!op.hasSchedule()) {
             return INVALID_SCHEDULE_ID;
-        }
-        if (op.getSigMap().getSigPairList().isEmpty()) {
-            return EMPTY_SIGNATURES;
         }
         return OK;
     }

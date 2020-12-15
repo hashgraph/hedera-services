@@ -5,24 +5,17 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.schedules.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.ThresholdAccount;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import java.time.Instant;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,13 +31,9 @@ public class ScheduleSignTransitionLogicTest {
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
 
-    private AccountID signer = IdUtils.asAccount("0.0.2");
-    private AccountID anotherSigner = IdUtils.asAccount("0.0.3");
-
     private TransactionBody scheduleSignTxn;
 
     private SignatureMap sigMap;
-    private ThresholdAccount signers;
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
@@ -72,36 +61,22 @@ public class ScheduleSignTransitionLogicTest {
 
     @Test
     public void failsOnInvalidScheduleId() {
-        givenCtx(true, false);
+        givenCtx(true);
 
         // expect:
         assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
     }
 
-    @Test
-    public void failsOnInvalidSigMap() {
-        givenCtx(false, true);
-
-        // expect:
-        assertEquals(EMPTY_SIGNATURES, subject.validate(scheduleSignTxn));
-    }
-
     private void givenValidTxnCtx() {
-        givenCtx(false, false);
+        givenCtx(false);
     }
 
     private void givenCtx(
-            boolean invalidScheduleId,
-            boolean invalidSigMap
+            boolean invalidScheduleId
     ) {
         this.sigMap = SignatureMap.newBuilder().addSigPair(
                 SignaturePair.newBuilder().build()
         ).build();
-        var signersBuilder = ThresholdAccount.newBuilder()
-                .addAccounts(signer)
-                .addAccounts(anotherSigner);
-        this.signers = signersBuilder
-                .build();
 
         var builder = TransactionBody.newBuilder();
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()
@@ -110,10 +85,6 @@ public class ScheduleSignTransitionLogicTest {
 
         if (invalidScheduleId) {
             scheduleSign.clearSchedule();
-        }
-
-        if (invalidSigMap) {
-            scheduleSign.setSigMap(SignatureMap.newBuilder().build());
         }
 
         builder.setScheduleSign(scheduleSign);
