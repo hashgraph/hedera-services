@@ -2,6 +2,7 @@ package com.hedera.services.queries.schedule;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -43,6 +45,8 @@ public class GetScheduleInfoAnswerTest {
     private Transaction paymentTxn;
     private String node = "0.0.3";
     private String payer = "0.0.12345";
+    private AccountID payerAccount = asAccount(payer);
+    private AccountID schedulingAccount = asAccount("0.0.12346");
     private ScheduleID scheduleID = asSchedule("1.2.3");
     private long fee = 1_234L;
 
@@ -57,7 +61,8 @@ public class GetScheduleInfoAnswerTest {
     public void setup() {
         info = ScheduleInfo.newBuilder()
                 .setSchedule(scheduleID)
-                .setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
+                .setPayer(payerAccount)
+                .setSchedulingAccount(schedulingAccount)
                 .build();
 
         view = mock(StateView.class);

@@ -39,12 +39,11 @@ message ScheduleGetInfoQuery {
 message ScheduleInfo {
   ScheduleID schedule = 1; // The ID of the Scheduled Entity
   AccountID schedulingAccount = 2; // The Account ID which created the Scheduled TX
-  bytes transactionBody = 3; // The transaction serialized into bytes that must be signed
-  Key adminKey = 4; // (optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed)
-  ThresholdAccounts signers = 5; // The key which is able to authorise and sign the scheduled transaction. This could be ThresholdKey or a simple ed25519 key. Serves as definition to who should sign this scheduled TX in order for it to be executed.
-  SignatureMap sigMap = 6; // (optional) The signature map containing all signatures gathered so far.
-  bool executeImmediately = 7; // Always set to true in MVP!!!
-  Timestamp executeAtTime = 8; // The time at which the transaction will be attempted to be executed. Currently not supported.
+  AccountID payer = 3; // The account which is going to pay for the execution of the Scheduled TX
+  bytes transactionBody = 4; // The transaction serialized into bytes that must be signed
+  bool executeImmediately = 5; // Whether to execute the transaction immediately when all required signatures are collected. Currently, only executeImmediately=true is supported and will be returned
+  Timestamp executeAtTime = 6; // The time at which the transaction will be attempted to be executed. Currently not supported.
+  KeyList signers = 7; // The keys that have provided signatures so far for the Scheduled TX
 }
 
 message ScheduleGetInfoResponse {

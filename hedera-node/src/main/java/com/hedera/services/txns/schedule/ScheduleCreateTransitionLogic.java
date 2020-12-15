@@ -14,10 +14,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.validation.ScheduleListChecks.checkAdminKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNERS_LIST;
+import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -86,13 +84,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
             return validity;
         }
 
-        var signers = op.getSigners().getAccountsList();
-        if (signers.isEmpty()) {
-            return EMPTY_SIGNERS_LIST;
-        }
-        if (signers.size() < op.getSigners().getThreshold()) {
-            return INVALID_SCHEDULE_THRESHOLD;
-        }
         return validity;
     }
 }

@@ -12,18 +12,13 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.ThresholdAccounts;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import java.time.Instant;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNERS_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,8 +28,6 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class ScheduleCreateTransitionLogicTest {
-    long thisSecond = 1_234_567L;
-    private Instant now = Instant.ofEpochSecond(thisSecond);
     private OptionValidator validator;
     private ScheduleStore store;
     private HederaLedger ledger;
@@ -42,8 +35,6 @@ public class ScheduleCreateTransitionLogicTest {
     private TransactionContext txnCtx;
 
     private AccountID payer = IdUtils.asAccount("1.2.3");
-    private AccountID signer = IdUtils.asAccount("0.0.2");
-    private AccountID anotherSigner = IdUtils.asAccount("0.0.3");
 
     private TransactionBody scheduleCreateTxn;
     final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -53,7 +44,6 @@ public class ScheduleCreateTransitionLogicTest {
     private final boolean yes = true;
 
     private SignatureMap sigMap;
-    private ThresholdAccounts signers;
 
     private ScheduleCreateTransitionLogic subject;
 
@@ -66,7 +56,6 @@ public class ScheduleCreateTransitionLogicTest {
 
         txnCtx = mock(TransactionContext.class);
         given(txnCtx.activePayer()).willReturn(payer);
-        given(txnCtx.consensusTime()).willReturn(Instant.now());
 
         subject = new ScheduleCreateTransitionLogic(validator, store, ledger, txnCtx);
     }
@@ -84,8 +73,6 @@ public class ScheduleCreateTransitionLogicTest {
     public void failsOnExecuteImmediatelyFalse() {
         givenCtx(
                 true,
-                false,
-                false,
                 false);
 
         // expect:
@@ -96,65 +83,30 @@ public class ScheduleCreateTransitionLogicTest {
     public void failsOnInvalidAdminKey() {
         givenCtx(
                 false,
-                true,
-                false,
-                false);
+                true);
 
         // expect:
         assertEquals(INVALID_ADMIN_KEY, subject.validate(scheduleCreateTxn));
     }
 
-    @Test
-    public void failsOnInvalidSigners() {
-        givenCtx(
-                false,
-                false,
-                true,
-                false);
-
-        // expect:
-        assertEquals(EMPTY_SIGNERS_LIST, subject.validate(scheduleCreateTxn));
-    }
-
-    @Test
-    public void failsOnTooLargeThreshold() {
-        givenCtx(
-                false,
-                false,
-                false,
-                true);
-
-        // expect:
-        assertEquals(INVALID_SCHEDULE_THRESHOLD, subject.validate(scheduleCreateTxn));
-    }
-
     private void givenValidTxnCtx() {
         givenCtx(
-                false,
-                false,
                 false,
                 false);
     }
 
     private void givenCtx(
             boolean invalidExecuteImmediately,
-            boolean invalidAdminKey,
-            boolean invalidSigners,
-            boolean invalidThreshold
+            boolean invalidAdminKey
             ) {
         sigMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
-        var signersBuilder = ThresholdAccounts.newBuilder()
-                .addAccounts(signer)
-                .addAccounts(anotherSigner);
-        signers = signersBuilder
-                .build();
 
         var builder = TransactionBody.newBuilder();
         var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
                 .setSigMap(sigMap)
-                .setSigners(signers)
                 .setAdminKey(key)
-                .setExecuteImmediately(yes);
+                .setExecuteImmediately(yes)
+                .setPayer(payer);
 
         if (invalidExecuteImmediately) {
             scheduleCreate.setExecuteImmediately(no);
@@ -164,20 +116,10 @@ public class ScheduleCreateTransitionLogicTest {
             scheduleCreate.setAdminKey(invalidKey);
         }
 
-        if (invalidSigners) {
-            scheduleCreate.setSigners(ThresholdAccounts.newBuilder());
-        }
-
-        if (invalidThreshold) {
-            signersBuilder.setThreshold(123123123);
-            scheduleCreate.setSigners(signersBuilder.build());
-        }
-
         builder.setScheduleCreation(scheduleCreate);
 
         scheduleCreateTxn = builder.build();
         given(accessor.getTxn()).willReturn(scheduleCreateTxn);
         given(txnCtx.accessor()).willReturn(accessor);
-        given(txnCtx.consensusTime()).willReturn(now);
     }
 }
