@@ -36,7 +36,7 @@ message NetworkGetVersionInfoQuery {
 
 /* Response when the client sends the node NetworkGetVersionInfoQuery */
 message NetworkGetVersionInfoResponse {
-    ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
-    SemanticVersion hapiProtoVersion = 2;
-    SemanticVersion hederaServicesVersion = 3;
+    ResponseHeader header = 1; // Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+    SemanticVersion hapiProtoVersion = 2; // The Hedera API (HAPI) protobuf version recognized by the responding node.
+    SemanticVersion hederaServicesVersion = 3; // The version of the Hedera Services software deployed on the responding node.
 }
