@@ -57,7 +57,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     public static final EntityId UNUSED_PAYER = null;
 
     private byte[] transactionBody;
-    private int signersThreshold;
     private JKey adminKey = UNUSED_KEY;
     private EntityId payer = UNUSED_PAYER;
     private EntityId schedulingAccount;
@@ -194,8 +193,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     }
 
     public byte[] transactionBody() { return this.transactionBody; }
-
-    public int signersThreshold() { return this.signersThreshold; }
 
     public boolean hasAdminKey() {
         return adminKey != UNUSED_KEY;

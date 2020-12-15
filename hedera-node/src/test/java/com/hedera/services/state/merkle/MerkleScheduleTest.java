@@ -237,7 +237,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentSchedulingTxValidStart() {
         // given:
-        other = new MerkleSchedule(otherTransactionBody, schedulingAccount, otherSchedulingTXValidStart);
+        other = new MerkleSchedule(transactionBody, schedulingAccount, otherSchedulingTXValidStart);
         setOptionalElements(other);
 
         // expect:
