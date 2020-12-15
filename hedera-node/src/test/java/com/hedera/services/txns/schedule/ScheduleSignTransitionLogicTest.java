@@ -38,15 +38,10 @@ public class ScheduleSignTransitionLogicTest {
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
 
-    private AccountID payer = IdUtils.asAccount("1.2.3");
     private AccountID signer = IdUtils.asAccount("0.0.2");
     private AccountID anotherSigner = IdUtils.asAccount("0.0.3");
 
     private TransactionBody scheduleSignTxn;
-    final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-
-    private final boolean no = false;
-    private final boolean yes = true;
 
     private SignatureMap sigMap;
     private ThresholdAccount signers;
@@ -62,8 +57,6 @@ public class ScheduleSignTransitionLogicTest {
         accessor = mock(PlatformTxnAccessor.class);
 
         txnCtx = mock(TransactionContext.class);
-        given(txnCtx.activePayer()).willReturn(payer);
-        given(txnCtx.consensusTime()).willReturn(Instant.now());
 
         subject = new ScheduleSignTransitionLogic(validator, store, ledger, txnCtx);
     }
@@ -101,13 +94,13 @@ public class ScheduleSignTransitionLogicTest {
             boolean invalidScheduleId,
             boolean invalidSigMap
     ) {
-        sigMap = SignatureMap.newBuilder().addSigPair(
+        this.sigMap = SignatureMap.newBuilder().addSigPair(
                 SignaturePair.newBuilder().build()
         ).build();
         var signersBuilder = ThresholdAccount.newBuilder()
                 .addAccounts(signer)
                 .addAccounts(anotherSigner);
-        signers = signersBuilder
+        this.signers = signersBuilder
                 .build();
 
         var builder = TransactionBody.newBuilder();
