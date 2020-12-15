@@ -59,7 +59,6 @@ import static org.mockito.Mockito.mock;
 
 public class MerkleScheduleTest {
     final int TX_BYTES = 64;
-    byte[] otherSignature = TxnUtils.randomUtf8Bytes(TX_BYTES);
     byte[] transactionBody, otherTransactionBody;
     EntityId schedulingAccount, otherSchedulingAccount;
     EntityId payer, otherPayer;
