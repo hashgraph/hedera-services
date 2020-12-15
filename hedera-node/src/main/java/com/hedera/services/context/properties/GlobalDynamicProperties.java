@@ -50,6 +50,7 @@ public class GlobalDynamicProperties {
 	private int minValidityBuffer;
 	private int maxGas;
 	private long defaultContractLifetime;
+	private int feesTokenTransferUsageMultiplier;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -89,6 +90,7 @@ public class GlobalDynamicProperties {
 		minValidityBuffer = properties.getIntProperty("hedera.transaction.minValidityBufferSecs");
 		maxGas = properties.getIntProperty("contracts.maxGas");
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
+		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
 	}
 
 	public int maxTokensPerAccount() {
@@ -181,5 +183,9 @@ public class GlobalDynamicProperties {
 
 	public long defaultContractLifetime() {
 		return defaultContractLifetime;
+	}
+
+	public int feesTokenTransferUsageMultiplier() {
+		return feesTokenTransferUsageMultiplier;
 	}
 }

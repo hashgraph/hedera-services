@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -58,8 +59,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	String txn;
 	boolean assertNothing = false;
+	boolean assertNothingAboutHashes = false;
 	boolean useDefaultTxnId = false;
 	boolean requestDuplicates = false;
+	boolean shouldBeTransferFree = false;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
@@ -91,8 +94,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord assertingNothingAboutHashes() {
+		assertNothingAboutHashes = true;
+		return this;
+	}
+
 	public HapiGetTxnRecord assertingNothing() {
 		assertNothing = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord showsNoTransfers() {
+		shouldBeTransferFree = true;
 		return this;
 	}
 
@@ -207,8 +220,16 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
 		assertPriority(spec, actualRecord);
 		assertDuplicates(spec);
-		assertTransactionHash(spec, actualRecord);
-		assertTopicRunningHash(spec, actualRecord);
+		if (!assertNothingAboutHashes) {
+			assertTransactionHash(spec, actualRecord);
+			assertTopicRunningHash(spec, actualRecord);
+		}
+		if (shouldBeTransferFree) {
+			Assert.assertEquals(
+					"Unexpected transfer list!",
+					0,
+					actualRecord.getTokenTransferListsCount());
+		}
 	}
 
 	@Override

@@ -68,7 +68,7 @@ public class GetFileInfoAnswer implements AnswerService {
 
 		ResponseType type = op.getHeader().getResponseType();
 		if (validity != OK) {
-			log.info("FileGetInfo not successful for: validity {}, query {} ", validity.toString(), query.getFileGetInfo().toString());
+			log.debug("FileGetInfo not successful for: validity {}, query {} ", validity, query.getFileGetInfo());
 			response.setHeader(header(validity, type, cost));
 		} else {
 			if (type == COST_ANSWER) {

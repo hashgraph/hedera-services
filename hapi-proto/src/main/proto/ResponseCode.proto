@@ -160,24 +160,20 @@ enum ResponseCodeEnum {
   MAX_GAS_LIMIT_EXCEEDED = 111; //Gas exceeded currently allowable gas limit per transaction
   MAX_FILE_SIZE_EXCEEDED = 112;  // File size exceeded the currently allowable limit
   INVALID_TOPIC_ID = 150; // The Topic ID specified is not in the system.
-  INVALID_ADMIN_KEY = 155;
-  INVALID_SUBMIT_KEY = 156;
+  INVALID_ADMIN_KEY = 155; // A provided admin key was invalid.
+  INVALID_SUBMIT_KEY = 156; // A provided submit key was invalid.
   UNAUTHORIZED = 157; // An attempted operation was not authorized (ie - a deleteTopic for a topic with no adminKey).
   INVALID_TOPIC_MESSAGE = 158; // A ConsensusService message is empty.
   INVALID_AUTORENEW_ACCOUNT = 159; // The autoRenewAccount specified is not a valid, active account.
-
-  // An adminKey was not specified on the topic, so there must not be an autoRenewAccount.
-  AUTORENEW_ACCOUNT_NOT_ALLOWED = 160;
-
+  AUTORENEW_ACCOUNT_NOT_ALLOWED = 160; // An adminKey was not specified on the topic, so there must not be an autoRenewAccount.
   // The topic has expired, was not automatically renewed, and is in a 7 day grace period before the topic will be
   // deleted unrecoverably. This error response code will not be returned until autoRenew functionality is supported
   // by HAPI.
   TOPIC_EXPIRED = 162;
   INVALID_CHUNK_NUMBER = 163; // chunk number must be from 1 to total (chunks) inclusive.
   INVALID_CHUNK_TRANSACTION_ID = 164; // For every chunk, the payer account that is part of initialTransactionID must match the Payer Account of this transaction. The entire initialTransactionID should match the transactionID of the first chunk, but this is not checked or enforced by Hedera except when the chunk number is 1.
-
   ACCOUNT_FROZEN_FOR_TOKEN = 165; // Account is frozen and cannot transact with the token
-  TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED = 166; // Maximum number of token relations for agiven account is exceeded
+  TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED = 166; // Maximum number of token relations for a given account is exceeded
   INVALID_TOKEN_ID = 167; // The token is invalid or does not exist
   INVALID_TOKEN_DECIMALS = 168; // Invalid token decimals
   INVALID_TOKEN_INITIAL_SUPPLY = 169; // Invalid token initial supply
@@ -185,22 +181,22 @@ enum ResponseCodeEnum {
   INVALID_TOKEN_SYMBOL = 171; // Token Symbol is not UTF-8 capitalized alphabetical string
   TOKEN_HAS_NO_FREEZE_KEY = 172; // Freeze key is not set on token
   TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN = 173; // Amounts in transfer list are not net zero
-  MISSING_TOKEN_SYMBOL = 174; // Token Symbol is not provided
-  TOKEN_SYMBOL_TOO_LONG = 175; // Token Symbol is too long
+  MISSING_TOKEN_SYMBOL = 174; // A token symbol was not provided
+  TOKEN_SYMBOL_TOO_LONG = 175; // The provided token symbol was too long
   ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN = 176; // KYC must be granted and account does not have KYC granted
   TOKEN_HAS_NO_KYC_KEY = 177; // KYC key is not set on token
   INSUFFICIENT_TOKEN_BALANCE = 178; // Token balance is not sufficient for the transaction
   TOKEN_WAS_DELETED = 179; // Token transactions cannot be executed on deleted token
   TOKEN_HAS_NO_SUPPLY_KEY = 180; // Supply key is not set on token
   TOKEN_HAS_NO_WIPE_KEY = 181; // Wipe key is not set on token
-  INVALID_TOKEN_MINT_AMOUNT = 182;
-  INVALID_TOKEN_BURN_AMOUNT = 183;
-  TOKEN_NOT_ASSOCIATED_TO_ACCOUNT = 184;
-  CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT = 185; // Cannot execute wipe operation on treasury account
-  INVALID_KYC_KEY = 186;
-  INVALID_WIPE_KEY = 187;
-  INVALID_FREEZE_KEY = 188;
-  INVALID_SUPPLY_KEY = 189;
+  INVALID_TOKEN_MINT_AMOUNT = 182; // The requested token mint amount would cause an invalid total supply
+  INVALID_TOKEN_BURN_AMOUNT = 183; // The requested token burn amount would cause an invalid total supply
+  TOKEN_NOT_ASSOCIATED_TO_ACCOUNT = 184; // A required token-account relationship is missing
+  CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT = 185; // The target of a wipe operation was the token treasury account
+  INVALID_KYC_KEY = 186; // The provided KYC key was invalid.
+  INVALID_WIPE_KEY = 187; // The provided wipe key was invalid.
+  INVALID_FREEZE_KEY = 188; // The provided freeze key was invalid.
+  INVALID_SUPPLY_KEY = 189; // The provided supply key was invalid.
   MISSING_TOKEN_NAME = 190; // Token Name is not provided
   TOKEN_NAME_TOO_LONG = 191; // Token Name is too long
   INVALID_WIPING_AMOUNT = 192; // The provided wipe amount must not be negative, zero or bigger than the token holder balance

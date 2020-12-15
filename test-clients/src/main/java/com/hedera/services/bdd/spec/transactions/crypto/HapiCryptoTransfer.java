@@ -63,6 +63,7 @@ import static java.util.stream.Collectors.toList;
 public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = null;
 	private static final Function<HapiApiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
+	private static final int DEFAULT_TOKEN_TRANSFER_USAGE_MULTIPLIER = 60;
 
 	private Function<HapiApiSpec, TransferList> hbarOnlyProvider = MISSING_HBAR_ONLY_PROVIDER;
 	private List<TokenMovement> tokenAwareProviders = MISSING_TOKEN_AWARE_PROVIDERS;
@@ -165,11 +166,16 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.CryptoTransfer, this::usageEstimate, txn, numPayerKeys);
+				HederaFunctionality.CryptoTransfer,
+				(_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
+				txn,
+				numPayerKeys);
 	}
 
-	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return CryptoTransferUsage.newEstimate(txn, suFrom(svo)).get();
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo, int multiplier) {
+		return CryptoTransferUsage.newEstimate(txn, suFrom(svo))
+				.givenTokenMultiplier(multiplier)
+				.get();
 	}
 
 	@Override

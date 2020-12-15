@@ -242,7 +242,7 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_070_CHILDREN, subject.getMinimumChildCount(1));
 		assertEquals(ServicesState.ChildIndices.NUM_080_CHILDREN, subject.getMinimumChildCount(2));
 		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(3));
-		assertEquals(ServicesState.ChildIndices.NUM_100_CHILDREN, subject.getMinimumChildCount(4));
+		assertEquals(ServicesState.ChildIndices.NUM_0100_CHILDREN, subject.getMinimumChildCount(4));
 	}
 
 	@Test
