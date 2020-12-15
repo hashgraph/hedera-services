@@ -37,6 +37,10 @@ import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractRecordsResourceUsage;
+import com.hedera.services.fees.calculation.schedule.queries.GetScheduleInfoResourceUsage;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleDeleteResourceUsage;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleSignResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
@@ -51,7 +55,12 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.queries.contract.GetContractRecordsAnswer;
+import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
+import com.hedera.services.queries.schedule.ScheduleAnswers;
+import com.hedera.services.schedules.HederaScheduleStore;
+import com.hedera.services.schedules.ScheduleStore;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -196,6 +205,9 @@ import com.hedera.services.txns.file.FileSysDelTransitionLogic;
 import com.hedera.services.txns.file.FileSysUndelTransitionLogic;
 import com.hedera.services.txns.file.FileUpdateTransitionLogic;
 import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
+import com.hedera.services.txns.schedule.ScheduleCreateTransitionLogic;
+import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
+import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
@@ -347,7 +359,9 @@ public class ServicesContext {
 	private MetaAnswers metaAnswers;
 	private RecordCache recordCache;
 	private TokenStore tokenStore;
+	private ScheduleStore scheduleStore;
 	private TokenAnswers tokenAnswers;
+	private ScheduleAnswers scheduleAnswers;
 	private HederaLedger ledger;
 	private SyncVerifier syncVerifier;
 	private IssEventInfo issEventInfo;
@@ -372,6 +386,7 @@ public class ServicesContext {
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private TokenController tokenGrpc;
+	private ScheduleController scheduleGrpc;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 	private ServicesNodeType nodeType;
@@ -710,6 +725,15 @@ public class ServicesContext {
 		return tokenAnswers;
 	}
 
+	public ScheduleAnswers scheduleAnswers() {
+		if (scheduleAnswers == null) {
+			scheduleAnswers = new ScheduleAnswers(
+					new GetScheduleInfoAnswer()
+			);
+		}
+		return scheduleAnswers;
+	}
+
 	public CryptoAnswers cryptoAnswers() {
 		if (cryptoAnswers == null) {
 			cryptoAnswers = new CryptoAnswers(
@@ -763,7 +787,9 @@ public class ServicesContext {
 							new GetContractInfoResourceUsage(),
 							new GetContractRecordsResourceUsage(contractFees),
 							/* Token */
-							new GetTokenInfoResourceUsage()
+							new GetTokenInfoResourceUsage(),
+							/* Schedule */
+							new GetScheduleInfoResourceUsage()
 					),
 					txnUsageEstimators(fileFees, cryptoFees, contractFees)
 			);
@@ -810,6 +836,10 @@ public class ServicesContext {
 				entry(TokenAccountWipe, List.of(new TokenWipeResourceUsage())),
 				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
 				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
+				/* Schedule */
+				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage())),
+				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage())),
+				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -1065,6 +1095,13 @@ public class ServicesContext {
 						List.of(new TokenAssociateTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenDissociateFromAccount,
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
+				/* Schedule */
+				entry(ScheduleCreate,
+						List.of(new ScheduleCreateTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
+				entry(ScheduleSign,
+						List.of(new ScheduleSignTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
+				entry(ScheduleDelete,
+						List.of(new ScheduleDeleteTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
@@ -1179,6 +1216,13 @@ public class ServicesContext {
 					tokenRelsLedger);
 		}
 		return tokenStore;
+	}
+
+	public ScheduleStore scheduleStore() {
+		if (scheduleStore == null) {
+			scheduleStore = new HederaScheduleStore();
+		}
+		return scheduleStore;
 	}
 
 	public HederaLedger ledger() {
@@ -1324,6 +1368,13 @@ public class ServicesContext {
 			tokenGrpc = new TokenController(tokenAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return tokenGrpc;
+	}
+
+	public ScheduleController scheduleGrpc() {
+		if (scheduleGrpc == null) {
+			scheduleGrpc = new ScheduleController(scheduleAnswers(), txnResponseHelper(), queryResponseHelper()); // TODO: Create controller functionality
+		}
+		return scheduleGrpc;
 	}
 
 	public CryptoController cryptoGrpc() {

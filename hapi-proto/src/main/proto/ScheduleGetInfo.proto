@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package proto;
+
+/*-
+ * ‌
+ * Hedera Network Services Protobuf
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+import "Timestamp.proto";
+import "QueryHeader.proto";
+import "ResponseHeader.proto";
+import "ScheduleCreate.proto";
+
+message ScheduleGetInfoQuery {
+  QueryHeader header = 1; // standard info sent from client to node including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
+  ScheduleID schedule = 2; // The ID of the Scheduled Entity
+}
+
+message ScheduleInfo {
+  ScheduleID schedule = 1; // The ID of the Scheduled Entity
+  AccountID schedulingAccount = 2; // The Account ID which created the Scheduled TX
+  bytes transactionBody = 3; // The transaction serialized into bytes that must be signed
+  Key adminKey = 4; // (optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed)
+  ThresholdAccount signers = 5; // The key which is able to authorise and sign the scheduled transaction. This could be ThresholdKey or a simple ed25519 key. Serves as definition to who should sign this scheduled TX in order for it to be executed.
+  SignatureMap sigMap = 6; // (optional) The signature map containing all signatures gathered so far.
+  bool executeImmediately = 7; // Always set to true in MVP!!!
+  Timestamp executeAtTime = 8; // The time at which the transaction will be attempted to be executed. Currently not supported.
+}
+
+message ScheduleGetInfoResponse {
+  ResponseHeader header = 1; // Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+  ScheduleInfo scheduleInfo = 2; // The information requested about this schedule instance
+}
