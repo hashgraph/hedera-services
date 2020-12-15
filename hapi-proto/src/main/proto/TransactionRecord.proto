@@ -45,4 +45,6 @@ message TransactionRecord {
     }
     TransferList transferList = 10; // All hbar transfers as a result of this transaction, such as fees, or transfers performed by the transaction, or by a smart contract it calls, or by the creation of threshold records that it triggers.
     repeated TokenTransferList tokenTransferLists = 11; // All Token transfers as a result of this transaction
+    uint32 tieOrder = 12; // Order of events with the same consensus timestamp
+    ScheduleID scheduleRef = 13; // Reference to the scheduled transaction ID that this transaction record represent
 }

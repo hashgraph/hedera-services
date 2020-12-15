@@ -103,4 +103,7 @@ message TransactionReceipt {
 
     // In the receipt of TokenMint, TokenWipe, TokenBurn, the current total supply of this token
     uint64 newTotalSupply = 11;
+
+    // In the receipt of a CreateSchedule, the id of the newly created Scheduled Entity
+    ScheduleID scheduleID = 12;
 }
