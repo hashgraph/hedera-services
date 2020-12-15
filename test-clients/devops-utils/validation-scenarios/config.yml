@@ -1,4 +1,15 @@
 networks:
+  perfnet:
+    bootstrap: 2
+    defaultNode: 3
+    ensureScenarioPayerHbars: 25
+    nodes:
+    - {account: 3, ipv4Addr: 34.74.82.254}
+    scenarioPayer: 1732
+    scenarios:
+      sysFilesDown:
+        evalMode: snapshot
+        numsToFetch: [121]
   integration:
     bootstrap: 2
     defaultNode: 3

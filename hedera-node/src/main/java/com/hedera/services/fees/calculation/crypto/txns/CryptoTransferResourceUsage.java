@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation.crypto.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.crypto.CryptoTransferUsage;
@@ -34,6 +35,12 @@ import java.util.function.BiFunction;
 public class CryptoTransferResourceUsage implements TxnResourceUsageEstimator {
 	static BiFunction<TransactionBody, SigUsage, CryptoTransferUsage> factory = CryptoTransferUsage::newEstimate;
 
+	private final GlobalDynamicProperties dynamicProperties;
+
+	public CryptoTransferResourceUsage(GlobalDynamicProperties dynamicProperties) {
+		this.dynamicProperties = dynamicProperties;
+	}
+
 	@Override
 	public boolean applicableTo(TransactionBody txn) {
 		return txn.hasCryptoTransfer();
@@ -43,6 +50,6 @@ public class CryptoTransferResourceUsage implements TxnResourceUsageEstimator {
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 		var estimate = factory.apply(txn, sigUsage);
-		return estimate.get();
+		return estimate.givenTokenMultiplier(dynamicProperties.feesTokenTransferUsageMultiplier()).get();
 	}
 }

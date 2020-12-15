@@ -94,17 +94,23 @@ public class DuplicateManagementTest extends HapiApiSuite {
 										DUPLICATE_TRANSACTION),
 						getTxnRecord("txnId")
 								.via("cheapTxn")
+								.assertingNothingAboutHashes()
 								.hasPriority(recordWith().status(SUCCESS)),
 						getTxnRecord("txnId").andAnyDuplicates()
 								.via("costlyTxn")
+								.assertingNothingAboutHashes()
 								.hasPriority(recordWith().status(SUCCESS))
 								.hasDuplicates(inOrder(
 										recordWith().status(DUPLICATE_TRANSACTION),
 										recordWith().status(DUPLICATE_TRANSACTION))),
 						sleepFor(1_000L),
 						withOpContext((spec, opLog) -> {
-							var cheapGet = getTxnRecord("cheapTxn").logged();
-							var costlyGet = getTxnRecord("costlyTxn").logged();
+							var cheapGet = getTxnRecord("cheapTxn")
+									.assertingNothingAboutHashes()
+									.logged();
+							var costlyGet = getTxnRecord("costlyTxn")
+									.assertingNothingAboutHashes()
+									.logged();
 							allRunFor(spec, cheapGet, costlyGet);
 							var payer = spec.registry().getAccountID("civilian");
 							var cheapRecord = cheapGet.getResponseRecord();
@@ -134,8 +140,9 @@ public class DuplicateManagementTest extends HapiApiSuite {
 						sleepFor(1_000L)
 				).then(
 						getReceipt("txnId").hasPriorityStatus(INVALID_PAYER_SIGNATURE),
-						getTxnRecord("txnId").hasPriority(
-								recordWith()
+						getTxnRecord("txnId")
+								.assertingNothingAboutHashes()
+								.hasPriority(recordWith()
 										.status(INVALID_PAYER_SIGNATURE)
 										.transfers(includingDeduction("node payment", "0.0.3")))
 				);
@@ -164,7 +171,9 @@ public class DuplicateManagementTest extends HapiApiSuite {
 								.logged()
 								.hasPriorityStatus(SUCCESS)
 								.hasDuplicateStatuses(INVALID_NODE_ACCOUNT),
-						getTxnRecord("txnId").andAnyDuplicates()
+						getTxnRecord("txnId")
+								.assertingNothingAboutHashes()
+								.andAnyDuplicates()
 								.hasPriority(recordWith().status(SUCCESS))
 								.hasDuplicates(inOrder(recordWith().status(INVALID_NODE_ACCOUNT)))
 				);

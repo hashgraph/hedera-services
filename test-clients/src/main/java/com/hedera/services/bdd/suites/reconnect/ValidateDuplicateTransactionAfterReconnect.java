@@ -66,7 +66,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 				)
 				.when(
 						cryptoCreate("repeatedTransaction")
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.validDurationSecs(180)
 								.via(transactionId),
 						getAccountBalance(GENESIS)
@@ -84,7 +84,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 								.loggingAvailabilityEvery(10)
 								.sleepingBetweenRetriesFor(5),
 						cryptoCreate("repeatedTransaction")
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.txnId(transactionId)
 								.validDurationSecs(180)
 								.hasPrecheck(DUPLICATE_TRANSACTION)
