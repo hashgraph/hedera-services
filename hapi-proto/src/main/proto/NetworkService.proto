@@ -32,5 +32,5 @@ import "Transaction.proto";
 /* The requests and responses for different network services. */
 service NetworkService {
     rpc getVersionInfo (Query) returns (Response); // Retrieves the active versions of Hedera Services and HAPI proto
-    rpc uncheckedSubmit (Transaction) returns (TransactionResponse);
+    rpc uncheckedSubmit (Transaction) returns (TransactionResponse); // Submits a "wrapped" transaction to the network, skipping its standard prechecks. (Note that the "wrapper" <tt>UncheckedSubmit</tt> transaction is still subject to normal prechecks, including an authorization requirement that its payer be either the treasury or system admin account.)
 }

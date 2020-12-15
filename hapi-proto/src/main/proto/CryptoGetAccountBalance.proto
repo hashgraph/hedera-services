@@ -39,22 +39,27 @@ message CryptoGetAccountBalanceQuery {
     }
 }
 
-/* Contains information the balance of an Account in regards to the corresponding Token ID */
+/* A number of <i>transferable units</i> of a certain token.
+
+The transferable unit of a token is its smallest denomination, as given by the token's <tt>decimals</tt> property---each minted token contains <tt>10<sup>decimals</sup></tt> transferable units. For example, we could think of the cent as the transferable unit of the US dollar (<tt>decimals=2</tt>); and the tinybar as the transferable unit of hbar (<tt>decimals=8</tt>).
+
+Transferable units are not directly comparable across different tokens. */
 message TokenBalance {
-    TokenID tokenId = 1; // The ID of the token
-    uint64 balance = 2; // The current token balance
+    TokenID tokenId = 1; // A unique token id
+    uint64 balance = 2; // A number of transferable units of the identified token
 }
 
+/* A sequence of token balances, for use in a v2 account balances CSV export. */
 message TokenBalances {
     repeated TokenBalance tokenBalances = 1;
 }
 
 /* Response when the client sends the node CryptoGetAccountBalanceQuery */
 message CryptoGetAccountBalanceResponse {
-    ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+    ResponseHeader header = 1; // Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither.
     AccountID accountID = 2; // The account ID that is being described (this is useful with state proofs, for proving to a third party)
-    uint64 balance = 3; // The current balance, in tinybars
-    repeated TokenBalance tokenBalances = 4; // The array of tokens that the account possesses
+    uint64 balance = 3; // The current balance, in tinybars.
+    repeated TokenBalance tokenBalances = 4; // The token balances possessed by the target account.
 }
 
 
