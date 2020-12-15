@@ -53,8 +53,6 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, int signersThreshold, Set<EntityId> signers, Map<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor);
 	ResponseCodeEnum putSignature(ScheduleID sID, AccountID aId, byte[] signature);
 
-	boolean thresholdReached(ScheduleID sID);
-
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;
 	}

@@ -35,7 +35,6 @@ class ExceptionalScheduleStoreTest {
         // expect:
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.createProvisionally(null, 0,null, null, null, null));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.putSignature(null, null, null));
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.thresholdReached(null));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.exists(null));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.get(null));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.apply(null, null));

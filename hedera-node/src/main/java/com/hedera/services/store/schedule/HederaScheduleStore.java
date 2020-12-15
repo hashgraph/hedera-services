@@ -113,40 +113,50 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	@Override
 	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, int signersThreshold, Set<EntityId> signers, Map<EntityId, byte[]> signatures, Optional<JKey> adminKey, AccountID sponsor) {
-		pendingId = ids.newScheduleId(sponsor);
-		pendingTxHash = hex(bodyBytes);
-		pendingCreation = new MerkleSchedule(
-			bodyBytes,
-			signersThreshold,
-			toSignersMap(signers),
-			signatures
-		);
-		adminKey.ifPresent(pendingCreation::setAdminKey);
-
-		return success(pendingId);
+		return null;
 	}
 
 	@Override
 	public ResponseCodeEnum putSignature(ScheduleID sID, AccountID aId, byte[] signature) {
-		var validity = checkAccountExistence(aId);
-		if (validity != OK) {
-			return validity;
-		}
-
-		var id = resolve(sID);
-		if (id == MISSING_SCHEDULE) {
-			return INVALID_SCHEDULE_ID;
-		}
-
-		var schedule = get(id);
-		if (schedule.isDeleted()) {
-			return SCHEDULE_WAS_DELETED;
-		}
-
-		schedule.putSignature(EntityId.ofNullableAccountId(aId), signature);
-
-		return OK;
+		return null;
 	}
+
+//	@Override
+//	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, EntityId schedulingAccount, Optional<JKey> adminKey, AccountID sponsor) {
+//		pendingId = ids.newScheduleId(sponsor);
+//		pendingTxHash = hex(bodyBytes);
+//		pendingCreation = new MerkleSchedule(
+//			bodyBytes,
+//			schedulingAccount,
+//			toSignersMap(signers),
+//			signatures
+//		);
+//		adminKey.ifPresent(pendingCreation::setAdminKey);
+//
+//		return success(pendingId);
+//	}
+//
+//	@Override
+//	public ResponseCodeEnum putSignature(ScheduleID sID, AccountID aId, byte[] signature) {
+//		var validity = checkAccountExistence(aId);
+//		if (validity != OK) {
+//			return validity;
+//		}
+//
+//		var id = resolve(sID);
+//		if (id == MISSING_SCHEDULE) {
+//			return INVALID_SCHEDULE_ID;
+//		}
+//
+//		var schedule = get(id);
+//		if (schedule.isDeleted()) {
+//			return SCHEDULE_WAS_DELETED;
+//		}
+//
+//		schedule.addSigner(EntityId.ofNullableAccountId(aId), signature);
+//
+//		return OK;
+//	}
 
 	@Override
 	public ResponseCodeEnum delete(ScheduleID sID){
@@ -197,13 +207,6 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 	}
 
-	private Map<EntityId, Boolean> toSignersMap(Set<EntityId> signers) {
-		var result = new HashMap<EntityId, Boolean>();
-		signers.forEach(e -> result.put(e, false));
-
-		return result;
-	}
-
 	private Map<String, MerkleEntityId> buildTxBodyMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
 		var result = new HashMap<String, MerkleEntityId>();
 		var schedulesMap = schedules.get();
@@ -224,14 +227,5 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		return null;
-	}
-
-	public boolean thresholdReached(ScheduleID id) {
-		// TODO: check if found
-
-		var schedule = get(id);
-
-		return schedule.signers()
-			.entrySet().stream().filter(Map.Entry::getValue).count() >= schedule.signersThreshold();
 	}
 }

@@ -77,8 +77,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_090_VERSION = 3;
-	static final int RELEASE_100_VERSION = 4;
-	static final int MERKLE_VERSION = RELEASE_100_VERSION;
+	static final int RELEASE_0100_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0100_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
@@ -102,7 +102,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		static final int DISK_FS = 7;
 		static final int NUM_090_CHILDREN = 8;
 		static final int SCHEDULE_TXS = 8;
-		static final int NUM_100_CHILDREN = 9;
+		static final int NUM_0100_CHILDREN = 9;
 	}
 
 	ServicesContext ctx;
@@ -111,7 +111,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	}
 
 	public ServicesState(List<MerkleNode> children) {
-		super(ChildIndices.NUM_100_CHILDREN);
+		super(ChildIndices.NUM_0100_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -144,7 +144,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		} else if (version == RELEASE_090_VERSION) {
 			return ChildIndices.NUM_090_CHILDREN;
 		} else {
-			return ChildIndices.NUM_100_CHILDREN;
+			return ChildIndices.NUM_0100_CHILDREN;
 		}
 	}
 
@@ -194,7 +194,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
-		if (getNumberOfChildren() < ChildIndices.NUM_100_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_0100_CHILDREN) {
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX,

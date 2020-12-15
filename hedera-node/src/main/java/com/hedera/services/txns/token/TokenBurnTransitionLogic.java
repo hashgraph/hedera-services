@@ -69,6 +69,9 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 			} else {
 				var outcome = store.burn(id, op.getAmount());
 				txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+				if(outcome == OK) {
+					txnCtx.setNewTotalSupply(store.get(id).totalSupply());
+				}
 			}
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);

@@ -70,9 +70,6 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	public ResponseCodeEnum putSignature(ScheduleID sID, AccountID aId, byte[] signature) { throw new UnsupportedOperationException(); }
 
 	@Override
-	public boolean thresholdReached(ScheduleID sID) { throw new UnsupportedOperationException(); }
-
-	@Override
 	public void commitCreation() { throw new UnsupportedOperationException(); }
 
 	@Override

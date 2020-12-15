@@ -44,9 +44,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -267,7 +265,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec account50CanUpdateApplicationProperties() {
-		return specialAccountCanUpdateSpecialPropertyFile(MASTER, APP_PROPERTIES, "getReceiptTps", "100");
+		return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, APP_PROPERTIES, "getReceiptTps", "100");
 	}
 
 	private HapiApiSpec unauthorizedAccountCannotUpdateApplicationProperties() {
@@ -279,7 +277,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec account50CanUpdateApiPermissions() {
-		return specialAccountCanUpdateSpecialPropertyFile(MASTER, API_PERMISSIONS, "updateFile", "1-*");
+		return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, API_PERMISSIONS, "updateFile", "1-*");
 	}
 
 	private HapiApiSpec unauthorizedAccountCannotUpdateApiPermissions() {
@@ -295,7 +293,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec account50CanUpdateAddressBook() {
-		return specialAccountCanUpdateSpecialFile(MASTER, ADDRESS_BOOK, "0.0.5", "0.0.6");
+		return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, ADDRESS_BOOK, "0.0.5", "0.0.6");
 	}
 
 	private HapiApiSpec account55CanUpdateAddressBook() {
@@ -315,7 +313,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec account50CanUpdateNodeDetails() {
-		return specialAccountCanUpdateSpecialFile(MASTER, NODE_DETAILS, "0.0.5", "0.0.6");
+		return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, NODE_DETAILS, "0.0.5", "0.0.6");
 	}
 
 	private HapiApiSpec account55CanUpdateNodeDetails() {
@@ -331,7 +329,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec account50CanUpdateFeeSchedule() {
-		return specialAccountCanUpdateSpecialFile(MASTER, FEE_SCHEDULE, "ignore", "ignore");
+		return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, FEE_SCHEDULE, "ignore", "ignore");
 	}
 
 	private HapiApiSpec account56CanUpdateFeeSchedule() {
@@ -347,7 +345,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec account50CanUpdateExchangeRates() {
-		return specialAccountCanUpdateSpecialFile(MASTER, EXCHANGE_RATES, "ignore", "ignore");
+		return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, EXCHANGE_RATES, "ignore", "ignore");
 	}
 
 	private HapiApiSpec account57CanUpdateExchangeRates() {
