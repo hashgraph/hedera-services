@@ -26,6 +26,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -60,8 +61,9 @@ import static org.mockito.Mockito.mock;
 public class MerkleScheduleTest {
     final int TX_BYTES = 64;
     byte[] transactionBody, otherTransactionBody;
-    EntityId schedulingAccount, otherSchedulingAccount;
     EntityId payer, otherPayer;
+    EntityId schedulingAccount, otherSchedulingAccount;
+    RichInstant schedulingTXValidStart, otherSchedulingTXValidStart;
     JKey adminKey, otherKey;
     JKey signer1, signer2, signer3;
     Set<JKey> signers, otherSigners;
@@ -77,11 +79,14 @@ public class MerkleScheduleTest {
         transactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES * 2);
         otherTransactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES);
 
+        payer = new EntityId(4, 5, 6);
+        otherPayer = new EntityId(4, 5, 5);
+
         schedulingAccount = new EntityId(1, 2, 3);
         otherSchedulingAccount = new EntityId(1, 2, 2);
 
-        payer = new EntityId(4, 5, 6);
-        otherPayer = new EntityId(4, 5, 5);
+        schedulingTXValidStart = new RichInstant(123, 456);
+        otherSchedulingTXValidStart = new RichInstant(456, 789);
 
         adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
         otherKey = new JEd25519Key("not-a-real-other-key".getBytes());
@@ -98,7 +103,7 @@ public class MerkleScheduleTest {
         otherSigners.add(signer2);
         otherSigners.add(signer3);
 
-        subject = new MerkleSchedule(transactionBody, schedulingAccount, signers);
+        subject = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
         this.setOptionalElements(subject);
 
         serdes = mock(DomainSerdes.class);
@@ -122,8 +127,9 @@ public class MerkleScheduleTest {
         assertEquals(transactionBody, subject.transactionBody());
         assertEquals(isDeleted, subject.isDeleted());
         assertEquals(signers, subject.signers());
-        assertEquals(schedulingAccount, subject.schedulingAccount());
         assertEquals(payer, subject.payer());
+        assertEquals(schedulingAccount, subject.schedulingAccount());
+        assertEquals(schedulingTXValidStart, subject.schedulingTXValidStart());
         assertTrue(subject.hasAdminKey());
         assertTrue(equalUpToDecodability(adminKey, subject.adminKey().get()));
         assertTrue(subject.signers().containsAll(signers));
@@ -156,8 +162,10 @@ public class MerkleScheduleTest {
         inOrder.verify(out).writeBoolean(isDeleted);
         inOrder.verify(out).writeInt(transactionBody.length);
         inOrder.verify(out).writeByteArray(transactionBody);
-        inOrder.verify(out).writeSerializable(schedulingAccount, true);
         inOrder.verify(serdes).writeNullableSerializable(payer, out);
+        inOrder.verify(out).writeSerializable(schedulingAccount, true);
+        inOrder.verify(out).writeLong(schedulingTXValidStart.getSeconds());
+        inOrder.verify(out).writeInt(schedulingTXValidStart.getNanos());
         inOrder.verify(out).writeInt(signers.size());
         inOrder.verify(serdes).serializeKey(signer1, out);
         inOrder.verify(serdes).serializeKey(signer2, out);
@@ -170,21 +178,27 @@ public class MerkleScheduleTest {
         // setup:
         SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
-        given(serdes.deserializeKey(fin)).willReturn(adminKey);
+        given(serdes.deserializeKey(fin))
+                .willReturn(adminKey);
         given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
                 .willReturn(adminKey);
         given(fin.readBoolean())
                 .willReturn(subject.isDeleted());
+        given(fin.readLong())
+                .willReturn(schedulingTXValidStart.getSeconds());
         given(fin.readInt())
                 .willReturn(transactionBody.length)
+                .willReturn(schedulingTXValidStart.getNanos())
                 .willReturn(signers.size());
         given(fin.readByteArray(transactionBody.length))
                 .willReturn(transactionBody);
         given(serdes.deserializeKey(fin))
                 .willReturn(signer1)
                 .willReturn(signer2);
-        given(fin.readSerializable()).willReturn(schedulingAccount);
-        given(serdes.readNullableSerializable(any())).willReturn(payer);
+        given(serdes.readNullableSerializable(any()))
+                .willReturn(payer);
+        given(fin.readSerializable())
+                .willReturn(schedulingAccount);
 
         // and:
         var read = new MerkleSchedule();
@@ -199,7 +213,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentTransactionBody() {
         // given:
-        other = new MerkleSchedule(otherTransactionBody, schedulingAccount, signers);
+        other = new MerkleSchedule(otherTransactionBody, schedulingAccount, schedulingTXValidStart);
         setOptionalElements(other);
 
         // expect:
@@ -211,7 +225,19 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentSchedulingAccount() {
         // given:
-        other = new MerkleSchedule(transactionBody, otherSchedulingAccount, signers);
+        other = new MerkleSchedule(transactionBody, otherSchedulingAccount, schedulingTXValidStart);
+        setOptionalElements(other);
+
+        // expect:
+        assertNotEquals(subject, other);
+        // and:
+        assertNotEquals(subject.hashCode(), other.hashCode());
+    }
+
+    @Test
+    public void failDifferentSchedulingTxValidStart() {
+        // given:
+        other = new MerkleSchedule(otherTransactionBody, schedulingAccount, otherSchedulingTXValidStart);
         setOptionalElements(other);
 
         // expect:
@@ -224,8 +250,11 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentSignersLength() {
         // given:
-        other = new MerkleSchedule(transactionBody, schedulingAccount, new LinkedHashSet<>());
+        other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
         setOptionalElements(other);
+
+        // when:
+        other.setSigners(new LinkedHashSet<>());
 
         // expect:
         assertNotEquals(subject, other);
@@ -236,8 +265,11 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentSigners() {
         // given:
-        other = new MerkleSchedule(transactionBody, schedulingAccount, otherSigners);
+        other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
         setOptionalElements(other);
+
+        // when:
+        other.setSigners(otherSigners);
 
         // expect:
         assertNotEquals(subject, other);
@@ -248,7 +280,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentAdminKey() {
         // given:
-        other = new MerkleSchedule(transactionBody, schedulingAccount, signers);
+        other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
         setOptionalElements(other);
 
         // when:
@@ -263,7 +295,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentPayer() {
         // given:
-        other = new MerkleSchedule(transactionBody, schedulingAccount, signers);
+        other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
         setOptionalElements(other);
 
         // when:
@@ -278,7 +310,7 @@ public class MerkleScheduleTest {
     @Test
     public void failDifferentIsDeleted() {
         // given:
-        other = new MerkleSchedule(transactionBody, schedulingAccount, signers);
+        other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
         setOptionalElements(other);
 
         // when:
@@ -296,8 +328,9 @@ public class MerkleScheduleTest {
         assertEquals("MerkleSchedule{" +
                     "deleted=" + isDeleted + ", " +
                     "transactionBody=" + hex(transactionBody) + ", " +
-                    "schedulingAccount=" + schedulingAccount + ", " +
                     "payer=" + payer.toAbbrevString() + ", " +
+                    "schedulingAccount=" + schedulingAccount + ", " +
+                    "schedulingTXValidStart=" + schedulingTXValidStart + ", " +
                     "signers=[" + signersToString() + "], " +
                     "adminKey=" + describe(adminKey) + "}",
                 subject.toString());
@@ -308,11 +341,11 @@ public class MerkleScheduleTest {
         // given:
         var defaultSubject = new MerkleAccountState();
         // and:
-        var identicalSubject = new MerkleSchedule(transactionBody, schedulingAccount, signers);
+        var identicalSubject = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
         setOptionalElements(identicalSubject);
 
         // and:
-        other = new MerkleSchedule(transactionBody, schedulingAccount, signers);
+        other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
 
         // expect:
         assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
@@ -366,6 +399,7 @@ public class MerkleScheduleTest {
     }
 
     private void setOptionalElements(MerkleSchedule schedule) {
+        schedule.setSigners(signers);
         schedule.setPayer(payer);
         schedule.setDeleted(isDeleted);
         schedule.setAdminKey(adminKey);

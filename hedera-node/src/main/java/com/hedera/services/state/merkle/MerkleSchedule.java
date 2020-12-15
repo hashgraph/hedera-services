@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
@@ -57,8 +58,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     private byte[] transactionBody;
     private JKey adminKey = UNUSED_KEY;
-    private EntityId schedulingAccount;
     private EntityId payer = UNUSED_PAYER;
+    private EntityId schedulingAccount;
+    private RichInstant schedulingTXValidStart;
     private Set<JKey> signers = new LinkedHashSet<>();
     private boolean deleted;
 
@@ -70,11 +72,11 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     public MerkleSchedule(
             byte[] transactionBody,
             EntityId schedulingAccount,
-            Set<JKey> signers
+            RichInstant schedulingTXValidStart
     ) {
         this.transactionBody = transactionBody;
         this.schedulingAccount = schedulingAccount;
-        this.signers = signers;
+        this.schedulingTXValidStart = schedulingTXValidStart;
     }
 
     @Deprecated
@@ -98,8 +100,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         var that = (MerkleSchedule) o;
         return this.deleted == that.deleted &&
                 Arrays.areEqual(this.transactionBody, that.transactionBody) &&
-                Objects.equals(this.schedulingAccount, that.schedulingAccount) &&
                 Objects.equals(this.payer, that.payer) &&
+                Objects.equals(this.schedulingAccount, that.schedulingAccount) &&
+                Objects.equals(this.schedulingTXValidStart, that.schedulingTXValidStart) &&
                 signersMatch(this.signers, that.signers) &&
                 equalUpToDecodability(this.adminKey, that.adminKey);
     }
@@ -109,8 +112,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         return Objects.hash(
                 deleted,
                 transactionBody,
-                schedulingAccount,
                 payer,
+                schedulingAccount,
+                schedulingTXValidStart,
                 signers,
                 adminKey);
     }
@@ -120,8 +124,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         return MoreObjects.toStringHelper(MerkleSchedule.class)
                 .add("deleted", deleted)
                 .add("transactionBody", hex(transactionBody))
-                .add("schedulingAccount", schedulingAccount)
                 .add("payer", readablePayer())
+                .add("schedulingAccount", schedulingAccount)
+                .add("schedulingTXValidStart", schedulingTXValidStart)
                 .add("signers", readableSigners())
                 .add("adminKey", describe(adminKey))
                 .toString();
@@ -136,8 +141,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         deleted = in.readBoolean();
         int txBodyLength = in.readInt();
         transactionBody = in.readByteArray(txBodyLength);
-        schedulingAccount = in.readSerializable();
         payer = serdes.readNullableSerializable(in);
+        schedulingAccount = in.readSerializable();
+        schedulingTXValidStart = RichInstant.from(in);
         deserializeSigners(in);
         adminKey = serdes.readNullable(in, serdes::deserializeKey);
     }
@@ -147,8 +153,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         out.writeBoolean(deleted);
         out.writeInt(transactionBody.length);
         out.writeByteArray(transactionBody);
-        out.writeSerializable(schedulingAccount, true);
         serdes.writeNullableSerializable(payer, out);
+        out.writeSerializable(schedulingAccount, true);
+        schedulingTXValidStart.serialize(out);
         serializeSigners(out);
         serdes.writeNullable(adminKey, out, serdes::serializeKey);
     }
@@ -170,11 +177,14 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         var fc = new MerkleSchedule(
                 transactionBody,
                 schedulingAccount,
-                signersCopy
+                schedulingTXValidStart
         );
 
         fc.setDeleted(deleted);
-        fc.setPayer(payer);
+        fc.setSigners(signersCopy);
+        if (payer != UNUSED_PAYER) {
+            fc.setPayer(payer);
+        }
         if (adminKey != UNUSED_KEY) {
             fc.setAdminKey(adminKey);
         }
@@ -196,15 +206,19 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         this.adminKey = adminKey;
     }
 
-    public EntityId schedulingAccount() { return this.schedulingAccount; }
-
     public void setPayer(EntityId payer) { this.payer = payer; }
 
     public EntityId payer() { return this.payer; }
 
     public boolean hasPayer() { return payer != UNUSED_PAYER; }
 
+    public EntityId schedulingAccount() { return this.schedulingAccount; }
+
+    public RichInstant schedulingTXValidStart() { return this.schedulingTXValidStart; }
+
     public Set<JKey> signers() { return signers; }
+
+    public void setSigners(Set<JKey> signers) { this.signers = signers; }
 
     public void addSigner(JKey signer) {
         this.signers.add(signer);
