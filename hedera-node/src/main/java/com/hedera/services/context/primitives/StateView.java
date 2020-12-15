@@ -38,6 +38,9 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleGetInfo;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -267,6 +270,11 @@ public class StateView {
 		}
 	}
 
+	public Optional<ScheduleInfo> infoForSchedule(ScheduleID scheduleID) {
+		// TODO: Implement logic for getting information for schedule from store.
+		return Optional.empty();
+	}
+
 	TokenFreezeStatus tfsFor(boolean flag) {
 		return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
 	}
@@ -277,6 +285,11 @@ public class StateView {
 
 	public boolean tokenExists(TokenID id) {
 		return tokenStore.resolve(id) != MISSING_TOKEN;
+	}
+
+	public boolean scheduleExists(ScheduleID id) {
+		// TODO: return scheduleStore.resolve(id) != MISSING_SCHEDULE;
+		return false;
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {

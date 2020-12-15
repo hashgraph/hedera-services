@@ -21,6 +21,8 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -55,6 +57,7 @@ class TokenMintTransitionLogicTest {
 	private TokenStore tokenStore;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+	private MerkleToken token;
 
 	private TransactionBody tokenMintTxn;
 	private TokenMintTransitionLogic subject;
@@ -63,6 +66,7 @@ class TokenMintTransitionLogicTest {
 	private void setup() {
 		tokenStore = mock(TokenStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
+		token = mock(MerkleToken.class);
 
 		txnCtx = mock(TransactionContext.class);
 
@@ -108,6 +112,7 @@ class TokenMintTransitionLogicTest {
 		// then:
 		verify(tokenStore).mint(id, amount);
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setNewTotalSupply(amount);
 	}
 
 	@Test
@@ -174,6 +179,8 @@ class TokenMintTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenMintTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(tokenStore.resolve(id)).willReturn(id);
+		given(tokenStore.get(id)).willReturn(token);
+		given(token.totalSupply()).willReturn(amount);
 	}
 
 	private void givenMissingToken() {

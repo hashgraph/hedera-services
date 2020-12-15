@@ -98,7 +98,7 @@ public class Issue2319Spec extends HapiApiSuite {
 		return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
 				.given(
 						cryptoCreate("civilian"),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
 						fileUpdate(EXCHANGE_RATES)
 								.payingWith(EXCHANGE_RATE_CONTROL)
@@ -107,7 +107,7 @@ public class Issue2319Spec extends HapiApiSuite {
 						fileUpdate(EXCHANGE_RATES)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.wacl(GENESIS)
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.signedBy(GENESIS),
 						fileUpdate(EXCHANGE_RATES)
 								.payingWith(EXCHANGE_RATE_CONTROL)
@@ -128,13 +128,13 @@ public class Issue2319Spec extends HapiApiSuite {
 						keyFromPem(pemLoc)
 								.name("persistent")
 								.passphrase("<SECReT>"),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
 						cryptoUpdate(EXCHANGE_RATE_CONTROL)
 								.key("persistent")
 				).then(
 						cryptoUpdate(EXCHANGE_RATE_CONTROL)
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.signedBy(GENESIS)
 								.receiverSigRequired(true),
 						cryptoUpdate(EXCHANGE_RATE_CONTROL)
@@ -168,14 +168,14 @@ public class Issue2319Spec extends HapiApiSuite {
 							CustomSpecAssert.allRunFor(spec, fetch);
 							validRates.set(fetch.getResponse().getFileGetContents().getFileContents().getContents());
 						}),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
 						fileUpdate(EXCHANGE_RATES)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.wacl("persistent")
 				).then(
 						fileUpdate(EXCHANGE_RATES)
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.signedBy(GENESIS)
 								.contents(ignore -> validRates.get()),
 						fileUpdate(EXCHANGE_RATES)

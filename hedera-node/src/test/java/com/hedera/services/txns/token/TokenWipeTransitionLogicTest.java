@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -55,10 +56,12 @@ class TokenWipeTransitionLogicTest {
     private AccountID account = IdUtils.asAccount("1.2.4");
     private TokenID id = IdUtils.asToken("1.2.3");
     private long wipeAmount = 100;
+    private long totalAmount = 1000L;
 
     private TokenStore tokenStore;
     private TransactionContext txnCtx;
     private PlatformTxnAccessor accessor;
+    private MerkleToken token;
 
     private TransactionBody tokenWipeTxn;
     private TokenWipeTransitionLogic subject;
@@ -67,6 +70,7 @@ class TokenWipeTransitionLogicTest {
     private void setup() {
         tokenStore = mock(TokenStore.class);
         accessor = mock(PlatformTxnAccessor.class);
+        token = mock(MerkleToken.class);
 
         txnCtx = mock(TransactionContext.class);
 
@@ -98,6 +102,7 @@ class TokenWipeTransitionLogicTest {
         // then:
         verify(tokenStore).wipe(account, id, wipeAmount, false);
         verify(txnCtx).setStatus(SUCCESS);
+        verify(txnCtx).setNewTotalSupply(totalAmount);
     }
 
     @Test
@@ -173,6 +178,8 @@ class TokenWipeTransitionLogicTest {
         given(accessor.getTxn()).willReturn(tokenWipeTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(tokenStore.resolve(id)).willReturn(id);
+        given(tokenStore.get(id)).willReturn(token);
+        given(token.totalSupply()).willReturn(totalAmount);
     }
 
     private void givenMissingToken() {

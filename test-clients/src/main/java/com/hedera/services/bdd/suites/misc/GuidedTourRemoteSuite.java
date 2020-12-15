@@ -165,7 +165,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed("invalidPayerKey").shape(keyShape)
 				) .when().then(
-						cryptoUpdate(MASTER)
+						cryptoUpdate(SYSTEM_ADMIN)
 								.receiverSigRequired(true)
 								.signedBy("invalidPayerKey")
 								.hasPrecheck(INVALID_SIGNATURE)

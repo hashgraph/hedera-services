@@ -250,14 +250,14 @@ public class TxnHandlerVerifySigRegressionTest {
 		speedometers = mock(MiscSpeedometers.class);
 		keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null),
+				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns);
 		retryingKeyOrder =
 				new HederaSigningOrder(
 						new MockEntityNumbers(),
 						defaultLookupsPlusAccountRetriesFor(
-								null, () -> accounts, () -> null, ref -> null,
+								null, () -> accounts, () -> null, ref -> null, ref -> null,
 								MN, MN, runningAvgs, speedometers),
 						updateAccountSigns,
 						targetWaclSigns);

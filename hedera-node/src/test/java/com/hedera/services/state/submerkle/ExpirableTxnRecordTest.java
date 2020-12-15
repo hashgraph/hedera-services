@@ -303,7 +303,7 @@ class ExpirableTxnRecordTest {
 				"ExpirableTxnRecord{receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
 						"exchangeRates=ExchangeRates{currHbarEquiv=0, currCentEquiv=0, currExpiry=0, " +
 						"nextHbarEquiv=0, nextCentEquiv=0, nextExpiry=0}, " +
-						"accountCreated=EntityId{shard=0, realm=0, num=3}}, " +
+						"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, " +
 						"txnHash=6e6f742d7265616c6c792d612d68617368, " +
 						"txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
 						"validStart=RichInstant{seconds=9999999999, nanos=0}}, " +
