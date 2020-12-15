@@ -1052,7 +1052,7 @@ def draw_subplot(stat_name, fig_count):
     NUM_STYLES = len(LINE_STYLES)
     stat_name_local = stat_name
     if stat_name_local == SEC_TRANS_H_2SEC:
-        start_name_local = SEC_TRANS_H
+        stat_name_local = SEC_TRANS_H
     data_dict = stat_data_dict[stat_name_local]
     if len(data_dict) > 0:
         row = math.floor(fig_count / fig_per_row)
