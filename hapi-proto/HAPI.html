@@ -3577,14 +3577,14 @@ and the topic will expire and after AUTORENEW_GRACE_PERIOD be automatically dele
                   <td>autoRenewPeriod</td>
                   <td><a href="#proto.Duration">Duration</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>If an auto-renew account is specified, when the topic expires, its lifetime will be extended by up to this duration (depending on the solvency of the auto-renew account). If the auto-renew account has no funds at all, the topic will be deleted instead. </p></td>
                 </tr>
               
                 <tr>
                   <td>autoRenewAccount</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p>Null if there is no autoRenewAccount. </p></td>
+                  <td><p>The account, if any, to charge for automatic renewal of the topic&#39;s lifetime upon expiry. </p></td>
                 </tr>
               
             </tbody>
@@ -4893,7 +4893,7 @@ If unspecified, no change. </p></td>
                   <td>header</td>
                   <td><a href="#proto.ResponseHeader">ResponseHeader</a></td>
                   <td></td>
-                  <td><p>Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither </p></td>
+                  <td><p>Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither. </p></td>
                 </tr>
               
                 <tr>
@@ -4907,14 +4907,14 @@ If unspecified, no change. </p></td>
                   <td>balance</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>The current balance, in tinybars </p></td>
+                  <td><p>The current balance, in tinybars. </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenBalances</td>
                   <td><a href="#proto.TokenBalance">TokenBalance</a></td>
                   <td>repeated</td>
-                  <td><p>The array of tokens that the account possesses </p></td>
+                  <td><p>The token balances possessed by the target account. </p></td>
                 </tr>
               
             </tbody>
@@ -4925,7 +4925,7 @@ If unspecified, no change. </p></td>
         
       
         <h3 id="proto.TokenBalance">TokenBalance</h3>
-        <p>Contains information the balance of an Account in regards to the corresponding Token ID</p>
+        <p>A number of <i>transferable units</i> of a certain token.</p><p>The transferable unit of a token is its smallest denomination, as given by the token's <tt>decimals</tt> property---each minted token contains <tt>10<sup>decimals</sup></tt> transferable units. For example, we could think of the cent as the transferable unit of the US dollar (<tt>decimals=2</tt>); and the tinybar as the transferable unit of hbar (<tt>decimals=8</tt>).</p><p>Transferable units are not directly comparable across different tokens.</p>
 
         
           <table class="field-table">
@@ -4938,14 +4938,14 @@ If unspecified, no change. </p></td>
                   <td>tokenId</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p>The ID of the token </p></td>
+                  <td><p>A unique token id </p></td>
                 </tr>
               
                 <tr>
                   <td>balance</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>The current token balance </p></td>
+                  <td><p>A number of transferable units of the identified token </p></td>
                 </tr>
               
             </tbody>
@@ -4956,7 +4956,7 @@ If unspecified, no change. </p></td>
         
       
         <h3 id="proto.TokenBalances">TokenBalances</h3>
-        <p></p>
+        <p>A sequence of token balances, for use in a v2 account balances CSV export.</p>
 
         
           <table class="field-table">
@@ -6859,14 +6859,14 @@ If unspecified, no change. </p></td>
                   <td>hapiProtoVersion</td>
                   <td><a href="#proto.SemanticVersion">SemanticVersion</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The Hedera API (HAPI) protobuf version recognized by the responding node. </p></td>
                 </tr>
               
                 <tr>
                   <td>hederaServicesVersion</td>
                   <td><a href="#proto.SemanticVersion">SemanticVersion</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The version of the Hedera Services software deployed on the responding node. </p></td>
                 </tr>
               
             </tbody>
@@ -6915,7 +6915,7 @@ If unspecified, no change. </p></td>
                 <td>uncheckedSubmit</td>
                 <td><a href="#proto.Transaction">Transaction</a></td>
                 <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
-                <td><p></p></td>
+                <td><p>Submits a &#34;wrapped&#34; transaction to the network, skipping its standard prechecks. (Note that the &#34;wrapper&#34; &lt;tt&gt;UncheckedSubmit&lt;/tt&gt; transaction is still subject to normal prechecks, including an authorization requirement that its payer be either the treasury or system admin account.)</p></td>
               </tr>
             
           </tbody>
@@ -7063,7 +7063,7 @@ If unspecified, no change. </p></td>
                   <td>networkGetVersionInfo</td>
                   <td><a href="#proto.NetworkGetVersionInfoQuery">NetworkGetVersionInfoQuery</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Get the versions of the HAPI protobuf and Hedera Services software deployed on the responding node. </p></td>
                 </tr>
               
                 <tr>
@@ -8029,13 +8029,13 @@ If unspecified, no change. </p></td>
               <tr>
                 <td>INVALID_ADMIN_KEY</td>
                 <td>155</td>
-                <td><p></p></td>
+                <td><p>A provided admin key was invalid.</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_SUBMIT_KEY</td>
                 <td>156</td>
-                <td><p></p></td>
+                <td><p>A provided submit key was invalid.</p></td>
               </tr>
             
               <tr>
@@ -8091,7 +8091,7 @@ by HAPI.</p></td>
               <tr>
                 <td>TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED</td>
                 <td>166</td>
-                <td><p>Maximum number of token relations for agiven account is exceeded</p></td>
+                <td><p>Maximum number of token relations for a given account is exceeded</p></td>
               </tr>
             
               <tr>
@@ -8139,13 +8139,13 @@ by HAPI.</p></td>
               <tr>
                 <td>MISSING_TOKEN_SYMBOL</td>
                 <td>174</td>
-                <td><p>Token Symbol is not provided</p></td>
+                <td><p>A token symbol was not provided</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_SYMBOL_TOO_LONG</td>
                 <td>175</td>
-                <td><p>Token Symbol is too long</p></td>
+                <td><p>The provided token symbol was too long</p></td>
               </tr>
             
               <tr>
@@ -8187,49 +8187,49 @@ by HAPI.</p></td>
               <tr>
                 <td>INVALID_TOKEN_MINT_AMOUNT</td>
                 <td>182</td>
-                <td><p></p></td>
+                <td><p>The requested token mint amount would cause an invalid total supply</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_TOKEN_BURN_AMOUNT</td>
                 <td>183</td>
-                <td><p></p></td>
+                <td><p>The requested token burn amount would cause an invalid total supply</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_NOT_ASSOCIATED_TO_ACCOUNT</td>
                 <td>184</td>
-                <td><p></p></td>
+                <td><p>A required token-account relationship is missing</p></td>
               </tr>
             
               <tr>
                 <td>CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT</td>
                 <td>185</td>
-                <td><p>Cannot execute wipe operation on treasury account</p></td>
+                <td><p>The target of a wipe operation was the token treasury account</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_KYC_KEY</td>
                 <td>186</td>
-                <td><p></p></td>
+                <td><p>The provided KYC key was invalid.</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_WIPE_KEY</td>
                 <td>187</td>
-                <td><p></p></td>
+                <td><p>The provided wipe key was invalid.</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_FREEZE_KEY</td>
                 <td>188</td>
-                <td><p></p></td>
+                <td><p>The provided freeze key was invalid.</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_SUPPLY_KEY</td>
                 <td>189</td>
-                <td><p></p></td>
+                <td><p>The provided supply key was invalid.</p></td>
               </tr>
             
               <tr>
