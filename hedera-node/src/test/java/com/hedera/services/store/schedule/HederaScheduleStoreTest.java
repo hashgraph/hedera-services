@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,18 +43,26 @@ import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_SIGNER_ONE_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_SIGNER_TWO_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
+import static com.swirlds.common.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -80,60 +89,54 @@ public class HederaScheduleStoreTest {
     MerkleAccount account;
 
     byte[] transactionBody;
-    int signersThreshold;
+    String hexTransactionBody;
+    RichInstant schedulingTXValidStart;
     Key adminKey;
     JKey adminJKey;
-    EntityId signer1, signer2;
-    boolean signer1submission, signer2submission;
-    byte[] signature1, signature2;
-    Set<EntityId> signers;
-    Map<EntityId, Boolean> signersMap;
-    Map<EntityId, byte[]> signatures;
+    JKey signer1, signer2;
+    Set<JKey> signers;
 
     ScheduleID created = IdUtils.asSchedule("1.2.333333");
-    AccountID sponsor = IdUtils.asAccount("1.2.333");
+    AccountID schedulingAccount = IdUtils.asAccount("1.2.333");
+    AccountID payerId = IdUtils.asAccount("1.2.456");
+
+    EntityId entityPayer = EntityId.ofNullableAccountId(payerId);
+    EntityId entitySchedulingAccount = EntityId.ofNullableAccountId(schedulingAccount);
 
     HederaScheduleStore subject;
 
     @BeforeEach
     public void setup() {
         transactionBody = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
-        signersThreshold = 2;
+        hexTransactionBody = hex(transactionBody);
+        schedulingTXValidStart = new RichInstant(123, 456);
         adminKey = SCHEDULE_ADMIN_KT.asKey();
         adminJKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
 
-        signer1 = new EntityId(1, 2, 3);
-        signer2 = new EntityId(2, 3, 4);
-        signers = new HashSet<>();
+        signer1 = SCHEDULE_SIGNER_ONE_KT.asJKeyUnchecked();
+        signer2 = SCHEDULE_SIGNER_TWO_KT.asJKeyUnchecked();
+        signers = new LinkedHashSet<>();
         signers.add(signer1);
         signers.add(signer2);
-
-        signersMap = new HashMap<>();
-        signersMap.put(signer1, signer1submission);
-        signersMap.put(signer2, signer2submission);
-
-        signature1 = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
-        signature2 = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
-
-        signatures = new HashMap<>();
-        signatures.put(signer1, signature1);
-        signatures.put(signer2, signature2);
 
         schedule = mock(MerkleSchedule.class);
 
         given(schedule.hasAdminKey()).willReturn(true);
         given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
-        given(schedule.signatures()).willReturn(signatures);
+        given(schedule.signers()).willReturn(signers);
 
         ids = mock(EntityIdSource.class);
-        given(ids.newScheduleId(sponsor)).willReturn(created);
+        given(ids.newScheduleId(schedulingAccount)).willReturn(created);
 
         account = mock(MerkleAccount.class);
 
         hederaLedger = mock(HederaLedger.class);
 
         accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
-        given(accountsLedger.exists(sponsor)).willReturn(true);
+        given(accountsLedger.exists(payerId)).willReturn(true);
+        given(accountsLedger.exists(schedulingAccount)).willReturn(true);
+        given(accountsLedger.get(payerId, IS_DELETED)).willReturn(false);
+        given(accountsLedger.get(schedulingAccount, IS_DELETED)).willReturn(false);
 
         schedules = (FCMap<MerkleEntityId, MerkleSchedule>) mock(FCMap.class);
         given(schedules.get(fromScheduleId(created))).willReturn(schedule);
@@ -157,45 +160,36 @@ public class HederaScheduleStoreTest {
     }
 
     @Test
-    public void successfulPutSignature() {
+    public void successfulAddSigner() {
         // when:
-        var outcome = subject.putSignature(created, sponsor, signature1);
+        var signers = new HashSet<JKey>();
+        signers.add(signer1);
+        var outcome = subject.addSigners(created, signers);
 
         // expect:
         assertEquals(OK, outcome);
     }
 
-    @Test
-    public void failPutSignatureDeletedAccount() {
-        // given:
-        given(hederaLedger.isDeleted(sponsor)).willReturn(true);
-
-        // when:
-        var outcome = subject.putSignature(created, sponsor, signature1);
-
-        // expect:
-        assertEquals(ACCOUNT_DELETED, outcome);
-    }
 
     @Test
-    public void failPutSignatureNotExistingSchedule() {
+    public void failAddSignerNotExistingSchedule() {
         // given:
         given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
         // when:
-        var outcome = subject.putSignature(created, sponsor, signature1);
+        var outcome = subject.addSigners(created, signers);
 
         // expect:
         assertEquals(INVALID_SCHEDULE_ID, outcome);
     }
 
     @Test
-    public void failPutSignatureDeletedSchedule() {
+    public void failAddSignerDeletedSchedule() {
         // given:
         given(schedule.isDeleted()).willReturn(true);
 
         // when:
-        var outcome = subject.putSignature(created, sponsor, signature1);
+        var outcome = subject.addSigners(created, signers);
 
         // expect:
         assertEquals(SCHEDULE_WAS_DELETED, outcome);
@@ -290,7 +284,7 @@ public class HederaScheduleStoreTest {
     }
 
     @Test
-    public void applicationAlwaysReplacesModifiableToken() {
+    public void applicationAlwaysReplacesModifiableSchedule() {
         // setup:
         var change = mock(Consumer.class);
         var key = fromScheduleId(created);
@@ -308,17 +302,17 @@ public class HederaScheduleStoreTest {
 
     @Test
     public void createProvisionallyWorks() {
-        var expected = new MerkleSchedule(transactionBody, signersThreshold, signersMap, signatures);
+        var expected = new MerkleSchedule(transactionBody, entitySchedulingAccount, schedulingTXValidStart);
         expected.setAdminKey(adminJKey);
+        expected.setPayer(entityPayer);
         // when:
         var outcome = subject
                 .createProvisionally(
                         transactionBody,
-                        signersThreshold,
-                        signers,
-                        signatures,
-                        Optional.of(adminJKey),
-                        sponsor);
+                        payerId,
+                        schedulingAccount,
+                        schedulingTXValidStart,
+                        Optional.of(adminJKey));
 
         // then:
         assertEquals(OK, outcome.getStatus());
@@ -326,6 +320,139 @@ public class HederaScheduleStoreTest {
         // and:
         assertEquals(created, subject.pendingId);
         assertEquals(expected, subject.pendingCreation);
+    }
+
+    @Test
+    public void getCanReturnPending() {
+        // setup:
+        subject.pendingId = created;
+        subject.pendingCreation = schedule;
+        subject.pendingTxHash = hexTransactionBody;
+
+        // expect:
+        assertSame(schedule, subject.get(created));
+        assertSame(hexTransactionBody, subject.pendingTxHash);
+    }
+
+    @Test
+    public void rejectsCreateProvisionallyMissingPayer() {
+        // given:
+        given(accountsLedger.exists(payerId)).willReturn(false);
+
+        // when:
+        var outcome = subject
+                .createProvisionally(
+                        transactionBody,
+                        payerId,
+                        schedulingAccount,
+                        schedulingTXValidStart,
+                        Optional.of(adminJKey));
+
+        // then:
+        assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.getStatus());
+        assertEquals(Optional.empty(), outcome.getCreated());
+        // and:
+        assertNull(subject.pendingCreation);
+        assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
+        assertNull(subject.pendingTxHash);
+    }
+
+    @Test
+    public void rejectsCreateProvisionallyDeletedPayer() {
+        // given:
+        given(accountsLedger.get(payerId, IS_DELETED)).willReturn(true);
+
+        // when:
+        var outcome = subject
+                .createProvisionally(
+                        transactionBody,
+                        payerId,
+                        schedulingAccount,
+                        schedulingTXValidStart,
+                        Optional.of(adminJKey));
+
+        // then:
+        assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.getStatus());
+        assertEquals(Optional.empty(), outcome.getCreated());
+        // and:
+        assertNull(subject.pendingCreation);
+        assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
+        assertNull(subject.pendingTxHash);
+    }
+
+    @Test
+    public void rejectsCreateProvisionallyDeletedSchedulingAccount() {
+        // given:
+        given(accountsLedger.get(schedulingAccount, IS_DELETED)).willReturn(true);
+
+        // when:
+        var outcome = subject
+                .createProvisionally(
+                        transactionBody,
+                        payerId,
+                        schedulingAccount,
+                        schedulingTXValidStart,
+                        Optional.of(adminJKey));
+
+        // then:
+        assertEquals(INVALID_SCHEDULE_ACCOUNT_ID, outcome.getStatus());
+        assertEquals(Optional.empty(), outcome.getCreated());
+        // and:
+        assertNull(subject.pendingCreation);
+        assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
+        assertNull(subject.pendingTxHash);
+    }
+
+    @Test
+    public void rejectsCreateProvisionallyMissingSchedulingAccount() {
+        // given:
+        given(accountsLedger.exists(schedulingAccount)).willReturn(false);
+
+        // when:
+        var outcome = subject
+                .createProvisionally(
+                        transactionBody,
+                        payerId,
+                        schedulingAccount,
+                        schedulingTXValidStart,
+                        Optional.of(adminJKey));
+
+        // then:
+        assertEquals(INVALID_SCHEDULE_ACCOUNT_ID, outcome.getStatus());
+        assertEquals(Optional.empty(), outcome.getCreated());
+        // and:
+        assertNull(subject.pendingCreation);
+        assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
+        assertNull(subject.pendingTxHash);
+    }
+
+    @Test
+    public void getsScheduleIDByTransactionBody() {
+        // given:
+        subject.txHashToEntityId.put(hex(transactionBody), fromScheduleId(created));
+        // when:
+        var scheduleId = subject.getScheduleIDByTransactionBody(transactionBody);
+
+        assertEquals(created, scheduleId);
+    }
+
+    @Test
+    public void getsScheduleIDFromPending() {
+        // given:
+        subject.pendingId = created;
+        subject.pendingTxHash = hex(transactionBody);
+        // when:
+        var scheduleId = subject.getScheduleIDByTransactionBody(transactionBody);
+
+        assertEquals(created, scheduleId);
+    }
+
+    @Test
+    public void failsToGetScheduleIDByTransactionBody() {
+        // when:
+        var scheduleId = subject.getScheduleIDByTransactionBody(transactionBody);
+
+        assertNull(scheduleId);
     }
 
     @Test
@@ -353,7 +480,7 @@ public class HederaScheduleStoreTest {
     }
 
     @Test
-    public void rejectsMissingDeletion() {
+    public void rejectsDeletionMissingSchedule() {
         // given:
         var mockSubject = mock(ScheduleStore.class);
 

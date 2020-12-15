@@ -407,7 +407,6 @@ public class MerkleScheduleTest {
 
     private String signersToString() {
         return signers
-                .entrySet()
                 .stream()
                 .map(MiscUtils::describe)
                 .collect(Collectors.joining(", "));

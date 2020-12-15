@@ -247,12 +247,12 @@ public interface TxnHandlingScenario {
 
 		var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
 
-		var immutableSchedule = new MerkleSchedule(null, 0, null, null);
+		var immutableSchedule = new MerkleSchedule(null, null, null);
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_IMMUTABLE))
 				.willReturn(KNOWN_SCHEDULE_IMMUTABLE);
 		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE)).willReturn(immutableSchedule);
 
-		var vanillaSchedule = new MerkleSchedule(null, 0, null, null);
+		var vanillaSchedule = new MerkleSchedule(null, null, null);
 		vanillaSchedule.setAdminKey(adminKey);
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_ADMIN))
 				.willReturn(KNOWN_SCHEDULE_ADMIN);
@@ -404,4 +404,6 @@ public interface TxnHandlingScenario {
 	ScheduleID UNKNOWN_SCHEDULE = asSchedule(UNKNOWN_SCHEDULE_ID);
 
 	KeyTree SCHEDULE_ADMIN_KT = withRoot(ed25519());
+	KeyTree SCHEDULE_SIGNER_ONE_KT = withRoot(ed25519());
+	KeyTree SCHEDULE_SIGNER_TWO_KT = withRoot(ed25519());
 }

@@ -216,4 +216,6 @@ enum ResponseCodeEnum {
   EMPTY_SIGNERS_LIST = 205; // No signers have been passed with the scheduled transaction entity
   EMPTY_SIGNATURES = 206; // No signers have been passed with the scheduled transaction entity
   INVALID_EXECUTION_TIMESTAMP = 207; // The scheduled transaction entity has an invalid execution timestamp
+  INVALID_SCHEDULE_PAYER_ID = 208; // The provided Scheduled Payer does not exist
+  INVALID_SCHEDULE_ACCOUNT_ID = 209; // The Schedule Create Transaction TransactionID account does not exist
 }
