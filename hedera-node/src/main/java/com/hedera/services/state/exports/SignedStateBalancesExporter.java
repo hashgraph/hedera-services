@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
@@ -118,8 +119,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 					summary.getTotalFloat(),
 					expectedFloat));
 		}
-
-		var csvLoc = lastUsedExportDir + when + "_Balances.csv";
+		var csvLoc = lastUsedExportDir + when.toString().replace(":", "_") + "_Balances.csv";
 		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, when);
 		if (exportSucceeded) {
 			tryToSign(csvLoc);

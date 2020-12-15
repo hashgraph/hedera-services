@@ -19,6 +19,23 @@ commands:
             pip3 -q install matplotlib;
             sudo apt-get install -y python3-setuptools;
             pip3 install awscli;
+      - run:
+          name: Install gcloud cli
+          command: |
+            apt-get update || apt-get update;
+            curl https://sdk.cloud.google.com > install.sh;
+            bash install.sh --disable-prompts;
+      - run:
+          name: Authenticate gcloud cli
+          command: |
+            echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc;
+            source /root/google-cloud-sdk/path.bash.inc;
+            echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
+            gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
+            gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
+            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
+
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
     steps:
@@ -510,6 +527,22 @@ commands:
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
                 '/repo/.circleci/scripts/scan-logs-for-iss.sh \
                     << parameters.iss-pattern-sh >>'
+
+  run-jrs-experiment:
+    description: Run JRS experiment json
+    parameters:
+      experiment-name:
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: Run experiment << parameters.experiment-name >>
+          no_output_timeout: 30m
+          command: |
+            cd /swirlds-platform/regression;
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.experiment-name >> /repo
+
   run-eet-suites:
     description: Run end-to-end tests
     parameters:
@@ -903,6 +936,27 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Daily-Services-Crypto-Update-5N-1C"
+          test-name: "AWS-Daily-Services-Crypto-Update-5N-1C.json"
+
+  GCP-Daily-Services-Crypto-Update-5N-1C:
+    triggers:
+      - schedule:
+          cron: "35 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-update-node-tests:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Crypto-Update-5N-1C"
 
   AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
@@ -923,6 +977,27 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C"
+          test-name: "AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C.json"
+
+  GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
+    triggers:
+      - schedule:
+          cron: "5 5 * * 6,0"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - weekly-run-crypto-transfer-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C"
 
   AWS-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
@@ -943,7 +1018,27 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Weekly-Services-HCS-Restart-Performance-15N-15C"
+          test-name: "AWS-Daily-Services-Comp-Basic-4N-1C.json"
 
+  GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
+    triggers:
+      - schedule:
+          cron: "5 10 * * 6,0"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - weekly-run-HCS-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Weekly-Services-HCS-Restart-Performance-15N-15C"
 
   AWS-Daily-Services-Comp-NetError-4N-1C:
     triggers:
@@ -964,6 +1059,27 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Daily-Services-Comp-NetError-4N-1C"
+          test-name: "AWS-Daily-Services-Comp-NetError-4N-1C.json"
+
+  GCP-Daily-Services-Comp-NetError-4N-1C:
+    triggers:
+      - schedule:
+          cron: "20 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-network-error-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
 
 # This workflow will be running normally in master branch on a daily basis
   AWS-Daily-Services-Crypto-Migration-4N-1C:
@@ -985,6 +1101,28 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Daily-Services-Crypto-Migration-4N-1C"
+          test-name: "AWS-Daily-Services-Crypto-Migration-4N-1C.json"
+  # This workflow will be running normally in master branch on a daily basis
+
+  GCP-Daily-Services-Crypto-Migration-4N-1C:
+    triggers:
+      - schedule:
+          cron: "35 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-testnet-migration-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Crypto-Migration-4N-1C"
 
 # The mainnet migration test needs to be run in a 13-node test network.
 # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
@@ -1028,6 +1166,27 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Daily-Services-Crypto-Restart-4N-1C"
+          test-name: "AWS-Daily-Services-Crypto-Restart-4N-1C.json"
+
+  GCP-Daily-Services-Crypto-Restart-4N-1C:
+    triggers:
+      - schedule:
+          cron: "5 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-software-update-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Crypto-Restart-4N-1C"
 
   AWS-Daily-Services-Recovery-4N-1C:
     triggers:
@@ -1048,6 +1207,27 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Daily-Services-Recovery-4N-1C"
+          test-name: "AWS-Daily-Services-Recovery-4N-1C.json"
+
+  GCP-Daily-Services-Recovery-4N-1C:
+    triggers:
+      - schedule:
+          cron: "35 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-state-recover-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Recovery-4N-1C"
 
   AWS-Daily-Services-Comp-Basic-Performance-4N-4C:
     triggers:
@@ -1068,6 +1248,27 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Daily-Services-Comp-Basic-Performance-4N-4C"
+          test-name: "AWS-Daily-Services-Comp-Basic-Performance-4N-4C.json"
+
+  GCP-Daily-Services-Comp-Basic-Performance-4N-4C:
+    triggers:
+      - schedule:
+          cron: "35 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C"
 
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
@@ -1088,6 +1289,27 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Daily-Services-Comp-Restart-Performance-6N-6C"
+          test-name: "AWS-Daily-Services-Comp-Restart-Performance-6N-6C.json"
+
+  GCP-Daily-Services-Comp-Restart-Performance-6N-6C:
+    triggers:
+      - schedule:
+          cron: "35 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
 
   AWS-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
@@ -1108,6 +1330,27 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "AWS-Daily-Services-Comp-Reconnect-4N-1C"
+          test-name: "AWS-Daily-Services-Comp-Reconnect-4N-1C.json"
+
+  GCP-Daily-Services-Comp-Reconnect-4N-1C:
+    triggers:
+      - schedule:
+          cron: "5 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-reconnect-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-Reconnect-4N-1C"
 
   nightly-simulate-network-outage:
     triggers:
@@ -1598,21 +1841,21 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
-            
+
   run-update-node-tests:
     parameters:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Daily-Services-Crypto-Update-5N-1C.json"
     executor:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run update node test
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Crypto-Update-5N-1C.json /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of update node tests to AWS
@@ -1628,15 +1871,15 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - run:
-          name: Performance regression
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Basic-Performance-4N-4C.json /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of performance regression to AWS
@@ -1652,15 +1895,15 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Daily-Services-Comp-NetError-4N-1C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run network error regression tests
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-NetError-4N-1C.json /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of network error regression to AWS
@@ -1676,6 +1919,9 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Daily-Services-Crypto-Migration-4N-1C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
@@ -1690,7 +1936,8 @@ jobs:
           command: |
             cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Crypto-Migration-4N-1C.json /repo
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.test-name >> /repo
 
       - run:
           name: Sync results of public testnet migration test to AWS
@@ -1737,16 +1984,15 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Daily-Services-Crypto-Restart-4N-1C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run Software Update regression tests
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Crypto-Restart-4N-1C.json /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of software update regression to AWS
@@ -1762,16 +2008,15 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Daily-Services-Recovery-4N-1C.json"
     executor:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run state recover regression tests
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Recovery-4N-1C.json /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of state recover regression to AWS
@@ -1787,6 +2032,9 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C.json"
     executor:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
@@ -1795,12 +2043,9 @@ jobs:
           name: Modify Payer account for Public testnet start from saved state test
           command: |
             echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
-      - run:
-          name: Run start from saved state regression tests
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Restart-Performance-6N-6C.json /repo
+
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of software update regression to AWS
@@ -1816,16 +2061,15 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Daily-Services-Comp-Reconnect-4N-1C.json"
     executor:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
     steps:
-      - run:
-          name: Run reconnect regression tests
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/AWS-Daily-Services-Comp-Reconnect-4N-1C.json /repo
+      - run-jrs-experiment:
+          experiment-name: << parameters.test-name >>
 
       - run:
           name: Sync results of reconnect regression to AWS
@@ -1841,6 +2085,9 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C.json"
     executor:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
@@ -1855,7 +2102,8 @@ jobs:
           no_output_timeout: 120m
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/weekly/AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C.json /repo
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/weekly/<< parameters.test-name >> /repo
 
       - run:
           name: Sync results of software update regression to AWS
@@ -1871,6 +2119,9 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      test-name:
+        type: string
+        default: "GCP-Weekly-Services-HCS-Restart-Performance-15N-15C.json"
     executor:
       name: build-executor
       workflow-name: << parameters.workflow-name >>
@@ -1885,7 +2136,8 @@ jobs:
           no_output_timeout: 180m
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/weekly/AWS-Weekly-Services-HCS-Restart-Performance-15N-15C.json /repo
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/weekly/<< parameters.test-name >> /repo
 
       - run:
           name: Sync results of software update regression to AWS
@@ -1895,7 +2147,6 @@ jobs:
 
       - store_artifacts:
           path: /results.tar.gz
-
 
   build-platform-and-services:
     parameters:

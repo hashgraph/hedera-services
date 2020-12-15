@@ -51,6 +51,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
@@ -124,10 +125,10 @@ class BackedSystemAccountsCreatorTest {
 				accountWith(2),
 				accountWith(3),
 				accountWith(4)));
-		given(backingAccounts.getUnsafeRef(accountWith(1))).willReturn(expectedWith(stdBalance));
-		given(backingAccounts.getUnsafeRef(accountWith(2))).willReturn(expectedWith(treasuryBalance));
-		given(backingAccounts.getUnsafeRef(accountWith(3))).willReturn(expectedWith(nodeBalance));
-		given(backingAccounts.getUnsafeRef(accountWith(4))).willReturn(expectedWith(stdBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(1))).willReturn(withExpectedBalance(stdBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(2))).willReturn(withExpectedBalance(treasuryBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(3))).willReturn(withExpectedBalance(nodeBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(4))).willReturn(withExpectedBalance(stdBalance));
 
 		subject = new BackedSystemAccountsCreator(
 				hederaNums,
@@ -179,7 +180,7 @@ class BackedSystemAccountsCreatorTest {
 		subject.ensureSystemAccounts(backingAccounts, book);
 
 		// then:
-		verify(backingAccounts).put(accountWith(3), expectedWith(nodeBalance));
+		verify(backingAccounts).put(accountWith(3), withExpectedBalance(nodeBalance));
 	}
 
 	@Test
@@ -192,7 +193,7 @@ class BackedSystemAccountsCreatorTest {
 		subject.ensureSystemAccounts(backingAccounts, book);
 
 		// then:
-		verify(backingAccounts).put(accountWith(4), expectedWith(stdBalance));
+		verify(backingAccounts).put(accountWith(4), withExpectedBalance(stdBalance));
 	}
 
 	@Test
@@ -205,7 +206,18 @@ class BackedSystemAccountsCreatorTest {
 		subject.ensureSystemAccounts(backingAccounts, book);
 
 		// then:
-		verify(backingAccounts).put(accountWith(2), expectedWith(treasuryBalance));
+		verify(backingAccounts).put(accountWith(2), withExpectedBalance(treasuryBalance));
+	}
+
+	@Test
+	public void createsMissingSpecialAccounts() throws NegativeAccountBalanceException{
+		givenMissingSpecialAccounts();
+		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
+
+		subject.ensureSystemAccounts(backingAccounts, book);
+
+		verify(backingAccounts).put(accountWith(900), withExpectedBalance(0));
+		verify(backingAccounts).put(accountWith(1000), withExpectedBalance(0));
 	}
 
 	@Test
@@ -233,6 +245,7 @@ class BackedSystemAccountsCreatorTest {
 		given(backingAccounts.contains(accountWith(2L))).willReturn(true);
 		given(backingAccounts.contains(accountWith(3L))).willReturn(true);
 		given(backingAccounts.contains(accountWith(4L))).willReturn(false);
+		givenAllPresentSpecialAccounts();
 	}
 
 	private void givenMissingTreasury() {
@@ -240,6 +253,7 @@ class BackedSystemAccountsCreatorTest {
 		given(backingAccounts.contains(accountWith(2L))).willReturn(false);
 		given(backingAccounts.contains(accountWith(3L))).willReturn(true);
 		given(backingAccounts.contains(accountWith(4L))).willReturn(true);
+		givenAllPresentSpecialAccounts();
 	}
 
 	private void givenMissingNode() {
@@ -247,13 +261,28 @@ class BackedSystemAccountsCreatorTest {
 		given(backingAccounts.contains(accountWith(2L))).willReturn(true);
 		given(backingAccounts.contains(accountWith(3L))).willReturn(false);
 		given(backingAccounts.contains(accountWith(4L))).willReturn(true);
+		givenAllPresentSpecialAccounts();
+	}
+
+	private void givenAllPresentSpecialAccounts() {
+		given(backingAccounts.contains(
+				argThat(accountID -> (900 <= accountID.getAccountNum() && accountID.getAccountNum() <= 1000)))
+		).willReturn(true);
+	}
+
+	private void givenMissingSpecialAccounts() {
+		given(backingAccounts.contains(
+				argThat(accountID -> (accountID.getAccountNum() != 900 && accountID.getAccountNum() != 1000)))
+		).willReturn(true);
+		given(backingAccounts.contains(accountWith(900L))).willReturn(false);
+		given(backingAccounts.contains(accountWith(1000L))).willReturn(false);
 	}
 
 	private AccountID accountWith(long num) {
-		return IdUtils.asAccount(String.format("1.2.%d", num));
+		return IdUtils.asAccount(String.format("%d.%d.%d", shard, realm, num));
 	}
 
-	private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
+	private MerkleAccount withExpectedBalance(long balance) throws NegativeAccountBalanceException {
 		MerkleAccount hAccount = new HederaAccountCustomizer()
 				.isReceiverSigRequired(false)
 				.proxy(EntityId.MISSING_ENTITY_ID)

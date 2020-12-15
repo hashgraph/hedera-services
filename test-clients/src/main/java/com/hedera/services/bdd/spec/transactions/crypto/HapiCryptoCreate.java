@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -41,6 +42,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
@@ -55,6 +57,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	 * insufficient transaction fee precheck
 	 */
 	private boolean recharging = false;
+	private boolean advertiseCreation = false;
 	/** The time window (unit of second) of not doing another recharge if just recharged recently */
 	private Optional<Integer> rechargeWindow = Optional.empty();
 	private String account;
@@ -77,6 +80,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	@Override
 	protected Key lookupKey(HapiApiSpec spec, String name) {
 		return name.equals(account) ? key : spec.registry().getKey(name);
+	}
+
+	public HapiCryptoCreate advertisingCreation() {
+		advertiseCreation = true;
+		return this;
 	}
 
 	public HapiCryptoCreate(String account) {
@@ -191,6 +199,15 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		spec.registry().saveKey(account, key);
 		spec.registry().saveAccountId(account, lastReceipt.getAccountID());
 		receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
+
+		if (advertiseCreation) {
+			String banner = "\n\n" + bannerWith(
+					String.format(
+							"Created account '%s' with id '0.0.%d'.",
+							account,
+							lastReceipt.getAccountID().getAccountNum()));
+			log.info(banner);
+		}
 	}
 
 	@Override

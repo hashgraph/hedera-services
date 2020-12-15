@@ -69,6 +69,9 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			} else {
 				var outcome = store.mint(id, op.getAmount());
 				txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+				if(outcome == OK) {
+					txnCtx.setNewTotalSupply(store.get(id).totalSupply());
+				}
 			}
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);

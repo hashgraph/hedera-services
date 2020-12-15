@@ -46,6 +46,7 @@ import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
+import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -78,6 +79,7 @@ import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.perf.TokenRelStatusChanges;
 import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
 import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
@@ -88,6 +90,7 @@ import com.hedera.services.bdd.suites.reconnect.SubmitMessagesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateChangesAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
@@ -203,6 +206,7 @@ public class SuiteRunner {
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
 		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
+		put("TokenRelChangesLoad", aof(new TokenRelStatusChanges()));
 		put("FileUpdateLoadTest", aof(new FileUpdateLoadTest()));
 		put("ContractCallLoadTest", aof(new ContractCallLoadTest()));
 		put("SubmitMessageLoadTest", aof(new SubmitMessageLoadTest()));
@@ -223,6 +227,7 @@ public class SuiteRunner {
 		put("ValidateAppPropertiesStateAfterReconnect", aof(new ValidateAppPropertiesStateAfterReconnect()));
 		put("ValidateFeeScheduleStateAfterReconnect", aof(new ValidateFeeScheduleStateAfterReconnect()));
 		put("ValidateExchangeRateStateAfterReconnect", aof(new ValidateExchangeRateStateAfterReconnect()));
+		put("ValidateChangesAfterReconnect", aof(new ValidateChangesAfterReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
@@ -248,6 +253,7 @@ public class SuiteRunner {
 		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
 		put("TokenAssociationSpecs", aof(new TokenAssociationSpecs()));
 		/* Functional tests - CRYPTO */
+		put("CryptoTransferSuite", aof(new CryptoTransferSuite()));
 		put("CryptoDeleteSuite", aof(new CryptoDeleteSuite()));
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
