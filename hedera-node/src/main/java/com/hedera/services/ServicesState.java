@@ -168,7 +168,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		if (scheduleTxs() == null) {
 			setChild(ChildIndices.SCHEDULE_TXS,
 					new FCMap<>(new MerkleEntityId.Provider(), MerkleSchedule.LEGACY_PROVIDER));
-			log.info("Created scheduled txs FCMap after <= 1.0.0 state restoration");
+			log.info("Created scheduled txs FCMap after <= 0.10.0 state restoration");
 		}
 	}
 
