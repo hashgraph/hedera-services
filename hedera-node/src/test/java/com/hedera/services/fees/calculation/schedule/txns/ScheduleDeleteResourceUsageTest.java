@@ -19,7 +19,7 @@ public class ScheduleDeleteResourceUsageTest {
     TransactionBody scheduleDeleteTxn;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    private void setup() {
         scheduleDeleteTxn = mock(TransactionBody.class);
         given(scheduleDeleteTxn.hasScheduleDelete()).willReturn(true);
 
