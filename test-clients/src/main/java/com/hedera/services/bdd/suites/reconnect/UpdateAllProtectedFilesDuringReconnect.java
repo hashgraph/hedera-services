@@ -53,9 +53,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class ValidateChangesAfterReconnect extends HapiApiSuite {
+public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 
-	private static final Logger log = LogManager.getLogger(ValidateChangesAfterReconnect.class);
+	private static final Logger log = LogManager.getLogger(UpdateAllProtectedFilesDuringReconnect.class);
 
 	public static void main(String... args) {
 		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
@@ -64,21 +64,22 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 	private static final String APP_FILE_REGISTRY = "AppPropertiesInRegistry";
 	private static final String API_FILE_REGISTRY = "ApiPropertiesInRegistry";
 	private static final String RATES_FILE_REGISTRY = "ExchangeRatesInRegistry";
+	private static final String FEES_FILE_REGISTRY = "FeeSchedulesInRegistry";
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				validateChangesAfterReconnect()
+				updateAllProtectedFilesDuringReconnect()
 		);
 	}
 
-	private HapiApiSpec validateChangesAfterReconnect() {
+	private HapiApiSpec updateAllProtectedFilesDuringReconnect() {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
 		final String transactionFeeid = "authorizedTxn";
 		final String nonUpdatableFile = "nonUpdatableFile";
 		final long newFee = 159_588_904;
 
-		return customHapiSpec("validateChangesAfterReconnect")
+		return customHapiSpec("UpdateAllProtectedFilesDuringReconnect")
 				.withProperties(Map.of(
 						"txn.start.offset.secs", "-5")
 				)
@@ -86,6 +87,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 						saveFileToRegistry(APP_PROPERTIES, APP_FILE_REGISTRY),
 						saveFileToRegistry(API_PERMISSIONS, API_FILE_REGISTRY),
 						saveFileToRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY),
+						saveFileToRegistry(FEE_SCHEDULE, FEES_FILE_REGISTRY),
 
 						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
@@ -113,7 +115,7 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 											spec.registry().saveBytes("newRates", newRates);
 											return newRates;
 										}
-								).payingWith(MASTER),
+								).payingWith(SYSTEM_ADMIN),
 
 						makeFree(CryptoGetInfo),
 
@@ -135,12 +137,12 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.3")
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.saveToRegistry(fileInfoRegistry),
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.6")
-								.payingWith(MASTER)
+								.payingWith(SYSTEM_ADMIN)
 								.hasContents(fileInfoRegistry),
 
 						fileUpdate(nonUpdatableFile)
@@ -174,7 +176,8 @@ public class ValidateChangesAfterReconnect extends HapiApiSuite {
 
 						restoreFileFromRegistry(APP_PROPERTIES, APP_FILE_REGISTRY),
 						restoreFileFromRegistry(API_PERMISSIONS, API_FILE_REGISTRY),
-						restoreFileFromRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY)
+						restoreFileFromRegistry(EXCHANGE_RATES, RATES_FILE_REGISTRY),
+						restoreFileFromRegistry(FEE_SCHEDULE, FEES_FILE_REGISTRY)
 				);
 	}
 

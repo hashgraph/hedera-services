@@ -46,6 +46,8 @@ public class FeeCalculator {
 	final FeeBuilder fees = new FeeBuilder();
 	final private FeesAndRatesProvider provider;
 
+	private int tokenTransferUsageMultiplier = 1;
+
 	public FeeCalculator(HapiSpecSetup setup, FeesAndRatesProvider provider) {
 		this.setup = setup;
 		this.provider = provider;
@@ -56,6 +58,7 @@ public class FeeCalculator {
 		feeSchedule.getTransactionFeeScheduleList().stream().forEach(feeData -> {
 			opFeeData.put(feeData.getHederaFunctionality(), feeData.getFeeData());
 		});
+		tokenTransferUsageMultiplier = setup.feesTokenTransferUsageMultiplier();
 	}
 
 	public long maxFeeTinyBars() {
@@ -106,5 +109,13 @@ public class FeeCalculator {
 		int size = getSignatureSize(txn);
 		int totalNumSigs = getSignatureCount(txn);
 		return new SigValueObj(totalNumSigs, numPayerSigs, size);
+	}
+
+	public int tokenTransferUsageMultiplier() {
+		return tokenTransferUsageMultiplier;
+	}
+
+	public void setTokenTransferUsageMultiplier(int tokenTransferUsageMultiplier) {
+		this.tokenTransferUsageMultiplier = tokenTransferUsageMultiplier;
 	}
 }

@@ -196,12 +196,19 @@ public class HapiApiSpec implements Runnable {
 		}
 	}
 
-	private boolean init() {
+	public boolean tryReinitializingFees() {
 		try {
 			ratesProvider.init();
 			feeCalculator.init();
 		} catch (Throwable t) {
-			log.warn("'" + name + "' failed to initialize, being skipped!", t);
+			log.error("Fees failed to initialize!", t);
+			return false;
+		}
+		return true;
+	}
+
+	private boolean init() {
+		if (!tryReinitializingFees()) {
 			status = ERROR;
 			return false;
 		}
