@@ -176,7 +176,7 @@ pp = pprint.PrettyPrinter(indent=4)
 
 CONST_PAUSE = "GC Pauses"
 SEC_TRANS_H = "secTransH"
-SEC_TRANS_H_2SEC = "secTransH2Sec"
+SEC_TRANS_H_10SEC = "secTransH10Sec"
 
 
 
@@ -1051,7 +1051,7 @@ def draw_subplot(stat_name, fig_count):
     LINE_STYLES = ['solid', 'dashed']
     NUM_STYLES = len(LINE_STYLES)
     stat_name_local = stat_name
-    if stat_name_local == SEC_TRANS_H_2SEC:
+    if stat_name_local == SEC_TRANS_H_10SEC:
         stat_name_local = SEC_TRANS_H
     data_dict = stat_data_dict[stat_name_local]
     if len(data_dict) > 0:
@@ -1115,7 +1115,7 @@ def draw_subplot(stat_name, fig_count):
 
                 # now when stat is secTransH, we have to trim the first 2 seconds off as well.
                 secTransHTimeStampIndex = 0
-                if stat_name == SEC_TRANS_H_2SEC:
+                if stat_name == SEC_TRANS_H_10SEC:
                     # get the timeStamp for this non zero value in sampled_values
                     nonZeroTimeStamp = sampled_time[0]
                     for i in range(0, len(sampled_values)):
@@ -1125,7 +1125,7 @@ def draw_subplot(stat_name, fig_count):
 
                     # increment 2 seconds to this and find the index in sampled_time
                     for i in range(0, len(sampled_time)):
-                        if sampled_time[i] >= nonZeroTimeStamp+2:
+                        if sampled_time[i] >= nonZeroTimeStamp+10:
                             secTransHTimeStampIndex = i
                             break
                 xlables_new = [x / 60 for x in sampled_time]  # seconds to epoch minutes
@@ -1158,7 +1158,7 @@ def draw_subplot(stat_name, fig_count):
             sub_axes[row, column].legend(line_ref, nodeid_ref)
             number_array_min_max_avg(stat_name_local, accumulated_values)
 
-        if stat_name == SEC_TRANS_H_2SEC:
+        if stat_name == SEC_TRANS_H_10SEC:
             sub_axes[row, column].set_title(stat_name)
         else:
             sub_axes[row, column].set_title(stat_name_local)
@@ -1169,7 +1169,8 @@ def draw_subplot(stat_name, fig_count):
 
 # update subplot on the page
 def draw_page(page_num):
-    for i in range(fig_per_page):
+    i = 0
+    while i < fig_per_page:
         index = page_num * fig_per_page + i + 1  # skip the first timestamp
         try:
             if index < total_figures:
@@ -1179,13 +1180,14 @@ def draw_page(page_num):
                 if stat_key == SEC_TRANS_H:
                     # skip a plot as we add a second plot for secTransH skipping first 2 seconds
                     i = i + 1
-                    draw_subplot(SEC_TRANS_H_2SEC, i)
+                    draw_subplot(SEC_TRANS_H_10SEC, i)
                 sub_axes[math.floor(i / fig_per_row), i % fig_per_row].set_visible(True)
             else:
                 # clear the subplot
                 sub_axes[math.floor(i / fig_per_row), i % fig_per_row].set_visible(False)
         except IndexError:
             print(" Index error, check default_stat_names may have repeated names ")
+        i = i + 1
 
     print("-----------------------")
 
