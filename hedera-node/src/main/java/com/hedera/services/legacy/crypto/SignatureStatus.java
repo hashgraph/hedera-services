@@ -70,12 +70,12 @@ public class SignatureStatus {
 
   public SignatureStatus(final SignatureStatusCode statusCode, final ResponseCodeEnum responseCode,
                          final boolean handlingTransaction, final TransactionID transactionID,
-                         final ScheduleID tokenID) {
+                         final ScheduleID scheduleID) {
     this.statusCode = statusCode;
     this.responseCode = responseCode;
     this.handlingTransaction = handlingTransaction;
     this.transactionId = transactionID;
-    this.scheduleID = tokenID;
+    this.scheduleID = scheduleID;
   }
 
   public ResponseCodeEnum getResponseCode() {

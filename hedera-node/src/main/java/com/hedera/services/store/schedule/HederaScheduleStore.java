@@ -111,7 +111,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		schedules.get().replace(key, schedule);
 		txHashToEntityId.remove(hex(schedule.transactionBody()));
 		if (thrown != null) {
-			throw new IllegalArgumentException("Token change failed unexpectedly!", thrown);
+			throw new IllegalArgumentException("Schedule change failed unexpectedly!", thrown);
 		}
 	}
 

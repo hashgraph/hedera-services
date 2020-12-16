@@ -33,6 +33,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 
 /**
@@ -55,6 +56,7 @@ public class SafeLookupResult<T> {
 		KNOWN_FAILURES.put(IMMUTABLE_CONTRACT, new SafeLookupResult<>(IMMUTABLE_CONTRACT));
 		KNOWN_FAILURES.put(INVALID_TOPIC, new SafeLookupResult<>(INVALID_TOPIC));
 		KNOWN_FAILURES.put(MISSING_AUTORENEW_ACCOUNT, new SafeLookupResult<>(MISSING_AUTORENEW_ACCOUNT));
+		KNOWN_FAILURES.put(MISSING_SCHEDULE, new SafeLookupResult<>(MISSING_SCHEDULE));
 	}
 
 	private SafeLookupResult(KeyOrderingFailure failure) {

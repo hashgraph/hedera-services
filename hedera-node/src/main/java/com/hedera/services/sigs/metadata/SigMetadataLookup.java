@@ -35,6 +35,7 @@ import java.util.function.Function;
 import static com.hedera.services.sigs.metadata.ScheduleSigningMetadata.from;
 import static com.hedera.services.sigs.metadata.TokenSigningMetadata.from;
 import static com.hedera.services.sigs.metadata.lookups.SafeLookupResult.failure;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 
 /**
@@ -57,7 +58,7 @@ public interface SigMetadataLookup {
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>>> SCHEDULE_REF_LOOKUP_FACTORY = scheduleStore -> ref -> {
 		ScheduleID id;
 		return ScheduleStore.MISSING_SCHEDULE.equals(id = scheduleStore.resolve(ref))
-				? failure(MISSING_TOKEN)
+				? failure(MISSING_SCHEDULE)
 				: new SafeLookupResult<>(from(scheduleStore.get(id)));
 	};
 

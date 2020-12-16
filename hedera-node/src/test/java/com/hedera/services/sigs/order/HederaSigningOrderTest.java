@@ -1707,7 +1707,7 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
-	public void getsScheduleSignWithMissingToken() throws Throwable {
+	public void getsScheduleSignWithMissingSchedule() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_SIGN_MISSING_SCHEDULE);
 

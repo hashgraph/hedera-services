@@ -22,7 +22,6 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.metadata.ScheduleSigningMetadata;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -47,7 +46,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -76,7 +74,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENE
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
-import static java.util.Collections.newSetFromMap;
 
 /**
  * Encapsulates all policies related to:
