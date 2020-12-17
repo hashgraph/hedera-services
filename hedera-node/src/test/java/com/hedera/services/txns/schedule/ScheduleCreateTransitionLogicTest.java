@@ -42,9 +42,6 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class ScheduleCreateTransitionLogicTest {
-    long thisSecond = 1_234_567L;
-    private Instant now = Instant.ofEpochSecond(thisSecond);
-
     private final CreationResult<ScheduleID> EMPTY_CREATION_RESULT = null;
     private final Optional<ScheduleID> EMPTY_SCHEDULE = Optional.empty();
     private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -219,6 +216,5 @@ public class ScheduleCreateTransitionLogicTest {
         this.scheduleCreateTxn = builder.build();
         given(accessor.getTxn()).willReturn(this.scheduleCreateTxn);
         given(txnCtx.accessor()).willReturn(accessor);
-        given(txnCtx.consensusTime()).willReturn(now);
     }
 }
