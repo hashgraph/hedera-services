@@ -208,6 +208,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 		} catch (Exception e) {
 			log.error("Something amiss with the expected records...", e);
 			Assert.fail("Impossible to meet expectations (on records)!");
+			//throw new E
 		}
 	}
 }
