@@ -112,14 +112,19 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey) {
-		var validity = accountCheck(payer, INVALID_SCHEDULE_PAYER_ID);
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Optional<AccountID> payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey) {
+		var validity = accountCheck(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
 		if (validity != OK) {
 			return failure(validity);
 		}
-		validity = accountCheck(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
-		if (validity != OK) {
-			return failure(validity);
+
+		var payerId = schedulingAccount;
+		if (payer.isPresent()) {
+			validity = accountCheck(payer.get(), INVALID_SCHEDULE_PAYER_ID);
+			if (validity != OK) {
+				return failure(validity);
+			}
+			payerId = payer.get();
 		}
 
 		pendingId = ids.newScheduleId(schedulingAccount);
@@ -130,7 +135,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 				schedulingTXValidStart
 		);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
-		pendingCreation.setPayer(EntityId.ofNullableAccountId(payer));
+		pendingCreation.setPayer(EntityId.ofNullableAccountId(payerId));
 
 		return success(pendingId);
 	}

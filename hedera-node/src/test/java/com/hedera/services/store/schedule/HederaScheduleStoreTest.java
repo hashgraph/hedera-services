@@ -310,7 +310,29 @@ public class HederaScheduleStoreTest {
         var outcome = subject
                 .createProvisionally(
                         transactionBody,
-                        payerId,
+                        Optional.of(payerId),
+                        schedulingAccount,
+                        schedulingTXValidStart,
+                        Optional.of(adminJKey));
+
+        // then:
+        assertEquals(OK, outcome.getStatus());
+        assertEquals(created, outcome.getCreated().get());
+        // and:
+        assertEquals(created, subject.pendingId);
+        assertEquals(expected, subject.pendingCreation);
+    }
+
+    @Test
+    public void createProvisionallyNullablePayer() {
+        var expected = new MerkleSchedule(transactionBody, entitySchedulingAccount, schedulingTXValidStart);
+        expected.setAdminKey(adminJKey);
+        expected.setPayer(entitySchedulingAccount);
+        // when:
+        var outcome = subject
+                .createProvisionally(
+                        transactionBody,
+                        Optional.empty(),
                         schedulingAccount,
                         schedulingTXValidStart,
                         Optional.of(adminJKey));
@@ -344,7 +366,7 @@ public class HederaScheduleStoreTest {
         var outcome = subject
                 .createProvisionally(
                         transactionBody,
-                        payerId,
+                        Optional.of(payerId),
                         schedulingAccount,
                         schedulingTXValidStart,
                         Optional.of(adminJKey));
@@ -367,7 +389,7 @@ public class HederaScheduleStoreTest {
         var outcome = subject
                 .createProvisionally(
                         transactionBody,
-                        payerId,
+                        Optional.of(payerId),
                         schedulingAccount,
                         schedulingTXValidStart,
                         Optional.of(adminJKey));
@@ -390,7 +412,7 @@ public class HederaScheduleStoreTest {
         var outcome = subject
                 .createProvisionally(
                         transactionBody,
-                        payerId,
+                        Optional.of(payerId),
                         schedulingAccount,
                         schedulingTXValidStart,
                         Optional.of(adminJKey));
@@ -413,7 +435,7 @@ public class HederaScheduleStoreTest {
         var outcome = subject
                 .createProvisionally(
                         transactionBody,
-                        payerId,
+                        Optional.of(payerId),
                         schedulingAccount,
                         schedulingTXValidStart,
                         Optional.of(adminJKey));

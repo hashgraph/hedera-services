@@ -52,7 +52,7 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 
 	void apply(ScheduleID id, Consumer<MerkleSchedule> change);
 
-	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey);
+	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Optional<AccountID> payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey);
 	ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> keys);
 
 	default ScheduleID resolve(ScheduleID id) {
