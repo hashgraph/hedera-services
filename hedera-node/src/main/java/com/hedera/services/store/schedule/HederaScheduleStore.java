@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -65,10 +66,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
-	Map<String, MerkleEntityId> txHashToEntityId = new HashMap<>(); // HashMap<hash(txBytes), MerkleEntityId>
+	Map<Integer, MerkleEntityId> txToEntityId = new HashMap<>(); // HashMap<hash(txBytes), MerkleEntityId>
 
 	ScheduleID pendingId = NO_PENDING_ID;
-	String pendingTxHash = null;
+	Integer pendingTxHashCode = null;
 	MerkleSchedule pendingCreation;
 
 	public HederaScheduleStore(
@@ -127,7 +128,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		pendingId = ids.newScheduleId(schedulingAccount);
-		pendingTxHash = hex(bodyBytes);
+		pendingTxHashCode = Arrays.hashCode(bodyBytes);
 		pendingCreation = new MerkleSchedule(
 				bodyBytes,
 				EntityId.ofNullableAccountId(schedulingAccount),
@@ -174,7 +175,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		apply(id, DELETION);
-		txHashToEntityId.remove(hex(schedule.transactionBody()));
+		txToEntityId.remove(Arrays.hashCode(schedule.transactionBody()));
 		return OK;
 	}
 
@@ -194,7 +195,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var id = fromScheduleId(pendingId);
 
 		schedules.get().put(id, pendingCreation);
-		txHashToEntityId.put(pendingTxHash, id);
+		txToEntityId.put(pendingTxHashCode, id);
 		resetPendingCreation();
 	}
 
@@ -212,7 +213,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void resetPendingCreation() {
 		pendingId = NO_PENDING_ID;
-		pendingTxHash = null;
+		pendingTxHashCode = null;
 		pendingCreation = null;
 	}
 
@@ -224,18 +225,18 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void buildTxBodyMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
 		var schedulesMap = schedules.get();
-		schedulesMap.forEach((key, value) -> txHashToEntityId.put(hex(value.transactionBody()), key));
+		schedulesMap.forEach((key, value) -> txToEntityId.put(Arrays.hashCode(value.transactionBody()), key));
 	}
 
 	public ScheduleID getScheduleIDByTransactionBody(byte[] bodyBytes) {
-		var txHash = hex(bodyBytes);
+		var txHashCode = Arrays.hashCode(bodyBytes);
 
-		if (txHash.equals(pendingTxHash)) {
+		if (pendingTxHashCode != null && pendingTxHashCode.equals(txHashCode)) {
 			return pendingId;
 		}
 
-		if (txHashToEntityId.containsKey(txHash)) {
-			return txHashToEntityId.get(txHash).toScheduleId();
+		if (txToEntityId.containsKey(txHashCode)) {
+			return txToEntityId.get(txHashCode).toScheduleId();
 		}
 
 		return null;
