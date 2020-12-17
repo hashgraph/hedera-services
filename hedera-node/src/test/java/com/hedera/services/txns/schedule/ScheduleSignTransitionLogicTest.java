@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
@@ -41,7 +42,7 @@ public class ScheduleSignTransitionLogicTest {
 
     private TransactionBody scheduleSignTxn;
 
-    private SignatureMap sigMap;
+    private SignatureMap.Builder sigMap;
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
@@ -117,25 +118,34 @@ public class ScheduleSignTransitionLogicTest {
 
     @Test
     public void failsOnInvalidScheduleId() {
-        givenCtx(true);
+        givenCtx(true, false);
 
         // expect:
         assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
     }
 
+    @Test
+    public void failsOnInvalidKeyEncoding() {
+        givenCtx(false, true);
+
+        // expect:
+        assertEquals(INVALID_KEY_ENCODING, subject.validate(scheduleSignTxn));
+    }
+
     private void givenValidTxnCtx() {
-        givenCtx(false);
+        givenCtx(false, false);
     }
 
     private void givenCtx(
-            boolean invalidScheduleId
+            boolean invalidScheduleId,
+            boolean invalidKeyEncoding
     ) {
         var keyPair = Ed25519PrivateKey.generate();
         this.sigMap = SignatureMap.newBuilder().addSigPair(
                 SignaturePair.newBuilder()
                         .setPubKeyPrefix(ByteString.copyFrom(keyPair.getPublicKey().toBytes()))
                         .build()
-        ).build();
+        );
 
         var builder = TransactionBody.newBuilder();
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()
@@ -144,6 +154,11 @@ public class ScheduleSignTransitionLogicTest {
 
         if (invalidScheduleId) {
             scheduleSign.clearSchedule();
+        }
+
+        if (invalidKeyEncoding) {
+            this.sigMap.clear().addSigPair(SignaturePair.newBuilder().setEd25519(ByteString.copyFromUtf8("some-invalid-signature")).build());
+            scheduleSign.setSigMap(this.sigMap);
         }
 
         builder.setScheduleSign(scheduleSign);
