@@ -71,7 +71,7 @@ import com.hedera.services.bdd.spec.stats.TxnObs;
 import io.grpc.StatusRuntimeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
+//import org.junit.Assert;
 
 import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
@@ -154,7 +154,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					continue;
 				}
 				log.error("Status resolution failed with unrecognized exception", e);
-				Assert.fail("Unable to resolve op status!");
+				//Assert.fail("Unable to resolve op status!");
 			}
 
 			/* Used by superclass to perform standard housekeeping. */
@@ -182,14 +182,21 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				if (permissiblePrechecks.get().contains(actualPrecheck)) {
 					expectedPrecheck = Optional.of(actualPrecheck);
 				} else {
-					Assert.fail(
-							String.format(
-									"Precheck was %s, not one of %s!",
-									actualPrecheck,
-									permissiblePrechecks.get()));
+//					Assert.fail(
+//							String.format(
+//									"Precheck was %s, not one of %s!",
+//									actualPrecheck,
+//									permissiblePrechecks.get()));
+					log.error(							String.format(
+							"Precheck was %s, not one of %s!",
+							actualPrecheck,
+							permissiblePrechecks.get()));
 				}
 			} else {
-				Assert.assertEquals("Wrong precheck status!", getExpectedPrecheck(), actualPrecheck);
+				//Assert.assertEquals("Wrong precheck status!", getExpectedPrecheck(), actualPrecheck);
+				if(getExpectedPrecheck() != actualPrecheck) {
+					log.error("Wrong precheck actual status {}, expecting {}", actualPrecheck, getExpectedPrecheck());
+				}
 			}
 		}
 		if (actualPrecheck != OK) {
@@ -234,14 +241,22 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			if (permissibleStatuses.get().contains(actualStatus)) {
 				expectedStatus = Optional.of(actualStatus);
 			} else {
-				Assert.fail(
+//				Assert.fail(
+//						String.format(
+//								"Status was %s, not one of %s!",
+//								actualStatus,
+//								permissibleStatuses.get()));
+				log.error(
 						String.format(
 								"Status was %s, not one of %s!",
 								actualStatus,
 								permissibleStatuses.get()));
 			}
 		} else {
-			Assert.assertEquals("Wrong status!", getExpectedStatus(), actualStatus);
+//			Assert.assertEquals("Wrong status!", getExpectedStatus(), actualStatus);
+			if(getExpectedStatus() != actualStatus) {
+				log.error("Wrong actual status {}, expecting {}", actualStatus, getExpectedStatus());
+			}
 		}
 		if (!deferStatusResolution) {
 			if (spec.setup().costSnapshotMode() != HapiApiSpec.CostSnapshotMode.OFF) {
@@ -306,10 +321,13 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		if (recordOfSubmission == null) {
 			lookupSubmissionRecord(spec);
 		}
-		Assert.assertEquals(
-				"Memo didn't come from submitted transaction!",
-				memo.get(),
-				recordOfSubmission.getMemo());
+//		Assert.assertEquals(
+//				"Memo didn't come from submitted transaction!",
+//				memo.get(),
+//				recordOfSubmission.getMemo());
+		if(!memo.get().equals(recordOfSubmission.getMemo())) {
+			log.error("Memo didn't come from submitted transaction! actual memo {}, recorded {}.", memo.get(), recordOfSubmission.getMemo());
+		}
 	}
 
 	@Override

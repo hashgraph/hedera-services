@@ -1275,11 +1275,12 @@ workflows:
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "30 0 * * *"
           filters:
             branches:
               only:
-                - master
+#                - master
+                - 00887-D-refactor-test-client-error-message-handling
     jobs:
       - build-platform-and-services
       - run-start-from-saved-state-regression:
@@ -1709,6 +1710,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 00887-D-refactor-test-client-error-message-handling
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -2274,7 +2276,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 00887-D-refactor-test-client-error-message-handling;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
