@@ -31,7 +31,7 @@ public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(
                     newSignedScheduleDelete()
-                            .deleting(KNOWN_SCHEDULE_ADMIN)
+                            .deleting(KNOWN_SCHEDULE_WITH_ADMIN)
                             .get()
             ));
         }
