@@ -152,9 +152,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			return SCHEDULE_WAS_DELETED;
 		}
 
-		for (JKey signer: signers) {
-			schedule.addSigner(signer);
-		}
+		schedule.addSigners(signers);
 
 		return OK;
 	}
