@@ -15,10 +15,16 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class ScheduleDeleteTransitionLogicTest {
@@ -43,6 +49,70 @@ public class ScheduleDeleteTransitionLogicTest {
         txnCtx = mock(TransactionContext.class);
 
         subject = new ScheduleDeleteTransitionLogic(validator, store, ledger, txnCtx);
+    }
+
+    @Test
+    public void followsHappyPath() {
+        // given:
+        givenValidTxnCtx();
+
+        // and:
+        given(store.delete(schedule)).willReturn(OK);
+
+        // when:
+        subject.doStateTransition();
+
+        // then
+        verify(store).delete(schedule);
+        verify(txnCtx).setStatus(SUCCESS);
+    }
+
+    @Test
+    public void capturesInvalidScheduleId() {
+        // given:
+        givenValidTxnCtx();
+
+        // and:
+        given(store.delete(schedule)).willReturn(INVALID_SCHEDULE_ID);
+
+        // when:
+        subject.doStateTransition();
+
+        // then
+        verify(store).delete(schedule);
+        verify(txnCtx).setStatus(INVALID_SCHEDULE_ID);
+    }
+
+    @Test
+    public void capturesImmutableSchedule() {
+        // given:
+        givenValidTxnCtx();
+
+        // and:
+        given(store.delete(schedule)).willReturn(SCHEDULE_IS_IMMUTABLE);
+
+        // when:
+        subject.doStateTransition();
+
+        // then
+        verify(store).delete(schedule);
+        verify(txnCtx).setStatus(SCHEDULE_IS_IMMUTABLE);
+    }
+
+    @Test
+    public void capturesAlreadyDeletedSchedule() {
+        // given:
+        givenValidTxnCtx();
+
+        // and:
+        given(store.delete(schedule)).willReturn(SCHEDULE_WAS_DELETED);
+
+        // when:
+        subject.doStateTransition();
+
+        // then
+        verify(store).delete(schedule);
+        verify(txnCtx).setStatus(SCHEDULE_WAS_DELETED);
     }
 
     @Test
@@ -81,5 +151,7 @@ public class ScheduleDeleteTransitionLogicTest {
         builder.setScheduleDelete(scheduleDelete);
 
         scheduleDeleteTxn = builder.build();
+        given(accessor.getTxn()).willReturn(scheduleDeleteTxn);
+        given(txnCtx.accessor()).willReturn(accessor);
     }
 }

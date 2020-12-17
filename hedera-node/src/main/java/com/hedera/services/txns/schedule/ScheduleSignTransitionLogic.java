@@ -1,22 +1,33 @@
 package com.hedera.services.txns.schedule;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleSignTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(ScheduleSignTransitionLogic.class);
@@ -49,8 +60,14 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
         }
     }
 
-    private void transitionFor(ScheduleSignTransactionBody op) {
-        // TODO: Implement transitionFor() functionality
+    private void transitionFor(ScheduleSignTransactionBody op) throws DecoderException {
+        Set<JKey> keys = new HashSet<>();
+        for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
+            keys.add(keyToJKey(signaturePair.getPubKeyPrefix()));
+        }
+
+        var outcome = store.addSigners(op.getSchedule(), keys);
+        txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
     }
 
     private void abortWith(ResponseCodeEnum cause) {
@@ -73,6 +90,23 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
         if (!op.hasSchedule()) {
             return INVALID_SCHEDULE_ID;
         }
+
+        for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
+            try {
+                if (keyToJKey(signaturePair.getPubKeyPrefix()).isValid()) {
+                    return INVALID_KEY;
+                }
+            }
+            catch (DecoderException e) {
+                return INVALID_KEY_ENCODING;
+            }
+        }
+
         return OK;
+    }
+
+    public JKey keyToJKey(ByteString prefix) throws DecoderException {
+        var key = Key.newBuilder().setEd25519(prefix).build();
+        return JKey.mapKey(key);
     }
 }

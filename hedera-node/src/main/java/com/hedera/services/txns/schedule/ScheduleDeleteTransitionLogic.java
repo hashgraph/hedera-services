@@ -17,6 +17,7 @@ import java.util.function.Predicate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleDeleteTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
@@ -50,7 +51,8 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
     }
 
     private void transitionFor(ScheduleDeleteTransactionBody op) {
-        // TODO: Implement transitionFor() functionality
+        var outcome = store.delete(op.getSchedule());
+        txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
     }
 
     private void abortWith(ResponseCodeEnum cause) {
