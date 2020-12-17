@@ -20,12 +20,8 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
@@ -55,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
-import static com.swirlds.common.CommonUtils.hex;
 
 /**
  * Provides a managing store for Scheduled Entities.
@@ -177,16 +172,6 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		apply(id, DELETION);
 		txToEntityId.remove(Arrays.hashCode(schedule.transactionBody()));
 		return OK;
-	}
-
-	@Override
-	public void setHederaLedger(HederaLedger ledger) {
-		super.setHederaLedger(ledger);
-	}
-
-	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		super.setAccountsLedger(accountsLedger);
 	}
 
 	@Override

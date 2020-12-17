@@ -24,11 +24,11 @@ public abstract class HederaStore {
         this.ids = ids;
     }
 
-    protected void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+    public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
         this.accountsLedger = accountsLedger;
     }
 
-    protected void setHederaLedger(HederaLedger hederaLedger) {
+    public void setHederaLedger(HederaLedger hederaLedger) {
         this.hederaLedger = hederaLedger;
     }
 
