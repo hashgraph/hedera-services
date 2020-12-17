@@ -216,17 +216,18 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		schedulesMap.forEach((key, value) -> txToEntityId.put(Arrays.hashCode(value.transactionBody()), key));
 	}
 
-	public ScheduleID getScheduleIDByTransactionBody(byte[] bodyBytes) {
+	@Override
+	public Optional<ScheduleID> getScheduleIDByTransactionBody(byte[] bodyBytes) {
 		var txHashCode = Arrays.hashCode(bodyBytes);
 
 		if (pendingTxHashCode != null && pendingTxHashCode.equals(txHashCode)) {
-			return pendingId;
+			return Optional.of(pendingId);
 		}
 
 		if (txToEntityId.containsKey(txHashCode)) {
-			return txToEntityId.get(txHashCode).toScheduleId();
+			return Optional.of(txToEntityId.get(txHashCode).toScheduleId());
 		}
 
-		return null;
+		return Optional.empty();
 	}
 }

@@ -45,9 +45,7 @@ public class ScheduleDeleteTransitionLogicTest {
         store = mock(ScheduleStore.class);
         ledger = mock(HederaLedger.class);
         accessor = mock(PlatformTxnAccessor.class);
-
         txnCtx = mock(TransactionContext.class);
-
         subject = new ScheduleDeleteTransitionLogic(validator, store, ledger, txnCtx);
     }
 

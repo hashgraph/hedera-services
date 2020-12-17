@@ -1,14 +1,11 @@
 package com.hedera.services.txns.schedule;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -22,6 +19,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.keys.KeysHelper.keyToJKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
@@ -103,10 +101,5 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
         }
 
         return OK;
-    }
-
-    public JKey keyToJKey(ByteString prefix) throws DecoderException {
-        var key = Key.newBuilder().setEd25519(prefix).build();
-        return JKey.mapKey(key);
     }
 }

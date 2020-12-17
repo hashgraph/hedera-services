@@ -55,6 +55,8 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Optional<AccountID> payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey);
 	ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> keys);
 
+	Optional<ScheduleID> getScheduleIDByTransactionBody(byte[] bodyBytes);
+
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;
 	}

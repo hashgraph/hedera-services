@@ -215,4 +215,5 @@ enum ResponseCodeEnum {
   INVALID_SCHEDULE_PAYER_ID = 204; // The provided Scheduled Payer does not exist
   INVALID_SCHEDULE_ACCOUNT_ID = 205; // The Schedule Create Transaction TransactionID account does not exist
   INVALID_KEY = 206;
+  SCHEDULE_ALREADY_PENDING = 207; // The Schedule is already created/pending
 }

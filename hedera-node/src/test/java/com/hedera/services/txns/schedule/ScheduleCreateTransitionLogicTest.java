@@ -1,9 +1,9 @@
 package com.hedera.services.txns.schedule;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -12,12 +12,12 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -37,34 +37,36 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class ScheduleCreateTransitionLogicTest {
+    long thisSecond = 1_234_567L;
+    private Instant now = Instant.ofEpochSecond(thisSecond);
+
+    private final CreationResult<ScheduleID> EMPTY_CREATION_RESULT = null;
+    private final Optional<ScheduleID> EMPTY_SCHEDULE = Optional.empty();
+    private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
+    private final Key invalidKey = Key.newBuilder().build();
+    private final boolean NO = false;
+    private final boolean YES = true;
+    private final ResponseCodeEnum NOT_OK = null;
+
     private OptionValidator validator;
     private ScheduleStore store;
     private HederaLedger ledger;
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
 
-    long thisSecond = 1_234_567L;
-    private Instant now = Instant.ofEpochSecond(thisSecond);
-
     private AccountID payer = IdUtils.asAccount("1.2.3");
-    private ScheduleID resultingSchedule = IdUtils.asSchedule("2.4.6");
+    private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
+    private CreationResult<ScheduleID> scheduleCreationResult = CreationResult.success(schedule);
 
     private TransactionBody scheduleCreateTxn;
-    final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-    final private Key invalidKey = Key.newBuilder().build();
-
-    private final boolean no = false;
-    private final boolean yes = true;
-
     private SignatureMap sigMap;
 
     private ScheduleCreateTransitionLogic subject;
-
-    private CreationResult created;
 
     @BeforeEach
     private void setup() {
@@ -92,34 +94,72 @@ public class ScheduleCreateTransitionLogicTest {
     public void followsHappyPath() {
         // given:
         givenValidTxnCtx();
-        var transactionBodyBytes = scheduleCreateTxn.toByteArray();
-        var now = RichInstant.fromJava(txnCtx.consensusTime());
-
-        JKey jAdminKey = null;
-        try {
-            jAdminKey = JKey.mapKey(key);
-        } catch (DecoderException e) {
-            e.printStackTrace();
-        }
 
         // and:
-        given(store.createProvisionally(
-                eq(this.scheduleCreateTxn.getScheduleCreation().getTransactionBody().toByteArray()),
-                eq(payer),
-                eq(payer),
-                eq(now),
-                eq(Optional.of(jAdminKey)))).willReturn(CreationResult.success(resultingSchedule));
+        given(store.getScheduleIDByTransactionBody(any())).willReturn(EMPTY_SCHEDULE);
+        given(store.createProvisionally(any(), any(), any(), any(), any())).willReturn(scheduleCreationResult);
+        given(store.addSigners(any(), any())).willReturn(OK);
+
         // when:
         subject.doStateTransition();
 
-        // then
-        verify(store).createProvisionally(
-                eq(this.scheduleCreateTxn.getScheduleCreation().getTransactionBody().toByteArray()),
-                eq(payer),
-                eq(payer),
-                eq(now),
-                eq(Optional.of(jAdminKey)));
+        // then:
+        verify(store).createProvisionally(any(), any(), any(), any(), any());
+        verify(store).addSigners(any(), any());
+        verify(store).commitCreation();
         verify(txnCtx).setStatus(SUCCESS);
+    }
+
+    @Test
+    public void capturesPendingScheduledTransaction() {
+        // given:
+        givenValidTxnCtx();
+
+        // and:
+        given(store.getScheduleIDByTransactionBody(any())).willReturn(Optional.of(schedule));
+
+        // then:
+        verify(store, never()).createProvisionally(any(), any(), any(), any(), any());
+        verify(store, never()).addSigners(any(), any());
+        verify(store, never()).commitCreation();
+        verify(txnCtx, never()).setStatus(SUCCESS);
+    }
+
+    @Test
+    public void capturesFailingCreateProvisionally() {
+        // given:
+        givenValidTxnCtx();
+
+        // and:
+        given(store.getScheduleIDByTransactionBody(any())).willReturn(EMPTY_SCHEDULE);
+        given(store.createProvisionally(any(), any(), any(), any(), any())).willReturn(EMPTY_CREATION_RESULT);
+
+        subject.doStateTransition();
+
+        // then:
+        verify(store).createProvisionally(any(), any(), any(), any(), any());
+        verify(store, never()).addSigners(any(), any());
+        verify(store, never()).commitCreation();
+        verify(txnCtx, never()).setStatus(SUCCESS);
+    }
+
+    @Test
+    public void capturesFailingSignersAddition() {
+        // given:
+        givenValidTxnCtx();
+
+        // and:
+        given(store.getScheduleIDByTransactionBody(any())).willReturn(EMPTY_SCHEDULE);
+        given(store.createProvisionally(any(), any(), any(), any(), any())).willReturn(CreationResult.success(schedule));
+        given(store.addSigners(any(), any())).willReturn(NOT_OK);
+
+        subject.doStateTransition();
+
+        // then:
+        verify(store).createProvisionally(any(), any(), any(), any(), any());
+        verify(store).addSigners(any(), any());
+        verify(store, never()).commitCreation();
+        verify(txnCtx, never()).setStatus(SUCCESS);
     }
 
     @Test
@@ -152,17 +192,22 @@ public class ScheduleCreateTransitionLogicTest {
             boolean invalidExecuteImmediately,
             boolean invalidAdminKey
             ) {
-        sigMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
+        var keyPair = Ed25519PrivateKey.generate();
+        this.sigMap = SignatureMap.newBuilder().addSigPair(
+                SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFrom(keyPair.getPublicKey().toBytes()))
+                        .build()
+        ).build();
 
         var builder = TransactionBody.newBuilder();
         var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
                 .setSigMap(sigMap)
                 .setAdminKey(key)
-                .setExecuteImmediately(yes)
+                .setExecuteImmediately(YES)
                 .setPayer(payer);
 
         if (invalidExecuteImmediately) {
-            scheduleCreate.setExecuteImmediately(no);
+            scheduleCreate.setExecuteImmediately(NO);
         }
 
         if (invalidAdminKey) {
