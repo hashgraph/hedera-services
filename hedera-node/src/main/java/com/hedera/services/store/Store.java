@@ -31,6 +31,10 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 
 import java.util.function.Consumer;
 
+/**
+ * Defines a generic type able to manage arbitrary entities.
+ *
+ */
 public interface Store<T, K> {
     K get(T id);
     boolean exists(T id);

@@ -12,6 +12,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+/**
+ * Provides an abstract store, having common functionality related to {@link EntityIdSource}, {@link HederaLedger}
+ * and {@link TransactionalLedger} for accounts.
+ *
+ */
 public abstract class HederaStore {
     protected final EntityIdSource ids;
 
