@@ -1275,7 +1275,7 @@ workflows:
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "30 0 * * *"
+          cron: "5 1 * * *"
           filters:
             branches:
               only:
