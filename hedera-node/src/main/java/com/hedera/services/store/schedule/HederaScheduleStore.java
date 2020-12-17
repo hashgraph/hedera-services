@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
 import static com.swirlds.common.CommonUtils.hex;
 
@@ -109,7 +110,6 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			thrown = e;
 		}
 		schedules.get().replace(key, schedule);
-		txHashToEntityId.remove(hex(schedule.transactionBody()));
 		if (thrown != null) {
 			throw new IllegalArgumentException("Schedule change failed unexpectedly!", thrown);
 		}
@@ -159,8 +159,23 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public ResponseCodeEnum delete(ScheduleID sID){
-		return ScheduleStore.super.delete(sID);
+	public ResponseCodeEnum delete(ScheduleID id){
+		var idRes = resolve(id);
+		if (idRes == MISSING_SCHEDULE) {
+			return INVALID_SCHEDULE_ID;
+		}
+
+		var schedule = get(id);
+		if (schedule.adminKey().isEmpty()) {
+			return SCHEDULE_IS_IMMUTABLE;
+		}
+		if (schedule.isDeleted()) {
+			return SCHEDULE_WAS_DELETED;
+		}
+
+		apply(id, DELETION);
+		txHashToEntityId.remove(hex(schedule.transactionBody()));
+		return OK;
 	}
 
 	@Override

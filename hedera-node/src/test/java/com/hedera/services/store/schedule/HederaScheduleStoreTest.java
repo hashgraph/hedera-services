@@ -482,16 +482,12 @@ public class HederaScheduleStoreTest {
     @Test
     public void rejectsDeletionMissingSchedule() {
         // given:
-        var mockSubject = mock(ScheduleStore.class);
-
-        given(mockSubject.resolve(created)).willReturn(ScheduleStore.MISSING_SCHEDULE);
-        willCallRealMethod().given(mockSubject).delete(created);
+        given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
         // when:
-        var outcome = mockSubject.delete(created);
+        var outcome = subject.delete(created);
 
         // then:
         assertEquals(INVALID_SCHEDULE_ID, outcome);
-        verify(mockSubject, never()).apply(any(), any());
     }
 }

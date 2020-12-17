@@ -58,22 +58,4 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;
 	}
-
-	default ResponseCodeEnum delete(ScheduleID id) {
-		var idRes = resolve(id);
-		if (idRes == MISSING_SCHEDULE) {
-			return INVALID_SCHEDULE_ID;
-		}
-
-		var schedule = get(id);
-		if (schedule.adminKey().isEmpty()) {
-			return SCHEDULE_IS_IMMUTABLE;
-		}
-		if (schedule.isDeleted()) {
-			return SCHEDULE_WAS_DELETED;
-		}
-
-		apply(id, DELETION);
-		return OK;
-	}
 }
