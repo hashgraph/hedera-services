@@ -60,7 +60,7 @@ public class GetScheduleInfoAnswerTest {
     @BeforeEach
     public void setup() {
         info = ScheduleInfo.newBuilder()
-                .setScheduleID(scheduleID)
+                .setSchedule(scheduleID)
                 .setPayer(payerAccount)
                 .setSchedulingAccount(schedulingAccount)
                 .build();

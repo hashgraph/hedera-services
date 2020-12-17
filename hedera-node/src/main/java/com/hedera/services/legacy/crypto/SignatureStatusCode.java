@@ -43,7 +43,8 @@ public enum SignatureStatusCode {
       "Failed to verify signature [ source = '%s', transactionId = '%s', accountId = '%s' ]"),
   INVALID_TOPIC_ID("Invalid Topic ID [ source = '%s', transactionId = '%s', topicId = '%s' ]"),
   INVALID_TOKEN_ID("Invalid Token ID [ source = '%s', transactionId = '%s', tokenId = '%s' ]"),
-  INVALID_AUTO_RENEW_ACCOUNT_ID("Invalid AutoRenew Account ID [ source = '%s', transactionId = '%s', accountId = '%s' ]");
+  INVALID_AUTO_RENEW_ACCOUNT_ID("Invalid AutoRenew Account ID [ source = '%s', transactionId = '%s', accountId = '%s' ]"),
+  INVALID_SCHEDULE_ID("Invalid Schedule ID [ source = '%s', transactionId = '%s', scheduleId = '%s' ]");
 
   private String message;
 
