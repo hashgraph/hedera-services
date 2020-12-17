@@ -147,11 +147,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		super.setAccountsLedger(accountsLedger);
-	}
-
-	@Override
 	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens) {
 		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);

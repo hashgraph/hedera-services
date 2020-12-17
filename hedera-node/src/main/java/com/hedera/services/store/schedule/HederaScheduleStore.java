@@ -20,12 +20,8 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
@@ -37,6 +33,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -52,8 +49,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
-import static com.swirlds.common.CommonUtils.hex;
 
 /**
  * Provides a managing store for Scheduled Entities.
@@ -64,10 +61,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
-	Map<String, MerkleEntityId> txHashToEntityId = new HashMap<>(); // HashMap<hash(txBytes), MerkleEntityId>
+	Map<Integer, MerkleEntityId> txToEntityId = new HashMap<>(); // HashMap<hash(txBytes), MerkleEntityId>
 
 	ScheduleID pendingId = NO_PENDING_ID;
-	String pendingTxHash = null;
+	Integer pendingTxHashCode = null;
 	MerkleSchedule pendingCreation;
 
 	public HederaScheduleStore(
@@ -109,32 +106,36 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			thrown = e;
 		}
 		schedules.get().replace(key, schedule);
-		txHashToEntityId.remove(hex(schedule.transactionBody()));
 		if (thrown != null) {
 			throw new IllegalArgumentException("Schedule change failed unexpectedly!", thrown);
 		}
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey) {
-		var validity = accountCheck(payer, INVALID_SCHEDULE_PAYER_ID);
-		if (validity != OK) {
-			return failure(validity);
-		}
-		validity = accountCheck(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Optional<AccountID> payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey) {
+		var validity = accountCheck(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
 		if (validity != OK) {
 			return failure(validity);
 		}
 
+		var payerId = schedulingAccount;
+		if (payer.isPresent()) {
+			validity = accountCheck(payer.get(), INVALID_SCHEDULE_PAYER_ID);
+			if (validity != OK) {
+				return failure(validity);
+			}
+			payerId = payer.get();
+		}
+
 		pendingId = ids.newScheduleId(schedulingAccount);
-		pendingTxHash = hex(bodyBytes);
+		pendingTxHashCode = Arrays.hashCode(bodyBytes);
 		pendingCreation = new MerkleSchedule(
 				bodyBytes,
 				EntityId.ofNullableAccountId(schedulingAccount),
 				schedulingTXValidStart
 		);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
-		pendingCreation.setPayer(EntityId.ofNullableAccountId(payer));
+		pendingCreation.setPayer(EntityId.ofNullableAccountId(payerId));
 
 		return success(pendingId);
 	}
@@ -151,26 +152,29 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			return SCHEDULE_WAS_DELETED;
 		}
 
-		for (JKey signer: signers) {
-			schedule.addSigner(signer);
-		}
+		schedule.addSigners(signers);
 
 		return OK;
 	}
 
 	@Override
-	public ResponseCodeEnum delete(ScheduleID sID){
-		return ScheduleStore.super.delete(sID);
-	}
+	public ResponseCodeEnum delete(ScheduleID id){
+		var idRes = resolve(id);
+		if (idRes == MISSING_SCHEDULE) {
+			return INVALID_SCHEDULE_ID;
+		}
 
-	@Override
-	public void setHederaLedger(HederaLedger ledger) {
-		super.setHederaLedger(ledger);
-	}
+		var schedule = get(id);
+		if (schedule.adminKey().isEmpty()) {
+			return SCHEDULE_IS_IMMUTABLE;
+		}
+		if (schedule.isDeleted()) {
+			return SCHEDULE_WAS_DELETED;
+		}
 
-	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		super.setAccountsLedger(accountsLedger);
+		apply(id, DELETION);
+		txToEntityId.remove(Arrays.hashCode(schedule.transactionBody()));
+		return OK;
 	}
 
 	@Override
@@ -179,7 +183,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var id = fromScheduleId(pendingId);
 
 		schedules.get().put(id, pendingCreation);
-		txHashToEntityId.put(pendingTxHash, id);
+		txToEntityId.put(pendingTxHashCode, id);
 		resetPendingCreation();
 	}
 
@@ -197,7 +201,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void resetPendingCreation() {
 		pendingId = NO_PENDING_ID;
-		pendingTxHash = null;
+		pendingTxHashCode = null;
 		pendingCreation = null;
 	}
 
@@ -209,18 +213,18 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void buildTxBodyMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
 		var schedulesMap = schedules.get();
-		schedulesMap.forEach((key, value) -> txHashToEntityId.put(hex(value.transactionBody()), key));
+		schedulesMap.forEach((key, value) -> txToEntityId.put(Arrays.hashCode(value.transactionBody()), key));
 	}
 
 	public ScheduleID getScheduleIDByTransactionBody(byte[] bodyBytes) {
-		var txHash = hex(bodyBytes);
+		var txHashCode = Arrays.hashCode(bodyBytes);
 
-		if (txHash.equals(pendingTxHash)) {
+		if (pendingTxHashCode != null && pendingTxHashCode.equals(txHashCode)) {
 			return pendingId;
 		}
 
-		if (txHashToEntityId.containsKey(txHash)) {
-			return txHashToEntityId.get(txHash).toScheduleId();
+		if (txToEntityId.containsKey(txHashCode)) {
+			return txToEntityId.get(txHashCode).toScheduleId();
 		}
 
 		return null;

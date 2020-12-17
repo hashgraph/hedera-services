@@ -61,7 +61,7 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey) {
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Optional<AccountID> payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -69,6 +69,9 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	public ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> key) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public ResponseCodeEnum delete(ScheduleID id) { throw new UnsupportedOperationException(); }
 
 	@Override
 	public void commitCreation() { throw new UnsupportedOperationException(); }

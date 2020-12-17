@@ -254,9 +254,9 @@ public interface TxnHandlingScenario {
 
 		var vanillaSchedule = new MerkleSchedule(null, null, null);
 		vanillaSchedule.setAdminKey(adminKey);
-		given(scheduleStore.resolve(KNOWN_SCHEDULE_ADMIN))
-				.willReturn(KNOWN_SCHEDULE_ADMIN);
-		given(scheduleStore.get(KNOWN_SCHEDULE_ADMIN)).willReturn(vanillaSchedule);
+		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_ADMIN))
+				.willReturn(KNOWN_SCHEDULE_WITH_ADMIN);
+		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_ADMIN)).willReturn(vanillaSchedule);
 
 
 		given(scheduleStore.resolve(UNKNOWN_SCHEDULE))
@@ -397,8 +397,8 @@ public interface TxnHandlingScenario {
 	String KNOWN_SCHEDULE_IMMUTABLE_ID = "0.0.789";
 	ScheduleID KNOWN_SCHEDULE_IMMUTABLE = asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID);
 
-	String KNOWN_SCHEDULE_ADMIN_ID = "0.0.456";
-	ScheduleID KNOWN_SCHEDULE_ADMIN = asSchedule(KNOWN_SCHEDULE_ADMIN_ID);
+	String KNOWN_SCHEDULE_WITH_ADMIN_ID = "0.0.456";
+	ScheduleID KNOWN_SCHEDULE_WITH_ADMIN = asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID);
 
 	String UNKNOWN_SCHEDULE_ID = "0.0.123";
 	ScheduleID UNKNOWN_SCHEDULE = asSchedule(UNKNOWN_SCHEDULE_ID);

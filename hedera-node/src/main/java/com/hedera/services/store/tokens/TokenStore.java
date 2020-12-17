@@ -20,10 +20,6 @@ package com.hedera.services.store.tokens;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
@@ -47,7 +43,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
-	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean isKnownTreasury(AccountID id);
 	boolean associationExists(AccountID aId, TokenID tId);
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);

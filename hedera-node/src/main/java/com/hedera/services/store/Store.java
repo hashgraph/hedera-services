@@ -27,9 +27,16 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import java.util.function.Consumer;
+
+/**
+ * Defines a generic type able to manage arbitrary entities.
+ *
+ */
 public interface Store<T, K> {
     K get(T id);
     boolean exists(T id);
+    void apply(T id, Consumer<K> change);
 
     void setHederaLedger(HederaLedger ledger);
     void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);

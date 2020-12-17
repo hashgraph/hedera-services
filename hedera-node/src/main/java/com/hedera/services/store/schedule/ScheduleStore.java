@@ -52,28 +52,10 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 
 	void apply(ScheduleID id, Consumer<MerkleSchedule> change);
 
-	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey);
+	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Optional<AccountID> payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey);
 	ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> keys);
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;
-	}
-
-	default ResponseCodeEnum delete(ScheduleID id) {
-		var idRes = resolve(id);
-		if (idRes == MISSING_SCHEDULE) {
-			return INVALID_SCHEDULE_ID;
-		}
-
-		var schedule = get(id);
-		if (schedule.adminKey().isEmpty()) {
-			return SCHEDULE_IS_IMMUTABLE;
-		}
-		if (schedule.isDeleted()) {
-			return SCHEDULE_WAS_DELETED;
-		}
-
-		apply(id, DELETION);
-		return OK;
 	}
 }
