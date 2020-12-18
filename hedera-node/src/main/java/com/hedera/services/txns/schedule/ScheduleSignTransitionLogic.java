@@ -54,7 +54,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
             transitionFor(txnCtx.accessor().getTxn().getScheduleSign());
         } catch (Exception e) {
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
-            abortWith(FAIL_INVALID);
+            txnCtx.setStatus(FAIL_INVALID);
         }
     }
 
@@ -66,10 +66,6 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
         var outcome = store.addSigners(op.getSchedule(), keys);
         txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-    }
-
-    private void abortWith(ResponseCodeEnum cause) {
-        // TODO: Implement abortWith() failure functionality
     }
 
     @Override

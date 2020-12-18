@@ -115,9 +115,12 @@ public class ScheduleCreateTransitionLogicTest {
         // and:
         given(store.getScheduleIDByTransactionBody(any())).willReturn(Optional.of(schedule));
 
+        // when:
+        subject.doStateTransition();
+
         // then:
         verify(store, never()).createProvisionally(any(), any(), any(), any(), any());
-        verify(store, never()).addSigners(any(), any());
+        verify(store).addSigners(eq(schedule), any());
         verify(store, never()).commitCreation();
         verify(txnCtx, never()).setStatus(SUCCESS);
     }

@@ -26,7 +26,6 @@ import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_PENDING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleCreateTransitionLogic implements TransitionLogic {
@@ -61,23 +60,24 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     }
 
     private void transitionFor(ScheduleCreateTransactionBody op) throws DecoderException {
-        if (store.getScheduleIDByTransactionBody(op.getTransactionBody().toByteArray()).isPresent()) {
-            abortWith(SCHEDULE_ALREADY_PENDING);
-        };
+        var schedule = store.getScheduleIDByTransactionBody(op.getTransactionBody().toByteArray());
+        if (schedule.isEmpty()) {
+            var result = store.createProvisionally(
+                    op.getTransactionBody().toByteArray(),
+                    Optional.of(op.getPayer()),
+                    txnCtx.activePayer(),
+                    RichInstant.fromJava(txnCtx.consensusTime()),
+                    Optional.of(JKey.mapKey(op.getAdminKey())));
 
-        var result = store.createProvisionally(
-                op.getTransactionBody().toByteArray(),
-                Optional.of(txnCtx.activePayer()),
-                op.getPayer(),
-                RichInstant.fromJava(txnCtx.consensusTime()),
-                Optional.of(JKey.mapKey(op.getAdminKey())));
+            if (result.getStatus() != OK) {
+                abortWith(result.getStatus());
+                return;
+            }
 
-        if (result.getStatus() != OK) {
-            abortWith(result.getStatus());
-            return;
+            schedule = result.getCreated();
         }
 
-        var created = result.getCreated().get();
+        var created = schedule.get();
 
         Set<JKey> keys = new HashSet<>();
         for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
@@ -96,7 +96,10 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     }
 
     private void abortWith(ResponseCodeEnum cause) {
-        // TODO: Implement abortWith() failure functionality
+        if (store.isCreationPending()) {
+            store.rollbackCreation();
+        }
+        txnCtx.setStatus(cause);
     }
 
     @Override

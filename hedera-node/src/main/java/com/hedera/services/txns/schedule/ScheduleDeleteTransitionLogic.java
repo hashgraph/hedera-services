@@ -46,17 +46,13 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
             transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
         } catch (Exception e) {
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
-            abortWith(FAIL_INVALID);
+            txnCtx.setStatus(FAIL_INVALID);
         }
     }
 
     private void transitionFor(ScheduleDeleteTransactionBody op) {
         var outcome = store.delete(op.getSchedule());
         txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-    }
-
-    private void abortWith(ResponseCodeEnum cause) {
-        // TODO: Implement abortWith() failure functionality
     }
 
     @Override
