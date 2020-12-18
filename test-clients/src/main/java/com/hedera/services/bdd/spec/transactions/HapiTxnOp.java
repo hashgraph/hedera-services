@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.legacy.regression.Utilities;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -71,6 +72,7 @@ import com.hedera.services.bdd.spec.stats.TxnObs;
 import io.grpc.StatusRuntimeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.util.Utils;
 //import org.junit.Assert;
 
 import static java.lang.Thread.sleep;
@@ -437,7 +439,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			}
 		}
 		if(response.getTransactionGetReceipt().getReceipt().getStatus() == UNKNOWN) {
-			log.error("{} status resolution failed with unrecognized exception, possibly network connection lost", receiptQuery);
+			log.error(" [ accountID {} validStart({}, {}) ], status resolution failed with unrecognized exception, possibly network connection lost",
+					receiptQuery.getTransactionGetReceipt().getTransactionID().getAccountID().getAccountNum(),
+					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getSeconds(),
+					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getNanos()
+					);
 		}
 		long after = System.currentTimeMillis();
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
