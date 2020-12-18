@@ -1964,6 +1964,7 @@ jobs:
       - run:
           name: Sync results of update node tests to AWS
           command: |
+            cd /swirlds-platform/regression/results/5N_1C/Update/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/5N_1C/Update/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/5N_1C/Update/*
 
@@ -1988,6 +1989,7 @@ jobs:
       - run:
           name: Sync results of performance regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_4C/Performance/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_4C/Performance/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_4C/Performance/*
 
@@ -2012,6 +2014,7 @@ jobs:
       - run:
           name: Sync results of network error regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/NetError/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/NetError/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/NetError/*
 
@@ -2046,6 +2049,7 @@ jobs:
       - run:
           name: Sync results of public testnet migration test to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/Migration/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/Migration/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Migration/*
 
@@ -2077,6 +2081,7 @@ jobs:
       - run:
           name: Sync results of mainnet migration test to AWS
           command: |
+            cd /swirlds-platform/regression/results/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
 
@@ -2101,6 +2106,7 @@ jobs:
       - run:
           name: Sync results of software update regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/Restart/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/Restart/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Restart/*
 
@@ -2125,6 +2131,7 @@ jobs:
       - run:
           name: Sync results of state recover regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/Recovery/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/Recovery/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Recovery/*
 
@@ -2154,6 +2161,7 @@ jobs:
       - run:
           name: Sync results of software update regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/6N_6C/Performance/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/6N_6C/Performance/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/6N_6C/Performance/*
 
@@ -2178,6 +2186,7 @@ jobs:
       - run:
           name: Sync results of reconnect regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/Reconnect/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/Reconnect/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Reconnect/*
 
@@ -2237,6 +2246,7 @@ jobs:
       - run:
           name: Sync results of software update regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/15N_15C/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/15N_15C/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/15N_15C/*
 
@@ -2271,6 +2281,7 @@ jobs:
       - run:
           name: Sync results of software update regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/15N_15C/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/15N_15C/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/15N_15C/*
 

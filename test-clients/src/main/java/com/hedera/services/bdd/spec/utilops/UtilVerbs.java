@@ -503,10 +503,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation restoreFileFromRegistry(String fileName, String registryEntry) {
-		return fileUpdate(fileName)
-				.payingWith(GENESIS)
-				.contents(spec ->
-						ByteString.copyFrom(spec.registry().getBytes(registryEntry)));
+		return updateLargeFile(GENESIS, fileName, registryEntry);
 	}
 
 	public static HapiSpecOperation contractListWithPropertiesInheritedFrom(
