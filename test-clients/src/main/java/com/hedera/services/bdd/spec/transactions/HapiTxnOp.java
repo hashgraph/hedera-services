@@ -158,7 +158,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				else {
 					log.error("{} Status resolution failed due to unrecoverable runtime exception, possibly network connection lost." ,txn);
 					throw new Exception("Unable to resolve op status!");
-					//Assert.fail("Unable to resolve op status!");
 				}
 			}
 
@@ -439,7 +438,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			}
 		}
 		if(response.getTransactionGetReceipt().getReceipt().getStatus() == UNKNOWN) {
-			log.error(" [ accountID {} validStart({}, {}) ], status resolution failed with unrecognized exception, possibly network connection lost",
+			log.error(" [ accountID {} validStart({}, {}) ], status resolution failed with unrecognized exception, not getting txn response back",
 					receiptQuery.getTransactionGetReceipt().getTransactionID().getAccountID().getAccountNum(),
 					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getSeconds(),
 					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getNanos()
