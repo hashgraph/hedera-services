@@ -76,11 +76,6 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public ScheduleID resolve(ScheduleID id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum delete(ScheduleID id) { throw new UnsupportedOperationException(); }
 
 	@Override

@@ -456,7 +456,7 @@ public class HederaScheduleStoreTest {
         // when:
         var scheduleId = subject.getScheduleIDByTransactionBody(transactionBody);
 
-        assertEquals(created, scheduleId);
+        assertEquals(Optional.of(created), scheduleId);
     }
 
     @Test
@@ -467,7 +467,7 @@ public class HederaScheduleStoreTest {
         // when:
         var scheduleId = subject.getScheduleIDByTransactionBody(transactionBody);
 
-        assertEquals(created, scheduleId);
+        assertEquals(Optional.of(created), scheduleId);
     }
 
     @Test
@@ -475,7 +475,7 @@ public class HederaScheduleStoreTest {
         // when:
         var scheduleId = subject.getScheduleIDByTransactionBody(transactionBody);
 
-        assertNull(scheduleId);
+        assertTrue(scheduleId.isEmpty());
     }
 
     @Test

@@ -19,9 +19,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.keys.KeysHelper.keyToJKey;
+import static com.hedera.services.keys.KeysHelper.ed25519ToJKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_SIG_MAP_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -61,7 +61,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
     private void transitionFor(ScheduleSignTransactionBody op) throws DecoderException {
         Set<JKey> keys = new HashSet<>();
         for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
-            keys.add(keyToJKey(signaturePair.getPubKeyPrefix()));
+            keys.add(ed25519ToJKey(signaturePair.getPubKeyPrefix()));
         }
 
         var outcome = store.addSigners(op.getSchedule(), keys);
@@ -87,8 +87,8 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
         for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
             try {
-                if (keyToJKey(signaturePair.getPubKeyPrefix()).isValid()) {
-                    return INVALID_KEY;
+                if (!ed25519ToJKey(signaturePair.getPubKeyPrefix()).isValid()) {
+                    return INVALID_SCHEDULE_SIG_MAP_KEY;
                 }
             }
             catch (DecoderException e) {

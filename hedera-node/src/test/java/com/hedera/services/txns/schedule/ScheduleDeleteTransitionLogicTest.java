@@ -130,6 +130,20 @@ public class ScheduleDeleteTransitionLogicTest {
         assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleDeleteTxn));
     }
 
+    @Test
+    public void acceptsValidTxn() {
+        givenValidTxnCtx();
+
+        assertEquals(OK, subject.syntaxCheck().apply(scheduleDeleteTxn));
+    }
+
+    @Test
+    public void rejectsInvalidScheduleId() {
+        givenCtx(true);
+
+        assertEquals(INVALID_SCHEDULE_ID, subject.syntaxCheck().apply(scheduleDeleteTxn));
+    }
+
     private void givenValidTxnCtx() {
         givenCtx(false);
     }

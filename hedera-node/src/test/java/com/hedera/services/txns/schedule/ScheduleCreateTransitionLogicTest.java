@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import java.time.Instant;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -180,6 +179,27 @@ public class ScheduleCreateTransitionLogicTest {
 
         // expect:
         assertEquals(INVALID_ADMIN_KEY, subject.validate(scheduleCreateTxn));
+    }
+
+    @Test
+    public void acceptsValidTxn() {
+        givenValidTxnCtx();
+
+        assertEquals(OK, subject.syntaxCheck().apply(scheduleCreateTxn));
+    }
+
+    @Test
+    public void rejectsInvalidExecuteImmediately() {
+        givenCtx(true, false);
+
+        assertEquals(NOT_SUPPORTED, subject.syntaxCheck().apply(scheduleCreateTxn));
+    }
+
+    @Test
+    public void rejectsInvalidAdminKey() {
+        givenCtx(false, true);
+
+        assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
     }
 
     private void givenValidTxnCtx() {

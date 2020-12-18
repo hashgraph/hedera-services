@@ -214,5 +214,5 @@ enum ResponseCodeEnum {
   SCHEDULE_WAS_DELETED = 203; // The Scheduled entity was already deleted
   INVALID_SCHEDULE_PAYER_ID = 204; // The provided Scheduled Payer does not exist
   INVALID_SCHEDULE_ACCOUNT_ID = 205; // The Schedule Create Transaction TransactionID account does not exist
-  INVALID_KEY = 206;
+  INVALID_SCHEDULE_SIG_MAP_KEY = 206;
 }

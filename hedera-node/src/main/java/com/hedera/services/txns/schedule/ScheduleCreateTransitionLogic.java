@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.keys.KeysHelper.keyToJKey;
+import static com.hedera.services.keys.KeysHelper.ed25519ToJKey;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -81,7 +81,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
         Set<JKey> keys = new HashSet<>();
         for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
-            keys.add(keyToJKey(signaturePair.getPubKeyPrefix()));
+            keys.add(ed25519ToJKey(signaturePair.getPubKeyPrefix()));
         }
 
         var outcome = store.addSigners(created, keys);

@@ -6,7 +6,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
 
 public class KeysHelper {
-    public static JKey keyToJKey(ByteString prefix) throws DecoderException {
+    public static JKey ed25519ToJKey(ByteString prefix) throws DecoderException {
         var key = Key.newBuilder().setEd25519(prefix).build();
         return JKey.mapKey(key);
     }
