@@ -21,16 +21,20 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.contract.HapiGetContractRecords;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import org.junit.Assert;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
 public class ExpectedTokenRel {
+	private static final Logger log = LogManager.getLogger(ExpectedTokenRel.class);
 	private final String token;
 
 	private OptionalLong balance = OptionalLong.empty();
@@ -55,10 +59,15 @@ public class ExpectedTokenRel {
 			for (TokenRelationship actualRel : actualRels) {
 				var unexpectedId = spec.registry().getTokenID(unexpectedToken);
 				if (actualRel.getTokenId().equals(unexpectedId)) {
-					Assert.fail(String.format(
+//					Assert.fail(String.format(
+//							"Account '%s' should have had no relationship with token '%s'!",
+//							account,
+//							unexpectedToken));
+					log.error(String.format(
 							"Account '%s' should have had no relationship with token '%s'!",
 							account,
 							unexpectedToken));
+					return;
 				}
 			}
 		}

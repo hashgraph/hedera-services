@@ -153,8 +153,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				}
-				log.error("Status resolution failed with unrecognized exception", e);
-				//Assert.fail("Unable to resolve op status!");
+				else {
+					log.error("{} Status resolution failed due to unrecoverable runtime exception, possibly network connection lost." ,txn);
+					throw new Exception("Unable to resolve op status!");
+					//Assert.fail("Unable to resolve op status!");
+				}
 			}
 
 			/* Used by superclass to perform standard housekeeping. */
@@ -187,15 +190,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 //									"Precheck was %s, not one of %s!",
 //									actualPrecheck,
 //									permissiblePrechecks.get()));
-					log.error(							String.format(
-							"Precheck was %s, not one of %s!",
+					log.error(
+							"{} {} Precheck was {}, not one of {}!",spec.logPrefix(), this,
 							actualPrecheck,
-							permissiblePrechecks.get()));
+							permissiblePrechecks.get());
 				}
 			} else {
 				//Assert.assertEquals("Wrong precheck status!", getExpectedPrecheck(), actualPrecheck);
 				if(getExpectedPrecheck() != actualPrecheck) {
-					log.error("Wrong precheck actual status {}, expecting {}", actualPrecheck, getExpectedPrecheck());
+					log.error( "{} {} Wrong precheck actual status {}, expecting {}", spec.logPrefix(), this, actualPrecheck, getExpectedPrecheck());
+					throw new Exception(String.format("Wrong precheck status! expected %s, actial %s", getExpectedPrecheck(), actualPrecheck));
 				}
 			}
 		}
@@ -247,15 +251,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 //								actualStatus,
 //								permissibleStatuses.get()));
 				log.error(
-						String.format(
-								"Status was %s, not one of %s!",
+						"{} {} Status was {}, not one of {}!", spec.logPrefix(), this,
 								actualStatus,
-								permissibleStatuses.get()));
+								permissibleStatuses.get());
+				throw new Exception(String.format("Wrong status actual %s, expected %s", actualStatus ,permissibleStatuses.get()));
 			}
 		} else {
 //			Assert.assertEquals("Wrong status!", getExpectedStatus(), actualStatus);
 			if(getExpectedStatus() != actualStatus) {
-				log.error("Wrong actual status {}, expecting {}", actualStatus, getExpectedStatus());
+				log.error("{} {} Wrong actual status {}, expected {}", spec.logPrefix(), this,actualStatus, getExpectedStatus());
+				throw new Exception(String.format("Wrong actual status %s, expected %s", actualStatus, getExpectedStatus()));
 			}
 		}
 		if (!deferStatusResolution) {
@@ -326,7 +331,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 //				memo.get(),
 //				recordOfSubmission.getMemo());
 		if(!memo.get().equals(recordOfSubmission.getMemo())) {
-			log.error("Memo didn't come from submitted transaction! actual memo {}, recorded {}.", memo.get(), recordOfSubmission.getMemo());
+			log.error("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}.",spec.logPrefix(), this, memo.get(), recordOfSubmission.getMemo());
 		}
 	}
 
@@ -420,8 +425,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				}
-				log.warn("Status resolution failed with unrecognized exception", e);
 				allowedUnrecognizedExceptions--;
+				//log.warn("{} status resolution failed with unrecognized exception, possibly network connection lost", receiptQuery);
 				if (allowedUnrecognizedExceptions == 0) {
 					response = Response.newBuilder()
 							.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
@@ -430,6 +435,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 							.build();
 				}
 			}
+		}
+		if(response.getTransactionGetReceipt().getReceipt().getStatus() == UNKNOWN) {
+			log.error("{} status resolution failed with unrecognized exception, possibly network connection lost", receiptQuery);
 		}
 		long after = System.currentTimeMillis();
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
