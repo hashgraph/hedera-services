@@ -1315,7 +1315,7 @@ workflows:
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "18 22 * * *"
+          cron: "54 22 * * *"
           filters:
             branches:
               only:
@@ -1358,7 +1358,7 @@ workflows:
   AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "22 22 * * *"
+          cron: "55 22 * * *"
           filters:
             branches:
               only:
@@ -1703,9 +1703,16 @@ workflows:
                 at: /
 
   continuous-integration-gcp:
-      jobs:
-        - build-platform-and-services
-        - run-continuous-integration-gcp:
+     jobs:
+       - build-platform-and-services:
+          filters:
+            branches:
+              ignore:
+                - /.*-PERF/
+                - /.*-REGRESSION/
+                - 00887-D-refactor-test-client-error-message-handling
+
+       - run-continuous-integration-gcp:
             context: Slack
             requires:
               - build-platform-and-services
@@ -1714,11 +1721,6 @@ workflows:
               - attach_workspace:
                   at: /
             workflow-name: "Continuous Integration GCP"
-            filters:
-              branches:
-                ignore:
-                  - /.*-PERF/
-                  - /.*-REGRESSION/
 
   continuous-integration:
     jobs:
