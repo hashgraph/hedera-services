@@ -1698,6 +1698,24 @@ workflows:
             - attach_workspace:
                 at: /
 
+  continuous-integration-gcp:
+      jobs:
+        - build-platform-and-services
+        - run-continuous-integration-gcp:
+            context: Slack
+            requires:
+              - build-platform-and-services
+            pre-steps:
+              - install-tools
+              - attach_workspace:
+                  at: /
+            workflow-name: "Continuous Integration GCP"
+            filters:
+              branches:
+                ignore:
+                  - /.*-PERF/
+                  - /.*-REGRESSION/
+
   continuous-integration:
     jobs:
       - build-artifact:
@@ -2169,6 +2187,31 @@ jobs:
             cd /swirlds-platform/regression/results/4N_1C/Reconnect/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/Reconnect/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Reconnect/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-continuous-integration-gcp:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run continuous integration tests
+          no_output_timeout: 30m
+          command: |
+            cd /swirlds-platform/regression;
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json /repo
+
+      - run:
+          name: Sync results of continuous integration to circelCI job
+          command: |
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/CI/*
 
       - store_artifacts:
           path: /results.tar.gz
