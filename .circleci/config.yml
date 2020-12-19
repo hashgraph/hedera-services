@@ -1232,11 +1232,13 @@ workflows:
   AWS-Daily-Services-Comp-Basic-Performance-4N-4C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "30 21 * * *"
           filters:
             branches:
               only:
-                - Disable-master
+#                - Disable-master
+                - 00887-D-refactor-test-client-error-message-handling
+
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1273,11 +1275,13 @@ workflows:
   AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
     triggers:
       - schedule:
-          cron: "18 22 * * *"
+          cron: "18 21 * * *"
           filters:
             branches:
               only:
-                - master
+#                - master
+                - 00887-D-refactor-test-client-error-message-handling
+
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1315,11 +1319,11 @@ workflows:
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "32 1 * * *"
+          cron: "15 20 * * *"
           filters:
             branches:
               only:
-                - Disable-master
+ #               - Disable-master
                 - 00887-D-refactor-test-client-error-message-handling
 
     jobs:
@@ -1358,11 +1362,11 @@ workflows:
   AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "35 1 * * *"
+          cron: "15 20 * * *"
           filters:
             branches:
               only:
-                - Disable-master
+#                - Disable-master
                 - 00887-D-refactor-test-client-error-message-handling
 
     jobs:
