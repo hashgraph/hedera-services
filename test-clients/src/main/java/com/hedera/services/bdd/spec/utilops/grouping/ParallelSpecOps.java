@@ -65,7 +65,6 @@ public class ParallelSpecOps extends UtilOp {
 					.map(e -> e.getKey() + " :: " + e.getValue().getMessage())
 					.collect(joining(", "));
 			if (errMessages.length() > 0) {
-				//Assert.fail("Problem(s) with sub-operation(s): " + errMessages);
 				log.error("Problem(s) with sub-operation(s): {}", errMessages);
 			}
 		}

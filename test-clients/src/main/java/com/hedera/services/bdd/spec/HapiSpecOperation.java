@@ -63,7 +63,6 @@ import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import org.apache.logging.log4j.LogManager;
@@ -196,7 +195,6 @@ public abstract class HapiSpecOperation {
 				return Optional.empty();
 			}
 			if (!loggingOff) {
-//				log.warn(spec.logPrefix() + this + " failed!", t);
 				log.warn(spec.logPrefix() + this + " failed!");
 			}
 			return Optional.of(t);

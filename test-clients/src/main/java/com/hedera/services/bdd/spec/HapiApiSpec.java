@@ -305,7 +305,6 @@ public class HapiApiSpec implements Runnable {
 										try {
 											op.finishFor(this);
 										} catch (Throwable t) {
-//											log.warn(logPrefix() + op + " failed!", t);
 											log.warn(logPrefix() + op + " failed!");
 											finishingError.set(Optional.of(t));
 										}

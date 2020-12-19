@@ -72,8 +72,6 @@ import com.hedera.services.bdd.spec.stats.TxnObs;
 import io.grpc.StatusRuntimeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.util.Utils;
-//import org.junit.Assert;
 
 import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
@@ -186,18 +184,13 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				if (permissiblePrechecks.get().contains(actualPrecheck)) {
 					expectedPrecheck = Optional.of(actualPrecheck);
 				} else {
-//					Assert.fail(
-//							String.format(
-//									"Precheck was %s, not one of %s!",
-//									actualPrecheck,
-//									permissiblePrechecks.get()));
 					log.error(
 							"{} {} Precheck was {}, not one of {}!",spec.logPrefix(), this,
 							actualPrecheck,
 							permissiblePrechecks.get());
+					throw new Exception(String.format("Wrong Precheck was %s, expected %s", actualStatus ,permissibleStatuses.get()));
 				}
 			} else {
-				//Assert.assertEquals("Wrong precheck status!", getExpectedPrecheck(), actualPrecheck);
 				if(getExpectedPrecheck() != actualPrecheck) {
 					log.error( "{} {} Wrong precheck actual status {}, expecting {}", spec.logPrefix(), this, actualPrecheck, getExpectedPrecheck());
 					throw new Exception(String.format("Wrong precheck status! expected %s, actial %s", getExpectedPrecheck(), actualPrecheck));
@@ -246,11 +239,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			if (permissibleStatuses.get().contains(actualStatus)) {
 				expectedStatus = Optional.of(actualStatus);
 			} else {
-//				Assert.fail(
-//						String.format(
-//								"Status was %s, not one of %s!",
-//								actualStatus,
-//								permissibleStatuses.get()));
 				log.error(
 						"{} {} Status was {}, not one of {}!", spec.logPrefix(), this,
 								actualStatus,
@@ -258,7 +246,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				throw new Exception(String.format("Wrong status actual %s, expected %s", actualStatus ,permissibleStatuses.get()));
 			}
 		} else {
-//			Assert.assertEquals("Wrong status!", getExpectedStatus(), actualStatus);
 			if(getExpectedStatus() != actualStatus) {
 				log.error("{} {} Wrong actual status {}, expected {}", spec.logPrefix(), this,actualStatus, getExpectedStatus());
 				throw new Exception(String.format("Wrong actual status %s, expected %s", actualStatus, getExpectedStatus()));
@@ -327,10 +314,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		if (recordOfSubmission == null) {
 			lookupSubmissionRecord(spec);
 		}
-//		Assert.assertEquals(
-//				"Memo didn't come from submitted transaction!",
-//				memo.get(),
-//				recordOfSubmission.getMemo());
 		if(!memo.get().equals(recordOfSubmission.getMemo())) {
 			log.error("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}."
 					,spec.logPrefix(), this, memo.get(), recordOfSubmission.getMemo());
@@ -430,7 +413,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					continue;
 				}
 				allowedUnrecognizedExceptions--;
-				//log.warn("{} status resolution failed with unrecognized exception, possibly network connection lost", receiptQuery);
 				if (allowedUnrecognizedExceptions == 0) {
 					response = Response.newBuilder()
 							.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()

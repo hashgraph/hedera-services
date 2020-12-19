@@ -54,20 +54,19 @@ public class ExpectedTokenRel {
 			List<String> expectedAbsent,
 			List<TokenRelationship> actualRels,
 			HapiApiSpec spec
-	) {
+	) throws Throwable {
 		for (String unexpectedToken : expectedAbsent) {
 			for (TokenRelationship actualRel : actualRels) {
 				var unexpectedId = spec.registry().getTokenID(unexpectedToken);
 				if (actualRel.getTokenId().equals(unexpectedId)) {
-//					Assert.fail(String.format(
-//							"Account '%s' should have had no relationship with token '%s'!",
-//							account,
-//							unexpectedToken));
 					log.error(String.format(
 							"Account '%s' should have had no relationship with token '%s'!",
 							account,
 							unexpectedToken));
-					return;
+					throw new Exception(String.format(
+							"Account '%s' should have had no relationship with token '%s'!",
+							account,
+							unexpectedToken));
 				}
 			}
 		}
@@ -78,7 +77,7 @@ public class ExpectedTokenRel {
 			List<ExpectedTokenRel> expectedRels,
 			List<TokenRelationship> actualRels,
 			HapiApiSpec spec
-	) {
+	) throws Throwable {
 		for (ExpectedTokenRel rel : expectedRels) {
 			boolean found = false;
 			var expectedId = spec.registry().getTokenID(rel.getToken());
@@ -91,7 +90,11 @@ public class ExpectedTokenRel {
 				}
 			}
 			if (!found) {
-				Assert.fail(String.format(
+				log.error(String.format(
+						"Account '%s' had no relationship with token '%s'!",
+						account,
+						rel.getToken()));
+				throw new Exception(String.format(
 						"Account '%s' had no relationship with token '%s'!",
 						account,
 						rel.getToken()));

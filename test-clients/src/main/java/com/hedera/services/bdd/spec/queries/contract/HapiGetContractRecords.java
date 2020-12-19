@@ -191,7 +191,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 		return prefix.map(d -> d + "/" + spec.getName()).get();
 	}
 
-	private void checkExpectations(HapiApiSpec spec, List<TransactionRecord> records) {
+	private void checkExpectations(HapiApiSpec spec, List<TransactionRecord> records) throws Throwable {
 		String specExpectationsDir = specScopedDir(spec, expectationsDirPath);
 		try {
 			String expectationsDir = specExpectationsDir + "/" + contract;
@@ -206,9 +206,13 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 				Assert.assertEquals("Wrong record #" + i, expected, records.get(i));
 			}
 		} catch (Exception e) {
-			log.error("Something amiss with the expected records...", e);
-			Assert.fail("Impossible to meet expectations (on records)!");
-			//throw new E
+			if(log.isDebugEnabled()) {
+				log.error("Something amiss with the expected records...", e);
+			}
+			else {
+				log.error("Something amiss with the expected records {}", records);
+			}
+			throw new Exception("Impossible to meet expectations (on records)!");
 		}
 	}
 }
