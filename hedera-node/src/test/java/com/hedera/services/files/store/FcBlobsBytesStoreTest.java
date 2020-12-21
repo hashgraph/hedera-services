@@ -236,7 +236,7 @@ class FcBlobsBytesStoreTest {
 	@Test
 	public void putDeletesReplacedValueIfNoCopyIsHeld() {
 		// setup:
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>();
 
 		// given:
 		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));
@@ -251,7 +251,7 @@ class FcBlobsBytesStoreTest {
 	@Test
 	public void putDoesNotDeleteReplacedValueIfCopyIsHeld() {
 		// setup:
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>();
 
 		// given:
 		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));

@@ -156,18 +156,6 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKe
 		return new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
 	}
 
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
 	/* --- Bean --- */
 
 	@Override

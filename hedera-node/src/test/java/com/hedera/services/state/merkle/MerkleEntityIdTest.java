@@ -87,16 +87,6 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
-	public void unsupportedOperationsThrow() {
-		// given:
-		var defaultSubject = new MerkleEntityId();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
-	}
-
-	@Test
 	public void legacyProviderWorks() throws IOException {
 		// setup:
 		var in = mock(DataInputStream.class);

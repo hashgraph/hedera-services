@@ -26,35 +26,44 @@ import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.context.ContextPlatformStatus;
-import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.service.FreezeServiceImpl;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestFeesFactory;
-import com.hedera.test.mocks.TestProperties;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.internal.SettingsCommon;
@@ -82,7 +91,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 /**
  * Working directory should be hedera-node/
@@ -92,270 +102,275 @@ import static org.mockito.BDDMockito.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class FreezeServiceImplTest {
 
-  @BeforeAll
-  @BeforeClass
-  public static void setupAll() {
-    SettingsCommon.transactionMaxBytes = 1_234_567;
-  }
+	@BeforeAll
+	@BeforeClass
+	public static void setupAll() {
+		SettingsCommon.transactionMaxBytes = 1_234_567;
+	}
 
-  FCMap<MerkleEntityId, MerkleAccount> accountFCMap = null;
-  FCMap<MerkleEntityId, MerkleTopic> topicFCMap = null;
-  Transaction tx;
-  Transaction signTransaction;
-  Platform platform;
-  long payerAccount;
-  private TransactionHandler transactionHandler;
-  private FreezeServiceImpl freezeService;
-  private RecordCache receiptCache;
-  private PlatformSubmissionManager submissionManager;
-  private AccountID nodeAccountId;
-  private Key key;
-  private Map<String, PrivateKey> pubKey2privKeyMap;
-  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = null;
+	FCMap<MerkleEntityId, MerkleAccount> accountFCMap = null;
+	FCMap<MerkleEntityId, MerkleTopic> topicFCMap = null;
+	Transaction tx;
+	Transaction signTransaction;
+	Platform platform;
+	long payerAccount;
+	private TransactionHandler transactionHandler;
+	private FreezeServiceImpl freezeService;
+	private RecordCache receiptCache;
+	private PlatformSubmissionManager submissionManager;
+	private AccountID nodeAccountId;
+	private Key key;
+	private Map<String, PrivateKey> pubKey2privKeyMap;
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = null;
 
-  @BeforeAll
-  public void setUp() throws Exception {
-    payerAccount = 58;
-    nodeAccountId = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
+	@BeforeAll
+	public void setUp() throws Exception {
+		payerAccount = 58;
+		nodeAccountId = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
 
-    submissionManager = mock(PlatformSubmissionManager.class);
-    given(submissionManager.trySubmission(any())).willReturn(OK);
+		submissionManager = mock(PlatformSubmissionManager.class);
+		given(submissionManager.trySubmission(any())).willReturn(OK);
 
-    //Init FCMap; Add account 58
-    accountFCMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(payerAccount);
-    mk.setRealm(0);
+		//Init FCMap; Add account 58
+		accountFCMap = new FCMap<>();
+		MerkleEntityId mk = new MerkleEntityId();
+		mk.setNum(payerAccount);
+		mk.setRealm(0);
 
-    MerkleAccount mv = new MerkleAccount();
-    mv.setBalance(10000000000000000l);
+		MerkleAccount mv = new MerkleAccount();
+		mv.setBalance(10000000000000000l);
 
-    pubKey2privKeyMap = new HashMap<>();
-    key = genSingleEd25519Key(pubKey2privKeyMap);
-    mv.setKey(JKey.mapKey(key));
-    accountFCMap.put(mk, mv);
+		pubKey2privKeyMap = new HashMap<>();
+		key = genSingleEd25519Key(pubKey2privKeyMap);
+		mv.setKey(JKey.mapKey(key));
+		accountFCMap.put(mk, mv);
 
-    receiptCache = new RecordCache(
-            null,
-            CacheBuilder.newBuilder().build(),
-            new HashMap<>());
+		receiptCache = new RecordCache(
+				null,
+				CacheBuilder.newBuilder().build(),
+				new HashMap<>());
 
-    PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
-    given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
-    HbarCentExchange exchange = new OneToOneRates();
-    var policies = new SystemOpPolicies(new MockEntityNumbers());
-    var platformStatus = new ContextPlatformStatus();
-    platformStatus.set(PlatformStatus.ACTIVE);
+		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
+		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
+		HbarCentExchange exchange = new OneToOneRates();
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
 
-    PropertySource propertySource = null;
+		PropertySource propertySource = null;
 
-    transactionHandler = new TransactionHandler(
-            receiptCache,
-            () -> accountFCMap,
-            nodeAccountId,
-            precheckVerifier,
-            TEST_USAGE_PRICES,
-            exchange,
-            TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
-            () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
-            new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
-            new QueryFeeCheck(() -> accountFCMap),
-            new MockAccountNumbers(),
-            policies,
-            new StandardExemptions(new MockAccountNumbers(), policies),
-            platformStatus);
-    PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
-            "./configuration/dev/application.properties",
-            "./configuration/dev/api-permission.properties");
-    GlobalFlag.getInstance().setExchangeRateSet(getDefaultExchangeRateSet());
-    freezeService = new FreezeServiceImpl(new MockFileNumbers(), transactionHandler, submissionManager);
+		transactionHandler = new TransactionHandler(
+				receiptCache,
+				() -> accountFCMap,
+				nodeAccountId,
+				precheckVerifier,
+				TEST_USAGE_PRICES,
+				exchange,
+				TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
+				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
+				new QueryFeeCheck(() -> accountFCMap),
+				new MockAccountNumbers(),
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
+		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
+				"./configuration/dev/application.properties",
+				"./configuration/dev/api-permission.properties");
+		GlobalFlag.getInstance().setExchangeRateSet(getDefaultExchangeRateSet());
+		freezeService = new FreezeServiceImpl(new MockFileNumbers(), transactionHandler, submissionManager);
 
-  }
+	}
 
-  private static ExchangeRateSet getDefaultExchangeRateSet() {
-    long expiryTime = Long.MAX_VALUE;
-    return RequestBuilder.getExchangeRateSetBuilder(
-            1, 1, expiryTime,
-            1, 1, expiryTime);
-  }
+	private static ExchangeRateSet getDefaultExchangeRateSet() {
+		long expiryTime = Long.MAX_VALUE;
+		return RequestBuilder.getExchangeRateSetBuilder(
+				1, 1, expiryTime,
+				1, 1, expiryTime);
+	}
 
-  private static class OneToOneRates implements HbarCentExchange {
-    long expiryTime = Long.MAX_VALUE;
-  	ExchangeRateSet rates = RequestBuilder.getExchangeRateSetBuilder(
-  	        1, 1, expiryTime,
-            1, 1, expiryTime);
+	private static class OneToOneRates implements HbarCentExchange {
+		long expiryTime = Long.MAX_VALUE;
+		ExchangeRateSet rates = RequestBuilder.getExchangeRateSetBuilder(
+				1, 1, expiryTime,
+				1, 1, expiryTime);
 
-    @Override
-    public ExchangeRate activeRate() {
-      return rates.getCurrentRate();
-    }
+		@Override
+		public ExchangeRate activeRate() {
+			return rates.getCurrentRate();
+		}
 
-    @Override
-    public ExchangeRateSet activeRates() {
-      return rates;
-    }
+		@Override
+		public ExchangeRateSet activeRates() {
+			return rates;
+		}
 
-    @Override
-    public ExchangeRate rate(Timestamp at) {
-      return rates.getCurrentRate();
-    }
-  }
-
-
-  private static Key genSingleEd25519Key(Map<String, PrivateKey> pubKey2privKeyMap) {
-    KeyPair pair = new KeyPairGenerator().generateKeyPair();
-    byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-    Key akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-    String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
-    pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
-    return akey;
-  }
-
-  @Test
-  public void freezeTest() throws Exception {
-    tx = FreezeTestHelper.createFreezeTransaction(true, true, null);
-    signTransaction = sign(tx);
-
-    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TransactionResponse response) {
-        Assertions.assertEquals( response.getNodeTransactionPrecheckCode() , OK);
-      }
-
-      @Override
-      public void onError(Throwable t) {
-      }
-
-      @Override
-      public void onCompleted() {
-      }
-    };
-
-    TransactionID txID = CommonUtils.extractTransactionBody(tx).getTransactionID();
-    freezeService.freeze(signTransaction, responseObserver);
-    TransactionRecord record = TransactionRecord.newBuilder().setReceipt(
-            TransactionReceipt.newBuilder().setStatus(OK))
-            .build();
-    receiptCache.setPostConsensus(
-            txID,
-            record.getReceipt().getStatus(),
-            ExpirableTxnRecord.fromGprc(record));
-  }
-
-  /**
-   * If a Freeze Transaction is not paid by account 55, precheck would return
-   * ResponseCodeEnum.NOT_SUPPORTED
-   */
-  @Test
-  public void freeze_NotPaidBy58_Test() throws Exception {
-    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(false, true, null);
-    Transaction signed = sign(freezeTx);
-    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TransactionResponse response) {
-        Assertions.assertEquals(response.getNodeTransactionPrecheckCode() , ResponseCodeEnum.NOT_SUPPORTED);
-      }
-
-      @Override
-      public void onError(Throwable t) {
-      }
-
-      @Override
-      public void onCompleted() {
-      }
-    };
-
-    freezeService.freeze(signed, responseObserver);
-  }
-
-  /**
-   * If a Freeze Transaction is not valid, precheck would return ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY
-   */
-  @Test
-  public void freeze_NotValidFreezeTxBody_Test() throws Exception {
-    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, false, null);
-    Transaction signed = sign(freezeTx);
-    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TransactionResponse response) {
-        Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
-      }
-
-      @Override
-      public void onError(Throwable t) {
-      }
-
-      @Override
-      public void onCompleted() {
-      }
-    };
-
-    freezeService.freeze(signed, responseObserver);
-  }
-
-  /**
-   * Only file ID 0.0.150 allowed for udpate feature
-   */
-  @Test
-  public void freeze_NotValidUpdateFileID_Test() throws Exception {
-
-    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, true,
-            FileID.newBuilder().setFileNum(151L).build(),
-            new byte[48]);
-    Transaction signed = sign(freezeTx);
-    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TransactionResponse response) {
-        Assertions.assertEquals(INVALID_FILE_ID, response.getNodeTransactionPrecheckCode());
-      }
-
-      @Override
-      public void onError(Throwable t) {}
-
-      @Override
-      public void onCompleted() {}
-    };
-    freezeService.freeze(signed, responseObserver);
-  }
-
-  /**
-   * File hash value for update feature must be set in transaction body
-   */
-  @Test
-  public void freeze_UpdateFileHashInvalid_Test() throws Exception {
-
-    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, true,
-            FileID.newBuilder().setFileNum(150L).build(),
-            new byte[0]);
-    Transaction signed = sign(freezeTx);
-    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TransactionResponse response) {
-        Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
-      }
-
-      @Override
-      public void onError(Throwable t) {}
-
-      @Override
-      public void onCompleted() {}
-    };
-    freezeService.freeze(signed, responseObserver);
-  }
+		@Override
+		public ExchangeRate rate(Timestamp at) {
+			return rates.getCurrentRate();
+		}
+	}
 
 
-  /**
-   * This is required to close all objects Else next set of test cases will fail
-   */
-  @AfterAll
-  public void tearDown() {
-    try {
-    } catch (Throwable tx) {
-    } finally {
-    }
-  }
+	private static Key genSingleEd25519Key(Map<String, PrivateKey> pubKey2privKeyMap) {
+		KeyPair pair = new KeyPairGenerator().generateKeyPair();
+		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+		Key akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+		String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
+		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
+		return akey;
+	}
 
-  public Transaction sign(Transaction tx) throws Exception {
-    return TransactionSigner.signTransactionComplexWithSigMap(tx, Collections.singletonList(key), pubKey2privKeyMap);
-  }
+	@Test
+	public void freezeTest() throws Exception {
+		tx = FreezeTestHelper.createFreezeTransaction(true, true, null);
+		signTransaction = sign(tx);
+
+		StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+			@Override
+			public void onNext(TransactionResponse response) {
+				Assertions.assertEquals(response.getNodeTransactionPrecheckCode(), OK);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+			}
+
+			@Override
+			public void onCompleted() {
+			}
+		};
+
+		TransactionID txID = CommonUtils.extractTransactionBody(tx).getTransactionID();
+		freezeService.freeze(signTransaction, responseObserver);
+		TransactionRecord record = TransactionRecord.newBuilder().setReceipt(
+				TransactionReceipt.newBuilder().setStatus(OK))
+				.build();
+		receiptCache.setPostConsensus(
+				txID,
+				record.getReceipt().getStatus(),
+				ExpirableTxnRecord.fromGprc(record));
+	}
+
+	/**
+	 * If a Freeze Transaction is not paid by account 55, precheck would return
+	 * ResponseCodeEnum.NOT_SUPPORTED
+	 */
+	@Test
+	public void freeze_NotPaidBy58_Test() throws Exception {
+		Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(false, true, null);
+		Transaction signed = sign(freezeTx);
+		StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+			@Override
+			public void onNext(TransactionResponse response) {
+				Assertions.assertEquals(response.getNodeTransactionPrecheckCode(), ResponseCodeEnum.NOT_SUPPORTED);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+			}
+
+			@Override
+			public void onCompleted() {
+			}
+		};
+
+		freezeService.freeze(signed, responseObserver);
+	}
+
+	/**
+	 * If a Freeze Transaction is not valid, precheck would return ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY
+	 */
+	@Test
+	public void freeze_NotValidFreezeTxBody_Test() throws Exception {
+		Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, false, null);
+		Transaction signed = sign(freezeTx);
+		StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+			@Override
+			public void onNext(TransactionResponse response) {
+				Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
+			}
+
+			@Override
+			public void onError(Throwable t) {
+			}
+
+			@Override
+			public void onCompleted() {
+			}
+		};
+
+		freezeService.freeze(signed, responseObserver);
+	}
+
+	/**
+	 * Only file ID 0.0.150 allowed for udpate feature
+	 */
+	@Test
+	public void freeze_NotValidUpdateFileID_Test() throws Exception {
+
+		Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, true,
+				FileID.newBuilder().setFileNum(151L).build(),
+				new byte[48]);
+		Transaction signed = sign(freezeTx);
+		StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+			@Override
+			public void onNext(TransactionResponse response) {
+				Assertions.assertEquals(INVALID_FILE_ID, response.getNodeTransactionPrecheckCode());
+			}
+
+			@Override
+			public void onError(Throwable t) {
+			}
+
+			@Override
+			public void onCompleted() {
+			}
+		};
+		freezeService.freeze(signed, responseObserver);
+	}
+
+	/**
+	 * File hash value for update feature must be set in transaction body
+	 */
+	@Test
+	public void freeze_UpdateFileHashInvalid_Test() throws Exception {
+
+		Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, true,
+				FileID.newBuilder().setFileNum(150L).build(),
+				new byte[0]);
+		Transaction signed = sign(freezeTx);
+		StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+			@Override
+			public void onNext(TransactionResponse response) {
+				Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
+			}
+
+			@Override
+			public void onError(Throwable t) {
+			}
+
+			@Override
+			public void onCompleted() {
+			}
+		};
+		freezeService.freeze(signed, responseObserver);
+	}
+
+
+	/**
+	 * This is required to close all objects Else next set of test cases will fail
+	 */
+	@AfterAll
+	public void tearDown() {
+		try {
+		} catch (Throwable tx) {
+		} finally {
+		}
+	}
+
+	public Transaction sign(Transaction tx) throws Exception {
+		return TransactionSigner.signTransactionComplexWithSigMap(tx, Collections.singletonList(key),
+                pubKey2privKeyMap);
+	}
 }

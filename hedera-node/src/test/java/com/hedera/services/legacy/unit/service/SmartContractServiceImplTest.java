@@ -195,10 +195,10 @@ public class SmartContractServiceImplTest {
 
 		senderAccountId = RequestBuilder.getAccountIdBuild(9999l, 0l, 0l);
 		receiverAccountId = RequestBuilder.getAccountIdBuild(8888l, 0l, 0l);
-		storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+		storageMap = new FCMap<>();
 		// Init FCMap & Put Balances
-		accountFCMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-		topicFCMap = new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider());
+		accountFCMap = new FCMap<>();
+		topicFCMap = new FCMap<>();
 		MerkleEntityId mk = new MerkleEntityId();
 		mk.setNum(payerAccount);
 		mk.setRealm(0);

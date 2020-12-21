@@ -551,65 +551,6 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void copiesFromExtraCorrectly() throws IOException {
-		// setup:
-		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
-		InOrder inOrder = inOrder(in, topics, storage, accounts, bookCopy);
-		ServicesState.legacyTmpBookSupplier = () -> bookCopy;
-		// and:
-		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
-		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
-		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
-
-		// when:
-		subject.copyFromExtra(in);
-
-		// then:
-		inOrder.verify(in).readLong();
-		inOrder.verify(bookCopy).copyFromExtra(in);
-		inOrder.verify(accounts).copyFromExtra(in);
-		inOrder.verify(storage).copyFromExtra(in);
-		inOrder.verify(topics).copyFromExtra(in);
-	}
-
-	@Test
-	public void copiesFromCorrectly() throws IOException {
-		// setup:
-		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
-		InOrder inOrder = inOrder(in, topics, storage, accounts, bookCopy, networkCtx, seqNo, midnightRates);
-		ServicesState.legacyTmpBookSupplier = () -> bookCopy;
-		// and:
-		subject.ctx = ctx;
-		subject.nodeId = self;
-		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
-		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
-		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
-		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
-		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
-		// and:
-		var lastHandleTime = Instant.now();
-
-		given(in.readInstant()).willReturn(lastHandleTime);
-		given(in.readBoolean()).willReturn(true);
-
-		// when:
-		subject.copyFrom(in);
-
-		// then:
-		inOrder.verify(in).readLong();
-		inOrder.verify(seqNo).deserialize(in);
-		inOrder.verify(bookCopy).copyFrom(in);
-		inOrder.verify(accounts).copyFrom(in);
-		inOrder.verify(storage).copyFrom(in);
-		inOrder.verify(in).readBoolean();
-		inOrder.verify(midnightRates).deserialize(in, ExchangeRates.MERKLE_VERSION);
-		inOrder.verify(in).readBoolean();
-		inOrder.verify(in).readInstant();
-		inOrder.verify(networkCtx).setConsensusTimeOfLastHandledTxn(lastHandleTime);
-		inOrder.verify(topics).copyFrom(in);
-	}
-
-	@Test
 	public void implementsBookCopy() {
 		// setup:
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
@@ -627,8 +568,7 @@ class ServicesStateTest {
 		subject.ctx = ctx;
 
 		// when:
-		subject.handleTransaction(
-				1, false, now, now, platformTxn, null);
+		subject.handleTransaction(1, false, now, now, platformTxn);
 
 		// then:
 		verify(logic, never()).incorporateConsensusTxn(platformTxn, now, 1);
@@ -640,8 +580,7 @@ class ServicesStateTest {
 		subject.ctx = ctx;
 
 		// when:
-		subject.handleTransaction(
-				1, true, now, now, platformTxn, null);
+		subject.handleTransaction(1, true, now, now, platformTxn);
 
 		// then:
 		verify(logic).incorporateConsensusTxn(platformTxn, now, 1);

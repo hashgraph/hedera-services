@@ -49,15 +49,13 @@ class ExportExistingAccountsTest {
 		Assertions.assertThrows(IOException.class, () ->
 				ExportExistingAccounts.exportAccounts(
 						"not/a/location",
-						new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER)));
+						new FCMap<>()));
 	}
 
 	@Test
 	public void handlesNullProxyAccount() throws IOException {
 		// setup:
-		FCMap<MerkleEntityId, MerkleAccount> savedAccounts = new FCMap<>(
-				new MerkleEntityId.Provider(),
-				MerkleAccount.LEGACY_PROVIDER);
+		FCMap<MerkleEntityId, MerkleAccount> savedAccounts = new FCMap<>();
 		// and:
 		var in = new SerializableDataInputStream(Files.newInputStream(Paths.get(LEGACY_ACCOUNTS_LOC)));
 		// and:
@@ -75,9 +73,7 @@ class ExportExistingAccountsTest {
 	@Test
 	public void reproducesLegacyFile() throws IOException {
 		// setup:
-		FCMap<MerkleEntityId, MerkleAccount> savedAccounts = new FCMap<>(
-				new MerkleEntityId.Provider(),
-				MerkleAccount.LEGACY_PROVIDER);
+		FCMap<MerkleEntityId, MerkleAccount> savedAccounts = new FCMap<>();
 		// and:
 		var in = new SerializableDataInputStream(Files.newInputStream(Paths.get(LEGACY_ACCOUNTS_LOC)));
 		// and:
