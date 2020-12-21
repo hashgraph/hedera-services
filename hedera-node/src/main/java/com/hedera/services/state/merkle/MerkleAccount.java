@@ -21,30 +21,22 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.common.FCMValue;
-import com.swirlds.common.FastCopyable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import static com.hedera.services.legacy.logic.ApplicationConstants.P;
 
 public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValue, MerkleInternal {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
@@ -52,6 +44,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 	static Runnable stackDump = Thread::dumpStack;
 
 	static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
+
 	static {
 		IMMUTABLE_EMPTY_FCQ.copy();
 	}

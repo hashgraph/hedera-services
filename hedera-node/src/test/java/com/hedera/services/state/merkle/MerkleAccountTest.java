@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -34,8 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -50,12 +47,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.will;
 
 @RunWith(JUnitPlatform.class)
 public class MerkleAccountTest {
@@ -150,7 +144,8 @@ public class MerkleAccountTest {
 	@Test
 	public void immutableAccountThrowsIse() {
 		// setup:
-		MerkleAccount.stackDump = () -> {};
+		MerkleAccount.stackDump = () -> {
+		};
 
 		// given:
 		var original = new MerkleAccount();

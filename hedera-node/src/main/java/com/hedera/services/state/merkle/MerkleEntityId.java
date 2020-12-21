@@ -69,23 +69,6 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getContractNum());
 	}
 
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream in) throws IOException {
-			var id = new MerkleEntityId();
-
-			in.readLong();
-			in.readLong();
-
-			id.realm = in.readLong();
-			id.shard = in.readLong();
-			id.num = in.readLong();
-
-			return id;
-		}
-	}
-
 	/* --- MerkleLeaf --- */
 	@Override
 	public long getClassId() {
@@ -142,18 +125,6 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 	@Override
 	public MerkleEntityId copy() {
 		return new MerkleEntityId(shard, realm, num);
-	}
-
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
 	}
 
 	/* --- Bean --- */
