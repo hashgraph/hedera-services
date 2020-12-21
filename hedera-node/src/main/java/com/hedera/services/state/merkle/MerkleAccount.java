@@ -33,6 +33,7 @@ import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
+import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,12 +46,12 @@ import java.util.Objects;
 
 import static com.hedera.services.legacy.logic.ApplicationConstants.P;
 
-public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, MerkleInternal {
+public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValue, MerkleInternal {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
 
 	static Runnable stackDump = Thread::dumpStack;
 
-	static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
+	static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
 	static {
 		IMMUTABLE_EMPTY_FCQ.copy();
 	}
@@ -63,9 +64,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
 	static DomainSerdes serdes = new DomainSerdes();
-
-	@Deprecated
-	public static final Provider LEGACY_PROVIDER = new Provider();
 
 	/* Order of Merkle node children */
 	static class ChildIndices {
@@ -151,18 +149,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 				state().copy(),
 				records().copy(),
 				tokens().copy()));
-	}
-
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
 	}
 
 	/* ---- Object ---- */
@@ -294,43 +280,5 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	/* --- Helpers --- */
 	public List<ExpirableTxnRecord> recordList() {
 		return new ArrayList<>(records());
-	}
-
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream in) throws IOException {
-			in.readLong();
-			in.readLong();
-
-			var balance = in.readLong();
-			var senderThreshold = in.readLong();
-			var receiverThreshold = in.readLong();
-			var receiverSigRequired = (in.readByte() == 1);
-			var key = serdes.deserializeKey(in);
-			EntityId proxy = null;
-			if (in.readChar() == P) {
-				in.readLong();
-				in.readLong();
-				proxy = new EntityId(in.readLong(), in.readLong(), in.readLong());
-			}
-			var autoRenewSecs = in.readLong();
-			var deleted = (in.readByte() == 1);
-			var expiry = in.readLong();
-			var memo = in.readUTF();
-			var smartContract = (in.readByte() == 1);
-			var state = new MerkleAccountState(
-					key,
-					expiry, balance, autoRenewSecs,
-					memo,
-					deleted, smartContract, receiverSigRequired,
-					proxy);
-
-			var records = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
-			serdes.deserializeIntoRecords(in, records);
-			var payerRecords = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
-
-			return new MerkleAccount(List.of(state, payerRecords, new MerkleAccountTokens()));
-		}
 	}
 }

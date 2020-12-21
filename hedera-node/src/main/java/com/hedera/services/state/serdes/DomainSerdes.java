@@ -128,12 +128,4 @@ public class DomainSerdes {
 		var in = (SerializableDataInputStream)_in;
 		return in.readSerializable();
 	}
-
-	@Deprecated
-	@SuppressWarnings("unchecked")
-	public void deserializeIntoRecords(DataInputStream din, FCQueue<ExpirableTxnRecord> to) throws IOException {
-		SerializableDataInputStream in = (SerializableDataInputStream)din;
-		to.copyFrom(in);
-		to.copyFromExtra(in);
-	}
 }

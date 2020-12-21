@@ -70,7 +70,7 @@ import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONS
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
-public class ServicesState extends AbstractMerkleInternal implements SwirldState.SwirldState2 {
+public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	static final int RELEASE_070_VERSION = 1;
