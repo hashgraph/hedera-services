@@ -87,20 +87,6 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
-	public void legacyProviderWorks() throws IOException {
-		// setup:
-		var in = mock(DataInputStream.class);
-
-		given(in.readLong()).willReturn(0l).willReturn(0l).willReturn(1l).willReturn(2l).willReturn(3l);
-
-		// when:
-		var id = (MerkleEntityId) (new MerkleEntityId.Provider().deserialize(in));
-
-		// then:
-		assertEquals(new MerkleEntityId(2, 1, 3), id);
-	}
-
-	@Test
 	public void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleEntityId.MERKLE_VERSION, subject.getVersion());

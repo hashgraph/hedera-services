@@ -103,13 +103,6 @@ public class FcmToJsonUtil {
 		}
 	}
 
-	@Test
-	public void convertStorageToJson() throws Exception {
-		for (String dumpLoc : storageLocs) {
-			PojoFs.fromDisk(dumpLoc).asJsonTo(jsonSuffixed(dumpLoc));
-		}
-	}
-
 	public static String jsonSuffixed(String path) {
 		int n = path.length();
 		return path.substring(0, n - 4) + ".json";
