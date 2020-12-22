@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import static com.hedera.services.keys.KeysHelper.ed25519ToJKey;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -63,21 +64,24 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
     private void transitionFor(ScheduleCreateTransactionBody op) throws DecoderException {
         var scheduledTXPayer = op.hasPayer() ? op.getPayer() : txnCtx.activePayer();
-        var schedule = store.getScheduleID(op.toByteArray(), scheduledTXPayer);
+        var schedule = store.getScheduleID(op.getTransactionBody().toByteArray(), scheduledTXPayer);
         if (schedule.isEmpty()) {
 
-            var bytes = op.toByteArray();
+            var bytes = op.getTransactionBody().toByteArray();
             var payer = Optional.of(op.getPayer());
             var schedulingAccount = txnCtx.activePayer();
             var now = RichInstant.fromJava(txnCtx.consensusTime());
-            var admin = Optional.of(mapKey(op.getAdminKey()));
+            Optional<JKey> adminKey = Optional.empty();
+            if (op.hasAdminKey()) {
+                adminKey = asUsableFcKey(op.getAdminKey());
+            }
 
             var result = store.createProvisionally(
                     bytes,
                     payer,
                     schedulingAccount,
                     now,
-                    admin);
+                    adminKey);
 
             if (result.getStatus() != OK) {
                 abortWith(result.getStatus());
@@ -140,11 +144,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
             return validity;
         }
 
-        validity = ScheduleChecks.validateSignatureMap(op.getSigMap());
-        if (validity != OK) {
-            return validity;
-        }
-
-        return validity;
+        return ScheduleChecks.validateSignatureMap(op.getSigMap());
     }
 }

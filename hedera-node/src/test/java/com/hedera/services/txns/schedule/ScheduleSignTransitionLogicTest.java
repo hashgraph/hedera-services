@@ -1,7 +1,6 @@
 package com.hedera.services.txns.schedule;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -13,6 +12,8 @@ import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -161,10 +162,11 @@ public class ScheduleSignTransitionLogicTest {
             boolean invalidScheduleId,
             boolean invalidKeyEncoding
     ) {
-        var keyPair = Ed25519PrivateKey.generate();
+        var pair = new KeyPairGenerator().generateKeyPair();
+        byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
         this.sigMap = SignatureMap.newBuilder().addSigPair(
                 SignaturePair.newBuilder()
-                        .setPubKeyPrefix(ByteString.copyFrom(keyPair.getPublicKey().toBytes()))
+                        .setPubKeyPrefix(ByteString.copyFrom(pubKey))
                         .build()
         );
 

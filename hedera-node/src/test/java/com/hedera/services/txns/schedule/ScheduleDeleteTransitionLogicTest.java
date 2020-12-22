@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
@@ -111,6 +112,21 @@ public class ScheduleDeleteTransitionLogicTest {
         // then
         verify(store).delete(schedule);
         verify(txnCtx).setStatus(SCHEDULE_WAS_DELETED);
+    }
+
+    @Test
+    public void setsFailInvalidIfUnhandledException() {
+        givenValidTxnCtx();
+        // and:
+        given(store.delete(schedule)).willThrow(IllegalArgumentException.class);
+
+        // when:
+        subject.doStateTransition();
+
+        // then:
+        verify(store).delete(schedule);
+        // and:
+        verify(txnCtx).setStatus(FAIL_INVALID);
     }
 
     @Test

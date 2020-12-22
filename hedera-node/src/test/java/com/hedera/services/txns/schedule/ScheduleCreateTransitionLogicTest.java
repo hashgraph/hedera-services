@@ -1,7 +1,6 @@
 package com.hedera.services.txns.schedule;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.KeysHelper;
 import com.hedera.services.ledger.HederaLedger;
@@ -11,8 +10,10 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.keys.KeyGenerator;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -21,11 +22,15 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
+import org.ethereum.vm.trace.Op;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -33,7 +38,11 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.hedera.services.keys.KeysHelper.ed25519ToJKey;
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_SIG_MAP_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -41,6 +50,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -51,12 +61,12 @@ import static org.mockito.Mockito.verify;
 public class ScheduleCreateTransitionLogicTest {
     long thisSecond = 1_234_567L;
     private Instant now = Instant.ofEpochSecond(thisSecond);
+    private byte[] transactionBody = TxnUtils.randomUtf8Bytes(6);
 
-    private final CreationResult<ScheduleID> EMPTY_CREATION_RESULT = null;
     private final Optional<ScheduleID> EMPTY_SCHEDULE = Optional.empty();
     private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
     private final Key invalidKey = Key.newBuilder().build();
-    private JKey jAdminKey;
+    private Optional<JKey> jAdminKey;
     private final boolean NO = false;
     private final boolean YES = true;
     private final ResponseCodeEnum NOT_OK = null;
@@ -100,37 +110,46 @@ public class ScheduleCreateTransitionLogicTest {
 
     @Test
     public void followsHappyPath() {
-        // given:
         givenValidTxnCtx();
 
-        var result = CreationResult.success(schedule);
-
-        // and:
-        given(store.getScheduleID(
-                scheduleCreateTxn.getScheduleCreation().toByteArray(),
-                payer)).willReturn(EMPTY_SCHEDULE);
-
+        given(store.getScheduleID(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
         given(store.createProvisionally(
-                eq(scheduleCreateTxn.getScheduleCreation().toByteArray()),
+                eq(transactionBody),
                 eq(Optional.of(payer)),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
-                eq(Optional.of(jAdminKey)))).willReturn(result);
-
-        given(store.addSigners(schedule, jKeySet)).willReturn(OK);
+                argThat(jKey -> true)))
+                .willReturn(CreationResult.success(schedule));
+        // and:
+        given(store.addSigners(
+                eq(schedule),
+                argThat(jKeySet -> true))).willReturn(OK);
 
         // when:
         subject.doStateTransition();
 
         // then:
-        verify(store).getScheduleID(scheduleCreateTxn.getScheduleCreation().toByteArray(), payer);
+        verify(store).getScheduleID(transactionBody, payer);
+        // and:
         verify(store).createProvisionally(
-                eq(scheduleCreateTxn.getScheduleCreation().toByteArray()),
+                eq(transactionBody),
                 eq(Optional.of(payer)),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
-                eq(Optional.of(jAdminKey)));
-        verify(store).addSigners(schedule, jKeySet);
+                argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
+        // and:
+        verify(store).addSigners(
+                eq(schedule),
+                argThat((Set<JKey> set) -> {
+                    assertEquals(set.size(), jKeySet.size());
+                    var setIterator = set.iterator();
+                    var jKeySetIterator = set.iterator();
+                    while (setIterator.hasNext()) {
+                        assertTrue(equalUpToDecodability(setIterator.next(), jKeySetIterator.next()));
+                    }
+                    return true;
+                }));
+        //and:
         verify(store).commitCreation();
         verify(txnCtx).setStatus(SUCCESS);
     }
@@ -141,16 +160,36 @@ public class ScheduleCreateTransitionLogicTest {
         givenValidTxnCtx();
 
         // and:
-        given(store.getScheduleID(scheduleCreateTxn.getScheduleCreation().toByteArray(), payer)).willReturn(Optional.of(schedule));
+        given(store.getScheduleID(transactionBody, payer)).willReturn(Optional.of(schedule));
+        given(store.addSigners(
+                eq(schedule),
+                argThat(jKeySet -> true))).willReturn(OK);
 
         // when:
         subject.doStateTransition();
 
         // then:
-        verify(store, never()).createProvisionally(any(), any(), any(), any(), any());
-        verify(store).addSigners(schedule, jKeySet);
-        verify(store, never()).commitCreation();
-        verify(txnCtx, never()).setStatus(SUCCESS);
+        verify(store).getScheduleID(transactionBody, payer);
+        // and:
+        verify(store, never()).createProvisionally( eq(transactionBody),
+                eq(Optional.of(payer)),
+                eq(payer),
+                eq(RichInstant.fromJava(now)),
+                argThat(jKey -> true));
+        // and:
+        verify(store).addSigners(
+                eq(schedule),
+                argThat((Set<JKey> set) -> {
+                    assertEquals(set.size(), jKeySet.size());
+                    var setIterator = set.iterator();
+                    var jKeySetIterator = set.iterator();
+                    while (setIterator.hasNext()) {
+                        assertTrue(equalUpToDecodability(setIterator.next(), jKeySetIterator.next()));
+                    }
+                    return true;
+                }));
+        verify(store).commitCreation();
+        verify(txnCtx).setStatus(SUCCESS);
     }
 
     @Test
@@ -159,22 +198,27 @@ public class ScheduleCreateTransitionLogicTest {
         givenValidTxnCtx();
 
         // and:
-        given(store.getScheduleID(scheduleCreateTxn.getScheduleCreation().toByteArray(), payer)).willReturn(EMPTY_SCHEDULE);
+        given(store.getScheduleID(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
         given(store.createProvisionally(
-                scheduleCreateTxn.getScheduleCreation().toByteArray(),
-                Optional.of(payer),
-                payer,
-                RichInstant.fromJava(now),
-                Optional.of(jAdminKey))).willReturn(EMPTY_CREATION_RESULT);
+                eq(transactionBody),
+                eq(Optional.of(payer)),
+                eq(payer),
+                eq(RichInstant.fromJava(now)),
+                argThat(jKey -> true)))
+                .willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
 
+        // when:
         subject.doStateTransition();
 
         // then:
-        verify(store).createProvisionally(scheduleCreateTxn.getScheduleCreation().toByteArray(),
-                Optional.of(payer),
-                payer,
-                RichInstant.fromJava(now),
-                Optional.of(jAdminKey));
+        verify(store).getScheduleID(transactionBody, payer);
+        // and:
+        verify(store).createProvisionally(
+                eq(transactionBody),
+                eq(Optional.of(payer)),
+                eq(payer),
+                eq(RichInstant.fromJava(now)),
+                argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
         verify(store, never()).addSigners(any(), any());
         verify(store, never()).commitCreation();
         verify(txnCtx, never()).setStatus(SUCCESS);
@@ -187,31 +231,66 @@ public class ScheduleCreateTransitionLogicTest {
 
         // and:
         given(store.getScheduleID(any(), any())).willReturn(EMPTY_SCHEDULE);
-        given(store.createProvisionally(scheduleCreateTxn.getScheduleCreation().toByteArray(),
-                Optional.of(payer),
-                payer,
-                RichInstant.fromJava(now),
-                Optional.of(jAdminKey))).willReturn(CreationResult.success(schedule));
-        given(store.addSigners(schedule, jKeySet)).willReturn(NOT_OK);
+        given(store.createProvisionally(
+                eq(transactionBody),
+                eq(Optional.of(payer)),
+                eq(payer),
+                eq(RichInstant.fromJava(now)),
+                argThat(jKey -> true)))
+                .willReturn(CreationResult.success(schedule));
+        given(store.addSigners(
+                eq(schedule),
+                argThat(jKeySet -> true))).willReturn(NOT_OK);
 
         subject.doStateTransition();
 
         // then:
-        verify(store).createProvisionally(scheduleCreateTxn.getScheduleCreation().toByteArray(),
-                Optional.of(payer),
-                payer,
-                RichInstant.fromJava(now),
-                Optional.of(jAdminKey));
-        verify(store).addSigners(schedule, jKeySet);
+        verify(store).getScheduleID(transactionBody, payer);
+        // and:
+        verify(store).createProvisionally(
+                eq(transactionBody),
+                eq(Optional.of(payer)),
+                eq(payer),
+                eq(RichInstant.fromJava(now)),
+                argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
+        // and:
+        verify(store).addSigners(
+                eq(schedule),
+                argThat((Set<JKey> set) -> {
+                    assertEquals(set.size(), jKeySet.size());
+                    var setIterator = set.iterator();
+                    var jKeySetIterator = set.iterator();
+                    while (setIterator.hasNext()) {
+                        assertTrue(equalUpToDecodability(setIterator.next(), jKeySetIterator.next()));
+                    }
+                    return true;
+                }));
+        // and:
         verify(store, never()).commitCreation();
         verify(txnCtx).setStatus(NOT_OK);
         verify(store).rollbackCreation();
     }
 
     @Test
+    public void setsFailInvalidIfUnhandledException() {
+        givenValidTxnCtx();
+        // and:
+        given(store.getScheduleID(transactionBody, payer)).willThrow(IllegalArgumentException.class);
+
+        // when:
+        subject.doStateTransition();
+
+        // then:
+        verify(store).getScheduleID(transactionBody, payer);
+        // and:
+        verify(txnCtx).setStatus(FAIL_INVALID);
+    }
+
+    @Test
     public void failsOnExecuteImmediatelyFalse() {
         givenCtx(
                 true,
+                false,
                 false);
 
         // expect:
@@ -222,7 +301,8 @@ public class ScheduleCreateTransitionLogicTest {
     public void failsOnInvalidAdminKey() {
         givenCtx(
                 false,
-                true);
+                true,
+                false);
 
         // expect:
         assertEquals(INVALID_ADMIN_KEY, subject.validate(scheduleCreateTxn));
@@ -237,36 +317,49 @@ public class ScheduleCreateTransitionLogicTest {
 
     @Test
     public void rejectsInvalidExecuteImmediately() {
-        givenCtx(true, false);
+        givenCtx(true, false, false);
 
         assertEquals(NOT_SUPPORTED, subject.syntaxCheck().apply(scheduleCreateTxn));
     }
 
     @Test
     public void rejectsInvalidAdminKey() {
-        givenCtx(false, true);
+        givenCtx(false, true, false);
 
         assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
     }
 
+    @Test
+    public void rejectsInvalidSignature() {
+        givenCtx(false, false, true);
+
+        assertEquals(INVALID_SCHEDULE_SIG_MAP_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
+    }
+
     private void givenValidTxnCtx() {
         givenCtx(
+                false,
                 false,
                 false);
     }
 
     private void givenCtx(
             boolean invalidExecuteImmediately,
-            boolean invalidAdminKey
+            boolean invalidAdminKey,
+            boolean invalidPubKey
             ) {
-        var keyPair = Ed25519PrivateKey.generate();
+        var pair = new KeyPairGenerator().generateKeyPair();
+        byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+        if (invalidPubKey) {
+            pubKey = "asd".getBytes();
+        }
         this.sigMap = SignatureMap.newBuilder().addSigPair(
                 SignaturePair.newBuilder()
-                        .setPubKeyPrefix(ByteString.copyFrom(keyPair.getPublicKey().toBytes()))
+                        .setPubKeyPrefix(ByteString.copyFrom(pubKey))
         ).build();
 
         try {
-            jAdminKey = JKey.mapKey(key);
+            jAdminKey = asUsableFcKey(key);
             jKeySet = new HashSet<>();
             for (SignaturePair signaturePair : this.sigMap.getSigPairList()) {
                     jKeySet.add(KeysHelper.ed25519ToJKey(signaturePair.getPubKeyPrefix()));
@@ -280,7 +373,8 @@ public class ScheduleCreateTransitionLogicTest {
                 .setSigMap(sigMap)
                 .setAdminKey(key)
                 .setExecuteImmediately(YES)
-                .setPayer(payer);
+                .setPayer(payer)
+                .setTransactionBody(ByteString.copyFrom(transactionBody));
 
         if (invalidExecuteImmediately) {
             scheduleCreate.setExecuteImmediately(NO);

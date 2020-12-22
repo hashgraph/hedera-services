@@ -22,8 +22,6 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.keys.KeysHelper.ed25519ToJKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_SIG_MAP_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -88,11 +86,6 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
             return INVALID_SCHEDULE_ID;
         }
 
-        var outcome = ScheduleChecks.validateSignatureMap(op.getSigMap());
-        if (outcome != OK) {
-            return outcome;
-        }
-
-        return OK;
+        return ScheduleChecks.validateSignatureMap(op.getSigMap());
     }
 }
