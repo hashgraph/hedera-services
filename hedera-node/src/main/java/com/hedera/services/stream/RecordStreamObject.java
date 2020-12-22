@@ -112,10 +112,9 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 				.append("ConsensusTimestamp", consensusTimestamp).toString();
 	}
 
-	public String toShortStringRecord(TransactionRecord transactionRecord) {
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append("TransactionID: ").append(transactionRecord.getTransactionID());
-		return stringBuilder.toString();
+	public static String toShortStringRecord(TransactionRecord transactionRecord) {
+		return new ToStringBuilder(transactionRecord, ToStringStyle.NO_CLASS_NAME_STYLE)
+				.append("TransactionID", transactionRecord.getTransactionID()).toString();
 	}
 
 	@Override
