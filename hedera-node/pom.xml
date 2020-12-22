@@ -291,6 +291,11 @@
       <version>${swirlds.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.swirlds</groupId>
+      <artifactId>swirlds-common</artifactId>
+      <version>${swirlds.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>ethereumj-core</artifactId>
       <version>${ethereum-core.version}</version>
