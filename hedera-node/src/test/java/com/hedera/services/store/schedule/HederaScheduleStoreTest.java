@@ -125,6 +125,7 @@ public class HederaScheduleStoreTest {
         given(schedule.hasAdminKey()).willReturn(true);
         given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
         given(schedule.signers()).willReturn(signers);
+        given(schedule.payer()).willReturn(EntityId.ofNullableAccountId(payerId));
 
         ids = mock(EntityIdSource.class);
         given(ids.newScheduleId(schedulingAccount)).willReturn(created);
@@ -453,8 +454,10 @@ public class HederaScheduleStoreTest {
     public void getsScheduleIDByTransactionBody() {
         // given:
         subject.txToEntityId.put(transactionBodyHashCode, fromScheduleId(created));
+        given(subject.get(created)).willReturn(schedule);
+
         // when:
-        var scheduleId = subject.getScheduleIDByTransactionBody(transactionBody);
+        var scheduleId = subject.getScheduleID(transactionBody, payerId);
 
         assertEquals(Optional.of(created), scheduleId);
     }
@@ -464,8 +467,9 @@ public class HederaScheduleStoreTest {
         // given:
         subject.pendingId = created;
         subject.pendingTxHashCode = transactionBodyHashCode;
+
         // when:
-        var scheduleId = subject.getScheduleIDByTransactionBody(transactionBody);
+        var scheduleId = subject.getScheduleID(transactionBody, payerId);
 
         assertEquals(Optional.of(created), scheduleId);
     }
@@ -473,7 +477,7 @@ public class HederaScheduleStoreTest {
     @Test
     public void failsToGetScheduleIDByTransactionBody() {
         // when:
-        var scheduleId = subject.getScheduleIDByTransactionBody(transactionBody);
+        var scheduleId = subject.getScheduleID(transactionBody, payerId);
 
         assertTrue(scheduleId.isEmpty());
     }

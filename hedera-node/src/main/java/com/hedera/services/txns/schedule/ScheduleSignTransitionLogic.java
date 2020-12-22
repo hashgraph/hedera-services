@@ -6,6 +6,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.txns.validation.ScheduleChecks;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -66,6 +67,8 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
         var outcome = store.addSigners(op.getSchedule(), keys);
         txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+
+        // TODO check if signatures for execution are collected and if so execute it
     }
 
     @Override
@@ -85,15 +88,9 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
             return INVALID_SCHEDULE_ID;
         }
 
-        for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
-            try {
-                if (!ed25519ToJKey(signaturePair.getPubKeyPrefix()).isValid()) {
-                    return INVALID_SCHEDULE_SIG_MAP_KEY;
-                }
-            }
-            catch (DecoderException e) {
-                return INVALID_KEY_ENCODING;
-            }
+        var outcome = ScheduleChecks.validateSignatureMap(op.getSigMap());
+        if (outcome != OK) {
+            return outcome;
         }
 
         return OK;

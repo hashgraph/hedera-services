@@ -7,6 +7,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.txns.validation.ScheduleChecks;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -22,6 +23,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.keys.KeysHelper.ed25519ToJKey;
+import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -60,14 +62,22 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     }
 
     private void transitionFor(ScheduleCreateTransactionBody op) throws DecoderException {
-        var schedule = store.getScheduleIDByTransactionBody(op.getTransactionBody().toByteArray());
+        var scheduledTXPayer = op.hasPayer() ? op.getPayer() : txnCtx.activePayer();
+        var schedule = store.getScheduleID(op.toByteArray(), scheduledTXPayer);
         if (schedule.isEmpty()) {
+
+            var bytes = op.toByteArray();
+            var payer = Optional.of(op.getPayer());
+            var schedulingAccount = txnCtx.activePayer();
+            var now = RichInstant.fromJava(txnCtx.consensusTime());
+            var admin = Optional.of(mapKey(op.getAdminKey()));
+
             var result = store.createProvisionally(
-                    op.getTransactionBody().toByteArray(),
-                    Optional.of(op.getPayer()),
-                    txnCtx.activePayer(),
-                    RichInstant.fromJava(txnCtx.consensusTime()),
-                    Optional.of(JKey.mapKey(op.getAdminKey())));
+                    bytes,
+                    payer,
+                    schedulingAccount,
+                    now,
+                    admin);
 
             if (result.getStatus() != OK) {
                 abortWith(result.getStatus());
@@ -89,6 +99,8 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
             abortWith(outcome);
             return;
         }
+
+        // TODO check if signatures for execution are collected and if so execute it
 
         store.commitCreation();
         txnCtx.setCreated(created);
@@ -124,6 +136,11 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
         validity = checkAdminKey(
                 op.hasAdminKey(), op.getAdminKey()
         );
+        if (validity != OK) {
+            return validity;
+        }
+
+        validity = ScheduleChecks.validateSignatureMap(op.getSigMap());
         if (validity != OK) {
             return validity;
         }

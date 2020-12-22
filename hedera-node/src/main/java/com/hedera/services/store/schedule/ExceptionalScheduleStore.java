@@ -71,7 +71,7 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public Optional<ScheduleID> getScheduleIDByTransactionBody(byte[] bodyBytes) {
+	public Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -217,7 +218,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public Optional<ScheduleID> getScheduleIDByTransactionBody(byte[] bodyBytes) {
+	public Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer) {
 		var txHashCode = Arrays.hashCode(bodyBytes);
 
 		if (pendingTxHashCode != null && pendingTxHashCode.equals(txHashCode)) {
@@ -225,7 +226,12 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		if (txToEntityId.containsKey(txHashCode)) {
-			return Optional.of(txToEntityId.get(txHashCode).toScheduleId());
+			var scheduleId = txToEntityId.get(txHashCode).toScheduleId();
+			var entity = get(scheduleId);
+
+			if (entity.payer().toGrpcAccountId().equals(scheduledTxPayer)) {
+				return Optional.of(txToEntityId.get(txHashCode).toScheduleId());
+			}
 		}
 
 		return Optional.empty();
