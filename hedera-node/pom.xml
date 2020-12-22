@@ -370,6 +370,10 @@
 
   <repositories>
     <repository>
+      <id>local-repo-for-swirlds-sdk</id>
+      <url>file:${project.basedir}/localSwirldsSDK</url>
+    </repository>
+    <repository>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
