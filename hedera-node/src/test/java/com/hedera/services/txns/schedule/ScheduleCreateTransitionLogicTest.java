@@ -10,7 +10,6 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.keys.KeyGenerator;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -25,19 +24,16 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
-import org.ethereum.vm.trace.Op;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.hedera.services.keys.KeysHelper.ed25519ToJKey;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -49,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -149,7 +144,7 @@ public class ScheduleCreateTransitionLogicTest {
                     }
                     return true;
                 }));
-        //and:
+        // and:
         verify(store).commitCreation();
         verify(txnCtx).setStatus(SUCCESS);
     }
@@ -219,7 +214,7 @@ public class ScheduleCreateTransitionLogicTest {
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
                 argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
-        verify(store, never()).addSigners(any(), any());
+        verify(store, never()).addSigners(schedule, jKeySet);
         verify(store, never()).commitCreation();
         verify(txnCtx, never()).setStatus(SUCCESS);
     }
@@ -230,7 +225,7 @@ public class ScheduleCreateTransitionLogicTest {
         givenValidTxnCtx();
 
         // and:
-        given(store.getScheduleID(any(), any())).willReturn(EMPTY_SCHEDULE);
+        given(store.getScheduleID(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
         given(store.createProvisionally(
                 eq(transactionBody),
                 eq(Optional.of(payer)),

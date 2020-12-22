@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.keys.KeysHelper.ed25519ToJKey;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
