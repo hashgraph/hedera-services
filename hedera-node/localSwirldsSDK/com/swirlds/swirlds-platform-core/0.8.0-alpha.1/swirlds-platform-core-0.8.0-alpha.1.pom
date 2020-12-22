@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ (c) 2016-2020 Swirlds, Inc.
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Swirlds, Inc. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Swirlds.
+  ~
+  ~ SWIRLDS MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. SWIRLDS SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<!-- Required Maven Version -->
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Parent Configuration -->
+	<parent>
+		<groupId>com.swirlds</groupId>
+		<artifactId>swirlds-platform</artifactId>
+		<version>0.8.0-alpha.1</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<!-- Project Configuration -->
+	<artifactId>swirlds-platform-core</artifactId>
+
+	<!-- Project Properties -->
+	<properties>
+		<!-- Maven and Java Configuration -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>12</maven.compiler.source>
+		<maven.compiler.target>12</maven.compiler.target>
+
+		<!--var app.repo is supplied by inheritors. mvn has dynamic var binding not lexical.-->
+		<app.repo>${project.baseUri}../sdk/data/repos/app/</app.repo>
+	</properties>
+
+
+	<!-- Dependencies -->
+	<dependencies>
+		<!-- Swirlds -->
+		<dependency>
+			<groupId>com.swirlds</groupId>
+			<artifactId>swirlds-common</artifactId>
+			<version>0.8.0-alpha.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.swirlds</groupId>
+			<artifactId>swirlds-logging</artifactId>
+			<version>0.8.0-alpha.1</version>
+		</dependency>
+
+		<!-- $$BEGIN_OPEN_REVIEW_REMOVE_0$$ -->
+		<dependency>
+			<groupId>com.swirlds</groupId>
+			<artifactId>swirlds-common-test</artifactId>
+			<version>0.8.0-alpha.1</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- $$END_OPEN_REVIEW_REMOVE_0$$ -->
+
+		<!-- OffByNull PortMapper -->
+		<dependency>
+			<groupId>com.offbynull.portmapper</groupId>
+			<artifactId>portmapper</artifactId>
+		</dependency>
+
+		<!-- Apache Commons -->
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+		</dependency>
+
+		<!-- SLF4J -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-nop</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+
+		<!-- Apache Log4j2 -->
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+		</dependency>
+
+		<!-- $$BEGIN_OPEN_REVIEW_REMOVE_1$$ -->
+		<!-- JUnit 5.x -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-params</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- $$END_OPEN_REVIEW_REMOVE_1$$ -->
+
+		<!-- BouncyCastle -->
+
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk15on</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk15on</artifactId>
+		</dependency>
+
+		<!-- PostgreSQL & Hikari -->
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+		</dependency>
+
+		<!-- FlywayDB -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+
+		<!-- JavaFX -->
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-base</artifactId>
+		</dependency>
+
+		<!-- Jackson JSON -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+		</dependency>
+	</dependencies>
+
+	<!-- Build Configuration -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>flyway-clean</id>
+						<phase>pre-clean</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>flyway-migrate</id>
+						<phase>test-compile</phase>
+						<goals>
+							<goal>migrate</goal>
+						</goals>
+					</execution>
+				</executions>
+
+				<configuration>
+					<url>jdbc:postgresql://localhost:5432/fcfs</url>
+					<user>swirlds</user>
+					<password>password</password>
+
+					<schemas>
+						<schema>public</schema>
+					</schemas>
+
+					<placeholders>
+						<PH_BLOB_TYPE>bytea</PH_BLOB_TYPE>
+						<PH_FS_HASH_TYPE>bytea</PH_FS_HASH_TYPE>
+						<PH_FS_META_TYPE>bytea</PH_FS_META_TYPE>
+						<PH_BYTE_TYPE>smallint</PH_BYTE_TYPE>
+					</placeholders>
+					<locations>
+						<location>classpath:/com/swirlds/blob/internal/db/migration/common</location>
+						<location>classpath:/com/swirlds/blob/internal/db/migration/postgres</location>
+					</locations>
+				</configuration>
+			</plugin>
+
+			<!-- $$BEGIN_OPEN_REVIEW_REMOVE_2$$ -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<failIfNoTests>true</failIfNoTests>
+					<!--<argLine>-Xmx64g</argLine>-->
+					<argLine>@{argLine} ${env.MAVEN_OPTS} --add-opens
+						com.swirlds.platform/com.swirlds.platform=ALL-UNNAMED --add-opens
+						com.swirlds.platform/com.swirlds.blob.internal.db.migration.common=ALL-UNNAMED --add-opens
+						com.swirlds.platform/com.swirlds.crypto=ALL-UNNAMED
+					</argLine>
+					<forkCount>1</forkCount>
+					<reuseForks>true</reuseForks>
+					<excludes>
+						<exclude>**/IsInFreezePeriodTest.java</exclude>
+						<exclude>**/FCFSTimingTests.java</exclude>
+						<exclude>**/SerializerTests.java</exclude>
+						<exclude>**/ChunkManagerTests.java</exclude>
+						<exclude>**/ChunkTest.java</exclude>
+						<exclude>**/FolderEntryTests.java</exclude>
+					</excludes>
+					<useSystemClassLoader>true</useSystemClassLoader>
+				</configuration>
+			</plugin>
+			<!-- $$END_OPEN_REVIEW_REMOVE_2$$ -->
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Sealed>true</Sealed>
+							<Built-By>Swirlds, Inc.</Built-By>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+
+		<!-- $$BEGIN_OPEN_REVIEW_REMOVE_3$$ -->
+		<testResources>
+			<testResource>
+				<directory>${project.basedir}/src/test/resources</directory>
+			</testResource>
+			<testResource>
+				<directory>${project.basedir}/../test-data</directory>
+			</testResource>
+		</testResources>
+		<!-- $$END_OPEN_REVIEW_REMOVE_3$$ -->
+	</build>
+
+
+	<!-- Profiles -->
+	<profiles>
+		<!-- Automatic Profile (not for manual use) -->
+		<!--
+		We support the use of the environment variable MAVEN_OPTS to allow extra JVM & Maven options to be passed
+		through to unit tests. This profile is to handle cases where the MAVEN_OPTS environment variable is not set or
+		undefined by creating an empty environment variable. The profile below should not be modified and needs to
+		remain here in the parent POM file. Also, this profile should be copied to all other POM files that use
+		the MAVEN_OPTS environment variable in their Surefire plugin definitions. Failing to include this profile when
+		launching surefire tests where the MAVEN_OPTS is undefined will result in erroneous error messages.
+
+		CircleCI depends on the MAVEN_OPTS environment variable in order to specify the appropriate amount of
+		maximum memory a maven process (including surefire) may consume. CircleCI passes an appropriate
+		JVM switch (-Xmx) via the MAVEN_OPTS variable to enforce the correct memory limits.
+
+		Additionally, the MAVEN_OPTS variable allows developers to pass custom JVM arguments when launching unit tests by
+		specifying them using the maven -D switch. See the following examples:
+
+			mvn -DMAVEN_OPTS=-Xmx8g test
+			mvn -DMAVEN_OPTS="-Xmx8g -Xms8g" test
+			mvn -DMAVEN_OPTS="-Xmx8g -XX:+UnlockExperimentalVMOptions -XX:+UseZGC" test
+
+		This comment should be copied along with this profile to every POM file that uses the MAVEN_OPTS variable.
+		-->
+		<profile>
+			<id>maven_opts_defaults</id>
+			<activation>
+				<property>
+					<name>!env.MAVEN_OPTS</name>
+				</property>
+			</activation>
+			<properties>
+				<env.MAVEN_OPTS/>
+			</properties>
+		</profile>
+
+		<profile>
+			<id>nightly_tests</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<properties>
+				<jacoco.skip>true</jacoco.skip>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<failIfNoTests>true</failIfNoTests>
+							<!--<argLine>-Xmx64g</argLine>-->
+							<argLine>@{argLine} --add-opens com.swirlds.platform/com.swirlds.platform=ALL-UNNAMED
+								--add-opens
+								com.swirlds.platform/com.swirlds.blob.internal.db.migration.common=ALL-UNNAMED
+							</argLine>
+							<forkCount>1</forkCount>
+							<reuseForks>false</reuseForks>
+							<excludes>
+								<exclude>**/IsInFreezePeriodTest.java</exclude>
+								<exclude>**/FCFSTimingTests.java</exclude>
+								<exclude>**/SerializerTests.java</exclude>
+								<exclude>**/ChunkManagerTests.java</exclude>
+								<exclude>**/ChunkTest.java</exclude>
+								<exclude>**/FolderEntryTests.java</exclude>
+								<exclude>**/ConsensusV1Test.java</exclude>
+							</excludes>
+							<useSystemClassLoader>true</useSystemClassLoader>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+</project>
+

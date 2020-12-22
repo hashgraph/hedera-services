@@ -1,0 +1,1060 @@
+<!--
+  ~ (c) 2016-2020 Swirlds, Inc.
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Swirlds, Inc. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Swirlds.
+  ~
+  ~ SWIRLDS MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. SWIRLDS SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<!-- Required Maven Version -->
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Project Configuration -->
+	<groupId>com.swirlds</groupId>
+	<artifactId>swirlds-platform</artifactId>
+	<version>0.8.0-alpha.1</version>
+
+	<packaging>pom</packaging>
+
+	<!-- Project Information (Required for Sonatype) -->
+	<name>${project.artifactId}</name>
+	<inceptionYear>2016</inceptionYear>
+	<url>https://www.swirlds.com/</url>
+
+	<organization>
+		<name>Swirlds, Inc.</name>
+		<url>https://www.swirlds.com</url>
+	</organization>
+
+	<description>
+		Swirlds is a software platform designed to build fully-distributed applications that harness the power of the
+		cloud without servers. Now you can develop applications with fairness in decision making, speed, trust and
+		reliability, at a fraction of the cost of traditional server-based platforms.
+	</description>
+
+	<!-- $$BEGIN_PROPRIETARY_LICENSE$$ -->
+	<licenses>
+		<license>
+			<name>Swirlds Proprietary License</name>
+			<url>https://github.com/swirlds/swirlds-platform/raw/develop/LICENSE.md</url>
+		</license>
+	</licenses>
+	<!-- $$END_PROPRIETARY_LICENSE$$ -->
+	<!-- $$BEGIN_OPEN_REVIEW_LICENSE$$
+	<licenses>
+		<license>
+			<name>Hashgraph Open Review License</name>
+			<url>https://github.com/hashgraph/swirlds-open-review/raw/master/LICENSE.md</url>
+		</license>
+	</licenses>
+	$$END_OPEN_REVIEW_LICENSE$$ -->
+	<developers>
+		<developer>
+			<name>Nathan Klick</name>
+			<email>nathan@swirlds.com</email>
+			<organization>Swirlds, Inc.</organization>
+			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Lazar Petrovic</name>
+			<email>lazar@swirlds.com</email>
+			<organization>Swirlds, Inc.</organization>
+			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Nosh Mody</name>
+			<email>nosh@swirlds.com</email>
+			<organization>Swirlds, Inc.</organization>
+			<organizationUrl>https://www.swirlds.com</organizationUrl>
+		</developer>
+	</developers>
+
+	<!-- $$BEGIN_PROPRIETARY_SCM$$ -->
+	<scm>
+		<connection>scm:git:git://github.com/swirlds/swirlds-platform.git</connection>
+		<developerConnection>scm:git:ssh://github.com:swirlds/swirlds-platform.git</developerConnection>
+		<url>https://github.com/swirlds/swirlds-platform</url>
+	</scm>
+	<!-- $$END_PROPRIETARY_SCM$$ -->
+	<!-- $$BEGIN_OPEN_REVIEW_SCM$$
+	<scm>
+		<connection>scm:git:git://github.com/hashgraph/swirlds-open-review.git</connection>
+		<developerConnection>scm:git:ssh://github.com:swirlds/swirlds-open-review.git</developerConnection>
+		<url>https://github.com/hashgraph/swirlds-open-review</url>
+	</scm>
+	$$END_OPEN_REVIEW_SCM$$ -->
+
+	<!-- Project Properties -->
+	<properties>
+		<!-- Maven and Java Configuration -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>12</maven.compiler.source>
+		<maven.compiler.target>12</maven.compiler.target>
+
+		<!-- Local Repository Variables -->
+		<app.repo>${project.baseUri}sdk/data/repos/app/</app.repo>
+
+		<!-- Plugin Versions -->
+		<!--
+			These properties control the versions of the maven build plugins used by all the core platform components.
+
+			Do not change these without understanding the impact. Any changes to these versions should be tested via
+			unit and regression tests.
+		-->
+
+		<!-- Code Analysis Plugins -->
+		<plugin.sonar.version>3.7.0.1746</plugin.sonar.version>
+		<plugin.jacoco.version>0.8.5</plugin.jacoco.version>
+
+		<!-- VCS Information Plugins -->
+		<plugin.git.commitid.version>4.0.2</plugin.git.commitid.version>
+
+		<!-- Core Maven Plugins -->
+		<plugin.maven.clean.version>3.1.0</plugin.maven.clean.version>
+		<plugin.maven.compiler.version>3.8.1</plugin.maven.compiler.version>
+		<plugin.maven.deploy.version>2.8.2</plugin.maven.deploy.version>
+		<plugin.maven.install.version>2.5.2</plugin.maven.install.version>
+		<plugin.maven.resources.version>3.2.0</plugin.maven.resources.version>
+		<plugin.maven.site.version>3.9.1</plugin.maven.site.version>
+		<plugin.maven.surefire.version>2.22.2</plugin.maven.surefire.version>
+		<plugin.maven.jar.version>3.2.0</plugin.maven.jar.version>
+		<plugin.maven.source.version>3.2.1</plugin.maven.source.version>
+		<plugin.maven.javadoc.version>3.2.0</plugin.maven.javadoc.version>
+		<plugin.maven.dependency.version>3.1.2</plugin.maven.dependency.version>
+		<plugin.maven.release.version>2.5.3</plugin.maven.release.version>
+		<plugin.maven.gpg.version>1.6</plugin.maven.gpg.version>
+
+
+		<!-- Maven CI/CD Utilities -->
+		<plugin.versions.maven.version>2.8.1</plugin.versions.maven.version>
+		<plugin.dependency.check.version>6.0.1</plugin.dependency.check.version>
+		<plugin.license.maven.version>4.0.rc2</plugin.license.maven.version>
+		<plugin.build.helper.version>3.2.0</plugin.build.helper.version>
+		<plugin.nexus.staging.version>1.6.8</plugin.nexus.staging.version>
+
+		<!-- Dependency Versions -->
+		<!--
+			These properties control the versions of the third-party dependencies used by all the core platform
+			components.
+
+			Do not change these without understanding the impact. Any changes to these versions should be tested via
+			unit and regression tests.
+		-->
+
+		<!-- Compile Time Dependencies -->
+		<dep.ow2.asm.version>8.0.1</dep.ow2.asm.version>
+		<dep.log4j2.version>2.13.2</dep.log4j2.version>
+		<dep.jackson.version>2.11.2</dep.jackson.version>
+		<dep.portmapper.version>2.0.4</dep.portmapper.version>
+		<dep.commons.io.version>2.6</dep.commons.io.version>
+		<dep.commons.lang3.version>3.11</dep.commons.lang3.version>
+		<dep.commons.collections4.version>4.4</dep.commons.collections4.version>
+		<dep.slf4j.version>1.8.0-beta2</dep.slf4j.version>
+		<dep.bouncy.castle.version>1.66</dep.bouncy.castle.version>
+		<dep.hikaricp.version>3.3.1</dep.hikaricp.version>
+		<dep.postgresql.version>42.2.16</dep.postgresql.version>
+		<dep.flywaydb.version>5.2.4</dep.flywaydb.version>
+		<dep.javafx.version>12.0.2</dep.javafx.version>
+		<dep.lazysodium.version>4.3.0</dep.lazysodium.version>
+		<dep.jna.version>5.5.0</dep.jna.version>
+		<dep.libly.version>1.3.7</dep.libly.version>
+		<dep.jocl.version>2.0.2</dep.jocl.version>
+		<dep.classgraph.version>4.8.65</dep.classgraph.version>
+
+		<!-- Test Dependencies -->
+		<!--
+			JUnit versions after 5.5.0-M1 have known issues when used with a scope other than test.
+			At this time surefire still has not fully resolved the underlying issues. Surefire has partially resolved
+			several issues related to this problem and expect full resolution by Surefire version 3.0.0 GA releases.
+
+			Please see https://github.com/junit-team/junit5/issues/2147
+		-->
+		<dep.junit.jupiter.version>5.5.0-M1</dep.junit.jupiter.version>
+		<dep.mockito.version>3.3.0</dep.mockito.version>
+
+		<!-- SonarCloud Properties -->
+		<sonar.jacoco.path>target/site/jacoco-aggregate/jacoco.xml</sonar.jacoco.path>
+		<sonar.organization>swirlds</sonar.organization>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<sonar.language>java</sonar.language>
+		<sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+
+		<sonar.coverage.jacoco.xmlReportPaths>
+			${sonar.jacoco.path},
+			${project.basedir}/../regression/${sonar.jacoco.path},
+			${project.basedir}/../platform-apps/tests/PlatformTestingTool/${sonar.jacoco.path},
+			${project.basedir}/../swirlds-platform-core/${sonar.jacoco.path},
+			${project.basedir}/../swirlds-fchashmap/${sonar.jacoco.path},
+			${project.basedir}/../swirlds-unit-tests/common/swirlds-common-test/${sonar.jacoco.path},
+			${project.basedir}/../swirlds-unit-tests/common/swirlds-logging-test/${sonar.jacoco.path},
+			${project.basedir}/../swirlds-unit-tests/core/swirlds-platform-test/${sonar.jacoco.path},
+			${project.basedir}/../swirlds-unit-tests/structures/swirlds-fcmap-test/${sonar.jacoco.path},
+			${project.basedir}/../swirlds-unit-tests/structures/swirlds-fcqueue-test/${sonar.jacoco.path}
+		</sonar.coverage.jacoco.xmlReportPaths>
+	</properties>
+
+	<repositories>
+		<repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>libly</id>
+			<name>libly-bintray</name>
+			<url>https://dl.bintray.com/libly/maven</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>jcenter</id>
+			<name>jcenter-bintray</name>
+			<url>https://jcenter.bintray.com</url>
+		</repository>
+	</repositories>
+
+	<!-- Profiles -->
+	<profiles>
+		<!-- Automatic Profile (not for manual use) -->
+		<!--
+		We support the use of the environment variable MAVEN_OPTS to allow extra JVM & Maven options to be passed
+		through to unit tests. This profile is to handle cases where the MAVEN_OPTS environment variable is not set or
+		undefined by creating an empty environment variable. The profile below should not be modified and needs to
+		remain here in the parent POM file. Also, this profile should be copied to all other POM files that use
+		the MAVEN_OPTS environment variable in their Surefire plugin definitions. Failing to include this profile when
+		launching surefire tests where the MAVEN_OPTS is undefined will result in erroneous error messages.
+
+		CircleCI depends on the MAVEN_OPTS environment variable in order to specify the appropriate amount of
+		maximum memory a maven process (including surefire) may consume. CircleCI passes an appropriate
+		JVM switch (-Xmx) via the MAVEN_OPTS variable to enforce the correct memory limits.
+
+		Additionally, the MAVEN_OPTS variable allows developers to pass custom JVM arguments when launching unit tests by
+		specifying them using the maven -D switch. See the following examples:
+
+			mvn -DMAVEN_OPTS=-Xmx8g test
+			mvn -DMAVEN_OPTS="-Xmx8g -Xms8g" test
+			mvn -DMAVEN_OPTS="-Xmx8g -XX:+UnlockExperimentalVMOptions -XX:+UseZGC" test
+
+		This comment should be copied along with this profile to every POM file that uses the MAVEN_OPTS variable.
+		-->
+		<profile>
+			<id>maven_opts_defaults</id>
+			<activation>
+				<property>
+					<name>!env.MAVEN_OPTS</name>
+				</property>
+			</activation>
+			<properties>
+				<env.MAVEN_OPTS/>
+			</properties>
+		</profile>
+
+
+		<profile>
+			<id>release</id>
+			<activation>
+				<property>
+					<name>env.RELEASE</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>build-helper-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>rootloc-property</id>
+								<phase>validate</phase>
+								<goals>
+									<goal>rootlocation</goal>
+								</goals>
+								<configuration>
+									<rootLocationProperty>helper.root.dir</rootLocationProperty>
+								</configuration>
+							</execution>
+							<execution>
+								<id>timestamp-property</id>
+								<phase>validate</phase>
+								<goals>
+									<goal>timestamp-property</goal>
+								</goals>
+								<configuration>
+									<locale>en_US</locale>
+									<name>helper.current.year</name>
+									<pattern>yyyy</pattern>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<profile>
+			<id>release-open-review</id>
+			<activation>
+				<property>
+					<name>env.RELEASE</name>
+					<value>open-review</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.mycila</groupId>
+						<artifactId>license-maven-plugin</artifactId>
+						<configuration>
+							<aggregate>true</aggregate>
+							<encoding>${project.build.sourceEncoding}</encoding>
+							<headerDefinitions>
+								<headerDefinition>${helper.root.dir}/.circleci/license/java_style.xml</headerDefinition>
+								<headerDefinition>${helper.root.dir}/.circleci/license/xml_tilde_style.xml
+								</headerDefinition>
+							</headerDefinitions>
+							<mapping>
+								<java>JAVA_STYLE</java>
+								<xml>XML_TILDE_STYLE</xml>
+								<pom>XML_TILDE_STYLE</pom>
+								<html>XML_TILDE_STYLE</html>
+							</mapping>
+							<licenseSets>
+								<licenseSet>
+									<header>${helper.root.dir}/.circleci/license/open_review/header.txt</header>
+									<excludes>
+										<exclude>.circleci/**</exclude>
+										<exclude>changelog.md</exclude>
+										<exclude>license.md</exclude>
+										<exclude>readme.md</exclude>
+										<exclude>docs/**</exclude>
+										<exclude>**/src/main/resources/**</exclude>
+										<exclude>**/src/test/resources/**</exclude>
+										<exclude>**/regression/**</exclude>
+										<exclude>platform-apps/**</exclude>
+										<exclude>**/sdk/data/**</exclude>
+										<exclude>**/sdk/testing/**</exclude>
+										<exclude>**/sdk/docs/**</exclude>
+										<exclude>**/sdk/kernels/**</exclude>
+										<exclude>**/sdk/settings.txt</exclude>
+										<exclude>**/sdk/config.txt</exclude>
+										<exclude>**/sdk/README.txt</exclude>
+										<exclude>archive/**</exclude>
+									</excludes>
+								</licenseSet>
+								<licenseSet>
+									<header>${helper.root.dir}/.circleci/license/apache2/header.txt</header>
+									<includes>
+										<include>platform-apps/**</include>
+									</includes>
+									<excludes>
+										<exclude>.circleci/**</exclude>
+										<exclude>changelog.md</exclude>
+										<exclude>license.md</exclude>
+										<exclude>readme.md</exclude>
+										<exclude>docs/**</exclude>
+										<exclude>**/src/main/resources/**</exclude>
+										<exclude>**/src/test/resources/**</exclude>
+										<exclude>**/regression/**</exclude>
+										<exclude>**/sdk/data/**</exclude>
+										<exclude>**/sdk/testing/**</exclude>
+										<exclude>**/sdk/docs/**</exclude>
+										<exclude>**/sdk/settings.txt</exclude>
+										<exclude>**/sdk/config.txt</exclude>
+										<exclude>**/sdk/README.txt</exclude>
+										<exclude>archive/**</exclude>
+									</excludes>
+								</licenseSet>
+							</licenseSets>
+							<properties>
+								<license.url>
+									https://github.com/hashgraph/swirlds-open-review/raw/master/LICENSE.md
+								</license.url>
+								<owner>
+									Swirlds, Inc.
+								</owner>
+								<helper.current.year>
+									${helper.current.year}
+								</helper.current.year>
+							</properties>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<profile>
+			<id>release-sonatype</id>
+			<activation>
+				<property>
+					<name>env.RELEASE</name>
+					<value>sonatype</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.sonatype.plugins</groupId>
+						<artifactId>nexus-staging-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>nexus-staging</id>
+								<phase>deploy</phase>
+								<goals>
+									<goal>deploy</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-javadoc</id>
+								<goals>
+									<goal>aggregate-jar</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<destDir>${project.build.directory}/apidocs</destDir>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<configuration>
+							<skipSource>true</skipSource>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+			<distributionManagement>
+				<snapshotRepository>
+					<id>ossrh</id>
+					<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+				</snapshotRepository>
+				<repository>
+					<id>ossrh</id>
+					<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+				</repository>
+			</distributionManagement>
+		</profile>
+
+		<profile>
+			<id>default-deployment</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+				<property>
+					<name>env.RELEASE</name>
+					<value>!sonatype</value>
+				</property>
+			</activation>
+			<!-- Distribution Management -->
+			<distributionManagement>
+				<repository>
+					<id>app.repo</id>
+					<url>${app.repo}</url>
+				</repository>
+			</distributionManagement>
+
+			<!-- Repository Configuration -->
+			<repositories>
+				<repository>
+					<id>app.repo</id>
+					<name>app</name>
+					<url>${app.repo}</url>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>always</updatePolicy>
+					</releases>
+					<snapshots>
+						<enabled>true</enabled>
+						<updatePolicy>always</updatePolicy>
+					</snapshots>
+				</repository>
+			</repositories>
+			<!-- $$BEGIN_OPEN_REVIEW_REMOVE$$ -->
+			<modules>
+				<!-- Main System Packages -->
+				<module>swirlds</module>
+
+				<!-- Regression Packages -->
+				<module>platform-apps</module>
+				<module>regression</module>
+
+				<!-- Test Packages-->
+				<module>swirlds-unit-tests</module>
+			</modules>
+			<!-- $$END_OPEN_REVIEW_REMOVE$$ -->
+		</profile>
+	</profiles>
+
+	<!-- Sub Modules -->
+	<modules>
+		<!-- Common Packages -->
+		<module>swirlds-common</module>
+		<module>swirlds-logging</module>
+
+		<!-- Main System Packages -->
+		<module>swirlds-platform-core</module>
+
+		<!-- Data Structure Packages -->
+		<module>swirlds-fcmap</module>
+		<module>swirlds-fcqueue</module>
+		<module>swirlds-fchashmap</module>
+	</modules>
+
+	<!-- Dependency Management -->
+	<dependencyManagement>
+		<dependencies>
+			<!-- Apache Log4j2 -->
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-api</artifactId>
+				<version>${dep.log4j2.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-core</artifactId>
+				<version>${dep.log4j2.version}</version>
+			</dependency>
+
+			<!-- Jackson JSON BOM -->
+			<dependency>
+				<groupId>com.fasterxml.jackson</groupId>
+				<artifactId>jackson-bom</artifactId>
+				<version>${dep.jackson.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- OffByNull PortMapper -->
+			<dependency>
+				<groupId>com.offbynull.portmapper</groupId>
+				<artifactId>portmapper</artifactId>
+				<version>${dep.portmapper.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>commons-io</groupId>
+						<artifactId>commons-io</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.apache.commons</groupId>
+						<artifactId>commons-lang3</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.apache.commons</groupId>
+						<artifactId>commons-collections4</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-api</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+
+			<!-- Apache Commons -->
+			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>${dep.commons.io.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+				<version>${dep.commons.lang3.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-collections4</artifactId>
+				<version>${dep.commons.collections4.version}</version>
+			</dependency>
+
+			<!-- SLF4J -->
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>${dep.slf4j.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-nop</artifactId>
+				<version>${dep.slf4j.version}</version>
+			</dependency>
+
+			<!-- BouncyCastle -->
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk15on</artifactId>
+				<version>${dep.bouncy.castle.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcpkix-jdk15on</artifactId>
+				<version>${dep.bouncy.castle.version}</version>
+			</dependency>
+
+			<!-- PostgreSQL & Hikari -->
+			<dependency>
+				<groupId>com.zaxxer</groupId>
+				<artifactId>HikariCP</artifactId>
+				<version>${dep.hikaricp.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.postgresql</groupId>
+				<artifactId>postgresql</artifactId>
+				<version>${dep.postgresql.version}</version>
+			</dependency>
+
+			<!-- FlywayDB -->
+			<dependency>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-core</artifactId>
+				<version>${dep.flywaydb.version}</version>
+			</dependency>
+
+			<!-- JavaFX -->
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-base</artifactId>
+				<version>${dep.javafx.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-graphics</artifactId>
+				<version>${dep.javafx.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-web</artifactId>
+				<version>${dep.javafx.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-controls</artifactId>
+				<version>${dep.javafx.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-fxml</artifactId>
+				<version>${dep.javafx.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-swing</artifactId>
+				<version>${dep.javafx.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-media</artifactId>
+				<version>${dep.javafx.version}</version>
+			</dependency>
+
+			<!-- LazySodium -->
+			<dependency>
+				<groupId>com.goterl.lazycode</groupId>
+				<artifactId>lazysodium-java</artifactId>
+				<version>${dep.lazysodium.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>net.java.dev.jna</groupId>
+				<artifactId>jna</artifactId>
+				<version>${dep.jna.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>co.libly</groupId>
+				<artifactId>resource-loader</artifactId>
+				<version>${dep.libly.version}</version>
+			</dependency>
+
+			<!-- JOCL -->
+			<dependency>
+				<groupId>org.jocl</groupId>
+				<artifactId>jocl</artifactId>
+				<version>${dep.jocl.version}</version>
+			</dependency>
+
+			<!-- Classgraph -->
+			<dependency>
+				<groupId>io.github.classgraph</groupId>
+				<artifactId>classgraph</artifactId>
+				<version>${dep.classgraph.version}</version>
+			</dependency>
+
+			<!-- JUnit 5.x BOM -->
+			<dependency>
+				<groupId>org.junit</groupId>
+				<artifactId>junit-bom</artifactId>
+				<version>${dep.junit.jupiter.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- Mockito -->
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-core</artifactId>
+				<version>${dep.mockito.version}</version>
+				<scope>test</scope>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
+
+	<!-- Build Lifecycle -->
+	<build>
+		<!-- Plugin Management -->
+		<!--
+			This section manages the version and base configuration for all the maven build lifecycle plugins.
+		-->
+		<pluginManagement>
+			<plugins>
+				<!-- Code Analysis Plugins -->
+				<plugin>
+					<groupId>org.jacoco</groupId>
+					<artifactId>jacoco-maven-plugin</artifactId>
+					<version>${plugin.jacoco.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.sonarsource.scanner.maven</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>${plugin.sonar.version}</version>
+				</plugin>
+
+				<!-- VCS Information Plugins -->
+				<plugin>
+					<groupId>pl.project13.maven</groupId>
+					<artifactId>git-commit-id-plugin</artifactId>
+					<version>${plugin.git.commitid.version}</version>
+				</plugin>
+
+				<!-- Flyway Plugin -->
+				<plugin>
+					<groupId>org.flywaydb</groupId>
+					<artifactId>flyway-maven-plugin</artifactId>
+					<version>${dep.flywaydb.version}</version>
+				</plugin>
+
+				<!-- Apache Maven Core Plugins -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-clean-plugin</artifactId>
+					<version>${plugin.maven.clean.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>${plugin.maven.compiler.version}</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.ow2.asm</groupId>
+							<artifactId>asm</artifactId>
+							<version>${dep.ow2.asm.version}</version>
+						</dependency>
+					</dependencies>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>${plugin.maven.deploy.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-install-plugin</artifactId>
+					<version>${plugin.maven.install.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>${plugin.maven.resources.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-site-plugin</artifactId>
+					<version>${plugin.maven.site.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>${plugin.maven.surefire.version}</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.junit.jupiter</groupId>
+							<artifactId>junit-jupiter-engine</artifactId>
+							<version>${dep.junit.jupiter.version}</version>
+						</dependency>
+						<dependency>
+							<groupId>org.ow2.asm</groupId>
+							<artifactId>asm</artifactId>
+							<version>${dep.ow2.asm.version}</version>
+						</dependency>
+					</dependencies>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>${plugin.maven.jar.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>${plugin.maven.source.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>${plugin.maven.javadoc.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<version>${plugin.maven.dependency.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-release-plugin</artifactId>
+					<version>${plugin.maven.release.version}</version>
+				</plugin>
+
+
+				<!-- Maven CI/CD Utility Plugins -->
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>versions-maven-plugin</artifactId>
+					<version>${plugin.versions.maven.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.owasp</groupId>
+					<artifactId>dependency-check-maven</artifactId>
+					<version>${plugin.dependency.check.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>com.mycila</groupId>
+					<artifactId>license-maven-plugin</artifactId>
+					<version>${plugin.license.maven.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>build-helper-maven-plugin</artifactId>
+					<version>${plugin.build.helper.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.sonatype.plugins</groupId>
+					<artifactId>nexus-staging-maven-plugin</artifactId>
+					<version>${plugin.nexus.staging.version}</version>
+					<extensions>true</extensions>
+					<configuration>
+						<serverId>ossrh</serverId>
+						<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+						<autoReleaseAfterClose>false</autoReleaseAfterClose>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>${plugin.maven.gpg.version}</version>
+					<configuration>
+						<executable>gpg2</executable>
+						<gpgArguments>
+							<gpgArgument>--pinentry-mode</gpgArgument>
+							<gpgArgument>loopback</gpgArgument>
+						</gpgArguments>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
+
+		<!-- Plugin Definitions -->
+		<!--
+			This section enables and configures plugins that are inherited and apply to all the maven submodules.
+		-->
+		<plugins>
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>jacoco-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>jacoco-report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report-aggregate</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>versions-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
+					<reportOutputDirectory>${project.basedir}/sdk/docs</reportOutputDirectory>
+					<destDir>javadoc</destDir>
+					<excludePackageNames>
+						com.swirlds.p2p.*:com.swirlds.platform.fc.*:com.swirlds.fcmap.internal:com.swirlds.fcmap.internal.*:com.swirlds.fs.internal:com.swirlds.crypto.internal:com.swirlds.platform.internal:com.swirlds.fcmap.list
+					</excludePackageNames>
+					<sourceFileExcludes>
+						<sourceFileExclude>com/swirlds/platform/Marshal**</sourceFileExclude>
+						<sourceFileExclude>com/swirlds/platform/CryptoStatistics**</sourceFileExclude>
+						<sourceFileExclude>com/swirlds/platform/StreamUtilities**</sourceFileExclude>
+						<sourceFileExclude>com/swirlds/crypto/CryptoMarshal**</sourceFileExclude>
+					</sourceFileExcludes>
+					<show>public</show>
+					<additionalOptions>-html5</additionalOptions>
+					<windowtitle>Swirlds Platform API</windowtitle>
+					<doctitle>Swirlds Platform API</doctitle>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>${project.basedir}/sdk/docs/javadoc</directory>
+							<includes>
+								<include>**/*</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/sdk/data/repos/app</directory>
+							<includes>
+								<include>**/*</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/sdk/data/lib</directory>
+							<includes>
+								<include>**/*.jar</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/sdk/data/apps</directory>
+							<includes>
+								<include>**/*.jar</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/sdk/data/saved</directory>
+							<includes>
+								<include>**/*</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/sdk</directory>
+							<includes>
+								<include>*.csv</include>
+								<include>debug/**</include>
+								<include>swirlds.log</include>
+								<include>swirlds.*.log</include>
+								<include>regression.log</include>
+								<include>remoteExperiment.tar.gz</include>
+								<include>settingsUsed.txt</include>
+								<include>*Address.txt</include>
+								<include>*Addresses.txt</include>
+								<include>ExpectedMap.json</include>
+								<include>ExpectedMap.json.gz</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/sdk/data</directory>
+							<includes>
+								<include>lifecycle/*</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/regression</directory>
+							<includes>
+								<include>*.tar.gz</include>
+								<include>regression.log</include>
+								<include>regression.jar</include>
+								<include>lib/**</include>
+								<include>tmp/**</include>
+								<include>multipage_pdf.pdf</include>
+								<include>data/lifecycle</include>
+							</includes>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Sealed>true</Sealed>
+							<Built-By>Swirlds, Inc.</Built-By>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<configuration>
+					<autoUpdate>true</autoUpdate>
+					<golangModEnabled>false</golangModEnabled>
+					<golangDepEnabled>false</golangDepEnabled>
+					<nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+					<nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+					<swiftPackageManagerAnalyzerEnabled>false</swiftPackageManagerAnalyzerEnabled>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
