@@ -21,8 +21,6 @@
     <app.name>HederaNode</app.name>
     <mainClass.name>ServicesMain</mainClass.name>
 
-    <app.repo>${project.baseUri}/data/repos/app/</app.repo>
-
     <asm.version>6.2</asm.version>
     <git-commit-id.version>2.2.4</git-commit-id.version>
     <ant-contrib.version>1.0b3</ant-contrib.version>
@@ -380,19 +378,6 @@
       <id>central</id>
       <name>bintray</name>
       <url>https://jcenter.bintray.com</url>
-    </repository>
-    <repository>
-      <id>app.repo</id>
-      <name>app</name>
-      <url>${app.repo}</url>
-      <releases>
-        <enabled>true</enabled>
-        <updatePolicy>always</updatePolicy>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-        <updatePolicy>always</updatePolicy>
-      </snapshots>
     </repository>
     <repository>
       <id>Ethereum</id>
