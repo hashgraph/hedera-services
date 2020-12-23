@@ -148,7 +148,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(JUnitPlatform.class)
 public class ServicesContextTest {
-	private final NodeId id = new NodeId(false, 1L);
+	private final long id = 1L;
+	private final NodeId nodeId = new NodeId(false, id);
 
 	RichInstant consensusTimeOfLastHandledTxn = RichInstant.fromJava(Instant.now());
 	Platform platform;
@@ -206,7 +207,7 @@ public class ServicesContextTest {
 		given(newState.storage()).willReturn(newStorage);
 		given(newState.tokenAssociations()).willReturn(newTokenRels);
 		// given:
-		var subject = new ServicesContext(id, platform, state, propertySources);
+		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
 		var accountsRef = subject.queryableAccounts();
 		var topicsRef = subject.queryableTopics();
@@ -238,7 +239,7 @@ public class ServicesContextTest {
 		InOrder inOrder = inOrder(state);
 
 		// given:
-		var subject = new ServicesContext(id, platform, state, propertySources);
+		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// when:
 		subject.addressBook();
@@ -270,7 +271,7 @@ public class ServicesContextTest {
 		given(state.addressBook()).willReturn(book);
 
 		// when:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// then:
 		assertEquals(ctx.address(), address);
@@ -283,7 +284,7 @@ public class ServicesContextTest {
 		Instant dataDrivenNow = Instant.now();
 		ServicesContext ctx =
 				new ServicesContext(
-						id,
+						nodeId,
 						platform,
 						state,
 						propertySources);
@@ -302,7 +303,7 @@ public class ServicesContextTest {
 		given(platform.createConsole(true)).willReturn(console);
 
 		// when:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// then:
 		assertEquals(console, ctx.console());
@@ -320,7 +321,7 @@ public class ServicesContextTest {
 		given(state.addressBook()).willReturn(book);
 
 		// given:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// expect:
 		assertEquals(ServicesNodeType.ZERO_STAKE_NODE, ctx.nodeType());
@@ -335,7 +336,7 @@ public class ServicesContextTest {
 		FCMapBackingAccounts backingAccounts = mock(FCMapBackingAccounts.class);
 
 		// given:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// expect:
 		assertDoesNotThrow(ctx::rebuildBackingStoresIfPresent);
@@ -364,7 +365,7 @@ public class ServicesContextTest {
 		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn("src/main/resources");
 
 		// given:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
 		ctx.platformStatus().set(PlatformStatus.DISCONNECTED);
 
@@ -490,9 +491,23 @@ public class ServicesContextTest {
 		given(diskFs.contains(any())).willReturn(true);
 		given(diskFs.contentsOf(any())).willReturn(fileContents);
 
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		var subject = ctx.systemFilesManager();
 
 		assertDoesNotThrow(() -> subject.loadFeeSchedules());
+	}
+
+	@Test
+	public void getRecordStreamDirectoryTest() {
+		final AddressBook book = mock(AddressBook.class);
+		final Address address = mock(Address.class);
+		given(state.addressBook()).willReturn(book);
+		given(book.getAddress(id)).willReturn(address);
+		given(address.getMemo()).willReturn("0.0.3");
+		final String recordStreamDir = "somePath/recordStream";
+		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(recordStreamDir);
+
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
+		assertEquals(recordStreamDir + "/record0.0.3", ctx.getRecordStreamDirectory());
 	}
 }

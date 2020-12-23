@@ -249,6 +249,7 @@ import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -296,6 +297,7 @@ import org.ethereum.datasource.StoragePersistence;
 import org.ethereum.db.ServicesRepositoryRoot;
 import com.hedera.services.context.properties.PropertySource;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.time.Instant;
 import java.util.Collections;
@@ -334,6 +336,8 @@ public class ServicesContext {
 	private final PropertySources propertySources;
 
 	/* Context-sensitive singletons. */
+	/** the directory to which we writes .rcd and .rcd_sig files */
+	private String recordStreamDir;
 	private Thread recordStreamThread;
 	private Address address;
 	private Console console;
@@ -1688,7 +1692,15 @@ public class ServicesContext {
 	}
 
 	public String getRecordStreamDirectory() {
-		return properties().getStringProperty("hedera.recordStream.logDir");
+		if (recordStreamDir == null) {
+			final String nodeAccountString = EntityIdUtils.asLiteralString(nodeAccount());
+			String parentDir = properties().getStringProperty("hedera.recordStream.logDir");
+			if (!parentDir.endsWith(File.separator)) {
+				parentDir += File.separator;
+			}
+			recordStreamDir = parentDir + "record" + nodeAccountString;
+		}
+		return recordStreamDir;
 	}
 
 	void setBackingTokenRels(BackingTokenRels backingTokenRels) {
