@@ -44,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
@@ -60,7 +61,9 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
@@ -82,13 +85,20 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ServicesState.RELEASE_0100_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_0110_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_070_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static java.util.Collections.EMPTY_LIST;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -125,6 +135,7 @@ class ServicesStateTest {
 	FCMap<MerkleEntityId, MerkleToken> tokensCopy;
 	MerkleDiskFs diskFs;
 	MerkleDiskFs diskFsCopy;
+	RecordsRunningHashLeaf runningHashLeaf;
 	ExchangeRates midnightRates;
 	SequenceNumber seqNo;
 	MerkleNetworkContext networkCtx;
@@ -175,6 +186,7 @@ class ServicesStateTest {
 		tokenAssociations = mock(FCMap.class);
 		tokenAssociationsCopy = mock(FCMap.class);
 		diskFs = mock(MerkleDiskFs.class);
+		runningHashLeaf = mock(RecordsRunningHashLeaf.class);
 
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
@@ -223,6 +235,7 @@ class ServicesStateTest {
 		assertNotNull(subject.tokens());
 		assertNotNull(subject.tokenAssociations());
 		assertNotNull(subject.diskFs());
+		assertNotNull(subject.runningHashLeaf());
 		// and:
 		assertTrue(subject.skipDiskFsHashCheck);
 	}
@@ -233,9 +246,14 @@ class ServicesStateTest {
 		subject = new ServicesState(ctx, self, Collections.emptyList());
 
 		// expect:
-		assertEquals(ServicesState.ChildIndices.NUM_070_CHILDREN, subject.getMinimumChildCount(1));
-		assertEquals(ServicesState.ChildIndices.NUM_080_CHILDREN, subject.getMinimumChildCount(2));
-		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(3));
+		assertEquals(ServicesState.ChildIndices.NUM_070_CHILDREN, subject.getMinimumChildCount(RELEASE_070_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_080_CHILDREN, subject.getMinimumChildCount(RELEASE_080_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(RELEASE_090_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(RELEASE_0100_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_0110_CHILDREN, subject.getMinimumChildCount(RELEASE_0110_VERSION));
+
+		Throwable throwable = assertThrows(IllegalArgumentException.class, () -> subject.getMinimumChildCount(RELEASE_0110_VERSION + 1));
+		assertTrue(throwable.getMessage().contains("unknown version"));
 	}
 
 	@Test
@@ -261,7 +279,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void initsAsExpected() {
+	public void initsWithoutMerkleAsExpected() {
 		// when:
 		subject.init(platform, book);
 
@@ -277,6 +295,10 @@ class ServicesStateTest {
 		assertEquals(self, actualCtx.id());
 		assertEquals(platform, actualCtx.platform());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
+		final RecordsRunningHashLeaf runningHashLeaf = subject.runningHashLeaf();
+		assertNotNull(runningHashLeaf);
+		final ImmutableHash emptyHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+		assertEquals(emptyHash, runningHashLeaf.getRunningHash().getHash());
 		// and:
 		verify(mockDigest, never()).accept(any());
 	}
@@ -434,7 +456,7 @@ class ServicesStateTest {
 		Hash accountsRootHash = new Hash("asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes());
 		Hash tokenRelsRootHash = new Hash("asdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdh".getBytes());
 		Hash specialFileSystemHash = new Hash("123456781234567812345678123456781234567812345678".getBytes());
-
+		Hash runningHashLeafHash = new Hash("qasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasd".getBytes());
 		// and:
 		Hash overallHash = new Hash("a!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!df".getBytes());
 		// and:
@@ -446,7 +468,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
-
+		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		// and:
 		var expected = String.format("[SwirldState Hashes]\n" +
 				"  Overall           :: %s\n" +
@@ -457,7 +479,8 @@ class ServicesStateTest {
 				"  TokenAssociations :: %s\n" +
 				"  DiskFs            :: %s\n" +
 				"  NetworkContext    :: %s\n" +
-				"  AddressBook       :: %s",
+				"  AddressBook       :: %s\n" +
+				"  RecordsRunningHashLeaf:: %s",
 				overallHash,
 				accountsRootHash,
 				storageRootHash,
@@ -466,7 +489,8 @@ class ServicesStateTest {
 				tokenRelsRootHash,
 				specialFileSystemHash,
 				ctxHash,
-				bookHash);
+				bookHash,
+				runningHashLeafHash);
 		subject.setHash(overallHash);
 
 		given(topics.getHash()).willReturn(topicRootHash);
@@ -477,7 +501,7 @@ class ServicesStateTest {
 		given(networkCtx.getHash()).willReturn(ctxHash);
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
-
+		given(runningHashLeaf.getHash()).willReturn(runningHashLeafHash);
 		// when:
 		subject.printHashes();
 

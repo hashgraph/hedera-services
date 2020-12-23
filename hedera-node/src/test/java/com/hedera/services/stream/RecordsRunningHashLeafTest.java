@@ -81,7 +81,6 @@ public class RecordsRunningHashLeafTest {
 				assertEquals(hash, originalHash);
 			}
 		}
-
 	}
 
 	private static Hash getRandomHash() {

@@ -25,6 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.exceptions.ContextNotFoundException;
+import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -37,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.blob.BinaryObjectStore;
@@ -46,6 +48,9 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.ImmutableHash;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
@@ -73,7 +78,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_090_VERSION = 3;
 	static final int RELEASE_0100_VERSION = 4;
-	static final int MERKLE_VERSION = RELEASE_0100_VERSION;
+	static final int RELEASE_0110_VERSION = 5;
+	static final int MERKLE_VERSION = RELEASE_0110_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
@@ -96,6 +102,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int TOKEN_ASSOCIATIONS = 6;
 		static final int DISK_FS = 7;
 		static final int NUM_090_CHILDREN = 8;
+		static final int RECORD_STREAM_RUNNING_HASH = 8;
+		static final int NUM_0110_CHILDREN = 9;
 	}
 
 	ServicesContext ctx;
@@ -104,7 +112,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	public ServicesState(List<MerkleNode> children) {
-		super(ChildIndices.NUM_090_CHILDREN);
+		super(ChildIndices.NUM_0110_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -130,12 +138,18 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version == RELEASE_070_VERSION) {
-			return ChildIndices.NUM_070_CHILDREN;
-		} else {
-			return (version == RELEASE_080_VERSION)
-					? ChildIndices.NUM_080_CHILDREN
-					: ChildIndices.NUM_090_CHILDREN;
+		switch (version) {
+			case RELEASE_0110_VERSION:
+				return ChildIndices.NUM_0110_CHILDREN;
+			case RELEASE_0100_VERSION:
+			case RELEASE_090_VERSION:
+				return ChildIndices.NUM_090_CHILDREN;
+			case RELEASE_080_VERSION:
+				return ChildIndices.NUM_080_CHILDREN;
+			case RELEASE_070_VERSION:
+				return ChildIndices.NUM_070_CHILDREN;
+			default:
+				throw new IllegalArgumentException(String.format("unknown version: %d", version));
 		}
 	}
 
@@ -155,6 +169,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			log.info("Created disk file system after <=0.9.0 state restoration");
 			skipDiskFsHashCheck = true;
+		}
+		if (runningHashLeaf() == null) {
+			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH,
+					new RecordsRunningHashLeaf(new RunningHash()));
+			log.info("Created RecordsRunningHashLeaf after <=0.110.0 state restoration");
 		}
 	}
 
@@ -180,7 +199,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
+		boolean initWithMerkle = true;
 		if (getNumberOfChildren() < ChildIndices.NUM_090_CHILDREN) {
+			initWithMerkle = false;
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX,
@@ -206,7 +227,20 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			if (!skipDiskFsHashCheck) {
 				restoredDiskFs.checkHashesAgainstDiskContents();
 			}
+		}
 
+		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN) {
+			// read file hash from the last record stream .rcd_sig file and set it as initial value of
+			// records running Hash
+			ImmutableHash hash = new ImmutableHash(RecordStream.readPrevFileHash(ctx.getRecordStreamDirectory()));
+			final RunningHash runningHash = new RunningHash();
+			runningHash.setHash(hash);
+			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));
+		}
+		log.info("initial Hash in RecordsRunningHashLeaf: {}", () -> runningHashLeaf().getRunningHash().getHash());
+
+		if (initWithMerkle) {
+			// only digest when initialize with Merkle state
 			merkleDigest.accept(this);
 			printHashes();
 		}
@@ -302,7 +336,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						"  TokenAssociations :: %s\n" +
 						"  DiskFs            :: %s\n" +
 						"  NetworkContext    :: %s\n" +
-						"  AddressBook       :: %s",
+						"  AddressBook       :: %s\n" +
+						"  RecordsRunningHashLeaf:: %s",
 				getHash(),
 				accounts().getHash(),
 				storage().getHash(),
@@ -311,7 +346,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				tokenAssociations().getHash(),
 				diskFs().getHash(),
 				networkCtx().getHash(),
-				addressBook().getHash()));
+				addressBook().getHash(),
+				runningHashLeaf().getHash()));
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
@@ -344,5 +380,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public MerkleDiskFs diskFs() {
 		return getChild((ChildIndices.DISK_FS));
+	}
+
+	public RecordsRunningHashLeaf runningHashLeaf() {
+		return getChild(ChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 }

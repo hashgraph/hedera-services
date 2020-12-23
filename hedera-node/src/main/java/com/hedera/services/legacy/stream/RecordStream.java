@@ -25,11 +25,11 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.Platform;
+import com.swirlds.common.crypto.DigestType;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -147,6 +147,7 @@ public class RecordStream implements Runnable {
 
 	/**
 	 * set `inFreeze` to be given value
+	 *
 	 * @param inFreeze
 	 */
 	public void setInFreeze(boolean inFreeze) {
@@ -221,9 +222,9 @@ public class RecordStream implements Runnable {
 			byte[] fileContentHash = mdForContent.digest(Arrays.copyOfRange(array, 57, array.length));
 			byte[] fileHash = md.digest(ArrayUtils.addAll(prevHashBytes, fileContentHash));
 
-			if(log.isDebugEnabled()){
-    			log.debug("Hash from stream record file " + Hex.encodeHexString(prevFileHash));
-    			log.debug("Hash from read record file   " + Hex.encodeHexString(fileHash));
+			if (log.isDebugEnabled()) {
+				log.debug("Hash from stream record file " + Hex.encodeHexString(prevFileHash));
+				log.debug("Hash from read record file   " + Hex.encodeHexString(fileHash));
 			}
 
 			if (!Arrays.equals(prevFileHash, fileHash)) {
@@ -324,7 +325,8 @@ public class RecordStream implements Runnable {
 
 		while (true) {
 			try {
-				// when the platform is in freeze period, and recordBuffer is empty, and stream is not null, which means the last record has been written into current RecordStream file, we should close and sign it.
+				// when the platform is in freeze period, and recordBuffer is empty, and stream is not null, which
+				// means the last record has been written into current RecordStream file, we should close and sign it.
 				if (inFreeze && recordBuffer.isEmpty() && stream != null) {
 					log.info("Finished writing the last record to file before restart.");
 					close();
@@ -467,20 +469,27 @@ public class RecordStream implements Runnable {
 
 	/**
 	 * Read the previous file hash from file system
+	 *
 	 * @param directory
 	 * @return
 	 */
 
-	private byte[] readPrevFileHash(String directory) {
-		File dir = new File(directory);
-		File[] files = dir.listFiles();
-		Optional<File> lastSigFileOptional = Arrays.stream(files).filter(file -> isRecordSigFile(file))
-				.max(Comparator.comparing(File::getName));
-		if (lastSigFileOptional.isPresent()) {
-			File lastSigFile = lastSigFileOptional.get();
-			return getFileHashFromSigFile(lastSigFile);
+	public static byte[] readPrevFileHash(String directory) {
+		if (directory != null) {
+			File dir = new File(directory);
+			File[] files = dir.listFiles();
+			if (files != null) {
+				Optional<File> lastSigFileOptional = Arrays.stream(files).filter(file -> isRecordSigFile(file))
+						.max(Comparator.comparing(File::getName));
+				if (lastSigFileOptional.isPresent()) {
+					File lastSigFile = lastSigFileOptional.get();
+					return getFileHashFromSigFile(lastSigFile);
+				}
+			}
 		}
-		return null;
+		log.info("readPrevFileHash: fail to load record stream Hash from {}, will return empty Hash",
+				() -> directory);
+		return new byte[DigestType.SHA_384.digestLength()];
 	}
 }
 

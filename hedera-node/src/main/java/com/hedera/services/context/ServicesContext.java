@@ -1687,6 +1687,10 @@ public class ServicesContext {
 		return state.diskFs();
 	}
 
+	public String getRecordStreamDirectory() {
+		return properties().getStringProperty("hedera.recordStream.logDir");
+	}
+
 	void setBackingTokenRels(BackingTokenRels backingTokenRels) {
 		this.backingTokenRels = backingTokenRels;
 	}

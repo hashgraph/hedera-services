@@ -52,7 +52,8 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		runningHash = new RunningHash(in.readSerializable());
+		runningHash = new RunningHash();
+		runningHash.setHash(in.readSerializable());
 	}
 
 	/**
