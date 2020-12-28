@@ -941,7 +941,7 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "30 3 * * *"
+          cron: "45 4 * * *"
           filters:
             branches:
               only:
@@ -1064,7 +1064,7 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "15 4 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
@@ -1171,7 +1171,7 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "15 6 * * *"
           filters:
             branches:
               only:
@@ -1212,7 +1212,7 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "5 6 * * *"
+          cron: "45 6 * * *"
           filters:
             branches:
               only:
@@ -1317,7 +1317,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-Performance-4N-4C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "45 6 * * *"
           filters:
             branches:
               only:
@@ -1338,7 +1338,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
     triggers:
       - schedule:
-          cron: "30 7 * * *"
+          cron: "40 10 * * *"
           filters:
             branches:
               only:
@@ -1358,7 +1358,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "35 6 * * *"
+          cron: "45 6 * * *"
           filters:
             branches:
               only:
@@ -1378,7 +1378,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "39 0 * * *"
+          cron: "49 0 * * *"
           filters:
             branches:
               only:
@@ -1420,7 +1420,7 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
       - schedule:
-          cron: "0 10 * * *"
+          cron: "15 7 * * *"
           filters:
             branches:
               only:
