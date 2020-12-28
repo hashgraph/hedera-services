@@ -1,11 +1,11 @@
 package com.hedera.services.stream;
 
+import com.hedera.services.stats.MiscRunningAvgs;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.SerializableRunningHashable;
-import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.HashCalculatorForStream;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThread;
@@ -73,8 +73,15 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	private volatile boolean inFreeze = false;
 
 	/**
+	 * an instance for recording the average value of recordStream queue size
+	 */
+	private MiscRunningAvgs runningAvgs;
+
+	/**
 	 * @param platform
 	 * 		the platform which initializes this RecordStreamManager instance
+	 * @param runningAvgs
+	 * 		an instance for recording the average value of recordStream queue size
 	 * @param enableRecordStreaming
 	 * 		whether write record stream files or not
 	 * @param recordStreamDir
@@ -82,13 +89,14 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 * @param recordsLogPeriod
 	 * 		period of generating recordStream file
 	 * @param recordStreamQueueCapacity
-	 * 		capacity of the blockingQueue from which we take records and write to EventStream files
+	 * 		capacity of the blockingQueue from which we take records and write to RecordStream files
 	 * @throws NoSuchAlgorithmException
 	 * 		is thrown when fails to get required MessageDigest instance
 	 * @throws IOException
 	 * 		is thrown when fails to create directory for record streaming
 	 */
 	public RecordStreamManager(final Platform platform,
+			final MiscRunningAvgs runningAvgs,
 			final boolean enableRecordStreaming,
 			final String recordStreamDir,
 			final long recordsLogPeriod,
@@ -102,10 +110,12 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 					recordsLogPeriod * SEC_TO_MS,
 					platform,
 					startWriteAtCompleteWindow,
-					EventStreamType.EVENT);
+					RecordStreamType.RECORD);
 			writeQueueThread = new QueueThread<>("writeQueueThread", platform.getSelfId(), streamFileWriter,
 					recordStreamQueueCapacity);
 		}
+
+		this.runningAvgs = runningAvgs;
 
 		runningHashCalculator = new RunningHashCalculatorForStream<>();
 		hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
@@ -118,14 +128,22 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	}
 
 	/**
+	 * Is used for unit testing
+	 *
 	 * @param multiStream
 	 * 		the instance which receives {@link RecordStreamObject}s then passes to nextStreams
+	 * @param writeQueueThread
+	 * 		receives {@link RecordStreamObject}s from multiStream, then passes to streamFileWriter
+	 * @param runningAvgs
+	 * 		an instance for recording the average value of recordStream queue size
 	 */
-	public RecordStreamManager(final MultiStream<T> multiStream) {
+	RecordStreamManager(final MultiStream<T> multiStream, final QueueThread<T> writeQueueThread,
+			final MiscRunningAvgs runningAvgs) {
 		this.multiStream = multiStream;
+		this.writeQueueThread = writeQueueThread;
 		multiStream.setRunningHash(initialHash);
+		this.runningAvgs = runningAvgs;
 	}
-
 
 	/**
 	 * receives a consensus record from {@link com.hedera.services.legacy.services.state.AwareProcessLogic} each time,
@@ -139,10 +157,11 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 		if (!inFreeze) {
 			multiStream.add(recordStreamObject);
 		}
+		runningAvgs.recordStreamQueueSize(getRecordStreamingQueueSize());
 	}
 
 	/**
-	 * set `inFreeze` to be given value
+	 * set `inFreeze` to be the given value
 	 *
 	 * @param inFreeze
 	 */
@@ -183,7 +202,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return current size of working queue for calculating hash and runningHash
 	 */
-	public int getHashQueueSize() {
+	int getHashQueueSize() {
 		return hashQueueThread.getQueueSize();
 	}
 
@@ -192,7 +211,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return current size of working queue for writing to record stream files
 	 */
-	public int getEventStreamingQueueSize() {
+	int getRecordStreamingQueueSize() {
 		return writeQueueThread == null ? 0 : writeQueueThread.getQueueSize();
 	}
 
@@ -201,7 +220,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return current multiStream instance
 	 */
-	public MultiStream<T> getMultiStream() {
+	MultiStream<T> getMultiStream() {
 		return multiStream;
 	}
 
@@ -210,7 +229,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return current TimestampStreamFileWriter instance
 	 */
-	public TimestampStreamFileWriter<T> getStreamFileWriter() {
+	TimestampStreamFileWriter<T> getStreamFileWriter() {
 		return streamFileWriter;
 	}
 
@@ -219,7 +238,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return current HashCalculatorForStream instance
 	 */
-	public HashCalculatorForStream<T> getHashCalculator() {
+	HashCalculatorForStream<T> getHashCalculator() {
 		return hashCalculator;
 	}
 
@@ -228,7 +247,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return whether freeze period has started
 	 */
-	public boolean getInFreeze() {
+	boolean getInFreeze() {
 		return inFreeze;
 	}
 
@@ -237,7 +256,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return a copy of initialHash
 	 */
-	public Hash getInitialHash() {
+	Hash getInitialHash() {
 		return new Hash(initialHash);
 	}
 }
