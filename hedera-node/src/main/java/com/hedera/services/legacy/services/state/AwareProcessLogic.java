@@ -365,7 +365,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	) {
 		final RecordStreamObject recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp);
 		// update runningHash instance in the leaf of ServicesState
-		// the Hash in the runningHash instance will be calculated and set by a runningHashCalculator in the RecordStreamManager
+		// the Hash in the runningHash instance will be calculated and set by the runningHashCalculator in the RecordStreamManager
 		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
 		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
 	}

@@ -194,7 +194,7 @@ public class RecordStreamManager {
 
 	/**
 	 * sets startWriteAtCompleteWindow:
-	 * it should be set to be true after reconnect, or at state recovering;
+	 * it should be set to be true after reconnect;
 	 * it should be set to be false at restart
 	 *
 	 * @param startWriteAtCompleteWindow
