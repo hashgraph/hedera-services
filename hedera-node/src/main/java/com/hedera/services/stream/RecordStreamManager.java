@@ -5,13 +5,11 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
-import com.swirlds.common.crypto.SerializableRunningHashable;
 import com.swirlds.common.stream.HashCalculatorForStream;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThread;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.stream.TimestampStreamFileWriter;
-import com.swirlds.common.stream.Timestamped;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,34 +25,34 @@ import static com.swirlds.common.Constants.SEC_TO_MS;
  * This class is used for generating record stream files when record streaming is enabled,
  * and for calculating runningHash for {@link RecordStreamObject}s
  */
-public class RecordStreamManager<T extends Timestamped & SerializableRunningHashable> {
+public class RecordStreamManager {
 	/** use this for all logging, as controlled by the optional data/log4j2.xml file */
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(RecordStreamManager.class);
 
 	/**
 	 * receives {@link RecordStreamObject}s from {@link com.hedera.services.legacy.services.state.AwareProcessLogic}
 	 * .addForStreaming,
 	 * then passes to hashQueueThread and writeQueueThread
 	 */
-	private MultiStream<T> multiStream;
+	private MultiStream<RecordStreamObject> multiStream;
 
 	/** receives {@link RecordStreamObject}s from multiStream, then passes to hashCalculator */
-	private QueueThread<T> hashQueueThread;
+	private QueueThread<RecordStreamObject> hashQueueThread;
 	/**
 	 * receives {@link RecordStreamObject}s from hashQueueThread, calculates this object's Hash, then passes to
 	 * runningHashCalculator
 	 */
-	private HashCalculatorForStream<T> hashCalculator;
+	private HashCalculatorForStream<RecordStreamObject> hashCalculator;
 	/** receives {@link RecordStreamObject}s from hashCalculator, calculates and set runningHash for this object */
-	private RunningHashCalculatorForStream<T> runningHashCalculator;
+	private RunningHashCalculatorForStream<RecordStreamObject> runningHashCalculator;
 
 	/** receives {@link RecordStreamObject}s from multiStream, then passes to streamFileWriter */
-	private QueueThread<T> writeQueueThread;
+	private QueueThread<RecordStreamObject> writeQueueThread;
 	/**
 	 * receives {@link RecordStreamObject}s from writeQueueThread, serializes {@link RecordStreamObject}s to record
 	 * stream files
 	 */
-	private TimestampStreamFileWriter<T> streamFileWriter;
+	private TimestampStreamFileWriter<RecordStreamObject> streamFileWriter;
 
 	/** initial running Hash of records */
 	private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
@@ -125,6 +123,13 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 		multiStream = new MultiStream<>(
 				enableRecordStreaming ? List.of(hashQueueThread, writeQueueThread) : List.of(hashQueueThread));
 		multiStream.setRunningHash(initialHash);
+
+		LOGGER.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}," +
+						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}",
+				() -> enableRecordStreaming,
+				() -> recordStreamDir,
+				() -> recordsLogPeriod,
+				() -> recordStreamQueueCapacity);
 	}
 
 	/**
@@ -137,7 +142,8 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 * @param runningAvgs
 	 * 		an instance for recording the average value of recordStream queue size
 	 */
-	RecordStreamManager(final MultiStream<T> multiStream, final QueueThread<T> writeQueueThread,
+	RecordStreamManager(final MultiStream<RecordStreamObject> multiStream,
+			final QueueThread<RecordStreamObject> writeQueueThread,
 			final MiscRunningAvgs runningAvgs) {
 		this.multiStream = multiStream;
 		this.writeQueueThread = writeQueueThread;
@@ -151,11 +157,14 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @param recordStreamObject
 	 * 		the {@link RecordStreamObject} object to be added
-	 * @throws InterruptedException
 	 */
-	public void addRecordStreamObject(final T recordStreamObject) throws InterruptedException {
+	public void addRecordStreamObject(final RecordStreamObject recordStreamObject) {
 		if (!inFreeze) {
-			multiStream.add(recordStreamObject);
+			try {
+				multiStream.add(recordStreamObject);
+			} catch (InterruptedException ex) {
+				LOGGER.error("thread interruption ignored in addRecordStreamObject: {}", ex);
+			}
 		}
 		runningAvgs.recordStreamQueueSize(getRecordStreamingQueueSize());
 	}
@@ -220,7 +229,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return current multiStream instance
 	 */
-	MultiStream<T> getMultiStream() {
+	MultiStream<RecordStreamObject> getMultiStream() {
 		return multiStream;
 	}
 
@@ -229,7 +238,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return current TimestampStreamFileWriter instance
 	 */
-	TimestampStreamFileWriter<T> getStreamFileWriter() {
+	TimestampStreamFileWriter<RecordStreamObject> getStreamFileWriter() {
 		return streamFileWriter;
 	}
 
@@ -238,7 +247,7 @@ public class RecordStreamManager<T extends Timestamped & SerializableRunningHash
 	 *
 	 * @return current HashCalculatorForStream instance
 	 */
-	HashCalculatorForStream<T> getHashCalculator() {
+	HashCalculatorForStream<RecordStreamObject> getHashCalculator() {
 		return hashCalculator;
 	}
 

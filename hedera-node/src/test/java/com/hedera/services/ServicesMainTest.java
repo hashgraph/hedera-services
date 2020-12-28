@@ -41,6 +41,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
+import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.utils.IdUtils;
@@ -87,14 +89,12 @@ public class ServicesMainTest {
 	FCMap accounts;
 	FCMap storage;
 	Pause pause;
-	Thread recordStreamThread;
 	Logger mockLog;
 	Console console;
 	Platform platform;
 	SystemExits systemExits;
 	AddressBook addressBook;
 	PrintStream consoleOut;
-	RecordStream recordStream;
 	FeeCalculator fees;
 	ServicesMain subject;
 	ServicesContext ctx;
@@ -113,6 +113,7 @@ public class ServicesMainTest {
 	AccountRecordsHistorian recordsHistorian;
 	GlobalDynamicProperties globalDynamicProperties;
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
+	RecordStreamManager recordStreamManager;
 
 	@BeforeEach
 	private void setup() {
@@ -127,8 +128,7 @@ public class ServicesMainTest {
 		consoleOut = mock(PrintStream.class);
 		platform = mock(Platform.class);
 		systemExits = mock(SystemExits.class);
-		recordStream = mock(RecordStream.class);
-		recordStreamThread = mock(Thread.class);
+		recordStreamManager = mock(RecordStreamManager.class);
 		backingAccounts = (BackingStore<AccountID, MerkleAccount>)mock(BackingStore.class);
 		statsManager = mock(ServicesStatsManager.class);
 		stateMigrations = mock(StateMigrations.class);
@@ -162,13 +162,12 @@ public class ServicesMainTest {
 		given(ctx.consoleOut()).willReturn(consoleOut);
 		given(ctx.addressBook()).willReturn(addressBook);
 		given(ctx.platform()).willReturn(platform);
-		given(ctx.recordStream()).willReturn(recordStream);
+		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
 		given(ctx.platformStatus()).willReturn(platformStatus);
 		given(ctx.ledgerValidator()).willReturn(ledgerValidator);
-		given(ctx.recordStreamThread()).willReturn(recordStreamThread);
 		given(ctx.propertySources()).willReturn(propertySources);
 		given(ctx.properties()).willReturn(properties);
-		given(ctx.recordStream()).willReturn(recordStream);
+		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
 		given(ctx.stateMigrations()).willReturn(stateMigrations);
 		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
 		given(ctx.backingAccounts()).willReturn(backingAccounts);
@@ -248,7 +247,6 @@ public class ServicesMainTest {
 				platform,
 				stateMigrations,
 				ledgerValidator,
-				recordStreamThread,
 				recordsHistorian,
 				fees,
 				grpc,
@@ -266,7 +264,6 @@ public class ServicesMainTest {
 		inOrder.verify(platform).setSleepAfterSync(0L);
 		inOrder.verify(platform).addSignedStateListener(any(IssListener.class));
 		inOrder.verify(statsManager).initializeFor(platform);
-		inOrder.verify(recordStreamThread).start();
 	}
 
 	@Test
@@ -441,7 +438,7 @@ public class ServicesMainTest {
 
 		// then:
 		verify(platformStatus).set(newStatus);
-		verifyNoInteractions(recordStream);
+		verifyNoInteractions(recordStreamManager);
 	}
 
 	@Test
@@ -455,7 +452,7 @@ public class ServicesMainTest {
 
 		// then:
 		verify(platformStatus).set(newStatus);
-		verify(recordStream).setInFreeze(true);
+		verify(recordStreamManager).setInFreeze(true);
 	}
 
 	@Test
@@ -469,7 +466,7 @@ public class ServicesMainTest {
 
 		// then:
 		verify(platformStatus).set(newStatus);
-		verify(recordStream).setInFreeze(false);
+		verify(recordStreamManager).setInFreeze(false);
 	}
 
 	@Test

@@ -88,6 +88,7 @@ import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsManager;
+import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.tokens.HederaTokenStore;
@@ -372,7 +373,6 @@ public class ServicesContextTest {
 		// expect:
 		assertEquals(SleepingPause.SLEEPING_PAUSE, ctx.pause());
 		assertEquals(PlatformStatus.DISCONNECTED, ctx.platformStatus().get());
-		assertEquals("record_stream_0.0.3", ctx.recordStreamThread().getName());
 		assertEquals(ctx.properties(), properties);
 		assertEquals(ctx.propertySources(), propertySources);
 		// and expect TDD:
@@ -461,6 +461,7 @@ public class ServicesContextTest {
 		assertThat(ctx.speedometers(), instanceOf(MiscSpeedometers.class));
 		assertThat(ctx.statsManager(), instanceOf(ServicesStatsManager.class));
 		assertThat(ctx.semVers(), instanceOf(SemanticVersions.class));
+		assertThat(ctx.recordStreamManager(), instanceOf(RecordStreamManager.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
@@ -468,7 +469,6 @@ public class ServicesContextTest {
 		assertThat(ctx.contracts(), instanceOf(SmartContractRequestHandler.class));
 		assertThat(ctx.freezeGrpc(), instanceOf(FreezeServiceImpl.class));
 		assertThat(ctx.contractsGrpc(), instanceOf(SmartContractServiceImpl.class));
-		assertThat(ctx.recordStream(), instanceOf(RecordStream.class));
 		assertThat(ctx.accountsExporter(), instanceOf(DefaultAccountsExporter.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));

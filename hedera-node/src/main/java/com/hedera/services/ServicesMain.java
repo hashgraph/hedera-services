@@ -107,9 +107,9 @@ public class ServicesMain implements SwirldMain {
 		log.info("Now current platform status = {} in HederaNode#{}.", status, ctx.id());
 		ctx.platformStatus().set(status);
 		if (status == ACTIVE) {
-			ctx.recordStream().setInFreeze(false);
+			ctx.recordStreamManager().setInFreeze(false);
 		} else if (status == MAINTENANCE) {
-			ctx.recordStream().setInFreeze(true);
+			ctx.recordStreamManager().setInFreeze(true);
 			ctx.updateFeature();
 		} else {
 			log.info("Platform {} status set to : {}", ctx.id(), status);
@@ -160,16 +160,10 @@ public class ServicesMain implements SwirldMain {
 		log.info("Accounts exported.");
 		initializeStats();
 		log.info("Stats initialized.");
-		startRecordStreamThread();
-		log.info("Record stream started in directory {}.", ctx.recordStream().getRecordStreamsDirectory());
 		startNettyIfAppropriate();
 		log.info("Netty started.");
 
 		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
-	}
-
-	private void startRecordStreamThread() {
-		ctx.recordStreamThread().start();
 	}
 
 	private void exportAccountsIfDesired() {

@@ -56,6 +56,10 @@ import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * This class is used for generating record stream v3 files
+ */
+@Deprecated
 public class RecordStream implements Runnable {
 
 	/** use this for all logging, as controlled by the optional data/log4j2.xml file */
@@ -403,10 +407,10 @@ public class RecordStream implements Runnable {
 	}
 
 	/**
-	 * Read the FileHash from the record stream signature file
+	 * Read the FileHash from the record stream signature v3 file
 	 *
-	 * @param file
-	 * @return
+	 * @param file .rcd_sig v3 file
+	 * @return file hash byte array
 	 */
 	public static byte[] getFileHashFromSigFile(File file) {
 		Pair<byte[], byte[]> pair = parseSigFile(file);
@@ -468,10 +472,10 @@ public class RecordStream implements Runnable {
 	}
 
 	/**
-	 * Read the previous file hash from file system
+	 * Read the previous file hash from the last .rcd_sig file in the given directory
 	 *
-	 * @param directory
-	 * @return
+	 * @param directory the directory where stores record stream v3 files
+	 * @return record stream v3 previous file hash byte array
 	 */
 
 	public static byte[] readPrevFileHash(String directory) {

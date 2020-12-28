@@ -34,21 +34,21 @@ public class RecordStreamManagerTest {
 	private static final String INITIALIZE_QUEUE_EMPTY = "after initialization, hash queue should be empty";
 	private static final String UNEXPECTED_VALUE = "unexpected value";
 
-	private static RecordStreamManager<RecordStreamObject> disableStreamingInstance;
-	private static RecordStreamManager<RecordStreamObject> enableStreamingInstance;
+	private static RecordStreamManager disableStreamingInstance;
+	private static RecordStreamManager enableStreamingInstance;
 
 	private static final Hash initialHash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 
 	private static final MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
 	private static final QueueThread<RecordStreamObject> writeQueueThreadMock = mock(QueueThread.class);
-	private static final RecordStreamManager<RecordStreamObject> RECORD_STREAM_MANAGER = new RecordStreamManager<>(
+	private static final RecordStreamManager RECORD_STREAM_MANAGER = new RecordStreamManager(
 			multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
 	@BeforeAll
 	static void init() throws Exception {
-		disableStreamingInstance = new RecordStreamManager<>(platform, runningAvgsMock, false, recordStreamDir,
+		disableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, false, recordStreamDir,
 				recordsLogPeriod, recordStreamQueueCapacity);
-		enableStreamingInstance = new RecordStreamManager<>(platform, runningAvgsMock, true, recordStreamDir,
+		enableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, true, recordStreamDir,
 				recordsLogPeriod, recordStreamQueueCapacity);
 	}
 
@@ -78,7 +78,7 @@ public class RecordStreamManagerTest {
 
 	@Test
 	void addRecordStreamObjectTest() throws InterruptedException {
-		RecordStreamManager<RecordStreamObject> recordStreamManager = new RecordStreamManager<>(
+		RecordStreamManager recordStreamManager = new RecordStreamManager(
 				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 		assertFalse(recordStreamManager.getInFreeze(),
 				"inFreeze should be false after initialization");

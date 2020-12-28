@@ -29,6 +29,7 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.state.logic.ServicesTxnManager;
+import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -60,7 +61,6 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DU
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -363,9 +363,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			TransactionRecord transactionRecord,
 			Instant consensusTimeStamp
 	) {
-		if (PropertiesLoader.isEnableRecordStreaming()) {
-			ctx.recordStream().addRecord(grpcTransaction, transactionRecord, consensusTimeStamp);
-		}
+		ctx.recordStreamManager().addRecordStreamObject(new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp));
 	}
 
 	private TransactionRecord processTransaction(TransactionBody txn, Instant consensusTime) {
