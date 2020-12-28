@@ -74,6 +74,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -120,6 +121,7 @@ import java.io.File;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.security.KeyPair;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -653,6 +655,13 @@ public class MiscUtilsTest {
 
 		assertArrayEquals(expectedHash, CommonUtils.noThrowSha384HashOf(testBytes));
 		assertArrayEquals(expectedHash, CommonUtils.sha384HashOf(testBytes).toByteArray());
+	}
+
+	@Test
+	public void asTimestampTest() {
+		final Instant instant = Instant.now();
+		final Timestamp timestamp = MiscUtils.asTimestamp(instant);
+		assertEquals(instant, MiscUtils.timestampToInstant(timestamp));
 	}
 
 	public static class BodySetter<T> {

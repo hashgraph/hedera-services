@@ -7,12 +7,14 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.Assert.assertEquals;
@@ -22,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class RecordsRunningHashLeafTest {
-	private static final Hash hash = getRandomHash();
+	private static final Hash hash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 	private static final RunningHash runningHash = new RunningHash(hash);
 	private static final RecordsRunningHashLeaf runningHashLeaf = new RecordsRunningHashLeaf(runningHash);
 
@@ -81,11 +83,5 @@ public class RecordsRunningHashLeafTest {
 				assertEquals(hash, originalHash);
 			}
 		}
-	}
-
-	private static Hash getRandomHash() {
-		byte[] bytes = new byte[DigestType.SHA_384.digestLength()];
-		ThreadLocalRandom.current().nextBytes(bytes);
-		return new Hash(bytes);
 	}
 }
