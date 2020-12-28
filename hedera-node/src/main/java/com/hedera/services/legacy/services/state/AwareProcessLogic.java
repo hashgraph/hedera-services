@@ -363,7 +363,11 @@ public class AwareProcessLogic implements ProcessLogic {
 			TransactionRecord transactionRecord,
 			Instant consensusTimeStamp
 	) {
-		ctx.recordStreamManager().addRecordStreamObject(new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp));
+		final RecordStreamObject recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp);
+		// update runningHash instance in the leaf of ServicesState
+		// the Hash in the runningHash instance will be calculated and set by a runningHashCalculator in the RecordStreamManager
+		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
+		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
 	}
 
 	private TransactionRecord processTransaction(TransactionBody txn, Instant consensusTime) {

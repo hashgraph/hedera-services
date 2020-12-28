@@ -267,6 +267,7 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
@@ -1735,6 +1736,14 @@ public class ServicesContext {
 			recordStreamDir = parentDir + "record" + nodeAccountString;
 		}
 		return recordStreamDir;
+	}
+
+	/**
+	 * update the runningHash instance saved in runningHashLeaf
+	 * @param runningHash new runningHash instance
+	 */
+	public void updateRecordRunningHash(final RunningHash runningHash) {
+		state.runningHashLeaf().setRunningHash(runningHash);
 	}
 
 	void setBackingTokenRels(BackingTokenRels backingTokenRels) {

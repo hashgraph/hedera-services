@@ -89,6 +89,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.tokens.HederaTokenStore;
@@ -126,6 +127,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
@@ -509,5 +511,26 @@ public class ServicesContextTest {
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		assertEquals(recordStreamDir + "/record0.0.3", ctx.getRecordStreamDirectory());
+	}
+
+	@Test
+	public void updateRecordRunningHashTest() {
+		// given:
+		final RunningHash runningHash = mock(RunningHash.class);
+		final RecordsRunningHashLeaf runningHashLeaf = new RecordsRunningHashLeaf();
+		when(state.runningHashLeaf()).thenReturn(runningHashLeaf);
+
+		ServicesContext ctx =
+				new ServicesContext(
+						nodeId,
+						platform,
+						state,
+						propertySources);
+
+		// when:
+		ctx.updateRecordRunningHash(runningHash);
+
+		// then:
+		assertEquals(runningHash, ctx.state.runningHashLeaf().getRunningHash());
 	}
 }

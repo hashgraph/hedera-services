@@ -315,7 +315,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				accounts().copy(),
 				tokens().copy(),
 				tokenAssociations().copy(),
-				diskFs().copy()));
+				diskFs().copy(),
+				runningHashLeaf().copy()));
 	}
 
 	/* --------------- */

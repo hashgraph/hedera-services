@@ -111,7 +111,7 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		return runningHash;
 	}
 
-	void setRunningHash(final RunningHash runningHash) {
+	public void setRunningHash(final RunningHash runningHash) {
 		this.runningHash = runningHash;
 	}
 }

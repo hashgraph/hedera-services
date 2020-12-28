@@ -482,7 +482,7 @@ public class RecordStream implements Runnable {
 		if (directory != null) {
 			File dir = new File(directory);
 			File[] files = dir.listFiles();
-			if (files != null) {
+			if (files != null && files.length > 0) {
 				Optional<File> lastSigFileOptional = Arrays.stream(files).filter(file -> isRecordSigFile(file))
 						.max(Comparator.comparing(File::getName));
 				if (lastSigFileOptional.isPresent()) {

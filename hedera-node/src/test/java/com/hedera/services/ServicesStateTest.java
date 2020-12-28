@@ -64,6 +64,7 @@ import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
@@ -136,6 +137,7 @@ class ServicesStateTest {
 	MerkleDiskFs diskFs;
 	MerkleDiskFs diskFsCopy;
 	RecordsRunningHashLeaf runningHashLeaf;
+	RecordsRunningHashLeaf runningHashLeafCopy;
 	ExchangeRates midnightRates;
 	SequenceNumber seqNo;
 	MerkleNetworkContext networkCtx;
@@ -194,12 +196,15 @@ class ServicesStateTest {
 		storageCopy = mock(FCMap.class);
 		accountsCopy = mock(FCMap.class);
 		diskFsCopy = mock(MerkleDiskFs.class);
+		runningHashLeafCopy = mock(RecordsRunningHashLeaf.class);
+
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
 		given(accounts.copy()).willReturn(accountsCopy);
 		given(tokens.copy()).willReturn(tokensCopy);
 		given(tokenAssociations.copy()).willReturn(tokenAssociationsCopy);
 		given(diskFs.copy()).willReturn(diskFsCopy);
+		given(runningHashLeaf.copy()).willReturn(runningHashLeafCopy);
 
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
@@ -523,13 +528,15 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
 		// when:
-		ServicesState copy = (ServicesState) subject.copy();
+		ServicesState copy = subject.copy();
 
 		// then:
+		assertEquals(subject.getNumberOfChildren(), copy.getNumberOfChildren());
 		assertTrue(subject.isImmutable());
 		assertEquals(self, copy.nodeId);
 		assertEquals(bookCopy, copy.addressBook());
@@ -540,6 +547,7 @@ class ServicesStateTest {
 		assertSame(tokensCopy, copy.tokens());
 		assertSame(tokenAssociationsCopy, copy.tokenAssociations());
 		assertSame(diskFsCopy, copy.diskFs());
+		assertSame(runningHashLeafCopy, copy.runningHashLeaf());
 	}
 
 	@Test
