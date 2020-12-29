@@ -136,4 +136,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int feesTokenTransferUsageMultiplier() {
 		return 380;
 	}
+
+	@Override
+	public long maxAutoRenewDuration() {
+		return 8000001L;
+	}
+
+	@Override
+	public long minAutoRenewDuration() {
+		return 6999999L;
+	}
 }

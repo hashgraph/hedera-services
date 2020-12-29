@@ -107,6 +107,8 @@ class BootstrapPropertiesTest {
 			entry("ledger.transfers.maxLen", 10),
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
+			entry("ledger.autoRenewPeriod.maxDuration", 8000001L),
+			entry("ledger.autoRenewPeriod.minDuration", 6999999L),
 			entry("precheck.account.maxLookupRetries", 10),
 			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
 			entry("tokens.maxPerAccount", 1_000),

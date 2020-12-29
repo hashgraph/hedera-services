@@ -1218,7 +1218,7 @@ public class ServicesContext {
 
 	public OptionValidator validator() {
 		if (validator == null) {
-			validator = new ContextOptionValidator(properties(), txnCtx(), globalDynamicProperties());
+			validator = new ContextOptionValidator(txnCtx(), globalDynamicProperties());
 		}
 		return validator;
 	}
