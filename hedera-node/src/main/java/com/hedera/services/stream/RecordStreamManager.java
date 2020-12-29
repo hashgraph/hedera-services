@@ -177,7 +177,9 @@ public class RecordStreamManager {
 	public void setInFreeze(boolean inFreeze) {
 		this.inFreeze = inFreeze;
 		LOGGER.info("RecordStream inFreeze is set to be {} ", inFreeze);
-		multiStream.close();
+		if (inFreeze) {
+			multiStream.close();
+		}
 	}
 
 	/**
