@@ -44,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.utils.SystemExits;
@@ -108,6 +109,7 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(JUnitPlatform.class)
 class ServicesStateTest {
@@ -138,6 +140,8 @@ class ServicesStateTest {
 	MerkleDiskFs diskFsCopy;
 	RecordsRunningHashLeaf runningHashLeaf;
 	RecordsRunningHashLeaf runningHashLeafCopy;
+	RunningHash runningHash;
+	Hash recordsHash;
 	ExchangeRates midnightRates;
 	SequenceNumber seqNo;
 	MerkleNetworkContext networkCtx;
@@ -147,9 +151,12 @@ class ServicesStateTest {
 	SerializableDataOutputStream out;
 	SystemExits systemExits;
 	SystemFilesManager systemFilesManager;
+	RecordStreamManager recordStreamManager;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
 	ServicesState subject;
+
+	private static final Hash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	@BeforeEach
 	private void setup() {
@@ -181,6 +188,7 @@ class ServicesStateTest {
 		systemFilesManager = mock(SystemFilesManager.class);
 		historian = mock(AccountRecordsHistorian.class);
 		txnHistories = mock(Map.class);
+		recordStreamManager = mock(RecordStreamManager.class);
 
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
@@ -189,6 +197,10 @@ class ServicesStateTest {
 		tokenAssociationsCopy = mock(FCMap.class);
 		diskFs = mock(MerkleDiskFs.class);
 		runningHashLeaf = mock(RecordsRunningHashLeaf.class);
+		runningHash = mock(RunningHash.class);
+		recordsHash = mock(Hash.class);
+		given(runningHash.getHash()).willReturn(recordsHash);
+		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
@@ -224,6 +236,7 @@ class ServicesStateTest {
 		given(ctx.txnHistories()).willReturn(txnHistories);
 		given(ctx.propertySources()).willReturn(propertySources);
 		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
+		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
 
 		systemExits = mock(SystemExits.class);
 
@@ -310,7 +323,7 @@ class ServicesStateTest {
 
 	@Test
 	public void initializesContext() {
-		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager);
+		InOrder inOrder = inOrder(ctx, recordStreamManager, txnHistories, historian, systemFilesManager);
 
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
 		// and:
@@ -321,6 +334,8 @@ class ServicesStateTest {
 
 		// then:
 		inOrder.verify(ctx).nodeAccount();
+		// during migration, if the records directory doesn't have old files, initialHash will be empty hash
+		inOrder.verify(recordStreamManager).setInitialHash(EMPTY_HASH);
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
@@ -391,6 +406,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 
 		// when:
 		subject.init(platform, book);
@@ -420,17 +436,19 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 
 		// when:
 		subject.init(platform, book);
 
 		// then:
-		InOrder inOrder = inOrder(diskFs, ctx, mockDigest, accounts, storage, topics,
+		InOrder inOrder = inOrder(diskFs, ctx, recordStreamManager, runningHashLeaf, mockDigest, accounts, storage, topics,
 				tokens, tokenAssociations, networkCtx, book, mockLog);
 		inOrder.verify(diskFs).setFsBaseDir(any());
 		inOrder.verify(ctx).nodeAccount();
 		inOrder.verify(diskFs).setFsNodeScopedDir(any());
 		inOrder.verify(diskFs).checkHashesAgainstDiskContents();
+		inOrder.verify(recordStreamManager).setInitialHash(recordsHash);
 		inOrder.verify(mockDigest).accept(subject);
 		inOrder.verify(accounts).getHash();
 		inOrder.verify(storage).getHash();
@@ -440,6 +458,7 @@ class ServicesStateTest {
 		inOrder.verify(diskFs).getHash();
 		inOrder.verify(networkCtx).getHash();
 		inOrder.verify(book).getHash();
+		inOrder.verify(runningHashLeaf).getHash();
 		inOrder.verify(mockLog).info(argThat((String s) -> s.startsWith("[SwirldState Hashes]")));
 		inOrder.verify(ctx).update(subject);
 

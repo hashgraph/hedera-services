@@ -236,10 +236,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			final RunningHash runningHash = new RunningHash();
 			runningHash.setHash(hash);
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));
-			// set recordStreamManager's initialHash
-			ctx.recordStreamManager().setInitialHash(hash);
 		}
 		log.info("initial Hash in RecordsRunningHashLeaf: {}", () -> runningHashLeaf().getRunningHash().getHash());
+		// set recordStreamManager's initialHash
+		if (runningHashLeaf().getRunningHash() != null && runningHashLeaf().getRunningHash().getHash() != null) {
+			ctx.recordStreamManager().setInitialHash(
+					runningHashLeaf().getRunningHash().getHash());
+		}
 
 		if (initWithMerkle) {
 			// only digest when initialize with Merkle state
