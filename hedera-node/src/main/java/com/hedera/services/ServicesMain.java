@@ -31,6 +31,7 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.SwirldMain;
 import com.swirlds.common.SwirldState;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.Browser;
@@ -158,7 +159,7 @@ public class ServicesMain implements SwirldMain {
 		log.info("Platform is configured.");
 		registerIssListener();
 		log.info("Platform callbacks registered.");
-		registerReconnectCompleteListener();
+		registerReconnectCompleteListener(NotificationFactory.getEngine());
 		log.info("ReconnectCompleteListener registered.");
 		exportAccountsIfDesired();
 		log.info("Accounts exported.");
@@ -274,8 +275,8 @@ public class ServicesMain implements SwirldMain {
 		ctx.platform().addSignedStateListener(new IssListener(ctx.issEventInfo()));
 	}
 
-	void registerReconnectCompleteListener() {
-		NotificationFactory.getEngine().register(ReconnectCompleteListener.class,
+	void registerReconnectCompleteListener(final NotificationEngine notificationEngine) {
+		notificationEngine.register(ReconnectCompleteListener.class,
 				(notification) -> {
 					log.info("Notification Received: Reconnect Finished." +
 									" consensusTimestamp: {}, roundNumber: {}, sequence: {}",

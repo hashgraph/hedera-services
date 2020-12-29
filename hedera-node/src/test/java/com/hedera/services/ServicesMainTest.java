@@ -53,6 +53,8 @@ import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
+import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,6 +72,7 @@ import java.time.Instant;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -584,5 +587,12 @@ public class ServicesMainTest {
 	public void returnsAppState() {
 		// expect:
 		assertTrue(subject.newState() instanceof ServicesState);
+	}
+
+	@Test
+	public void registerReconnectCompleteListenerTest() {
+		NotificationEngine engineMock = mock(NotificationEngine.class);
+		subject.registerReconnectCompleteListener(engineMock);
+		verify(engineMock).register(eq(ReconnectCompleteListener.class), any());
 	}
 }

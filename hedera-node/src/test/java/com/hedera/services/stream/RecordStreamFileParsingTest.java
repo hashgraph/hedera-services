@@ -1,5 +1,6 @@
 package com.hedera.services.stream;
 
+import com.hedera.services.legacy.stream.RecordStream;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -15,9 +16,11 @@ import org.junit.jupiter.api.Test;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,17 +47,6 @@ public class RecordStreamFileParsingTest {
 		final File recordsDir = new File("src/test/resources/record0.0.3");
 		Iterator<SelfSerializable> iterator = LinkedObjectStreamUtilities.parseStreamDirOrFile(recordsDir,
 				RecordStreamType.RECORD);
-//		try (BufferedWriter writer = new BufferedWriter(new FileWriter(out))) {
-//			while (iterator.hasNext()) {
-//				Object object = iterator.next();
-//				if (object instanceof RecordStreamObject) {
-//					writer.write(((RecordStreamObject) object).toShortString());
-//				} else {
-//					writer.write(object.toString());
-//				}
-//				writer.write("\n");
-//			}
-//		}
 
 		Hash startHash = null;
 		int recordsCount = 0;
@@ -86,5 +78,13 @@ public class RecordStreamFileParsingTest {
 		assertEquals(EMPTY_HASH, startHash);
 		assertNotEquals(0, recordsCount);
 		assertNotEquals(EMPTY_HASH, endHash);
+	}
+
+	@Test
+	public void readHashForV2() {
+		final String recordV2Dir = "src/test/resources/recordV2";
+		byte[] hash = RecordStream.readPrevFileHash(recordV2Dir);
+		// the hash read from this directory should not be empty
+		assertFalse(Arrays.equals(new byte[DigestType.SHA_384.digestLength()], hash));
 	}
 }
