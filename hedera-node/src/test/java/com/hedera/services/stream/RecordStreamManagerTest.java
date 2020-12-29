@@ -28,7 +28,7 @@ public class RecordStreamManagerTest {
 
 	private static final long recordsLogPeriod = 5;
 	private static final int recordStreamQueueCapacity = 100;
-	private static final String recordStreamDir = "recordStream/record0.0.3";
+	private static final String recordStreamDir = "recordStreamTest/record0.0.3";
 
 	private static final String INITIALIZE_NOT_NULL = "after initialization, the instance should not be null";
 	private static final String INITIALIZE_QUEUE_EMPTY = "after initialization, hash queue should be empty";

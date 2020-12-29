@@ -43,8 +43,32 @@ public class RecordStreamFileParsingTest {
 
 	@Test
 	void parseRCDV5files() throws Exception {
-		final File out = new File("src/test/resources/record0.0.3/out.log");
-		final File recordsDir = new File("src/test/resources/record0.0.3");
+		// these files are generated with initial Hash be an empty Hash
+		final String dir = "src/test/resources/recordStreamTest/record0.0.3";
+		parseV5(dir, EMPTY_HASH);
+	}
+
+	@Test
+	public void readHashForV2() {
+		final String recordV2Dir = "src/test/resources/recordStreamTest/recordV2";
+		byte[] hash = RecordStream.readPrevFileHash(recordV2Dir);
+		// the hash read from this directory should not be empty
+		assertFalse(Arrays.equals(new byte[DigestType.SHA_384.digestLength()], hash));
+	}
+
+	@Test
+	void parseRCDV5AfterV2files() throws Exception {
+		final String v2Dir = "src/test/resources/recordStreamTest/recordV2";
+		// these files are generated with initial Hash whose byte array is the bytes read from recordV2Dir
+		final String v5Dir = "src/test/resources/recordStreamTest/recordV5AfterV2";
+		final Hash expectedStartHash = new Hash(RecordStream.readPrevFileHash(v2Dir));
+		parseV5(v5Dir, expectedStartHash);
+	}
+
+	private void parseV5(final String dir, final Hash expectedStartHash) throws Exception {
+		final File out = new File(dir + "/out.log");
+		// these files are generated with initial Hash be an empty Hash
+		final File recordsDir = new File(dir);
 		Iterator<SelfSerializable> iterator = LinkedObjectStreamUtilities.parseStreamDirOrFile(recordsDir,
 				RecordStreamType.RECORD);
 
@@ -75,16 +99,8 @@ public class RecordStreamFileParsingTest {
 		}
 
 		// the record streams are generated with an empty startHash
-		assertEquals(EMPTY_HASH, startHash);
+		assertEquals(expectedStartHash, startHash);
 		assertNotEquals(0, recordsCount);
-		assertNotEquals(EMPTY_HASH, endHash);
-	}
-
-	@Test
-	public void readHashForV2() {
-		final String recordV2Dir = "src/test/resources/recordV2";
-		byte[] hash = RecordStream.readPrevFileHash(recordV2Dir);
-		// the hash read from this directory should not be empty
-		assertFalse(Arrays.equals(new byte[DigestType.SHA_384.digestLength()], hash));
+		assertNotEquals(startHash, endHash);
 	}
 }
