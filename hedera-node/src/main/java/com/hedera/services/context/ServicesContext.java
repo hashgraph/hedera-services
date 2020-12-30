@@ -267,6 +267,9 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.core.AccountState;
@@ -367,7 +370,8 @@ public class ServicesContext {
 	/* Context-sensitive singletons. */
 	/** the directory to which we writes .rcd and .rcd_sig files */
 	private String recordStreamDir;
-	private Thread recordStreamThread;
+	/** the initialHash of RecordStreamManager */
+	private Hash recordsInitialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 	private Address address;
 	private Console console;
 	private HederaFs hfs;
@@ -1288,20 +1292,26 @@ public class ServicesContext {
 	}
 
 	public RecordStreamManager recordStreamManager() {
-		if (recordStreamManager == null) {
-			try {
-				recordStreamManager = new RecordStreamManager(
-						platform,
-						runningAvgs(),
-						PropertiesLoader.isEnableRecordStreaming(),
-						getRecordStreamDirectory(),
-						properties.getLongProperty("hedera.recordStream.logPeriod"),
-						PropertiesLoader.getRecordStreamQueueCapacity());
-			} catch (IOException | NoSuchAlgorithmException ex) {
-				log.error("Fail to initialize RecordStreamManager.", ex);
-			}
-		}
 		return recordStreamManager;
+	}
+
+	/**
+	 * RecordStreamManager should only be initialized after system files have been loaded,
+	 * which means enableRecordStreaming has been read from file
+	 */
+	public void initRecordStreamManager() {
+		try {
+			recordStreamManager = new RecordStreamManager(
+					platform,
+					runningAvgs(),
+					PropertiesLoader.isEnableRecordStreaming(),
+					getRecordStreamDirectory(),
+					properties.getLongProperty("hedera.recordStream.logPeriod"),
+					PropertiesLoader.getRecordStreamQueueCapacity(),
+					getRecordsInitialHash());
+		} catch (IOException | NoSuchAlgorithmException ex) {
+			log.error("Fail to initialize RecordStreamManager.", ex);
+		}
 	}
 
 	public FileUpdateInterceptor exchangeRatesManager() {
@@ -1740,10 +1750,37 @@ public class ServicesContext {
 
 	/**
 	 * update the runningHash instance saved in runningHashLeaf
-	 * @param runningHash new runningHash instance
+	 *
+	 * @param runningHash
+	 * 		new runningHash instance
 	 */
 	public void updateRecordRunningHash(final RunningHash runningHash) {
 		state.runningHashLeaf().setRunningHash(runningHash);
+	}
+
+	/**
+	 * set recordsInitialHash, which will be set to RecordStreamManager as initialHash.
+	 * recordsInitialHash is read at restart, either from the state's runningHashLeaf,
+	 * or from the last old .rcd_sig file in migration.
+	 * When recordsInitialHash is read, the RecordStreamManager might not be initialized yet,
+	 * because RecordStreamManager can only be initialized after system files are loaded so that enableRecordStream
+	 * setting is read.
+	 * Thus we save the initialHash in the context, and use it when initializing RecordStreamManager
+	 *
+	 * @param recordsInitialHash
+	 * 		initial running Hash of records
+	 */
+	public void setRecordsInitialHash(final Hash recordsInitialHash) {
+		if (recordsInitialHash != null) {
+			this.recordsInitialHash = recordsInitialHash;
+		}
+		if (recordStreamManager() != null) {
+			recordStreamManager().setInitialHash(recordsInitialHash);
+		}
+	}
+
+	Hash getRecordsInitialHash() {
+		return recordsInitialHash;
 	}
 
 	void setBackingTokenRels(BackingTokenRels backingTokenRels) {

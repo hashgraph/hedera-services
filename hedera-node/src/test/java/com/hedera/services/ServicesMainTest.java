@@ -253,7 +253,8 @@ public class ServicesMainTest {
 				recordsHistorian,
 				fees,
 				grpc,
-				statsManager);
+				statsManager,
+				ctx);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -267,6 +268,7 @@ public class ServicesMainTest {
 		inOrder.verify(platform).setSleepAfterSync(0L);
 		inOrder.verify(platform).addSignedStateListener(any(IssListener.class));
 		inOrder.verify(statsManager).initializeFor(platform);
+		inOrder.verify(ctx).initRecordStreamManager();
 	}
 
 	@Test

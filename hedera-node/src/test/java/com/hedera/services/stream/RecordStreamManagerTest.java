@@ -57,7 +57,7 @@ public class RecordStreamManagerTest {
 	private static RecordStreamManager disableStreamingInstance;
 	private static RecordStreamManager enableStreamingInstance;
 
-	private static final Hash initialHash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
+	public static final Hash INITIAL_RANDOM_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 
 	private static final MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
 	private static final QueueThread<RecordStreamObject> writeQueueThreadMock = mock(QueueThread.class);
@@ -67,9 +67,9 @@ public class RecordStreamManagerTest {
 	@BeforeAll
 	static void init() throws Exception {
 		disableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, false, recordStreamDir,
-				recordsLogPeriod, recordStreamQueueCapacity);
+				recordsLogPeriod, recordStreamQueueCapacity, INITIAL_RANDOM_HASH);
 		enableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, true, recordStreamDir,
-				recordsLogPeriod, recordStreamQueueCapacity);
+				recordsLogPeriod, recordStreamQueueCapacity, INITIAL_RANDOM_HASH);
 	}
 
 	@Test
@@ -91,9 +91,9 @@ public class RecordStreamManagerTest {
 
 	@Test
 	void setInitialHashTest() {
-		RECORD_STREAM_MANAGER.setInitialHash(initialHash);
-		verify(multiStreamMock).setRunningHash(initialHash);
-		assertEquals(initialHash, RECORD_STREAM_MANAGER.getInitialHash(), "initialHash is not set");
+		RECORD_STREAM_MANAGER.setInitialHash(INITIAL_RANDOM_HASH);
+		verify(multiStreamMock).setRunningHash(INITIAL_RANDOM_HASH);
+		assertEquals(INITIAL_RANDOM_HASH, RECORD_STREAM_MANAGER.getInitialHash(), "initialHash is not set");
 	}
 
 	@Test

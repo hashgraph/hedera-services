@@ -323,7 +323,7 @@ class ServicesStateTest {
 
 	@Test
 	public void initializesContext() {
-		InOrder inOrder = inOrder(ctx, recordStreamManager, txnHistories, historian, systemFilesManager);
+		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager);
 
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
 		// and:
@@ -335,7 +335,7 @@ class ServicesStateTest {
 		// then:
 		inOrder.verify(ctx).nodeAccount();
 		// during migration, if the records directory doesn't have old files, initialHash will be empty hash
-		inOrder.verify(recordStreamManager).setInitialHash(EMPTY_HASH);
+		inOrder.verify(ctx).setRecordsInitialHash(EMPTY_HASH);
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
@@ -442,13 +442,13 @@ class ServicesStateTest {
 		subject.init(platform, book);
 
 		// then:
-		InOrder inOrder = inOrder(diskFs, ctx, recordStreamManager, runningHashLeaf, mockDigest, accounts, storage, topics,
+		InOrder inOrder = inOrder(diskFs, ctx, runningHashLeaf, mockDigest, accounts, storage, topics,
 				tokens, tokenAssociations, networkCtx, book, mockLog);
 		inOrder.verify(diskFs).setFsBaseDir(any());
 		inOrder.verify(ctx).nodeAccount();
 		inOrder.verify(diskFs).setFsNodeScopedDir(any());
 		inOrder.verify(diskFs).checkHashesAgainstDiskContents();
-		inOrder.verify(recordStreamManager).setInitialHash(recordsHash);
+		inOrder.verify(ctx).setRecordsInitialHash(recordsHash);
 		inOrder.verify(mockDigest).accept(subject);
 		inOrder.verify(accounts).getHash();
 		inOrder.verify(storage).getHash();

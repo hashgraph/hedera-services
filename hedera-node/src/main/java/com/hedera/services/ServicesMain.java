@@ -168,6 +168,7 @@ public class ServicesMain implements SwirldMain {
 		startNettyIfAppropriate();
 		log.info("Netty started.");
 
+		ctx.initRecordStreamManager();
 		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
 	}
 

@@ -118,7 +118,8 @@ public class RecordStreamManager {
 			final boolean enableRecordStreaming,
 			final String recordStreamDir,
 			final long recordsLogPeriod,
-			final int recordStreamQueueCapacity) throws NoSuchAlgorithmException, IOException {
+			final int recordStreamQueueCapacity,
+			final Hash initialHash) throws NoSuchAlgorithmException, IOException {
 		if (enableRecordStreaming) {
 			// the directory to which record stream files are written
 			Files.createDirectories(Paths.get(recordStreamDir));
@@ -142,14 +143,16 @@ public class RecordStreamManager {
 
 		multiStream = new MultiStream<>(
 				enableRecordStreaming ? List.of(hashQueueThread, writeQueueThread) : List.of(hashQueueThread));
+		this.initialHash = initialHash;
 		multiStream.setRunningHash(initialHash);
 
 		LOGGER.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}," +
-						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}",
+						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}, initialHash: {}",
 				() -> enableRecordStreaming,
 				() -> recordStreamDir,
 				() -> recordsLogPeriod,
-				() -> recordStreamQueueCapacity);
+				() -> recordStreamQueueCapacity,
+				() -> initialHash);
 	}
 
 	/**
@@ -287,7 +290,7 @@ public class RecordStreamManager {
 	 *
 	 * @return a copy of initialHash
 	 */
-	Hash getInitialHash() {
+	public Hash getInitialHash() {
 		return new Hash(initialHash);
 	}
 }

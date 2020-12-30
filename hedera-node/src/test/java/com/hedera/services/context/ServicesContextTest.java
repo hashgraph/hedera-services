@@ -127,6 +127,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
@@ -141,9 +142,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import static com.hedera.services.stream.RecordStreamManagerTest.INITIAL_RANDOM_HASH;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.*;
@@ -153,6 +156,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class ServicesContextTest {
 	private final long id = 1L;
 	private final NodeId nodeId = new NodeId(false, id);
+	private static final String recordStreamDir = "somePath/recordStream";
 
 	RichInstant consensusTimeOfLastHandledTxn = RichInstant.fromJava(Instant.now());
 	Platform platform;
@@ -463,7 +467,6 @@ public class ServicesContextTest {
 		assertThat(ctx.speedometers(), instanceOf(MiscSpeedometers.class));
 		assertThat(ctx.statsManager(), instanceOf(ServicesStatsManager.class));
 		assertThat(ctx.semVers(), instanceOf(SemanticVersions.class));
-		assertThat(ctx.recordStreamManager(), instanceOf(RecordStreamManager.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
@@ -506,7 +509,6 @@ public class ServicesContextTest {
 		given(state.addressBook()).willReturn(book);
 		given(book.getAddress(id)).willReturn(address);
 		given(address.getMemo()).willReturn("0.0.3");
-		final String recordStreamDir = "somePath/recordStream";
 		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(recordStreamDir);
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
@@ -532,5 +534,35 @@ public class ServicesContextTest {
 
 		// then:
 		assertEquals(runningHash, ctx.state.runningHashLeaf().getRunningHash());
+	}
+
+	@Test
+	public void initRecordStreamManagerTest() {
+		// given:
+		final AddressBook book = mock(AddressBook.class);
+		final Address address = mock(Address.class);
+		given(state.addressBook()).willReturn(book);
+		given(book.getAddress(id)).willReturn(address);
+		given(address.getMemo()).willReturn("0.0.3");
+		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(recordStreamDir);
+		final Hash initialHash = INITIAL_RANDOM_HASH;
+
+		ServicesContext ctx =
+				new ServicesContext(
+						nodeId,
+						platform,
+						state,
+						propertySources);
+
+		assertNull(ctx.recordStreamManager());
+
+		// when:
+		ctx.setRecordsInitialHash(initialHash);
+		ctx.initRecordStreamManager();
+
+		// then:
+		assertEquals(initialHash, ctx.getRecordsInitialHash());
+		assertNotNull(ctx.recordStreamManager());
+		assertEquals(initialHash, ctx.recordStreamManager().getInitialHash());
 	}
 }
