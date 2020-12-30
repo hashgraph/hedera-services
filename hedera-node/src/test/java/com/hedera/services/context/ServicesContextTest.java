@@ -565,4 +565,25 @@ public class ServicesContextTest {
 		assertNotNull(ctx.recordStreamManager());
 		assertEquals(initialHash, ctx.recordStreamManager().getInitialHash());
 	}
+
+	@Test
+	public void setRecordsInitialHashTest() {
+		// given:
+		final Hash initialHash = INITIAL_RANDOM_HASH;
+
+		ServicesContext ctx = spy(new ServicesContext(
+				nodeId,
+				platform,
+				state,
+				propertySources));
+		RecordStreamManager recordStreamManager = mock(RecordStreamManager.class);
+
+		when(ctx.recordStreamManager()).thenReturn(recordStreamManager);
+
+		// when:
+		ctx.setRecordsInitialHash(initialHash);
+
+		// then:
+		verify(recordStreamManager).setInitialHash(initialHash);
+	}
 }

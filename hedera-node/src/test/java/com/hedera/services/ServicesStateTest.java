@@ -23,25 +23,25 @@ package com.hedera.services;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.state.initialization.SystemFilesManager;
-import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordStreamManager;
@@ -79,7 +79,6 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -94,7 +93,6 @@ import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static java.util.Collections.EMPTY_LIST;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -109,7 +107,6 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.when;
 
 @RunWith(JUnitPlatform.class)
 class ServicesStateTest {
@@ -161,7 +158,7 @@ class ServicesStateTest {
 	@BeforeEach
 	private void setup() {
 		CONTEXTS.clear();
-		mockDigest = (Consumer<MerkleNode>)mock(Consumer.class);
+		mockDigest = (Consumer<MerkleNode>) mock(Consumer.class);
 		ServicesState.merkleDigest = mockDigest;
 		blobStore = mock(BinaryObjectStore.class);
 		mockBlobStoreSupplier = (Supplier<BinaryObjectStore>) mock(Supplier.class);
@@ -270,7 +267,8 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(RELEASE_0100_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0110_CHILDREN, subject.getMinimumChildCount(RELEASE_0110_VERSION));
 
-		Throwable throwable = assertThrows(IllegalArgumentException.class, () -> subject.getMinimumChildCount(RELEASE_0110_VERSION + 1));
+		Throwable throwable = assertThrows(IllegalArgumentException.class,
+				() -> subject.getMinimumChildCount(RELEASE_0110_VERSION + 1));
 		assertTrue(throwable.getMessage().contains("unknown version"));
 	}
 
@@ -442,8 +440,8 @@ class ServicesStateTest {
 		subject.init(platform, book);
 
 		// then:
-		InOrder inOrder = inOrder(diskFs, ctx, runningHashLeaf, mockDigest, accounts, storage, topics,
-				tokens, tokenAssociations, networkCtx, book, mockLog);
+		InOrder inOrder = inOrder(diskFs, ctx, runningHashLeaf, mockDigest, accounts,
+				storage, topics, tokens, tokenAssociations, networkCtx, book, mockLog);
 		inOrder.verify(diskFs).setFsBaseDir(any());
 		inOrder.verify(ctx).nodeAccount();
 		inOrder.verify(diskFs).setFsNodeScopedDir(any());
@@ -495,16 +493,16 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		// and:
 		var expected = String.format("[SwirldState Hashes]\n" +
-				"  Overall           :: %s\n" +
-				"  Accounts          :: %s\n" +
-				"  Storage           :: %s\n" +
-				"  Topics            :: %s\n" +
-				"  Tokens            :: %s\n" +
-				"  TokenAssociations :: %s\n" +
-				"  DiskFs            :: %s\n" +
-				"  NetworkContext    :: %s\n" +
-				"  AddressBook       :: %s\n" +
-				"  RecordsRunningHashLeaf:: %s",
+						"  Overall           :: %s\n" +
+						"  Accounts          :: %s\n" +
+						"  Storage           :: %s\n" +
+						"  Topics            :: %s\n" +
+						"  Tokens            :: %s\n" +
+						"  TokenAssociations :: %s\n" +
+						"  DiskFs            :: %s\n" +
+						"  NetworkContext    :: %s\n" +
+						"  AddressBook       :: %s\n" +
+						"  RecordsRunningHashLeaf:: %s",
 				overallHash,
 				accountsRootHash,
 				storageRootHash,
