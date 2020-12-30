@@ -279,11 +279,11 @@ public class ServicesMain implements SwirldMain {
 	void registerReconnectCompleteListener(final NotificationEngine notificationEngine) {
 		notificationEngine.register(ReconnectCompleteListener.class,
 				(notification) -> {
-					log.info("Notification Received: Reconnect Finished." +
-									" consensusTimestamp: {}, roundNumber: {}, sequence: {}",
-							notification::getConsensusTimestamp,
-							notification::getRoundNumber,
-							notification::getSequence);
+					log.info(String.format("Notification Received: Reconnect Finished." +
+									" consensusTimestamp: %s, roundNumber: %s, sequence: %s",
+							notification.getConsensusTimestamp(),
+							notification.getRoundNumber(),
+							notification.getSequence()));
 					ctx.recordStreamManager().setStartWriteAtCompleteWindow(true);
 				});
 	}

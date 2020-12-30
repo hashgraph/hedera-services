@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,6 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -42,7 +41,6 @@ import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.utils.IdUtils;
@@ -53,9 +51,13 @@ import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
+import com.swirlds.common.SwirldState;
 import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
+import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -72,6 +74,7 @@ import java.time.Instant;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -132,7 +135,7 @@ public class ServicesMainTest {
 		platform = mock(Platform.class);
 		systemExits = mock(SystemExits.class);
 		recordStreamManager = mock(RecordStreamManager.class);
-		backingAccounts = (BackingStore<AccountID, MerkleAccount>)mock(BackingStore.class);
+		backingAccounts = (BackingStore<AccountID, MerkleAccount>) mock(BackingStore.class);
 		statsManager = mock(ServicesStatsManager.class);
 		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
@@ -596,5 +599,23 @@ public class ServicesMainTest {
 		NotificationEngine engineMock = mock(NotificationEngine.class);
 		subject.registerReconnectCompleteListener(engineMock);
 		verify(engineMock).register(eq(ReconnectCompleteListener.class), any());
+	}
+
+	@Test
+	public void reconnectCompleteListenerTest() {
+		// setup
+		subject.ctx = ctx;
+		// register
+		subject.registerReconnectCompleteListener(NotificationFactory.getEngine());
+		final long roundNumber = RandomUtils.nextLong();
+		final Instant consensusTimestamp = Instant.now();
+		final SwirldState state = mock(ServicesState.class);
+		// dispatch a notification
+		final ReconnectCompleteNotification notification = new ReconnectCompleteNotification(roundNumber,
+				consensusTimestamp, state);
+		NotificationFactory.getEngine().dispatch(ReconnectCompleteListener.class, notification);
+		// should receive this notification
+		verify(mockLog).info(argThat((String s) -> s.startsWith("Notification Received: Reconnect Finished.")));
+		verify(recordStreamManager).setStartWriteAtCompleteWindow(true);
 	}
 }
