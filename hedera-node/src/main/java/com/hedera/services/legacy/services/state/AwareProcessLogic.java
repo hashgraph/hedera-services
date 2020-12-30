@@ -358,7 +358,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 	}
 
-	private void addForStreaming(
+	void addForStreaming(
 			com.hederahashgraph.api.proto.java.Transaction grpcTransaction,
 			TransactionRecord transactionRecord,
 			Instant consensusTimeStamp

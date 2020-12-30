@@ -47,7 +47,7 @@ import static com.swirlds.common.Constants.SEC_TO_MS;
  */
 public class RecordStreamManager {
 	/** use this for all logging, as controlled by the optional data/log4j2.xml file */
-	private static final Logger LOGGER = LogManager.getLogger(RecordStreamManager.class);
+	static Logger LOGGER = LogManager.getLogger(RecordStreamManager.class);
 
 	/**
 	 * receives {@link RecordStreamObject}s from {@link com.hedera.services.legacy.services.state.AwareProcessLogic}

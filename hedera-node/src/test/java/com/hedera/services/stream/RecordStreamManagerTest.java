@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThread;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +45,8 @@ import static org.mockito.Mockito.when;
 
 public class RecordStreamManagerTest {
 	private static final Platform platform = mock(Platform.class);
+	private static final Logger mockLog = mock(Logger.class);
+
 	private static final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
 
 	private static final long recordsLogPeriod = 5;
@@ -65,7 +68,8 @@ public class RecordStreamManagerTest {
 			multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
 	@BeforeAll
-	static void init() throws Exception {
+	public static void init() throws Exception {
+		RecordStreamManager.LOGGER = mockLog;
 		disableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, false, recordStreamDir,
 				recordsLogPeriod, recordStreamQueueCapacity, INITIAL_RANDOM_HASH);
 		enableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, true, recordStreamDir,
@@ -73,7 +77,7 @@ public class RecordStreamManagerTest {
 	}
 
 	@Test
-	void initializeTest() {
+	public void initializeTest() {
 		assertNull(disableStreamingInstance.getStreamFileWriter(),
 				"When recordStreaming is disabled, streamFileWriter instance should be null");
 		assertNotNull(disableStreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
@@ -90,14 +94,14 @@ public class RecordStreamManagerTest {
 	}
 
 	@Test
-	void setInitialHashTest() {
+	public void setInitialHashTest() {
 		RECORD_STREAM_MANAGER.setInitialHash(INITIAL_RANDOM_HASH);
 		verify(multiStreamMock).setRunningHash(INITIAL_RANDOM_HASH);
 		assertEquals(INITIAL_RANDOM_HASH, RECORD_STREAM_MANAGER.getInitialHash(), "initialHash is not set");
 	}
 
 	@Test
-	void addRecordStreamObjectTest() throws InterruptedException {
+	public void addRecordStreamObjectTest() throws InterruptedException {
 		RecordStreamManager recordStreamManager = new RecordStreamManager(
 				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 		assertFalse(recordStreamManager.getInFreeze(),
@@ -134,9 +138,27 @@ public class RecordStreamManagerTest {
 
 	@ParameterizedTest
 	@ValueSource(booleans = { true, false })
-	void setStartWriteAtCompleteWindowTest(boolean startWriteAtCompleteWindow) {
+	public void setStartWriteAtCompleteWindowTest(boolean startWriteAtCompleteWindow) {
 		enableStreamingInstance.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
 		assertEquals(startWriteAtCompleteWindow,
 				enableStreamingInstance.getStreamFileWriter().getStartWriteAtCompleteWindow(), UNEXPECTED_VALUE);
+	}
+
+	@Test
+	public void setInFreezeTest() {
+		RecordStreamManager recordStreamManager = new RecordStreamManager(
+				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+
+		recordStreamManager.setInFreeze(false);
+
+		verify(mockLog).info("RecordStream inFreeze is set to be {}", false);
+		assertFalse(recordStreamManager.getInFreeze());
+
+		recordStreamManager.setInFreeze(true);
+
+		verify(mockLog).info("RecordStream inFreeze is set to be {}", true);
+		assertTrue(recordStreamManager.getInFreeze());
+		// multiStream should be closed when inFreeze is true;
+		verify(multiStreamMock).close();
 	}
 }

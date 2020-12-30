@@ -615,7 +615,6 @@ public class ServicesMainTest {
 				consensusTimestamp, state);
 		NotificationFactory.getEngine().dispatch(ReconnectCompleteListener.class, notification);
 		// should receive this notification
-		verify(mockLog).info(argThat((String s) -> s.startsWith("Notification Received: Reconnect Finished.")));
 		verify(recordStreamManager).setStartWriteAtCompleteWindow(true);
 	}
 }
