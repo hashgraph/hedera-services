@@ -264,8 +264,6 @@ public class SmartContractServiceImplTest {
 				() -> accountFCMap,
 				nodeAccountId,
 				precheckVerifier,
-				TEST_USAGE_PRICES,
-				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),

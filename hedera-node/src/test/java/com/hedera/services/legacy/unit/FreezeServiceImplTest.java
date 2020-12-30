@@ -154,8 +154,6 @@ public class FreezeServiceImplTest {
             () -> accountFCMap,
             nodeAccountId,
             precheckVerifier,
-            TEST_USAGE_PRICES,
-            exchange,
             TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
             () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
             new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),

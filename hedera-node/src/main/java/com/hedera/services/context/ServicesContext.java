@@ -1513,8 +1513,6 @@ public class ServicesContext {
 					this::accounts,
 					nodeAccount(),
 					txnThrottling(),
-					usagePrices(),
-					exchange(),
 					fees(),
 					stateViews(),
 					new BasicPrecheck(validator(), globalDynamicProperties()),

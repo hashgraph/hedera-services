@@ -28,8 +28,6 @@ import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
@@ -43,18 +41,13 @@ import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TransferListChecks;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -63,7 +56,6 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.Platform;
 import com.swirlds.fcmap.FCMap;
@@ -71,10 +63,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -110,8 +99,6 @@ public class TransactionHandler {
   private FunctionalityThrottling throttling;
   private AccountID nodeAccount;
   private TransactionThrottling txnThrottling;
-  private UsagePricesProvider usagePrices;
-  private HbarCentExchange exchange;
   private FeeCalculator fees;
   private FeeExemptions exemptions;
   private Supplier<StateView> stateView;
@@ -130,13 +117,23 @@ public class TransactionHandler {
     this.txnThrottling = new TransactionThrottling(throttling);
   }
 
+  public void setFees(FeeCalculator fees) {
+    this.fees = fees;
+  }
+
+  public void setStateView(Supplier<StateView> stateView) {
+    this.stateView = stateView;
+  }
+
+  public void setQueryFeeCheck(QueryFeeCheck queryFeeCheck) {
+    this.queryFeeCheck = queryFeeCheck;
+  }
+
   public TransactionHandler(
           RecordCache recordCache,
           Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
           AccountID nodeAccount,
           PrecheckVerifier precheckVerifier,
-          UsagePricesProvider usagePrices,
-          HbarCentExchange exchange,
           FeeCalculator fees,
           Supplier<StateView> stateView,
           BasicPrecheck basicPrecheck,
@@ -148,8 +145,6 @@ public class TransactionHandler {
   ) {
   	this.fees = fees;
   	this.stateView = stateView;
-    this.exchange = exchange;
-    this.usagePrices = usagePrices;
     this.recordCache = recordCache;
     this.accounts = accounts;
     this.nodeAccount = nodeAccount;
@@ -175,7 +170,7 @@ public class TransactionHandler {
           CurrentPlatformStatus platformStatus
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
-            null, null, null, null,
+            null, null,
             null, null, null, null,
             accountNums, systemOpPolicies, exemptions, platformStatus);
   }
@@ -186,8 +181,6 @@ public class TransactionHandler {
           Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
           AccountID nodeAccount,
           TransactionThrottling txnThrottling,
-          UsagePricesProvider usagePrices,
-          HbarCentExchange exchange,
           FeeCalculator fees,
           Supplier<StateView> stateView,
           BasicPrecheck basicPrecheck,
@@ -200,14 +193,12 @@ public class TransactionHandler {
   ) {
     this.fees = fees;
     this.stateView = stateView;
-    this.exchange = exchange;
     this.recordCache = recordCache;
     this.precheckVerifier = precheckVerifier;
     this.accounts = accounts;
     this.nodeAccount = nodeAccount;
     this.basicPrecheck = basicPrecheck;
     this.txnThrottling = txnThrottling;
-    this.usagePrices = usagePrices;
     this.queryFeeCheck = queryFeeCheck;
     this.throttling = throttling;
     this.accountNums = accountNums;
@@ -365,50 +356,24 @@ public class TransactionHandler {
       if (isAccountExist(payerAccount)) {
         Long payerAccountBalance = Optional.ofNullable(accounts.get().get(fromAccountId(payerAccount)))
                 .map(MerkleAccount::getBalance)
-                .orElse(null);
+                .orElse(0L);
         long suppliedFee = txn.getTransactionFee();
-        long payerChangeDuringTxn = !txn.hasCryptoTransfer() ? 0L :
-            txn.getCryptoTransfer().getTransfers().getAccountAmountsList()
-                    .stream()
-                    .filter(aa -> aa.getAccountID().equals(payerAccount))
-                    .mapToLong(AccountAmount::getAmount)
-					.sum();
-        if (suppliedFee > (payerAccountBalance + Math.min(0L, payerChangeDuringTxn))) {
-          returnCode = ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-        }
 
-        if (returnCode == OK) {
-          try {
-            JKey payerKey = accounts.get().get(fromAccountId(payerAccount)).getKey();
-            Timestamp at = txn.getTransactionID().getTransactionValidStart();
-            FeeObject txnFee = fees.estimateFee(accessor, payerKey, stateView.get(), at);
-            fee = txnFee.getNetworkFee() + txnFee.getNodeFee() + txnFee.getServiceFee();
-          } catch (Exception e) {
-            log.error("Could not calculate fee for transaction. " + e);
-            returnCode = ResponseCodeEnum.FAIL_FEE;
-          }
+        Timestamp at = txn.getTransactionID().getTransactionValidStart();
+        try {
+          JKey payerKey = accounts.get().get(fromAccountId(payerAccount)).getKey();
+          FeeObject txnFee = fees.estimateFee(accessor, payerKey, stateView.get(), at);
+          fee = txnFee.getNetworkFee() + txnFee.getNodeFee() + txnFee.getServiceFee();
+        } catch (Exception e) {
+          log.warn("Could not calculate fee for transaction", e);
+          returnCode = ResponseCodeEnum.FAIL_FEE;
         }
         if (returnCode == OK) {
           if (suppliedFee < fee) {
             returnCode = ResponseCodeEnum.INSUFFICIENT_TX_FEE;
             feeRequired = fee;
-          } else if (payerAccountBalance < fee) {
+          } else if (payerAccountBalance + Math.min(0L, fees.estimatedNonFeePayerAdjustments(accessor, at)) < fee) {
             returnCode = ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-          } else if (txn.hasContractCreateInstance()) {
-            ContractCreateTransactionBody createBody = txn.getContractCreateInstance();
-            long gasInTransacton = createBody.getGas();
-            long gasCost = gasInTransacton * getGasPrice(HederaFunctionality.ContractCreate);
-            long balance = createBody.getInitialBalance();
-            if (payerAccountBalance < (fee + gasCost + balance)) {
-              returnCode = ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-            }
-          } else if (txn.hasContractCall()) {
-            ContractCallTransactionBody callBody = txn.getContractCall();
-            long gasCost = callBody.getGas() * getGasPrice(HederaFunctionality.ContractCall);
-            long amount = callBody.getAmount();
-            if (payerAccountBalance < (fee + gasCost + amount)) {
-              returnCode = ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-            }
           }
         }
       } else {
@@ -418,17 +383,6 @@ public class TransactionHandler {
       returnCode = ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
     }
     return new TxnValidityAndFeeReq(returnCode, feeRequired);
-  }
-
-  public long getGasPrice(HederaFunctionality function) {
-    Timestamp at = Timestamp.newBuilder()
-            .setSeconds(System.currentTimeMillis() / 1000)
-            .build();
-
-    FeeData prices = usagePrices.pricesGiven(function, at);
-    long feeInTinyCents = prices.getServicedata().getGas() / 1000;
-    long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
-    return Math.max(feeInTinyBars, 1L);
   }
 
   private ResponseCodeEnum validateTransactionContents(Transaction transaction) {
@@ -603,21 +557,6 @@ public class TransactionHandler {
       return precheckVerifier.hasNecessarySignatures(accessor);
     } catch (InvalidProtocolBufferException ignore) {
       return false;
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  public List<ExpirableTxnRecord> getAllTransactionRecordFCM(MerkleEntityId merkleEntityId) {
-    try {
-      MerkleAccount account = accounts.get().get(merkleEntityId);
-      if (account != null) {
-        return account.recordList();
-      } else {
-        return Collections.emptyList();
-      }
-    } catch (ConcurrentModificationException cme) {
-      log.error("Queried records are being modified by another thread!", cme);
-      throw cme;
     }
   }
 }

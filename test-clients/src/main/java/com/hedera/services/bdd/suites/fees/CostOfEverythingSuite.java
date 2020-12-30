@@ -20,6 +20,8 @@ package com.hedera.services.bdd.suites.fees;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -28,11 +30,18 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BELIEVE_IN_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CONSPICUOUS_DONATION_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.LUCKY_NO_LOOKUP_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
@@ -60,7 +69,8 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 //				cryptoTransferPaths(),
 //				cryptoGetAccountInfoPaths(),
 //				cryptoGetAccountRecordsPaths(),
-				transactionGetRecordPaths()
+//				transactionGetRecordPaths()
+				miscContractCreatesAndCalls()
 		).map(Stream::of).reduce(Stream.empty(), Stream::concat).collect(toList());
 	}
 
@@ -70,6 +80,35 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 				txnGetSmallTransferRecord(),
 				txnGetLargeTransferRecord(),
 		};
+	}
+
+	HapiApiSpec miscContractCreatesAndCalls() {
+		Object[] donationArgs = new Object[] { 2, "Hey, Ma!" };
+
+		return customHapiSpec("MiscContractCreatesAndCalls")
+				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+				.given(
+						cryptoCreate("civilian")
+								.balance(A_HUNDRED_HBARS),
+						fileCreate("multiBytecode")
+								.payingWith("civilian")
+								.path(MULTIPURPOSE_BYTECODE_PATH)
+				).when(
+						contractCreate("multi")
+								.payingWith("civilian")
+								.bytecode("multiBytecode")
+								.balance(652)
+				).then(
+						contractCall("multi", BELIEVE_IN_ABI, 256)
+								.payingWith("civilian"),
+						contractCallLocal("multi", LUCKY_NO_LOOKUP_ABI)
+								.payingWith("civilian")
+								.has(resultWith().resultThruAbi(
+										LUCKY_NO_LOOKUP_ABI,
+										isLiteralResult(new Object[] { BigInteger.valueOf(256) }))),
+						contractCall("multi", CONSPICUOUS_DONATION_ABI, donationArgs)
+								.payingWith("civilian")
+				);
 	}
 
 	HapiApiSpec txnGetCreateRecord() {
