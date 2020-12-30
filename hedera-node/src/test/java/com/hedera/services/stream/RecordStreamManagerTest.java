@@ -32,12 +32,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InOrder;
+
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -69,7 +75,6 @@ public class RecordStreamManagerTest {
 
 	@BeforeAll
 	public static void init() throws Exception {
-		RecordStreamManager.LOGGER = mockLog;
 		disableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, false, recordStreamDir,
 				recordsLogPeriod, recordStreamQueueCapacity, INITIAL_RANDOM_HASH);
 		enableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, true, recordStreamDir,
@@ -146,17 +151,18 @@ public class RecordStreamManagerTest {
 
 	@Test
 	public void setInFreezeTest() {
+		MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
 		RecordStreamManager recordStreamManager = new RecordStreamManager(
 				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+		RecordStreamManager.LOGGER = mockLog;
 
 		recordStreamManager.setInFreeze(false);
-
-		verify(mockLog).info("RecordStream inFreeze is set to be {}", false);
+		verify(mockLog).info("RecordStream inFreeze is set to be {} ", false);
 		assertFalse(recordStreamManager.getInFreeze());
 
 		recordStreamManager.setInFreeze(true);
 
-		verify(mockLog).info("RecordStream inFreeze is set to be {}", true);
+		verify(mockLog).info("RecordStream inFreeze is set to be {} ", true);
 		assertTrue(recordStreamManager.getInFreeze());
 		// multiStream should be closed when inFreeze is true;
 		verify(multiStreamMock).close();
