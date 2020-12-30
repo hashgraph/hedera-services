@@ -34,8 +34,6 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -89,7 +87,7 @@ public class RecordsRunningHashLeafTest {
 	@Test
 	public void serializationDeserializationTest() throws IOException, InterruptedException {
 		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		SerializableDataOutputStream out = new SerializableDataOutputStream(byteArrayOutputStream)) {
+			 SerializableDataOutputStream out = new SerializableDataOutputStream(byteArrayOutputStream)) {
 			runningHashLeaf.serialize(out);
 			byteArrayOutputStream.flush();
 			byte[] bytes = byteArrayOutputStream.toByteArray();

@@ -49,7 +49,7 @@ public class RecordStreamFileParsingTest {
 	private static final Hash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	@BeforeAll
-	static void setUp() throws ConstructableRegistryException {
+	public static void setUp() throws ConstructableRegistryException {
 		// this register is needed so that the Hash objects can be de-serialized
 		ConstructableRegistry.registerConstructables("com.swirlds.common");
 		// this register is needed so that RecordStreamObject can be de-serialized
@@ -62,7 +62,7 @@ public class RecordStreamFileParsingTest {
 	}
 
 	@Test
-	void parseRCDV5files() throws Exception {
+	public void parseRCDV5files() throws Exception {
 		// these files are generated with initial Hash be an empty Hash
 		final String dir = "src/test/resources/recordStreamTest/record0.0.3";
 		parseV5(dir, EMPTY_HASH);
@@ -77,7 +77,7 @@ public class RecordStreamFileParsingTest {
 	}
 
 	@Test
-	void parseRCDV5AfterV2files() throws Exception {
+	public void parseRCDV5AfterV2files() throws Exception {
 		final String v2Dir = "src/test/resources/recordStreamTest/recordV2";
 		// these files are generated with initial Hash whose byte array is the bytes read from recordV2Dir
 		final String v5Dir = "src/test/resources/recordStreamTest/recordV5AfterV2";

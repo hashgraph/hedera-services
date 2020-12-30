@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class RecordStreamTypeTest {
+public class RecordStreamTypeTest {
 	public static final File NULL_FILE = null;
 
 	public static final String RECORD_FILE_NAME = "test.rcd";
@@ -49,7 +49,7 @@ class RecordStreamTypeTest {
 	private static final String IS_STREAM_SIG_FILE_ERROR_MSG = "isStreamSigFile() returns unexpected result";
 
 	@Test
-	void isStreamFileTest() {
+	public void isStreamFileTest() {
 		assertFalse(RECORD.isStreamFile(NULL_FILE), IS_STREAM_FILE_ERROR_MSG);
 
 		assertTrue(RECORD.isStreamFile(RECORD_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
@@ -69,7 +69,7 @@ class RecordStreamTypeTest {
 	}
 
 	@Test
-	void isStreamSigFileTest() {
+	public void isStreamSigFileTest() {
 		assertFalse(RECORD.isStreamFile(NULL_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
 
 		assertTrue(RECORD.isStreamSigFile(RECORD_SIG_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
