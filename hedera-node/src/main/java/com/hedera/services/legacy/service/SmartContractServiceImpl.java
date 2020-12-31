@@ -330,40 +330,9 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     txnHelper.submit(signedTxn, observer, ContractDelete);
   }
 
-  /**
-   * Validate the System Delete transaction request and then invoke the platform.
-   *
-   * @param request API request to system-delete the contract
-   * @param responseObserver Observer to be informed of the results
-   */
   @Override
-  public void systemDelete(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
-    opCounters.countReceived(SystemDelete);
-    TxnValidityAndFeeReq precheckResult = txHandler.validateTransactionPreConsensus(request, false);
-    if (precheckResult.getValidity() != OK) {
-      String errorMsg = "Pre-check validation failed. " + precheckResult;
-      if (log.isDebugEnabled()) {
-        log.debug(errorMsg);
-      }
-      TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
-      return;
-    }
-
-    try {
-      TransactionBody body = CommonUtils.extractTransactionBody(request);
-      if (log.isDebugEnabled()) {
-        log.debug("In systemDelete :: request : " + TextFormat.shortDebugString(body));
-      }
-      if (submissionManager.trySubmission(uncheckedFrom(request)) != OK) {
-        logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
-        return;
-      }
-      TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
-    } catch (InvalidProtocolBufferException e) {
-      precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-      TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
-    }
-    opCounters.countSubmitted(SystemDelete);
+  public void systemDelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    txnHelper.submit(signedTxn, observer, ContractDelete);
   }
 
   /**

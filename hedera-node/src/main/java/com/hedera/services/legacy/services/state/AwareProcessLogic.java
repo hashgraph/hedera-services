@@ -353,9 +353,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private TransactionRecord processTransaction(TransactionBody txn, Instant consensusTime) {
 		TransactionRecord record = null;
-		if (txn.hasSystemDelete() && txn.getSystemDelete().hasContractID()) {
-				record = ctx.contracts().systemDelete(txn, consensusTime);
-		} else if (txn.hasSystemUndelete() && txn.getSystemUndelete().hasContractID()) {
+		if (txn.hasSystemUndelete() && txn.getSystemUndelete().hasContractID()) {
 				record = ctx.contracts().systemUndelete(txn, consensusTime);
 		} else if (txn.hasFreeze()) {
 			record = ctx.freeze().freeze(txn, consensusTime);
