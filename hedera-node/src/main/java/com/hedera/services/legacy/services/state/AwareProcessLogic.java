@@ -32,7 +32,6 @@ import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -58,9 +57,7 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVE
 import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -71,10 +68,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -344,9 +339,6 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void mapLegacyRecordToTxnCtx(TransactionRecord legacyRecord) {
 		ctx.txnCtx().setStatus(legacyRecord.getReceipt().getStatus());
-		if (legacyRecord.hasContractCallResult()) {
-			ctx.txnCtx().setCallResult(legacyRecord.getContractCallResult());
-		}
 	}
 
 	private void addForStreaming(
@@ -361,13 +353,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private TransactionRecord processTransaction(TransactionBody txn, Instant consensusTime) {
 		TransactionRecord record = null;
-		if (txn.hasContractCall()) {
-			try {
-				record = ctx.contracts().contractCall(txn, consensusTime, ctx.seqNo());
-			} catch (Exception e) {
-				log.error("Error during create contract", e);
-			}
-		} else if (txn.hasSystemDelete() && txn.getSystemDelete().hasContractID()) {
+		if (txn.hasSystemDelete() && txn.getSystemDelete().hasContractID()) {
 				record = ctx.contracts().systemDelete(txn, consensusTime);
 		} else if (txn.hasSystemUndelete() && txn.getSystemUndelete().hasContractID()) {
 				record = ctx.contracts().systemUndelete(txn, consensusTime);

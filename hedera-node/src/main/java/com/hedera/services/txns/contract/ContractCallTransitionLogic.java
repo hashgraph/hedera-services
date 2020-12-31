@@ -3,6 +3,7 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -19,41 +20,45 @@ import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
-public class ContractDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ContractDeleteTransitionLogic.class);
+public class ContractCallTransitionLogic implements TransitionLogic {
+	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
-	private final LegacyDeleter delegate;
+	private final LegacyCaller delegate;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final Supplier<SequenceNumber> seqNo;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-	public ContractDeleteTransitionLogic(
-			LegacyDeleter delegate,
+	public ContractCallTransitionLogic(
+			LegacyCaller delegate,
 			OptionValidator validator,
 			TransactionContext txnCtx,
+			Supplier<SequenceNumber> seqNo,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
 	) {
 		this.delegate = delegate;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
+		this.seqNo = seqNo;
 		this.contracts = contracts;
 	}
 
 	@FunctionalInterface
-	public interface LegacyDeleter {
-		TransactionRecord perform(TransactionBody txn, Instant consensusTime);
+	public interface LegacyCaller {
+		TransactionRecord perform(TransactionBody txn, Instant consensusTime, SequenceNumber seqNo);
 	}
 
 	@Override
 	public void doStateTransition() {
 		try {
-			var contractDeleteTxn = txnCtx.accessor().getTxn();
+			var contractCallTxn = txnCtx.accessor().getTxn();
 
-			var legacyRecord = delegate.perform(contractDeleteTxn, txnCtx.consensusTime());
+			var legacyRecord = delegate.perform(contractCallTxn, txnCtx.consensusTime(), seqNo.get());
 
 			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
+			txnCtx.setCallResult(legacyRecord.getContractCallResult());
 		} catch (Exception e) {
 			log.warn("Avoidable exception!", e);
 			txnCtx.setStatus(FAIL_INVALID);
@@ -62,7 +67,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasContractDeleteInstance;
+		return TransactionBody::hasContractCall;
 	}
 
 	@Override
@@ -70,8 +75,8 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 		return SYNTAX_CHECK;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody contractDeleteTxn) {
-		var op = contractDeleteTxn.getContractDeleteInstance();
+	public ResponseCodeEnum validate(TransactionBody contractCallTxn) {
+		var op = contractCallTxn.getContractCall();
 		return validator.queryableContractStatus(op.getContractID(), contracts.get());
 	}
 }

@@ -63,9 +63,9 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 
 import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
-import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.legacy.utils.TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
@@ -271,23 +271,18 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
           validationCode,scheduledFee);
       return;
     }
-    if (callResultResponse != null) {
-      ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
-          (OK.equals(returnResponseCode)) ? validationCode : returnResponseCode,
-          queryFee, transactionContractCallLocal.getHeader().getResponseType(), ByteString.EMPTY);
-      if (transactionContractCallLocal.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-        responseObserver.onNext(Response.newBuilder()
-            .setContractCallLocal(ContractCallLocalResponse.newBuilder().setHeader(responseHeader))
-            .build());
-      } else {
-        responseObserver.onNext(Response.newBuilder().setContractCallLocal(ContractCallLocalResponse
-            .newBuilder().setHeader(responseHeader).setFunctionResult(callResultResponse)).build());
-      }
-      responseObserver.onCompleted();
+    ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
+        (OK.equals(returnResponseCode)) ? validationCode : returnResponseCode,
+        queryFee, transactionContractCallLocal.getHeader().getResponseType(), ByteString.EMPTY);
+    if (transactionContractCallLocal.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
+      responseObserver.onNext(Response.newBuilder()
+          .setContractCallLocal(ContractCallLocalResponse.newBuilder().setHeader(responseHeader))
+          .build());
     } else {
-      TransactionValidationUtils.constructContractCallLocalErrorResponse(responseObserver,
-          validationCode,0);
+      responseObserver.onNext(Response.newBuilder().setContractCallLocal(ContractCallLocalResponse
+          .newBuilder().setHeader(responseHeader).setFunctionResult(callResultResponse)).build());
     }
+    responseObserver.onCompleted();
     opCounters.countAnswered(ContractCallLocal);
   }
 
@@ -296,25 +291,9 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     txnHelper.submit(signedTxn, observer, ContractCreate);
   }
 
-  /**
-   * Delegate Contract Call requests to the generic handler
-   *
-   * @param request API request to call the contract
-   * @param responseObserver Observer to be informed of the results
-   */
   @Override
-  public void contractCallMethod(Transaction request,
-      StreamObserver<TransactionResponse> responseObserver) {
-    smartContractTransactionExecution(request, responseObserver, "contractCallMethod", HederaFunctionality.ContractCall);
-  }
-
-
-  private void transactionResponse(StreamObserver<TransactionResponse> responseObserver,
-      TxnValidityAndFeeReq precheckResult) {
-    responseObserver.onNext(TransactionResponse.newBuilder()
-        .setNodeTransactionPrecheckCodeValue(precheckResult.getValidity().getNumber())
-        .setCost(precheckResult.getRequiredFee()).build());
-    responseObserver.onCompleted();
+  public void contractCallMethod(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    txnHelper.submit(signedTxn, observer, ContractCall);
   }
 
   @Override
@@ -344,69 +323,6 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
   @Override
   public void getTxRecordByContractID(Query query, StreamObserver<Response> observer) {
       queryHelper.answer(query, observer, contractAnswers.getContractRecords(), ContractGetRecords);
-  }
-
-  /**
-   * Single handler for four types of request: contract Create, Call, Update, and Delete.
-   * Validates the transaction and then invokes the platform
-   *
-   * @param request API request
-   * @param responseObserver Observer to be informed of results
-   * @param transactionRequest Name of the transaction type
-   */
-  private void smartContractTransactionExecution(
-          Transaction request,
-          StreamObserver<TransactionResponse> responseObserver,
-          String transactionRequest,
-          HederaFunctionality function
-  ) {
-    if (nodeType == ZERO_STAKE_NODE) {
-      transactionResponse(responseObserver, new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_NODE_ACCOUNT));
-      return;
-    }
-    opCounters.countReceived(function);
-
-    TransactionBody transactionBody;
-    TxnValidityAndFeeReq precheckResult;
-    try {
-      transactionBody = CommonUtils.extractTransactionBody(request);
-    } catch (InvalidProtocolBufferException e) {
-      precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-      String errorMsg = "Transaction Body Parsing failed";
-      if (log.isDebugEnabled()) {
-        log.debug(errorMsg);
-      }
-      transactionResponse(responseObserver, precheckResult);
-      return;
-    }
-    if (log.isDebugEnabled()) {
-      log.debug(
-          transactionRequest + " :: request : " + TextFormat.shortDebugString(transactionBody));
-    }
-    precheckResult = txHandler.validateTransactionPreConsensus(request, false);
-
-    if (precheckResult.getValidity() == OK) {
-      if (transactionBody.hasContractCall()) {
-        if (transactionBody.getContractCall().hasContractID()) {
-          precheckResult = new TxnValidityAndFeeReq(smartContractHandler
-              .validateContractExistence(transactionBody.getContractCall().getContractID()));
-        } else {
-          precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_CONTRACT_ID);
-        }
-      }
-    }
-
-    if (precheckResult.getValidity() != OK) {
-      transactionResponse(responseObserver, precheckResult);
-      return;
-    }
-
-    if (submissionManager.trySubmission(uncheckedFrom(request)) != OK) {
-      logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
-      return;
-    }
-    TransactionValidationUtils.transactionResponse(responseObserver, new TxnValidityAndFeeReq(OK));
-    opCounters.countSubmitted(function);
   }
 
   @Override
