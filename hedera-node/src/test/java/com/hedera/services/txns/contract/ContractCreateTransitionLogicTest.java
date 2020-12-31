@@ -216,11 +216,6 @@ public class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
-		contractCreateTxn = contractCreateTxn.toBuilder()
-				.setContractCreateInstance(contractCreateTxn.getContractCreateInstance().toBuilder())
-				.build();
-		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
 		given(delegate.perform(any(), any(), any(), any())).willThrow(IllegalStateException.class);
 
 		// when:

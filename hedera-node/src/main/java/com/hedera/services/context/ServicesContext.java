@@ -186,6 +186,7 @@ import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
 import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
 import com.hedera.services.txns.consensus.TopicUpdateTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
+import com.hedera.services.txns.contract.ContractUpdateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoCreateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoDeleteTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
@@ -1027,6 +1028,9 @@ public class ServicesContext {
 				entry(ContractCreate,
 						List.of(new ContractCreateTransitionLogic(
 								hfs(), contracts()::createContract, this::seqNo, validator(), txnCtx()))),
+				entry(ContractUpdate,
+						List.of(new ContractUpdateTransitionLogic(
+								contracts()::updateContract, validator(), txnCtx(), this::accounts))),
 				/* Consensus */
 				entry(ConsensusCreateTopic,
 						List.of(new TopicCreateTransitionLogic(

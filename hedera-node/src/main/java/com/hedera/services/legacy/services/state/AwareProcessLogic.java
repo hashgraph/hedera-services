@@ -79,9 +79,6 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class AwareProcessLogic implements ProcessLogic {
-
-	private static final int MEMO_SIZE_LIMIT = 100;
-
 	static Logger log = LogManager.getLogger(AwareProcessLogic.class);
 
 	private static final EnumSet<ResponseCodeEnum> SIG_RATIONALIZATION_ERRORS = EnumSet.of(
@@ -370,16 +367,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			} catch (Exception e) {
 				log.error("Error during create contract", e);
 			}
-		} else if (txn.hasContractUpdateInstance()) {
-			try {
-				if (isMemoTooLong(txn.getContractUpdateInstance().getMemo())) {
-					record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, MEMO_TOO_LONG);
-				} else {
-					record = ctx.contracts().updateContract(txn, consensusTime);
-				}
-			} catch (Exception e) {
-				log.error("Error during update contract", e);
-			}
 		} else if (txn.hasContractDeleteInstance()) {
 			try {
 				record = ctx.contracts().deleteContract(txn, consensusTime);
@@ -407,9 +394,5 @@ public class AwareProcessLogic implements ProcessLogic {
 			}
 		}
 		return record;
-	}
-
-	private boolean isMemoTooLong(String memo) {
-		return memo.length() > MEMO_SIZE_LIMIT;
 	}
 }

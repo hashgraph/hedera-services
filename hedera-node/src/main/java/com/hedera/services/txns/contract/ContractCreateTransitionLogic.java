@@ -5,8 +5,6 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;

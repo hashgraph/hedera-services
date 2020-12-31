@@ -71,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
@@ -315,16 +316,9 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     responseObserver.onCompleted();
   }
 
-  /**
-   * Delegate Contract Update requests to the generic handler
-   *
-   * @param request API request to update the contract
-   * @param responseObserver Observer to be informed of the results
-   */
   @Override
-  public void updateContract(Transaction request,
-      StreamObserver<TransactionResponse> responseObserver) {
-    smartContractTransactionExecution(request, responseObserver, "updateContract", HederaFunctionality.ContractUpdate);
+  public void updateContract(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    txnHelper.submit(signedTxn, observer, ContractUpdate);
   }
 
   /**
@@ -391,16 +385,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     precheckResult = txHandler.validateTransactionPreConsensus(request, false);
 
     if (precheckResult.getValidity() == OK) {
-      /* should check if ContractID is invalid, if so return INVALID_CONTRACT_ID */
-      if (transactionBody.hasContractUpdateInstance()) {
-        if (transactionBody.getContractUpdateInstance().hasContractID()) {
-          precheckResult = new TxnValidityAndFeeReq(smartContractHandler
-              .validateContractExistence(
-                  transactionBody.getContractUpdateInstance().getContractID()));
-        } else {
-          precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_CONTRACT_ID);
-        }
-      } else if (transactionBody.hasContractDeleteInstance()) {
+      if (transactionBody.hasContractDeleteInstance()) {
         if (transactionBody.getContractDeleteInstance().hasContractID()) {
           precheckResult = new TxnValidityAndFeeReq(smartContractHandler
               .validateContractExistence(
@@ -423,42 +408,12 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
       return;
     }
 
-    long minimumDuration = PropertiesLoader.getMinimumAutorenewDuration();
-    if (minimumDuration < Instant.MIN.getEpochSecond()) {
-      minimumDuration = Instant.MIN.getEpochSecond();
-    }
-    long maximumDuration = PropertiesLoader.getMaximumAutorenewDuration();
-    if (maximumDuration > Instant.MAX.getEpochSecond()) {
-      maximumDuration = Instant.MAX.getEpochSecond();
-    }
-
-    if (transactionBody.hasContractUpdateInstance()) {
-      if (transactionBody.getContractUpdateInstance().hasAutoRenewPeriod()) {
-        long duration = transactionBody.getContractUpdateInstance().getAutoRenewPeriod().getSeconds();
-        if (durationRangeCheck(responseObserver, minimumDuration, maximumDuration, duration)) {
-          return;
-        }
-      }
-
-    }
-
     if (submissionManager.trySubmission(uncheckedFrom(request)) != OK) {
       logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
       return;
     }
     TransactionValidationUtils.transactionResponse(responseObserver, new TxnValidityAndFeeReq(OK));
     opCounters.countSubmitted(function);
-  }
-
-  private boolean durationRangeCheck(
-          StreamObserver<TransactionResponse> observer,
-          long minimumDuration, long maximumDuration, long duration
-  ) {
-    if ((duration < minimumDuration) || (duration > maximumDuration)) {
-      transactionResponse(observer, new TxnValidityAndFeeReq(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE));
-      return true;
-    }
-    return false;
   }
 
   /**
