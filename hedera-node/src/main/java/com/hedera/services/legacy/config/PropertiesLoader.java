@@ -64,14 +64,6 @@ public class PropertiesLoader {
 		log.info("API Properties Populated with these values :: " + apiProperties.getCustomProperties());
 	}
 
-	public static long getMinimumAutorenewDuration() {
-		return SyncPropertiesObject.getMINIMUM_AUTORENEW_DURATION();
-	}
-
-	public static long getMaximumAutorenewDuration() {
-		return SyncPropertiesObject.getMAXIMUM_AUTORENEW_DURATION();
-	}
-
 	public static long getRecordLogPeriod() {
 		return AsyncPropertiesObject.getRecordLogPeriod();
 	}

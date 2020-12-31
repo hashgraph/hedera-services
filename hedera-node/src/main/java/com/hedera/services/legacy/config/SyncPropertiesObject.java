@@ -30,29 +30,15 @@ import com.hedera.services.legacy.logic.CustomProperties;
  * In other words, they impact state of system.
  */
 public class SyncPropertiesObject {
-	private static long minimumAutoRenewDuration = ApplicationConstants.MINIMUM_AUTORENEW_DURATION;
-	private static long maximumAutoRenewDuration= ApplicationConstants.MAXIMUM_AUTORENEW_DURATION;
-
 	// Estimates for calculating fees for Smart Contract local calls
 	private static int localCallEstReturnBytes = ApplicationConstants.LOCAL_CALLEST_RET_BYTES;
 	private static int maxGasLimit = ApplicationConstants.MAX_GAS_LIMIT;
 
 	public static void loadSynchProperties(CustomProperties appConfig) {
-		minimumAutoRenewDuration = appConfig.getLong("minimumAutoRenewDuration", ApplicationConstants.MINIMUM_AUTORENEW_DURATION);
-		maximumAutoRenewDuration = appConfig.getLong("maximumAutoRenewDuration", ApplicationConstants.MAXIMUM_AUTORENEW_DURATION);
-
 		// Estimates for calculating fees for Smart Contract local calls
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
 
 		maxGasLimit = appConfig.getInt("maxGasLimit", ApplicationConstants.MAX_GAS_LIMIT);
-	}
-
-	static long getMINIMUM_AUTORENEW_DURATION() {
-		return minimumAutoRenewDuration;
-	}
-
-	static long getMAXIMUM_AUTORENEW_DURATION() {
-		return maximumAutoRenewDuration;
 	}
 
 	static int getLocalCallEstReturnBytes() {
