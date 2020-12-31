@@ -139,7 +139,7 @@
     <hamcrest-all.version>1.3</hamcrest-all.version>
     <junit.jupiter.version>5.5.0-M1</junit.jupiter.version>
     <junit.vintage.version>5.5.0-M1</junit.vintage.version>
-    <junit.platform.version>1.4.2</junit.platform.version>
+    <junit.platform.version>1.5.0-M1</junit.platform.version>
     <mockito-junit-jupiter.version>3.3.0</mockito-junit-jupiter.version>
     <mockito2.version>3.3.0</mockito2.version>
 
