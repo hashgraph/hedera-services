@@ -189,6 +189,7 @@ import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.contract.ContractDeleteTransitionLogic;
 import com.hedera.services.txns.contract.ContractSysDelTransitionLogic;
+import com.hedera.services.txns.contract.ContractSysUndelTransitionLogic;
 import com.hedera.services.txns.contract.ContractUpdateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoCreateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoDeleteTransitionLogic;
@@ -1090,7 +1091,10 @@ public class ServicesContext {
 								new ContractSysDelTransitionLogic(
 										validator(), txnCtx(), contracts()::systemDelete, this::accounts))),
 				entry(SystemUndelete,
-						List.of(new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
+						List.of(
+								new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
+								new ContractSysUndelTransitionLogic(
+										validator(), txnCtx(), contracts()::systemUndelete, this::accounts))),
 				/* Network */
 				entry(UncheckedSubmit,
 						List.of(new UncheckedSubmitTransitionLogic()))

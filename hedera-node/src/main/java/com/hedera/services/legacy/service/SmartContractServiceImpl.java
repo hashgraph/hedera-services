@@ -301,9 +301,6 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     txnHelper.submit(signedTxn, observer, ContractUpdate);
   }
 
-  /**
-   * Not implemented
-   */
   @Override
   public void getBySolidityID(Query request, StreamObserver<Response> responseObserver) {
     opCounters.countReceived(GetBySolidityID);
@@ -332,43 +329,11 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
 
   @Override
   public void systemDelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-    txnHelper.submit(signedTxn, observer, ContractDelete);
+    txnHelper.submit(signedTxn, observer, SystemDelete);
   }
 
-  /**
-   * Validate the System Undelete transaction request and then invoke the platform
-   *
-   * @param request API request to system-undelete the contract
-   * @param responseObserver Observer to be informed of the results
-   */
   @Override
-  public void systemUndelete(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
-    opCounters.countReceived(SystemUndelete);
-    TxnValidityAndFeeReq precheckResult = txHandler.validateTransactionPreConsensus(request, false);
-    if (precheckResult.getValidity() != OK) {
-      String errorMsg = "Pre-check validation failed. " + precheckResult;
-      if (log.isDebugEnabled()) {
-        log.debug(errorMsg);
-      }
-      TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
-      return;
-    }
-
-    try {
-      TransactionBody body = CommonUtils.extractTransactionBody(request);
-      if (log.isDebugEnabled()) {
-        log.debug("In systemUnDelete :: request : " + TextFormat.shortDebugString(body));
-      }
-
-      if (submissionManager.trySubmission(uncheckedFrom(request)) != OK) {
-        logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
-        return;
-      }
-      TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
-    } catch (InvalidProtocolBufferException e) {
-      precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-      TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
-    }
-    opCounters.countSubmitted(SystemUndelete);
+  public void systemUndelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    txnHelper.submit(signedTxn, observer, SystemDelete);
   }
 }
