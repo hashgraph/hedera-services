@@ -367,12 +367,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			} catch (Exception e) {
 				log.error("Error during create contract", e);
 			}
-		} else if (txn.hasContractDeleteInstance()) {
-			try {
-				record = ctx.contracts().deleteContract(txn, consensusTime);
-			} catch (Exception e) {
-				log.error("Error during delete contract", e);
-			}
 		} else if (txn.hasSystemDelete() && txn.getSystemDelete().hasContractID()) {
 				record = ctx.contracts().systemDelete(txn, consensusTime);
 		} else if (txn.hasSystemUndelete() && txn.getSystemUndelete().hasContractID()) {

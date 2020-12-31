@@ -68,6 +68,7 @@ import static com.hedera.services.legacy.utils.TransactionValidationUtils.logAnd
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
@@ -385,15 +386,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     precheckResult = txHandler.validateTransactionPreConsensus(request, false);
 
     if (precheckResult.getValidity() == OK) {
-      if (transactionBody.hasContractDeleteInstance()) {
-        if (transactionBody.getContractDeleteInstance().hasContractID()) {
-          precheckResult = new TxnValidityAndFeeReq(smartContractHandler
-              .validateContractExistence(
-                  transactionBody.getContractDeleteInstance().getContractID()));
-        } else {
-          precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_CONTRACT_ID);
-        }
-      } else if (transactionBody.hasContractCall()) {
+      if (transactionBody.hasContractCall()) {
         if (transactionBody.getContractCall().hasContractID()) {
           precheckResult = new TxnValidityAndFeeReq(smartContractHandler
               .validateContractExistence(transactionBody.getContractCall().getContractID()));
@@ -416,16 +409,9 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     opCounters.countSubmitted(function);
   }
 
-  /**
-   * Delegate Delete Contract requests to the generic handler
-   *
-   * @param request API request to delete the contract
-   * @param responseObserver Observer to be informed of the results
-   */
   @Override
-  public void deleteContract(Transaction request,
-      StreamObserver<TransactionResponse> responseObserver) {
-    smartContractTransactionExecution(request, responseObserver, "deleteContract", HederaFunctionality.ContractDelete);
+  public void deleteContract(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    txnHelper.submit(signedTxn, observer, ContractDelete);
   }
 
   /**
