@@ -185,6 +185,7 @@ import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
 import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
 import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
 import com.hedera.services.txns.consensus.TopicUpdateTransitionLogic;
+import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoCreateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoDeleteTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
@@ -1022,6 +1023,10 @@ public class ServicesContext {
 						List.of(new FileDeleteTransitionLogic(hfs(), txnCtx()))),
 				entry(FileAppend,
 						List.of(new FileAppendTransitionLogic(hfs(), txnCtx()))),
+				/* Contract */
+				entry(ContractCreate,
+						List.of(new ContractCreateTransitionLogic(
+								hfs(), contracts()::createContract, this::seqNo, validator(), txnCtx()))),
 				/* Consensus */
 				entry(ConsensusCreateTopic,
 						List.of(new TopicCreateTransitionLogic(
@@ -1348,7 +1353,8 @@ public class ServicesContext {
 					submissionManager(),
 					contractAnswers(),
 					queryResponseHelper(),
-					opCounters());
+					opCounters(),
+					txnResponseHelper());
 		}
 		return contractsGrpc;
 	}

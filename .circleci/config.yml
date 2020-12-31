@@ -1715,6 +1715,7 @@ workflows:
             filters:
               branches:
                 ignore:
+                  - 085-M-ReduceSmartContractDup
                   - /.*-PERF/
                   - /.*-REGRESSION/
 

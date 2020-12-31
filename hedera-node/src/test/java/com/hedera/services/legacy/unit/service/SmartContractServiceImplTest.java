@@ -414,7 +414,7 @@ public class SmartContractServiceImplTest {
 		smartContractImpl = new SmartContractServiceImpl(transactionHandler,
 				smartContractHandler,
 				TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-				submissionManager, null, null, mock(HapiOpCounters.class));
+				submissionManager, null, null, mock(HapiOpCounters.class), null);
 		smartContractImpl.createContract(trx, responseObserver);
 	}
 
@@ -445,7 +445,7 @@ public class SmartContractServiceImplTest {
 			smartContractImpl = new SmartContractServiceImpl(transactionHandler,
 					smartContractHandler,
 					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-					submissionManager, null, null, mock(HapiOpCounters.class));
+					submissionManager, null, null, mock(HapiOpCounters.class), null);
 
 			StreamObserver<Response> respOb = new StreamObserver<Response>() {
 

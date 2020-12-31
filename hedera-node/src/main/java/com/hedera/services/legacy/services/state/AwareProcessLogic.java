@@ -347,14 +347,8 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void mapLegacyRecordToTxnCtx(TransactionRecord legacyRecord) {
 		ctx.txnCtx().setStatus(legacyRecord.getReceipt().getStatus());
-
 		if (legacyRecord.hasContractCallResult()) {
 			ctx.txnCtx().setCallResult(legacyRecord.getContractCallResult());
-		} else if (legacyRecord.hasContractCreateResult()) {
-			ctx.txnCtx().setCreateResult(legacyRecord.getContractCreateResult());
-			if (ctx.txnCtx().status() == SUCCESS) {
-				ctx.txnCtx().setCreated(legacyRecord.getReceipt().getContractID());
-			}
 		}
 	}
 
@@ -370,26 +364,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private TransactionRecord processTransaction(TransactionBody txn, Instant consensusTime) {
 		TransactionRecord record = null;
-		if (txn.hasContractCreateInstance()) {
-			FileID fid = txn.getContractCreateInstance().getFileID();
-			try {
-				if (!ctx.hfs().exists(fid)) {
-					record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, INVALID_FILE_ID);
-				} else if(isMemoTooLong(txn.getContractCreateInstance().getMemo())) {
-					record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, MEMO_TOO_LONG);
-				} else {
-					byte[] contractByteCode = ctx.hfs().cat(fid);
-					if (contractByteCode.length > 0) {
-						record = ctx.contracts().createContract(txn, consensusTime, contractByteCode, ctx.seqNo());
-					} else {
-						record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, CONTRACT_FILE_EMPTY);
-					}
-				}
-			} catch (Exception e) {
-				log.error("Error during create contract", e);
-			}
-
-		} else if (txn.hasContractCall()) {
+		if (txn.hasContractCall()) {
 			try {
 				record = ctx.contracts().contractCall(txn, consensusTime, ctx.seqNo());
 			} catch (Exception e) {

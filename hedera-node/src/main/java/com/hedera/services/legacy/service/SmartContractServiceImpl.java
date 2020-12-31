@@ -36,6 +36,7 @@ import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
+import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -66,6 +67,7 @@ import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.legacy.utils.TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
@@ -93,6 +95,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
   private ContractAnswers contractAnswers;
   private QueryResponseHelper queryHelper;
   private HapiOpCounters opCounters;
+  private TxnResponseHelper txnHelper;
 
   public SmartContractServiceImpl(
           TransactionHandler txHandler,
@@ -103,7 +106,8 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
           PlatformSubmissionManager submissionManager,
           ContractAnswers contractAnswers,
           QueryResponseHelper queryHelper,
-          HapiOpCounters opCounters
+          HapiOpCounters opCounters,
+          TxnResponseHelper txnHelper
   ) {
     this.txHandler = txHandler;
     this.smartContractHandler = smartContractHandler;
@@ -114,6 +118,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     this.contractAnswers = contractAnswers;
     this.queryHelper = queryHelper;
     this.opCounters = opCounters;
+    this.txnHelper = txnHelper;
   }
 
   public long getContractCallLocalGasPriceInTinyBars(Timestamp at) {
@@ -284,15 +289,9 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     opCounters.countAnswered(ContractCallLocal);
   }
 
-  /**
-   * Delegate Create Contract requests to the  generic handler
-   *
-   * @param request API request to create the contract
-   * @param responseObserver Observer to be informed of results
-   */
   @Override
-  public void createContract(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
-    smartContractTransactionExecution(request, responseObserver, "createContract", HederaFunctionality.ContractCreate);
+  public void createContract(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    txnHelper.submit(signedTxn, observer, ContractCreate);
   }
 
   /**
@@ -431,12 +430,6 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     long maximumDuration = PropertiesLoader.getMaximumAutorenewDuration();
     if (maximumDuration > Instant.MAX.getEpochSecond()) {
       maximumDuration = Instant.MAX.getEpochSecond();
-    }
-    if (transactionBody.hasContractCreateInstance()) {
-      long duration = transactionBody.getContractCreateInstance().getAutoRenewPeriod().getSeconds();
-      if (durationRangeCheck(responseObserver, minimumDuration, maximumDuration, duration)) {
-        return;
-      }
     }
 
     if (transactionBody.hasContractUpdateInstance()) {
