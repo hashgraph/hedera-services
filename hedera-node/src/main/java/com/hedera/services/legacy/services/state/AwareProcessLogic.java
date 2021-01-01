@@ -21,20 +21,17 @@ package com.hedera.services.legacy.services.state;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.TextFormat;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.Transaction;
@@ -58,6 +55,7 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICA
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -218,25 +216,19 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 
 		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
-		ResponseCodeEnum opValidity = transitionLogic.isPresent()
-				? transitionLogic.get().syntaxCheck().apply(accessor.getTxn())
-				: TransactionValidationUtils.validateTxSpecificBody(accessor.getTxn(), ctx.validator());
+		if (transitionLogic.isEmpty()) {
+			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxn4Log);
+			ctx.txnCtx().setStatus(FAIL_INVALID);
+			return;
+		}
 
+		var logic = transitionLogic.get();
+		var opValidity = logic.syntaxCheck().apply(accessor.getTxn());
 		if (opValidity != OK) {
 			ctx.txnCtx().setStatus(opValidity);
 			return;
 		}
-
-		if (transitionLogic.isPresent()) {
-			transitionLogic.get().doStateTransition();
-		} else {
-			TransactionRecord record = processTransaction(accessor.getTxn(), consensusTime);
-			if (record != null && record.isInitialized()) {
-				mapLegacyRecordToTxnCtx(record);
-			} else {
-				log.warn("Legacy process returned null record for {}!", accessor.getTxn());
-			}
-		}
+		logic.doStateTransition();
 
 		ctx.opCounters().countHandled(accessor.getFunction());
 	}
@@ -337,10 +329,6 @@ public class AwareProcessLogic implements ProcessLogic {
 				!inSameUtcDay(ctx.consensusTimeOfLastHandledTxn(), dataDrivenNow);
 	}
 
-	private void mapLegacyRecordToTxnCtx(TransactionRecord legacyRecord) {
-		ctx.txnCtx().setStatus(legacyRecord.getReceipt().getStatus());
-	}
-
 	private void addForStreaming(
 			com.hederahashgraph.api.proto.java.Transaction grpcTransaction,
 			TransactionRecord transactionRecord,
@@ -349,26 +337,5 @@ public class AwareProcessLogic implements ProcessLogic {
 		if (PropertiesLoader.isEnableRecordStreaming()) {
 			ctx.recordStream().addRecord(grpcTransaction, transactionRecord, consensusTimeStamp);
 		}
-	}
-
-	private TransactionRecord processTransaction(TransactionBody txn, Instant consensusTime) {
-		TransactionRecord record = null;
-		if (txn.hasFreeze()) {
-			record = ctx.freeze().freeze(txn, consensusTime);
-		} else {
-			log.error("API is not implemented");
-			record = TransactionRecord.getDefaultInstance();
-		}
-		if (record.hasReceipt()) {
-			if (!record.getReceipt().hasExchangeRate()) {
-				if(log.isDebugEnabled()) {
-					log.debug("Receipt {} missing rates info!", TextFormat.shortDebugString(record));
-				}
-				TransactionReceipt.Builder receiptBuilder = record.getReceipt().toBuilder();
-				receiptBuilder.setExchangeRate(ctx.exchange().activeRates());
-				record = record.toBuilder().setReceipt(receiptBuilder).build();
-			}
-		}
-		return record;
 	}
 }

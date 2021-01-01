@@ -51,6 +51,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.queries.contract.GetContractRecordsAnswer;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
@@ -201,6 +202,7 @@ import com.hedera.services.txns.file.FileDeleteTransitionLogic;
 import com.hedera.services.txns.file.FileSysDelTransitionLogic;
 import com.hedera.services.txns.file.FileSysUndelTransitionLogic;
 import com.hedera.services.txns.file.FileUpdateTransitionLogic;
+import com.hedera.services.txns.network.FreezeTransitionLogic;
 import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
@@ -274,7 +276,6 @@ import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.netty.NettyServerManager;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
-import com.hedera.services.legacy.service.FreezeServiceImpl;
 import com.hedera.services.legacy.service.SmartContractServiceImpl;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -388,12 +389,12 @@ public class ServicesContext {
 	private SemanticVersions semVers;
 	private PrecheckVerifier precheckVerifier;
 	private BackingTokenRels backingTokenRels;
+	private FreezeController freezeGrpc;
 	private BalancesExporter balancesExporter;
 	private SolidityLifecycle solidityLifecycle;
 	private ExpiringCreations creator;
 	private NetworkController networkGrpc;
 	private GrpcServerManager grpc;
-	private FreezeServiceImpl freezeGrpc;
 	private TxnResponseHelper txnResponseHelper;
 	private TransactionContext txnCtx;
 	private BlobStorageSource bytecodeDb;
@@ -1096,6 +1097,8 @@ public class ServicesContext {
 								new ContractSysUndelTransitionLogic(
 										validator(), txnCtx(), contracts()::systemUndelete, this::accounts))),
 				/* Network */
+				entry(Freeze,
+						List.of(new FreezeTransitionLogic(fileNums(), freeze()::freeze, txnCtx()))),
 				entry(UncheckedSubmit,
 						List.of(new UncheckedSubmitTransitionLogic()))
 		);
@@ -1316,9 +1319,9 @@ public class ServicesContext {
 		return feeSchedulesManager;
 	}
 
-	public FreezeServiceImpl freezeGrpc() {
+	public FreezeController freezeGrpc() {
 		if (freezeGrpc == null) {
-			freezeGrpc = new FreezeServiceImpl(fileNums(), txns(), submissionManager());
+			freezeGrpc = new FreezeController(txnResponseHelper());
 		}
 		return freezeGrpc;
 	}

@@ -110,12 +110,16 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidAutoRenewOnly() {
+	public void acceptsOkSyntax() {
 		givenValidTxnCtx();
 
 		// expect:
 		assertEquals(OK, subject.syntaxCheck().apply(contractCreateTxn));
+	}
 
+	@Test
+	public void rejectsOutOfRangeAutoRenew() {
+		givenValidTxnCtx();
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
