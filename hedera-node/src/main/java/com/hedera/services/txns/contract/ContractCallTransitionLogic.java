@@ -18,7 +18,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractCallTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
@@ -77,6 +80,17 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 
 	public ResponseCodeEnum validate(TransactionBody contractCallTxn) {
 		var op = contractCallTxn.getContractCall();
-		return validator.queryableContractStatus(op.getContractID(), contracts.get());
+
+		var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
+		if (status != OK) {
+			return status;
+		}
+		if (op.getGas() < 0) {
+			return CONTRACT_NEGATIVE_GAS;
+		}
+		if (op.getAmount() < 0) {
+			return CONTRACT_NEGATIVE_VALUE;
+		}
+		return OK;
 	}
 }

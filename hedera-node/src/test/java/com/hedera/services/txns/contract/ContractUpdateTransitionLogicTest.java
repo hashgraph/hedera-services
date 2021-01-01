@@ -45,6 +45,7 @@ import java.time.Instant;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -61,8 +62,7 @@ import static org.mockito.BDDMockito.verify;
 public class ContractUpdateTransitionLogicTest {
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private long customAutoRenewPeriod = 100_001L;
-	final private Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
+	private long customAutoRenewPeriod = 100_001L;
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 	final private String memo = "Who, me?";
 
@@ -99,15 +99,13 @@ public class ContractUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidMemo() {
+	public void rejectsInvalidMemoInSyntaxCheck() {
 		givenValidTxnCtx();
+		// and:
 		given(validator.isValidEntityMemo(any())).willReturn(false);
 
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(MEMO_TOO_LONG);
+		// expect:
+		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(contractUpdateTxn));
 	}
 
 	@Test
@@ -178,6 +176,17 @@ public class ContractUpdateTransitionLogicTest {
 
 	@Test
 	public void rejectsInvalidAutoRenew() {
+		// setup:
+		customAutoRenewPeriod = -1;
+
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.syntaxCheck().apply(contractUpdateTxn));
+	}
+
+	@Test
+	public void rejectsOutOfRangeAutoRenew() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
@@ -204,6 +213,7 @@ public class ContractUpdateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx(boolean useAutoRenew) {
+		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setContractUpdateInstance(
@@ -228,6 +238,7 @@ public class ContractUpdateTransitionLogicTest {
 	}
 
 	private void withRubberstampingValidator() {
+		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
 		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
 		given(validator.isValidAutoRenewPeriod(autoRenewDuration)).willReturn(true);
 		given(validator.isValidEntityMemo(memo)).willReturn(true);

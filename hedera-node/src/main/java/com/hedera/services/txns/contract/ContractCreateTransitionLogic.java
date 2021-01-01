@@ -19,8 +19,11 @@ import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -65,10 +68,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			var contractCreateTxn = txnCtx.accessor().getTxn();
 			var op = contractCreateTxn.getContractCreateInstance();
 
-			if (!validator.isValidEntityMemo(op.getMemo())) {
-				txnCtx.setStatus(MEMO_TOO_LONG);
-				return;
-			}
 			var inputs = prepBytecode(op);
 			if (inputs.getValue() != OK) {
 				txnCtx.setStatus(inputs.getValue());
@@ -112,6 +111,23 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 	public ResponseCodeEnum validate(TransactionBody contractCreateTxn) {
 		var op = contractCreateTxn.getContractCreateInstance();
-		return validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()) ? OK : AUTORENEW_DURATION_NOT_IN_RANGE;
+
+		if (!op.hasAutoRenewPeriod() || op.getAutoRenewPeriod().getSeconds() < 1) {
+			return INVALID_RENEWAL_PERIOD;
+		}
+		if (!validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
+			return AUTORENEW_DURATION_NOT_IN_RANGE;
+		}
+		if (op.getGas() < 0) {
+			return CONTRACT_NEGATIVE_GAS;
+		}
+		if (op.getInitialBalance() < 0) {
+			return CONTRACT_NEGATIVE_VALUE;
+		}
+		if (!validator.isValidEntityMemo(op.getMemo())) {
+			return MEMO_TOO_LONG;
+		}
+
+		return OK;
 	}
 }

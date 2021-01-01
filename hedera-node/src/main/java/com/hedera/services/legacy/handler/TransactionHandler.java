@@ -252,50 +252,6 @@ public class TransactionHandler {
   }
 
   /**
-   * @param trBody body of the transaction
-   * @return ResponseCodeEnum.CONTRACT_GAS_NEGATIVE if this is a contract creation or call and the
-   * gas is negative, ResponseCodeEnum.CONTRACT_VALUE_NEGATIVE if a contract create / call with
-   * negative initial balance / value, else OK.
-   */
-  private ResponseCodeEnum validateContractPositiveValues(TransactionBody trBody) {
-    long gas = 0;
-    long value = 0;
-    ResponseCodeEnum returnCode = OK;
-    if (trBody.hasContractCreateInstance()) {
-      gas = trBody.getContractCreateInstance().getGas();
-      value = trBody.getContractCreateInstance().getInitialBalance();
-    } else if (trBody.hasContractCall()) {
-      gas = trBody.getContractCall().getGas();
-      value = trBody.getContractCall().getAmount();
-    }
-    if (gas < 0) {
-      returnCode = ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
-    } else if (value < 0) {
-      returnCode = ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-    }
-    return returnCode;
-  }
-
-  /**
-   * @param trBody body of the transaction
-   * @return ResponseCodeEnum.MEMO_TOO_LONG if this is a contract creation or update and the memo is
-   * longer than 100 characters, else OK.
-   */
-  private ResponseCodeEnum validateContractMemoSize(TransactionBody trBody) {
-    String memo = null;
-    ResponseCodeEnum returnCode = OK;
-    if (trBody.hasContractCreateInstance()) {
-      memo = trBody.getContractCreateInstance().getMemo();
-    } else if (trBody.hasContractUpdateInstance()) {
-      memo = trBody.getContractUpdateInstance().getMemo();
-    }
-    if (memo != null && memo.length() > 100) {
-      returnCode = ResponseCodeEnum.MEMO_TOO_LONG;
-    }
-    return returnCode;
-  }
-
-  /**
    * validates node account id against current node account
    *
    * @param trBody body of the transaction
@@ -494,14 +450,6 @@ public class TransactionHandler {
 
     if (!(isQueryPayment && txn.hasCryptoTransfer()) && returnCode == OK) {
       returnCode = validateTransactionThrottling(txn);
-    }
-
-    if (returnCode == OK) {
-      returnCode = validateContractPositiveValues(txn);
-    }
-
-    if (returnCode == OK) {
-      returnCode = validateContractMemoSize(txn);
     }
 
     return new TxnValidityAndFeeReq(returnCode, feeRequired);

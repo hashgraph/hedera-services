@@ -27,9 +27,9 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -44,9 +44,10 @@ import org.junit.runner.RunWith;
 import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
@@ -56,12 +57,13 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @RunWith(JUnitPlatform.class)
 public class ContractCallTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+	private long gas = 1_234L;
+	private long sent = 1_234L;
 
 	private Instant consensusTime;
 	private OptionValidator validator;
@@ -150,6 +152,28 @@ public class ContractCallTransitionLogicTest {
 	}
 
 	@Test
+	public void rejectsNegativeSend() {
+		// setup:
+		sent = -1;
+
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(CONTRACT_NEGATIVE_VALUE, subject.syntaxCheck().apply(contractCallTxn));
+	}
+
+	@Test
+	public void rejectsNegativeGas() {
+		// setup:
+		gas = -1;
+
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(CONTRACT_NEGATIVE_GAS, subject.syntaxCheck().apply(contractCallTxn));
+	}
+
+	@Test
 	public void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
@@ -177,6 +201,8 @@ public class ContractCallTransitionLogicTest {
 				.setTransactionID(ourTxnId())
 				.setContractCall(
 						ContractCallTransactionBody.newBuilder()
+								.setGas(gas)
+								.setAmount(sent)
 								.setContractID(target));
 		contractCallTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractCallTxn);

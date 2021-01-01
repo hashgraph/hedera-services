@@ -49,8 +49,11 @@ import java.time.Instant;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -65,9 +68,9 @@ import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class ContractCreateTransitionLogicTest {
-	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-	final private long customAutoRenewPeriod = 100_001L;
-	final private Long balance = 1_234L;
+	private long gas = 33_333L;
+	private long customAutoRenewPeriod = 100_001L;
+	private Long balance = 1_234L;
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID created = ContractID.newBuilder().setContractNum(9_999L).build();
@@ -115,6 +118,47 @@ public class ContractCreateTransitionLogicTest {
 
 		// expect:
 		assertEquals(OK, subject.syntaxCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidAutoRenew() {
+		givenValidTxnCtx(false);
+
+		// expect:
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.syntaxCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	public void rejectsNegativeBalance() {
+		// setup:
+		balance = -1L;
+
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(CONTRACT_NEGATIVE_VALUE, subject.syntaxCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	public void rejectsNegativeGas() {
+		// setup:
+		gas = -1L;
+
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(CONTRACT_NEGATIVE_GAS, subject.syntaxCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	public void rejectsNegativeAutoRenew() {
+		// setup:
+		customAutoRenewPeriod = -1L;
+
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.syntaxCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -179,15 +223,13 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidMemo() {
+	public void rejectsInvalidMemoInSyntaxCheck() {
 		givenValidTxnCtx();
+		// and:
 		given(validator.isValidEntityMemo(any())).willReturn(false);
 
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(MEMO_TOO_LONG);
+		// expect:
+		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -230,16 +272,22 @@ public class ContractCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		contractCreateTxn = TransactionBody.newBuilder()
+		givenValidTxnCtx(true);
+	}
+
+	private void givenValidTxnCtx(boolean rememberAutoRenew) {
+		var op = ContractCreateTransactionBody.newBuilder()
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setGas(gas)
+				.setProxyAccountID(proxy);
+		if (rememberAutoRenew) {
+			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
+		}
+		var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
-				.setContractCreateInstance(
-						ContractCreateTransactionBody.newBuilder()
-								.setFileID(bytecodeSrc)
-								.setInitialBalance(balance)
-								.setProxyAccountID(proxy)
-								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
-								.build()
-				).build();
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 	}

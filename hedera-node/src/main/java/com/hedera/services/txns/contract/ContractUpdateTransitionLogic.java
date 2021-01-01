@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -55,12 +56,6 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			var contractUpdateTxn = txnCtx.accessor().getTxn();
-			var op = contractUpdateTxn.getContractUpdateInstance();
-
-			if (!validator.isValidEntityMemo(op.getMemo())) {
-				txnCtx.setStatus(MEMO_TOO_LONG);
-				return;
-			}
 
 			var legacyRecord = delegate.perform(contractUpdateTxn, txnCtx.consensusTime());
 
@@ -83,12 +78,25 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 
 	public ResponseCodeEnum validate(TransactionBody contractUpdateTxn) {
 		var op = contractUpdateTxn.getContractUpdateInstance();
+
 		var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
 		if (status != OK) {
 			return status;
 		}
-		return (!op.hasAutoRenewPeriod() || validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()))
-				? OK
-				: AUTORENEW_DURATION_NOT_IN_RANGE;
+
+		if (op.hasAutoRenewPeriod()) {
+			if (op.getAutoRenewPeriod().getSeconds() < 1) {
+				return INVALID_RENEWAL_PERIOD;
+			}
+			if (!validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
+				return AUTORENEW_DURATION_NOT_IN_RANGE;
+			}
+		}
+
+		if (!validator.isValidEntityMemo(op.getMemo())) {
+			return MEMO_TOO_LONG;
+		}
+
+		return OK;
 	}
 }

@@ -52,8 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Deprecated
 public class TransactionValidationUtils {
-	private static final Logger log = LogManager.getLogger(TransactionValidationUtils.class);
-
 	private static final int MESSAGE_MAX_DEPTH = 50;
 
 	public static void transactionResponse(
@@ -109,94 +107,6 @@ public class TransactionValidationUtils {
 			returnFlag = queryHeader.hasPayment();
 		}
 		return returnFlag;
-	}
-
-	public static ResponseCodeEnum validateTxSpecificBody(
-			TransactionBody txn,
-			OptionValidator validator) {
-		if (txn.hasContractCreateInstance()) {
-			return validateContractCreateTransactionBody(txn, validator);
-		} else if (txn.hasContractCall()) {
-			return validateContractCallTransactionBody(txn);
-		} else if (txn.hasContractUpdateInstance()) {
-			return validateContractUpdateTransactionBody(txn, validator);
-		}
-
-		return OK;
-	}
-
-	private static ResponseCodeEnum validateContractCreateTransactionBody(
-			TransactionBody trBody,
-			OptionValidator validator
-	) {
-		ContractCreateTransactionBody body = trBody.getContractCreateInstance();
-		long autoRenewPeriod = body.getAutoRenewPeriod().getSeconds();
-		if (!body.hasAutoRenewPeriod() || (autoRenewPeriod < 1)) {
-			if (log.isDebugEnabled()) {
-				log.debug("Non-positive auto renewal period given, trBody=" + trBody);
-			}
-			return ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-		}
-
-		ResponseCodeEnum durationValidationResponse =
-				validator.isValidAutoRenewPeriod(body.getAutoRenewPeriod()) ? OK : AUTORENEW_DURATION_NOT_IN_RANGE;
-		if (durationValidationResponse != OK) {
-			return durationValidationResponse;
-		}
-		if (body.getGas() < 0L) {
-			if (log.isDebugEnabled()) {
-				log.debug("negative gas for a contract." + trBody);
-			}
-			return ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
-		}
-		if (body.getInitialBalance() < 0L) {
-			if (log.isDebugEnabled()) {
-				log.debug("negative initial balance for a contract." + trBody);
-			}
-			return ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-		}
-
-		return OK;
-	}
-
-	private static ResponseCodeEnum validateContractCallTransactionBody(TransactionBody trBody) {
-		ContractCallTransactionBody body = trBody.getContractCall();
-		if (body.getGas() < 0L) {
-			if (log.isDebugEnabled()) {
-				log.debug("negative gas for a contract." + trBody);
-			}
-			return ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
-		}
-		if (body.getAmount() < 0L) {
-			if (log.isDebugEnabled()) {
-				log.debug("negative amount for a contract." + trBody);
-			}
-			return ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-		}
-
-		return OK;
-	}
-
-	private static ResponseCodeEnum validateContractUpdateTransactionBody(
-			TransactionBody txn,
-			OptionValidator validator
-	) {
-		ContractUpdateTransactionBody body = txn.getContractUpdateInstance();
-		long autoRenewPeriod = body.getAutoRenewPeriod().getSeconds();
-		if (body.hasAutoRenewPeriod()) {
-			if (autoRenewPeriod < 1) {
-				if (log.isDebugEnabled()) {
-					log.debug("Non-positive auto renewal period given, trBody=" + txn);
-				}
-				return ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-			}
-			ResponseCodeEnum durationValidationResponse =
-					validator.isValidAutoRenewPeriod(body.getAutoRenewPeriod()) ? OK : AUTORENEW_DURATION_NOT_IN_RANGE;
-			if (durationValidationResponse != OK) {
-				return durationValidationResponse;
-			}
-		}
-		return OK;
 	}
 
 	public static void constructGetBySolidityIDErrorResponse(
