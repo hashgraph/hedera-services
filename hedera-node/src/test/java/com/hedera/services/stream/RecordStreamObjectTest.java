@@ -34,8 +34,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -48,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(JUnitPlatform.class)
 public class RecordStreamObjectTest {
 	private static final TransactionRecord record = mock(TransactionRecord.class);
 	private static final TransactionID transactionID = mock(TransactionID.class);
