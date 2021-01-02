@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.txns.validation.PureValidation;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -532,19 +533,15 @@ public class SmartContractRequestHandler {
 	 */
 	public ContractCallLocalResponse contractCallLocal(
 			ContractCallLocalQuery transactionContractCallLocal, long currentTimeMs) throws Exception {
-		ContractCallLocalResponse responseToReturn = ContractCallLocalResponse.getDefaultInstance();
-		Transaction tx = null;
+		ContractCallLocalResponse responseToReturn;
+		Transaction tx;
 		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
 				.extractTransactionBody(transactionContractCallLocal.getHeader().getPayment());
 		AccountID senderAccount = body.getTransactionID().getAccountID();
 		String senderAccountEthAddress = asSolidityAddressHex(senderAccount);
-		AccountID receiverAccount = AccountID.newBuilder()
-				.setAccountNum(transactionContractCallLocal.getContractID().getContractNum())
-				.setRealmNum(transactionContractCallLocal.getContractID().getRealmNum())
-				.setShardNum(transactionContractCallLocal.getContractID().getShardNum()).build();
+		AccountID receiverAccount = EntityIdUtils.asAccount(transactionContractCallLocal.getContractID());
 		String receiverAccountEthAddress = asSolidityAddressHex(receiverAccount);
-		ResponseCodeEnum callResponseStatus =
-				validateContractExistence(transactionContractCallLocal.getContractID());
+		ResponseCodeEnum callResponseStatus = validateContractExistence(transactionContractCallLocal.getContractID());
 		if (callResponseStatus == ResponseCodeEnum.OK) {
 			BigInteger gas;
 			if (transactionContractCallLocal.getGas() <= dynamicProperties.maxGas()) {

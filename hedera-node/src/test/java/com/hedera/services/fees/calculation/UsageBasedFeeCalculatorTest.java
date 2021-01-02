@@ -220,7 +220,7 @@ class UsageBasedFeeCalculatorTest {
 		long expected = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
 		// when:
-		long actual = subject.estimatedGasPriceInTinybars(accessor, at);
+		long actual = subject.estimatedGasPriceInTinybars(CryptoCreate, at);
 
 		// then:
 		assertEquals(expected, actual);

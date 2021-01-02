@@ -146,4 +146,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public long minAutoRenewDuration() {
 		return 6999999L;
 	}
+
+	@Override
+	public int localCallEstRetBytes() {
+		return 32;
+	}
 }

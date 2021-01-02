@@ -190,8 +190,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
       }
     }
 
-    if (callResponse.hasHeader()
-        && callResponse.getHeader().getNodeTransactionPrecheckCode() != null) {
+    if (callResponse.hasHeader()) {
       returnResponseCode = callResponse.getHeader().getNodeTransactionPrecheckCode();
       if (returnResponseCode == OK && callResponse.hasFunctionResult()) {
         callResult = callResponse.getFunctionResult().getContractCallResult();

@@ -23,6 +23,7 @@ package com.hedera.services.fees;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -42,7 +43,7 @@ public interface FeeCalculator {
 	void init();
 
 	long activeGasPriceInTinybars();
-	long estimatedGasPriceInTinybars(SignedTxnAccessor accessor, Timestamp at);
+	long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 	long estimatedNonFeePayerAdjustments(SignedTxnAccessor accessor, Timestamp at);
 	FeeObject computeFee(SignedTxnAccessor accessor, JKey payerKey, StateView view);
 	FeeObject estimateFee(SignedTxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);

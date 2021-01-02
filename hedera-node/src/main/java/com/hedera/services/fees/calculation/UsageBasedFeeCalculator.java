@@ -46,6 +46,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
@@ -137,9 +139,9 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	@Override
-	public long estimatedGasPriceInTinybars(SignedTxnAccessor accessor, Timestamp at) {
+	public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
 		var rates = exchange.rate(at);
-		var prices = usagePrices.pricesGiven(accessor.getFunction(), at);
+		var prices = usagePrices.pricesGiven(function, at);
 		return gasPriceInTinybars(prices, rates);
 	}
 
@@ -163,11 +165,11 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			case ContractCreate:
 				var contractCreateOp = accessor.getTxn().getContractCreateInstance();
 				return -contractCreateOp.getInitialBalance()
-						- contractCreateOp.getGas() * estimatedGasPriceInTinybars(accessor, at);
+						- contractCreateOp.getGas() * estimatedGasPriceInTinybars(ContractCreate, at);
 			case ContractCall:
 				var contractCallOp = accessor.getTxn().getContractCall();
 				return -contractCallOp.getAmount()
-						- contractCallOp.getGas() * estimatedGasPriceInTinybars(accessor, at);
+						- contractCallOp.getGas() * estimatedGasPriceInTinybars(ContractCall, at);
 			default:
 				return 0L;
 		}

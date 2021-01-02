@@ -80,6 +80,7 @@ class BootstrapPropertiesTest {
 			entry("accounts.systemUndeleteAdmin", 60L),
 			entry("accounts.treasury", 2L),
 			entry("contracts.defaultLifetime", 7890000L),
+			entry("contracts.localCall.estRetBytes", 32),
 			entry("contracts.maxGas", 300000),
 			entry("contracts.maxStorageKb", 1024),
 			entry("files.addressBook", 101L),
