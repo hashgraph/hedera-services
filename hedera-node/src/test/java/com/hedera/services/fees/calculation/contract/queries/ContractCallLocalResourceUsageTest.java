@@ -63,7 +63,6 @@ import static org.mockito.BDDMockito.mock;
 @RunWith(JUnitPlatform.class)
 class ContractCallLocalResourceUsageTest {
 	int gas = 1_234;
-	long now = 1_234_567L;
 	ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
 	ContractID target = asContract("0.0.123");
 
@@ -72,7 +71,7 @@ class ContractCallLocalResourceUsageTest {
 	StateView view;
 	SmartContractFeeBuilder usageEstimator;
 	GlobalDynamicProperties properties = new MockGlobalDynamicProps();
-	ContractCallLocalResourceUsage.LegacyLocalCaller delegate;
+	ContractCallLocalAnswer.LegacyLocalCaller delegate;
 
 	Query satisfiableCostAnswer = localCallQuery(target, COST_ANSWER);
 	Query satisfiableAnswerOnly = localCallQuery(target, ANSWER_ONLY);
@@ -82,7 +81,7 @@ class ContractCallLocalResourceUsageTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		view = mock(StateView.class);
-		delegate = mock(ContractCallLocalResourceUsage.LegacyLocalCaller.class);
+		delegate = mock(ContractCallLocalAnswer.LegacyLocalCaller.class);
 		usageEstimator = mock(SmartContractFeeBuilder.class);
 
 		subject = new ContractCallLocalResourceUsage(delegate, usageEstimator, properties);
@@ -104,13 +103,14 @@ class ContractCallLocalResourceUsageTest {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 		var response = okResponse();
+		var expected = expectedUsage();
 
 		given(delegate.perform(argThat(satisfiableAnswerOnly.getContractCallLocal()::equals), anyLong()))
 				.willReturn(response);
 		given(usageEstimator.getContractCallLocalFeeMatrices(
 				params.size(),
 				response.getFunctionResult(),
-				ANSWER_ONLY)).willReturn(expectedUsage);
+				ANSWER_ONLY)).willReturn(nonGasUsage);
 
 		// when:
 		var actualUsage1 = subject.usageGiven(satisfiableAnswerOnly, view);
@@ -119,9 +119,9 @@ class ContractCallLocalResourceUsageTest {
 
 		// then:
 		assertSame(response, queryCtx.get(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
-		assertSame(expectedUsage, actualUsage1);
-		assertSame(expectedUsage, actualUsage2);
-		assertSame(expectedUsage, actualUsage3);
+		assertEquals(expected, actualUsage1);
+		assertEquals(expected, actualUsage2);
+		assertEquals(expected, actualUsage3);
 	}
 
 	@Test
@@ -129,18 +129,19 @@ class ContractCallLocalResourceUsageTest {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 		var response = subject.dummyResponse(target);
+		var expected = expectedUsage();
 
 		given(usageEstimator.getContractCallLocalFeeMatrices(
 				params.size(),
 				response.getFunctionResult(),
-				COST_ANSWER)).willReturn(expectedUsage);
+				COST_ANSWER)).willReturn(nonGasUsage);
 
 		// when:
 		var actualUsage = subject.usageGiven(satisfiableCostAnswer, view, queryCtx);
 
 		// then:
 		assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
-		assertSame(expectedUsage, actualUsage);
+		assertEquals(expected, actualUsage);
 	}
 
 	@Test
@@ -191,7 +192,7 @@ class ContractCallLocalResourceUsageTest {
 				.build();
 	}
 
-	public static final FeeData expectedUsage = UsageEstimatorUtils.defaultPartitioning(
+	static final FeeData nonGasUsage = UsageEstimatorUtils.defaultPartitioning(
 			FeeComponents.newBuilder()
 					.setMin(1)
 					.setMax(1_000_000)
@@ -200,9 +201,15 @@ class ContractCallLocalResourceUsageTest {
 					.setVpt(1)
 					.setRbh(1)
 					.setSbh(1)
-					.setGas(1)
+					.setGas(0)
 					.setTv(1)
 					.setBpr(1)
 					.setSbpr(1)
 					.build(), 1);
+
+	private FeeData expectedUsage() {
+		return nonGasUsage.toBuilder()
+				.setNodedata(nonGasUsage.toBuilder().getNodedataBuilder().setGas(gas).build())
+				.build();
+	}
 }

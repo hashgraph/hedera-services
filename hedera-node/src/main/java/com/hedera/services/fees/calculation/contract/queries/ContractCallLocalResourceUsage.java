@@ -4,7 +4,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
+import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -28,23 +28,18 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalResourceUsage.class);
 
-	private final LegacyLocalCaller delegate;
+	private final ContractCallLocalAnswer.LegacyLocalCaller delegate;
 	private final SmartContractFeeBuilder usageEstimator;
 	private final GlobalDynamicProperties properties;
 
 	public ContractCallLocalResourceUsage(
-			LegacyLocalCaller delegate,
+			ContractCallLocalAnswer.LegacyLocalCaller delegate,
 			SmartContractFeeBuilder usageEstimator,
 			GlobalDynamicProperties properties
 	) {
 		this.delegate = delegate;
 		this.properties = properties;
 		this.usageEstimator = usageEstimator;
-	}
-
-	@FunctionalInterface
-	public interface LegacyLocalCaller {
-		ContractCallLocalResponse perform(ContractCallLocalQuery query, long now) throws Exception;
 	}
 
 	@Override
@@ -81,10 +76,13 @@ public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimat
 			} else {
 				response = dummyResponse(op.getContractID());
 			}
-			return usageEstimator.getContractCallLocalFeeMatrices(
+			var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(
 					op.getFunctionParameters().size(),
 					response.getFunctionResult(),
 					type);
+			return nonGasUsage.toBuilder()
+					.setNodedata(nonGasUsage.getNodedata().toBuilder().setGas(op.getGas()))
+					.build();
 		} catch (Exception e) {
 			log.warn("Usage estimation unexpectedly failed for {}!", query, e);
 			throw new IllegalArgumentException(e);
