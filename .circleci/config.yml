@@ -1727,7 +1727,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 085-M-ReduceSmartContractDup
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack

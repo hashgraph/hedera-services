@@ -52,6 +52,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hedera.services.queries.contract.GetBySolidityIdAnswer;
@@ -279,7 +280,6 @@ import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.netty.NettyServerManager;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
-import com.hedera.services.legacy.service.SmartContractServiceImpl;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.context.properties.PropertySources;
@@ -402,6 +402,7 @@ public class ServicesContext {
 	private TransactionContext txnCtx;
 	private BlobStorageSource bytecodeDb;
 	private TransactionHandler txns;
+	private ContractController contractsGrpc;
 	private HederaSigningOrder keyOrder;
 	private HederaSigningOrder backedKeyOrder;
 	private HederaSigningOrder lookupRetryingKeyOrder;
@@ -429,7 +430,6 @@ public class ServicesContext {
 	private ServicesRepositoryRoot repository;
 	private AccountRecordsHistorian recordsHistorian;
 	private GlobalDynamicProperties globalDynamicProperties;
-	private SmartContractServiceImpl contractsGrpc;
 	private PlatformSubmissionManager submissionManager;
 	private SmartContractRequestHandler contracts;
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
@@ -1372,19 +1372,9 @@ public class ServicesContext {
 		return cryptoGrpc;
 	}
 
-	public SmartContractServiceImpl contractsGrpc() {
+	public ContractController contractsGrpc() {
 		if (contractsGrpc == null) {
-			contractsGrpc = new SmartContractServiceImpl(
-					txns(),
-					contracts(),
-					usagePrices(),
-					exchange(),
-					nodeType(),
-					submissionManager(),
-					contractAnswers(),
-					queryResponseHelper(),
-					opCounters(),
-					txnResponseHelper());
+			contractsGrpc = new ContractController(contractAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return contractsGrpc;
 	}

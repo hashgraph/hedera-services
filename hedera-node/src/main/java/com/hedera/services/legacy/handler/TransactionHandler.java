@@ -48,7 +48,6 @@ import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TransferListChecks;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -119,14 +118,6 @@ public class TransactionHandler {
 
   public void setFees(FeeCalculator fees) {
     this.fees = fees;
-  }
-
-  public void setStateView(Supplier<StateView> stateView) {
-    this.stateView = stateView;
-  }
-
-  public void setQueryFeeCheck(QueryFeeCheck queryFeeCheck) {
-    this.queryFeeCheck = queryFeeCheck;
   }
 
   public TransactionHandler(
@@ -215,35 +206,6 @@ public class TransactionHandler {
     } catch (Exception ignore) {
       return INVALID_TRANSACTION_BODY;
     }
-  }
-
-  /**
-   * Method to validate Fee and Submit Transaction used only for query header payment
-   */
-  public ResponseCodeEnum validateScheduledFee(
-          HederaFunctionality function,
-          Transaction transaction,
-          long scheduledFee
-  ) {
-    ResponseCodeEnum validationCode = OK;
-    if (scheduledFee > 0) {
-      validationCode = validateTransactionPreConsensus(transaction, true).getValidity();
-      if (validationCode != OK) {
-        log.debug("Pre Consensus validation failed.");
-        return validationCode;
-      }
-      validationCode = nodePaymentValidity(transaction, scheduledFee);
-    }
-    boolean isThrottleExempt = false;
-	try {
-	  TransactionBody txn = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
-	  isThrottleExempt = IS_THROTTLE_EXEMPT.test(txn.getTransactionID().getAccountID());
-	} catch (Exception ignore) { }
-
-	if (!isThrottleExempt && throttling.shouldThrottle(function)) {
-      validationCode = ResponseCodeEnum.BUSY;
-    }
-    return validationCode;
   }
 
   public boolean isAccountExist(AccountID acctId) {

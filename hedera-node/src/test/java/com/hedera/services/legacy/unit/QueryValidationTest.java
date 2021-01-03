@@ -171,25 +171,4 @@ class QueryValidationTest {
     ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
     assertEquals(result, ResponseCodeEnum.NOT_SUPPORTED);
   }
-
-
-  @Test
-  void testValidateGetInfoQuery_validateFee_inSufficientTxFee() throws Exception {
-  	// setup:
-    FeeCalculator mockFees = mock(FeeCalculator.class);
-    given(mockFees.estimateFee(any(), any(), any(), any()))
-            .willReturn(new FeeObject(1, 2, 3));
-    // and:
-    transactionHandler.setFees(mockFees);
-    transactionHandler.setStateView(() -> null);
-    transactionHandler.setQueryFeeCheck(new QueryFeeCheck(() -> map));
-
-    // when:
-    Transaction transaction = createQueryHeaderTransfer(lowBalanceAccount);
-    ResponseCodeEnum result = transactionHandler.validateScheduledFee(HederaFunctionality.CryptoGetInfo, transaction, 100);
-
-    // then:
-    assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, result);
-
-  }
 }
