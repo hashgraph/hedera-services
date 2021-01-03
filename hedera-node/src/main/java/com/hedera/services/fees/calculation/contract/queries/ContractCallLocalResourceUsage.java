@@ -70,19 +70,20 @@ public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimat
 		try {
 			var op = query.getContractCallLocal();
 			ContractCallLocalResponse response;
-			if (type == ANSWER_ONLY) {
-				response = delegate.perform(op, Instant.now().getEpochSecond());
-				queryCtx.ifPresent(ctx -> ctx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response));
-			} else {
+			if (queryCtx.isEmpty()) {
 				response = dummyResponse(op.getContractID());
+			} else {
+				response = delegate.perform(op, Instant.now().getEpochSecond());
+				queryCtx.get().put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
 			}
 			var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(
 					op.getFunctionParameters().size(),
 					response.getFunctionResult(),
 					type);
-			return nonGasUsage.toBuilder()
+			var ans = nonGasUsage.toBuilder()
 					.setNodedata(nonGasUsage.getNodedata().toBuilder().setGas(op.getGas()))
 					.build();
+			return ans;
 		} catch (Exception e) {
 			log.warn("Usage estimation unexpectedly failed for {}!", query, e);
 			throw new IllegalArgumentException(e);

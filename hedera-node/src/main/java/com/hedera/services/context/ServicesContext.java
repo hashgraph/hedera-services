@@ -34,6 +34,7 @@ import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractRecordsResourceUsage;
@@ -52,6 +53,8 @@ import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.grpc.controllers.FreezeController;
+import com.hedera.services.queries.contract.ContractCallLocalAnswer;
+import com.hedera.services.queries.contract.GetBySolidityIdAnswer;
 import com.hedera.services.queries.contract.GetContractRecordsAnswer;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
@@ -674,7 +677,9 @@ public class ServicesContext {
 			contractAnswers = new ContractAnswers(
 					new GetBytecodeAnswer(validator()),
 					new GetContractInfoAnswer(validator()),
-					new GetContractRecordsAnswer(validator())
+					new GetBySolidityIdAnswer(),
+					new GetContractRecordsAnswer(validator()),
+					new ContractCallLocalAnswer(contracts()::contractCallLocal, validator())
 			);
 		}
 		return contractAnswers;
@@ -769,6 +774,8 @@ public class ServicesContext {
 							new GetBytecodeResourceUsage(contractFees),
 							new GetContractInfoResourceUsage(),
 							new GetContractRecordsResourceUsage(contractFees),
+							new ContractCallLocalResourceUsage(
+									contracts()::contractCallLocal, contractFees, globalDynamicProperties()),
 							/* Token */
 							new GetTokenInfoResourceUsage()
 					),

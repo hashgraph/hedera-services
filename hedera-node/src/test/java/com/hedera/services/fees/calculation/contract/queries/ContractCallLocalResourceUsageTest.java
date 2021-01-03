@@ -59,6 +59,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @RunWith(JUnitPlatform.class)
 class ContractCallLocalResourceUsageTest {
@@ -103,6 +104,7 @@ class ContractCallLocalResourceUsageTest {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 		var response = okResponse();
+		var estimateResponse = subject.dummyResponse(target);
 		var expected = expectedUsage();
 
 		given(delegate.perform(argThat(satisfiableAnswerOnly.getContractCallLocal()::equals), anyLong()))
@@ -110,6 +112,10 @@ class ContractCallLocalResourceUsageTest {
 		given(usageEstimator.getContractCallLocalFeeMatrices(
 				params.size(),
 				response.getFunctionResult(),
+				ANSWER_ONLY)).willReturn(nonGasUsage);
+		given(usageEstimator.getContractCallLocalFeeMatrices(
+				params.size(),
+				estimateResponse.getFunctionResult(),
 				ANSWER_ONLY)).willReturn(nonGasUsage);
 
 		// when:
@@ -125,23 +131,22 @@ class ContractCallLocalResourceUsageTest {
 	}
 
 	@Test
-	public void treatsCostAnswerAsExpected() {
+	public void treatsAnswerOnlyEstimateAsExpected() {
 		// setup:
-		var queryCtx = new HashMap<String, Object>();
 		var response = subject.dummyResponse(target);
 		var expected = expectedUsage();
 
 		given(usageEstimator.getContractCallLocalFeeMatrices(
 				params.size(),
 				response.getFunctionResult(),
-				COST_ANSWER)).willReturn(nonGasUsage);
+				ANSWER_ONLY)).willReturn(nonGasUsage);
 
 		// when:
-		var actualUsage = subject.usageGiven(satisfiableCostAnswer, view, queryCtx);
+		var actualUsage = subject.usageGivenType(satisfiableCostAnswer, view, ANSWER_ONLY);
 
 		// then:
-		assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
 		assertEquals(expected, actualUsage);
+		verifyNoInteractions(delegate);
 	}
 
 	@Test

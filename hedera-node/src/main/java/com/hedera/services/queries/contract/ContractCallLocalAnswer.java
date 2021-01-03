@@ -105,7 +105,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 		if (queryCtx.isPresent()) {
 			var ctx = queryCtx.get();
 			if (!ctx.containsKey(CONTRACT_CALL_LOCAL_CTX_KEY)) {
-				throw new AssertionError("Not implemented!");
+				throw new IllegalStateException("Query context had no cached local call result!");
 			} else {
 				response.mergeFrom(
 						withCid((ContractCallLocalResponse)ctx.get(CONTRACT_CALL_LOCAL_CTX_KEY), op.getContractID()));
