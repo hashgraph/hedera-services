@@ -117,14 +117,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		if (validity != OK) {
 			return failure(validity);
 		}
-
-		var payerId = schedulingAccount;
-
 		validity = accountCheck(payer, INVALID_SCHEDULE_PAYER_ID);
 		if (validity != OK) {
 			return failure(validity);
 		}
-		payerId = payer;
 
 		pendingId = ids.newScheduleId(schedulingAccount);
 		pendingTxHashCode = Arrays.hashCode(bodyBytes);
@@ -134,7 +130,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 				schedulingTXValidStart
 		);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
-		pendingCreation.setPayer(EntityId.ofNullableAccountId(payerId));
+		pendingCreation.setPayer(EntityId.ofNullableAccountId(payer));
 
 		return success(pendingId);
 	}
