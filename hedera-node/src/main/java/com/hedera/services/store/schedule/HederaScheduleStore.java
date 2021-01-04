@@ -218,23 +218,16 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	@Override
 	public Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer) {
 		var txHashCode = Arrays.hashCode(bodyBytes);
+		var keyToCheckFor = new CompositeKey(txHashCode, scheduledTxPayer);
+		var pendingKey = new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId());
 
-		if (scheduledTxPayer == null) {
-			return Optional.empty();
-		}
-
-		if (pendingTxHashCode != null && pendingTxHashCode.equals(txHashCode)) {
+		if (keyToCheckFor.equals(pendingKey)) {
 			return Optional.of(pendingId);
 		}
 
-		var key = new CompositeKey(txHashCode, scheduledTxPayer);
-		if (txToEntityId.containsKey(key)) {
-			var scheduleId = txToEntityId.get(key).toScheduleId();
-			var entity = get(scheduleId);
-
-			if (entity.payer().toGrpcAccountId().equals(scheduledTxPayer)) {
-				return Optional.of(txToEntityId.get(key).toScheduleId());
-			}
+		if (txToEntityId.containsKey(keyToCheckFor)) {
+			var scheduleId = txToEntityId.get(keyToCheckFor).toScheduleId();
+			return Optional.of(scheduleId);
 		}
 
 		return Optional.empty();
