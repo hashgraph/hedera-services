@@ -87,6 +87,7 @@ public class HederaScheduleStoreTest {
     HederaLedger hederaLedger;
 
     MerkleSchedule schedule;
+    MerkleSchedule anotherSchedule;
     MerkleAccount account;
 
     byte[] transactionBody;
@@ -100,6 +101,7 @@ public class HederaScheduleStoreTest {
     ScheduleID created = IdUtils.asSchedule("1.2.333333");
     AccountID schedulingAccount = IdUtils.asAccount("1.2.333");
     AccountID payerId = IdUtils.asAccount("1.2.456");
+    AccountID anotherPayerId = IdUtils.asAccount("1.2.457");
 
     EntityId entityPayer = EntityId.ofNullableAccountId(payerId);
     EntityId entitySchedulingAccount = EntityId.ofNullableAccountId(schedulingAccount);
@@ -121,11 +123,14 @@ public class HederaScheduleStoreTest {
         signers.add(signer2);
 
         schedule = mock(MerkleSchedule.class);
+        anotherSchedule = mock(MerkleSchedule.class);
 
         given(schedule.hasAdminKey()).willReturn(true);
         given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
         given(schedule.signers()).willReturn(signers);
         given(schedule.payer()).willReturn(EntityId.ofNullableAccountId(payerId));
+
+        given(anotherSchedule.payer()).willReturn(EntityId.ofNullableAccountId(anotherPayerId));
 
         ids = mock(EntityIdSource.class);
         given(ids.newScheduleId(schedulingAccount)).willReturn(created);
@@ -448,6 +453,8 @@ public class HederaScheduleStoreTest {
     @Test
     public void getsScheduleIDByTransactionBody() {
         // given:
+        subject.pendingTxHashCode = 1;
+        subject.pendingCreation = anotherSchedule;
         subject.txToEntityId.put(new CompositeKey(transactionBodyHashCode, payerId), fromScheduleId(created));
         given(subject.get(created)).willReturn(schedule);
 
@@ -458,20 +465,10 @@ public class HederaScheduleStoreTest {
     }
 
     @Test
-    public void failsGetScheduleIDWithoutPayer() {
-        // given:
-        subject.txToEntityId.put(new CompositeKey(transactionBodyHashCode), fromScheduleId(created));
-        given(subject.get(created)).willReturn(schedule);
-
-        // when:
-        var scheduleId = subject.getScheduleID(transactionBody, null);
-
-        assertEquals(Optional.empty(), scheduleId);
-    }
-
-    @Test
     public void getsScheduleIDFromPending() {
         // given:
+        subject.pendingTxHashCode = transactionBodyHashCode;
+        subject.pendingCreation = schedule;
         subject.pendingId = created;
         subject.pendingTxHashCode = transactionBodyHashCode;
 
@@ -483,6 +480,9 @@ public class HederaScheduleStoreTest {
 
     @Test
     public void failsToGetScheduleIDByTransactionBody() {
+        subject.pendingTxHashCode = 0;
+        subject.pendingCreation = anotherSchedule;
+
         // when:
         var scheduleId = subject.getScheduleID(transactionBody, payerId);
 

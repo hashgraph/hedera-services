@@ -1131,11 +1131,11 @@ public class ServicesContext {
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* Schedule */
 				entry(ScheduleCreate,
-						List.of(new ScheduleCreateTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
+						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx()))),
 				entry(ScheduleSign,
-						List.of(new ScheduleSignTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
+						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx()))),
 				entry(ScheduleDelete,
-						List.of(new ScheduleDeleteTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
+						List.of(new ScheduleDeleteTransitionLogic(scheduleStore(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
