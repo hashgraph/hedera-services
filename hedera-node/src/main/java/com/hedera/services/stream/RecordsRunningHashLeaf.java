@@ -67,11 +67,6 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		try {
 			// should wait until runningHash has been calculated and set
 			out.writeSerializable(runningHash.getFutureHash().get(), true);
-			log.info("RecordsRunningHashLeaf :: serialize : runningHash.getFutureHash().get(): {};" +
-							"runningHash.getHash(): {}; leaf's Hash: {}",
-					runningHash.getFutureHash().get(),
-					runningHash.getHash(),
-					this.getHash());
 		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
 			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf",
