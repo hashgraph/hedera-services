@@ -61,9 +61,13 @@ public class CryptoCreatePerfSuite extends LoadTest {
 								asOpArray(NUM_CREATES, i ->
 										(i == (NUM_CREATES - 1)) ? cryptoCreate("testAccount" + i)
 												.balance(100_000_000_000L)
+												.withRecharging()
+												.rechargeWindow(30)
 												.payingWith(GENESIS) :
 												cryptoCreate("testAccount" + i)
 														.balance(100_000_000_000L)
+														.withRecharging()
+														.rechargeWindow(30)
 														.payingWith(GENESIS)
 														.deferStatusResolution()
 								)
