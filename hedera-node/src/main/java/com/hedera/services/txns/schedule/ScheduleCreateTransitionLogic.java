@@ -35,19 +35,13 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
     private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-    private final OptionValidator validator;
     private final ScheduleStore store;
-    private final HederaLedger ledger;
     private final TransactionContext txnCtx;
 
     public ScheduleCreateTransitionLogic(
-            OptionValidator validator,
             ScheduleStore store,
-            HederaLedger ledger,
             TransactionContext txnCtx) {
-        this.validator = validator;
         this.store = store;
-        this.ledger = ledger;
         this.txnCtx = txnCtx;
     }
 
@@ -67,7 +61,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
         if (schedule.isEmpty()) {
 
             var bytes = op.getTransactionBody().toByteArray();
-            var payer = Optional.of(op.getPayer());
+            var payer = op.getPayer();
             var schedulingAccount = txnCtx.activePayer();
             var now = RichInstant.fromJava(txnCtx.consensusTime());
             Optional<JKey> adminKey = Optional.empty();

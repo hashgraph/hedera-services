@@ -1,10 +1,8 @@
 package com.hedera.services.txns.schedule;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -24,19 +22,13 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 
     private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-    OptionValidator validator;
     ScheduleStore store;
-    HederaLedger ledger;
     TransactionContext txnCtx;
 
     public ScheduleDeleteTransitionLogic(
-            OptionValidator validator,
             ScheduleStore store,
-            HederaLedger ledger,
             TransactionContext txnCtx) {
-        this.validator = validator;
         this.store = store;
-        this.ledger = ledger;
         this.txnCtx = txnCtx;
     }
 

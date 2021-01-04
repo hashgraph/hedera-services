@@ -44,9 +44,7 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class ScheduleSignTransitionLogicTest {
-    private OptionValidator validator;
     private ScheduleStore store;
-    private HederaLedger ledger;
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
 
@@ -60,14 +58,12 @@ public class ScheduleSignTransitionLogicTest {
 
     @BeforeEach
     private void setup() {
-        validator = mock(OptionValidator.class);
         store = mock(ScheduleStore.class);
-        ledger = mock(HederaLedger.class);
         accessor = mock(PlatformTxnAccessor.class);
 
         txnCtx = mock(TransactionContext.class);
 
-        subject = new ScheduleSignTransitionLogic(validator, store, ledger, txnCtx);
+        subject = new ScheduleSignTransitionLogic(store, txnCtx);
     }
 
     @Test

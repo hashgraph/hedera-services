@@ -1,11 +1,10 @@
 package com.hedera.services.txns.schedule;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -17,8 +16,6 @@ import org.junit.runner.RunWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,11 +26,10 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class ScheduleDeleteTransitionLogicTest {
-    private OptionValidator validator;
     private ScheduleStore store;
-    private HederaLedger ledger;
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
+    private final ResponseCodeEnum NOT_OK = null;
 
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
 
@@ -42,12 +38,10 @@ public class ScheduleDeleteTransitionLogicTest {
 
     @BeforeEach
     private void setup() {
-        validator = mock(OptionValidator.class);
         store = mock(ScheduleStore.class);
-        ledger = mock(HederaLedger.class);
         accessor = mock(PlatformTxnAccessor.class);
         txnCtx = mock(TransactionContext.class);
-        subject = new ScheduleDeleteTransitionLogic(validator, store, ledger, txnCtx);
+        subject = new ScheduleDeleteTransitionLogic(store, txnCtx);
     }
 
     @Test
@@ -67,51 +61,19 @@ public class ScheduleDeleteTransitionLogicTest {
     }
 
     @Test
-    public void capturesInvalidScheduleId() {
+    public void capturesInvalidSchedule() {
         // given:
         givenValidTxnCtx();
 
         // and:
-        given(store.delete(schedule)).willReturn(INVALID_SCHEDULE_ID);
+        given(store.delete(schedule)).willReturn(NOT_OK);
 
         // when:
         subject.doStateTransition();
 
         // then
         verify(store).delete(schedule);
-        verify(txnCtx).setStatus(INVALID_SCHEDULE_ID);
-    }
-
-    @Test
-    public void capturesImmutableSchedule() {
-        // given:
-        givenValidTxnCtx();
-
-        // and:
-        given(store.delete(schedule)).willReturn(SCHEDULE_IS_IMMUTABLE);
-
-        // when:
-        subject.doStateTransition();
-
-        // then
-        verify(store).delete(schedule);
-        verify(txnCtx).setStatus(SCHEDULE_IS_IMMUTABLE);
-    }
-
-    @Test
-    public void capturesAlreadyDeletedSchedule() {
-        // given:
-        givenValidTxnCtx();
-
-        // and:
-        given(store.delete(schedule)).willReturn(SCHEDULE_WAS_DELETED);
-
-        // when:
-        subject.doStateTransition();
-
-        // then
-        verify(store).delete(schedule);
-        verify(txnCtx).setStatus(SCHEDULE_WAS_DELETED);
+        verify(txnCtx).setStatus(NOT_OK);
     }
 
     @Test

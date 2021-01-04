@@ -66,9 +66,7 @@ public class ScheduleCreateTransitionLogicTest {
     private final boolean YES = true;
     private final ResponseCodeEnum NOT_OK = null;
 
-    private OptionValidator validator;
     private ScheduleStore store;
-    private HederaLedger ledger;
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
 
@@ -83,15 +81,13 @@ public class ScheduleCreateTransitionLogicTest {
 
     @BeforeEach
     private void setup() {
-        validator = mock(OptionValidator.class);
         store = mock(ScheduleStore.class);
-        ledger = mock(HederaLedger.class);
         accessor = mock(PlatformTxnAccessor.class);
 
         txnCtx = mock(TransactionContext.class);
         given(txnCtx.activePayer()).willReturn(payer);
 
-        subject = new ScheduleCreateTransitionLogic(validator, store, ledger, txnCtx);
+        subject = new ScheduleCreateTransitionLogic(store, txnCtx);
     }
 
     @Test
@@ -110,7 +106,7 @@ public class ScheduleCreateTransitionLogicTest {
         given(store.getScheduleID(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
         given(store.createProvisionally(
                 eq(transactionBody),
-                eq(Optional.of(payer)),
+                eq(payer),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
                 argThat(jKey -> true)))
@@ -128,7 +124,7 @@ public class ScheduleCreateTransitionLogicTest {
         // and:
         verify(store).createProvisionally(
                 eq(transactionBody),
-                eq(Optional.of(payer)),
+                eq(payer),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
                 argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
@@ -167,7 +163,7 @@ public class ScheduleCreateTransitionLogicTest {
         verify(store).getScheduleID(transactionBody, payer);
         // and:
         verify(store, never()).createProvisionally( eq(transactionBody),
-                eq(Optional.of(payer)),
+                eq(payer),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
                 argThat(jKey -> true));
@@ -196,7 +192,7 @@ public class ScheduleCreateTransitionLogicTest {
         given(store.getScheduleID(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
         given(store.createProvisionally(
                 eq(transactionBody),
-                eq(Optional.of(payer)),
+                eq(payer),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
                 argThat(jKey -> true)))
@@ -210,7 +206,7 @@ public class ScheduleCreateTransitionLogicTest {
         // and:
         verify(store).createProvisionally(
                 eq(transactionBody),
-                eq(Optional.of(payer)),
+                eq(payer),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
                 argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
@@ -228,7 +224,7 @@ public class ScheduleCreateTransitionLogicTest {
         given(store.getScheduleID(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
         given(store.createProvisionally(
                 eq(transactionBody),
-                eq(Optional.of(payer)),
+                eq(payer),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
                 argThat(jKey -> true)))
@@ -244,7 +240,7 @@ public class ScheduleCreateTransitionLogicTest {
         // and:
         verify(store).createProvisionally(
                 eq(transactionBody),
-                eq(Optional.of(payer)),
+                eq(payer),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
                 argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
