@@ -31,13 +31,11 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
-public class CryptoCreateLoadTest extends LoadTest {
-	private static final Logger log = LogManager.getLogger(CryptoCreateLoadTest.class);
+public class CryptoCreatePerfSuite extends LoadTest {
+	private static final Logger log = LogManager.getLogger(CryptoCreatePerfSuite.class);
 
 	public static void main(String... args) {
-		parseArgs(args);
-
-		CryptoCreateLoadTest suite = new CryptoCreateLoadTest();
+		CryptoCreatePerfSuite suite = new CryptoCreatePerfSuite();
 		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
