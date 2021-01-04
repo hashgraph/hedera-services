@@ -61,7 +61,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
         if (schedule.isEmpty()) {
 
             var bytes = op.getTransactionBody().toByteArray();
-            var payer = op.getPayer();
             var schedulingAccount = txnCtx.activePayer();
             var now = RichInstant.fromJava(txnCtx.consensusTime());
             Optional<JKey> adminKey = Optional.empty();
@@ -71,7 +70,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
             var result = store.createProvisionally(
                     bytes,
-                    payer,
+                    scheduledTXPayer,
                     schedulingAccount,
                     now,
                     adminKey);

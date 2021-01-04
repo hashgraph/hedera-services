@@ -12,10 +12,6 @@ public class CompositeKey {
         this.id = id;
     }
 
-    public CompositeKey(int hash) {
-        this(hash, EntityId.MISSING_ENTITY_ID.toGrpcAccountId());
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == this)

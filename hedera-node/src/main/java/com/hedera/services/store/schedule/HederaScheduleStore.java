@@ -20,7 +20,6 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -62,7 +61,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
-	Map<CompositeKey, MerkleEntityId> txToEntityId = new HashMap<>(); // HashMap<CompositeKey(hash(txBytes), payerId), MerkleEntityId>
+	Map<CompositeKey, MerkleEntityId> txToEntityId = new HashMap<>();
 
 	ScheduleID pendingId = NO_PENDING_ID;
 	Integer pendingTxHashCode = null;
@@ -74,7 +73,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	) {
 		super(ids);
 		this.schedules = schedules;
-		buildTxBodyMap(this.schedules); // TODO: rebuild HashMap<hash(txBytes), {MerkleEntityId, List<AccountID>}>
+		buildTxToEntityIdMap(this.schedules); // TODO: rebuild HashMap<hash(txBytes), {MerkleEntityId, List<AccountID>}>
 	}
 
 	@Override
@@ -173,7 +172,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		apply(id, DELETION);
-		txToEntityId.remove(Arrays.hashCode(schedule.transactionBody()));
+		txToEntityId.remove(new CompositeKey(Arrays.hashCode(schedule.transactionBody()), schedule.payer().toGrpcAccountId()));
 		return OK;
 	}
 
@@ -183,7 +182,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var id = fromScheduleId(pendingId);
 
 		schedules.get().put(id, pendingCreation);
-		txToEntityId.put(new CompositeKey(pendingTxHashCode), id);
+		txToEntityId.put(new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId()), id);
 		resetPendingCreation();
 	}
 
@@ -211,7 +210,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 	}
 
-	private void buildTxBodyMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
+	private void buildTxToEntityIdMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
 		var schedulesMap = schedules.get();
 		schedulesMap.forEach((key, value) -> txToEntityId.put(new CompositeKey(Arrays.hashCode(value.transactionBody()), value.payer().toGrpcAccountId()), key));
 	}
