@@ -25,6 +25,8 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -34,6 +36,8 @@ import java.util.Objects;
  * Hash calculated from all {@link RecordStreamObject} in history
  */
 public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
+	private static final Logger log = LogManager.getLogger(RecordsRunningHashLeaf.class);
+
 	public static final long CLASS_ID = 0xe370929ba5429d9bL;
 	public static final int CLASS_VERSION = 1;
 	/**
@@ -63,6 +67,11 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		try {
 			// should wait until runningHash has been calculated and set
 			out.writeSerializable(runningHash.getFutureHash().get(), true);
+			log.info("RecordsRunningHashLeaf :: serialize : runningHash.getFutureHash().get(): {};" +
+							"runningHash.getHash(): {}; leaf's Hash: {}",
+					runningHash.getFutureHash().get(),
+					runningHash.getHash(),
+					this.getHash());
 		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
 			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf",
@@ -127,11 +136,21 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		return CLASS_VERSION;
 	}
 
+	@Override
+	public String toString() {
+		return String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s",
+				getHash(),
+				runningHash.getHash());
+	}
+
 	public RunningHash getRunningHash() {
 		return runningHash;
 	}
 
 	public void setRunningHash(final RunningHash runningHash) {
 		this.runningHash = runningHash;
+		// should invalidate current Hash when updating the runningHash object
+		// because its Hash should be calculated based on the runningHash object
+		this.invalidateHash();
 	}
 }

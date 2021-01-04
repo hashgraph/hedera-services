@@ -22,6 +22,7 @@ package com.hedera.services.stream;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -35,6 +36,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -64,6 +66,12 @@ public class RecordsRunningHashLeafTest {
 		assertEquals(runningHashLeaf, copy);
 		assertTrue(runningHashLeaf.isImmutable());
 		assertFalse(copy.isImmutable());
+		// Hashes of the original and the copy should be the same
+		CryptoFactory.getInstance().digestSync(copy, DigestType.SHA_384);
+		CryptoFactory.getInstance().digestSync(runningHashLeaf, DigestType.SHA_384);
+		final Hash copyHash = copy.getHash();
+		final Hash leafHash = runningHashLeaf.getHash();
+		assertEquals(copyHash, leafHash);
 	}
 
 	@Test
@@ -82,6 +90,26 @@ public class RecordsRunningHashLeafTest {
 		runningHash.setHash(hash);
 		assertEquals(runningHash, leafForTestingRunningHash.getRunningHash());
 		assertEquals(hash, leafForTestingRunningHash.getRunningHash().getHash());
+	}
+
+	@Test
+	public void updateRunningHashInvalidateHashTest() {
+		RunningHash runningHash = new RunningHash();
+		// sets Hash for the RunningHash
+		runningHash.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		// initializes a leaf with a RunningHash
+		RecordsRunningHashLeaf leafForTestingRunningHash = new RecordsRunningHashLeaf(runningHash);
+		// digest this leaf
+		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+		Hash leafHash = leafForTestingRunningHash.getHash();
+		assertNotNull(leafHash);
+
+		// update runningHash object
+		RunningHash newRunningHash = new RunningHash();
+		newRunningHash.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(newRunningHash);
+		// the Leaf's Hash should be set to be null after updating the runningHash object
+		assertNull(leafForTestingRunningHash.getHash());
 	}
 
 	@Test

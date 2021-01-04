@@ -93,7 +93,7 @@
 
   </Appenders>
   <Loggers>
-    <Root level="WARN">
+    <Root level="INFO">
       <Filters>
         <!-- In the following, enable a marker with onMatch="ACCEPT" and disable with onMatch="DENY". -->
         <!-- More markers can be added, but ensure that every onMismatch="NEUTRAL", except the last is "DENY". -->
@@ -142,6 +142,9 @@
         <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="EVENT_PARSER" onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="DENY"/>
+        <!-- Record Stream -->
+        <MarkerFilter marker="OBJECT_STREAM_FILE"     onMatch="DENY" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="OBJECT_STREAM"          onMatch="DENY" onMismatch="NEUTRAL"/>
       </Filters>
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="fileLog"/>

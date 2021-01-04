@@ -228,6 +228,7 @@ public class RecordStreamManager {
 	public void setStartWriteAtCompleteWindow(boolean startWriteAtCompleteWindow) {
 		if (streamFileWriter != null) {
 			streamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
+			LOGGER.info("RecordStreamManager::setStartWriteAtCompleteWindow: {}", startWriteAtCompleteWindow);
 		}
 	}
 

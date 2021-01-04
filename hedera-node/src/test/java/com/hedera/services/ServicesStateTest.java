@@ -479,6 +479,8 @@ class ServicesStateTest {
 		Hash tokenRelsRootHash = new Hash("asdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdh".getBytes());
 		Hash specialFileSystemHash = new Hash("123456781234567812345678123456781234567812345678".getBytes());
 		Hash runningHashLeafHash = new Hash("qasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasd".getBytes());
+		RunningHash runningHash = mock(RunningHash.class);
+		Hash hashInRunningHash = new Hash("ttqasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdha".getBytes());
 		// and:
 		Hash overallHash = new Hash("a!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!df".getBytes());
 		// and:
@@ -502,7 +504,8 @@ class ServicesStateTest {
 						"  DiskFs            :: %s\n" +
 						"  NetworkContext    :: %s\n" +
 						"  AddressBook       :: %s\n" +
-						"  RecordsRunningHashLeaf:: %s",
+						"  RecordsRunningHashLeaf:: %s\n" +
+						"  running Hash saved in RecordsRunningHashLeaf:: %s",
 				overallHash,
 				accountsRootHash,
 				storageRootHash,
@@ -512,7 +515,8 @@ class ServicesStateTest {
 				specialFileSystemHash,
 				ctxHash,
 				bookHash,
-				runningHashLeafHash);
+				runningHashLeafHash,
+				hashInRunningHash);
 		subject.setHash(overallHash);
 
 		given(topics.getHash()).willReturn(topicRootHash);
@@ -524,6 +528,8 @@ class ServicesStateTest {
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
 		given(runningHashLeaf.getHash()).willReturn(runningHashLeafHash);
+		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+		given(runningHash.getHash()).willReturn(hashInRunningHash);
 		// when:
 		subject.printHashes();
 

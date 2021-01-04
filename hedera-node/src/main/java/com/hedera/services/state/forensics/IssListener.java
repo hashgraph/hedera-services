@@ -34,9 +34,11 @@ import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.function.Function;
 
@@ -48,7 +50,7 @@ public class IssListener implements InvalidSignedStateListener {
 	static final String FC_DUMP_LOC_TPL = "data/saved/%s/%d/%s-round%d.fcm";
 	static final String ISS_ERROR_MSG_PATTERN =
 			"In round %d, node %d received a signed state from node %d with " +
-					"a signature different than %s on %s [accounts :: %s | storage :: %s | topics :: %s]!";
+					"a signature different than %s on %s [accounts :: %s | storage :: %s | topics :: %s | runningHashLeaf :: %s ]!";
 	static final String ISS_FALLBACK_ERROR_MSG_PATTERN =
 			"In round %d, node %s received a signed state from node %s differing from its local "
 					+ "signed state; could not provide all details!";
@@ -57,6 +59,8 @@ public class IssListener implements InvalidSignedStateListener {
 
 	static Function<String, MerkleDataOutputStream> merkleOutFn = dumpLoc -> {
 		try {
+			// create parent directories if not exist
+			Files.createDirectories(Path.of(dumpLoc).getParent());
 			return new MerkleDataOutputStream(Files.newOutputStream(Path.of(dumpLoc)), false);
 		} catch (Exception e) {
 			log.warn("Unable to use suggested dump location {}, falling back to STDOUT!", dumpLoc, e);
@@ -88,7 +92,8 @@ public class IssListener implements InvalidSignedStateListener {
 						encodeHexString(sig), encodeHexString(hash),
 						encodeHexString(issState.accounts().getRootHash().getValue()),
 						encodeHexString(issState.storage().getRootHash().getValue()),
-						encodeHexString(issState.topics().getRootHash().getValue()));
+						encodeHexString(issState.topics().getRootHash().getValue()),
+						issState.runningHashLeaf());
 				log.error(msg);
 				dumpFcms(issState, self, round);
 			}

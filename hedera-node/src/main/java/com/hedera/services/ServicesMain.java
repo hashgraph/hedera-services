@@ -284,6 +284,8 @@ public class ServicesMain implements SwirldMain {
 							notification.getConsensusTimestamp(),
 							notification.getRoundNumber(),
 							notification.getSequence()));
+					ServicesState state = (ServicesState)notification.getState();
+					state.printHashes();
 					ctx.recordStreamManager().setStartWriteAtCompleteWindow(true);
 				});
 	}
