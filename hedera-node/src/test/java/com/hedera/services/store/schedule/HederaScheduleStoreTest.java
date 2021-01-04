@@ -451,10 +451,8 @@ public class HederaScheduleStoreTest {
     }
 
     @Test
-    public void getsScheduleIDByTransactionBody() {
+    public void getsScheduleID() {
         // given:
-        subject.pendingTxHashCode = 1;
-        subject.pendingCreation = anotherSchedule;
         subject.txToEntityId.put(new CompositeKey(transactionBodyHashCode, payerId), fromScheduleId(created));
         given(subject.get(created)).willReturn(schedule);
 
@@ -467,7 +465,6 @@ public class HederaScheduleStoreTest {
     @Test
     public void getsScheduleIDFromPending() {
         // given:
-        subject.pendingTxHashCode = transactionBodyHashCode;
         subject.pendingCreation = schedule;
         subject.pendingId = created;
         subject.pendingTxHashCode = transactionBodyHashCode;
@@ -479,10 +476,7 @@ public class HederaScheduleStoreTest {
     }
 
     @Test
-    public void failsToGetScheduleIDByTransactionBody() {
-        subject.pendingTxHashCode = 0;
-        subject.pendingCreation = anotherSchedule;
-
+    public void failsToGetScheduleID() {
         // when:
         var scheduleId = subject.getScheduleID(transactionBody, payerId);
 

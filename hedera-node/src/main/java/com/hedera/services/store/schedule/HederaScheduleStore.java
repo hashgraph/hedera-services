@@ -215,10 +215,13 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	public Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer) {
 		var txHashCode = Arrays.hashCode(bodyBytes);
 		var keyToCheckFor = new CompositeKey(txHashCode, scheduledTxPayer);
-		var pendingKey = new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId());
 
-		if (keyToCheckFor.equals(pendingKey)) {
-			return Optional.of(pendingId);
+		if (isCreationPending()) {
+			var pendingKey = new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId());
+
+			if (keyToCheckFor.equals(pendingKey)) {
+				return Optional.of(pendingId);
+			}
 		}
 
 		if (txToEntityId.containsKey(keyToCheckFor)) {

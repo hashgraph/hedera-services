@@ -1,6 +1,5 @@
 package com.hedera.services.store.schedule;
 
-import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 public class CompositeKey {

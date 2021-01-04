@@ -3,12 +3,11 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.KeysHelper;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -55,6 +54,7 @@ public class ScheduleSignTransitionLogicTest {
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
+    private final ResponseCodeEnum NOT_OK = null;
 
     @BeforeEach
     private void setup() {
@@ -115,35 +115,19 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void capturesInvalidScheduleId() {
+    public void failsWithResponseErrorsOnAddingSigners() {
         // given:
         givenValidTxnCtx();
 
         // and:
-        given(store.addSigners(eq(schedule), any())).willReturn(INVALID_SCHEDULE_ID);
+        given(store.addSigners(eq(schedule), any())).willReturn(NOT_OK);
 
         // when:
         subject.doStateTransition();
 
         // then
         verify(store).addSigners(eq(schedule), any());
-        verify(txnCtx).setStatus(INVALID_SCHEDULE_ID);
-    }
-
-    @Test
-    public void capturesDeletedSchedule() {
-        // given:
-        givenValidTxnCtx();
-
-        // and:
-        given(store.addSigners(eq(schedule), any())).willReturn(SCHEDULE_WAS_DELETED);
-
-        // when:
-        subject.doStateTransition();
-
-        // then
-        verify(store).addSigners(eq(schedule), any());
-        verify(txnCtx).setStatus(SCHEDULE_WAS_DELETED);
+        verify(txnCtx).setStatus(NOT_OK);
     }
 
     @Test
