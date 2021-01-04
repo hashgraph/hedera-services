@@ -56,7 +56,7 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString()))
-				.when(freeze().startingIn(1).minutes().andLasting(2).minutes().payingWith(GENESIS)).then(
+				.when(freeze().startingIn(0).minutes().andLasting(2).minutes().payingWith(GENESIS)).then(
 						// sleep for a while to wait for this freeze transaction be handled
 						UtilVerbs.sleepFor(75_000)
 				);
