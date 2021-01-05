@@ -1,10 +1,8 @@
 package com.hedera.services.txns.schedule;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -17,25 +15,20 @@ import java.util.function.Predicate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleDeleteTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
     private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-    OptionValidator validator;
     ScheduleStore store;
-    HederaLedger ledger;
     TransactionContext txnCtx;
 
     public ScheduleDeleteTransitionLogic(
-            OptionValidator validator,
             ScheduleStore store,
-            HederaLedger ledger,
             TransactionContext txnCtx) {
-        this.validator = validator;
         this.store = store;
-        this.ledger = ledger;
         this.txnCtx = txnCtx;
     }
 
@@ -45,16 +38,13 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
             transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
         } catch (Exception e) {
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
-            abortWith(FAIL_INVALID);
+            txnCtx.setStatus(FAIL_INVALID);
         }
     }
 
     private void transitionFor(ScheduleDeleteTransactionBody op) {
-        // TODO: Implement transitionFor() functionality
-    }
-
-    private void abortWith(ResponseCodeEnum cause) {
-        // TODO: Implement abortWith() failure functionality
+        var outcome = store.delete(op.getSchedule());
+        txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
     }
 
     @Override
