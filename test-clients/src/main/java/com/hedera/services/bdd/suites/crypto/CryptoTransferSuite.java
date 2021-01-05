@@ -23,13 +23,19 @@ package com.hedera.services.bdd.suites.crypto;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 
@@ -70,12 +76,13 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						transferToTopicReturnsInvalidAccountId(),
-						tokenTransferFeesScaleAsExpected(),
+				transferWithAccts(),
+//						vanillaTransferSucceeds(),
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						transferToTopicReturnsInvalidAccountId(),
+//						tokenTransferFeesScaleAsExpected(),
 				}
 		);
 	}
@@ -311,6 +318,38 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						getAccountInfo("payeeNoSigReq").has(accountWith().balance(initialBalance + 2_000L))
 				);
 	}
+
+	private HapiApiSpec transferWithAccts() {
+		long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
+
+		return defaultHapiSpec("transferWithAccts")
+				.given(
+						keyFromPem("src/main/resource/simple.pem").name("simple")
+//						cryptoCreate("r1")
+//								.balance(100_000_000_000L)
+//								.key("simple")
+//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+//
+//						cryptoCreate("r2")
+//								.balance(100_000_000_000L)
+//								.key("simple")
+//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+//						cryptoCreate("r3")
+//								.balance(100_000_000_000L)
+//								.key("simple")
+//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+
+						).when(
+						cryptoTransfer(
+								tinyBarsFromTo("0.0.1001", "0.0.1002", 1_000L)
+						).via("transferTxn")
+						.payingWith("0.0.1001")
+						.signedBy("simple")
+						.fee(100_000_000L)
+				).then(
+				);
+	}
+
 
 	@Override
 	protected Logger getResultsLogger() {

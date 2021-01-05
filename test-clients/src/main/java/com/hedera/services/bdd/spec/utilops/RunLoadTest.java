@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
@@ -47,6 +48,7 @@ public class RunLoadTest extends UtilOp {
 	private static final TimeUnit DEFAULT_DURATION_UNIT = TimeUnit.SECONDS;
 	private static final int DEFAULT_THREADS = 1;
 	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE = 256;
+	public static final int DEFAULT_TOTAL_TEST_ACCOUNTS = 2;
 
 	private DoubleSupplier targetTps = () -> DEFAULT_TPS_TARGET;
 	private IntSupplier tpsTolerancePercentage = () -> DEFAULT_TPS_TOLERANCE_PERCENTAGE;
@@ -55,6 +57,8 @@ public class RunLoadTest extends UtilOp {
 	private Supplier<TimeUnit> ofUnit = () -> DEFAULT_DURATION_UNIT;
 	private IntSupplier threads = () -> DEFAULT_THREADS;
 	private IntSupplier hcsSubmitMessageSize = () -> DEFAULT_SUBMIT_MESSAGE_SIZE;
+	private BooleanSupplier useFixedAccounts = () -> true;
+	private IntSupplier totalTestAccounts = () -> DEFAULT_TOTAL_TEST_ACCOUNTS;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
 
@@ -80,6 +84,15 @@ public class RunLoadTest extends UtilOp {
 		return this;
 	}
 
+	public RunLoadTest setUseFixedAccounts(BooleanSupplier useFixedAccountsFn) {
+		this.useFixedAccounts = useFixedAccountsFn;
+		return this;
+	}
+
+	public RunLoadTest setTotalTestAccounts(IntSupplier totalTestAccounts) {
+		this.totalTestAccounts = totalTestAccounts;
+		return this;
+	}
 	public RunLoadTest setHCSSubmitMessageSize(IntSupplier submitMessageSize) {
 		this.hcsSubmitMessageSize = submitMessageSize;
 		return this;

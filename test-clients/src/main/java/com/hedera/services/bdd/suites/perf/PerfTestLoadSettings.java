@@ -31,6 +31,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_BURST_SIZE = 5;
 	public static final int DEFAULT_THREADS = 50;
 	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE = 256;
+	public static final int DEFAULT_TOTAL_TEST_ACCOUNTS = 2;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -39,6 +40,7 @@ public class PerfTestLoadSettings {
 	private int burstSize = DEFAULT_BURST_SIZE;
 	private int threads = DEFAULT_THREADS;
 	private int hcsSubmitMessageSize = DEFAULT_SUBMIT_MESSAGE_SIZE;
+	private int totalTestAccounts = DEFAULT_TOTAL_TEST_ACCOUNTS;
 
 	private HapiPropertySource ciProps = null;
 
@@ -77,6 +79,9 @@ public class PerfTestLoadSettings {
 	public int getHcsSubmitMessageSize() {
 		return hcsSubmitMessageSize;
 	}
+	public int getTotalAccounts() {
+		return totalTestAccounts;
+	}
 
 
 	public int getIntProperty(String property, int defaultValue) {
@@ -113,6 +118,9 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("threads")) {
 			threads = ciProps.getInteger("threads");
 		}
+		if (ciProps.has("totalTestAccounts")) {
+			totalTestAccounts = ciProps.getInteger("totalTestAccounts");
+		}
 		if (ciProps.has("messageSize")) {
 			hcsSubmitMessageSize = ciProps.getInteger("messageSize");
 		}
@@ -127,6 +135,7 @@ public class PerfTestLoadSettings {
 				.add("burstSize", burstSize)
 				.add("allowedSecsBelow", allowedSecsBelow)
 				.add("threads", threads)
+				.add("totalTestAccounts", totalTestAccounts)
 				.add("submitMessageSize", hcsSubmitMessageSize)
 				.toString();
 	}
