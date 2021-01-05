@@ -21,6 +21,7 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
