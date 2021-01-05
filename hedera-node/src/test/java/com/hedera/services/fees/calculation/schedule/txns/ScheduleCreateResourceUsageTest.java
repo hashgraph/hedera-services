@@ -21,10 +21,10 @@ public class ScheduleCreateResourceUsageTest {
     @BeforeEach
     private void setup() throws Throwable {
         scheduleCreateTxn = mock(TransactionBody.class);
-        given(scheduleCreateTxn.hasScheduleCreation()).willReturn(true);
+        given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
 
         nonScheduleCreateTxn = mock(TransactionBody.class);
-        given(nonScheduleCreateTxn.hasScheduleCreation()).willReturn(false);
+        given(nonScheduleCreateTxn.hasScheduleCreate()).willReturn(false);
 
         subject = new ScheduleCreateResourceUsage();
     }

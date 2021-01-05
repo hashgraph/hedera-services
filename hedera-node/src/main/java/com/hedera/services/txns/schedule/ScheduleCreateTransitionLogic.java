@@ -43,7 +43,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     @Override
     public void doStateTransition() {
         try {
-            transitionFor(txnCtx.accessor().getTxn().getScheduleCreation());
+            transitionFor(txnCtx.accessor().getTxn().getScheduleCreate());
         } catch (Exception e) {
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
             abortWith(FAIL_INVALID);
@@ -60,7 +60,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
     @Override
     public Predicate<TransactionBody> applicability() {
-        return TransactionBody::hasScheduleCreation;
+        return TransactionBody::hasScheduleCreate;
     }
 
     @Override
@@ -71,7 +71,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         var validity = OK;
 
-        ScheduleCreateTransactionBody op = txnBody.getScheduleCreation();
+        ScheduleCreateTransactionBody op = txnBody.getScheduleCreate();
 
         if (!op.getExecuteImmediately()) {
             return NOT_SUPPORTED;

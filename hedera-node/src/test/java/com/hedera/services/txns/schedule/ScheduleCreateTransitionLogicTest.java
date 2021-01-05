@@ -106,7 +106,7 @@ public class ScheduleCreateTransitionLogicTest {
                 .setSigMap(sigMap)
                 .setAdminKey(key)
                 .setExecuteImmediately(yes)
-                .setPayer(payer);
+                .setPayerAccountID(payer);
 
         if (invalidExecuteImmediately) {
             scheduleCreate.setExecuteImmediately(no);
@@ -116,7 +116,7 @@ public class ScheduleCreateTransitionLogicTest {
             scheduleCreate.setAdminKey(invalidKey);
         }
 
-        builder.setScheduleCreation(scheduleCreate);
+        builder.setScheduleCreate(scheduleCreate);
 
         scheduleCreateTxn = builder.build();
         given(accessor.getTxn()).willReturn(scheduleCreateTxn);

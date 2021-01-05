@@ -81,10 +81,10 @@ public class ScheduleSignTransitionLogicTest {
         var builder = TransactionBody.newBuilder();
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()
                 .setSigMap(sigMap)
-                .setSchedule(schedule);
+                .setScheduleID(schedule);
 
         if (invalidScheduleId) {
-            scheduleSign.clearSchedule();
+            scheduleSign.clearScheduleID();
         }
 
         builder.setScheduleSign(scheduleSign);

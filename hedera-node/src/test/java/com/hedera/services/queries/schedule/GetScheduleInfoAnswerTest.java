@@ -46,7 +46,7 @@ public class GetScheduleInfoAnswerTest {
     private String node = "0.0.3";
     private String payer = "0.0.12345";
     private AccountID payerAccount = asAccount(payer);
-    private AccountID schedulingAccount = asAccount("0.0.12346");
+    private AccountID creatorAccount = asAccount("0.0.12346");
     private ScheduleID scheduleID = asSchedule("1.2.3");
     private long fee = 1_234L;
 
@@ -60,9 +60,9 @@ public class GetScheduleInfoAnswerTest {
     @BeforeEach
     public void setup() {
         info = ScheduleInfo.newBuilder()
-                .setSchedule(scheduleID)
-                .setPayer(payerAccount)
-                .setSchedulingAccount(schedulingAccount)
+                .setScheduleID(scheduleID)
+                .setPayerAccountID(payerAccount)
+                .setCreatorAccountID(creatorAccount)
                 .build();
 
         view = mock(StateView.class);
@@ -237,7 +237,7 @@ public class GetScheduleInfoAnswerTest {
                 .setResponseType(type);
         ScheduleGetInfoQuery.Builder op = ScheduleGetInfoQuery.newBuilder()
                 .setHeader(header)
-                .setSchedule(id);
+                .setScheduleID(id);
         return Query.newBuilder().setScheduleGetInfo(op).build();
     }
 }

@@ -10,7 +10,7 @@ import com.hederahashgraph.fee.SigValueObj;
 public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
     @Override
     public boolean applicableTo(TransactionBody txn) {
-        return txn.hasScheduleCreation();
+        return txn.hasScheduleCreate();
     }
 
     @Override

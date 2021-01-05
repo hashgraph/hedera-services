@@ -36,7 +36,7 @@ public class GetScheduleInfoResourceUsageTest {
 
     private Query scheduleInfoQuery(ScheduleID id, ResponseType type) {
         ScheduleGetInfoQuery.Builder op = ScheduleGetInfoQuery.newBuilder()
-                .setSchedule(id)
+                .setScheduleID(id)
                 .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder()
                 .setScheduleGetInfo(op)
