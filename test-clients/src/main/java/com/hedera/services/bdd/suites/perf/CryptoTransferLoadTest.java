@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -105,24 +106,25 @@ public class CryptoTransferLoadTest extends LoadTest {
 	private HapiApiSpec runCryptoTransfers() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
-		Supplier<HapiSpecOperation[]> transferRandomBurst = () -> {
-			int sender = 0;
-			int receiver = 0;
-			if(settings.getTotalAccounts() == 2) {
-				sender = 1001;
-				receiver = 1002;
-			}
-			else {
-				sender = 1001 + r.nextInt(settings.getTotalAccounts());
+		Supplier<HapiSpecOperation[]> transferBurst = () -> {
+			String sender = "sender";
+			String receiver = "receiver";
+			if(settings.getTotalAccounts() > 2) {
+				int s =  r.nextInt(settings.getTotalAccounts());
+				int re = 0;
 				do {
-					receiver = 1001 + r.nextInt(settings.getTotalAccounts());
-				} while (receiver == sender);
+					re =  r.nextInt(settings.getTotalAccounts());
+				} while (re == s);
+				sender = String.format("0.0.%d", 1001 + s);
+				receiver = String.format("0.0.%d", 1001 + re);
 			}
 
+//			log.info("Total account {}, sender={}, receiver={}", settings.getTotalAccounts(), sender, receiver);
+
 			return new HapiSpecOperation[] { cryptoTransfer(
-					tinyBarsFromTo(String.format("0.0.%d", sender), String.format("0.0.%d", receiver), 1L))
+					tinyBarsFromTo(sender, receiver , 1L))
 					.noLogging()
-					.payingWith(String.format("0.0.%d", sender))
+					.payingWith(sender)
 					.signedBy("simple")
 					.suppressStats(true)
 					.fee(100_000_000L)
@@ -133,59 +135,38 @@ public class CryptoTransferLoadTest extends LoadTest {
 
 		};
 
-		return defaultHapiSpec("RunCryptoRandomTransfers")
+		return defaultHapiSpec("RunCryptoTransfers")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when(
-						keyFromPem("src/main/resource/simple.pem").name("simple"),
+						keyFromPem("src/main/resource/simple_test.pem").name("simple"),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "4000"))
-//
-//						cryptoCreate("r1")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-//						cryptoCreate("r2")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-//						cryptoCreate("r3")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-//						cryptoCreate("r4")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-//						cryptoCreate("r11")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-//						cryptoCreate("r12")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-//						cryptoCreate("r13")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-//						cryptoCreate("r14")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-//						cryptoCreate("r21")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-//						cryptoCreate("r22")
-//								.balance(initialBalance.getAsLong())
-//								.key("simple")
-//								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-
+								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "4000")),
+						cryptoCreate("sender")
+								.balance(initialBalance.getAsLong())
+								.withRecharging()
+								.key("simple")
+								.rechargeWindow(3)
+								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+						cryptoCreate("receiver")
+								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						        .key("simple")
+//  The following operation is to generate some local accounts for testing purpose. If needed, uncomment this operation, run it
+//  once. Then rerun the normal testing process.
+//						withOpContext((spec, ignore) -> {
+//							for (int i = 0; i < 10; i++) {
+//								var op = cryptoCreate("acct" + i)
+//										.balance(initialBalance.getAsLong())
+//										.payingWith(GENESIS)
+//										.key("simple")
+//										.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED);
+//								CustomSpecAssert.allRunFor(spec, op);
+//							}
+//						})
 				).then(
-						defaultLoadTest(transferRandomBurst, settings)
+						defaultLoadTest(transferBurst, settings)
 				);
 	}
 
