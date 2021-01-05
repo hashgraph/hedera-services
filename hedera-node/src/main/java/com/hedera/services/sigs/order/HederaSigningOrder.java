@@ -176,6 +176,23 @@ public class HederaSigningOrder {
 		return SigningOrderResult.noKnownKeys();
 	}
 
+	public <T> ScheduledTransactionOrderResult<T> scheduledTxBody(TransactionBody txn, ScheduledTransactionOrderResultFactory<T> factory) {
+		if (txn.hasScheduleCreation()) {
+			return new ScheduledTransactionOrderResult<>(txn.getScheduleCreation().getTransactionBody().toByteArray());
+		} else if (txn.hasScheduleSign()) {
+			var id = txn.getScheduleSign().getSchedule();
+			var txnId = txn.getTransactionID();
+			var result = sigMetaLookup.scheduleSigningMetaFor(id);
+			if (!result.succeeded()) {
+				return factory.forMissingSchedule(id, txnId);
+			}
+
+			return factory.forValidOrder(result.metadata().transactionBody());
+		}
+
+		return ScheduledTransactionOrderResult.noTransactionBody();
+	}
+
 	private <T> SigningOrderResult<T> orderForPayer(
 			TransactionBody txn,
 			SigningOrderResultFactory<T> factory

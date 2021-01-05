@@ -22,6 +22,7 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.ScheduledTransactionOrderResult;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -29,8 +30,10 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
 import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -53,6 +56,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.*;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.*;
+import static com.hedera.test.factories.txns.ScheduleCreateFactory.*;
+import static com.hedera.test.factories.txns.ScheduleSignFactory.*;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 
 import java.util.List;
@@ -156,6 +161,70 @@ public class HederaToPlatformSigOpsTest {
 
 		// then:
 		assertEquals(failureStatus.toString(), status.toString());
+	}
+
+	@Test
+	public void returnsImmediatelyOnScheduledTxBodyKeyOrderFailure() throws Throwable {
+		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedScheduleCreate().get()));
+		wellBehavedOrdersAndSigSourcesPreHandle();
+		given(keyOrdering.scheduledTxBody(platformTxn.getTxn(), PRE_HANDLE_SCHEDULED_TX_FACTORY))
+				.willReturn(new ScheduledTransactionOrderResult<>(failureStatus));
+
+		// when:
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider);
+
+		// then:
+		assertEquals(failureStatus.toString(), status.toString());
+	}
+
+	@Test
+	public void returnsValidScheduleSignEmptyMap() throws Throwable {
+		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedScheduleSign()
+				.updating(IdUtils.asSchedule("1.2.3"))
+				.get()));
+		wellBehavedOrdersAndSigSourcesPreHandle();
+		given(keyOrdering.scheduledTxBody(platformTxn.getTxn(), PRE_HANDLE_SCHEDULED_TX_FACTORY))
+				.willReturn(new ScheduledTransactionOrderResult<>(TxnHandlingScenario.SCHEDULE_TX_BODY));
+
+		// when:
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider);
+
+		// then:
+		assertEquals(successStatus.toString(), status.toString());
+		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+	}
+
+	@Test
+	public void returnsValidScheduleCreateEmptyMap() throws Throwable {
+		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedScheduleCreate()
+				.missingSignature()
+				.get()));
+		wellBehavedOrdersAndSigSourcesPreHandle();
+		given(keyOrdering.scheduledTxBody(platformTxn.getTxn(), PRE_HANDLE_SCHEDULED_TX_FACTORY))
+				.willReturn(new ScheduledTransactionOrderResult<>(TxnHandlingScenario.SCHEDULE_TX_BODY));
+
+		// when:
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider);
+
+		// then:
+		assertEquals(successStatus.toString(), status.toString());
+		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+	}
+
+	@Test
+	public void returnsValidScheduleCreateMap() throws Throwable {
+		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedScheduleCreate()
+				.get()));
+		wellBehavedOrdersAndSigSourcesPreHandle();
+		given(keyOrdering.scheduledTxBody(platformTxn.getTxn(), PRE_HANDLE_SCHEDULED_TX_FACTORY))
+				.willReturn(new ScheduledTransactionOrderResult<>(TxnHandlingScenario.SCHEDULE_TX_BODY));
+
+		// when:
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider);
+
+		// then:
+		assertEquals(successStatus.toString(), status.toString());
+		assertEquals(expectedScheduledSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
 	}
 
 	@Test
@@ -311,6 +380,18 @@ public class HederaToPlatformSigOpsTest {
 				dummyFor(otherKeys.get(1), "3"));
 	}
 
+	private List<TransactionSignature> expectedScheduledSigsWithNoErrors() {
+		return List.of(
+				dummyFor(payerKey.get(0), "1"),
+				dummyFor(otherKeys.get(0), "2"),
+				dummyFor(otherKeys.get(1), "3"),
+				dummyFor(
+						TxnHandlingScenario.SCHEDULE_SIG_PAIR_PUB_KEY.toByteArray(),
+						TxnHandlingScenario.SCHEDULE_SIG_PAIR_ED25519_SIG.toByteArray(),
+						TxnHandlingScenario.SCHEDULE_TX_BODY
+				));
+	}
+
 	private List<TransactionSignature> expectedSigsWithOtherPartiesCreationError() {
 		return expectedSigsWithNoErrors().subList(0, 1);
 	}
@@ -320,6 +401,13 @@ public class HederaToPlatformSigOpsTest {
 				key.getEd25519(),
 				sig.getBytes(),
 				platformTxn.getTxnBytes());
+	}
+
+	private TransactionSignature dummyFor(byte[] key, byte[] sig, byte[] body) {
+		return PlatformSigFactory.createEd25519(
+				key,
+				sig,
+				body);
 	}
 
 	PubKeyToSigBytesProvider sigBytesProvider = new PubKeyToSigBytesProvider() {

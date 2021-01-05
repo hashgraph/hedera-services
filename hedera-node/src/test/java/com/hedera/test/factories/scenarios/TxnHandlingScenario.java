@@ -20,6 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -252,7 +253,7 @@ public interface TxnHandlingScenario {
 				.willReturn(KNOWN_SCHEDULE_IMMUTABLE);
 		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE)).willReturn(immutableSchedule);
 
-		var vanillaSchedule = new MerkleSchedule(null, null, null);
+		var vanillaSchedule = new MerkleSchedule(SCHEDULE_TX_BODY, null, null);
 		vanillaSchedule.setAdminKey(adminKey);
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_ADMIN))
 				.willReturn(KNOWN_SCHEDULE_WITH_ADMIN);
@@ -402,6 +403,9 @@ public interface TxnHandlingScenario {
 
 	String UNKNOWN_SCHEDULE_ID = "0.0.123";
 	ScheduleID UNKNOWN_SCHEDULE = asSchedule(UNKNOWN_SCHEDULE_ID);
+	byte[] SCHEDULE_TX_BODY = "SCHEDULE_TX_BODY".getBytes();
+	ByteString SCHEDULE_SIG_PAIR_PUB_KEY = ByteString.copyFromUtf8("SCHEDULE_SIG_PAIR_PUB_KEY");
+	ByteString SCHEDULE_SIG_PAIR_ED25519_SIG = ByteString.copyFromUtf8("SCHEDULE_SIG_PAIR_SIG");
 
 	KeyTree SCHEDULE_ADMIN_KT = withRoot(ed25519());
 	KeyTree SCHEDULE_SIGNER_ONE_KT = withRoot(ed25519());

@@ -22,6 +22,7 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
+import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
@@ -60,6 +61,8 @@ import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
 import static java.util.stream.Collectors.toList;
 import org.junit.runner.RunWith;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -72,7 +75,9 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.test.utils.IdUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -235,6 +240,7 @@ public class HederaSigningOrderTest {
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private SigStatusOrderResultFactory summaryFactory = new SigStatusOrderResultFactory(IN_HANDLE_TXN_DYNAMIC_CTX);
+	private ScheduledTransactionStatusOrderResultFactory scheduledTxFactory = new ScheduledTransactionStatusOrderResultFactory(IN_HANDLE_TXN_DYNAMIC_CTX);
 	private SigningOrderResultFactory<SignatureStatus> mockSummaryFactory;
 
 	@Test
@@ -1755,6 +1761,54 @@ public class HederaSigningOrderTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(SCHEDULE_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void validScheduledTxBodyCreate() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_WITH_ADMIN);
+
+		// when:
+		var summary = subject.scheduledTxBody(txn, scheduledTxFactory);
+		// then:
+		assertFalse(summary.hasErrorReport());
+		assertTrue(Arrays.equals(TxnHandlingScenario.SCHEDULE_TX_BODY, summary.getTransactionBody()));
+	}
+
+	@Test
+	public void validScheduledTxBodySign() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE);
+
+		// when:
+		var summary = subject.scheduledTxBody(txn, scheduledTxFactory);
+		// then:
+		assertFalse(summary.hasErrorReport());
+		assertTrue(Arrays.equals(TxnHandlingScenario.SCHEDULE_TX_BODY, summary.getTransactionBody()));
+	}
+
+	@Test
+	public void failScheduledTxBodySignMissingSchedule() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_SIGN_MISSING_SCHEDULE);
+
+		// when:
+		var summary = subject.scheduledTxBody(txn, scheduledTxFactory);
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(SignatureStatusCode.INVALID_SCHEDULE_ID, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
+	public void scheduleTxBodyDifferentBody() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
+
+		// when:
+		var summary = subject.scheduledTxBody(txn, scheduledTxFactory);
+		// then:
+		assertFalse(summary.hasErrorReport());
+		assertNull(summary.getTransactionBody());
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {

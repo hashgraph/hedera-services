@@ -46,4 +46,11 @@ public class StatusUtils {
 				inHandleCtx, platformTxn.getTxnId(),
 				null, null, null, null);
 	}
+
+	public static SignatureStatus failForInvalidTransaction(boolean inHandleCtx, PlatformTxnAccessor platformTxn) {
+		return new SignatureStatus(
+				SignatureStatusCode.GENERAL_TRANSACTION_ERROR, ResponseCodeEnum.INVALID_TRANSACTION_BODY,
+				inHandleCtx, platformTxn.getTxnId(),
+				null, null, null, null);
+	}
 }

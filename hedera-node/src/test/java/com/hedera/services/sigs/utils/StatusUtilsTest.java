@@ -49,4 +49,20 @@ public class StatusUtilsTest {
 		// then:
 		assertEquals(expectedStatus.toString(), status.toString());
 	}
+
+	@Test
+	public void usesTxnIdForStatusFail() throws Throwable {
+		// given:
+		PlatformTxnAccessor platformTxn = new PlatformTxnAccessor(from(newSignedSystemDelete().get()));
+		SignatureStatus expectedStatus = new SignatureStatus(
+				SignatureStatusCode.GENERAL_TRANSACTION_ERROR, ResponseCodeEnum.INVALID_TRANSACTION_BODY,
+				true, platformTxn.getTxn().getTransactionID(),
+				null, null, null, null);
+
+		// when:
+		SignatureStatus status = StatusUtils.failForInvalidTransaction(true, platformTxn);
+
+		// then:
+		assertEquals(expectedStatus.toString(), status.toString());
+	}
 }

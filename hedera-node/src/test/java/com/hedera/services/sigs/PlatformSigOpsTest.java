@@ -21,34 +21,39 @@ package com.hedera.services.sigs;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.test.factories.keys.KeyTree;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
+import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.test.factories.keys.KeyTree;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.runner.RunWith;
-import static com.hedera.test.factories.keys.NodeFactory.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.keys.NodeFactory.threshold;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(JUnitPlatform.class)
 public class PlatformSigOpsTest {
@@ -204,5 +209,29 @@ public class PlatformSigOpsTest {
 
 		// then:
 		assertEquals(expectedStatus.toLogMessage(), status.toLogMessage());
+	}
+
+
+	@Test
+	public void returnsSuccessfulPlatformSigsFromMap() {
+		// given:
+		byte[] MOCK_PUB_KEY = "MOCK_PUB_KEY".getBytes();
+		var sigPair = SignaturePair.newBuilder()
+				.setPubKeyPrefix(ByteString.copyFrom(MOCK_PUB_KEY))
+				.setEd25519(ByteString.copyFrom(MOCK_SIG))
+				.build();
+		var map = SignatureMap.newBuilder().
+				addSigPair(sigPair).build();
+
+		// when:
+		PlatformSigsCreationResult result = createEd25519PlatformSigsFrom(map, sigFactory);
+
+		// then:
+		assertFalse(result.hasFailed());
+		assertEquals(map.getSigPairCount(), result.getPlatformSigs().size());
+		// and:
+		for (var pair : map.getSigPairList()) {
+			verify(sigFactory).create(pair.getPubKeyPrefix(), pair.getEd25519());
+		}
 	}
 }

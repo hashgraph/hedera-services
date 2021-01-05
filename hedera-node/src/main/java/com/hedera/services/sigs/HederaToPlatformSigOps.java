@@ -21,18 +21,20 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.ScheduledTransactionStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
@@ -42,9 +44,10 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static com.hedera.services.sigs.PlatformSigOps.*;
-import static com.hedera.services.sigs.utils.StatusUtils.successFor;
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
+import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.utils.StatusUtils.failForInvalidTransaction;
+import static com.hedera.services.sigs.utils.StatusUtils.successFor;
 
 /**
  * Provides two operations that act in-place on the {@link Signature} list of a
@@ -80,6 +83,9 @@ public class HederaToPlatformSigOps {
 
 	public final static SigStatusOrderResultFactory PRE_HANDLE_SUMMARY_FACTORY =
 			new SigStatusOrderResultFactory(false);
+
+	public final static ScheduledTransactionStatusOrderResultFactory PRE_HANDLE_SCHEDULED_TX_FACTORY =
+			new ScheduledTransactionStatusOrderResultFactory(false);
 
 	private HederaToPlatformSigOps(){
 		throw new IllegalStateException("Utility Class");
@@ -188,6 +194,20 @@ public class HederaToPlatformSigOps {
 							otherStatus);
 				}
 			}
+
+			if (txnAccessor.getTxn().hasScheduleCreation() || txnAccessor.getTxn().hasScheduleSign()) {
+				var scheduledTxStatus = expandScheduledTransaction();
+				if ( SUCCESS != scheduledTxStatus.getStatusCode()) {
+					if (log.isDebugEnabled()) {
+						log.debug(
+								"Failed expanding scheduled tx Hedera sigs for txn {}: {}",
+								txnAccessor.getTxnId(),
+								scheduledTxStatus);
+					}
+				}
+				return scheduledTxStatus;
+			}
+
 			return otherStatus;
 		}
 
@@ -206,6 +226,36 @@ public class HederaToPlatformSigOps {
 				txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
 			}
 			/* Ignore sig creation failures. */
+			return successFor(false, txnAccessor);
+		}
+
+		private SignatureStatus expandScheduledTransaction() {
+			var txn = txnAccessor.getTxn();
+
+			if (!txn.hasScheduleCreation() && !txn.hasScheduleSign()) {
+				return failForInvalidTransaction(false, txnAccessor);
+			}
+
+			var result = keyOrderer.scheduledTxBody(txn, PRE_HANDLE_SCHEDULED_TX_FACTORY);
+			if (result.hasErrorReport()) {
+				return result.getErrorReport();
+			}
+
+			SignatureMap map;
+			if (txn.hasScheduleCreation()) {
+				map = txn.getScheduleCreation().getSigMap();
+			} else {
+				map = txn.getScheduleSign().getSigMap();
+			}
+
+			var creationResult = createEd25519PlatformSigsFrom(
+					map,
+					new BodySigningSigFactory(result.getTransactionBody()));
+
+			if (!creationResult.hasFailed()) {
+				txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
+			}
+
 			return successFor(false, txnAccessor);
 		}
 	}

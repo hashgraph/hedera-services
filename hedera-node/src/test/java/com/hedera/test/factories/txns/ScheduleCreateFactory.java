@@ -20,13 +20,18 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactory> {
     private boolean omitAdmin = false;
+    private boolean omitTransactionBody = false;
+    private boolean omitSignature = false;
 
     private ScheduleCreateFactory() {}
 
@@ -36,6 +41,16 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
 
     public ScheduleCreateFactory missingAdmin() {
         omitAdmin = true;
+        return this;
+    }
+
+    public ScheduleCreateFactory missingBody() {
+        omitTransactionBody = true;
+        return this;
+    }
+
+    public ScheduleCreateFactory missingSignature() {
+        omitSignature = true;
         return this;
     }
 
@@ -54,6 +69,17 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
         var op = ScheduleCreateTransactionBody.newBuilder();
         if (!omitAdmin) {
             op.setAdminKey(TxnHandlingScenario.SCHEDULE_ADMIN_KT.asKey());
+        }
+        if (!omitTransactionBody) {
+            op.setTransactionBody(ByteString.copyFrom(TxnHandlingScenario.SCHEDULE_TX_BODY));
+        }
+        if (!omitSignature) {
+            op.setSigMap(SignatureMap.newBuilder()
+                    .addSigPair(SignaturePair.newBuilder()
+                            .setPubKeyPrefix(TxnHandlingScenario.SCHEDULE_SIG_PAIR_PUB_KEY)
+                            .setEd25519(TxnHandlingScenario.SCHEDULE_SIG_PAIR_ED25519_SIG)
+                            .build())
+                    .build());
         }
         txn.setScheduleCreation(op);
     }

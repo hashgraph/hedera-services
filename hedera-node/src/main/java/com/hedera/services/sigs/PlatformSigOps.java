@@ -22,9 +22,11 @@ package com.hedera.services.sigs;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.keys.HederaKeyTraversal;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 
 import java.util.List;
 
@@ -58,6 +60,22 @@ public class PlatformSigOps {
 			HederaKeyTraversal.visitSimpleKeys(pk,
 					simpleKey -> createPlatformSigFor(simpleKey, sigBytes, factory, result));
 		}
+		return result;
+	}
+
+	public static PlatformSigsCreationResult createEd25519PlatformSigsFrom(
+			SignatureMap map,
+			TxnScopedPlatformSigFactory factory
+	) {
+		PlatformSigsCreationResult result = new PlatformSigsCreationResult();
+
+		for (SignaturePair pair : map.getSigPairList()) {
+			ByteString pubKey = ByteString.copyFrom(pair.getPubKeyPrefix().toByteArray());
+			ByteString ed25519Sig = ByteString.copyFrom(pair.getEd25519().toByteArray());
+
+			result.getPlatformSigs().add(factory.create(pubKey, ed25519Sig));
+		}
+
 		return result;
 	}
 
