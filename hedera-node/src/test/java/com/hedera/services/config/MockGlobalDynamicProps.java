@@ -38,12 +38,12 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public int maxTokenSymbolLength() {
+	public int maxTokenSymbolUtf8Bytes() {
 		return 32;
 	}
 
 	@Override
-	public int maxTokenNameLength() {
+	public int maxTokenNameUtf8Bytes() {
 		return 100;
 	}
 
