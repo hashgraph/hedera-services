@@ -44,7 +44,6 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt testDurationMinutes = OptionalInt.empty();
 	public static OptionalInt threadNumber = OptionalInt.empty();
 	public static OptionalInt hcsSubmitMessage = OptionalInt.empty();
-	public static Optional<Boolean> useFixedAccounts = Optional.empty();
 	/** initial balance of payer account used for paying for performance test transactions */
 	public static OptionalLong initialBalance = OptionalLong.of(900_000_000_000L);
 	public static OptionalInt totalTestAccounts = OptionalInt.empty();
@@ -88,12 +87,6 @@ public class LoadTest extends HapiApiSuite {
 			usedArgs++;
 		}
 
-//		if (args.length > 5) {
-//			useFixedAccounts = Optional.of(Boolean.parseBoolean(args[5]));
-//			log.info("Set useFixedAccount as " + useFixedAccounts.get());
-//			usedArgs++;
-//		}
-
 		return usedArgs;
 	}
 
@@ -112,7 +105,6 @@ public class LoadTest extends HapiApiSuite {
 				.allowedSecsBelow(settings::getAllowedSecsBelow)
 				.setNumberOfThreads(threadNumber.isPresent() ? threadNumber::getAsInt : settings::getThreads)
 				.setTotalTestAccounts(threadNumber.isPresent() ? totalTestAccounts::getAsInt : settings::getTotalAccounts)
-				//.setUseFixedAccount(useFixedAccounts.isPresent() ? useFixedAccounts::get : settings::getUseFixedAccounts)
 				.setHCSSubmitMessageSize(
 						hcsSubmitMessage.isPresent() ? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
 				.lasting(

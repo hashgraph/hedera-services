@@ -31,6 +31,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_BURST_SIZE = 5;
 	public static final int DEFAULT_THREADS = 50;
 	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE = 256;
+	// By default, it will fall back to original test scenarios
 	public static final int DEFAULT_TOTAL_TEST_ACCOUNTS = 2;
 
 	private int tps = DEFAULT_TPS;

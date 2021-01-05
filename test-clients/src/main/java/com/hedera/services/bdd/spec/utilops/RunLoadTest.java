@@ -57,7 +57,6 @@ public class RunLoadTest extends UtilOp {
 	private Supplier<TimeUnit> ofUnit = () -> DEFAULT_DURATION_UNIT;
 	private IntSupplier threads = () -> DEFAULT_THREADS;
 	private IntSupplier hcsSubmitMessageSize = () -> DEFAULT_SUBMIT_MESSAGE_SIZE;
-	private BooleanSupplier useFixedAccounts = () -> true;
 	private IntSupplier totalTestAccounts = () -> DEFAULT_TOTAL_TEST_ACCOUNTS;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
@@ -81,11 +80,6 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest setNumberOfThreads(IntSupplier numberOfThreads) {
 		this.threads = numberOfThreads;
-		return this;
-	}
-
-	public RunLoadTest setUseFixedAccounts(BooleanSupplier useFixedAccountsFn) {
-		this.useFixedAccounts = useFixedAccountsFn;
 		return this;
 	}
 
