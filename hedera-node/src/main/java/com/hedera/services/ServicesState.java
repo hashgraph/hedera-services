@@ -162,8 +162,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			skipDiskFsHashCheck = true;
 		}
 		if (scheduleTxs() == null) {
-			setChild(ChildIndices.SCHEDULE_TXS,
-					new FCMap<>(new MerkleEntityId.Provider(), MerkleSchedule.LEGACY_PROVIDER));
+			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 			log.info("Created scheduled txs FCMap after <= 0.10.0 state restoration");
 		}
 	}
@@ -203,8 +202,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			setChild(ChildIndices.DISK_FS,
 					new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
-			setChild(ChildIndices.SCHEDULE_TXS,
-					new FCMap<>(new MerkleEntityId.Provider(), MerkleSchedule.LEGACY_PROVIDER));
+			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 
