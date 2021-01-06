@@ -49,6 +49,7 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
@@ -177,11 +178,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (scheduleTxs() == null) {
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 			log.info("Created scheduled txs FCMap after <= 0.10.0 state restoration");
-		}
-		if (runningHashLeaf() == null) {
-			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH,
-					new RecordsRunningHashLeaf(new RunningHash()));
-			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
 		}
 	}
 
