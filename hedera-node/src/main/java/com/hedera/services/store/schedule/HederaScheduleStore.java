@@ -61,7 +61,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
-	Map<Integer, MerkleEntityId> txToEntityId = new HashMap<>(); // HashMap<hash(txBytes), MerkleEntityId>
+	Map<CompositeKey, MerkleEntityId> txToEntityId = new HashMap<>();
 
 	ScheduleID pendingId = NO_PENDING_ID;
 	Integer pendingTxHashCode = null;
@@ -73,7 +73,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	) {
 		super(ids);
 		this.schedules = schedules;
-		buildTxBodyMap(this.schedules); // TODO: rebuild HashMap<hash(txBytes), {MerkleEntityId, List<AccountID>}>
+		buildTxToEntityIdMap(this.schedules); // TODO: rebuild HashMap<hash(txBytes), {MerkleEntityId, List<AccountID>}>
 	}
 
 	@Override
@@ -112,19 +112,14 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, Optional<AccountID> payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey) {
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey) {
 		var validity = accountCheck(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
 		if (validity != OK) {
 			return failure(validity);
 		}
-
-		var payerId = schedulingAccount;
-		if (payer.isPresent()) {
-			validity = accountCheck(payer.get(), INVALID_SCHEDULE_PAYER_ID);
-			if (validity != OK) {
-				return failure(validity);
-			}
-			payerId = payer.get();
+		validity = accountCheck(payer, INVALID_SCHEDULE_PAYER_ID);
+		if (validity != OK) {
+			return failure(validity);
 		}
 
 		pendingId = ids.newScheduleId(schedulingAccount);
@@ -135,7 +130,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 				schedulingTXValidStart
 		);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
-		pendingCreation.setPayer(EntityId.ofNullableAccountId(payerId));
+		pendingCreation.setPayer(EntityId.ofNullableAccountId(payer));
 
 		return success(pendingId);
 	}
@@ -173,7 +168,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		apply(id, DELETION);
-		txToEntityId.remove(Arrays.hashCode(schedule.transactionBody()));
+		txToEntityId.remove(new CompositeKey(Arrays.hashCode(schedule.transactionBody()), schedule.payer().toGrpcAccountId()));
 		return OK;
 	}
 
@@ -183,7 +178,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var id = fromScheduleId(pendingId);
 
 		schedules.get().put(id, pendingCreation);
-		txToEntityId.put(pendingTxHashCode, id);
+		txToEntityId.put(new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId()), id);
 		resetPendingCreation();
 	}
 
@@ -211,22 +206,29 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 	}
 
-	private void buildTxBodyMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
+	private void buildTxToEntityIdMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
 		var schedulesMap = schedules.get();
-		schedulesMap.forEach((key, value) -> txToEntityId.put(Arrays.hashCode(value.transactionBody()), key));
+		schedulesMap.forEach((key, value) -> txToEntityId.put(new CompositeKey(Arrays.hashCode(value.transactionBody()), value.payer().toGrpcAccountId()), key));
 	}
 
-	public ScheduleID getScheduleIDByTransactionBody(byte[] bodyBytes) {
+	@Override
+	public Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer) {
 		var txHashCode = Arrays.hashCode(bodyBytes);
+		var keyToCheckFor = new CompositeKey(txHashCode, scheduledTxPayer);
 
-		if (pendingTxHashCode != null && pendingTxHashCode.equals(txHashCode)) {
-			return pendingId;
+		if (isCreationPending()) {
+			var pendingKey = new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId());
+
+			if (keyToCheckFor.equals(pendingKey)) {
+				return Optional.of(pendingId);
+			}
 		}
 
-		if (txToEntityId.containsKey(txHashCode)) {
-			return txToEntityId.get(txHashCode).toScheduleId();
+		if (txToEntityId.containsKey(keyToCheckFor)) {
+			var scheduleId = txToEntityId.get(keyToCheckFor).toScheduleId();
+			return Optional.of(scheduleId);
 		}
 
-		return null;
+		return Optional.empty();
 	}
 }
