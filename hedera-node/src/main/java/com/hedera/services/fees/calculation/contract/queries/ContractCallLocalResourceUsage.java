@@ -43,7 +43,6 @@ import java.util.Optional;
 import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalResourceUsage.class);

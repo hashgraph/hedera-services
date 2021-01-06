@@ -22,7 +22,6 @@ package com.hedera.services.grpc.controllers;
 
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.contract.ContractAnswers;
-import com.hedera.services.queries.crypto.CryptoAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
