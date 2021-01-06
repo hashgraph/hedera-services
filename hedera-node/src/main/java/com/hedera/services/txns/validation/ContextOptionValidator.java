@@ -43,9 +43,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
@@ -53,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-import static java.util.stream.IntStream.range;
 
 /**
  * Implements an {@link OptionValidator} that relies an injected instance
@@ -157,10 +154,11 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
-		if (symbol.length() < 1) {
+		int numUtf8Bytes = StringUtils.getBytesUtf8(symbol).length;
+		if (numUtf8Bytes == 0) {
 			return MISSING_TOKEN_SYMBOL;
 		}
-		if (symbol.length() > dynamicProperties.maxTokenSymbolLength()) {
+		if (numUtf8Bytes > dynamicProperties.maxTokenSymbolUtf8Bytes()) {
 			return TOKEN_SYMBOL_TOO_LONG;
 		}
 		return OK;
@@ -168,10 +166,11 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum tokenNameCheck(String name) {
-		if (name.length() < 1) {
+		int numUtf8Bytes = StringUtils.getBytesUtf8(name).length;
+		if (numUtf8Bytes == 0) {
 			return MISSING_TOKEN_NAME;
 		}
-		if (name.length() > dynamicProperties.maxTokenNameLength()) {
+		if (numUtf8Bytes > dynamicProperties.maxTokenNameUtf8Bytes()) {
 			return TOKEN_NAME_TOO_LONG;
 		}
 		return OK;
