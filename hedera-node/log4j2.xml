@@ -93,7 +93,7 @@
 
   </Appenders>
   <Loggers>
-    <Root level="WARN">
+    <Root level="INFO">
       <Filters>
         <!-- In the following, enable a marker with onMatch="ACCEPT" and disable with onMatch="DENY". -->
         <!-- More markers can be added, but ensure that every onMismatch="NEUTRAL", except the last is "DENY". -->
