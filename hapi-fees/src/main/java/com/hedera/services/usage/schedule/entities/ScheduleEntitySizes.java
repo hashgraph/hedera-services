@@ -35,14 +35,14 @@ public enum ScheduleEntitySizes {
 	/* { schedulingTXValidStart } */
 	static int NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
 
-	public int fixedBytesInTokenRepr() {
+	public int fixedBytesInScheduleRepr() {
 		return NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
 				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
 	}
 
-	public int totalBytesInfScheduleReprGiven(byte[] transactionBody) {
-		return fixedBytesInTokenRepr() + transactionBody.length;
+	public int totalBytesInScheduleReprGiven(byte[] transactionBody) {
+		return fixedBytesInScheduleRepr() + transactionBody.length;
 	}
 
 	public int totalBytesScheduleSigMapGiven(SignatureMap sigMap) {

@@ -46,8 +46,7 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 	public FeeData get() {
 		var op = this.op.getScheduleCreate();
 
-		// TODO: modify total bytes method
-		var baseSize = scheduleEntitySizes.totalBytesInfScheduleReprGiven(op.getTransactionBody().toByteArray());
+		var baseSize = scheduleEntitySizes.totalBytesInScheduleReprGiven(op.getTransactionBody().toByteArray());
 		baseSize += keySizeIfPresent(op, ScheduleCreateTransactionBody::hasAdminKey, ScheduleCreateTransactionBody::getAdminKey);
 		if (op.hasSigMap()) {
 			baseSize += scheduleEntitySizes.totalBytesScheduleSigMapGiven(op.getSigMap());

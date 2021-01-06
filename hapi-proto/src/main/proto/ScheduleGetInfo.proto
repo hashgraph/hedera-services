@@ -44,6 +44,7 @@ message ScheduleInfo {
   bool executeImmediately = 5; // Whether to execute the transaction immediately when all required signatures are collected. Currently, only executeImmediately=true is supported and will be returned
   Timestamp executeAtTime = 6; // The time at which the transaction will be attempted to be executed. Currently not supported.
   KeyList signers = 7; // The keys that have provided signatures so far for the Scheduled TX
+  Key adminKey = 8; // (optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed)
 }
 
 message ScheduleGetInfoResponse {

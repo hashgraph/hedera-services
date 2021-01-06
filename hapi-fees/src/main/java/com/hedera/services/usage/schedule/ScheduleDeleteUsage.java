@@ -40,7 +40,7 @@ public class ScheduleDeleteUsage extends ScheduleTxnUsage<ScheduleDeleteUsage> {
 	}
 
 	public FeeData get() {
-		var baseSize = scheduleEntitySizes.fixedBytesInTokenRepr();
+		var baseSize = scheduleEntitySizes.fixedBytesInScheduleRepr();
 
 		addAccountBpt();
 		return usageEstimator.get();
