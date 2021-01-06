@@ -41,8 +41,6 @@ message ScheduleInfo {
   AccountID creatorAccountID = 2; // The Account ID which created the Scheduled TX
   AccountID payerAccountID = 3; // The account which is going to pay for the execution of the Scheduled TX
   bytes transactionBody = 4; // The transaction serialized into bytes that must be signed
-  bool executeImmediately = 5; // Whether to execute the transaction immediately when all required signatures are collected. Currently, only executeImmediately=true is supported and will be returned
-  Timestamp executeAtTime = 6; // The time at which the transaction will be attempted to be executed. Currently not supported.
   KeyList signers = 7; // The keys that have provided signatures so far for the Scheduled TX
 }
 
