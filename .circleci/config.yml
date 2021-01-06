@@ -1275,7 +1275,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C:
     triggers:
       - schedule:
-          cron: "36 3,8 * * *"
+          cron: "36 6 * * *"
           filters:
             branches:
               only:
@@ -1291,6 +1291,7 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C.json"
 
 
   AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
