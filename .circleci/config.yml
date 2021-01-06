@@ -1272,6 +1272,27 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C"
 
+  GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C:
+    triggers:
+      - schedule:
+          cron: "36 3,8 * * *"
+          filters:
+            branches:
+              only:
+                - 909-b-add-state-to-perf-tests
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C"
+
+
   AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
     triggers:
       - schedule:
@@ -1727,6 +1748,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 909-b-add-state-to-perf-tests
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -2317,7 +2339,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 764-D-modify-basic-perf-tests
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
