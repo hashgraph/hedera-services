@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -102,8 +103,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int TOKEN_ASSOCIATIONS = 6;
 		static final int DISK_FS = 7;
 		static final int NUM_090_CHILDREN = 8;
-		static final int RECORD_STREAM_RUNNING_HASH = 8;
-		static final int NUM_0110_CHILDREN = 9;
+		static final int SCHEDULE_TXS = 8;
+		static final int NUM_0100_CHILDREN = 9;
+		static final int RECORD_STREAM_RUNNING_HASH = 9;
+		static final int NUM_0110_CHILDREN = 10;
 	}
 
 	ServicesContext ctx;
@@ -142,6 +145,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			case RELEASE_0110_VERSION:
 				return ChildIndices.NUM_0110_CHILDREN;
 			case RELEASE_0100_VERSION:
+				return ChildIndices.NUM_0100_CHILDREN;
 			case RELEASE_090_VERSION:
 				return ChildIndices.NUM_090_CHILDREN;
 			case RELEASE_080_VERSION:
@@ -169,6 +173,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			log.info("Created disk file system after <=0.9.0 state restoration");
 			skipDiskFsHashCheck = true;
+		}
+		if (scheduleTxs() == null) {
+			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
+			log.info("Created scheduled txs FCMap after <= 0.10.0 state restoration");
 		}
 		if (runningHashLeaf() == null) {
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH,
@@ -200,7 +208,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
 		boolean initWithMerkle = true;
-		if (getNumberOfChildren() < ChildIndices.NUM_090_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_0100_CHILDREN) {
 			initWithMerkle = false;
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
@@ -214,6 +222,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			setChild(ChildIndices.DISK_FS,
 					new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
+			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 
@@ -318,7 +327,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				tokens().copy(),
 				tokenAssociations().copy(),
 				diskFs().copy(),
-				runningHashLeaf().copy()));
+				scheduleTxs().copy(),
+				runningHashLeaf().copy()
+		));
 	}
 
 	/* --------------- */
@@ -338,6 +349,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						"  Tokens            :: %s\n" +
 						"  TokenAssociations :: %s\n" +
 						"  DiskFs            :: %s\n" +
+						"  ScheduledTxs      :: %s\n" +
 						"  NetworkContext    :: %s\n" +
 						"  AddressBook       :: %s\n" +
 						"  RecordsRunningHashLeaf:: %s\n" +
@@ -349,6 +361,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				tokens().getHash(),
 				tokenAssociations().getHash(),
 				diskFs().getHash(),
+				scheduleTxs().getHash(),
 				networkCtx().getHash(),
 				addressBook().getHash(),
 				runningHashLeaf().getHash(),
@@ -373,6 +386,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return getChild(ChildIndices.TOKEN_ASSOCIATIONS);
+	}
+
+	public FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs() {
+		return getChild(ChildIndices.SCHEDULE_TXS);
 	}
 
 	public MerkleNetworkContext networkCtx() {
