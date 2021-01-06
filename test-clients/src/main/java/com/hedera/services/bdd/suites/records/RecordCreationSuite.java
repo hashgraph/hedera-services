@@ -58,7 +58,10 @@ public class RecordCreationSuite extends HapiApiSuite {
 	private HapiApiSpec accountsGetPayerRecordsIfSoConfigured() {
 		return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")
 				.given(
-						cryptoCreate("payer")
+						cryptoCreate("payer"),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("ledger.keepRecordsInState", "false"))
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
