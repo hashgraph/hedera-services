@@ -41,7 +41,8 @@ message ScheduleInfo {
   AccountID creatorAccountID = 2; // The Account ID which created the Scheduled TX
   AccountID payerAccountID = 3; // The account which is going to pay for the execution of the Scheduled TX
   bytes transactionBody = 4; // The transaction serialized into bytes that must be signed
-  KeyList signers = 7; // The keys that have provided signatures so far for the Scheduled TX
+  KeyList signers = 5; // The keys that have provided signatures so far for the Scheduled TX
+  Key adminKey = 6; // The Key which is able to delete the Scheduled Transaction if set
 }
 
 message ScheduleGetInfoResponse {
