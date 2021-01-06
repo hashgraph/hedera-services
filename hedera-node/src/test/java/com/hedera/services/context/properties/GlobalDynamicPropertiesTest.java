@@ -63,7 +63,7 @@ class GlobalDynamicPropertiesTest {
 		// expect:
 		assertFalse(subject.shouldKeepRecordsInState());
 		assertEquals(1, subject.maxTokensPerAccount());
-		assertEquals(2, subject.maxTokenSymbolLength());
+		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(3L, subject.maxAccountNum());
 		assertEquals(6, subject.maxFileSizeKb());
 		assertEquals(accountWith(1L, 2L, 7L), subject.fundingAccount());
@@ -96,7 +96,7 @@ class GlobalDynamicPropertiesTest {
 		// expect:
 		assertTrue(subject.shouldKeepRecordsInState());
 		assertEquals(2, subject.maxTokensPerAccount());
-		assertEquals(3, subject.maxTokenSymbolLength());
+		assertEquals(3, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(4L, subject.maxAccountNum());
 		assertEquals(7, subject.maxFileSizeKb());
 		assertEquals(accountWith(1L, 2L, 8L), subject.fundingAccount());
@@ -121,7 +121,7 @@ class GlobalDynamicPropertiesTest {
 
 	private void givenPropsWithSeed(int i) {
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
-		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(i + 1);
+		given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long)i + 2);
 		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
