@@ -165,7 +165,6 @@ public class AwareProcessLogic implements ProcessLogic {
 	private void addRecordToStream() {
 		var finalRecord = ctx.recordsHistorian().lastCreatedRecord().get();
 		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
-		log.info("addRecordToStream :: {}", ctx.txnCtx().consensusTime());
 	}
 
 	private void doProcess(PlatformTxnAccessor accessor, Instant consensusTime) {

@@ -173,7 +173,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (runningHashLeaf() == null) {
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH,
 					new RecordsRunningHashLeaf(new RunningHash()));
-			log.info("Created RecordsRunningHashLeaf after <=0.110.0 state restoration");
+			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
 		}
 	}
 

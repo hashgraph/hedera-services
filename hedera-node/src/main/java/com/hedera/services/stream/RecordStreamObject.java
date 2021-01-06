@@ -20,7 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
-import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -91,7 +91,8 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		transactionRecord = TransactionRecord.parseFrom(in.readByteArray(MAX_RECORD_LENGTH));
 		transaction = Transaction.parseFrom(in.readByteArray(MAX_TRANSACTION_LENGTH));
-		consensusTimestamp = MiscUtils.timestampToInstant(transactionRecord.getConsensusTimestamp());
+		final Timestamp timestamp = transactionRecord.getConsensusTimestamp();
+		consensusTimestamp = Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
 	}
 
 	/**
