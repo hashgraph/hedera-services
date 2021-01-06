@@ -1771,9 +1771,7 @@ public class ServicesContext {
 	 * 		initial running Hash of records
 	 */
 	public void setRecordsInitialHash(final Hash recordsInitialHash) {
-		if (recordsInitialHash != null) {
-			this.recordsInitialHash = recordsInitialHash;
-		}
+		this.recordsInitialHash = recordsInitialHash;
 		if (recordStreamManager() != null) {
 			recordStreamManager().setInitialHash(recordsInitialHash);
 		}
