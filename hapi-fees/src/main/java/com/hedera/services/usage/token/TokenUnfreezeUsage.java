@@ -42,8 +42,8 @@ public class TokenUnfreezeUsage extends TokenTxnUsage<TokenUnfreezeUsage> {
 	}
 
 	public FeeData get() {
-		addAccountBpt();
-		addAccountBpt();
+		addEntityBpt();
+		addEntityBpt();
 		return usageEstimator.get();
 	}
 }

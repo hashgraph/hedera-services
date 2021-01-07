@@ -23,11 +23,11 @@ package com.hedera.services.usage.schedule;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 	private ScheduleCreateUsage(TransactionBody scheduleCreationOp, TxnUsageEstimator usageEstimator) {
@@ -46,21 +46,28 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 	public FeeData get() {
 		var op = this.op.getScheduleCreate();
 
-		var baseSize = scheduleEntitySizes.bytesInBaseReprGiven(op.getTransactionBody().toByteArray());
-		baseSize += keySizeIfPresent(op, ScheduleCreateTransactionBody::hasAdminKey, ScheduleCreateTransactionBody::getAdminKey);
+		var txBytes = op.getTransactionBody().toByteArray().length;
+		var ramBytes = scheduleEntitySizes.bytesInBaseReprGiven(op.getTransactionBody().toByteArray());
+		if (op.hasAdminKey()) {
+			long keySize = getAccountKeyStorageSize(op.getAdminKey());
+			txBytes += keySize;
+			ramBytes += keySize;
+		}
 
-		var bptSize = baseSize;
-		var rbSize = baseSize;
+		if (op.hasPayerAccountID()) {
+			txBytes += BASIC_ENTITY_ID_SIZE;
+		}
+
 		if (op.hasSigMap()) {
-			bptSize += scheduleEntitySizes.bptScheduleReprGiven(op.getSigMap());
-			rbSize += scheduleEntitySizes.sigBytesInScheduleReprGiven(op.getSigMap());
+			txBytes += scheduleEntitySizes.bptScheduleReprGiven(op.getSigMap());
+			ramBytes += scheduleEntitySizes.sigBytesInScheduleReprGiven(op.getSigMap());
 		}
 
 		long lifetime = 1_000; // TODO
 
-		usageEstimator.addBpt(bptSize);
-		usageEstimator.addRbs(rbSize * lifetime);
-		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE); // The newly created ScheduleID, set in the receipt
+		usageEstimator.addBpt(txBytes);
+		usageEstimator.addRbs(ramBytes * lifetime);
+		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE); // The newly created ScheduleID that is set in the receipt
 
 		return usageEstimator.get();
 	}

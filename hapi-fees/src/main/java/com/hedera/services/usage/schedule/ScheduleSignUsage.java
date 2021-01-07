@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 	private ScheduleSignUsage(TransactionBody scheduleSignOp, TxnUsageEstimator usageEstimator) {
@@ -42,14 +43,16 @@ public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 	public FeeData get() {
 		var op = this.op.getScheduleSign();
 
-		var baseSize = 0;
+		var txnBytes = BASIC_ENTITY_ID_SIZE;
+		var ramBytes = 0;
 		if (op.hasSigMap()) {
-			baseSize += scheduleEntitySizes.bptScheduleReprGiven(op.getSigMap());
+			txnBytes += scheduleEntitySizes.bptScheduleReprGiven(op.getSigMap());
+			ramBytes += scheduleEntitySizes.sigBytesInScheduleReprGiven(op.getSigMap());
 		}
+		long lifetime = 1_000; // TODO -> Should we estimate the "time left before expiry"
+		usageEstimator.addBpt(txnBytes);
+		usageEstimator.addRbs(ramBytes * lifetime);
 
-		addAccountBpt();
-		usageEstimator.addBpt(baseSize);
-		usageEstimator.addRbs(baseSize);
 		return usageEstimator.get();
 	}
 }
