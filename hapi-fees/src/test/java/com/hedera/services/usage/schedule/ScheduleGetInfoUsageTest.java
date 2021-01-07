@@ -55,11 +55,14 @@ public class ScheduleGetInfoUsageTest {
 	public void assessesRequiredBytes() {
 		// given:
 		subject.givenCurrentAdminKey(adminKey)
-				.givenSigners(signers);
+				.givenSigners(signers)
+				.givenTransaction(transactionBody);
+
 
 		// and:
 		var expectedAdminBytes = FeeBuilder.getAccountKeyStorageSize(adminKey.get());
-		var expectedBytes = expectedAdminBytes + SCHEDULE_ENTITY_SIZES.totalBytesInScheduleReprGiven(transactionBody) + BASIC_ENTITY_ID_SIZE;
+		var signersBytes = signers.get().toByteArray().length;
+		var expectedBytes = expectedAdminBytes + signersBytes + SCHEDULE_ENTITY_SIZES.totalBytesInScheduleReprGiven(transactionBody);
 
 		// when:
 		var usage = subject.get();

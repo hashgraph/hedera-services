@@ -46,9 +46,10 @@ public class ScheduleGetInfoUsage extends QueryUsage {
 		return this;
 	}
 
-//	public ScheduleGetInfoUsage givenTransactionBytes(byte[] transactionBytes) {
-
-//	}
+	public ScheduleGetInfoUsage givenTransaction(byte[] transactionBody) {
+		this.updateRb(transactionBody.length);
+		return this;
+	}
 
 	public ScheduleGetInfoUsage givenSigners(Optional<KeyList> keyList) {
 		keyList.map(kl -> kl.toByteArray().length).ifPresent(this::updateRb);
