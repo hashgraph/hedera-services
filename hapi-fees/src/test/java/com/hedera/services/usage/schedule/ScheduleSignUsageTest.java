@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verify;
 public class ScheduleSignUsageTest {
 
 	long now = 1_000L;
-	long scheduledTXExpiry = 1_000L;
+	int scheduledTXExpiry = 1_000;
 	ScheduleID scheduleID = IdUtils.asSchedule("0.0.1");
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
@@ -86,7 +86,7 @@ public class ScheduleSignUsageTest {
 		givenBaseOp();
 
 		// and:
-		subject = ScheduleSignUsage.newEstimate(txn, sigUsage);
+		subject = ScheduleSignUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -106,7 +106,7 @@ public class ScheduleSignUsageTest {
 		givenOpWithSigMap();
 
 		// and:
-		subject = ScheduleSignUsage.newEstimate(txn, sigUsage);
+		subject = ScheduleSignUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();

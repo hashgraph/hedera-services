@@ -30,12 +30,13 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
-	private ScheduleCreateUsage(TransactionBody scheduleCreationOp, TxnUsageEstimator usageEstimator) {
-		super(scheduleCreationOp, usageEstimator);
+
+	private ScheduleCreateUsage(TransactionBody scheduleCreationOp, TxnUsageEstimator usageEstimator, int txExpirationTimeSecs) {
+		super(scheduleCreationOp, usageEstimator, txExpirationTimeSecs);
 	}
 
-	public static ScheduleCreateUsage newEstimate(TransactionBody scheduleCreationOp, SigUsage sigUsage) {
-		return new ScheduleCreateUsage(scheduleCreationOp, estimatorFactory.get(sigUsage, scheduleCreationOp, ESTIMATOR_UTILS));
+	public static ScheduleCreateUsage newEstimate(TransactionBody scheduleCreationOp, SigUsage sigUsage, int txExpirationTimeSecs) {
+		return new ScheduleCreateUsage(scheduleCreationOp, estimatorFactory.get(sigUsage, scheduleCreationOp, ESTIMATOR_UTILS), txExpirationTimeSecs);
 	}
 
 	@Override
@@ -63,10 +64,8 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 			ramBytes += scheduleEntitySizes.sigBytesInScheduleReprGiven(op.getSigMap());
 		}
 
-		long lifetime = 1_000; // TODO
-
 		usageEstimator.addBpt(txBytes);
-		usageEstimator.addRbs(ramBytes * lifetime);
+		usageEstimator.addRbs(ramBytes * this.expirationTimeSecs);
 		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE); // The newly created ScheduleID that is set in the receipt
 
 		return usageEstimator.get();

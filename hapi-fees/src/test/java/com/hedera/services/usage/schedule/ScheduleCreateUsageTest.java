@@ -27,7 +27,6 @@ import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ScheduleCreate;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -56,7 +55,7 @@ public class ScheduleCreateUsageTest {
 	Key adminKey = KeyUtils.A_THRESHOLD_KEY;
 	byte[] transactionBody = new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
 	long now = 1_000L;
-	long scheduledTXExpiry = 1_000L;
+	int scheduledTXExpiry = 1000;
 	AccountID payer = IdUtils.asAccount("0.0.2");
 
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
@@ -95,7 +94,7 @@ public class ScheduleCreateUsageTest {
 		givenBaseOp();
 
 		// and:
-		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage);
+		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -116,7 +115,7 @@ public class ScheduleCreateUsageTest {
 		givenOpWithAdminKey();
 
 		// and:
-		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage);
+		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -137,7 +136,7 @@ public class ScheduleCreateUsageTest {
 		givenOpWithPayer();
 
 		// and:
-		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage);
+		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -158,7 +157,7 @@ public class ScheduleCreateUsageTest {
 		givenOpWithSigMap();
 
 		// and:
-		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage);
+		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();

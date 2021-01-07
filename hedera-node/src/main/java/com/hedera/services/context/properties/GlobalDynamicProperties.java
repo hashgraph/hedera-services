@@ -51,6 +51,7 @@ public class GlobalDynamicProperties {
 	private int maxGas;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
+	private int scheduledTxExpiryTimeSecs;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -91,6 +92,7 @@ public class GlobalDynamicProperties {
 		maxGas = properties.getIntProperty("contracts.maxGas");
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
+		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
 	}
 
 	public int maxTokensPerAccount() {
@@ -187,5 +189,9 @@ public class GlobalDynamicProperties {
 
 	public int feesTokenTransferUsageMultiplier() {
 		return feesTokenTransferUsageMultiplier;
+	}
+
+	public int scheduledTxExpiryTimeSecs() {
+		return scheduledTxExpiryTimeSecs;
 	}
 }
