@@ -44,7 +44,7 @@ public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 
 		var baseSize = 0;
 		if (op.hasSigMap()) {
-			baseSize += scheduleEntitySizes.totalBytesScheduleSigMapGiven(op.getSigMap());
+			baseSize += scheduleEntitySizes.bptScheduleReprGiven(op.getSigMap());
 		}
 
 		addAccountBpt();

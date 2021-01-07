@@ -46,15 +46,21 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 	public FeeData get() {
 		var op = this.op.getScheduleCreate();
 
-		var baseSize = scheduleEntitySizes.totalBytesInScheduleReprGiven(op.getTransactionBody().toByteArray());
+		var baseSize = scheduleEntitySizes.bytesInBaseReprGiven(op.getTransactionBody().toByteArray());
 		baseSize += keySizeIfPresent(op, ScheduleCreateTransactionBody::hasAdminKey, ScheduleCreateTransactionBody::getAdminKey);
+
+		var bptSize = baseSize;
+		var rbSize = baseSize;
 		if (op.hasSigMap()) {
-			baseSize += scheduleEntitySizes.totalBytesScheduleSigMapGiven(op.getSigMap());
+			bptSize += scheduleEntitySizes.bptScheduleReprGiven(op.getSigMap());
+			rbSize += scheduleEntitySizes.sigBytesInScheduleReprGiven(op.getSigMap());
 		}
 
-		usageEstimator.addBpt(baseSize);
-		usageEstimator.addRbs(baseSize);
-		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE);
+		long lifetime = 1_000; // TODO
+
+		usageEstimator.addBpt(bptSize);
+		usageEstimator.addRbs(rbSize * lifetime);
+		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE); // The newly created ScheduleID, set in the receipt
 
 		return usageEstimator.get();
 	}

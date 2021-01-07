@@ -24,12 +24,13 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 
 public enum ScheduleEntitySizes {
 	SCHEDULE_ENTITY_SIZES;
 
 	/* { deleted } */
-	static int NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION = 3;
+	static int NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
 	/* { payer, schedulingAccount } */
 	static int NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 2;
 	/* { schedulingTXValidStart } */
@@ -41,11 +42,14 @@ public enum ScheduleEntitySizes {
 				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
 	}
 
-	public int totalBytesInScheduleReprGiven(byte[] transactionBody) {
+	public int bytesInBaseReprGiven(byte[] transactionBody) {
 		return fixedBytesInScheduleRepr() + transactionBody.length;
 	}
 
-	public int totalBytesScheduleSigMapGiven(SignatureMap sigMap) {
+	/**
+	 * Signature map is not stored in state, we only need it for bpt
+	 */
+	public int bptScheduleReprGiven(SignatureMap sigMap) {
 		var bytes = 0;
 		for (SignaturePair signaturePair : sigMap.getSigPairList()) {
 			bytes += signaturePair.getPubKeyPrefix().size() +
@@ -55,5 +59,12 @@ public enum ScheduleEntitySizes {
 					signaturePair.getECDSA384().size();
 		}
 		return bytes;
+	}
+
+	/**
+	 * For a given Scheduled Entity, a set of simple JKEYs are stored
+	 */
+	public int sigBytesInScheduleReprGiven(SignatureMap sigMap) {
+		return sigMap.getSigPairCount() * KEY_SIZE;
 	}
 }
