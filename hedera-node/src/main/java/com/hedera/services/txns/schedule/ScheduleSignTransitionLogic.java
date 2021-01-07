@@ -50,11 +50,11 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
     }
 
     private void transitionFor(ScheduleSignTransactionBody op) {
-        // TODO: Implement transitionFor() functionality
+        throw new UnsupportedOperationException();
     }
 
     private void abortWith(ResponseCodeEnum cause) {
-        // TODO: Implement abortWith() failure functionality
+        throw new UnsupportedOperationException();
     }
 
     @Override

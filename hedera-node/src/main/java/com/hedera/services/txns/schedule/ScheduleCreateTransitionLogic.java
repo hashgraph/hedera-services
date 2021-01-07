@@ -52,10 +52,12 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
     private void transitionFor(ScheduleCreateTransactionBody op) {
         // TODO: Implement transitionFor() functionality
+        throw new UnsupportedOperationException();
     }
 
     private void abortWith(ResponseCodeEnum cause) {
         // TODO: Implement abortWith() failure functionality
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -9,8 +9,12 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GetScheduleInfoResourceUsageTest {
@@ -32,6 +36,22 @@ public class GetScheduleInfoResourceUsageTest {
         // expect:
         assertTrue(subject.applicableTo(applicable));
         assertFalse(subject.applicableTo(inapplicable));
+    }
+
+    @Test
+    public void usageGivenToDo() {
+        assertNull(subject.usageGiven(scheduleInfoQuery(target, COST_ANSWER), null));
+    }
+
+    @Test
+    public void usageGivenWithContextToDo() {
+        Map<String, Object> context = new HashMap<>();
+        assertNull(subject.usageGiven(scheduleInfoQuery(target, COST_ANSWER), null, context));
+    }
+
+    @Test
+    public void usageGivenTypeToDo() {
+        assertNull(subject.usageGivenType(scheduleInfoQuery(target, COST_ANSWER), null, COST_ANSWER));
     }
 
     private Query scheduleInfoQuery(ScheduleID id, ResponseType type) {
