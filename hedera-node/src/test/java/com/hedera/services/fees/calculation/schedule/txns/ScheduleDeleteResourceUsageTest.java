@@ -7,6 +7,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -34,5 +35,10 @@ public class ScheduleDeleteResourceUsageTest {
         // expect:
         assertTrue(subject.applicableTo(scheduleDeleteTxn));
         assertFalse(subject.applicableTo(nonScheduleDeleteTxn));
+    }
+
+    @Test
+    public void usageGivenNotSupported() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.usageGiven(scheduleDeleteTxn, null, null));
     }
 }

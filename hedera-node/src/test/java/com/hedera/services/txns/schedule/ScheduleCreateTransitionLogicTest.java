@@ -19,10 +19,10 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -67,6 +67,12 @@ public class ScheduleCreateTransitionLogicTest {
         // expect:
         assertTrue(subject.applicability().test(scheduleCreateTxn));
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+    }
+
+    @Test
+    public void doStateTransitionIsUnsupported() {
+        givenValidTxnCtx();
+        assertThrows(UnsupportedOperationException.class, () -> subject.doStateTransition());
     }
 
     @Test
