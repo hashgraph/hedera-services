@@ -70,19 +70,8 @@ public class ScheduleCreateTransitionLogicTest {
     }
 
     @Test
-    public void failsOnExecuteImmediatelyFalse() {
-        givenCtx(
-                true,
-                false);
-
-        // expect:
-        assertEquals(NOT_SUPPORTED, subject.validate(scheduleCreateTxn));
-    }
-
-    @Test
     public void failsOnInvalidAdminKey() {
         givenCtx(
-                false,
                 true);
 
         // expect:
@@ -91,12 +80,10 @@ public class ScheduleCreateTransitionLogicTest {
 
     private void givenValidTxnCtx() {
         givenCtx(
-                false,
                 false);
     }
 
     private void givenCtx(
-            boolean invalidExecuteImmediately,
             boolean invalidAdminKey
             ) {
         sigMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
@@ -105,12 +92,7 @@ public class ScheduleCreateTransitionLogicTest {
         var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
                 .setSigMap(sigMap)
                 .setAdminKey(key)
-                .setExecuteImmediately(yes)
                 .setPayerAccountID(payer);
-
-        if (invalidExecuteImmediately) {
-            scheduleCreate.setExecuteImmediately(no);
-        }
 
         if (invalidAdminKey) {
             scheduleCreate.setAdminKey(invalidKey);

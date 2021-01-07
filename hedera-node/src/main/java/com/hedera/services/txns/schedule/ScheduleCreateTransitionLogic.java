@@ -73,10 +73,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
         ScheduleCreateTransactionBody op = txnBody.getScheduleCreate();
 
-        if (!op.getExecuteImmediately()) {
-            return NOT_SUPPORTED;
-        }
-
         validity = checkAdminKey(
                 op.hasAdminKey(), op.getAdminKey()
         );
