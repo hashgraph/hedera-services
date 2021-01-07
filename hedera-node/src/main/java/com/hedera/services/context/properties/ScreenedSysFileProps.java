@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.LogManager;
@@ -71,7 +72,13 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("accountBalanceExportPeriodMinutes", legacy -> "" + (60 * Integer.parseInt(legacy)))
 	);
 	private static Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
-			entry("rates.intradayChangeLimitPercent", limitPercent -> (int)limitPercent > 0)
+			entry("rates.intradayChangeLimitPercent", limitPercent -> (int)limitPercent > 0),
+			entry(
+					"tokens.maxSymbolUtf8Bytes",
+					maxUtf8Bytes -> (int)maxUtf8Bytes <= MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES),
+			entry(
+					"tokens.maxTokenNameUtf8Bytes",
+					maxUtf8Bytes -> (int)maxUtf8Bytes <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES)
 	);
 
 	Map<String, Object>	from121 = Collections.emptyMap();

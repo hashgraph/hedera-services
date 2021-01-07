@@ -163,7 +163,7 @@ public class TopicCreateSuite extends HapiApiSuite {
 
 
 	private HapiApiSpec signingRequirementsEnforced() {
-		long PAYER_BALANCE = 1_999_999_999_999L;
+		long PAYER_BALANCE = 1_999_999_999L;
 
 		return defaultHapiSpec("SigningRequirementsEnforced")
 				.given(
