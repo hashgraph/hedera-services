@@ -179,6 +179,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 			log.info("Created scheduled txs FCMap after <= 0.10.0 state restoration");
 		}
+		if (runningHashLeaf() == null) {
+			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH,
+					new RecordsRunningHashLeaf(new RunningHash()));
+			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
+		}
 	}
 
 	@Override
@@ -234,7 +239,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			}
 		}
 
-		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN || runningHashLeaf().getRunningHash().getHash() == null) {
 			// read file hash from the last record stream .rcd_sig file and set it as initial value of
 			// records running Hash
 			ImmutableHash hash = new ImmutableHash(RecordStream.readPrevFileHash(ctx.getRecordStreamDirectory()));

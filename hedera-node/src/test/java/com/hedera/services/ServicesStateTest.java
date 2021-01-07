@@ -256,6 +256,7 @@ class ServicesStateTest {
 		assertNotNull(subject.tokens());
 		assertNotNull(subject.tokenAssociations());
 		assertNotNull(subject.diskFs());
+		assertNotNull(subject.runningHashLeaf());
 		// and:
 		assertTrue(subject.skipDiskFsHashCheck);
 	}
