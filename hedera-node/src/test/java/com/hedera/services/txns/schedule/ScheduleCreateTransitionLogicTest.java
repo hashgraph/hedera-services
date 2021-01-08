@@ -19,6 +19,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -82,6 +83,14 @@ public class ScheduleCreateTransitionLogicTest {
 
         // expect:
         assertEquals(INVALID_ADMIN_KEY, subject.validate(scheduleCreateTxn));
+    }
+
+    @Test
+    public void syntaxCheckWorks() {
+        givenValidTxnCtx();
+
+        // expect:
+        assertEquals(OK, subject.syntaxCheck().apply(scheduleCreateTxn));
     }
 
     private void givenValidTxnCtx() {
