@@ -1321,7 +1321,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1342,7 +1342,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1362,7 +1362,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-start-from-saved-state-regression:
@@ -1382,7 +1382,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
 
     jobs:
       - build-platform-and-services
@@ -1424,7 +1424,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-reconnect-regression:
@@ -1444,7 +1444,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - rel-v0.10.0
+                  - Disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1509,7 +1509,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - rel-v0.10.0
+                  - Disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1581,7 +1581,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1669,7 +1669,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
