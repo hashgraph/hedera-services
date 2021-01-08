@@ -63,7 +63,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 	private HapiApiSpec transactionsWithOnlySigMap() {
 		return defaultHapiSpec("TransactionsWithOnlySigMap")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1L))
 								.via("failedCryptoTransaction")
 								.asTxnWithOnlySigMap()
 								.hasPrecheck(INVALID_TRANSACTION_BODY),

@@ -14,12 +14,10 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.validation.ScheduleList.checkAdminKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_SIGNERS_LIST;
+import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_THRESHOLD;
 
 public class ScheduleCreateTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
@@ -45,7 +43,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     @Override
     public void doStateTransition() {
         try {
-            transitionFor(txnCtx.accessor().getTxn().getScheduleCreation());
+            transitionFor(txnCtx.accessor().getTxn().getScheduleCreate());
         } catch (Exception e) {
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
             abortWith(FAIL_INVALID);
@@ -54,15 +52,17 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
     private void transitionFor(ScheduleCreateTransactionBody op) {
         // TODO: Implement transitionFor() functionality
+        throw new UnsupportedOperationException();
     }
 
     private void abortWith(ResponseCodeEnum cause) {
         // TODO: Implement abortWith() failure functionality
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Predicate<TransactionBody> applicability() {
-        return TransactionBody::hasScheduleCreation;
+        return TransactionBody::hasScheduleCreate;
     }
 
     @Override
@@ -73,11 +73,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         var validity = OK;
 
-        ScheduleCreateTransactionBody op = txnBody.getScheduleCreation();
-
-        if (!op.getExecuteImmediately()) {
-            return NOT_SUPPORTED;
-        }
+        ScheduleCreateTransactionBody op = txnBody.getScheduleCreate();
 
         validity = checkAdminKey(
                 op.hasAdminKey(), op.getAdminKey()
@@ -86,13 +82,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
             return validity;
         }
 
-        var signers = op.getSigners().getAccountsList();
-        if (signers.isEmpty()) {
-            return EMPTY_SIGNERS_LIST;
-        }
-        if (signers.size() < op.getSigners().getThreshold()) {
-            return INVALID_SCHEDULE_THRESHOLD;
-        }
         return validity;
     }
 }

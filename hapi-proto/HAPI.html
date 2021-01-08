@@ -231,6 +231,10 @@
                 </li>
               
                 <li>
+                  <a href="#proto.ScheduleID"><span class="badge">M</span>ScheduleID</a>
+                </li>
+              
+                <li>
                   <a href="#proto.SemanticVersion"><span class="badge">M</span>SemanticVersion</a>
                 </li>
               
@@ -1133,6 +1137,89 @@
               
                 <li>
                   <a href="#proto.ResponseHeader"><span class="badge">M</span>ResponseHeader</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleCreate.proto">ScheduleCreate.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.ScheduleCreateTransactionBody"><span class="badge">M</span>ScheduleCreateTransactionBody</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleDelete.proto">ScheduleDelete.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.ScheduleDeleteTransactionBody"><span class="badge">M</span>ScheduleDeleteTransactionBody</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleGetInfo.proto">ScheduleGetInfo.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.ScheduleGetInfoQuery"><span class="badge">M</span>ScheduleGetInfoQuery</a>
+                </li>
+              
+                <li>
+                  <a href="#proto.ScheduleGetInfoResponse"><span class="badge">M</span>ScheduleGetInfoResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#proto.ScheduleInfo"><span class="badge">M</span>ScheduleInfo</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleService.proto">ScheduleService.proto</a>
+            <ul>
+              
+              
+              
+              
+                <li>
+                  <a href="#proto.ScheduleService"><span class="badge">S</span>ScheduleService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleSign.proto">ScheduleSign.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.ScheduleSignTransactionBody"><span class="badge">M</span>ScheduleSignTransactionBody</a>
                 </li>
               
               
@@ -2140,6 +2227,44 @@
 
         
       
+        <h3 id="proto.ScheduleID">ScheduleID</h3>
+        <p>Unique identifier for a schedule entity</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>shardNum</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>A nonnegative shard number </p></td>
+                </tr>
+              
+                <tr>
+                  <td>realmNum</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>A nonnegative realm number </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleNum</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>A nonnegative schedule number </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="proto.SemanticVersion">SemanticVersion</h3>
         <p></p>
 
@@ -3000,7 +3125,7 @@
               <tr>
                 <td>TokenGetInfo</td>
                 <td>58</td>
-                <td><p>Get token information</p></td>
+                <td><p>Get Token information</p></td>
               </tr>
             
               <tr>
@@ -3067,6 +3192,30 @@
                 <td>TokenDissociateFromAccount</td>
                 <td>69</td>
                 <td><p>Dissociate tokens from an account</p></td>
+              </tr>
+            
+              <tr>
+                <td>ScheduleCreate</td>
+                <td>70</td>
+                <td><p>Create Scheduled Transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>ScheduleDelete</td>
+                <td>71</td>
+                <td><p>Delete Scheduled Transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>ScheduleSign</td>
+                <td>72</td>
+                <td><p>Sign Scheduled Transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>ScheduleGetInfo</td>
+                <td>73</td>
+                <td><p>Get Scheduled Transaction Information</p></td>
               </tr>
             
           </tbody>
@@ -3577,14 +3726,14 @@ and the topic will expire and after AUTORENEW_GRACE_PERIOD be automatically dele
                   <td>autoRenewPeriod</td>
                   <td><a href="#proto.Duration">Duration</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>If an auto-renew account is specified, when the topic expires, its lifetime will be extended by up to this duration (depending on the solvency of the auto-renew account). If the auto-renew account has no funds at all, the topic will be deleted instead. </p></td>
                 </tr>
               
                 <tr>
                   <td>autoRenewAccount</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p>Null if there is no autoRenewAccount. </p></td>
+                  <td><p>The account, if any, to charge for automatic renewal of the topic&#39;s lifetime upon expiry. </p></td>
                 </tr>
               
             </tbody>
@@ -4893,7 +5042,7 @@ If unspecified, no change. </p></td>
                   <td>header</td>
                   <td><a href="#proto.ResponseHeader">ResponseHeader</a></td>
                   <td></td>
-                  <td><p>Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither </p></td>
+                  <td><p>Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither. </p></td>
                 </tr>
               
                 <tr>
@@ -4907,14 +5056,14 @@ If unspecified, no change. </p></td>
                   <td>balance</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>The current balance, in tinybars </p></td>
+                  <td><p>The current balance, in tinybars. </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenBalances</td>
                   <td><a href="#proto.TokenBalance">TokenBalance</a></td>
                   <td>repeated</td>
-                  <td><p>The array of tokens that the account possesses </p></td>
+                  <td><p>The token balances possessed by the target account. </p></td>
                 </tr>
               
             </tbody>
@@ -4925,7 +5074,7 @@ If unspecified, no change. </p></td>
         
       
         <h3 id="proto.TokenBalance">TokenBalance</h3>
-        <p>Contains information the balance of an Account in regards to the corresponding Token ID</p>
+        <p>A number of <i>transferable units</i> of a certain token.</p><p>The transferable unit of a token is its smallest denomination, as given by the token's <tt>decimals</tt> property---each minted token contains <tt>10<sup>decimals</sup></tt> transferable units. For example, we could think of the cent as the transferable unit of the US dollar (<tt>decimals=2</tt>); and the tinybar as the transferable unit of hbar (<tt>decimals=8</tt>).</p><p>Transferable units are not directly comparable across different tokens.</p>
 
         
           <table class="field-table">
@@ -4938,14 +5087,14 @@ If unspecified, no change. </p></td>
                   <td>tokenId</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p>The ID of the token </p></td>
+                  <td><p>A unique token id </p></td>
                 </tr>
               
                 <tr>
                   <td>balance</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>The current token balance </p></td>
+                  <td><p>A number of transferable units of the identified token </p></td>
                 </tr>
               
             </tbody>
@@ -4956,7 +5105,7 @@ If unspecified, no change. </p></td>
         
       
         <h3 id="proto.TokenBalances">TokenBalances</h3>
-        <p></p>
+        <p>A sequence of token balances, for use in a v2 account balances CSV export.</p>
 
         
           <table class="field-table">
@@ -6859,14 +7008,14 @@ If unspecified, no change. </p></td>
                   <td>hapiProtoVersion</td>
                   <td><a href="#proto.SemanticVersion">SemanticVersion</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The Hedera API (HAPI) protobuf version recognized by the responding node. </p></td>
                 </tr>
               
                 <tr>
                   <td>hederaServicesVersion</td>
                   <td><a href="#proto.SemanticVersion">SemanticVersion</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The version of the Hedera Services software deployed on the responding node. </p></td>
                 </tr>
               
             </tbody>
@@ -6915,7 +7064,7 @@ If unspecified, no change. </p></td>
                 <td>uncheckedSubmit</td>
                 <td><a href="#proto.Transaction">Transaction</a></td>
                 <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
-                <td><p></p></td>
+                <td><p>Submits a &#34;wrapped&#34; transaction to the network, skipping its standard prechecks. (Note that the &#34;wrapper&#34; &lt;tt&gt;UncheckedSubmit&lt;/tt&gt; transaction is still subject to normal prechecks, including an authorization requirement that its payer be either the treasury or system admin account.)</p></td>
               </tr>
             
           </tbody>
@@ -7063,7 +7212,7 @@ If unspecified, no change. </p></td>
                   <td>networkGetVersionInfo</td>
                   <td><a href="#proto.NetworkGetVersionInfoQuery">NetworkGetVersionInfoQuery</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Get the versions of the HAPI protobuf and Hedera Services software deployed on the responding node. </p></td>
                 </tr>
               
                 <tr>
@@ -7071,6 +7220,13 @@ If unspecified, no change. </p></td>
                   <td><a href="#proto.TokenGetInfoQuery">TokenGetInfoQuery</a></td>
                   <td></td>
                   <td><p>Get all information about a token </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleGetInfo</td>
+                  <td><a href="#proto.ScheduleGetInfoQuery">ScheduleGetInfoQuery</a></td>
+                  <td></td>
+                  <td><p>Get all information about a scheduled entity </p></td>
                 </tr>
               
             </tbody>
@@ -7315,6 +7471,13 @@ If unspecified, no change. </p></td>
                   <td><a href="#proto.TokenGetInfoResponse">TokenGetInfoResponse</a></td>
                   <td></td>
                   <td><p>Get all information about a token </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleGetInfo</td>
+                  <td><a href="#proto.ScheduleGetInfoResponse">ScheduleGetInfoResponse</a></td>
+                  <td></td>
+                  <td><p>Get all information about a schedule entity </p></td>
                 </tr>
               
             </tbody>
@@ -8029,13 +8192,13 @@ If unspecified, no change. </p></td>
               <tr>
                 <td>INVALID_ADMIN_KEY</td>
                 <td>155</td>
-                <td><p></p></td>
+                <td><p>A provided admin key was invalid.</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_SUBMIT_KEY</td>
                 <td>156</td>
-                <td><p></p></td>
+                <td><p>A provided submit key was invalid.</p></td>
               </tr>
             
               <tr>
@@ -8091,7 +8254,7 @@ by HAPI.</p></td>
               <tr>
                 <td>TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED</td>
                 <td>166</td>
-                <td><p>Maximum number of token relations for agiven account is exceeded</p></td>
+                <td><p>Maximum number of token relations for a given account is exceeded</p></td>
               </tr>
             
               <tr>
@@ -8139,13 +8302,13 @@ by HAPI.</p></td>
               <tr>
                 <td>MISSING_TOKEN_SYMBOL</td>
                 <td>174</td>
-                <td><p>Token Symbol is not provided</p></td>
+                <td><p>A token symbol was not provided</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_SYMBOL_TOO_LONG</td>
                 <td>175</td>
-                <td><p>Token Symbol is too long</p></td>
+                <td><p>The provided token symbol was too long</p></td>
               </tr>
             
               <tr>
@@ -8187,49 +8350,49 @@ by HAPI.</p></td>
               <tr>
                 <td>INVALID_TOKEN_MINT_AMOUNT</td>
                 <td>182</td>
-                <td><p></p></td>
+                <td><p>The requested token mint amount would cause an invalid total supply</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_TOKEN_BURN_AMOUNT</td>
                 <td>183</td>
-                <td><p></p></td>
+                <td><p>The requested token burn amount would cause an invalid total supply</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_NOT_ASSOCIATED_TO_ACCOUNT</td>
                 <td>184</td>
-                <td><p></p></td>
+                <td><p>A required token-account relationship is missing</p></td>
               </tr>
             
               <tr>
                 <td>CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT</td>
                 <td>185</td>
-                <td><p>Cannot execute wipe operation on treasury account</p></td>
+                <td><p>The target of a wipe operation was the token treasury account</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_KYC_KEY</td>
                 <td>186</td>
-                <td><p></p></td>
+                <td><p>The provided KYC key was invalid.</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_WIPE_KEY</td>
                 <td>187</td>
-                <td><p></p></td>
+                <td><p>The provided wipe key was invalid.</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_FREEZE_KEY</td>
                 <td>188</td>
-                <td><p></p></td>
+                <td><p>The provided freeze key was invalid.</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_SUPPLY_KEY</td>
                 <td>189</td>
-                <td><p></p></td>
+                <td><p>The provided supply key was invalid.</p></td>
               </tr>
             
               <tr>
@@ -8298,6 +8461,12 @@ by HAPI.</p></td>
                 <td><p>TokenTransfersTransactionBody has a TokenTransferList with no AccountAmounts</p></td>
               </tr>
             
+              <tr>
+                <td>INVALID_SCHEDULE_ID</td>
+                <td>201</td>
+                <td><p>The scheduled transaction entity is invalid or does not exist</p></td>
+              </tr>
+            
           </tbody>
         </table>
       
@@ -8349,6 +8518,337 @@ by HAPI.</p></td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
                   <td><p>The state proof for this information (if a state proof was requested, and is available) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleCreate.proto">ScheduleCreate.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.ScheduleCreateTransactionBody">ScheduleCreateTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>transactionBody</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The transaction serialized into bytes that must be signed </p></td>
+                </tr>
+              
+                <tr>
+                  <td>adminKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>(optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>payerAccountID</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>(optional) The account which is going to pay for the execution of the Scheduled TX. If not populated, the scheduling account is charged </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sigMap</td>
+                  <td><a href="#proto.SignatureMap">SignatureMap</a></td>
+                  <td></td>
+                  <td><p>(optional) Signatures that could be provided (similarly to how signatures are provided in ScheduleSign operation) on Scheduled Transaction creation </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleDelete.proto">ScheduleDelete.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.ScheduleDeleteTransactionBody">ScheduleDeleteTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>The ID of the Scheduled Entity </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleGetInfo.proto">ScheduleGetInfo.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.ScheduleGetInfoQuery">ScheduleGetInfoQuery</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>header</td>
+                  <td><a href="#proto.QueryHeader">QueryHeader</a></td>
+                  <td></td>
+                  <td><p>standard info sent from client to node including the signed payment, and what kind of response is requested (cost, state proof, both, or neither). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>The ID of the Scheduled Entity </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="proto.ScheduleGetInfoResponse">ScheduleGetInfoResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>header</td>
+                  <td><a href="#proto.ResponseHeader">ResponseHeader</a></td>
+                  <td></td>
+                  <td><p>Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleInfo</td>
+                  <td><a href="#proto.ScheduleInfo">ScheduleInfo</a></td>
+                  <td></td>
+                  <td><p>The information requested about this schedule instance </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="proto.ScheduleInfo">ScheduleInfo</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>The ID of the Scheduled Entity </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creatorAccountID</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>The Account ID which created the Scheduled TX </p></td>
+                </tr>
+              
+                <tr>
+                  <td>payerAccountID</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>The account which is going to pay for the execution of the Scheduled TX </p></td>
+                </tr>
+              
+                <tr>
+                  <td>transactionBody</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The transaction serialized into bytes that must be signed </p></td>
+                </tr>
+              
+                <tr>
+                  <td>signers</td>
+                  <td><a href="#proto.KeyList">KeyList</a></td>
+                  <td></td>
+                  <td><p>The keys that have provided signatures so far for the Scheduled TX </p></td>
+                </tr>
+              
+                <tr>
+                  <td>adminKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The Key which is able to delete the Scheduled Transaction if set </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleService.proto">ScheduleService.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+
+      
+
+      
+
+      
+        <h3 id="proto.ScheduleService">ScheduleService</h3>
+        <p>Transactions and queries for the Schedule Service</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>createSchedule</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Creates a new Schedule by submitting the transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>signSchedule</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Signs a new Schedule by submitting the transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>deleteSchedule</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Deletes a new Schedule by submitting the transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>getScheduleInfo</td>
+                <td><a href="#proto.Query">Query</a></td>
+                <td><a href="#proto.Response">Response</a></td>
+                <td><p>Retrieves the metadata of a schedule entity</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleSign.proto">ScheduleSign.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.ScheduleSignTransactionBody">ScheduleSignTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>The ID of the Scheduled entity </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sigMap</td>
+                  <td><a href="#proto.SignatureMap">SignatureMap</a></td>
+                  <td></td>
+                  <td><p>The signature map containing the signature(s) to authorise the transaction </p></td>
                 </tr>
               
             </tbody>
@@ -8841,7 +9341,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>expiry</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Timestamp">Timestamp</a></td>
                   <td></td>
                   <td><p>The epoch second at which the token should expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod </p></td>
                 </tr>
@@ -8855,7 +9355,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>autoRenewPeriod</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Duration">Duration</a></td>
                   <td></td>
                   <td><p>The interval at which the auto-renew account will be charged to extend the token&#39;s expiry </p></td>
                 </tr>
@@ -9173,7 +9673,7 @@ by HAPI.</p></td>
                 </tr>
               
                 <tr>
-                  <td>isDeleted</td>
+                  <td>deleted</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Specifies whether the token was deleted or not </p></td>
@@ -9188,16 +9688,16 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>autoRenewPeriod</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Duration">Duration</a></td>
                   <td></td>
                   <td><p>The interval at which the auto-renew account will be charged to extend the token&#39;s expiry </p></td>
                 </tr>
               
                 <tr>
                   <td>expiry</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Timestamp">Timestamp</a></td>
                   <td></td>
-                  <td><p>The epoch second at which the token will expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod </p></td>
+                  <td><p>The epoch second at which the token will expire </p></td>
                 </tr>
               
             </tbody>
@@ -9600,14 +10100,14 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>autoRenewPeriod</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Duration">Duration</a></td>
                   <td></td>
                   <td><p>The new interval at which the auto-renew account will be charged to extend the token&#39;s expiry. </p></td>
                 </tr>
               
                 <tr>
                   <td>expiry</td>
-                  <td><a href="#uint64">uint64</a></td>
+                  <td><a href="#proto.Timestamp">Timestamp</a></td>
                   <td></td>
                   <td><p>The new expiry time of the token. Expiry can be updated even if admin key is not set. If the provided expiry is earlier than the current token expiry, transaction wil resolve to INVALID_EXPIRATION_TIME </p></td>
                 </tr>
@@ -10051,6 +10551,27 @@ by HAPI.</p></td>
                   <td><a href="#proto.TokenDissociateTransactionBody">TokenDissociateTransactionBody</a></td>
                   <td></td>
                   <td><p>Dissociate tokens from an account </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleCreate</td>
+                  <td><a href="#proto.ScheduleCreateTransactionBody">ScheduleCreateTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Creates a scheduled transaction instance </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleDelete</td>
+                  <td><a href="#proto.ScheduleDeleteTransactionBody">ScheduleDeleteTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Deletes a scheduled transaction instance </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleSign</td>
+                  <td><a href="#proto.ScheduleSignTransactionBody">ScheduleSignTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Signs a scheduled transaction instance </p></td>
                 </tr>
               
             </tbody>
@@ -10512,10 +11033,24 @@ Otherwise, IF the topicRunningHashVersion is &#39;3&#39;, then the input data to
                 </tr>
               
                 <tr>
-                  <td>tokenId</td>
+                  <td>tokenID</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>In the receipt of a CreateToken, the id of the newly created token </p></td>
+                </tr>
+              
+                <tr>
+                  <td>newTotalSupply</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>In the receipt of TokenMint, TokenWipe, TokenBurn, the current total supply of this token </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>In the receipt of a CreateSchedule, the id of the newly created Scheduled Entity </p></td>
                 </tr>
               
             </tbody>
@@ -10617,6 +11152,13 @@ Otherwise, IF the topicRunningHashVersion is &#39;3&#39;, then the input data to
                   <td><a href="#proto.TokenTransferList">TokenTransferList</a></td>
                   <td>repeated</td>
                   <td><p>All Token transfers as a result of this transaction </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleRef</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>Reference to the scheduled transaction ID that this transaction record represent </p></td>
                 </tr>
               
             </tbody>

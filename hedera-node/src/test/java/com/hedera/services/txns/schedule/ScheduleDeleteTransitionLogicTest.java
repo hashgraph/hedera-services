@@ -18,6 +18,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
@@ -43,6 +45,14 @@ public class ScheduleDeleteTransitionLogicTest {
         txnCtx = mock(TransactionContext.class);
 
         subject = new ScheduleDeleteTransitionLogic(validator, store, ledger, txnCtx);
+    }
+
+    @Test
+    public void doStateTransitionIsUnsupported() {
+        givenValidTxnCtx();
+
+        // expect:
+        assertThrows(UnsupportedOperationException.class, () -> subject.doStateTransition());
     }
 
     @Test
@@ -72,14 +82,16 @@ public class ScheduleDeleteTransitionLogicTest {
     ) {
         var builder = TransactionBody.newBuilder();
         var scheduleDelete = ScheduleDeleteTransactionBody.newBuilder()
-                .setSchedule(schedule);
+                .setScheduleID(schedule);
 
         if (invalidScheduleId) {
-            scheduleDelete.clearSchedule();
+            scheduleDelete.clearScheduleID();
         }
 
-        builder.setScheduleDelete(scheduleDelete);
+        builder.setScheduleDelete(scheduleDelete.build());
 
         scheduleDeleteTxn = builder.build();
+        given(accessor.getTxn()).willReturn(scheduleDeleteTxn);
+        given(txnCtx.accessor()).willReturn(accessor);
     }
 }
