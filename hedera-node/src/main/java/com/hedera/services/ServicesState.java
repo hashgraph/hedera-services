@@ -105,8 +105,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int TOKEN_ASSOCIATIONS = 6;
 		static final int DISK_FS = 7;
 		static final int NUM_090_CHILDREN = 8;
+		static final int NUM_0100_CHILDREN = 8;
 		static final int SCHEDULE_TXS = 8;
-		static final int NUM_0100_CHILDREN = 9;
 		static final int RECORD_STREAM_RUNNING_HASH = 9;
 		static final int NUM_0110_CHILDREN = 10;
 	}
@@ -211,7 +211,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
 		boolean initWithMerkle = true;
-		if (getNumberOfChildren() < ChildIndices.NUM_0100_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN) {
 			initWithMerkle = false;
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
