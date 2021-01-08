@@ -241,7 +241,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			}
 		}
 
-		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN || runningHashLeaf().getRunningHash().getHash() == null) {
+		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN
+				|| runningHashLeaf().getRunningHash().getHash().equals(emptyHash)) {
 			// read file hash from the last record stream .rcd_sig file and set it as initial value of
 			// records running Hash
 			ImmutableHash hash = new ImmutableHash(RecordStream.readPrevFileHash(ctx.getRecordStreamDirectory()));
