@@ -48,6 +48,7 @@ public class RunLoadTest extends UtilOp {
 	private static final TimeUnit DEFAULT_DURATION_UNIT = TimeUnit.SECONDS;
 	private static final int DEFAULT_THREADS = 1;
 	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE = 256;
+	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE_VAR = 64;
 	public static final int DEFAULT_TOTAL_TEST_ACCOUNTS = 2;
 	public static final int DEFAULT_TOTAL_TEST_TOPICS = 1;
 	public static final int DEFAULT_TOTAL_TEST_TOKENS = 1;
@@ -59,6 +60,7 @@ public class RunLoadTest extends UtilOp {
 	private Supplier<TimeUnit> ofUnit = () -> DEFAULT_DURATION_UNIT;
 	private IntSupplier threads = () -> DEFAULT_THREADS;
 	private IntSupplier hcsSubmitMessageSize = () -> DEFAULT_SUBMIT_MESSAGE_SIZE;
+	private IntSupplier hcsSubmitMessageSizeVar = () -> DEFAULT_SUBMIT_MESSAGE_SIZE_VAR;
 	private IntSupplier totalTestAccounts = () -> DEFAULT_TOTAL_TEST_ACCOUNTS;
 	private IntSupplier totalTestTopics = () -> DEFAULT_TOTAL_TEST_TOPICS;
 	private IntSupplier totalTestTokens = () -> DEFAULT_TOTAL_TEST_TOKENS;
@@ -104,6 +106,11 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest setHCSSubmitMessageSize(IntSupplier submitMessageSize) {
 		this.hcsSubmitMessageSize = submitMessageSize;
+		return this;
+	}
+
+	public RunLoadTest setHCSSubmitMessageSizeVar(IntSupplier submitMessageSizeVar) {
+		this.hcsSubmitMessageSizeVar = submitMessageSizeVar;
 		return this;
 	}
 

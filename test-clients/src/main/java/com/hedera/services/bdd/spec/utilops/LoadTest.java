@@ -44,6 +44,7 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt testDurationMinutes = OptionalInt.empty();
 	public static OptionalInt threadNumber = OptionalInt.empty();
 	public static OptionalInt hcsSubmitMessage = OptionalInt.empty();
+	public static OptionalInt hcsSubmitMessageSizeVar = OptionalInt.empty();
 	/** initial balance of payer account used for paying for performance test transactions */
 	public static OptionalLong initialBalance = OptionalLong.of(900_000_000_000L);
 	public static OptionalInt totalTestAccounts = OptionalInt.empty();
@@ -81,13 +82,6 @@ public class LoadTest extends HapiApiSuite {
 			log.info("Set hcsSubmitMessageSize as " + hcsSubmitMessage.getAsInt());
 			usedArgs++;
 		}
-
-		if (args.length > 5) {
-			totalTestAccounts = OptionalInt.of(Integer.parseInt(args[5]));
-			log.info("Set totalTestAccounts as " + totalTestAccounts.getAsInt());
-			usedArgs++;
-		}
-
 		return usedArgs;
 	}
 
@@ -104,12 +98,18 @@ public class LoadTest extends HapiApiSuite {
 				.tps(targetTPS.isPresent() ? LoadTest::getTargetTPS : settings::getTps)
 				.tolerance(settings::getTolerancePercentage)
 				.allowedSecsBelow(settings::getAllowedSecsBelow)
-				.setNumberOfThreads(threadNumber.isPresent() ? threadNumber::getAsInt : settings::getThreads)
-				.setTotalTestAccounts(totalTestAccounts.isPresent() ? totalTestAccounts::getAsInt : settings::getTotalAccounts)
-				.setTotalTestTopics(totalTestTopics.isPresent() ? totalTestTopics::getAsInt : settings::getTotalTopics)
-				.setTotalTestTokens(totalTestTokens.isPresent() ? totalTestTokens::getAsInt : settings::getTotalTokens)
-				.setHCSSubmitMessageSize(
-						hcsSubmitMessage.isPresent() ? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
+				.setNumberOfThreads(threadNumber.isPresent()
+						? threadNumber::getAsInt : settings::getThreads)
+				.setTotalTestAccounts(totalTestAccounts.isPresent()
+						? totalTestAccounts::getAsInt : settings::getTotalAccounts)
+				.setTotalTestTopics(totalTestTopics.isPresent()
+						? totalTestTopics::getAsInt : settings::getTotalTopics)
+				.setTotalTestTokens(totalTestTokens.isPresent()
+						? totalTestTokens::getAsInt : settings::getTotalTokens)
+				.setHCSSubmitMessageSize(hcsSubmitMessage.isPresent()
+						? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
+				.setHCSSubmitMessageSizeVar(hcsSubmitMessageSizeVar.isPresent()
+						? hcsSubmitMessageSizeVar::getAsInt	: settings::getHcsSubmitMessageSizeVar)
 				.lasting(
 						(testDurationMinutes.isPresent() ?
 								LoadTest::getTestDurationMinutes :

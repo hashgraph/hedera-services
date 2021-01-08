@@ -31,6 +31,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_BURST_SIZE = 5;
 	public static final int DEFAULT_THREADS = 50;
 	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE = 256;
+	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE_VAR = 64;
 	// By default, it will fall back to original test scenarios
 	public static final int DEFAULT_TOTAL_TEST_ACCOUNTS = 2;
 	public static final int DEFAULT_TOTAL_TEST_TOPICS = 1;
@@ -43,6 +44,7 @@ public class PerfTestLoadSettings {
 	private int burstSize = DEFAULT_BURST_SIZE;
 	private int threads = DEFAULT_THREADS;
 	private int hcsSubmitMessageSize = DEFAULT_SUBMIT_MESSAGE_SIZE;
+	private int hcsSubmitMessageSizeVar = DEFAULT_SUBMIT_MESSAGE_SIZE_VAR;
 	private int totalTestAccounts = DEFAULT_TOTAL_TEST_ACCOUNTS;
 	private int totalTestTopics = DEFAULT_TOTAL_TEST_TOPICS;
 	private int totalTestTokens = DEFAULT_TOTAL_TEST_TOKENS;
@@ -83,6 +85,10 @@ public class PerfTestLoadSettings {
 
 	public int getHcsSubmitMessageSize() {
 		return hcsSubmitMessageSize;
+	}
+
+	public int getHcsSubmitMessageSizeVar() {
+		return hcsSubmitMessageSizeVar;
 	}
 
 	public int getTotalAccounts() {
@@ -133,13 +139,16 @@ public class PerfTestLoadSettings {
 			totalTestAccounts = ciProps.getInteger("totalTestAccounts");
 		}
 		if (ciProps.has("totalTestTopics")) {
-			totalTestAccounts = ciProps.getInteger("totalTestTopics");
+			totalTestTopics = ciProps.getInteger("totalTestTopics");
 		}
 		if (ciProps.has("totalTestTokens")) {
-			totalTestAccounts = ciProps.getInteger("totalTestTokens");
+			totalTestTokens = ciProps.getInteger("totalTestTokens");
 		}
 		if (ciProps.has("messageSize")) {
 			hcsSubmitMessageSize = ciProps.getInteger("messageSize");
+		}
+		if (ciProps.has("messageSizeVar")) {
+			hcsSubmitMessageSize = ciProps.getInteger("messageSizeVar");
 		}
 	}
 
@@ -156,6 +165,7 @@ public class PerfTestLoadSettings {
 				.add("totalTestTopics", totalTestTopics)
 				.add("totalTestTokens", totalTestTokens)
 				.add("submitMessageSize", hcsSubmitMessageSize)
+				.add("submitMessageSizeVar", hcsSubmitMessageSizeVar)
 				.toString();
 	}
 }

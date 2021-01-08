@@ -1296,7 +1296,7 @@ workflows:
   GCP-Daily-Services-Comp-Basic-HCS-Performance-Random-4N-4C:
     triggers:
       - schedule:
-          cron: "0 2 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:

@@ -63,7 +63,6 @@ public class SubmitMessageLoadTest extends LoadTest {
 	private static int messageSize = 256;
 	private static String pemFile = null;
 	private final static long TEST_ACCOUNT_STARTS_FROM = 1001L;
-	private final static int  DEFAULT_MESSAGE_SIZE_DEVIATION = 64;  // TODO make it a ciProperty
 
 	private static Random r = new Random();
 
@@ -158,17 +157,23 @@ public class SubmitMessageLoadTest extends LoadTest {
 	}
 
 	private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
-		messageSize = (r.nextInt(2) == 1 ) ?
-				settings.getIntProperty("messageSize", messageSize) + r.nextInt(DEFAULT_MESSAGE_SIZE_DEVIATION)
-				:  settings.getIntProperty("messageSize", messageSize) - r.nextInt(DEFAULT_MESSAGE_SIZE_DEVIATION);
+		int msgSize = (r.nextInt(2) == 1 ) ?
+				settings.getIntProperty("messageSize", messageSize)
+						+ r.nextInt(settings.getHcsSubmitMessageSizeVar())
+				:  settings.getIntProperty("messageSize", messageSize)
+				        - r.nextInt(settings.getHcsSubmitMessageSizeVar());
 
+		// maybe use some more realistic distributions to simulate real world scenarios
 		String senderId = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + r.nextInt(settings.getTotalAccounts()));
 		String topicId  = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + settings.getTotalAccounts()
-				+ r.nextInt(settings.getTotalTopics()));
+				+ r.nextInt(settings.getTotalTopics() ));
 
+		if(log.isDebugEnabled()) {
+			log.debug("{} will submit a message of size {} to topic {}", senderId, msgSize, topicId);
+		}
 		var op = submitMessageTo(topicId)
 				.message(ArrayUtils.addAll(ByteBuffer.allocate(8).putLong(Instant.now().toEpochMilli()).array(),
-					randomUtf8Bytes( messageSize - 8)))
+					randomUtf8Bytes( msgSize - 8)))
 				.noLogging()
 				.payingWith(senderId)
 				.signedBy(GENESIS, GENESIS)
