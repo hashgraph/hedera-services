@@ -48,9 +48,6 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-        // TODO: Not in this scope
-        throw new UnsupportedOperationException();
     public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
         var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         var estimate = factory.apply(txn, sigUsage);
