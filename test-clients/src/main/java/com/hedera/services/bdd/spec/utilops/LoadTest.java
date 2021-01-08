@@ -47,6 +47,8 @@ public class LoadTest extends HapiApiSuite {
 	/** initial balance of payer account used for paying for performance test transactions */
 	public static OptionalLong initialBalance = OptionalLong.of(900_000_000_000L);
 	public static OptionalInt totalTestAccounts = OptionalInt.empty();
+	public static OptionalInt totalTestTopics = OptionalInt.empty();
+	public static OptionalInt totalTestTokens = OptionalInt.empty();
 
 	public static int parseArgs(String... args) {
 		int usedArgs = 0;
@@ -80,7 +82,6 @@ public class LoadTest extends HapiApiSuite {
 			usedArgs++;
 		}
 
-
 		if (args.length > 5) {
 			totalTestAccounts = OptionalInt.of(Integer.parseInt(args[5]));
 			log.info("Set totalTestAccounts as " + totalTestAccounts.getAsInt());
@@ -104,7 +105,9 @@ public class LoadTest extends HapiApiSuite {
 				.tolerance(settings::getTolerancePercentage)
 				.allowedSecsBelow(settings::getAllowedSecsBelow)
 				.setNumberOfThreads(threadNumber.isPresent() ? threadNumber::getAsInt : settings::getThreads)
-				.setTotalTestAccounts(threadNumber.isPresent() ? totalTestAccounts::getAsInt : settings::getTotalAccounts)
+				.setTotalTestAccounts(totalTestAccounts.isPresent() ? totalTestAccounts::getAsInt : settings::getTotalAccounts)
+				.setTotalTestTopics(totalTestTopics.isPresent() ? totalTestTopics::getAsInt : settings::getTotalTopics)
+				.setTotalTestTokens(totalTestTokens.isPresent() ? totalTestTokens::getAsInt : settings::getTotalTokens)
 				.setHCSSubmitMessageSize(
 						hcsSubmitMessage.isPresent() ? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
 				.lasting(

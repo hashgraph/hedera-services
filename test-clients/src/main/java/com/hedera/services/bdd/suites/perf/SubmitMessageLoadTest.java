@@ -32,6 +32,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -49,9 +50,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
 
 public class SubmitMessageLoadTest extends LoadTest {
 
@@ -59,6 +62,11 @@ public class SubmitMessageLoadTest extends LoadTest {
 	private static String topicID = null;
 	private static int messageSize = 256;
 	private static String pemFile = null;
+	private final static long TEST_ACCOUNT_STARTS_FROM = 1001L;
+	private final static int  DEFAULT_MESSAGE_SIZE_DEVIATION = 64;  // TODO make it a ciProperty
+
+	private static Random r = new Random();
+
 	public static void main(String... args) {
 		int usedArgs = parseArgs(args);
 
@@ -126,7 +134,6 @@ public class SubmitMessageLoadTest extends LoadTest {
 								.name("submitKey")
 								.simpleWacl()
 								.passphrase(KeyFactory.PEM_PASSPHRASE),
-
 						// if just created a new key then export spec for later reuse
 						pemFile == null ? withOpContext((spec, ignore) ->spec.keys().exportSimpleKey("topicSubmitKey.pem", "submitKey")):
 								sleepFor(100),
@@ -138,28 +145,40 @@ public class SubmitMessageLoadTest extends LoadTest {
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0")),
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
 								.withRecharging()
-								.rechargeWindow(30)
+								.rechargeWindow(3)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						topicID == null ? createTopic("topic")
 								.submitKeyName("submitKey")
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED):
 								sleepFor(100),
-						sleepFor(5000) //wait all other thread ready
+						sleepFor(1000) //wait all other thread ready
 				).then(
 						defaultLoadTest(submitBurst, settings)
 				);
 	}
 
 	private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
-		byte[] payload = randomUtf8Bytes(settings.getIntProperty("messageSize", messageSize) - 8);
-		var op = submitMessageTo(topicID != null ? topicID : "topic")
-				.message(ArrayUtils.addAll(ByteBuffer.allocate(8).putLong(Instant.now().toEpochMilli()).array(), payload))
+		messageSize = (r.nextInt(2) == 1 ) ?
+				settings.getIntProperty("messageSize", messageSize) + r.nextInt(DEFAULT_MESSAGE_SIZE_DEVIATION)
+				:  settings.getIntProperty("messageSize", messageSize) - r.nextInt(DEFAULT_MESSAGE_SIZE_DEVIATION);
+
+		String senderId = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + r.nextInt(settings.getTotalAccounts()));
+		String topicId  = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + settings.getTotalAccounts()
+				+ r.nextInt(settings.getTotalTopics()));
+
+		var op = submitMessageTo(topicId)
+				.message(ArrayUtils.addAll(ByteBuffer.allocate(8).putLong(Instant.now().toEpochMilli()).array(),
+					randomUtf8Bytes( messageSize - 8)))
 				.noLogging()
-				.payingWith("sender")
-				.signedBy("sender", "submitKey")
+				.payingWith(senderId)
+				.signedBy(GENESIS, GENESIS)
+				.fee(100_000_000)
 				.suppressStats(true)
-				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
-				.hasKnownStatusFrom(SUCCESS, OK)
+				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
+						TOPIC_EXPIRED,
+						INVALID_TOPIC_ID,
+						INSUFFICIENT_PAYER_BALANCE)
+				.hasKnownStatusFrom(SUCCESS, OK, INVALID_TOPIC_ID)
 				.deferStatusResolution();
 		if (settings.getBooleanProperty("isChunk", false)) {
 			return () -> op.chunkInfo(1, 1).usePresetTimestamp();

@@ -26,13 +26,15 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 public class PerfTestLoadSettings {
 	public static final int DEFAULT_TPS = 500;
 	public static final int DEFAULT_TOLERANCE_PERCENTAGE = 5;
-	public static final int DEFAULT_MINS = 5;
+	public static final int DEFAULT_MINS = 1;
 	public static final int DEFAULT_ALLOWED_SECS_BELOW = 60;
 	public static final int DEFAULT_BURST_SIZE = 5;
 	public static final int DEFAULT_THREADS = 50;
 	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE = 256;
 	// By default, it will fall back to original test scenarios
 	public static final int DEFAULT_TOTAL_TEST_ACCOUNTS = 2;
+	public static final int DEFAULT_TOTAL_TEST_TOPICS = 1;
+	public static final int DEFAULT_TOTAL_TEST_TOKENS = 2;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -42,6 +44,8 @@ public class PerfTestLoadSettings {
 	private int threads = DEFAULT_THREADS;
 	private int hcsSubmitMessageSize = DEFAULT_SUBMIT_MESSAGE_SIZE;
 	private int totalTestAccounts = DEFAULT_TOTAL_TEST_ACCOUNTS;
+	private int totalTestTopics = DEFAULT_TOTAL_TEST_TOPICS;
+	private int totalTestTokens = DEFAULT_TOTAL_TEST_TOKENS;
 
 	private HapiPropertySource ciProps = null;
 
@@ -80,10 +84,16 @@ public class PerfTestLoadSettings {
 	public int getHcsSubmitMessageSize() {
 		return hcsSubmitMessageSize;
 	}
+
 	public int getTotalAccounts() {
 		return totalTestAccounts;
 	}
-
+	public int getTotalTopics() {
+		return totalTestTopics;
+	}
+	public int getTotalTokens() {
+		return totalTestTokens;
+	}
 
 	public int getIntProperty(String property, int defaultValue) {
 		if (null != ciProps && ciProps.has(property)) {
@@ -122,6 +132,12 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("totalTestAccounts")) {
 			totalTestAccounts = ciProps.getInteger("totalTestAccounts");
 		}
+		if (ciProps.has("totalTestTopics")) {
+			totalTestAccounts = ciProps.getInteger("totalTestTopics");
+		}
+		if (ciProps.has("totalTestTokens")) {
+			totalTestAccounts = ciProps.getInteger("totalTestTokens");
+		}
 		if (ciProps.has("messageSize")) {
 			hcsSubmitMessageSize = ciProps.getInteger("messageSize");
 		}
@@ -137,6 +153,8 @@ public class PerfTestLoadSettings {
 				.add("allowedSecsBelow", allowedSecsBelow)
 				.add("threads", threads)
 				.add("totalTestAccounts", totalTestAccounts)
+				.add("totalTestTopics", totalTestTopics)
+				.add("totalTestTokens", totalTestTokens)
 				.add("submitMessageSize", hcsSubmitMessageSize)
 				.toString();
 	}

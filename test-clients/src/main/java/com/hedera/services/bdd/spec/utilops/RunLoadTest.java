@@ -49,6 +49,8 @@ public class RunLoadTest extends UtilOp {
 	private static final int DEFAULT_THREADS = 1;
 	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE = 256;
 	public static final int DEFAULT_TOTAL_TEST_ACCOUNTS = 2;
+	public static final int DEFAULT_TOTAL_TEST_TOPICS = 1;
+	public static final int DEFAULT_TOTAL_TEST_TOKENS = 1;
 
 	private DoubleSupplier targetTps = () -> DEFAULT_TPS_TARGET;
 	private IntSupplier tpsTolerancePercentage = () -> DEFAULT_TPS_TOLERANCE_PERCENTAGE;
@@ -58,6 +60,8 @@ public class RunLoadTest extends UtilOp {
 	private IntSupplier threads = () -> DEFAULT_THREADS;
 	private IntSupplier hcsSubmitMessageSize = () -> DEFAULT_SUBMIT_MESSAGE_SIZE;
 	private IntSupplier totalTestAccounts = () -> DEFAULT_TOTAL_TEST_ACCOUNTS;
+	private IntSupplier totalTestTopics = () -> DEFAULT_TOTAL_TEST_TOPICS;
+	private IntSupplier totalTestTokens = () -> DEFAULT_TOTAL_TEST_TOKENS;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
 
@@ -87,6 +91,17 @@ public class RunLoadTest extends UtilOp {
 		this.totalTestAccounts = totalTestAccounts;
 		return this;
 	}
+
+	public RunLoadTest setTotalTestTopics(IntSupplier totalTestAccounts) {
+		this.totalTestTopics = totalTestTopics;
+		return this;
+	}
+
+	public RunLoadTest setTotalTestTokens(IntSupplier totalTestAccounts) {
+		this.totalTestTokens = totalTestTokens;
+		return this;
+	}
+
 	public RunLoadTest setHCSSubmitMessageSize(IntSupplier submitMessageSize) {
 		this.hcsSubmitMessageSize = submitMessageSize;
 		return this;
