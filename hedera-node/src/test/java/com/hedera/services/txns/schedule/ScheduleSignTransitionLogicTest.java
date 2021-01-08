@@ -20,6 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -57,6 +58,12 @@ public class ScheduleSignTransitionLogicTest {
         // expect:
         assertTrue(subject.applicability().test(scheduleSignTxn));
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+    }
+
+    @Test
+    public void doStateTransitionIsUnsupported() {
+        givenValidTxnCtx();
+        assertThrows(UnsupportedOperationException.class, () -> subject.doStateTransition());
     }
 
     @Test
