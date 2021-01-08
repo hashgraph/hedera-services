@@ -231,6 +231,10 @@
                 </li>
               
                 <li>
+                  <a href="#proto.ScheduleID"><span class="badge">M</span>ScheduleID</a>
+                </li>
+              
+                <li>
                   <a href="#proto.SemanticVersion"><span class="badge">M</span>SemanticVersion</a>
                 </li>
               
@@ -1133,6 +1137,89 @@
               
                 <li>
                   <a href="#proto.ResponseHeader"><span class="badge">M</span>ResponseHeader</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleCreate.proto">ScheduleCreate.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.ScheduleCreateTransactionBody"><span class="badge">M</span>ScheduleCreateTransactionBody</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleDelete.proto">ScheduleDelete.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.ScheduleDeleteTransactionBody"><span class="badge">M</span>ScheduleDeleteTransactionBody</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleGetInfo.proto">ScheduleGetInfo.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.ScheduleGetInfoQuery"><span class="badge">M</span>ScheduleGetInfoQuery</a>
+                </li>
+              
+                <li>
+                  <a href="#proto.ScheduleGetInfoResponse"><span class="badge">M</span>ScheduleGetInfoResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#proto.ScheduleInfo"><span class="badge">M</span>ScheduleInfo</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleService.proto">ScheduleService.proto</a>
+            <ul>
+              
+              
+              
+              
+                <li>
+                  <a href="#proto.ScheduleService"><span class="badge">S</span>ScheduleService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ScheduleSign.proto">ScheduleSign.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.ScheduleSignTransactionBody"><span class="badge">M</span>ScheduleSignTransactionBody</a>
                 </li>
               
               
@@ -2140,6 +2227,44 @@
 
         
       
+        <h3 id="proto.ScheduleID">ScheduleID</h3>
+        <p>Unique identifier for a schedule entity</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>shardNum</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>A nonnegative shard number </p></td>
+                </tr>
+              
+                <tr>
+                  <td>realmNum</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>A nonnegative realm number </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleNum</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>A nonnegative schedule number </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="proto.SemanticVersion">SemanticVersion</h3>
         <p></p>
 
@@ -3000,7 +3125,7 @@
               <tr>
                 <td>TokenGetInfo</td>
                 <td>58</td>
-                <td><p>Get token information</p></td>
+                <td><p>Get Token information</p></td>
               </tr>
             
               <tr>
@@ -3067,6 +3192,30 @@
                 <td>TokenDissociateFromAccount</td>
                 <td>69</td>
                 <td><p>Dissociate tokens from an account</p></td>
+              </tr>
+            
+              <tr>
+                <td>ScheduleCreate</td>
+                <td>70</td>
+                <td><p>Create Scheduled Transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>ScheduleDelete</td>
+                <td>71</td>
+                <td><p>Delete Scheduled Transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>ScheduleSign</td>
+                <td>72</td>
+                <td><p>Sign Scheduled Transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>ScheduleGetInfo</td>
+                <td>73</td>
+                <td><p>Get Scheduled Transaction Information</p></td>
               </tr>
             
           </tbody>
@@ -7073,6 +7222,13 @@ If unspecified, no change. </p></td>
                   <td><p>Get all information about a token </p></td>
                 </tr>
               
+                <tr>
+                  <td>scheduleGetInfo</td>
+                  <td><a href="#proto.ScheduleGetInfoQuery">ScheduleGetInfoQuery</a></td>
+                  <td></td>
+                  <td><p>Get all information about a scheduled entity </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7315,6 +7471,13 @@ If unspecified, no change. </p></td>
                   <td><a href="#proto.TokenGetInfoResponse">TokenGetInfoResponse</a></td>
                   <td></td>
                   <td><p>Get all information about a token </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleGetInfo</td>
+                  <td><a href="#proto.ScheduleGetInfoResponse">ScheduleGetInfoResponse</a></td>
+                  <td></td>
+                  <td><p>Get all information about a schedule entity </p></td>
                 </tr>
               
             </tbody>
@@ -8298,6 +8461,12 @@ by HAPI.</p></td>
                 <td><p>TokenTransfersTransactionBody has a TokenTransferList with no AccountAmounts</p></td>
               </tr>
             
+              <tr>
+                <td>INVALID_SCHEDULE_ID</td>
+                <td>201</td>
+                <td><p>The scheduled transaction entity is invalid or does not exist</p></td>
+              </tr>
+            
           </tbody>
         </table>
       
@@ -8349,6 +8518,337 @@ by HAPI.</p></td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
                   <td><p>The state proof for this information (if a state proof was requested, and is available) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleCreate.proto">ScheduleCreate.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.ScheduleCreateTransactionBody">ScheduleCreateTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>transactionBody</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The transaction serialized into bytes that must be signed </p></td>
+                </tr>
+              
+                <tr>
+                  <td>adminKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>(optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>payerAccountID</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>(optional) The account which is going to pay for the execution of the Scheduled TX. If not populated, the scheduling account is charged </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sigMap</td>
+                  <td><a href="#proto.SignatureMap">SignatureMap</a></td>
+                  <td></td>
+                  <td><p>(optional) Signatures that could be provided (similarly to how signatures are provided in ScheduleSign operation) on Scheduled Transaction creation </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleDelete.proto">ScheduleDelete.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.ScheduleDeleteTransactionBody">ScheduleDeleteTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>The ID of the Scheduled Entity </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleGetInfo.proto">ScheduleGetInfo.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.ScheduleGetInfoQuery">ScheduleGetInfoQuery</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>header</td>
+                  <td><a href="#proto.QueryHeader">QueryHeader</a></td>
+                  <td></td>
+                  <td><p>standard info sent from client to node including the signed payment, and what kind of response is requested (cost, state proof, both, or neither). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>The ID of the Scheduled Entity </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="proto.ScheduleGetInfoResponse">ScheduleGetInfoResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>header</td>
+                  <td><a href="#proto.ResponseHeader">ResponseHeader</a></td>
+                  <td></td>
+                  <td><p>Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleInfo</td>
+                  <td><a href="#proto.ScheduleInfo">ScheduleInfo</a></td>
+                  <td></td>
+                  <td><p>The information requested about this schedule instance </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="proto.ScheduleInfo">ScheduleInfo</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>The ID of the Scheduled Entity </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creatorAccountID</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>The Account ID which created the Scheduled TX </p></td>
+                </tr>
+              
+                <tr>
+                  <td>payerAccountID</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>The account which is going to pay for the execution of the Scheduled TX </p></td>
+                </tr>
+              
+                <tr>
+                  <td>transactionBody</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The transaction serialized into bytes that must be signed </p></td>
+                </tr>
+              
+                <tr>
+                  <td>signers</td>
+                  <td><a href="#proto.KeyList">KeyList</a></td>
+                  <td></td>
+                  <td><p>The keys that have provided signatures so far for the Scheduled TX </p></td>
+                </tr>
+              
+                <tr>
+                  <td>adminKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The Key which is able to delete the Scheduled Transaction if set </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleService.proto">ScheduleService.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+
+      
+
+      
+
+      
+        <h3 id="proto.ScheduleService">ScheduleService</h3>
+        <p>Transactions and queries for the Schedule Service</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>createSchedule</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Creates a new Schedule by submitting the transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>signSchedule</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Signs a new Schedule by submitting the transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>deleteSchedule</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Deletes a new Schedule by submitting the transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>getScheduleInfo</td>
+                <td><a href="#proto.Query">Query</a></td>
+                <td><a href="#proto.Response">Response</a></td>
+                <td><p>Retrieves the metadata of a schedule entity</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="ScheduleSign.proto">ScheduleSign.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.ScheduleSignTransactionBody">ScheduleSignTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>The ID of the Scheduled entity </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sigMap</td>
+                  <td><a href="#proto.SignatureMap">SignatureMap</a></td>
+                  <td></td>
+                  <td><p>The signature map containing the signature(s) to authorise the transaction </p></td>
                 </tr>
               
             </tbody>
@@ -10053,6 +10553,27 @@ by HAPI.</p></td>
                   <td><p>Dissociate tokens from an account </p></td>
                 </tr>
               
+                <tr>
+                  <td>scheduleCreate</td>
+                  <td><a href="#proto.ScheduleCreateTransactionBody">ScheduleCreateTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Creates a scheduled transaction instance </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleDelete</td>
+                  <td><a href="#proto.ScheduleDeleteTransactionBody">ScheduleDeleteTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Deletes a scheduled transaction instance </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleSign</td>
+                  <td><a href="#proto.ScheduleSignTransactionBody">ScheduleSignTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Signs a scheduled transaction instance </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -10525,6 +11046,13 @@ Otherwise, IF the topicRunningHashVersion is &#39;3&#39;, then the input data to
                   <td><p>In the receipt of TokenMint, TokenWipe, TokenBurn, the current total supply of this token </p></td>
                 </tr>
               
+                <tr>
+                  <td>scheduleID</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>In the receipt of a CreateSchedule, the id of the newly created Scheduled Entity </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -10624,6 +11152,13 @@ Otherwise, IF the topicRunningHashVersion is &#39;3&#39;, then the input data to
                   <td><a href="#proto.TokenTransferList">TokenTransferList</a></td>
                   <td>repeated</td>
                   <td><p>All Token transfers as a result of this transaction </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduleRef</td>
+                  <td><a href="#proto.ScheduleID">ScheduleID</a></td>
+                  <td></td>
+                  <td><p>Reference to the scheduled transaction ID that this transaction record represent </p></td>
                 </tr>
               
             </tbody>
