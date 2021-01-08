@@ -17,6 +17,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -72,6 +73,14 @@ public class ScheduleSignTransitionLogicTest {
 
         // expect:
         assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
+    }
+
+    @Test
+    public void syntaxCheckWorks() {
+        givenValidTxnCtx();
+
+        // expect:
+        assertEquals(OK, subject.syntaxCheck().apply(scheduleSignTxn));
     }
 
     private void givenValidTxnCtx() {
