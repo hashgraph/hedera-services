@@ -180,8 +180,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			log.info("Created scheduled txs FCMap after <= 0.10.0 state restoration");
 		}
 		if (runningHashLeaf() == null) {
-			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH,
-					new RecordsRunningHashLeaf(new RunningHash()));
+			RecordsRunningHashLeaf initialRecordsRunningHashLeaf = new RecordsRunningHashLeaf(new RunningHash());
+			initialRecordsRunningHashLeaf.setHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
+			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, initialRecordsRunningHashLeaf);
 			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
 		}
 	}
