@@ -945,7 +945,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-update-node-tests:
@@ -1068,7 +1068,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-network-error-regression:
@@ -1111,7 +1111,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-testnet-migration-regression:
@@ -1175,7 +1175,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-software-update-regression:
@@ -1216,7 +1216,7 @@ workflows:
           filters:
             branches:
               only:
-                - rel-v0.10.0
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-state-recover-regression:
