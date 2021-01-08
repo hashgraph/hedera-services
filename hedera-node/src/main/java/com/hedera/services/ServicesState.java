@@ -75,6 +75,7 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
+	public static final ImmutableHash emptyHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
@@ -180,8 +181,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			log.info("Created scheduled txs FCMap after <= 0.10.0 state restoration");
 		}
 		if (runningHashLeaf() == null) {
-			RecordsRunningHashLeaf initialRecordsRunningHashLeaf = new RecordsRunningHashLeaf(new RunningHash());
-			initialRecordsRunningHashLeaf.setHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
+			final RunningHash runningHash = new RunningHash(emptyHash);
+			RecordsRunningHashLeaf initialRecordsRunningHashLeaf = new RecordsRunningHashLeaf(runningHash);
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, initialRecordsRunningHashLeaf);
 			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
 		}
