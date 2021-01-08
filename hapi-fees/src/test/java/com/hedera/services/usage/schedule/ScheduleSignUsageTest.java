@@ -86,7 +86,8 @@ public class ScheduleSignUsageTest {
 		givenBaseOp();
 
 		// and:
-		subject = ScheduleSignUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
+		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
+				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -96,6 +97,7 @@ public class ScheduleSignUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(0L);
+		verify(base).addVpt(0);
 	}
 
 	@Test
@@ -106,7 +108,8 @@ public class ScheduleSignUsageTest {
 		givenOpWithSigMap();
 
 		// and:
-		subject = ScheduleSignUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
+		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
+				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -116,6 +119,7 @@ public class ScheduleSignUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
+		verify(base).addVpt(sigMap.getSigPairCount());
 	}
 
 	private void givenBaseOp() {

@@ -837,9 +837,9 @@ public class ServicesContext {
 				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
 				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
 				/* Schedule */
-				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage())),
+				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(globalDynamicProperties()))),
 				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage())),
-				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage())),
+				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(globalDynamicProperties()))),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),

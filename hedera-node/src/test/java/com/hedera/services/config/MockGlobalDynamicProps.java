@@ -136,4 +136,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int feesTokenTransferUsageMultiplier() {
 		return 380;
 	}
+
+	@Override
+	public int scheduledTxExpiryTimeSecs() {
+		return 1800;
+	}
 }

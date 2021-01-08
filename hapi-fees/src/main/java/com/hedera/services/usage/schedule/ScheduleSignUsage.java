@@ -28,12 +28,12 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 
-	private ScheduleSignUsage(TransactionBody scheduleSignOp, TxnUsageEstimator usageEstimator, int txExpirationTimeSecs) {
-		super(scheduleSignOp, usageEstimator, txExpirationTimeSecs);
+	private ScheduleSignUsage(TransactionBody scheduleSignOp, TxnUsageEstimator usageEstimator) {
+		super(scheduleSignOp, usageEstimator);
 	}
 
-	public static ScheduleSignUsage newEstimate(TransactionBody scheduleSignOp, SigUsage sigUsage, int txExpirationTimeSecs) {
-		return new ScheduleSignUsage(scheduleSignOp, estimatorFactory.get(sigUsage, scheduleSignOp, ESTIMATOR_UTILS), txExpirationTimeSecs);
+	public static ScheduleSignUsage newEstimate(TransactionBody scheduleSignOp, SigUsage sigUsage) {
+		return new ScheduleSignUsage(scheduleSignOp, estimatorFactory.get(sigUsage, scheduleSignOp, ESTIMATOR_UTILS));
 	}
 
 	@Override
@@ -46,12 +46,15 @@ public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 
 		var txnBytes = BASIC_ENTITY_ID_SIZE;
 		var ramBytes = 0;
+		var scheduledTxSigs = 0;
 		if (op.hasSigMap()) {
 			txnBytes += scheduleEntitySizes.bptScheduleReprGiven(op.getSigMap());
 			ramBytes += scheduleEntitySizes.sigBytesInScheduleReprGiven(op.getSigMap());
+			scheduledTxSigs += op.getSigMap().getSigPairCount();
 		}
 		usageEstimator.addBpt(txnBytes);
-		usageEstimator.addRbs(ramBytes * this.expirationTimeSecs); // TODO: Here we are assuming the worst case for rb/s. It must be the delta if we want to optimise
+		usageEstimator.addRbs(ramBytes * this.expirationTimeSecs); // TODO: Here we are assuming the worst case for rb/s. It must be the delta if we want to absolutely precise
+		usageEstimator.addVpt(scheduledTxSigs);
 
 		return usageEstimator.get();
 	}

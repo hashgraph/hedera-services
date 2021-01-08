@@ -66,7 +66,14 @@ public class ScheduleCreateUsageTest {
 							.setPubKeyPrefix(ByteString.copyFrom(new byte[]{0x01}))
 							.setECDSA384(ByteString.copyFrom(new byte[]{0x01, 0x02}))
 							.build()
-			).build();
+			)
+			.addSigPair(
+					SignaturePair.newBuilder()
+							.setPubKeyPrefix(ByteString.copyFrom(new byte[]{0x02}))
+							.setECDSA384(ByteString.copyFrom(new byte[]{0x01, 0x02}))
+							.build()
+			)
+			.build();
 
 	ScheduleCreateTransactionBody op;
 	TransactionBody txn;
@@ -94,7 +101,8 @@ public class ScheduleCreateUsageTest {
 		givenBaseOp();
 
 		// and:
-		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
+		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
+			.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -104,6 +112,7 @@ public class ScheduleCreateUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
+		verify(base).addVpt(0);
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -115,7 +124,8 @@ public class ScheduleCreateUsageTest {
 		givenOpWithAdminKey();
 
 		// and:
-		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
+		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
+				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -125,6 +135,7 @@ public class ScheduleCreateUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
+		verify(base).addVpt(0);
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -136,7 +147,8 @@ public class ScheduleCreateUsageTest {
 		givenOpWithPayer();
 
 		// and:
-		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
+		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
+				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -146,6 +158,7 @@ public class ScheduleCreateUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
+		verify(base).addVpt(0);
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -157,7 +170,8 @@ public class ScheduleCreateUsageTest {
 		givenOpWithSigMap();
 
 		// and:
-		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage, scheduledTXExpiry);
+		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
+				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -167,6 +181,7 @@ public class ScheduleCreateUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
+		verify(base).addVpt(sigMap.getSigPairCount());
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 

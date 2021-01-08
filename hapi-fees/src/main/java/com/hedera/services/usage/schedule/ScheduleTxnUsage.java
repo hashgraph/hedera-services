@@ -37,8 +37,8 @@ public abstract class ScheduleTxnUsage<T extends ScheduleTxnUsage<T>> extends Tx
 		super(scheduleOp, usageEstimator);
 	}
 
-	protected ScheduleTxnUsage(TransactionBody scheduleOp, TxnUsageEstimator usageEstimator, int txExpirationTimeSecs) {
-		super(scheduleOp, usageEstimator);
-		this.expirationTimeSecs = txExpirationTimeSecs;
+	public T givenScheduledTxExpirationTimeSecs(int scheduledTxExpirationTimeSecs) {
+		this.expirationTimeSecs = scheduledTxExpirationTimeSecs;
+		return self();
 	}
 }
