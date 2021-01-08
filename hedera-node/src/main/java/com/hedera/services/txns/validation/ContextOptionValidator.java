@@ -150,7 +150,7 @@ public class ContextOptionValidator implements OptionValidator {
 		if (numUtf8Bytes == 0) {
 			return MISSING_TOKEN_SYMBOL;
 		}
-		if (numUtf8Bytes > dynamicProperties.maxTokenSymbolUtf8Bytes()) {
+		if (numUtf8Bytes > properties.maxTokenSymbolUtf8Bytes()) {
 			return TOKEN_SYMBOL_TOO_LONG;
 		}
 		return OK;
@@ -162,7 +162,7 @@ public class ContextOptionValidator implements OptionValidator {
 		if (numUtf8Bytes == 0) {
 			return MISSING_TOKEN_NAME;
 		}
-		if (numUtf8Bytes > dynamicProperties.maxTokenNameUtf8Bytes()) {
+		if (numUtf8Bytes > properties.maxTokenNameUtf8Bytes()) {
 			return TOKEN_NAME_TOO_LONG;
 		}
 		return OK;
