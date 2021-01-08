@@ -1293,6 +1293,26 @@ workflows:
           workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C"
           test-name: "GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C.json"
 
+  GCP-Daily-Services-Comp-Basic-HCS-Performance-Random-4N-4C:
+    triggers:
+      - schedule:
+          cron: "0 2 * * *"
+          filters:
+            branches:
+              only:
+                - 909-b-add-state-to-perf-tests
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-Random-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-Random-4N-4C.json"
 
   AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
     triggers:
