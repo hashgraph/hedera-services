@@ -27,9 +27,11 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +41,7 @@ import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import static com.hedera.services.stream.RecordStreamType.RECORD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -85,12 +88,26 @@ public class RecordStreamFileParsingTest {
 		parseV5(v5Dir, expectedStartHash);
 	}
 
+	@Test
+	public void parseSigFileV5() throws Exception {
+		final String streamFilePath = "src/test/resources/recordStreamTest/record0.0.3/2021-01-08T14_50_50.729343000Z.rcd";
+		final File streamFile = new File(streamFilePath);
+		final File sigFile = new File(streamFilePath + "_sig");
+		Hash expectedEntireHash = LinkedObjectStreamUtilities.computeEntireHash(streamFile);
+		Hash expectedMetaHash = LinkedObjectStreamUtilities.computeMetaHash(streamFile, RECORD);
+		Pair<Pair<Hash, Signature>, Pair<Hash, Signature>> parsedResult = LinkedObjectStreamUtilities.parseSigFile(sigFile, RECORD);
+		Hash entireHashInSig = parsedResult.getLeft().getLeft();
+		Hash metaHashInSig = parsedResult.getRight().getLeft();
+		assertEquals(expectedEntireHash, entireHashInSig);
+		assertEquals(expectedMetaHash, metaHashInSig);
+	}
+
 	private void parseV5(final String dir, final Hash expectedStartHash) throws Exception {
 		final File out = new File(dir + "/out.log");
 		// these files are generated with initial Hash be an empty Hash
 		final File recordsDir = new File(dir);
 		Iterator<SelfSerializable> iterator = LinkedObjectStreamUtilities.parseStreamDirOrFile(recordsDir,
-				RecordStreamType.RECORD);
+				RECORD);
 
 		Hash startHash = null;
 		int recordsCount = 0;

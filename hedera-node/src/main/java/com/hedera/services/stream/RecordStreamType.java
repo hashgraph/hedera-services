@@ -47,7 +47,7 @@ public final class RecordStreamType implements StreamType {
 	/**
 	 * Header which is written in the beginning of a stream signature file, before writing the Object Stream Signature
 	 * Version.
-	 * the int in sigFileHeader denotes version 5
+	 * the byte in sigFileHeader denotes version 5
 	 */
 	private static final byte[] RECORD_SIG_FILE_HEADER = new byte[] { 5 };
 
