@@ -52,6 +52,8 @@ import "NetworkGetVersionInfo.proto";
 
 import "TokenGetInfo.proto";
 
+import "ScheduleGetInfo.proto";
+
 /* A single response, which is returned from the node to the client, after the client sent the node a query. This includes all responses. */
 message Response {
     oneof response {
@@ -81,5 +83,7 @@ message Response {
         NetworkGetVersionInfoResponse networkGetVersionInfo = 151; // Semantic versions of Hedera Services and HAPI proto
 
         TokenGetInfoResponse tokenGetInfo = 152; // Get all information about a token
+
+        ScheduleGetInfoResponse scheduleGetInfo = 153; // Get all information about a schedule entity
     }
 }

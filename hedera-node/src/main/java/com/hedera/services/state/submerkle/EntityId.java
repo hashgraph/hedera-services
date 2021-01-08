@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SelfSerializable;
@@ -151,6 +152,12 @@ public class EntityId implements SelfSerializable {
 		return (accountId == null )
 				? null
 				: new EntityId(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
+	}
+
+	public static EntityId ofNullableScheduleId(ScheduleID scheduleId) {
+		return (scheduleId == null )
+				? null
+				: new EntityId(scheduleId.getShardNum(), scheduleId.getRealmNum(), scheduleId.getScheduleNum());
 	}
 
 	public static EntityId ofNullableFileId(FileID fileId) {
