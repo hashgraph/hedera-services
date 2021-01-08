@@ -1231,7 +1231,7 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Recovery-4N-1C"
 
-  AWS-Daily-Services-Comp-Basic-Performance-Random-4N-4C:
+  AWS-Daily-Services-Comp-Restart-Performance-Random-4N-4C:
     triggers:
       - schedule:
           cron: "6 17 * * *"
@@ -1249,10 +1249,10 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "AWS-Daily-Services-Comp-Basic-Performance-Random-4N-4C"
-          test-name: "AWS-Daily-Services-Comp-Basic-Performance-Random-4N-4C.json"
+          workflow-name: "AWS-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
+          test-name: "AWS-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
 
-  GCP-Daily-Services-Comp-Basic-Performance-4N-4C:
+  GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C:
     triggers:
       - schedule:
           cron: "35 6 * * *"
@@ -1270,9 +1270,10 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C"
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C"
 
-  GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C:
+  GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C:
     triggers:
       - schedule:
           cron: "8 17 * * *"
@@ -1290,31 +1291,10 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C"
-          test-name: "GCP-Daily-Services-Comp-Basic-Performance-Random-4N-4C.json"
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
 
-  GCP-Daily-Services-Comp-Basic-HCS-Performance-Random-4N-4C:
-    triggers:
-      - schedule:
-          cron: "30 4 * * *"
-          filters:
-            branches:
-              only:
-                - 909-b-add-state-to-perf-tests
-    jobs:
-      - build-platform-and-services
-      - run-performance-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-Random-4N-4C"
-          test-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-Random-4N-4C.json"
-
-  AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
+  AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C:
     triggers:
       - schedule:
           cron: "30 4 * * *"
@@ -1333,10 +1313,31 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
-          test-name: "AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C.json"
+          workflow-name: "AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C"
+          test-name: "AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C.json"
 
-  GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
+  GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C:
+    triggers:
+      - schedule:
+          cron: "30 4 * * *"
+          filters:
+            branches:
+              only:
+                - 909-b-add-state-to-perf-tests
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C.json"
+
+  GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C:
     triggers:
       - schedule:
           cron: "30 10 * * *"
@@ -1354,7 +1355,8 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
+          workflow-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C"
 
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
@@ -2029,7 +2031,7 @@ jobs:
         default: ""
       test-name:
         type: string
-        default: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C.json"
+        default: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
