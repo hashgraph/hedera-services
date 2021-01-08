@@ -49,7 +49,7 @@ public final class RecordStreamType implements StreamType {
 	 * Version.
 	 * the int in sigFileHeader denotes version 5
 	 */
-	private static final int[] RECORD_SIG_FILE_HEADER = new int[] { 5 };
+	private static final byte[] RECORD_SIG_FILE_HEADER = new byte[] { 5 };
 
 	private RecordStreamType() {
 	}
@@ -80,7 +80,7 @@ public final class RecordStreamType implements StreamType {
 	}
 
 	@Override
-	public int[] getSigFileHeader() {
+	public byte[] getSigFileHeader() {
 		return RECORD_SIG_FILE_HEADER;
 	}
 }
