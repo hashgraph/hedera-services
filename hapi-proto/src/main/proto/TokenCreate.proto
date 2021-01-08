@@ -41,8 +41,8 @@ Token B has initial supply set to 10_012_345_678 and decimals set to 8. The numb
 Creating immutable token: Token can be created as immutable if the adminKey is omitted. In this case, the name, symbol, treasury, management keys, expiry and renew properties cannot be updated. If a token is created as immutable, anyone is able to extend the expiry time by paying the fee.
  */
 message TokenCreateTransactionBody {
-    string name = 1; // The publicly visible name of the token, specified as a string of only ASCII characters
-    string symbol = 2; // The publicly visible token symbol. It is UTF-8 capitalized alphabetical string identifying the token
+    string name = 1; // The publicly visible name of the token, limited to a UTF-8 encoding of length <tt>tokens.maxSymbolUtf8Bytes</tt>.
+    string symbol = 2; // The publicly visible token symbol, limited to a UTF-8 encoding of length <tt>tokens.maxTokenNameUtf8Bytes</tt>.
     uint32 decimals = 3; // The number of decimal places a token is divisible by. This field can never be changed!
     uint64 initialSupply = 4; // Specifies the initial supply of tokens to be put in circulation. The initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible.
     AccountID treasury = 5; // The account which will act as a treasury for the token. This account will receive the specified initial supply

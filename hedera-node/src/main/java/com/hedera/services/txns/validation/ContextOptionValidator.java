@@ -146,10 +146,11 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
-		if (symbol.length() < 1) {
+		int numUtf8Bytes = StringUtils.getBytesUtf8(symbol).length;
+		if (numUtf8Bytes == 0) {
 			return MISSING_TOKEN_SYMBOL;
 		}
-		if (symbol.length() > properties.maxTokenSymbolLength()) {
+		if (numUtf8Bytes > dynamicProperties.maxTokenSymbolUtf8Bytes()) {
 			return TOKEN_SYMBOL_TOO_LONG;
 		}
 		return OK;
@@ -157,10 +158,11 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum tokenNameCheck(String name) {
-		if (name.length() < 1) {
+		int numUtf8Bytes = StringUtils.getBytesUtf8(name).length;
+		if (numUtf8Bytes == 0) {
 			return MISSING_TOKEN_NAME;
 		}
-		if (name.length() > properties.maxTokenNameLength()) {
+		if (numUtf8Bytes > dynamicProperties.maxTokenNameUtf8Bytes()) {
 			return TOKEN_NAME_TOO_LONG;
 		}
 		return OK;

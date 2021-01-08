@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -62,7 +63,10 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.6")
-								.unavailableNode()
+								.unavailableNode(),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("ledger.keepRecordsInState", "true"))
 				)
 				.when(
 						cryptoCreate("repeatedTransaction")

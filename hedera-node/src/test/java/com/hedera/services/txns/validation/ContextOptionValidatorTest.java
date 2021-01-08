@@ -68,14 +68,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
@@ -539,7 +536,7 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void acceptsReasonableTokenSymbol() {
-		given(dynamicProperties.maxTokenSymbolLength()).willReturn(3);
+		given(dynamicProperties.maxTokenSymbolUtf8Bytes()).willReturn(3);
 
 		// expect:
 		assertEquals(OK, subject.tokenSymbolCheck("AS"));
@@ -553,15 +550,15 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void rejectsTooLongTokenSymbol() {
-		given(dynamicProperties.maxTokenSymbolLength()).willReturn(3);
+		given(dynamicProperties.maxTokenSymbolUtf8Bytes()).willReturn(3);
 
 		// expect:
-		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.tokenSymbolCheck("ASDF"));
+		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.tokenSymbolCheck("A€"));
 	}
 
 	@Test
 	public void acceptsReasonableTokenName() {
-		given(dynamicProperties.maxTokenNameLength()).willReturn(100);
+		given(dynamicProperties.maxTokenNameUtf8Bytes()).willReturn(100);
 
 		// expect:
 		assertEquals(OK, subject.tokenNameCheck("ASDF"));
@@ -575,10 +572,10 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void rejectsTooLongTokenName() {
-		given(dynamicProperties.maxTokenNameLength()).willReturn(3);
+		given(dynamicProperties.maxTokenNameUtf8Bytes()).willReturn(3);
 
 		// expect:
-		assertEquals(TOKEN_NAME_TOO_LONG, subject.tokenNameCheck("ASDF"));
+		assertEquals(TOKEN_NAME_TOO_LONG, subject.tokenNameCheck("A€"));
 	}
 
 	@Test
