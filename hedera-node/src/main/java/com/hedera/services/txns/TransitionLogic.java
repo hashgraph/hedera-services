@@ -40,7 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *
  * The context injects the {@link TransitionLogicLookup} with all
  * implementations of this type, so it is simple for the {@link ProcessLogic}
- * ton to find the right state transition after it validates that signing,
+ * to find the right state transition after it validates that signing,
  * fee, and other generic prerequisites have been met.
  *
  * <b>NOTE:</b>	There is no strict contract on whether the syntax check

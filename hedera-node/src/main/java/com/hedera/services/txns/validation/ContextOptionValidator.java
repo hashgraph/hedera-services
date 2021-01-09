@@ -22,7 +22,6 @@ package com.hedera.services.txns.validation;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -61,17 +60,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER
  */
 public class ContextOptionValidator implements OptionValidator {
 	public static final Logger log = LogManager.getLogger(ContextOptionValidator.class);
-	private final PropertySource properties;
 	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
+	private final GlobalDynamicProperties properties;
 
-	public ContextOptionValidator(
-			PropertySource properties,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties) {
-		this.properties = properties;
+	public ContextOptionValidator(TransactionContext txnCtx, GlobalDynamicProperties properties) {
 		this.txnCtx = txnCtx;
-		this.dynamicProperties = dynamicProperties;
+		this.properties = properties;
 	}
 
 	@Override
@@ -86,7 +80,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public boolean isValidTxnDuration(long duration) {
-		return duration >= dynamicProperties.minTxnDuration() && duration <= dynamicProperties.maxTxnDuration();
+		return duration >= properties.minTxnDuration() && duration <= properties.maxTxnDuration();
 	}
 
 	@Override
@@ -98,10 +92,8 @@ public class ContextOptionValidator implements OptionValidator {
 	@Override
 	public boolean isValidAutoRenewPeriod(Duration autoRenewPeriod) {
 		long duration = autoRenewPeriod.getSeconds();
-		long minDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
-		long maxDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
 
-		if (duration < minDuration || duration > maxDuration) {
+		if (duration < properties.minAutoRenewDuration() || duration > properties.maxAutoRenewDuration()) {
 			return false;
 		}
 		return true;
@@ -109,12 +101,12 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
-		return accountAmounts.getAccountAmountsCount() <= dynamicProperties.maxTransferListSize();
+		return accountAmounts.getAccountAmountsCount() <= properties.maxTransferListSize();
 	}
 
 	@Override
 	public ResponseCodeEnum isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
-		int maxLen = dynamicProperties.maxTokenTransferListSize();
+		int maxLen = properties.maxTokenTransferListSize();
 		int tokenTransferListsSize = tokenTransferLists.size();
 
 		if (tokenTransferListsSize > maxLen) {
@@ -140,7 +132,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public boolean isValidEntityMemo(@Nullable String memo) {
-		return (null == memo) || (StringUtils.getBytesUtf8(memo).length <= dynamicProperties.maxMemoUtf8Bytes());
+		return (null == memo) || (StringUtils.getBytesUtf8(memo).length <= properties.maxMemoUtf8Bytes());
 	}
 
 	@Override
@@ -158,7 +150,7 @@ public class ContextOptionValidator implements OptionValidator {
 		if (numUtf8Bytes == 0) {
 			return MISSING_TOKEN_SYMBOL;
 		}
-		if (numUtf8Bytes > dynamicProperties.maxTokenSymbolUtf8Bytes()) {
+		if (numUtf8Bytes > properties.maxTokenSymbolUtf8Bytes()) {
 			return TOKEN_SYMBOL_TOO_LONG;
 		}
 		return OK;
@@ -170,7 +162,7 @@ public class ContextOptionValidator implements OptionValidator {
 		if (numUtf8Bytes == 0) {
 			return MISSING_TOKEN_NAME;
 		}
-		if (numUtf8Bytes > dynamicProperties.maxTokenNameUtf8Bytes()) {
+		if (numUtf8Bytes > properties.maxTokenNameUtf8Bytes()) {
 			return TOKEN_NAME_TOO_LONG;
 		}
 		return OK;

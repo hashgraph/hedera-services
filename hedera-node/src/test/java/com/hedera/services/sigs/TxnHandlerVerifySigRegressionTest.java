@@ -123,8 +123,6 @@ public class TxnHandlerVerifySigRegressionTest {
 				() -> accounts,
 				DEFAULT_NODE,
 				null,
-				TEST_USAGE_PRICES,
-				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
 				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null),
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),

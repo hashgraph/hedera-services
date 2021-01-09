@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
@@ -205,6 +206,10 @@ public class UtilVerbs {
 
 	public static VerifyGetFastRecordNotSupported getFastRecordNotSupported() {
 		return new VerifyGetFastRecordNotSupported();
+	}
+
+	public static VerifyGetBySolidityIdNotSupported getBySolidityIdNotSupported() {
+		return new VerifyGetBySolidityIdNotSupported();
 	}
 
 	public static RunLoadTest runLoadTest(Supplier<HapiSpecOperation[]> opSource) {

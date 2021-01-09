@@ -89,8 +89,6 @@ public class RequestValidationTest {
                 null,
                 nodeAcc,
                 null,
-                TEST_USAGE_PRICES,
-                TestExchangeRates.TEST_EXCHANGE,
                 TestFeesFactory.FEES_FACTORY.get(),
                 () -> StateView.EMPTY_VIEW,
                 new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),

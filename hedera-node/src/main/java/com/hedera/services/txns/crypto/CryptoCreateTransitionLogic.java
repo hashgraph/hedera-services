@@ -85,6 +85,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		} catch (InsufficientFundsException ife) {
 			txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
 		} catch (Exception e) {
+			log.warn("Avoidable exception!", e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
