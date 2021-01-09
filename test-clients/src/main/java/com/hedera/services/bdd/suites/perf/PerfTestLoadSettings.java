@@ -35,7 +35,9 @@ public class PerfTestLoadSettings {
 	// By default, it will fall back to original test scenarios
 	public static final int DEFAULT_TOTAL_TEST_ACCOUNTS = 2;
 	public static final int DEFAULT_TOTAL_TEST_TOPICS = 1;
-	public static final int DEFAULT_TOTAL_TEST_TOKENS = 2;
+	public static final int DEFAULT_TOTAL_TEST_TOKENS = 1;
+	public static final int DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS = 2;
+	public static final int DEFAULT_TEST_TREASURE_START_ACCOUNT = 1001;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -48,6 +50,8 @@ public class PerfTestLoadSettings {
 	private int totalTestAccounts = DEFAULT_TOTAL_TEST_ACCOUNTS;
 	private int totalTestTopics = DEFAULT_TOTAL_TEST_TOPICS;
 	private int totalTestTokens = DEFAULT_TOTAL_TEST_TOKENS;
+	private int totalTestTokenAccounts = DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
+	private int testTreasureStartAccount = DEFAULT_TEST_TREASURE_START_ACCOUNT;
 
 	private HapiPropertySource ciProps = null;
 
@@ -100,7 +104,8 @@ public class PerfTestLoadSettings {
 	public int getTotalTokens() {
 		return totalTestTokens;
 	}
-
+	public int getTotalTestTokenAccounts() { return totalTestTokenAccounts; }
+	public int getTestTreasureStartAccount() { return testTreasureStartAccount; }
 	public int getIntProperty(String property, int defaultValue) {
 		if (null != ciProps && ciProps.has(property)) {
 			return ciProps.getInteger(property);
@@ -144,6 +149,12 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("totalTestTokens")) {
 			totalTestTokens = ciProps.getInteger("totalTestTokens");
 		}
+		if (ciProps.has("totalTestTokenAccounts")) {
+			totalTestTokenAccounts = ciProps.getInteger("totalTestTokenAccounts");
+		}
+		if (ciProps.has("testTreasureStartAccount")) {
+			testTreasureStartAccount = ciProps.getInteger("testTreasureStartAccount");
+		}
 		if (ciProps.has("messageSize")) {
 			hcsSubmitMessageSize = ciProps.getInteger("messageSize");
 		}
@@ -163,7 +174,8 @@ public class PerfTestLoadSettings {
 				.add("threads", threads)
 				.add("totalTestAccounts", totalTestAccounts)
 				.add("totalTestTopics", totalTestTopics)
-				.add("totalTestTokens", totalTestTokens)
+				.add("testActiveTokenAccounts", totalTestTokenAccounts)
+				.add("testTreasureStartAccount", testTreasureStartAccount)
 				.add("submitMessageSize", hcsSubmitMessageSize)
 				.add("submitMessageSizeVar", hcsSubmitMessageSizeVar)
 				.toString();

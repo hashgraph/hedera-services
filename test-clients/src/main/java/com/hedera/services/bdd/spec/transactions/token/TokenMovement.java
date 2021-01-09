@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 
 public class TokenMovement {
 	private final long amount;
@@ -108,7 +109,7 @@ public class TokenMovement {
 
 	public TokenTransferList specializedFor(HapiApiSpec spec) {
 		var scopedTransfers = TokenTransferList.newBuilder();
-		var id = isTrulyToken() ? spec.registry().getTokenID(token) : HBAR_SENTINEL_TOKEN_ID;
+		var id = isTrulyToken() ? asTokenId(token, spec) : HBAR_SENTINEL_TOKEN_ID;
 		scopedTransfers.setToken(id);
 		if (senderFn.isPresent()) {
 			scopedTransfers.addTransfers(adjustment(senderFn.get().apply(spec), -amount, spec));

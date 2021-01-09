@@ -1238,7 +1238,7 @@ workflows:
           filters:
             branches:
               only:
-                - 909-b-add-state-to-perf-tests
+                - master
     jobs:
       - build-platform-and-services
       - run-performance-regression:

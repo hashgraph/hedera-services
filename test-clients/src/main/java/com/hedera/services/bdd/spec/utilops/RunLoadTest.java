@@ -52,6 +52,8 @@ public class RunLoadTest extends UtilOp {
 	public static final int DEFAULT_TOTAL_TEST_ACCOUNTS = 2;
 	public static final int DEFAULT_TOTAL_TEST_TOPICS = 1;
 	public static final int DEFAULT_TOTAL_TEST_TOKENS = 1;
+	public static final int DEFAULT_START_TEST_TREASURE_ACCT = 1001;
+	public static final int DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS = 2;
 
 	private DoubleSupplier targetTps = () -> DEFAULT_TPS_TARGET;
 	private IntSupplier tpsTolerancePercentage = () -> DEFAULT_TPS_TOLERANCE_PERCENTAGE;
@@ -64,6 +66,8 @@ public class RunLoadTest extends UtilOp {
 	private IntSupplier totalTestAccounts = () -> DEFAULT_TOTAL_TEST_ACCOUNTS;
 	private IntSupplier totalTestTopics = () -> DEFAULT_TOTAL_TEST_TOPICS;
 	private IntSupplier totalTestTokens = () -> DEFAULT_TOTAL_TEST_TOKENS;
+	private IntSupplier testTreasureStartAccount = () -> DEFAULT_START_TEST_TREASURE_ACCT;
+	private IntSupplier totalTestTokenAccounts = () -> DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
 
@@ -99,8 +103,18 @@ public class RunLoadTest extends UtilOp {
 		return this;
 	}
 
-	public RunLoadTest setTotalTestTokens(IntSupplier totalTestAccounts) {
+	public RunLoadTest setTotalTestTokens(IntSupplier totalTestTokens) {
 		this.totalTestTokens = totalTestTokens;
+		return this;
+	}
+
+	public RunLoadTest setTestTreasureStartAccount (IntSupplier testTreasureStartAccount) {
+		this.testTreasureStartAccount = testTreasureStartAccount;
+		return this;
+	}
+
+	public RunLoadTest setTotalTestTokenAccounts(IntSupplier totalTestTokenAccts) {
+		this.totalTestTokenAccounts = totalTestTokenAccts;
 		return this;
 	}
 

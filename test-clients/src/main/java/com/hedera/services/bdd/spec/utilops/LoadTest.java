@@ -50,6 +50,8 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt totalTestAccounts = OptionalInt.empty();
 	public static OptionalInt totalTestTopics = OptionalInt.empty();
 	public static OptionalInt totalTestTokens = OptionalInt.empty();
+	public static OptionalInt testTreasureStartAccount = OptionalInt.empty();
+	public static OptionalInt totalTestTokenAccounts = OptionalInt.empty();
 
 	public static int parseArgs(String... args) {
 		int usedArgs = 0;
@@ -106,6 +108,10 @@ public class LoadTest extends HapiApiSuite {
 						? totalTestTopics::getAsInt : settings::getTotalTopics)
 				.setTotalTestTokens(totalTestTokens.isPresent()
 						? totalTestTokens::getAsInt : settings::getTotalTokens)
+				.setTotalTestTokenAccounts(totalTestTokenAccounts.isPresent()
+						? totalTestTokenAccounts::getAsInt : settings::getTotalTestTokenAccounts)
+				.setTestTreasureStartAccount(testTreasureStartAccount.isPresent()
+						? testTreasureStartAccount::getAsInt : settings::getTestTreasureStartAccount)
 				.setHCSSubmitMessageSize(hcsSubmitMessage.isPresent()
 						? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
 				.setHCSSubmitMessageSizeVar(hcsSubmitMessageSizeVar.isPresent()
