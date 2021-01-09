@@ -47,8 +47,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public static final long UNUSED_AUTO_RENEW_PERIOD = -1L;
 	public static final JKey UNUSED_KEY = null;
 	public static final EntityId UNUSED_AUTO_RENEW_ACCOUNT = null;
-	public static final int UPPER_BOUND_SYMBOL_UTF8_BYTES = 256;
-	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 256;
+	public static final int UPPER_BOUND_SYMBOL_UTF8_BYTES = 1024;
+	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 1024;
 
 	@Deprecated
 	public static final MerkleToken.Provider LEGACY_PROVIDER = new MerkleToken.Provider();
