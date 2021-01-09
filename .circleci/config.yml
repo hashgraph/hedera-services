@@ -1276,7 +1276,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C:
     triggers:
       - schedule:
-          cron: "8 17 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:
