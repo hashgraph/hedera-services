@@ -943,7 +943,7 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "5 1 * * *"
+          cron: "17 1 * * *"
           filters:
             branches:
               only:
@@ -2317,7 +2317,7 @@ jobs:
             cd /swirlds-platform; git checkout 854-894-RecordStreamV5;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 854-894-RecordStreamV5;
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
