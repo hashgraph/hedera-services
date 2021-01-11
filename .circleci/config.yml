@@ -133,6 +133,8 @@ commands:
           dsl-args: "RecordStreamValidation"
           ci-properties-map: "recordStreamsDir=/repo/recordstreams"
 
+# insight py is removed from services repo and is stages in platform regression repo.
+# we no longer use this job for publishing stats.
   publish-platform-stats:
     description: Generate the insight.py PDF and publish it (e.g. to Slack)
     parameters:
@@ -924,7 +926,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-update-node-tests:
@@ -1047,7 +1049,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-network-error-regression:
@@ -1089,7 +1091,7 @@ workflows:
               filters:
                 branches:
                   only:
-                    - master
+                    - Disable-master
     jobs:
       - build-platform-and-services
       - run-testnet-migration-regression:
@@ -1154,7 +1156,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-software-update-regression:
@@ -1195,7 +1197,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-state-recover-regression:
@@ -1236,7 +1238,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1249,70 +1251,6 @@ workflows:
                 at: /
           workflow-name: "AWS-Daily-Services-Comp-Basic-Performance-4N-4C"
           test-name: "AWS-Daily-Services-Comp-Basic-Performance-4N-4C.json"
-
-  AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
-    triggers:
-      - schedule:
-          cron: "30 4 * * *"
-          filters:
-            branches:
-              only:
-                - master
-
-    jobs:
-      - build-platform-and-services
-      - run-performance-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
-          test-name: "AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C.json"
-
-  AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
-    triggers:
-      - schedule:
-          cron: "30 6 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - run-start-from-saved-state-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Restart-Performance-6N-6C"
-          test-name: "AWS-Daily-Services-Comp-Restart-Performance-6N-6C.json"
-
-  AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
-    triggers:
-      - schedule:
-          cron: "30 4 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - run-start-from-saved-state-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
-          test-name: "AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C.json"
 
   GCP-Daily-Services-Comp-Basic-Performance-4N-4C:
     triggers:
@@ -1334,6 +1272,27 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C"
 
+  AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
+    triggers:
+      - schedule:
+          cron: "30 4 * * *"
+          filters:
+            branches:
+              only:
+                - Disable-master
+
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
+          test-name: "AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C.json"
 
   GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
     triggers:
@@ -1355,6 +1314,27 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
 
+  AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
+    triggers:
+      - schedule:
+          cron: "30 6 * * *"
+          filters:
+            branches:
+              only:
+                - Disable-master
+    jobs:
+      - build-platform-and-services
+      - run-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "AWS-Daily-Services-Comp-Restart-Performance-6N-6C"
+          test-name: "AWS-Daily-Services-Comp-Restart-Performance-6N-6C.json"
+
   GCP-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
       - schedule:
@@ -1375,6 +1355,27 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
 
+  AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
+    triggers:
+      - schedule:
+          cron: "30 4 * * *"
+          filters:
+            branches:
+              only:
+                - Disable-master
+    jobs:
+      - build-platform-and-services
+      - run-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
+          test-name: "AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C.json"
+
   GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
     triggers:
       - schedule:
@@ -1382,8 +1383,7 @@ workflows:
           filters:
             branches:
               only:
-#                - master
-                - 00862-D-split-perf-tests
+                - master
 
     jobs:
       - build-platform-and-services
@@ -1404,7 +1404,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-reconnect-regression:
@@ -1700,6 +1700,24 @@ workflows:
             - attach_workspace:
                 at: /
 
+  continuous-integration-gcp:
+      jobs:
+        - build-platform-and-services
+        - run-continuous-integration-gcp:
+            context: Slack
+            requires:
+              - build-platform-and-services
+            pre-steps:
+              - install-tools
+              - attach_workspace:
+                  at: /
+            workflow-name: "Continuous Integration GCP"
+            filters:
+              branches:
+                ignore:
+                  - /.*-PERF/
+                  - /.*-REGRESSION/
+
   continuous-integration:
     jobs:
       - build-artifact:
@@ -1946,6 +1964,7 @@ jobs:
       - run:
           name: Sync results of update node tests to AWS
           command: |
+            cd /swirlds-platform/regression/results/5N_1C/Update/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/5N_1C/Update/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/5N_1C/Update/*
 
@@ -1970,6 +1989,7 @@ jobs:
       - run:
           name: Sync results of performance regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_4C/Performance/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_4C/Performance/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_4C/Performance/*
 
@@ -1994,6 +2014,7 @@ jobs:
       - run:
           name: Sync results of network error regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/NetError/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/NetError/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/NetError/*
 
@@ -2028,6 +2049,7 @@ jobs:
       - run:
           name: Sync results of public testnet migration test to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/Migration/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/Migration/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Migration/*
 
@@ -2059,6 +2081,7 @@ jobs:
       - run:
           name: Sync results of mainnet migration test to AWS
           command: |
+            cd /swirlds-platform/regression/results/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
 
@@ -2083,6 +2106,7 @@ jobs:
       - run:
           name: Sync results of software update regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/Restart/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/Restart/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Restart/*
 
@@ -2107,6 +2131,7 @@ jobs:
       - run:
           name: Sync results of state recover regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/Recovery/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/Recovery/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Recovery/*
 
@@ -2136,6 +2161,7 @@ jobs:
       - run:
           name: Sync results of software update regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/6N_6C/Performance/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/6N_6C/Performance/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/6N_6C/Performance/*
 
@@ -2160,8 +2186,34 @@ jobs:
       - run:
           name: Sync results of reconnect regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/4N_1C/Reconnect/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/4N_1C/Reconnect/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Reconnect/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-continuous-integration-gcp:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run continuous integration tests
+          no_output_timeout: 30m
+          command: |
+            cd /swirlds-platform/regression;
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json /repo
+
+      - run:
+          name: Sync results of continuous integration to circelCI job
+          command: |
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/CI/*
 
       - store_artifacts:
           path: /results.tar.gz
@@ -2194,6 +2246,7 @@ jobs:
       - run:
           name: Sync results of software update regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/15N_15C/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/15N_15C/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/15N_15C/*
 
@@ -2228,6 +2281,7 @@ jobs:
       - run:
           name: Sync results of software update regression to AWS
           command: |
+            cd /swirlds-platform/regression/results/15N_15C/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/15N_15C/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/15N_15C/*
 

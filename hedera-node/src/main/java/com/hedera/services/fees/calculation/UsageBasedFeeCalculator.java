@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -45,6 +46,10 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 /**
  * Implements a {@link FeeCalculator} in terms of injected usage prices,
@@ -126,6 +131,54 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		FeeData prices = uncheckedPricesGiven(accessor, at);
 
 		return feeGiven(accessor, payerKey, view, prices, exchange.rate(at));
+	}
+
+	@Override
+	public long activeGasPriceInTinybars() {
+		return gasPriceInTinybars(usagePrices.activePrices(), exchange.activeRate());
+	}
+
+	@Override
+	public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
+		var rates = exchange.rate(at);
+		var prices = usagePrices.pricesGiven(function, at);
+		return gasPriceInTinybars(prices, rates);
+	}
+
+	@Override
+	public long estimatedNonFeePayerAdjustments(SignedTxnAccessor accessor, Timestamp at) {
+		switch (accessor.getFunction()) {
+			case CryptoCreate:
+				var cryptoCreateOp = accessor.getTxn().getCryptoCreateAccount();
+				return -cryptoCreateOp.getInitialBalance();
+			case CryptoTransfer:
+				var payer = accessor.getPayer();
+				var cryptoTransferOp = accessor.getTxn().getCryptoTransfer();
+				var adjustments = cryptoTransferOp.getTransfers().getAccountAmountsList();
+				long cryptoTransferNet = 0L;
+				for (AccountAmount adjustment : adjustments) {
+					if (payer.equals(adjustment.getAccountID())) {
+						cryptoTransferNet += adjustment.getAmount();
+					}
+				}
+				return cryptoTransferNet;
+			case ContractCreate:
+				var contractCreateOp = accessor.getTxn().getContractCreateInstance();
+				return -contractCreateOp.getInitialBalance()
+						- contractCreateOp.getGas() * estimatedGasPriceInTinybars(ContractCreate, at);
+			case ContractCall:
+				var contractCallOp = accessor.getTxn().getContractCall();
+				return -contractCallOp.getAmount()
+						- contractCallOp.getGas() * estimatedGasPriceInTinybars(ContractCall, at);
+			default:
+				return 0L;
+		}
+	}
+
+	private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
+		long priceInTinyCents = prices.getServicedata().getGas() / FEE_DIVISOR_FACTOR;
+		long priceInTinyBars = getTinybarsFromTinyCents(rates, priceInTinyCents);
+		return Math.max(priceInTinyBars, 1L);
 	}
 
 	private FeeData uncheckedPricesGiven(SignedTxnAccessor accessor, Timestamp at) {

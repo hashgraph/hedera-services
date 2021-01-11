@@ -63,7 +63,7 @@ class GlobalDynamicPropertiesTest {
 		// expect:
 		assertFalse(subject.shouldKeepRecordsInState());
 		assertEquals(1, subject.maxTokensPerAccount());
-		assertEquals(2, subject.maxTokenSymbolLength());
+		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(3L, subject.maxAccountNum());
 		assertEquals(6, subject.maxFileSizeKb());
 		assertEquals(accountWith(1L, 2L, 7L), subject.fundingAccount());
@@ -84,6 +84,9 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(21, subject.maxGas());
 		assertEquals(22L, subject.defaultContractLifetime());
 		assertEquals(23, subject.feesTokenTransferUsageMultiplier());
+		assertEquals(24, subject.maxAutoRenewDuration());
+		assertEquals(25, subject.minAutoRenewDuration());
+		assertEquals(26, subject.localCallEstRetBytes());
 	}
 
 	@Test
@@ -96,7 +99,7 @@ class GlobalDynamicPropertiesTest {
 		// expect:
 		assertTrue(subject.shouldKeepRecordsInState());
 		assertEquals(2, subject.maxTokensPerAccount());
-		assertEquals(3, subject.maxTokenSymbolLength());
+		assertEquals(3, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(4L, subject.maxAccountNum());
 		assertEquals(7, subject.maxFileSizeKb());
 		assertEquals(accountWith(1L, 2L, 8L), subject.fundingAccount());
@@ -117,11 +120,14 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(22, subject.maxGas());
 		assertEquals(23L, subject.defaultContractLifetime());
 		assertEquals(24, subject.feesTokenTransferUsageMultiplier());
+		assertEquals(25, subject.maxAutoRenewDuration());
+		assertEquals(26, subject.minAutoRenewDuration());
+		assertEquals(27, subject.localCallEstRetBytes());
 	}
 
 	private void givenPropsWithSeed(int i) {
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
-		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(i + 1);
+		given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long)i + 2);
 		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
@@ -143,6 +149,9 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("contracts.maxGas")).willReturn(i + 20);
 		given(properties.getLongProperty("contracts.defaultLifetime")).willReturn(i + 21L);
 		given(properties.getIntProperty("fees.tokenTransferUsageMultiplier")).willReturn(i + 22);
+		given(properties.getLongProperty("ledger.autoRenewPeriod.maxDuration")).willReturn(i + 23L);
+		given(properties.getLongProperty("ledger.autoRenewPeriod.minDuration")).willReturn(i + 24L);
+		given(properties.getIntProperty("contracts.localCall.estRetBytes")).willReturn(i + 25);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

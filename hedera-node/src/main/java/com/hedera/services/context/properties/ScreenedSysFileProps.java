@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.LogManager;
@@ -64,14 +65,23 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("transferListSizeLimit", "ledger.transfers.maxLen"),
 			entry("txMaximumDuration", "hedera.transaction.maxValidDuration"),
 			entry("txMinimumDuration", "hedera.transaction.minValidDuration"),
-			entry("txMinimumRemaining", "hedera.transaction.minValidityBufferSecs")
+			entry("txMinimumRemaining", "hedera.transaction.minValidityBufferSecs"),
+			entry("maximumAutoRenewDuration", "ledger.autoRenewPeriod.maxDuration"),
+			entry("minimumAutoRenewDuration", "ledger.autoRenewPeriod.minDuration"),
+			entry("localCallEstReturnBytes", "contracts.localCall.estRetBytes")
 	);
 	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
 			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum()),
 			entry("accountBalanceExportPeriodMinutes", legacy -> "" + (60 * Integer.parseInt(legacy)))
 	);
 	private static Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
-			entry("rates.intradayChangeLimitPercent", limitPercent -> (int)limitPercent > 0)
+			entry("rates.intradayChangeLimitPercent", limitPercent -> (int)limitPercent > 0),
+			entry(
+					"tokens.maxSymbolUtf8Bytes",
+					maxUtf8Bytes -> (int)maxUtf8Bytes <= MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES),
+			entry(
+					"tokens.maxTokenNameUtf8Bytes",
+					maxUtf8Bytes -> (int)maxUtf8Bytes <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES)
 	);
 
 	Map<String, Object>	from121 = Collections.emptyMap();

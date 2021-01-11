@@ -26,12 +26,14 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
+import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
@@ -77,6 +79,7 @@ import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -119,6 +122,18 @@ public class UtilVerbs {
 
 	public static NodeLivenessTimeout withLiveNode(String node) {
 		return new NodeLivenessTimeout(node);
+	}
+
+	public static <T> RecordSystemProperty<T> recordSystemProperty(
+			String property,
+			Function<String, T> converter,
+			Consumer<T> historian
+	) {
+		return new RecordSystemProperty<>(property, converter, historian);
+	}
+
+	public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {
+		return new SourcedOp(source);
 	}
 
 	public static HapiSpecSleep sleepFor(long timeMs) {
@@ -191,6 +206,10 @@ public class UtilVerbs {
 
 	public static VerifyGetFastRecordNotSupported getFastRecordNotSupported() {
 		return new VerifyGetFastRecordNotSupported();
+	}
+
+	public static VerifyGetBySolidityIdNotSupported getBySolidityIdNotSupported() {
+		return new VerifyGetBySolidityIdNotSupported();
 	}
 
 	public static RunLoadTest runLoadTest(Supplier<HapiSpecOperation[]> opSource) {

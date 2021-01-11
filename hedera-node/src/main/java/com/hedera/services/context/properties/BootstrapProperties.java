@@ -193,6 +193,7 @@ public class BootstrapProperties implements PropertySource {
 			"balances.nodeBalanceWarningThreshold",
 			"cache.records.ttl",
 			"contracts.defaultLifetime",
+			"contracts.localCall.estRetBytes",
 			"contracts.maxGas",
 			"contracts.maxStorageKb",
 			"files.maxSizeKb",
@@ -201,6 +202,8 @@ public class BootstrapProperties implements PropertySource {
 			"hedera.transaction.maxValidDuration",
 			"hedera.transaction.minValidDuration",
 			"hedera.transaction.minValidityBufferSecs",
+			"ledger.autoRenewPeriod.maxDuration",
+			"ledger.autoRenewPeriod.minDuration",
 			"ledger.keepRecordsInState",
 			"ledger.fundingAccount",
 			"ledger.maxAccountNum",
@@ -208,8 +211,8 @@ public class BootstrapProperties implements PropertySource {
 			"ledger.tokenTransfers.maxLen",
 			"rates.intradayChangeLimitPercent",
 			"tokens.maxPerAccount",
-			"tokens.maxSymbolLength",
-			"tokens.maxTokenNameLength"
+			"tokens.maxSymbolUtf8Bytes",
+			"tokens.maxTokenNameUtf8Bytes"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -263,6 +266,8 @@ public class BootstrapProperties implements PropertySource {
 			entry("hedera.transaction.maxValidDuration", AS_LONG),
 			entry("hedera.transaction.minValidDuration", AS_LONG),
 			entry("hedera.transaction.minValidityBufferSecs", AS_INT),
+			entry("ledger.autoRenewPeriod.maxDuration", AS_LONG),
+			entry("ledger.autoRenewPeriod.minDuration", AS_LONG),
 			entry("precheck.account.maxLookupRetries", AS_INT),
 			entry("precheck.account.lookupRetryBackoffIncrementMs", AS_INT),
 			entry("bootstrap.ledger.nodeAccounts.initialBalance", AS_LONG),
@@ -284,8 +289,9 @@ public class BootstrapProperties implements PropertySource {
 			entry("ledger.tokenTransfers.maxLen", AS_INT),
 			entry("ledger.totalTinyBarFloat", AS_LONG),
 			entry("tokens.maxPerAccount", AS_INT),
-			entry("tokens.maxSymbolLength", AS_INT),
-			entry("tokens.maxTokenNameLength", AS_INT),
+			entry("tokens.maxSymbolUtf8Bytes", AS_INT),
+			entry("tokens.maxTokenNameUtf8Bytes", AS_INT),
+			entry("contracts.localCall.estRetBytes", AS_INT),
 			entry("contracts.maxStorageKb", AS_INT),
 			entry("contracts.defaultLifetime", AS_LONG),
 			entry("contracts.maxGas", AS_INT),

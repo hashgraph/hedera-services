@@ -40,7 +40,6 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
-	static final int MAX_CONCEIVABLE_SYMBOL_NAME_LENGTH = 256;
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
 	static DomainSerdes serdes = new DomainSerdes();
@@ -48,6 +47,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public static final long UNUSED_AUTO_RENEW_PERIOD = -1L;
 	public static final JKey UNUSED_KEY = null;
 	public static final EntityId UNUSED_AUTO_RENEW_ACCOUNT = null;
+	public static final int UPPER_BOUND_SYMBOL_UTF8_BYTES = 1024;
+	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 1024;
 
 	@Deprecated
 	public static final MerkleToken.Provider LEGACY_PROVIDER = new MerkleToken.Provider();
@@ -194,8 +195,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		expiry = in.readLong();
 		autoRenewAccount = serdes.readNullableSerializable(in);
 		autoRenewPeriod = in.readLong();
-		symbol = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_NAME_LENGTH);
-		name = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_NAME_LENGTH);
+		symbol = in.readNormalisedString(UPPER_BOUND_SYMBOL_UTF8_BYTES);
+		name = in.readNormalisedString(UPPER_BOUND_TOKEN_NAME_UTF8_BYTES);
 		treasury = in.readSerializable();
 		totalSupply = in.readLong();
 		decimals = in.readInt();

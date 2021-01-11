@@ -21,21 +21,17 @@ package com.hedera.services.legacy.services.state;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.TextFormat;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.Transaction;
@@ -58,7 +54,6 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVE
 import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -71,17 +66,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class AwareProcessLogic implements ProcessLogic {
-
-	private static final int MEMO_SIZE_LIMIT = 100;
-
 	static Logger log = LogManager.getLogger(AwareProcessLogic.class);
 
 	private static final EnumSet<ResponseCodeEnum> SIG_RATIONALIZATION_ERRORS = EnumSet.of(
@@ -226,25 +216,19 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 
 		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
-		ResponseCodeEnum opValidity = transitionLogic.isPresent()
-				? transitionLogic.get().syntaxCheck().apply(accessor.getTxn())
-				: TransactionValidationUtils.validateTxSpecificBody(accessor.getTxn(), ctx.validator());
+		if (transitionLogic.isEmpty()) {
+			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxn4Log);
+			ctx.txnCtx().setStatus(FAIL_INVALID);
+			return;
+		}
 
+		var logic = transitionLogic.get();
+		var opValidity = logic.syntaxCheck().apply(accessor.getTxn());
 		if (opValidity != OK) {
 			ctx.txnCtx().setStatus(opValidity);
 			return;
 		}
-
-		if (transitionLogic.isPresent()) {
-			transitionLogic.get().doStateTransition();
-		} else {
-			TransactionRecord record = processTransaction(accessor.getTxn(), consensusTime);
-			if (record != null && record.isInitialized()) {
-				mapLegacyRecordToTxnCtx(record);
-			} else {
-				log.warn("Legacy process returned null record for {}!", accessor.getTxn());
-			}
-		}
+		logic.doStateTransition();
 
 		ctx.opCounters().countHandled(accessor.getFunction());
 	}
@@ -345,19 +329,6 @@ public class AwareProcessLogic implements ProcessLogic {
 				!inSameUtcDay(ctx.consensusTimeOfLastHandledTxn(), dataDrivenNow);
 	}
 
-	private void mapLegacyRecordToTxnCtx(TransactionRecord legacyRecord) {
-		ctx.txnCtx().setStatus(legacyRecord.getReceipt().getStatus());
-
-		if (legacyRecord.hasContractCallResult()) {
-			ctx.txnCtx().setCallResult(legacyRecord.getContractCallResult());
-		} else if (legacyRecord.hasContractCreateResult()) {
-			ctx.txnCtx().setCreateResult(legacyRecord.getContractCreateResult());
-			if (ctx.txnCtx().status() == SUCCESS) {
-				ctx.txnCtx().setCreated(legacyRecord.getReceipt().getContractID());
-			}
-		}
-	}
-
 	private void addForStreaming(
 			com.hederahashgraph.api.proto.java.Transaction grpcTransaction,
 			TransactionRecord transactionRecord,
@@ -366,75 +337,5 @@ public class AwareProcessLogic implements ProcessLogic {
 		if (PropertiesLoader.isEnableRecordStreaming()) {
 			ctx.recordStream().addRecord(grpcTransaction, transactionRecord, consensusTimeStamp);
 		}
-	}
-
-	private TransactionRecord processTransaction(TransactionBody txn, Instant consensusTime) {
-		TransactionRecord record = null;
-		if (txn.hasContractCreateInstance()) {
-			FileID fid = txn.getContractCreateInstance().getFileID();
-			try {
-				if (!ctx.hfs().exists(fid)) {
-					record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, INVALID_FILE_ID);
-				} else if(isMemoTooLong(txn.getContractCreateInstance().getMemo())) {
-					record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, MEMO_TOO_LONG);
-				} else {
-					byte[] contractByteCode = ctx.hfs().cat(fid);
-					if (contractByteCode.length > 0) {
-						record = ctx.contracts().createContract(txn, consensusTime, contractByteCode, ctx.seqNo());
-					} else {
-						record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, CONTRACT_FILE_EMPTY);
-					}
-				}
-			} catch (Exception e) {
-				log.error("Error during create contract", e);
-			}
-
-		} else if (txn.hasContractCall()) {
-			try {
-				record = ctx.contracts().contractCall(txn, consensusTime, ctx.seqNo());
-			} catch (Exception e) {
-				log.error("Error during create contract", e);
-			}
-		} else if (txn.hasContractUpdateInstance()) {
-			try {
-				if (isMemoTooLong(txn.getContractUpdateInstance().getMemo())) {
-					record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, MEMO_TOO_LONG);
-				} else {
-					record = ctx.contracts().updateContract(txn, consensusTime);
-				}
-			} catch (Exception e) {
-				log.error("Error during update contract", e);
-			}
-		} else if (txn.hasContractDeleteInstance()) {
-			try {
-				record = ctx.contracts().deleteContract(txn, consensusTime);
-			} catch (Exception e) {
-				log.error("Error during delete contract", e);
-			}
-		} else if (txn.hasSystemDelete() && txn.getSystemDelete().hasContractID()) {
-				record = ctx.contracts().systemDelete(txn, consensusTime);
-		} else if (txn.hasSystemUndelete() && txn.getSystemUndelete().hasContractID()) {
-				record = ctx.contracts().systemUndelete(txn, consensusTime);
-		} else if (txn.hasFreeze()) {
-			record = ctx.freeze().freeze(txn, consensusTime);
-		} else {
-			log.error("API is not implemented");
-			record = TransactionRecord.getDefaultInstance();
-		}
-		if (record.hasReceipt()) {
-			if (!record.getReceipt().hasExchangeRate()) {
-				if(log.isDebugEnabled()) {
-					log.debug("Receipt {} missing rates info!", TextFormat.shortDebugString(record));
-				}
-				TransactionReceipt.Builder receiptBuilder = record.getReceipt().toBuilder();
-				receiptBuilder.setExchangeRate(ctx.exchange().activeRates());
-				record = record.toBuilder().setReceipt(receiptBuilder).build();
-			}
-		}
-		return record;
-	}
-
-	private boolean isMemoTooLong(String memo) {
-		return memo.length() > MEMO_SIZE_LIMIT;
 	}
 }

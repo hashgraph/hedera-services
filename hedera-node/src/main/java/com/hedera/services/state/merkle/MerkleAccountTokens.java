@@ -44,7 +44,7 @@ import static java.util.stream.Collectors.toList;
 public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountTokens.class);
 
-	static final int MAX_CONCEIVABLE_TOKEN_ID_PARTS = 3_000;
+	static final int MAX_CONCEIVABLE_TOKEN_ID_PARTS = Integer.MAX_VALUE;
 
 	static final long[] NO_ASSOCIATIONS = new long[0];
 	static final int NUM_ID_PARTS = 3;

@@ -141,7 +141,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 			SystemFile.NODE_DETAILS, BookEntryPojo::toNodeDetailsEntry));
 
 	static Pattern nodeCertPattern = Pattern.compile(".*node(\\d+)[.]crt");
-	static Pattern pubKeyPattern = Pattern.compile(".*node(\\d+).]der");
+	static Pattern pubKeyPattern = Pattern.compile(".*node(\\d+)[.]der");
 
 	public static void main(String... args) throws IOException {
 		parse(args);
@@ -223,7 +223,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 				).then(
 						cryptoUpdate(accountToReKey)
 								.key("replacementKey")
-								.signedBy(GENESIS, "existingKey", "replacementKey")
+								.signedBy(DEFAULT_PAYER, "existingKey", "replacementKey")
 				);
 	}
 
@@ -316,10 +316,10 @@ public class SysFilesUpdate extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							if (toUpload.length < (6 * 1024)) {
 								var singleOp = fileUpdate(registryNames.get(target))
-										.payingWith(GENESIS)
+										.payingWith(DEFAULT_PAYER)
 										.fee(feeToOffer())
 										.contents(toUpload)
-										.signedBy(GENESIS, DEFAULT_SYSFILE_KEY);
+										.signedBy(DEFAULT_PAYER, DEFAULT_SYSFILE_KEY);
 								CustomSpecAssert.allRunFor(spec, singleOp);
 							} else {
 								int n = 0;
@@ -332,13 +332,13 @@ public class SysFilesUpdate extends HapiApiSuite {
 												.fee(feeToOffer())
 												.wacl("insurance")
 												.contents(thisChunk)
-												.signedBy(GENESIS, DEFAULT_SYSFILE_KEY)
+												.signedBy(DEFAULT_PAYER, DEFAULT_SYSFILE_KEY)
 												.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED);
 									} else {
 										subOp = fileAppend(registryNames.get(target))
 												.fee(feeToOffer())
 												.content(thisChunk)
-												.signedBy(GENESIS, DEFAULT_SYSFILE_KEY)
+												.signedBy(DEFAULT_PAYER, DEFAULT_SYSFILE_KEY)
 												.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED);
 									}
 									CustomSpecAssert.allRunFor(spec, subOp);

@@ -20,18 +20,12 @@ package com.hedera.services.txns;
  * ‍
  */
 
-import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Provides logic to identify what {@link TransitionLogic} applies to the
