@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -64,14 +65,14 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		try {
+	//	try {
 			// should wait until runningHash has been calculated and set
-			out.writeSerializable(runningHash.getFutureHash().get(), true);
-		} catch (InterruptedException ex) {
-			Thread.currentThread().interrupt();
-			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf",
-					ex);
-		}
+			out.writeSerializable(CryptoFactory.getInstance().getNullHash(), true);
+//		} catch (InterruptedException ex) {
+//			Thread.currentThread().interrupt();
+//			throw new IOException("Got interrupted when getting runningHash when serializing RunningHashLeaf",
+//					ex);
+//		}
 	}
 
 	@Override
