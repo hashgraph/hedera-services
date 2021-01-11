@@ -39,7 +39,6 @@ import com.hedera.test.mocks.TestContextValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -48,6 +47,14 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
+
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.fcmap.FCMap;
@@ -57,13 +64,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
@@ -164,22 +164,12 @@ class QueryValidationTest {
 	}
 
 	@Test
-	void testValidateGetInfoQuery_validateQuery_negetive() throws Exception {
+	void testValidateGetInfoQuery_validateQuery_negative() throws Exception {
 		Transaction transferTransaction = createQueryHeaderTransfer(negetiveAccountNo);
 		Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(negetiveAccountNo,
 				transferTransaction, ResponseType.ANSWER_ONLY);
 
 		ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
 		assertEquals(result, ResponseCodeEnum.NOT_SUPPORTED);
-	}
-
-
-	@Test
-	void testValidateGetInfoQuery_validateFee_inSufficientTxFee() throws Exception {
-		Transaction transaction = createQueryHeaderTransfer(lowBalanceAccount);
-		ResponseCodeEnum result =
-				transactionHandler.validateScheduledFee(HederaFunctionality.CryptoGetInfo, transaction, 100);
-		assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, result);
-
 	}
 }

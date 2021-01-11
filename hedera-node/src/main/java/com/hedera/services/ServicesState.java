@@ -178,7 +178,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 		if (scheduleTxs() == null) {
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
-			log.info("Created scheduled txs FCMap after <= 0.10.0 state restoration");
+			log.info("Created scheduled transactions FCMap after <=0.10.0 state restoration");
 		}
 		if (runningHashLeaf() == null) {
 			final RunningHash runningHash = new RunningHash(emptyHash);
