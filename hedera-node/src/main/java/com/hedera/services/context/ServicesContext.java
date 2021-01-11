@@ -913,8 +913,12 @@ public class ServicesContext {
 
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
-			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics,
-					REF_LOOKUP_FACTORY.apply(tokenStore()), SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
+			var lookups = defaultLookupsFor(
+					hfs(),
+					this::accounts,
+					this::topics,
+					REF_LOOKUP_FACTORY.apply(tokenStore()),
+					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
 			keyOrder = keyOrderWith(lookups);
 		}
 		return keyOrder;

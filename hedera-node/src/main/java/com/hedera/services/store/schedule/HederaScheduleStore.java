@@ -73,7 +73,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	) {
 		super(ids);
 		this.schedules = schedules;
-		buildTxToEntityIdMap(this.schedules); // TODO: rebuild HashMap<hash(txBytes), {MerkleEntityId, List<AccountID>}>
+		buildTxToEntityIdMap(this.schedules);
 	}
 
 	@Override
