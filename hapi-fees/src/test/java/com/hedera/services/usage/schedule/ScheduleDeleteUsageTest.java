@@ -1,6 +1,8 @@
-package com.hedera.services.usage.schedule;/*
+package com.hedera.services.usage.schedule;
+
+/*
  * ‌
- * Hedera Services Node
+ * Hedera Services API Fees
  * ​
  * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
@@ -65,6 +67,15 @@ public class ScheduleDeleteUsageTest {
 		given(factory.get(any(), any(), any())).willReturn(base);
 
 		TxnUsage.estimatorFactory = factory;
+	}
+
+	@Test
+	public void returnsSelf() {
+		givenOp();
+		// and:
+		subject = ScheduleDeleteUsage.newEstimate(txn, sigUsage);
+
+		assertEquals(subject, subject.self());
 	}
 
 	@Test

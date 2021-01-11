@@ -1,4 +1,6 @@
-package com.hedera.services.usage.schedule;/*
+package com.hedera.services.usage.schedule;
+
+/*
  * ‌
  * Hedera Services Node
  * ​

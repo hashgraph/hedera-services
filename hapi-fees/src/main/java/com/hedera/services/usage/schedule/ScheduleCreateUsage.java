@@ -2,7 +2,7 @@ package com.hedera.services.usage.schedule;
 
 /*
  * ‌
- * Hedera Services Node
+ * Hedera Services API Fees
  * ​
  * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
