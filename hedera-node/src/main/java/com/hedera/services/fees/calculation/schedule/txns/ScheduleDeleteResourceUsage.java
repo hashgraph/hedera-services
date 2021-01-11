@@ -16,6 +16,6 @@ public class ScheduleDeleteResourceUsage implements TxnResourceUsageEstimator {
     @Override
     public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
         // TODO: Not in this scope
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

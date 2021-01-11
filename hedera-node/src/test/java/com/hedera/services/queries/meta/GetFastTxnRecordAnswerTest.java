@@ -84,7 +84,6 @@ class GetFastTxnRecordAnswerTest {
 		assertEquals(NOT_SUPPORTED, subject.extractValidityFrom(answerOnlyResponse));
 	}
 
-
 	@Test
 	public void alwaysUnsupported() {
 		// expect:

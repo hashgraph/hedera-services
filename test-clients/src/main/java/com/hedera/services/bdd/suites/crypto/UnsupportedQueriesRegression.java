@@ -28,6 +28,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getBySolidityIdNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getClaimNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getFastRecordNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getStakersNotSupported;
@@ -57,7 +58,8 @@ public class UnsupportedQueriesRegression extends HapiApiSuite {
 				.given( ).when( ).then(
 						getClaimNotSupported(),
 						getStakersNotSupported(),
-						getFastRecordNotSupported()
+						getFastRecordNotSupported(),
+						getBySolidityIdNotSupported()
 				);
 	}
 }

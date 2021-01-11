@@ -235,12 +235,12 @@ public class HederaSigningOrder {
 	private <T> Optional<SigningOrderResult<T>> forSchedule(
 			TransactionBody txn,
 			SigningOrderResultFactory<T> factory) {
-		if (txn.hasScheduleCreation()) {
-			return Optional.of(scheduleCreate(txn.getScheduleCreation(), factory));
+		if (txn.hasScheduleCreate()) {
+			return Optional.of(scheduleCreate(txn.getScheduleCreate(), factory));
 		} else if (txn.hasScheduleSign()) {
-			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getSchedule(), factory));
+			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
 		} else if (txn.hasScheduleDelete()) {
-			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getSchedule(), factory));
+			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(), factory));
 		} else {
 			return Optional.empty();
 		}

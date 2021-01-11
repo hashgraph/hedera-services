@@ -38,12 +38,12 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public int maxTokenSymbolLength() {
-		return 32;
+	public int maxTokenSymbolUtf8Bytes() {
+		return 100;
 	}
 
 	@Override
-	public int maxTokenNameLength() {
+	public int maxTokenNameUtf8Bytes() {
 		return 100;
 	}
 
@@ -135,5 +135,20 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public int feesTokenTransferUsageMultiplier() {
 		return 380;
+	}
+
+	@Override
+	public long maxAutoRenewDuration() {
+		return 8000001L;
+	}
+
+	@Override
+	public long minAutoRenewDuration() {
+		return 6999999L;
+	}
+
+	@Override
+	public int localCallEstRetBytes() {
+		return 32;
 	}
 }

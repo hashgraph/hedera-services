@@ -76,7 +76,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			var outcome = ledger.doAtomicTransfers(op);
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
-			log.warn("Unrecognized exception {}!", e);
+			log.warn("Avoidable exception!", e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

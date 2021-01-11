@@ -19,10 +19,11 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -70,33 +71,34 @@ public class ScheduleCreateTransitionLogicTest {
     }
 
     @Test
-    public void failsOnExecuteImmediatelyFalse() {
-        givenCtx(
-                true,
-                false);
-
-        // expect:
-        assertEquals(NOT_SUPPORTED, subject.validate(scheduleCreateTxn));
+    public void doStateTransitionIsUnsupported() {
+        givenValidTxnCtx();
+        assertThrows(UnsupportedOperationException.class, () -> subject.doStateTransition());
     }
 
     @Test
     public void failsOnInvalidAdminKey() {
         givenCtx(
-                false,
                 true);
 
         // expect:
         assertEquals(INVALID_ADMIN_KEY, subject.validate(scheduleCreateTxn));
     }
 
+    @Test
+    public void syntaxCheckWorks() {
+        givenValidTxnCtx();
+
+        // expect:
+        assertEquals(OK, subject.syntaxCheck().apply(scheduleCreateTxn));
+    }
+
     private void givenValidTxnCtx() {
         givenCtx(
-                false,
                 false);
     }
 
     private void givenCtx(
-            boolean invalidExecuteImmediately,
             boolean invalidAdminKey
             ) {
         sigMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
@@ -105,18 +107,13 @@ public class ScheduleCreateTransitionLogicTest {
         var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
                 .setSigMap(sigMap)
                 .setAdminKey(key)
-                .setExecuteImmediately(yes)
-                .setPayer(payer);
-
-        if (invalidExecuteImmediately) {
-            scheduleCreate.setExecuteImmediately(no);
-        }
+                .setPayerAccountID(payer);
 
         if (invalidAdminKey) {
             scheduleCreate.setAdminKey(invalidKey);
         }
 
-        builder.setScheduleCreation(scheduleCreate);
+        builder.setScheduleCreate(scheduleCreate);
 
         scheduleCreateTxn = builder.build();
         given(accessor.getTxn()).willReturn(scheduleCreateTxn);

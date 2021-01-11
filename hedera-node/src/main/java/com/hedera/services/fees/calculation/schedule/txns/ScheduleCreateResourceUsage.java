@@ -10,12 +10,12 @@ import com.hederahashgraph.fee.SigValueObj;
 public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
     @Override
     public boolean applicableTo(TransactionBody txn) {
-        return txn.hasScheduleCreation();
+        return txn.hasScheduleCreate();
     }
 
     @Override
     public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
         // TODO: Not in this scope
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

@@ -28,6 +28,6 @@ option java_multiple_files = true;
 import "BasicTypes.proto";
 
 message ScheduleSignTransactionBody {
-  ScheduleID schedule = 1; // The ID of the Scheduled entity
+  ScheduleID scheduleID = 1; // The ID of the Scheduled entity
   SignatureMap sigMap = 2; // The signature map containing the signature(s) to authorise the transaction
 }

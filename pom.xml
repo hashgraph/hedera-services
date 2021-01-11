@@ -138,11 +138,8 @@
     <!-- Test dependency properties -->
     <hamcrest-all.version>1.3</hamcrest-all.version>
     <junit.version>4.13.1</junit.version>
-    <junit.jupiter.version>5.4.2</junit.jupiter.version>
-    <junit.vintage.version>5.4.2</junit.vintage.version>
-    <junit.platform.version>1.4.2</junit.platform.version>
-    <mockito-junit-jupiter.version>3.3.0</mockito-junit-jupiter.version>
-    <mockito2.version>3.3.0</mockito2.version>
+    <junit5-bom.version>5.7.0</junit5-bom.version>
+    <mockito2.version>3.7.0</mockito2.version>
 
     <!-- SonarCloud properties -->
     <jacoco.version>0.8.5</jacoco.version>
@@ -429,6 +426,28 @@ ${git.signoff}
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit5-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${mockito2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-junit-jupiter</artifactId>
+        <version>${mockito2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-all</artifactId>
+        <version>${hamcrest-all.version}</version>
       </dependency>
       <dependency>
         <groupId>net.i2p.crypto</groupId>

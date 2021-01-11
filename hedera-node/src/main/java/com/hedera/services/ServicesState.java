@@ -78,7 +78,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_090_VERSION = 3;
 	static final int RELEASE_0100_VERSION = 4;
-	static final int MERKLE_VERSION = RELEASE_0100_VERSION;
+	static final int RELEASE_0110_VERSION = 5;
+	static final int MERKLE_VERSION = RELEASE_0110_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
@@ -101,8 +102,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		static final int TOKEN_ASSOCIATIONS = 6;
 		static final int DISK_FS = 7;
 		static final int NUM_090_CHILDREN = 8;
+		static final int NUM_0100_CHILDREN = 8;
 		static final int SCHEDULE_TXS = 8;
-		static final int NUM_0100_CHILDREN = 9;
+		static final int NUM_0110_CHILDREN = 9;
 	}
 
 	ServicesContext ctx;
@@ -111,7 +113,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	}
 
 	public ServicesState(List<MerkleNode> children) {
-		super(ChildIndices.NUM_0100_CHILDREN);
+		super(ChildIndices.NUM_0110_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -137,14 +139,19 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version == RELEASE_070_VERSION) {
-			return ChildIndices.NUM_070_CHILDREN;
-		} else if (version == RELEASE_080_VERSION) {
-			return ChildIndices.NUM_080_CHILDREN;
-		} else if (version == RELEASE_090_VERSION) {
-			return ChildIndices.NUM_090_CHILDREN;
-		} else {
-			return ChildIndices.NUM_0100_CHILDREN;
+		switch (version) {
+			case RELEASE_0110_VERSION:
+				return ChildIndices.NUM_0110_CHILDREN;
+			case RELEASE_0100_VERSION:
+				return ChildIndices.NUM_0100_CHILDREN;
+			case RELEASE_090_VERSION:
+				return ChildIndices.NUM_090_CHILDREN;
+			case RELEASE_080_VERSION:
+				return ChildIndices.NUM_080_CHILDREN;
+			case RELEASE_070_VERSION:
+				return ChildIndices.NUM_070_CHILDREN;
+			default:
+				throw new IllegalArgumentException(String.format("unknown version: %d", version));
 		}
 	}
 
@@ -168,7 +175,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		if (scheduleTxs() == null) {
 			setChild(ChildIndices.SCHEDULE_TXS,
 					new FCMap<>(new MerkleEntityId.Provider(), MerkleSchedule.LEGACY_PROVIDER));
-			log.info("Created scheduled txs FCMap after <= 0.10.0 state restoration");
+			log.info("Created scheduled transactions FCMap after <=0.10.0 state restoration");
 		}
 	}
 
@@ -194,7 +201,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
-		if (getNumberOfChildren() < ChildIndices.NUM_0100_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN) {
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX,

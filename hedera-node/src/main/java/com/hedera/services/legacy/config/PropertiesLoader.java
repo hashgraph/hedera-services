@@ -48,7 +48,6 @@ public class PropertiesLoader {
 			properties.setProperty(setting.getName(), setting.getValue());
 		});
 		applicationProps = new CustomProperties(properties);
-		SyncPropertiesObject.loadSynchProperties(applicationProps);
 		AsyncPropertiesObject.loadAsynchProperties(applicationProps);
 		log.info("Application Properties Populated with these values :: " + applicationProps.getCustomProperties());
 		updateCallbacks.forEach(Runnable::run);
@@ -64,14 +63,6 @@ public class PropertiesLoader {
 		log.info("API Properties Populated with these values :: " + apiProperties.getCustomProperties());
 	}
 
-	public static long getMinimumAutorenewDuration() {
-		return SyncPropertiesObject.getMINIMUM_AUTORENEW_DURATION();
-	}
-
-	public static long getMaximumAutorenewDuration() {
-		return SyncPropertiesObject.getMAXIMUM_AUTORENEW_DURATION();
-	}
-
 	public static long getRecordLogPeriod() {
 		return AsyncPropertiesObject.getRecordLogPeriod();
 	}
@@ -82,10 +73,6 @@ public class PropertiesLoader {
 
 	public static int getRecordStreamQueueCapacity() {
 		return AsyncPropertiesObject.getRecordStreamQueueCapacity();
-	}
-
-	public static int getlocalCallEstReturnBytes() {
-		return SyncPropertiesObject.getLocalCallEstReturnBytes();
 	}
 
 	public static boolean isEnableRecordStreaming() {
@@ -142,10 +129,6 @@ public class PropertiesLoader {
 
 	public static String getNettyMode() {
 		return AsyncPropertiesObject.getNettyMode();
-	}
-
-	public static int getMaxGasLimit() {
-		return SyncPropertiesObject.getMaxGasLimit();
 	}
 
 	public static int getBinaryObjectQueryRetryTimes() {
