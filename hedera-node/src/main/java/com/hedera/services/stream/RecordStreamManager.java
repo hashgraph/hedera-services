@@ -190,6 +190,7 @@ public class RecordStreamManager {
 			}
 		}
 		runningAvgs.recordStreamQueueSize(getRecordStreamingQueueSize());
+		runningAvgs.hashQueueSize(getHashQueueSize());
 	}
 
 	/**

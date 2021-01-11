@@ -23,6 +23,7 @@ package com.hedera.services.stats;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.Platform;
 import com.swirlds.platform.StatsRunningAverage;
+import com.swirlds.platform.StatsSpeedometer;
 
 public class MiscRunningAvgs {
 	private final RunningAvgFactory runningAvg;
@@ -31,6 +32,7 @@ public class MiscRunningAvgs {
 	StatsRunningAverage accountLookupRetries;
 	StatsRunningAverage recordStreamQueueSize;
 	StatsRunningAverage handledSubmitMessageSize;
+	StatsRunningAverage hashQueueSize;
 
 	public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
 		this.runningAvg = runningAvg;
@@ -41,6 +43,7 @@ public class MiscRunningAvgs {
 		accountLookupRetries = new StatsRunningAverage(halfLife);
 		recordStreamQueueSize = new StatsRunningAverage(halfLife);
 		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
+		hashQueueSize = new StatsRunningAverage(halfLife);
 	}
 
 	public void registerWith(Platform platform) {
@@ -64,6 +67,13 @@ public class MiscRunningAvgs {
 						Names.HANDLED_SUBMIT_MESSAGE_SIZE,
 						Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
 						handledSubmitMessageSize));
+		platform.addAppStatEntry(
+				runningAvg.from(
+						Names.HASH_QUEUE_SIZE,
+						Descriptions.HASH_QUEUE_SIZE,
+						hashQueueSize
+				)
+		);
 	}
 
 	public void recordAccountLookupRetries(int num) {
@@ -82,11 +92,16 @@ public class MiscRunningAvgs {
 		handledSubmitMessageSize.recordValue(bytes);
 	}
 
+	public void hashQueueSize(int num) {
+		hashQueueSize.recordValue(num);
+	}
+
 	static class Names {
 		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
 		public static final String RECORD_STREAM_QUEUE_SIZE = "recordStreamQueueSize";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
+		public static final String HASH_QUEUE_SIZE = "hashQueueSize";
 	}
 
 	static class Descriptions {
@@ -98,5 +113,6 @@ public class MiscRunningAvgs {
 				"size of the queue from which we take records and write to RecordStream file";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
 				"average size of the handled HCS submit message transaction";
+		public static final String HASH_QUEUE_SIZE = "size of working queue for calculating hash and runningHash";
 	}
 }
