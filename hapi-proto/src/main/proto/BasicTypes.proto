@@ -98,6 +98,13 @@ message TokenID {
     int64 tokenNum = 3; // A nonnegative token number
 }
 
+/* Unique identifier for a schedule entity */
+message ScheduleID {
+    int64 shardNum = 1;    // A nonnegative shard number
+    int64 realmNum = 2;    // A nonnegative realm number
+    int64 scheduleNum = 3; // A nonnegative schedule number
+}
+
 /* Possible Freeze statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship */
 enum TokenFreezeStatus {
     FreezeNotApplicable = 0;
@@ -252,7 +259,7 @@ enum HederaFunctionality {
     ConsensusSubmitMessage = 54; // Submit message to topic
     UncheckedSubmit = 55;
     TokenCreate = 56; // Create Token
-    TokenGetInfo = 58; // Get token information
+    TokenGetInfo = 58; // Get Token information
     TokenFreezeAccount = 59; // Freeze Account
     TokenUnfreezeAccount = 60; // Unfreeze Account
     TokenGrantKycToAccount = 61; // Grant KYC to Account
@@ -264,6 +271,10 @@ enum HederaFunctionality {
     TokenAccountWipe = 67; // Wipe token amount from Account holder
     TokenAssociateToAccount = 68; // Associate tokens to an account
     TokenDissociateFromAccount = 69; // Dissociate tokens from an account
+    ScheduleCreate = 70; // Create Scheduled Transaction
+    ScheduleDelete = 71; // Delete Scheduled Transaction
+    ScheduleSign = 72; // Sign Scheduled Transaction
+    ScheduleGetInfo = 73; // Get Scheduled Transaction Information
 }
 
 /*

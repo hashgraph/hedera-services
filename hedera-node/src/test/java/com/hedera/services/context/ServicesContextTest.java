@@ -29,6 +29,9 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.grpc.controllers.ContractController;
+import com.hedera.services.grpc.controllers.FreezeController;
+import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
@@ -36,6 +39,7 @@ import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.contract.ContractAnswers;
+import com.hedera.services.queries.schedule.ScheduleAnswers;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -113,8 +117,6 @@ import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
-import com.hedera.services.legacy.service.FreezeServiceImpl;
-import com.hedera.services.legacy.service.SmartContractServiceImpl;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.hedera.services.legacy.stream.RecordStream;
@@ -406,6 +408,7 @@ public class ServicesContextTest {
 		assertThat(ctx.bytecodeDb(), instanceOf(BlobStorageSource.class));
 		assertThat(ctx.cryptoAnswers(), instanceOf(CryptoAnswers.class));
 		assertThat(ctx.tokenAnswers(), instanceOf(TokenAnswers.class));
+		assertThat(ctx.scheduleAnswers(), instanceOf(ScheduleAnswers.class));
 		assertThat(ctx.consensusGrpc(), instanceOf(ConsensusController.class));
 		assertThat(ctx.storagePersistence(), instanceOf(BlobStoragePersistence.class));
 		assertThat(ctx.filesGrpc(), instanceOf(FileController.class));
@@ -451,6 +454,7 @@ public class ServicesContextTest {
 		assertThat(ctx.tokenStore(), instanceOf(HederaTokenStore.class));
 		assertThat(ctx.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
 		assertThat(ctx.tokenGrpc(), instanceOf(TokenController.class));
+		assertThat(ctx.scheduleGrpc(), instanceOf(ScheduleController.class));
 		assertThat(ctx.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		assertThat(ctx.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));
 		assertThat(ctx.exchange(), instanceOf(AwareHbarCentExchange.class));
@@ -460,13 +464,13 @@ public class ServicesContextTest {
 		assertThat(ctx.speedometers(), instanceOf(MiscSpeedometers.class));
 		assertThat(ctx.statsManager(), instanceOf(ServicesStatsManager.class));
 		assertThat(ctx.semVers(), instanceOf(SemanticVersions.class));
+		assertThat(ctx.freezeGrpc(), instanceOf(FreezeController.class));
+		assertThat(ctx.contractsGrpc(), instanceOf(ContractController.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));
 		assertThat(ctx.contracts(), instanceOf(SmartContractRequestHandler.class));
-		assertThat(ctx.freezeGrpc(), instanceOf(FreezeServiceImpl.class));
-		assertThat(ctx.contractsGrpc(), instanceOf(SmartContractServiceImpl.class));
 		assertThat(ctx.recordStream(), instanceOf(RecordStream.class));
 		assertThat(ctx.accountsExporter(), instanceOf(DefaultAccountsExporter.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));

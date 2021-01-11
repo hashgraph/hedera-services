@@ -208,4 +208,6 @@ enum ResponseCodeEnum {
   TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED = 198; // Exceeded the number of token transfers (both from and to) allowed for token transfer list
   EMPTY_TOKEN_TRANSFER_BODY = 199; // TokenTransfersTransactionBody has no TokenTransferList
   EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS = 200; // TokenTransfersTransactionBody has a TokenTransferList with no AccountAmounts
+
+  INVALID_SCHEDULE_ID = 201; // The scheduled transaction entity is invalid or does not exist
 }

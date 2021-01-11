@@ -66,7 +66,6 @@ class GetContractInfoResourceUsageTest {
 	Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
 
 	StateView view;
-	SmartContractFeeBuilder usageEstimator;
 	ContractGetInfoResponse.ContractInfo info;
 
 	ContractGetInfoUsage estimator;

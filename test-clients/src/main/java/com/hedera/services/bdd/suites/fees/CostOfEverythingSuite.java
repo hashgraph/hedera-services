@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,28 +20,47 @@ package com.hedera.services.bdd.suites.fees;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
+import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
+import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.TAKE;
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_LOOKUP_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_LOOKUP_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BELIEVE_IN_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CONSPICUOUS_DONATION_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.LUCKY_NO_LOOKUP_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static java.util.stream.Collectors.toList;
-import static com.hedera.services.bdd.spec.keys.KeyShape.*;
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.*;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.*;
-import static com.hedera.services.bdd.spec.assertions.AssertUtils.*;
 
 public class CostOfEverythingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CostOfEverythingSuite.class);
@@ -60,7 +79,8 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 //				cryptoTransferPaths(),
 //				cryptoGetAccountInfoPaths(),
 //				cryptoGetAccountRecordsPaths(),
-				transactionGetRecordPaths()
+//				transactionGetRecordPaths()
+				miscContractCreatesAndCalls()
 		).map(Stream::of).reduce(Stream.empty(), Stream::concat).collect(toList());
 	}
 
@@ -70,6 +90,49 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 				txnGetSmallTransferRecord(),
 				txnGetLargeTransferRecord(),
 		};
+	}
+
+	HapiApiSpec miscContractCreatesAndCalls() {
+		Object[] donationArgs = new Object[] { 2, "Hey, Ma!" };
+
+		return customHapiSpec("MiscContractCreatesAndCalls")
+				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+				.given(
+						cryptoCreate("civilian")
+								.balance(A_HUNDRED_HBARS),
+						fileCreate("multiBytecode")
+								.payingWith("civilian")
+								.path(MULTIPURPOSE_BYTECODE_PATH),
+						fileCreate("lookupBytecode")
+								.payingWith("civilian")
+								.path(BALANCE_LOOKUP_BYTECODE_PATH)
+				).when(
+						contractCreate("multi")
+								.payingWith("civilian")
+								.bytecode("multiBytecode")
+								.balance(652),
+						contractCreate("lookup")
+								.payingWith("civilian")
+								.bytecode("lookupBytecode")
+								.balance(256)
+				).then(
+						contractCall("multi", BELIEVE_IN_ABI, 256)
+								.payingWith("civilian"),
+						contractCallLocal("multi", LUCKY_NO_LOOKUP_ABI)
+								.payingWith("civilian").logged()
+								.has(resultWith().resultThruAbi(
+										LUCKY_NO_LOOKUP_ABI,
+										isLiteralResult(new Object[] { BigInteger.valueOf(256) }))),
+						contractCall("multi", CONSPICUOUS_DONATION_ABI, donationArgs)
+								.payingWith("civilian"),
+						contractCallLocal(
+								"lookup",
+								BALANCE_LOOKUP_ABI,
+								spec -> new Object[] {
+										spec.registry().getAccountID("civilian").getAccountNum()
+								}
+						).payingWith("civilian").logged()
+				);
 	}
 
 	HapiApiSpec txnGetCreateRecord() {
@@ -114,11 +177,11 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 						cryptoCreate("d")
 				).when(
 						cryptoTransfer(spec -> TransferList.newBuilder()
-											.addAccountAmounts(aa(spec, GENESIS, -4L))
-											.addAccountAmounts(aa(spec, "a", 1L))
-											.addAccountAmounts(aa(spec, "b", 1L))
-											.addAccountAmounts(aa(spec, "c", 1L))
-											.addAccountAmounts(aa(spec, "d", 1L)).build())
+								.addAccountAmounts(aa(spec, GENESIS, -4L))
+								.addAccountAmounts(aa(spec, "a", 1L))
+								.addAccountAmounts(aa(spec, "b", 1L))
+								.addAccountAmounts(aa(spec, "c", 1L))
+								.addAccountAmounts(aa(spec, "d", 1L)).build())
 								.payingWith("hairTriggerPayer")
 								.via("txn")
 				).then(
@@ -216,7 +279,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 
 	HapiApiSpec[] cryptoCreatePaths() {
 		return new HapiApiSpec[] {
-			cryptoCreateSimpleKey(),
+				cryptoCreateSimpleKey(),
 		};
 	}
 

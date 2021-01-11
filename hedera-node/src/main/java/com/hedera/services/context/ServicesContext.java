@@ -34,9 +34,14 @@ import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractRecordsResourceUsage;
+import com.hedera.services.fees.calculation.schedule.queries.GetScheduleInfoResourceUsage;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleDeleteResourceUsage;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleSignResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
@@ -51,7 +56,16 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.grpc.controllers.ContractController;
+import com.hedera.services.grpc.controllers.FreezeController;
+import com.hedera.services.queries.contract.ContractCallLocalAnswer;
+import com.hedera.services.queries.contract.GetBySolidityIdAnswer;
+import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.queries.contract.GetContractRecordsAnswer;
+import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
+import com.hedera.services.queries.schedule.ScheduleAnswers;
+import com.hedera.services.schedules.HederaScheduleStore;
+import com.hedera.services.schedules.ScheduleStore;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -185,6 +199,12 @@ import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
 import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
 import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
 import com.hedera.services.txns.consensus.TopicUpdateTransitionLogic;
+import com.hedera.services.txns.contract.ContractCallTransitionLogic;
+import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
+import com.hedera.services.txns.contract.ContractDeleteTransitionLogic;
+import com.hedera.services.txns.contract.ContractSysDelTransitionLogic;
+import com.hedera.services.txns.contract.ContractSysUndelTransitionLogic;
+import com.hedera.services.txns.contract.ContractUpdateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoCreateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoDeleteTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
@@ -195,7 +215,11 @@ import com.hedera.services.txns.file.FileDeleteTransitionLogic;
 import com.hedera.services.txns.file.FileSysDelTransitionLogic;
 import com.hedera.services.txns.file.FileSysUndelTransitionLogic;
 import com.hedera.services.txns.file.FileUpdateTransitionLogic;
+import com.hedera.services.txns.network.FreezeTransitionLogic;
 import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
+import com.hedera.services.txns.schedule.ScheduleCreateTransitionLogic;
+import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
+import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
@@ -268,8 +292,6 @@ import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.netty.NettyServerManager;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
-import com.hedera.services.legacy.service.FreezeServiceImpl;
-import com.hedera.services.legacy.service.SmartContractServiceImpl;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.context.properties.PropertySources;
@@ -347,7 +369,9 @@ public class ServicesContext {
 	private MetaAnswers metaAnswers;
 	private RecordCache recordCache;
 	private TokenStore tokenStore;
+	private ScheduleStore scheduleStore;
 	private TokenAnswers tokenAnswers;
+	private ScheduleAnswers scheduleAnswers;
 	private HederaLedger ledger;
 	private SyncVerifier syncVerifier;
 	private IssEventInfo issEventInfo;
@@ -372,6 +396,7 @@ public class ServicesContext {
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private TokenController tokenGrpc;
+	private ScheduleController scheduleGrpc;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 	private ServicesNodeType nodeType;
@@ -382,16 +407,17 @@ public class ServicesContext {
 	private SemanticVersions semVers;
 	private PrecheckVerifier precheckVerifier;
 	private BackingTokenRels backingTokenRels;
+	private FreezeController freezeGrpc;
 	private BalancesExporter balancesExporter;
 	private SolidityLifecycle solidityLifecycle;
 	private ExpiringCreations creator;
 	private NetworkController networkGrpc;
 	private GrpcServerManager grpc;
-	private FreezeServiceImpl freezeGrpc;
 	private TxnResponseHelper txnResponseHelper;
 	private TransactionContext txnCtx;
 	private BlobStorageSource bytecodeDb;
 	private TransactionHandler txns;
+	private ContractController contractsGrpc;
 	private HederaSigningOrder keyOrder;
 	private HederaSigningOrder backedKeyOrder;
 	private HederaSigningOrder lookupRetryingKeyOrder;
@@ -419,7 +445,6 @@ public class ServicesContext {
 	private ServicesRepositoryRoot repository;
 	private AccountRecordsHistorian recordsHistorian;
 	private GlobalDynamicProperties globalDynamicProperties;
-	private SmartContractServiceImpl contractsGrpc;
 	private PlatformSubmissionManager submissionManager;
 	private SmartContractRequestHandler contracts;
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
@@ -667,7 +692,9 @@ public class ServicesContext {
 			contractAnswers = new ContractAnswers(
 					new GetBytecodeAnswer(validator()),
 					new GetContractInfoAnswer(validator()),
-					new GetContractRecordsAnswer(validator())
+					new GetBySolidityIdAnswer(),
+					new GetContractRecordsAnswer(validator()),
+					new ContractCallLocalAnswer(contracts()::contractCallLocal, validator())
 			);
 		}
 		return contractAnswers;
@@ -708,6 +735,15 @@ public class ServicesContext {
 			);
 		}
 		return tokenAnswers;
+	}
+
+	public ScheduleAnswers scheduleAnswers() {
+		if (scheduleAnswers == null) {
+			scheduleAnswers = new ScheduleAnswers(
+					new GetScheduleInfoAnswer()
+			);
+		}
+		return scheduleAnswers;
 	}
 
 	public CryptoAnswers cryptoAnswers() {
@@ -762,8 +798,12 @@ public class ServicesContext {
 							new GetBytecodeResourceUsage(contractFees),
 							new GetContractInfoResourceUsage(),
 							new GetContractRecordsResourceUsage(contractFees),
+							new ContractCallLocalResourceUsage(
+									contracts()::contractCallLocal, contractFees, globalDynamicProperties()),
 							/* Token */
-							new GetTokenInfoResourceUsage()
+							new GetTokenInfoResourceUsage(),
+							/* Schedule */
+							new GetScheduleInfoResourceUsage()
 					),
 					txnUsageEstimators(fileFees, cryptoFees, contractFees)
 			);
@@ -810,6 +850,10 @@ public class ServicesContext {
 				entry(TokenAccountWipe, List.of(new TokenWipeResourceUsage())),
 				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
 				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
+				/* Schedule */
+				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage())),
+				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage())),
+				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -1022,6 +1066,19 @@ public class ServicesContext {
 						List.of(new FileDeleteTransitionLogic(hfs(), txnCtx()))),
 				entry(FileAppend,
 						List.of(new FileAppendTransitionLogic(hfs(), txnCtx()))),
+				/* Contract */
+				entry(ContractCreate,
+						List.of(new ContractCreateTransitionLogic(
+								hfs(), contracts()::createContract, this::seqNo, validator(), txnCtx()))),
+				entry(ContractUpdate,
+						List.of(new ContractUpdateTransitionLogic(
+								contracts()::updateContract, validator(), txnCtx(), this::accounts))),
+				entry(ContractDelete,
+						List.of(new ContractDeleteTransitionLogic(
+								contracts()::deleteContract, validator(), txnCtx(), this::accounts))),
+				entry(ContractCall,
+						List.of(new ContractCallTransitionLogic(
+								contracts()::contractCall, validator(), txnCtx(), this::seqNo, this::accounts))),
 				/* Consensus */
 				entry(ConsensusCreateTopic,
 						List.of(new TopicCreateTransitionLogic(
@@ -1065,12 +1122,27 @@ public class ServicesContext {
 						List.of(new TokenAssociateTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenDissociateFromAccount,
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
+				/* Schedule */
+				entry(ScheduleCreate,
+						List.of(new ScheduleCreateTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
+				entry(ScheduleSign,
+						List.of(new ScheduleSignTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
+				entry(ScheduleDelete,
+						List.of(new ScheduleDeleteTransitionLogic(validator(), scheduleStore(), ledger(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
-						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
+						List.of(
+								new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
+								new ContractSysDelTransitionLogic(
+										validator(), txnCtx(), contracts()::systemDelete, this::accounts))),
 				entry(SystemUndelete,
-						List.of(new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
+						List.of(
+								new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
+								new ContractSysUndelTransitionLogic(
+										validator(), txnCtx(), contracts()::systemUndelete, this::accounts))),
 				/* Network */
+				entry(Freeze,
+						List.of(new FreezeTransitionLogic(fileNums(), freeze()::freeze, txnCtx()))),
 				entry(UncheckedSubmit,
 						List.of(new UncheckedSubmitTransitionLogic()))
 		);
@@ -1181,6 +1253,13 @@ public class ServicesContext {
 		return tokenStore;
 	}
 
+	public ScheduleStore scheduleStore() {
+		if (scheduleStore == null) {
+			scheduleStore = new HederaScheduleStore();
+		}
+		return scheduleStore;
+	}
+
 	public HederaLedger ledger() {
 		if (ledger == null) {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
@@ -1218,7 +1297,7 @@ public class ServicesContext {
 
 	public OptionValidator validator() {
 		if (validator == null) {
-			validator = new ContextOptionValidator(properties(), txnCtx(), globalDynamicProperties());
+			validator = new ContextOptionValidator(txnCtx(), globalDynamicProperties());
 		}
 		return validator;
 	}
@@ -1291,9 +1370,9 @@ public class ServicesContext {
 		return feeSchedulesManager;
 	}
 
-	public FreezeServiceImpl freezeGrpc() {
+	public FreezeController freezeGrpc() {
 		if (freezeGrpc == null) {
-			freezeGrpc = new FreezeServiceImpl(fileNums(), txns(), submissionManager());
+			freezeGrpc = new FreezeController(txnResponseHelper());
 		}
 		return freezeGrpc;
 	}
@@ -1326,6 +1405,13 @@ public class ServicesContext {
 		return tokenGrpc;
 	}
 
+	public ScheduleController scheduleGrpc() {
+		if (scheduleGrpc == null) {
+			scheduleGrpc = new ScheduleController(scheduleAnswers(), txnResponseHelper(), queryResponseHelper()); // TODO: Create controller functionality
+		}
+		return scheduleGrpc;
+	}
+
 	public CryptoController cryptoGrpc() {
 		if (cryptoGrpc == null) {
 			cryptoGrpc = new CryptoController(
@@ -1337,18 +1423,9 @@ public class ServicesContext {
 		return cryptoGrpc;
 	}
 
-	public SmartContractServiceImpl contractsGrpc() {
+	public ContractController contractsGrpc() {
 		if (contractsGrpc == null) {
-			contractsGrpc = new SmartContractServiceImpl(
-					txns(),
-					contracts(),
-					usagePrices(),
-					exchange(),
-					nodeType(),
-					submissionManager(),
-					contractAnswers(),
-					queryResponseHelper(),
-					opCounters());
+			contractsGrpc = new ContractController(contractAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return contractsGrpc;
 	}
@@ -1513,8 +1590,6 @@ public class ServicesContext {
 					this::accounts,
 					nodeAccount(),
 					txnThrottling(),
-					usagePrices(),
-					exchange(),
 					fees(),
 					stateViews(),
 					new BasicPrecheck(validator(), globalDynamicProperties()),

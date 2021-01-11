@@ -20,52 +20,19 @@ package com.hedera.services.legacy.utils;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.GetBySolidityIDResponse;
 import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.Platform;
-import io.grpc.stub.StreamObserver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 @Deprecated
 public class TransactionValidationUtils {
-	private static final Logger log = LogManager.getLogger(TransactionValidationUtils.class);
-
 	private static final int MESSAGE_MAX_DEPTH = 50;
-
-	public static void transactionResponse(
-			StreamObserver<TransactionResponse> responseObserver,
-			TxnValidityAndFeeReq preCheckResult
-	) {
-		responseObserver.onNext(TransactionResponse.newBuilder()
-				.setNodeTransactionPrecheckCode(preCheckResult.getValidity())
-				.setCost(preCheckResult.getRequiredFee())
-				.build());
-		responseObserver.onCompleted();
-	}
 
 	public static boolean validateTxDepth(Transaction transaction) {
 		return getDepth(transaction) <= MESSAGE_MAX_DEPTH;
@@ -109,132 +76,5 @@ public class TransactionValidationUtils {
 			returnFlag = queryHeader.hasPayment();
 		}
 		return returnFlag;
-	}
-
-	public static ResponseCodeEnum validateTxSpecificBody(
-			TransactionBody txn,
-			OptionValidator validator) {
-		if (txn.hasContractCreateInstance()) {
-			return validateContractCreateTransactionBody(txn, validator);
-		} else if (txn.hasContractCall()) {
-			return validateContractCallTransactionBody(txn);
-		} else if (txn.hasContractUpdateInstance()) {
-			return validateContractUpdateTransactionBody(txn, validator);
-		}
-
-		return OK;
-	}
-
-	private static ResponseCodeEnum validateContractCreateTransactionBody(
-			TransactionBody trBody,
-			OptionValidator validator
-	) {
-		ContractCreateTransactionBody body = trBody.getContractCreateInstance();
-		long autoRenewPeriod = body.getAutoRenewPeriod().getSeconds();
-		if (!body.hasAutoRenewPeriod() || (autoRenewPeriod < 1)) {
-			if (log.isDebugEnabled()) {
-				log.debug("Non-positive auto renewal period given, trBody=" + trBody);
-			}
-			return ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-		}
-
-		ResponseCodeEnum durationValidationResponse =
-				validator.isValidAutoRenewPeriod(body.getAutoRenewPeriod()) ? OK : AUTORENEW_DURATION_NOT_IN_RANGE;
-		if (durationValidationResponse != OK) {
-			return durationValidationResponse;
-		}
-		if (body.getGas() < 0L) {
-			if (log.isDebugEnabled()) {
-				log.debug("negative gas for a contract." + trBody);
-			}
-			return ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
-		}
-		if (body.getInitialBalance() < 0L) {
-			if (log.isDebugEnabled()) {
-				log.debug("negative initial balance for a contract." + trBody);
-			}
-			return ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-		}
-
-		return OK;
-	}
-
-	private static ResponseCodeEnum validateContractCallTransactionBody(TransactionBody trBody) {
-		ContractCallTransactionBody body = trBody.getContractCall();
-		if (body.getGas() < 0L) {
-			if (log.isDebugEnabled()) {
-				log.debug("negative gas for a contract." + trBody);
-			}
-			return ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
-		}
-		if (body.getAmount() < 0L) {
-			if (log.isDebugEnabled()) {
-				log.debug("negative amount for a contract." + trBody);
-			}
-			return ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-		}
-
-		return OK;
-	}
-
-	private static ResponseCodeEnum validateContractUpdateTransactionBody(
-			TransactionBody txn,
-			OptionValidator validator
-	) {
-		ContractUpdateTransactionBody body = txn.getContractUpdateInstance();
-		long autoRenewPeriod = body.getAutoRenewPeriod().getSeconds();
-		if (body.hasAutoRenewPeriod()) {
-			if (autoRenewPeriod < 1) {
-				if (log.isDebugEnabled()) {
-					log.debug("Non-positive auto renewal period given, trBody=" + txn);
-				}
-				return ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-			}
-			ResponseCodeEnum durationValidationResponse =
-					validator.isValidAutoRenewPeriod(body.getAutoRenewPeriod()) ? OK : AUTORENEW_DURATION_NOT_IN_RANGE;
-			if (durationValidationResponse != OK) {
-				return durationValidationResponse;
-			}
-		}
-		return OK;
-	}
-
-	public static void constructGetBySolidityIDErrorResponse(
-			StreamObserver<Response> responseObserver, ResponseCodeEnum validationCode, long scheduledFee) {
-		ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
-				validationCode, scheduledFee, ResponseType.ANSWER_ONLY, ByteString.EMPTY);
-		responseObserver.onNext(Response.newBuilder().setGetBySolidityID(
-				GetBySolidityIDResponse.newBuilder().setHeader(responseHeader)).build());
-		responseObserver.onCompleted();
-	}
-
-	public static void constructContractCallLocalErrorResponse(
-			StreamObserver<Response> responseObserver, ResponseCodeEnum validationCode, long scheduledFee) {
-		ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
-				validationCode, scheduledFee, ResponseType.ANSWER_ONLY, ByteString.EMPTY);
-		responseObserver.onNext(Response.newBuilder().setContractCallLocal(
-				ContractCallLocalResponse.newBuilder().setHeader(responseHeader)).build());
-		responseObserver.onCompleted();
-	}
-
-	public static void logAndConstructResponseWhenCreateTxFailed(
-			StreamObserver<Response> responseObserver,
-			String methodMsg
-	) {
-		ResponseCodeEnum responseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-		if (methodMsg.startsWith("getBySolidityID")) {
-			TransactionValidationUtils.constructGetBySolidityIDErrorResponse(responseObserver,
-					responseCode, 0);
-		} else if (methodMsg.startsWith("contractCallLocalMethod")) {
-			TransactionValidationUtils.constructContractCallLocalErrorResponse(responseObserver,
-					responseCode, 0);
-		}
-	}
-
-	public static void logAndConstructResponseWhenCreateTxFailed(
-			Logger log, StreamObserver<TransactionResponse> responseObserver
-	) {
-		TxnValidityAndFeeReq responseCode = new TxnValidityAndFeeReq(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED);
-		transactionResponse(responseObserver, responseCode);
 	}
 }

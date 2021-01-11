@@ -23,7 +23,6 @@ package com.hedera.services.txns.validation;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -113,13 +112,11 @@ public class ContextOptionValidatorTest {
 	final private TokenID cTId = TokenID.newBuilder().setTokenNum(3_456L).build();
 	final private TokenID dTId = TokenID.newBuilder().setTokenNum(4_567L).build();
 
-	private MerkleTopic missingMerkleTopic;
 	private MerkleTopic deletedMerkleTopic;
 	private MerkleTopic expiredMerkleTopic;
 	private MerkleTopic merkleTopic;
 	private FCMap topics;
 	private FCMap accounts;
-	private PropertySource properties;
 	private TransactionContext txnCtx;
 	private ContextOptionValidator subject;
 	private JKey wacl;
@@ -135,7 +132,6 @@ public class ContextOptionValidatorTest {
 	private void setup() throws Exception {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(now);
-		properties = mock(PropertySource.class);
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(a))).willReturn(aV);
 		given(accounts.get(MerkleEntityId.fromAccountId(deleted))).willReturn(deletedV);
@@ -146,7 +142,6 @@ public class ContextOptionValidatorTest {
 		given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(100);
 
 		topics = mock(FCMap.class);
-		missingMerkleTopic = TopicFactory.newTopic().memo("I'm not here").get();
 		deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
 		expiredMerkleTopic = TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
 		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(now.plusSeconds(555L).getEpochSecond()).get();
@@ -160,7 +155,7 @@ public class ContextOptionValidatorTest {
 		deletedAttr = new JFileInfo(true, wacl, expiry);
 		view = mock(StateView.class);
 
-		subject = new ContextOptionValidator(properties, txnCtx, dynamicProperties);
+		subject = new ContextOptionValidator(txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(JFileInfo meta) throws Exception {
@@ -312,13 +307,13 @@ public class ContextOptionValidatorTest {
 		// setup:
 		Duration autoRenewPeriod = Duration.newBuilder().setSeconds(55L).build();
 
-		given(properties.getLongProperty("ledger.autoRenewPeriod.minDuration")).willReturn(1_000L);
-		given(properties.getLongProperty("ledger.autoRenewPeriod.maxDuration")).willReturn(1_000_000L);
+		given(dynamicProperties.minAutoRenewDuration()).willReturn(1_000L);
+		given(dynamicProperties.maxAutoRenewDuration()).willReturn(1_000_000L);
 
 		// expect:
 		assertFalse(subject.isValidAutoRenewPeriod(autoRenewPeriod));
 		// and:
-		verify(properties).getLongProperty("ledger.autoRenewPeriod.minDuration");
+		verify(dynamicProperties).minAutoRenewDuration();
 	}
 
 	@Test
@@ -326,14 +321,14 @@ public class ContextOptionValidatorTest {
 		// setup:
 		Duration autoRenewPeriod = Duration.newBuilder().setSeconds(500_000L).build();
 
-		given(properties.getLongProperty("ledger.autoRenewPeriod.minDuration")).willReturn(1_000L);
-		given(properties.getLongProperty("ledger.autoRenewPeriod.maxDuration")).willReturn(1_000_000L);
+		given(dynamicProperties.minAutoRenewDuration()).willReturn(1_000L);
+		given(dynamicProperties.maxAutoRenewDuration()).willReturn(1_000_000L);
 
 		// expect:
 		assertTrue(subject.isValidAutoRenewPeriod(autoRenewPeriod));
 		// and:
-		verify(properties).getLongProperty("ledger.autoRenewPeriod.minDuration");
-		verify(properties).getLongProperty("ledger.autoRenewPeriod.maxDuration");
+		verify(dynamicProperties).minAutoRenewDuration();
+		verify(dynamicProperties).maxAutoRenewDuration();
 	}
 
 	@Test
@@ -341,14 +336,14 @@ public class ContextOptionValidatorTest {
 		// setup:
 		Duration autoRenewPeriod = Duration.newBuilder().setSeconds(5_555_555L).build();
 
-		given(properties.getLongProperty("ledger.autoRenewPeriod.minDuration")).willReturn(1_000L);
-		given(properties.getLongProperty("ledger.autoRenewPeriod.maxDuration")).willReturn(1_000_000L);
+		given(dynamicProperties.minAutoRenewDuration()).willReturn(1_000L);
+		given(dynamicProperties.maxAutoRenewDuration()).willReturn(1_000_000L);
 
 		// expect:
 		assertFalse(subject.isValidAutoRenewPeriod(autoRenewPeriod));
 		// and:
-		verify(properties).getLongProperty("ledger.autoRenewPeriod.minDuration");
-		verify(properties).getLongProperty("ledger.autoRenewPeriod.maxDuration");
+		verify(dynamicProperties).minAutoRenewDuration();
+		verify(dynamicProperties).maxAutoRenewDuration();
 	}
 
 	@Test
