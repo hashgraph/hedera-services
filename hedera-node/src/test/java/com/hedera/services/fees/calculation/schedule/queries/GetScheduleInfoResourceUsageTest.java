@@ -1,13 +1,15 @@
 package com.hedera.services.fees.calculation.schedule.queries;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.BytesValue;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.calculation.UsageEstimatorUtils;
+import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
 import com.hedera.services.usage.schedule.ScheduleGetInfoUsage;
-import com.hedera.services.usage.token.TokenGetInfoUsage;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
@@ -19,16 +21,18 @@ import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class GetScheduleInfoResourceUsageTest {
@@ -49,12 +53,20 @@ public class GetScheduleInfoResourceUsageTest {
 
     @BeforeEach
     private void setup() throws Throwable {
-        subject = new GetScheduleInfoResourceUsage();
         view = mock(StateView.class);
         estimator = mock(ScheduleGetInfoUsage.class);
         factory = mock(Function.class);
         given(factory.apply(any())).willReturn(estimator);
         given(view.infoForSchedule(target)).willReturn(Optional.of(info));
+
+
+        given(estimator.givenTransaction(info.getTransactionBody().toByteArray())).willReturn(estimator);
+        given(estimator.givenCurrentAdminKey(any())).willReturn(estimator);
+        given(estimator.givenSigners(any())).willReturn(estimator);
+        given(estimator.get()).willReturn(MOCK_SCHEDULE_GET_INFO_USAGE);
+
+        GetScheduleInfoResourceUsage.factory = factory;
+        subject = new GetScheduleInfoResourceUsage();
     }
 
     @Test
@@ -68,17 +80,89 @@ public class GetScheduleInfoResourceUsageTest {
         assertFalse(subject.applicableTo(inapplicable));
     }
 
-//    @Test
-//    public void calculatesFeeData() {
-//        // when
-//        subject.usageGiven(scheduleInfoQuery(target), view);
-//
-//        // then
-//        verify(view).infoForSchedule(target);
-//        verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
-//        verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-//        verify(estimator).givenSigners(Optional.of(info.getSigners()));
-//    }
+    @Test
+    public void calculatesFeeData() {
+        // when
+        var usage = subject.usageGiven(scheduleInfoQuery(target), view);
+
+        // then
+        verify(view).infoForSchedule(target);
+        verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
+        verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
+        verify(estimator).givenSigners(Optional.of(info.getSigners()));
+        assertSame(MOCK_SCHEDULE_GET_INFO_USAGE, usage);
+    }
+
+    @Test
+    public void calculatesFeeDataScheduleNotPresent() {
+        // given
+        given(view.infoForSchedule(target)).willReturn(Optional.empty());
+        // when
+        var usage = subject.usageGiven(scheduleInfoQuery(target), view);
+
+        // then
+        verify(view).infoForSchedule(target);
+        verify(estimator, never()).givenTransaction(any());
+        verify(estimator, never()).givenCurrentAdminKey(any());
+        verify(estimator, never()).givenSigners(any());
+        assertSame(FeeData.getDefaultInstance(), usage);
+    }
+
+    @Test
+    public void calculatesFeeDataWithType() {
+        // when
+        var usage = subject.usageGivenType(scheduleInfoQuery(target), view, ResponseType.ANSWER_STATE_PROOF);
+
+        // then
+        verify(view).infoForSchedule(target);
+        verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
+        verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
+        verify(estimator).givenSigners(Optional.of(info.getSigners()));
+        assertSame(MOCK_SCHEDULE_GET_INFO_USAGE, usage);
+    }
+
+    @Test
+    public void calculatesFeeDataWithContext() {
+        // setup:
+        var queryCtx = new HashMap<String, Object>();
+
+        // when
+        var usage = subject.usageGiven(scheduleInfoQuery(target), view, queryCtx);
+
+        // then
+        assertSame(info, queryCtx.get(GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY));
+        assertSame(MOCK_SCHEDULE_GET_INFO_USAGE, usage);
+        verify(view).infoForSchedule(target);
+        verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
+        verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
+        verify(estimator).givenSigners(Optional.of(info.getSigners()));
+    }
+
+    @Test
+    public void onlySetsScheduleInfoInQueryCxtIfFound() {
+        // setup:
+        var queryCtx = new HashMap<String, Object>();
+
+        given(view.infoForSchedule(target)).willReturn(Optional.empty());
+
+        // when:
+        var usage = subject.usageGiven(scheduleInfoQuery(target), view, queryCtx);
+
+        // then:
+        assertFalse(queryCtx.containsKey(GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY));
+        // and:
+        assertSame(FeeData.getDefaultInstance(), usage);
+    }
+
+    @Test
+    public void rethrowsIae() {
+        // given:
+        Query query = scheduleInfoQuery(target);
+        given(view.infoForSchedule(any())).willThrow(IllegalStateException.class);
+
+        // expect:
+        assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
+    }
 
     private Query scheduleInfoQuery(ScheduleID id) {
         return Query.newBuilder()
@@ -95,4 +179,19 @@ public class GetScheduleInfoResourceUsageTest {
                 .setScheduleGetInfo(op)
                 .build();
     }
+
+    private static final FeeData MOCK_SCHEDULE_GET_INFO_USAGE = UsageEstimatorUtils.defaultPartitioning(
+            FeeComponents.newBuilder()
+                    .setMin(1)
+                    .setMax(1_000_000)
+                    .setConstant(1)
+                    .setBpt(1)
+                    .setVpt(1)
+                    .setRbh(1)
+                    .setSbh(1)
+                    .setGas(1)
+                    .setTv(1)
+                    .setBpr(1)
+                    .setSbpr(1)
+                    .build(), 1);
 }
