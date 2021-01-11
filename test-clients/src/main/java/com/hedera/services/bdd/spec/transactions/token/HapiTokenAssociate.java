@@ -160,6 +160,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) {
+		/* No-op. */
 	}
 
 	@Override
