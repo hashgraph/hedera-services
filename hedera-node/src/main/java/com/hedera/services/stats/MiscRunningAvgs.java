@@ -32,6 +32,7 @@ public class MiscRunningAvgs {
 	StatsRunningAverage recordStreamWriteQueueSize;
 	StatsRunningAverage handledSubmitMessageSize;
 	StatsRunningAverage recordStreamHashQueueSize;
+	StatsRunningAverage avgEntityExpiryNanos;
 
 	public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
 		this.runningAvg = runningAvg;
@@ -43,6 +44,7 @@ public class MiscRunningAvgs {
 		recordStreamWriteQueueSize = new StatsRunningAverage(halfLife);
 		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
 		recordStreamHashQueueSize = new StatsRunningAverage(halfLife);
+		avgEntityExpiryNanos = new StatsRunningAverage(halfLife);
 	}
 
 	public void registerWith(Platform platform) {
@@ -73,6 +75,13 @@ public class MiscRunningAvgs {
 						recordStreamHashQueueSize
 				)
 		);
+		platform.addAppStatEntry(
+				runningAvg.from(
+						Names.AVERAGE_ENTITY_EXPIRY_NANOS,
+						Descriptions.AVERAGE_ENTITY_EXPIRY_NANOS,
+						recordStreamHashQueueSize
+				)
+		);
 	}
 
 	public void recordAccountLookupRetries(int num) {
@@ -95,12 +104,17 @@ public class MiscRunningAvgs {
 		recordStreamHashQueueSize.recordValue(num);
 	}
 
+	public void recordAvgEntityExpiryNanos(long nanos) {
+		avgEntityExpiryNanos.recordValue(nanos);
+	}
+
 	static class Names {
 		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
 		public static final String RECORD_STREAM_WRITE_QUEUE_SIZE = "recordStreamWriteQueueSize";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
 		public static final String RECORD_STREAM_HASH_QUEUE_SIZE = "recordStreamHashQueueSize";
+		public static final String AVERAGE_ENTITY_EXPIRY_NANOS = "avgEntityExpiryNanos";
 	}
 
 	static class Descriptions {
@@ -113,5 +127,7 @@ public class MiscRunningAvgs {
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
 				"average size of the handled HCS submit message transaction";
 		public static final String RECORD_STREAM_HASH_QUEUE_SIZE = "size of working queue for calculating hash and runningHash";
+		public static final String AVERAGE_ENTITY_EXPIRY_NANOS =
+				"average nanoseconds spent purging expired entities in handleTransaction";
 	}
 }

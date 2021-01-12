@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.Transaction;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -157,11 +158,18 @@ public class AwareProcessLogic implements ProcessLogic {
 		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
 	}
 
+	private void purgeExpiredEntities() {
+		var watch = StopWatch.createStarted();
+		ctx.recordsHistorian().purgeExpiredRecords();
+		ctx.runningAvgs().recordAvgEntityExpiryNanos(watch.getNanoTime());
+	}
+
+
 	private void doProcess(PlatformTxnAccessor accessor, Instant consensusTime) {
 		/* Side-effects of advancing data-driven clock to consensus time. */
 		updateMidnightRatesIfAppropriateAt(consensusTime);
 		ctx.updateConsensusTimeOfLastHandledTxn(consensusTime);
-		ctx.recordsHistorian().purgeExpiredRecords();
+		purgeExpiredEntities();
 
 		if (ctx.issEventInfo().status() == ONGOING_ISS) {
 			var resetPeriod = ctx.properties().getIntProperty("iss.reset.periodSecs");
