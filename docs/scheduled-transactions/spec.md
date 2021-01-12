@@ -64,7 +64,7 @@ If the transaction is deemed "identical", the second `scheduleCreate` tx will no
   
 Additional `ScheduleSignTransactionBody` is added in the protobufs. The operation appends the signature(s) to an already existing Scheduled Entity. If after adding the new signature(s), the transaction has the required number of signatures, it will be executed immediately in the same transaction context. The message has the following format:  
   
-```json  
+```  
 message ScheduleSignTransactionBody {  
   ScheduleID scheduleID // The ID of the Scheduled entity
   SigMap sigMap // The signature map containing the signature(s) to authorise the transaction
@@ -77,7 +77,7 @@ Additional `ScheduleDeleteTransactionBody` is added in the protobufs. The operat
   
 The message has the following format:  
   
-```json  
+```  
 message ScheduleDeleteTransactionBody {  
   ScheduleID schedule // The ID of the Scheduled Entity
 }  
@@ -87,7 +87,7 @@ message ScheduleDeleteTransactionBody {
   
 An additional query is added for retrieving information related to Scheduled Transactions. The operation has the following format:  
   
-```json  
+```  
 message ScheduleGetInfoQuery {  
   QueryHeader header // standard info sent from client to node including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).  
   ScheduleID schedule // The ID of the Scheduled Entity
@@ -112,7 +112,7 @@ Once a given Scheduled Transaction **expires** or **executes**, it is no longer 
   
 New `scheduleID` property is added in the `TransactionReceipt` protobuf. The new property is the ID of the newly created Scheduled TX. It is populated **only** in the receipts of `ScheduleCreate` transactions.  
   
-```json  
+```  
 message TransactionReceipt {  
   ResponseCodeEnum status  
   ... 
@@ -127,7 +127,7 @@ Schedule Sign (or idempotently created Schedule Create) transaction that trigger
   
 New `scheduleRef` property is added in the `TransactionRecord` profobuf. The new property is the ID of Scheduled Entity that casues the execution of the underlying scheduled transaction.  
   
-```json  
+```  
 TransactionRecord {  
  /** current ones */
  receipt  
@@ -219,14 +219,14 @@ Performance tests will be performed to see how many TPS we can do and how many w
 **Scheduled** **TX ID**  
   
 Transactions of scheduled type will have the following format of `TransactionID` **on submission**!  
-```json  
+```  
 message TransactionID {  
   uint32 nonce // Used to add addditional option for clients to create idempotent Transactions. Default 0
 }  
 ```   
 This is to say that the encoded Transaction in the `transactionBytes` of the Scheduled Transaction could be submitted without any of the `TransactionID` properties populated.
 Once the transaction is executed (all required signatures are collected), the transaction is exported and externalised in the transaction record stream with the following `TransactionID`:
-```json  
+```  
 message TransactionID {  
   Timestamp transactionValidStart // Inherited from original ScheduleCreate TX
   AccountID accountID // Inherited from original ScheduleCreate TX  
