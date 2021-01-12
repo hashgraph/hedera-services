@@ -41,9 +41,9 @@ public final class RecordStreamType implements StreamType {
 	public static final String RECORD_SIG_EXTENSION = "rcd_sig";
 	/**
 	 * Header which is written in the beginning of a stream file, before writing the Object Stream Version.
-	 * the ints in fileHeader denote: version 5, hapiProtoVersion: 0.9.0
+	 * the ints in fileHeader denote: version 5, hapiProtoVersion: 0.11.0
 	 */
-	private static final int[] RECORD_FILE_HEADER = new int[] { 5, 0, 9, 0 };
+	private static final int[] RECORD_FILE_HEADER = new int[] { 5, 0, 11, 0 };
 	/**
 	 * Header which is written in the beginning of a stream signature file, before writing the Object Stream Signature
 	 * Version.

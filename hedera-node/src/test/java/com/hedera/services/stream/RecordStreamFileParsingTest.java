@@ -33,6 +33,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedWriter;
@@ -88,6 +89,7 @@ public class RecordStreamFileParsingTest {
 		parseV5(v5Dir, expectedStartHash);
 	}
 
+	@Disabled
 	@Test
 	public void parseSigFileV5() throws Exception {
 		final String streamFilePath = "src/test/resources/recordStreamTest/record0.0.3/2021-01-08T14_50_50.729343000Z.rcd";
