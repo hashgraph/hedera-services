@@ -371,7 +371,6 @@ public class ServicesContextTest {
 		given(address.getStake()).willReturn(1_234_567L);
 		given(book.getAddress(1L)).willReturn(address);
 		given(state.addressBook()).willReturn(book);
-		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn("src/main/resources");
 
 		// given:
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);

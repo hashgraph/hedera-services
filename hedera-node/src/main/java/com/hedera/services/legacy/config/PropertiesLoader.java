@@ -67,10 +67,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.getRecordLogPeriod();
 	}
 
-	public static String getRecordLogDir() {
-		return AsyncPropertiesObject.getRecordLogDir();
-	}
-
 	public static int getRecordStreamQueueCapacity() {
 		return AsyncPropertiesObject.getRecordStreamQueueCapacity();
 	}

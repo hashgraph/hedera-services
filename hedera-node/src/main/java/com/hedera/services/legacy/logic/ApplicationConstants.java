@@ -39,7 +39,6 @@ public class ApplicationConstants {
 
 	//Default Values for Configuration Properties
 	public static int RECORD_LOG_PERIOD = 2;
-	public static String RECORD_LOG_DIR = "data/recordstreams/";
 	public static int RECORD_STREAM_QU_CAP = 500;
 
 	// Estimates for calculating fees for Smart Contract local calls

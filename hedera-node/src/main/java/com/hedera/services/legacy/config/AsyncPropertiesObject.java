@@ -37,7 +37,6 @@ public class AsyncPropertiesObject {
 	// properties for RecordStream
 	private static boolean enableRecordStreaming;
 	private static long recordLogPeriod = ApplicationConstants.RECORD_LOG_PERIOD;
-	private static String recordLogDir = ApplicationConstants.RECORD_LOG_DIR;
 	private static int recordStreamQueueCapacity = ApplicationConstants.RECORD_STREAM_QU_CAP;
 
 	// Server Properties
@@ -82,7 +81,6 @@ public class AsyncPropertiesObject {
 		// properties for RecordStream
 		 enableRecordStreaming = appConfig.getBoolean("enableRecordStreaming", false);
 		 recordLogPeriod = appConfig.getLong("recordLogPeriod", ApplicationConstants.RECORD_LOG_PERIOD);
-		 recordLogDir = appConfig.getString("recordLogDir", ApplicationConstants.RECORD_LOG_DIR);
 		 recordStreamQueueCapacity = appConfig.getInt("recordStreamQueueCapacity", ApplicationConstants.RECORD_STREAM_QU_CAP);
 
 		// Re-try times for querying binary object store (for file services)
@@ -106,10 +104,6 @@ public class AsyncPropertiesObject {
 
 	static long getRecordLogPeriod() {
 		return recordLogPeriod;
-	}
-
-	static String getRecordLogDir() {
-		return recordLogDir;
 	}
 
 	static int getRecordStreamQueueCapacity() {
