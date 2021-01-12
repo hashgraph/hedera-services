@@ -52,6 +52,12 @@ public class RecordStreamManager {
 	/**
 	 * receives {@link RecordStreamObject}s from {@link com.hedera.services.legacy.services.state.AwareProcessLogic}
 	 * .addForStreaming,
+	 * then passes to multiStream
+	 */
+	private QueueThread<RecordStreamObject> bufferQueueThread;
+
+	/**
+	 * receives {@link RecordStreamObject}s from bufferQueueThread,
 	 * then passes to hashQueueThread and writeQueueThread
 	 */
 	private MultiStream<RecordStreamObject> multiStream;
@@ -146,6 +152,9 @@ public class RecordStreamManager {
 		this.initialHash = initialHash;
 		multiStream.setRunningHash(initialHash);
 
+		bufferQueueThread = new QueueThread<>("bufferQueueThread", platform.getSelfId(), multiStream,
+				recordStreamQueueCapacity);
+
 		LOGGER.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}," +
 						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}, initialHash: {}",
 				() -> enableRecordStreaming,
@@ -158,19 +167,19 @@ public class RecordStreamManager {
 	/**
 	 * Is used for unit testing
 	 *
-	 * @param multiStream
-	 * 		the instance which receives {@link RecordStreamObject}s then passes to nextStreams
+	 * @param bufferQueueThread
+	 * 		the instance which receives {@link RecordStreamObject}s then passes to multiStream
 	 * @param writeQueueThread
 	 * 		receives {@link RecordStreamObject}s from multiStream, then passes to streamFileWriter
 	 * @param runningAvgs
 	 * 		an instance for recording the average value of recordStream queue size
 	 */
-	RecordStreamManager(final MultiStream<RecordStreamObject> multiStream,
+	RecordStreamManager(final QueueThread<RecordStreamObject> bufferQueueThread,
 			final QueueThread<RecordStreamObject> writeQueueThread,
 			final MiscRunningAvgs runningAvgs) {
-		this.multiStream = multiStream;
+		this.bufferQueueThread = bufferQueueThread;
 		this.writeQueueThread = writeQueueThread;
-		multiStream.setRunningHash(initialHash);
+		bufferQueueThread.setRunningHash(initialHash);
 		this.runningAvgs = runningAvgs;
 	}
 
@@ -184,13 +193,14 @@ public class RecordStreamManager {
 	public void addRecordStreamObject(final RecordStreamObject recordStreamObject) {
 		if (!inFreeze) {
 			try {
-				multiStream.add(recordStreamObject);
+				bufferQueueThread.add(recordStreamObject);
 			} catch (InterruptedException ex) {
 				LOGGER.error("thread interruption ignored in addRecordStreamObject: {}", ex);
 			}
 		}
-		runningAvgs.recordStreamQueueSize(getRecordStreamingQueueSize());
-		runningAvgs.hashQueueSize(getHashQueueSize());
+		runningAvgs.bufferQueueSizeRecordStream(getBufferQueueSize());
+		runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());
+		runningAvgs.hashQueueSizeRecordStream(getHashQueueSize());
 	}
 
 	/**
@@ -202,7 +212,7 @@ public class RecordStreamManager {
 		this.inFreeze = inFreeze;
 		LOGGER.info("RecordStream inFreeze is set to be {} ", inFreeze);
 		if (inFreeze) {
-			multiStream.close();
+			bufferQueueThread.close();
 		}
 	}
 
@@ -215,7 +225,7 @@ public class RecordStreamManager {
 	public void setInitialHash(final Hash initialHash) {
 		this.initialHash = initialHash;
 		LOGGER.info("RecordStreamManager::setInitialHash: {}", () -> initialHash);
-		multiStream.setRunningHash(initialHash);
+		bufferQueueThread.setRunningHash(initialHash);
 	}
 
 	/**
@@ -239,7 +249,7 @@ public class RecordStreamManager {
 	 * @return current size of working queue for calculating hash and runningHash
 	 */
 	int getHashQueueSize() {
-		return hashQueueThread.getQueueSize();
+		return hashQueueThread == null ? 0 : hashQueueThread.getQueueSize();
 	}
 
 	/**
@@ -247,8 +257,17 @@ public class RecordStreamManager {
 	 *
 	 * @return current size of working queue for writing to record stream files
 	 */
-	int getRecordStreamingQueueSize() {
+	int getWriteQueueSize() {
 		return writeQueueThread == null ? 0 : writeQueueThread.getQueueSize();
+	}
+
+	/**
+	 * returns current size of buffer queue from which multiStream polls objects
+	 *
+	 * @return current size of buffer queue from which multiStream poll objects
+	 */
+	int getBufferQueueSize() {
+		return bufferQueueThread == null ? 0 : bufferQueueThread.getQueueSize();
 	}
 
 	/**

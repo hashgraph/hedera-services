@@ -29,10 +29,12 @@ public class MiscRunningAvgs {
 
 	StatsRunningAverage accountRetryWaitMs;
 	StatsRunningAverage accountLookupRetries;
-	StatsRunningAverage recordStreamWriteQueueSize;
 	StatsRunningAverage handledSubmitMessageSize;
-	StatsRunningAverage recordStreamHashQueueSize;
 	StatsRunningAverage avgEntityExpiryNanos;
+
+	StatsRunningAverage writeQueueSizeRecordStream;
+	StatsRunningAverage hashQueueSizeRecordStream;
+	StatsRunningAverage bufferQueueSizeRecordStream;
 
 	public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
 		this.runningAvg = runningAvg;
@@ -41,10 +43,12 @@ public class MiscRunningAvgs {
 
 		accountRetryWaitMs = new StatsRunningAverage(halfLife);
 		accountLookupRetries = new StatsRunningAverage(halfLife);
-		recordStreamWriteQueueSize = new StatsRunningAverage(halfLife);
 		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
-		recordStreamHashQueueSize = new StatsRunningAverage(halfLife);
 		avgEntityExpiryNanos = new StatsRunningAverage(halfLife);
+
+		writeQueueSizeRecordStream = new StatsRunningAverage(halfLife);
+		hashQueueSizeRecordStream = new StatsRunningAverage(halfLife);
+		bufferQueueSizeRecordStream = new StatsRunningAverage(halfLife);
 	}
 
 	public void registerWith(Platform platform) {
@@ -60,26 +64,33 @@ public class MiscRunningAvgs {
 						accountRetryWaitMs));
 		platform.addAppStatEntry(
 				runningAvg.from(
-						Names.RECORD_STREAM_WRITE_QUEUE_SIZE,
-						Descriptions.RECORD_STREAM_WRITE_QUEUE_SIZE,
-						recordStreamWriteQueueSize));
-		platform.addAppStatEntry(
-				runningAvg.from(
 						Names.HANDLED_SUBMIT_MESSAGE_SIZE,
 						Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
 						handledSubmitMessageSize));
 		platform.addAppStatEntry(
 				runningAvg.from(
-						Names.RECORD_STREAM_HASH_QUEUE_SIZE,
-						Descriptions.RECORD_STREAM_HASH_QUEUE_SIZE,
-						recordStreamHashQueueSize
+						Names.AVERAGE_ENTITY_EXPIRY_NANOS,
+						Descriptions.AVERAGE_ENTITY_EXPIRY_NANOS,
+						hashQueueSizeRecordStream
 				)
 		);
 		platform.addAppStatEntry(
 				runningAvg.from(
-						Names.AVERAGE_ENTITY_EXPIRY_NANOS,
-						Descriptions.AVERAGE_ENTITY_EXPIRY_NANOS,
-						recordStreamHashQueueSize
+						Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
+						Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
+						writeQueueSizeRecordStream));
+		platform.addAppStatEntry(
+				runningAvg.from(
+						Names.HASH_QUEUE_SIZE_RECORD_STREAM,
+						Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
+						hashQueueSizeRecordStream
+				)
+		);
+		platform.addAppStatEntry(
+				runningAvg.from(
+						Names.BUFFER_QUEUE_SIZE_RECORD_STREAM,
+						Descriptions.BUFFER_QUEUE_SIZE_RECORD_STREAM,
+						bufferQueueSizeRecordStream
 				)
 		);
 	}
@@ -92,29 +103,35 @@ public class MiscRunningAvgs {
 		accountRetryWaitMs.recordValue(time);
 	}
 
-	public void recordStreamQueueSize(int num) {
-		recordStreamWriteQueueSize.recordValue(num);
-	}
-
 	public void recordHandledSubmitMessageSize(int bytes) {
 		handledSubmitMessageSize.recordValue(bytes);
-	}
-
-	public void hashQueueSize(int num) {
-		recordStreamHashQueueSize.recordValue(num);
 	}
 
 	public void recordAvgEntityExpiryNanos(long nanos) {
 		avgEntityExpiryNanos.recordValue(nanos);
 	}
 
+	public void writeQueueSizeRecordStream(int num) {
+		writeQueueSizeRecordStream.recordValue(num);
+	}
+
+	public void hashQueueSizeRecordStream(int num) {
+		hashQueueSizeRecordStream.recordValue(num);
+	}
+
+	public void bufferQueueSizeRecordStream(int num) {
+		bufferQueueSizeRecordStream.recordValue(num);
+	}
+
 	static class Names {
 		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
-		public static final String RECORD_STREAM_WRITE_QUEUE_SIZE = "recordStreamWriteQueueSize";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
-		public static final String RECORD_STREAM_HASH_QUEUE_SIZE = "recordStreamHashQueueSize";
 		public static final String AVERAGE_ENTITY_EXPIRY_NANOS = "avgEntityExpiryNanos";
+
+		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM = "writeQueueSizeRecordStream";
+		public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "hashQueueSizeRecordStream";
+		public static final String BUFFER_QUEUE_SIZE_RECORD_STREAM = "bufferQueueSizeRecordStream";
 	}
 
 	static class Descriptions {
@@ -122,12 +139,14 @@ public class MiscRunningAvgs {
 				"average time is millis spent waiting to lookup the account number";
 		public static final String ACCOUNT_LOOKUP_RETRIES =
 				"average number of retry attempts made to lookup the account number";
-		public static final String RECORD_STREAM_WRITE_QUEUE_SIZE =
-				"size of the queue from which we take records and write to RecordStream file";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
 				"average size of the handled HCS submit message transaction";
-		public static final String RECORD_STREAM_HASH_QUEUE_SIZE = "size of working queue for calculating hash and runningHash";
 		public static final String AVERAGE_ENTITY_EXPIRY_NANOS =
 				"average nanoseconds spent purging expired entities in handleTransaction";
+
+		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM =
+				"size of the queue from which we take records and write to RecordStream file";
+		public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "size of working queue for calculating hash and runningHash";
+		public static final String BUFFER_QUEUE_SIZE_RECORD_STREAM = "size of the buffer queue from which multiStream polls objects";
 	}
 }

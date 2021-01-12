@@ -338,7 +338,7 @@ public class RecordStream implements Runnable {
 
 				Triple<Transaction, TransactionRecord, Instant> record = recordBuffer.poll(STREAM_DELAY,
 						TimeUnit.MILLISECONDS);
-				runningAvgs.recordStreamQueueSize(getRecordStreamQueueSize());
+				runningAvgs.writeQueueSizeRecordStream(getRecordStreamQueueSize());
 
 				long recordLogPeriod = properties.getLongProperty("hedera.recordStream.logPeriod");
 				if (record != null) {

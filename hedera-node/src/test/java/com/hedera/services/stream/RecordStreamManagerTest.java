@@ -62,10 +62,10 @@ public class RecordStreamManagerTest {
 
 	public static final Hash INITIAL_RANDOM_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 
-	private static final MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
+	private static final QueueThread<RecordStreamObject> bufferQueueThreadMock = mock(QueueThread.class);
 	private static final QueueThread<RecordStreamObject> writeQueueThreadMock = mock(QueueThread.class);
 	private static final RecordStreamManager RECORD_STREAM_MANAGER = new RecordStreamManager(
-			multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+			bufferQueueThreadMock, writeQueueThreadMock, runningAvgsMock);
 
 	@BeforeAll
 	public static void init() throws Exception {
@@ -82,27 +82,27 @@ public class RecordStreamManagerTest {
 		assertNotNull(disableStreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
 		assertNotNull(disableStreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
 		assertEquals(0, disableStreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
-		assertEquals(0, disableStreamingInstance.getRecordStreamingQueueSize(), INITIALIZE_QUEUE_EMPTY);
+		assertEquals(0, disableStreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
 
 		assertNotNull(enableStreamingInstance.getStreamFileWriter(),
 				"When recordStreaming is enabled, streamFileWriter instance should not be null");
 		assertNotNull(enableStreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
 		assertNotNull(enableStreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
 		assertEquals(0, enableStreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
-		assertEquals(0, enableStreamingInstance.getRecordStreamingQueueSize(), INITIALIZE_QUEUE_EMPTY);
+		assertEquals(0, enableStreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
 	}
 
 	@Test
 	public void setInitialHashTest() {
 		RECORD_STREAM_MANAGER.setInitialHash(INITIAL_RANDOM_HASH);
-		verify(multiStreamMock).setRunningHash(INITIAL_RANDOM_HASH);
+		verify(bufferQueueThreadMock).setRunningHash(INITIAL_RANDOM_HASH);
 		assertEquals(INITIAL_RANDOM_HASH, RECORD_STREAM_MANAGER.getInitialHash(), "initialHash is not set");
 	}
 
 	@Test
 	public void addRecordStreamObjectTest() throws InterruptedException {
 		RecordStreamManager recordStreamManager = new RecordStreamManager(
-				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+				bufferQueueThreadMock, writeQueueThreadMock, runningAvgsMock);
 		assertFalse(recordStreamManager.getInFreeze(),
 				"inFreeze should be false after initialization");
 		final int recordsNum = 10;
@@ -110,10 +110,10 @@ public class RecordStreamManagerTest {
 			RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
 			when(writeQueueThreadMock.getQueueSize()).thenReturn(i);
 			recordStreamManager.addRecordStreamObject(recordStreamObject);
-			verify(multiStreamMock).add(recordStreamObject);
-			verify(runningAvgsMock).recordStreamQueueSize(i);
-			// multiStream should not be closed after adding it
-			verify(multiStreamMock, never()).close();
+			verify(bufferQueueThreadMock).add(recordStreamObject);
+			verify(runningAvgsMock).writeQueueSizeRecordStream(i);
+			// bufferQueueThread should not be closed after adding it
+			verify(bufferQueueThreadMock, never()).close();
 			assertFalse(recordStreamManager.getInFreeze(),
 					"inFreeze should be false after adding the records");
 		}
@@ -127,12 +127,12 @@ public class RecordStreamManagerTest {
 		when(writeQueueThreadMock.getQueueSize()).thenReturn(recordsNum);
 
 		recordStreamManager.addRecordStreamObject(objectAfterFreeze);
-		// after frozen, when adding object to the RecordStreamManager, multiStream.add(object) should not be called
-		verify(multiStreamMock, never()).add(objectAfterFreeze);
-		// multiStream should be closed when inFreeze is set to be true
-		verify(multiStreamMock).close();
+		// after frozen, when adding object to the RecordStreamManager, bufferQueueThread.add(object) should not be called
+		verify(bufferQueueThreadMock, never()).add(objectAfterFreeze);
+		// bufferQueueThread should be closed when inFreeze is set to be true
+		verify(bufferQueueThreadMock).close();
 		// should get recordStream queue size and set to runningAvgs
-		verify(runningAvgsMock).recordStreamQueueSize(recordsNum);
+		verify(runningAvgsMock).writeQueueSizeRecordStream(recordsNum);
 	}
 
 	@ParameterizedTest
@@ -145,9 +145,9 @@ public class RecordStreamManagerTest {
 
 	@Test
 	public void setInFreezeTest() {
-		MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
+		QueueThread<RecordStreamObject> bufferQueueThreadMock = mock(QueueThread.class);
 		RecordStreamManager recordStreamManager = new RecordStreamManager(
-				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+				bufferQueueThreadMock, writeQueueThreadMock, runningAvgsMock);
 		RecordStreamManager.LOGGER = mockLog;
 
 		recordStreamManager.setInFreeze(false);
@@ -158,7 +158,7 @@ public class RecordStreamManagerTest {
 
 		verify(mockLog).info("RecordStream inFreeze is set to be {} ", true);
 		assertTrue(recordStreamManager.getInFreeze());
-		// multiStream should be closed when inFreeze is true;
-		verify(multiStreamMock).close();
+		// bufferQueueThread should be closed when inFreeze is true;
+		verify(bufferQueueThreadMock).close();
 	}
 }

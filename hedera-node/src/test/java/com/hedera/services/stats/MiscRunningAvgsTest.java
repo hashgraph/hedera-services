@@ -72,9 +72,9 @@ class MiscRunningAvgsTest {
 				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS::equals),
 				argThat(subject.accountRetryWaitMs::equals))).willReturn(waitMs);
 		given(factory.from(
-				argThat(MiscRunningAvgs.Names.RECORD_STREAM_WRITE_QUEUE_SIZE::equals),
-				argThat(MiscRunningAvgs.Descriptions.RECORD_STREAM_WRITE_QUEUE_SIZE::equals),
-				argThat(subject.recordStreamWriteQueueSize::equals))).willReturn(queueSizes);
+				argThat(MiscRunningAvgs.Names.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
+				argThat(MiscRunningAvgs.Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
+				argThat(subject.writeQueueSizeRecordStream::equals))).willReturn(queueSizes);
 		given(factory.from(
 				argThat(MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
 				argThat(MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
@@ -101,13 +101,13 @@ class MiscRunningAvgsTest {
 		subject.accountLookupRetries = retries;
 		subject.accountRetryWaitMs = waitMs;
 		subject.handledSubmitMessageSize = submitSizes;
-		subject.recordStreamWriteQueueSize = queueSize;
+		subject.writeQueueSizeRecordStream = queueSize;
 
 		// when:
 		subject.recordAccountLookupRetries(1);
 		subject.recordAccountRetryWaitMs(2.0);
 		subject.recordHandledSubmitMessageSize(3);
-		subject.recordStreamQueueSize(4);
+		subject.writeQueueSizeRecordStream(4);
 
 		// then:
 		verify(retries).recordValue(1.0);
