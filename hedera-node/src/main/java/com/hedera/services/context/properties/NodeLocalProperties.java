@@ -31,6 +31,7 @@ public class NodeLocalProperties {
 	private Profile activeProfile;
 	private double statsSpeedometerHalfLifeSecs;
 	private double statsRunningAvgHalfLifeSecs;
+	private String recordLogDir;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -47,6 +48,7 @@ public class NodeLocalProperties {
 		statsHapiOpsSpeedometerUpdateIntervalMs = properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
 		statsSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
 		statsRunningAvgHalfLifeSecs = properties.getDoubleProperty("stats.runningAvgHalfLifeSecs");
+		recordLogDir = properties.getStringProperty("hedera.recordStream.logDir");
 	}
 
 	public int port() {
@@ -79,5 +81,9 @@ public class NodeLocalProperties {
 
 	public double statsRunningAvgHalfLifeSecs() {
 		return statsRunningAvgHalfLifeSecs;
+	}
+
+	public String recordLogDir() {
+		return recordLogDir;
 	}
 }

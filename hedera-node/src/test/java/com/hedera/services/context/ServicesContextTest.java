@@ -508,15 +508,18 @@ public class ServicesContextTest {
 
 	@Test
 	public void getRecordStreamDirectoryTest() {
+		String expectedDir = "/here/we/are";
+
+		NodeLocalProperties sourceProps = mock(NodeLocalProperties.class);
+		given(sourceProps.recordLogDir()).willReturn(expectedDir);
 		final AddressBook book = mock(AddressBook.class);
 		final Address address = mock(Address.class);
 		given(state.addressBook()).willReturn(book);
 		given(book.getAddress(id)).willReturn(address);
 		given(address.getMemo()).willReturn("0.0.3");
-		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(recordStreamDir);
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-		assertEquals(recordStreamDir + "/record0.0.3", ctx.getRecordStreamDirectory());
+		assertEquals(expectedDir + "/record0.0.3", ctx.getRecordStreamDirectory(sourceProps));
 	}
 
 	@Test

@@ -96,6 +96,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.numReservedSystemEntities", 1_000L),
 			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),
+			entry("hedera.recordStream.logDir", "/opt/hgcapp/recordStreams"),
 			entry("hedera.shard", 0L),
 			entry("hedera.transaction.maxMemoUtf8Bytes", 100),
 			entry("hedera.transaction.minValidDuration", 15L),

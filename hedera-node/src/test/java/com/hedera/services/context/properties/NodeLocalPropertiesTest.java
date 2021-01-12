@@ -61,6 +61,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(6L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
 		assertEquals(7.0, subject.statsSpeedometerHalfLifeSecs());
 		assertEquals(8.0, subject.statsRunningAvgHalfLifeSecs());
+		assertEquals(logDir(9), subject.recordLogDir());
 	}
 
 	@Test
@@ -79,6 +80,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(7L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
 		assertEquals(8.0, subject.statsSpeedometerHalfLifeSecs());
 		assertEquals(9.0, subject.statsRunningAvgHalfLifeSecs());
+		assertEquals(logDir(10), subject.recordLogDir());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -90,5 +92,10 @@ class NodeLocalPropertiesTest {
 		given(properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs")).willReturn(i + 5L);
 		given(properties.getDoubleProperty("stats.speedometerHalfLifeSecs")).willReturn(i + 6.0);
 		given(properties.getDoubleProperty("stats.runningAvgHalfLifeSecs")).willReturn(i + 7.0);
+		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(logDir(i + 8));
+	}
+
+	static String logDir(int num) {
+		return "myRecords/dir" + num;
 	}
 }

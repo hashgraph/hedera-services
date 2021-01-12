@@ -47,6 +47,7 @@ public class ScreenedNodeFileProps implements PropertySource {
 
 	static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
 			entry("port", "grpc.port"),
+			entry("recordLogDir", "hedera.recordStream.logDir"),
 			entry("tlsPort", "grpc.tlsPort"),
 			entry("environment", "hedera.profiles.active")
 	);

@@ -219,6 +219,7 @@ public class BootstrapProperties implements PropertySource {
 			"grpc.port",
 			"grpc.tlsPort",
 			"hedera.profiles.active",
+			"hedera.recordStream.logDir",
 			"precheck.account.maxLookupRetries",
 			"precheck.account.lookupRetryBackoffIncrementMs",
 			"stats.hapiOps.speedometerUpdateIntervalMs",

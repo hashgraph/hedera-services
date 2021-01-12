@@ -67,6 +67,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
+import static com.hedera.services.legacy.stream.RecordStream.readPrevFileHash;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
@@ -245,7 +246,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				|| runningHashLeaf().getRunningHash().getHash().equals(emptyHash)) {
 			// read file hash from the last record stream .rcd_sig file and set it as initial value of
 			// records running Hash
-			ImmutableHash hash = new ImmutableHash(RecordStream.readPrevFileHash(ctx.getRecordStreamDirectory()));
+			ImmutableHash hash = new ImmutableHash(readPrevFileHash(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties())));
 			final RunningHash runningHash = new RunningHash();
 			runningHash.setHash(hash);
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));

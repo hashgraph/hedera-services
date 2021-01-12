@@ -1387,7 +1387,7 @@ public class ServicesContext {
 					platform,
 					runningAvgs(),
 					PropertiesLoader.isEnableRecordStreaming(),
-					getRecordStreamDirectory(),
+					getRecordStreamDirectory(nodeLocalProperties()),
 					properties.getLongProperty("hedera.recordStream.logPeriod"),
 					PropertiesLoader.getRecordStreamQueueCapacity(),
 					getRecordsInitialHash());
@@ -1814,10 +1814,10 @@ public class ServicesContext {
 	 *
 	 * @return the direct file folder for writing record stream files
 	 */
-	public String getRecordStreamDirectory() {
+	public String getRecordStreamDirectory(NodeLocalProperties source) {
 		if (recordStreamDir == null) {
 			final String nodeAccountString = EntityIdUtils.asLiteralString(nodeAccount());
-			String parentDir = properties().getStringProperty("hedera.recordStream.logDir");
+			String parentDir = source.recordLogDir();
 			if (!parentDir.endsWith(File.separator)) {
 				parentDir += File.separator;
 			}
