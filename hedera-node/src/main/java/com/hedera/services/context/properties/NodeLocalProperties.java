@@ -32,6 +32,9 @@ public class NodeLocalProperties {
 	private double statsSpeedometerHalfLifeSecs;
 	private double statsRunningAvgHalfLifeSecs;
 	private String recordLogDir;
+	private long recordLogPeriod;
+	private boolean recordStreamEnabled;
+	private int recordStreamQueueCapacity;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -49,6 +52,9 @@ public class NodeLocalProperties {
 		statsSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
 		statsRunningAvgHalfLifeSecs = properties.getDoubleProperty("stats.runningAvgHalfLifeSecs");
 		recordLogDir = properties.getStringProperty("hedera.recordStream.logDir");
+		recordLogPeriod = properties.getLongProperty("hedera.recordStream.logPeriod");
+		recordStreamEnabled = properties.getBooleanProperty("hedera.recordStream.isEnabled");
+		recordStreamQueueCapacity = properties.getIntProperty("hedera.recordStream.queueCapacity");
 	}
 
 	public int port() {
@@ -85,5 +91,17 @@ public class NodeLocalProperties {
 
 	public String recordLogDir() {
 		return recordLogDir;
+	}
+
+	public long recordLogPeriod() {
+		return recordLogPeriod;
+	}
+
+	public boolean isRecordStreamEnabled() {
+		return recordStreamEnabled;
+	}
+
+	public int recordStreamQueueCapacity() {
+		return recordStreamQueueCapacity;
 	}
 }

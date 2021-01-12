@@ -34,11 +34,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
  *
  */
 public class AsyncPropertiesObject {
-	// properties for RecordStream
-	private static boolean enableRecordStreaming;
-	private static long recordLogPeriod = ApplicationConstants.RECORD_LOG_PERIOD;
-	private static int recordStreamQueueCapacity = ApplicationConstants.RECORD_STREAM_QU_CAP;
-
 	// Server Properties
 	private static String defaultListeningNodeAccount = ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT;
 	private static int uniqueListeningPortFlag;
@@ -78,11 +73,6 @@ public class AsyncPropertiesObject {
 		saveAccounts = appConfig.getString("saveAccounts", ApplicationConstants.NO);
 		exportedAccountPath = appConfig.getString("exportedAccountPath", ApplicationConstants.EXPORTED_ACCOUNT_PATH);
 
-		// properties for RecordStream
-		 enableRecordStreaming = appConfig.getBoolean("enableRecordStreaming", false);
-		 recordLogPeriod = appConfig.getLong("recordLogPeriod", ApplicationConstants.RECORD_LOG_PERIOD);
-		 recordStreamQueueCapacity = appConfig.getInt("recordStreamQueueCapacity", ApplicationConstants.RECORD_STREAM_QU_CAP);
-
 		// Re-try times for querying binary object store (for file services)
 		binaryObjectQueryRetryTimes = appConfig.getInt("binary.object.query.retry.times", 3);
 	}
@@ -96,18 +86,6 @@ public class AsyncPropertiesObject {
 
 	static Map<String , PermissionedAccountsRange> getApiPermission(){
 		return apiPermission;
-	}
-
-	static boolean isEnableRecordStreaming() {
-		return enableRecordStreaming;
-	}
-
-	static long getRecordLogPeriod() {
-		return recordLogPeriod;
-	}
-
-	static int getRecordStreamQueueCapacity() {
-		return recordStreamQueueCapacity;
 	}
 
 	static String getDefaultListeningNodeAccount() {

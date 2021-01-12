@@ -1383,13 +1383,13 @@ public class ServicesContext {
 	 */
 	public void initRecordStreamManager() {
 		try {
+			var nodeLocalProps = nodeLocalProperties();
+			var nodeScopedRecordLogDir = getRecordStreamDirectory(nodeLocalProps);
 			recordStreamManager = new RecordStreamManager(
 					platform,
 					runningAvgs(),
-					PropertiesLoader.isEnableRecordStreaming(),
-					getRecordStreamDirectory(nodeLocalProperties()),
-					properties.getLongProperty("hedera.recordStream.logPeriod"),
-					PropertiesLoader.getRecordStreamQueueCapacity(),
+					nodeLocalProps,
+					nodeScopedRecordLogDir,
 					getRecordsInitialHash());
 		} catch (IOException | NoSuchAlgorithmException ex) {
 			log.error("Fail to initialize RecordStreamManager.", ex);

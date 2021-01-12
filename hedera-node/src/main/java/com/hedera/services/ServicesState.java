@@ -64,6 +64,7 @@ import java.io.File;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
@@ -86,8 +87,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	static final int MERKLE_VERSION = RELEASE_0110_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
+	static Function<String, byte[]> hashReader = RecordStream::readPrevFileHash;
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
-	static Supplier<AddressBook> legacyTmpBookSupplier = AddressBook::new;
 	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
 	NodeId nodeId = null;
@@ -246,7 +247,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				|| runningHashLeaf().getRunningHash().getHash().equals(emptyHash)) {
 			// read file hash from the last record stream .rcd_sig file and set it as initial value of
 			// records running Hash
-			ImmutableHash hash = new ImmutableHash(readPrevFileHash(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties())));
+			byte[] lastHash = hashReader.apply(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties()));
+			ImmutableHash hash = new ImmutableHash(lastHash);
 			final RunningHash runningHash = new RunningHash();
 			runningHash.setHash(hash);
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));

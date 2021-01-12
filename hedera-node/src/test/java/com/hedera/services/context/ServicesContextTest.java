@@ -551,6 +551,9 @@ public class ServicesContextTest {
 		given(book.getAddress(id)).willReturn(address);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(recordStreamDir);
+		given(properties.getIntProperty("hedera.recordStream.queueCapacity")).willReturn(123);
+		given(properties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(1L);
+		given(properties.getBooleanProperty("hedera.recordStream.isEnabled")).willReturn(true);
 		final Hash initialHash = INITIAL_RANDOM_HASH;
 
 		ServicesContext ctx =
