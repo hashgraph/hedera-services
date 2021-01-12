@@ -209,8 +209,6 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("hedera.accountsExportPath"));
 		assertTrue(properties.containsProperty("hedera.exportAccountsOnStartup"));
 		assertTrue(properties.containsProperty("hedera.profiles.active"));
-		assertTrue(properties.containsProperty("hedera.recordStream.logDir"));
-		assertTrue(properties.containsProperty("hedera.recordStream.logPeriod"));
 		assertTrue(properties.containsProperty("hedera.transaction.maxMemoUtf8Bytes"));
 		assertTrue(properties.containsProperty("hedera.transaction.maxValidDuration"));
 		assertTrue(properties.containsProperty("hedera.transaction.minValidDuration"));

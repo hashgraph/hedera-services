@@ -371,7 +371,6 @@ public class ServicesContextTest {
 		given(address.getStake()).willReturn(1_234_567L);
 		given(book.getAddress(1L)).willReturn(address);
 		given(state.addressBook()).willReturn(book);
-		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn("src/main/resources");
 
 		// given:
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
@@ -508,15 +507,18 @@ public class ServicesContextTest {
 
 	@Test
 	public void getRecordStreamDirectoryTest() {
+		String expectedDir = "/here/we/are";
+
+		NodeLocalProperties sourceProps = mock(NodeLocalProperties.class);
+		given(sourceProps.recordLogDir()).willReturn(expectedDir);
 		final AddressBook book = mock(AddressBook.class);
 		final Address address = mock(Address.class);
 		given(state.addressBook()).willReturn(book);
 		given(book.getAddress(id)).willReturn(address);
 		given(address.getMemo()).willReturn("0.0.3");
-		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(recordStreamDir);
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-		assertEquals(recordStreamDir + "/record0.0.3", ctx.getRecordStreamDirectory());
+		assertEquals(expectedDir + "/record0.0.3", ctx.getRecordStreamDirectory(sourceProps));
 	}
 
 	@Test
@@ -549,6 +551,9 @@ public class ServicesContextTest {
 		given(book.getAddress(id)).willReturn(address);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(recordStreamDir);
+		given(properties.getIntProperty("hedera.recordStream.queueCapacity")).willReturn(123);
+		given(properties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(1L);
+		given(properties.getBooleanProperty("hedera.recordStream.isEnabled")).willReturn(true);
 		final Hash initialHash = INITIAL_RANDOM_HASH;
 
 		ServicesContext ctx =
