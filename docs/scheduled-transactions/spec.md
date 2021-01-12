@@ -30,7 +30,7 @@ New `HederaFunctionality`:
   
 Additional `ScheduleCreateTransactionBody` is added in the protobufs. The message has the following format:  
   
-```json  
+```  
 message ScheduleCreateTransactionBody {  
   bytes transactionBody // The transaction serialized into bytes that must be signed
   Key adminKey // (optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed)
