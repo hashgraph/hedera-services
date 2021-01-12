@@ -38,6 +38,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_TOTAL_TEST_TOKENS = 1;
 	public static final int DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS = 2;
 	public static final int DEFAULT_TEST_TREASURE_START_ACCOUNT = 1001;
+	public static final int DEFAULT_TOTAL_CLIENTS = 1;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -52,6 +53,8 @@ public class PerfTestLoadSettings {
 	private int totalTestTokens = DEFAULT_TOTAL_TEST_TOKENS;
 	private int totalTestTokenAccounts = DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
 	private int testTreasureStartAccount = DEFAULT_TEST_TREASURE_START_ACCOUNT;
+	// This is only needed for running HTS performance regression tests to setup the context
+	private int totalClients = DEFAULT_TOTAL_CLIENTS;
 
 	private HapiPropertySource ciProps = null;
 
@@ -67,6 +70,11 @@ public class PerfTestLoadSettings {
 	public int getTps() {
 		return tps;
 	}
+
+	public int getTotalClients() {
+		return totalClients;
+	}
+
 	public int getTolerancePercentage() {
 		return tolerancePercentage;
 	}
@@ -125,6 +133,9 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("tps")) {
 			tps = ciProps.getInteger("tps");
 		}
+		if (ciProps.has("totalClients")) {
+			totalClients = ciProps.getInteger("totalClients");
+		}
 		if (ciProps.has("mins")) {
 			mins = ciProps.getInteger("mins");
 		}
@@ -167,6 +178,7 @@ public class PerfTestLoadSettings {
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
 				.add("tps", tps)
+				.add("totalClients", totalClients)
 				.add("mins", mins)
 				.add("tolerance", tolerancePercentage)
 				.add("burstSize", burstSize)
@@ -174,6 +186,7 @@ public class PerfTestLoadSettings {
 				.add("threads", threads)
 				.add("totalTestAccounts", totalTestAccounts)
 				.add("totalTestTopics", totalTestTopics)
+				.add("totalTestTokens", totalTestTokens)
 				.add("testActiveTokenAccounts", totalTestTokenAccounts)
 				.add("testTreasureStartAccount", testTreasureStartAccount)
 				.add("submitMessageSize", hcsSubmitMessageSize)

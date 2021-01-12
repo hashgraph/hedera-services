@@ -349,6 +349,12 @@ public class SuiteRunner {
 					NETWORK_SIZE_ARG,
 					"" + EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
+			// For HTS perf regression test, we need to know the number of clients to distribute
+			// the creation of the test tokens and token associations to each client.
+			// For current perf test setup, this number will be the size of test network.
+			if(!otherOverrides.containsKey("totalClients")) {
+				otherOverrides.put("totalClients", "" + expectedNetworkSize);
+			}
 			createPayerAccount(System.getenv("NODES"), args[1]);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
