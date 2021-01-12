@@ -68,7 +68,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.hedera.services.stats.ServicesStatsConfig.FREEZE_METRIC;
+import static com.hedera.services.grpc.controllers.FreezeController.FREEZE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_UNDELETE_METRIC;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
