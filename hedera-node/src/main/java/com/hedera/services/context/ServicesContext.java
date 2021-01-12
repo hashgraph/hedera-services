@@ -1389,7 +1389,7 @@ public class ServicesContext {
 					PropertiesLoader.isEnableRecordStreaming(),
 					getRecordStreamDirectory(),
 					properties.getLongProperty("hedera.recordStream.logPeriod"),
-					PropertiesLoader.getRecordStreamQueueCapacity(),
+					5000,
 					getRecordsInitialHash());
 		} catch (IOException | NoSuchAlgorithmException ex) {
 			log.error("Fail to initialize RecordStreamManager.", ex);

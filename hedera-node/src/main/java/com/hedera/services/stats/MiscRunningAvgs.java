@@ -23,16 +23,15 @@ package com.hedera.services.stats;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.Platform;
 import com.swirlds.platform.StatsRunningAverage;
-import com.swirlds.platform.StatsSpeedometer;
 
 public class MiscRunningAvgs {
 	private final RunningAvgFactory runningAvg;
 
 	StatsRunningAverage accountRetryWaitMs;
 	StatsRunningAverage accountLookupRetries;
-	StatsRunningAverage recordStreamQueueSize;
+	StatsRunningAverage recordStreamWriteQueueSize;
 	StatsRunningAverage handledSubmitMessageSize;
-	StatsRunningAverage hashQueueSize;
+	StatsRunningAverage recordStreamHashQueueSize;
 
 	public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
 		this.runningAvg = runningAvg;
@@ -41,9 +40,9 @@ public class MiscRunningAvgs {
 
 		accountRetryWaitMs = new StatsRunningAverage(halfLife);
 		accountLookupRetries = new StatsRunningAverage(halfLife);
-		recordStreamQueueSize = new StatsRunningAverage(halfLife);
+		recordStreamWriteQueueSize = new StatsRunningAverage(halfLife);
 		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
-		hashQueueSize = new StatsRunningAverage(halfLife);
+		recordStreamHashQueueSize = new StatsRunningAverage(halfLife);
 	}
 
 	public void registerWith(Platform platform) {
@@ -59,9 +58,9 @@ public class MiscRunningAvgs {
 						accountRetryWaitMs));
 		platform.addAppStatEntry(
 				runningAvg.from(
-						Names.RECORD_STREAM_QUEUE_SIZE,
-						Descriptions.RECORD_STREAM_QUEUE_SIZE,
-						recordStreamQueueSize));
+						Names.RECORD_STREAM_WRITE_QUEUE_SIZE,
+						Descriptions.RECORD_STREAM_WRITE_QUEUE_SIZE,
+						recordStreamWriteQueueSize));
 		platform.addAppStatEntry(
 				runningAvg.from(
 						Names.HANDLED_SUBMIT_MESSAGE_SIZE,
@@ -69,9 +68,9 @@ public class MiscRunningAvgs {
 						handledSubmitMessageSize));
 		platform.addAppStatEntry(
 				runningAvg.from(
-						Names.HASH_QUEUE_SIZE,
-						Descriptions.HASH_QUEUE_SIZE,
-						hashQueueSize
+						Names.RECORD_STREAM_HASH_QUEUE_SIZE,
+						Descriptions.RECORD_STREAM_HASH_QUEUE_SIZE,
+						recordStreamHashQueueSize
 				)
 		);
 	}
@@ -85,7 +84,7 @@ public class MiscRunningAvgs {
 	}
 
 	public void recordStreamQueueSize(int num) {
-		recordStreamQueueSize.recordValue(num);
+		recordStreamWriteQueueSize.recordValue(num);
 	}
 
 	public void recordHandledSubmitMessageSize(int bytes) {
@@ -93,15 +92,15 @@ public class MiscRunningAvgs {
 	}
 
 	public void hashQueueSize(int num) {
-		hashQueueSize.recordValue(num);
+		recordStreamHashQueueSize.recordValue(num);
 	}
 
 	static class Names {
 		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
-		public static final String RECORD_STREAM_QUEUE_SIZE = "recordStreamQueueSize";
+		public static final String RECORD_STREAM_WRITE_QUEUE_SIZE = "recordStreamWriteQueueSize";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
-		public static final String HASH_QUEUE_SIZE = "hashQueueSize";
+		public static final String RECORD_STREAM_HASH_QUEUE_SIZE = "recordStreamHashQueueSize";
 	}
 
 	static class Descriptions {
@@ -109,10 +108,10 @@ public class MiscRunningAvgs {
 				"average time is millis spent waiting to lookup the account number";
 		public static final String ACCOUNT_LOOKUP_RETRIES =
 				"average number of retry attempts made to lookup the account number";
-		public static final String RECORD_STREAM_QUEUE_SIZE =
+		public static final String RECORD_STREAM_WRITE_QUEUE_SIZE =
 				"size of the queue from which we take records and write to RecordStream file";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
 				"average size of the handled HCS submit message transaction";
-		public static final String HASH_QUEUE_SIZE = "size of working queue for calculating hash and runningHash";
+		public static final String RECORD_STREAM_HASH_QUEUE_SIZE = "size of working queue for calculating hash and runningHash";
 	}
 }

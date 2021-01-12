@@ -29,9 +29,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class MiscRunningAvgsTest {
@@ -71,9 +72,9 @@ class MiscRunningAvgsTest {
 				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS::equals),
 				argThat(subject.accountRetryWaitMs::equals))).willReturn(waitMs);
 		given(factory.from(
-				argThat(MiscRunningAvgs.Names.RECORD_STREAM_QUEUE_SIZE::equals),
-				argThat(MiscRunningAvgs.Descriptions.RECORD_STREAM_QUEUE_SIZE::equals),
-				argThat(subject.recordStreamQueueSize::equals))).willReturn(queueSizes);
+				argThat(MiscRunningAvgs.Names.RECORD_STREAM_WRITE_QUEUE_SIZE::equals),
+				argThat(MiscRunningAvgs.Descriptions.RECORD_STREAM_WRITE_QUEUE_SIZE::equals),
+				argThat(subject.recordStreamWriteQueueSize::equals))).willReturn(queueSizes);
 		given(factory.from(
 				argThat(MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
 				argThat(MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
@@ -100,7 +101,7 @@ class MiscRunningAvgsTest {
 		subject.accountLookupRetries = retries;
 		subject.accountRetryWaitMs = waitMs;
 		subject.handledSubmitMessageSize = submitSizes;
-		subject.recordStreamQueueSize = queueSize;
+		subject.recordStreamWriteQueueSize = queueSize;
 
 		// when:
 		subject.recordAccountLookupRetries(1);
