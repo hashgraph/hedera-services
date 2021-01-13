@@ -174,7 +174,7 @@ If there is, the operation is considered as idempotent creation and only the sig
   
 The HashMap will be recreated from the `FCMap` after a restart or reconnect of the nodes.  
   
-##### Transition Logic  
+#### Transition Logic  
   
 New `ScheduleCreateTransitionLogic`, `ScheduleSignTransitionLogic`, `ScheduleDeleteTransitionLogic` and `GetScheduleInfoAnswer` are implemented. 
   
@@ -195,14 +195,14 @@ The following steps represent the major logic in appending signatures to Schedul
  3. Add the `Key` to the `signers` set in the state.
  3. Compute whether all of the required `Key`'s provided signatures. If yes -> set the transaction context for the child transaction in order to be executed after the `Create` operation is fully processed.
 
-##### Signature Verifications  
+#### Signature Verifications  
   
 Every transaction is undergoing signature verification using the `expandSignatures` method called immediately after TX is submitted to Hedera. The current signature expansion logic will be extended with:  
  1. Additional implementation in `HederaSigningOrder` `forSchedule`. Used to handle signature verification **for the** `ScheduleCreate`, `ScheduleSign` and `ScheduleDelete` transactions.  
  2. Logic for expanding the `scheduled transaction` signatures (the underlying transaction in `ScheduleCreate` and `ScheduleSign`).  
  3. Logic for verifying that the verified signatures are `VALID` (in the `handleTransaction` context)
 
-##### Fees  
+#### Fees  
   
 Scheduled Transactions are more expensive compared to other operations due to the computation overhead and memory/state footprint.  
 
