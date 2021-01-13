@@ -1,4 +1,4 @@
-package com.hedera.services.tokens;
+package com.hedera.services.store.tokens;
 
 /*-
  * ‌
@@ -32,6 +32,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.store.CreationResult;
+import com.hedera.services.store.HederaStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -63,18 +65,16 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
-import static com.hedera.services.tokens.TokenCreationResult.failure;
-import static com.hedera.services.tokens.TokenCreationResult.success;
+import static com.hedera.services.store.CreationResult.failure;
+import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -100,12 +100,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
  *
  * @author Michael Tinker
  */
-public class HederaTokenStore implements TokenStore {
+public class HederaTokenStore extends HederaStore implements TokenStore {
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
 	static Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
 
-	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
@@ -113,10 +112,6 @@ public class HederaTokenStore implements TokenStore {
 			Map.Entry<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
-
-	private HederaLedger hederaLedger;
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-
 	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
 
 	TokenID pendingId = NO_PENDING_ID;
@@ -129,7 +124,7 @@ public class HederaTokenStore implements TokenStore {
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
-		this.ids = ids;
+		super(ids);
 		this.tokens = tokens;
 		this.validator = validator;
 		this.properties = properties;
@@ -148,12 +143,7 @@ public class HederaTokenStore implements TokenStore {
 	@Override
 	public void setHederaLedger(HederaLedger hederaLedger) {
 		hederaLedger.setTokenRelsLedger(tokenRelsLedger);
-		this.hederaLedger = hederaLedger;
-	}
-
-	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		this.accountsLedger = accountsLedger;
+		super.setHederaLedger(hederaLedger);
 	}
 
 	@Override
@@ -368,7 +358,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
-	public TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
+	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
 		var validity = accountCheck(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		if (validity != OK) {
 			return failure(validity);
@@ -662,13 +652,6 @@ public class HederaTokenStore implements TokenStore {
 		return knownTreasuries.get(aId).contains(tId);
 	}
 
-	private ResponseCodeEnum accountCheck(AccountID id, ResponseCodeEnum failure) {
-		if (!accountsLedger.exists(id) || (boolean) accountsLedger.get(id, AccountProperty.IS_DELETED)) {
-			return failure;
-		}
-		return OK;
-	}
-
 	private ResponseCodeEnum manageFlag(
 			AccountID aId,
 			TokenID tId,
@@ -733,11 +716,5 @@ public class HederaTokenStore implements TokenStore {
 			return validity;
 		}
 		return exists(tId) ? OK : INVALID_TOKEN_ID;
-	}
-
-	private ResponseCodeEnum checkAccountExistence(AccountID aId) {
-		return accountsLedger.exists(aId)
-				? (hederaLedger.isDeleted(aId) ? ACCOUNT_DELETED : OK)
-				: INVALID_ACCOUNT_ID;
 	}
 }

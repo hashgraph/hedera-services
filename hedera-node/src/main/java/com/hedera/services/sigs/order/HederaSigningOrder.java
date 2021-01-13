@@ -44,6 +44,8 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -156,6 +158,11 @@ public class HederaSigningOrder {
 			return tokenOrder.get();
 		}
 
+		var scheduleOrder = forSchedule(txn, factory);
+		if (scheduleOrder.isPresent()) {
+			return scheduleOrder.get();
+		}
+
 		var fileOrder = forFile(txn, factory);
 		if (fileOrder.isPresent()) {
 			return fileOrder.get();
@@ -220,6 +227,20 @@ public class HederaSigningOrder {
 		} else if (txn.hasCryptoDelete()) {
 			return Optional.of(cryptoDelete(
 					txn.getTransactionID(), txn.getCryptoDelete(), factory));
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	private <T> Optional<SigningOrderResult<T>> forSchedule(
+			TransactionBody txn,
+			SigningOrderResultFactory<T> factory) {
+		if (txn.hasScheduleCreate()) {
+			return Optional.of(scheduleCreate(txn.getScheduleCreate(), factory));
+		} else if (txn.hasScheduleSign()) {
+			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
+		} else if (txn.hasScheduleDelete()) {
+			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -804,6 +825,56 @@ public class HederaSigningOrder {
 			SigningOrderResultFactory<T> factory
 	) {
 		return forSingleAccount(txnId, op.getAccount(), factory);
+	}
+
+	private <T> SigningOrderResult<T> scheduleCreate(
+			ScheduleCreateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = new ArrayList<>();
+
+		addToMutableReqIfPresent(
+				op,
+				ScheduleCreateTransactionBody::hasAdminKey,
+				ScheduleCreateTransactionBody::getAdminKey,
+				required);
+
+		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> scheduleSign(
+			TransactionID txnId,
+			ScheduleID id,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = new ArrayList<>();
+
+		var result = sigMetaLookup.scheduleSigningMetaFor(id);
+		if (!result.succeeded()) {
+			return factory.forMissingSchedule(id, txnId);
+		}
+
+		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> scheduleDelete(
+			TransactionID txnId,
+			ScheduleID id,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = new ArrayList<>();
+
+		var result = sigMetaLookup.scheduleSigningMetaFor(id);
+		if (result.succeeded()) {
+			var meta = result.metadata();
+			if (meta.adminKey().isPresent()) {
+				required.add(meta.adminKey().get());
+			}
+		} else {
+			return factory.forMissingSchedule(id, txnId);
+		}
+
+		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> forSingleAccount(

@@ -336,7 +336,7 @@ public class SigOpsRegressionTest {
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
 		HederaSigningOrder keysOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null),
+				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns);
 
@@ -348,7 +348,7 @@ public class SigOpsRegressionTest {
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
 		HederaSigningOrder keysOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(hfs, () -> accounts, null, ref -> null),
+				defaultLookupsFor(hfs, () -> accounts, null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns);
 
@@ -359,7 +359,7 @@ public class SigOpsRegressionTest {
 		int MAGIC_NUMBER = 10;
 		SigMetadataLookup sigMetaLookups =
 				defaultLookupsPlusAccountRetriesFor(
-						hfs, () -> accounts, () -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
+						hfs, () -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
 						runningAvgs, speedometers);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
@@ -372,7 +372,7 @@ public class SigOpsRegressionTest {
 
 	private SignatureStatus invokeRationalizationScenario() throws Exception {
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
-		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null);
+		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
 				sigMetaLookups,
@@ -393,7 +393,7 @@ public class SigOpsRegressionTest {
 
 		signingOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null),
+				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns);
 		SigningOrderResult<SignatureStatus> payerKeys =

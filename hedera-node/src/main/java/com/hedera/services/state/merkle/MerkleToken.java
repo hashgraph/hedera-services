@@ -407,11 +407,4 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		totalSupply += amount;
 	}
 
-	void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
-		this.accountsFrozenByDefault = accountsFrozenByDefault;
-	}
-
-	void setAccountsKycGrantedByDefault(boolean accountKycGrantedByDefault) {
-		this.accountsKycGrantedByDefault = accountKycGrantedByDefault;
-	}
 }

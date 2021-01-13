@@ -36,6 +36,7 @@ import org.bouncycastle.util.Arrays;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -220,8 +221,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     public void setSigners(Set<JKey> signers) { this.signers = signers; }
 
-    public void addSigner(JKey signer) {
-        this.signers.add(signer);
+    public void addSigners(Set<JKey> signer) {
+        this.signers.addAll(signer);
     }
 
     public boolean isDeleted() {
