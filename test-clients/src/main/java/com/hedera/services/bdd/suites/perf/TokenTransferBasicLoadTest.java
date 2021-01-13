@@ -24,22 +24,30 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 public class TokenTransferBasicLoadTest extends LoadTest {
 	private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(TokenTransferBasicLoadTest.class);
-
+	final static int EXPECTED_MAX_OPS_PER_SEC = 5_000;
+	final static int MAX_PENDING_OPS_FOR_SETUP = 10_000;
+	final static int ESTIMATED_TOKEN_CREATION_RATE = 50;
 	private static final Random r = new Random();
 
 	public static void main(String... args) {
@@ -84,9 +92,13 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 				var op = tokenCreate(tokenRegistryName(next))
 						.payingWith(GENESIS)
 						.signedBy(GENESIS)
-						.treasury(payingTreasury)
+						.fee(A_HUNDRED_HBARS)
 						.initialSupply(100_000_000_000L)
-						.fee(10_000_000_000L)
+						.treasury(payingTreasury)
+						.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED, DUPLICATE_TRANSACTION,INSUFFICIENT_PAYER_BALANCE)
+						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
+						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, FAIL_INVALID)
+						.suppressStats(true)
 						.noLogging();
 				return Optional.of(op);
 			}
@@ -134,8 +146,10 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 				var op = tokenAssociate(accountId, tokenRegistryName(curToken))
 						.payingWith(GENESIS)
 						.signedBy(GENESIS)
-						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+						.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED, DUPLICATE_TRANSACTION,INSUFFICIENT_PAYER_BALANCE)
+						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
+						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
+								TRANSACTION_EXPIRED, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,FAIL_INVALID)
 						.fee(A_HUNDRED_HBARS)
 						.noLogging()
 						.suppressStats(true)
@@ -145,38 +159,44 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 		};
 	}
 
-    private HapiApiSpec runTokenTransferBasicLoadTest() {
+	private HapiApiSpec runTokenTransferBasicLoadTest() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		Supplier<HapiSpecOperation[]> tokenTransferBurst = () -> new HapiSpecOperation[] {
-			opSupplier(settings).get()
+				opSupplier(settings).get()
 		};
 		return defaultHapiSpec("TokenTransferBasicLoadTest" )
-			.given(
-					tokenOpsEnablement(), // remove this line when token services enabled by default
-					withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-			).when(
-					// The running time is calculated based on testing from one node network.
-					// TODO: don't change the numbers calculated here till we enhance the ProviderRun to
-					//       also terminate based on total operation number.
-					sourcing(() -> runWithProvider(tokenCreatesFactory(settings))
-							.lasting(() -> settings.getTotalTokens() / (settings.getTotalClients() * 12) + 5,
-									() -> TimeUnit.SECONDS)
-							.maxOpsPerSec(() -> settings.getTps())),
-					sourcing(() -> runWithProvider(activeTokenAssociatesFactory(settings))
+				.given(
+						tokenOpsEnablement(), // remove this line when token services enabled by default
+						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+				).when(
+						sourcing(() -> runWithProvider(tokenCreatesFactory(settings))
+								.lasting(() -> settings.getTotalTokens() / ESTIMATED_TOKEN_CREATION_RATE + 10, // 10s as buffering time
+										() -> TimeUnit.SECONDS)
+								.totalOpsToSumbit(() ->
+										(int)Math.ceil((double)(settings.getTotalTokens()) / settings.getTotalClients()))
+								.maxOpsPerSec(() -> (EXPECTED_MAX_OPS_PER_SEC / settings.getTotalClients()))
+								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)
+						),
+						sourcing(() -> runWithProvider(activeTokenAssociatesFactory(settings))
 
-							.lasting(() -> (settings.getTotalTokens() / settings.getTotalClients())
-											* settings.getTotalTestTokenAccounts() / 1_200 + 10,
-									() -> TimeUnit.SECONDS)
-							.maxOpsPerSec(() ->  1200)
-							.maxPendingOps( () -> 10000)
-					)
+								.lasting(() -> (settings.getTotalTokens() * settings.getTotalTestTokenAccounts()
+												/ EXPECTED_MAX_OPS_PER_SEC) + 30, // 30s as buffering time
+										() -> TimeUnit.SECONDS)
+								.totalOpsToSumbit(() ->
+										(int)Math.ceil((double)(settings.getTotalTokens()) / settings.getTotalClients())
+												* settings.getTotalTestTokenAccounts())
+								.maxOpsPerSec(() ->  (EXPECTED_MAX_OPS_PER_SEC / settings.getTotalClients()))
+								.maxPendingOps( () -> MAX_PENDING_OPS_FOR_SETUP)
+						),
+						sleepFor(2000)
 				).then(
-					defaultLoadTest(tokenTransferBurst, settings)
+						defaultLoadTest(tokenTransferBurst, settings)
 				);
 	}
 
+
 	private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
-		int tokenNum = r.nextInt(settings.getTotalTokens()/settings.getTotalClients());
+		int tokenNum = r.nextInt(settings.getTotalTokens() / settings.getTotalClients());
 		int sender = r.nextInt(settings.getTotalTestTokenAccounts());
 		int receiver = r.nextInt(settings.getTotalTestTokenAccounts());
 		while (receiver == sender) {
@@ -194,12 +214,14 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 				moving(1, tokenRegistryName(tokenNum)).between(senderAcct, receiverAcct))
 				.payingWith(senderAcct)
 				.signedBy(GENESIS)
-				.fee(10_000_000_000L)
+				.fee(A_HUNDRED_HBARS)
 				.noLogging()
 				.suppressStats(true)
-				.hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
+				.hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS
+						,DUPLICATE_TRANSACTION)
 				.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-				.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_TOKEN_BALANCE, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+				.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_TOKEN_BALANCE,TRANSACTION_EXPIRED,
+						UNKNOWN, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 				.deferStatusResolution();
 		return () -> op;
 	}

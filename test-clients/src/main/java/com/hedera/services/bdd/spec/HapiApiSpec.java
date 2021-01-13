@@ -197,12 +197,27 @@ public class HapiApiSpec implements Runnable {
 	}
 
 	public boolean tryReinitializingFees() {
-		try {
-			ratesProvider.init();
-			feeCalculator.init();
-		} catch (Throwable t) {
-			log.error("Fees failed to initialize!", t);
-			return false;
+		int attempt = 60;
+		while (attempt >= 0 )  {
+			try {
+				ratesProvider.init();
+				feeCalculator.init();
+				return true;
+			} catch (Throwable t) {
+				attempt--;
+				if (attempt < 0) {
+					log.error("Fees failed to initialize! Please check if server is down...", t);
+					return false;
+				}
+				else {
+					log.warn("Hedera service is not reachable. Will wait and try connect again for {} times...", attempt);
+					try {
+						Thread.sleep(2000);
+					} catch (InterruptedException e) {
+
+					}
+				}
+			}
 		}
 		return true;
 	}
