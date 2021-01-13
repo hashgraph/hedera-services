@@ -24,11 +24,9 @@ New `HederaFunctionality`:
 - `ScheduleCreate` - Creates new scheduled transaction.  
 - `ScheduleSign` - Signs an already created scheduled transaction.  
 - `ScheduleDelete` - Deletes an already created scheduled transaction. Must be signed by the specified `adminKey` .
-- `ScheduleGetInfo` - Returns information for an already created scheduled transaction.  
+- `ScheduleGetInfo` - Returns information for an already created scheduled transaction.    
   
-#### Operations  
-  
-##### ScheduleCreate  
+#### ScheduleCreate  
   
 Additional [`ScheduleCreateTransactionBody`](https://github.com/hashgraph/hedera-services/blob/master/hapi-proto/src/main/proto/ScheduleCreate.proto) is added in the protobufs. The message has the following format:  
   
@@ -62,7 +60,7 @@ If the transaction is deemed "identical", the second `scheduleCreate` tx will no
   
 `ScheduleCreate` transaction referring to an already created scheduled transaction and providing the rest of the required signature(s) will cause the underlying encoded transaction to be executed!  
   
-##### ScheduleSign  
+#### ScheduleSign  
   
 Additional [`ScheduleSignTransactionBody`](https://github.com/hashgraph/hedera-services/blob/master/hapi-proto/src/main/proto/ScheduleSign.proto) is added in the protobufs. The operation appends the signature(s) to an already existing Scheduled Entity. If after adding the new signature(s), the transaction has the required number of signatures, it will be executed immediately in the same transaction context. The message has the following format:  
   
@@ -73,7 +71,7 @@ message ScheduleSignTransactionBody {
 }  
 ```  
   
-##### ScheduleDelete  
+#### ScheduleDelete  
   
 Additional [`ScheduleDeleteTransactionBody`](https://github.com/hashgraph/hedera-services/blob/master/hapi-proto/src/main/proto/ScheduleDelete.proto) is added in the protobufs. The operation deletes an already created Scheduled Transaction (unless the TX has already been executed). The transaction must be signed by the `adminKey` specified on the `ScheduleCreate` operation. Once the delete operation is executed, the data structure holding scheduled TX info in-state is marked as deleted, but is not cleared out.
   
@@ -85,7 +83,7 @@ message ScheduleDeleteTransactionBody {
 }  
 ```  
   
-##### ScheduleGetInfo  
+#### ScheduleGetInfo  
   
 An additional query [`ScheduleGetInfoQuery`](https://github.com/hashgraph/hedera-services/blob/master/hapi-proto/src/main/proto/ScheduleGetInfo.proto) is added for retrieving information related to Scheduled Transactions. The operation has the following format:  
   
