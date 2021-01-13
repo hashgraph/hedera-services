@@ -1,4 +1,4 @@
-package com.hedera.services.tokens;
+package com.hedera.services.store.tokens;
 
 /*-
  * ‌
@@ -25,6 +25,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -93,7 +94,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
+	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
 		throw new UnsupportedOperationException();
 	}
 

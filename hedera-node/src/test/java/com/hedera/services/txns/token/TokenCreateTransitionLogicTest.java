@@ -23,8 +23,8 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.tokens.TokenCreationResult;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.CreationResult;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -133,7 +133,7 @@ class TokenCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(TokenCreationResult.failure(INVALID_ADMIN_KEY));
+				.willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
 
 		// when:
 		subject.doStateTransition();
@@ -152,7 +152,7 @@ class TokenCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(TokenCreationResult.success(created));
+				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
@@ -175,7 +175,7 @@ class TokenCreateTransitionLogicTest {
 		givenValidTxnCtx(false, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(TokenCreationResult.success(created));
+				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// when:
@@ -195,7 +195,7 @@ class TokenCreateTransitionLogicTest {
 		givenValidTxnCtx(false, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(TokenCreationResult.success(created));
+				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
@@ -216,7 +216,7 @@ class TokenCreateTransitionLogicTest {
 		givenValidTxnCtx(true, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(TokenCreationResult.success(created));
+				.willReturn(CreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
@@ -242,7 +242,7 @@ class TokenCreateTransitionLogicTest {
 		givenValidTxnCtx(true, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(TokenCreationResult.success(created));
+				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(OK);
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
@@ -266,7 +266,7 @@ class TokenCreateTransitionLogicTest {
 		givenValidTxnCtx(false, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
-				.willReturn(TokenCreationResult.success(created));
+				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))

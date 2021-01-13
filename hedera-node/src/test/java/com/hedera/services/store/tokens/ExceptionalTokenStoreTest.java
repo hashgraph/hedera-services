@@ -1,4 +1,4 @@
-package com.hedera.services.tokens;
+package com.hedera.services.store.tokens;
 
 /*-
  * ‌
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
