@@ -108,14 +108,14 @@ public class RecordStreamManagerTest {
 		assertNotNull(disableStreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
 		assertNotNull(disableStreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
 		assertEquals(0, disableStreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
-		assertEquals(0, disableStreamingInstance.getRecordStreamingQueueSize(), INITIALIZE_QUEUE_EMPTY);
+		assertEquals(0, disableStreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
 
 		assertNotNull(enableStreamingInstance.getStreamFileWriter(),
 				"When recordStreaming is enabled, streamFileWriter instance should not be null");
 		assertNotNull(enableStreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
 		assertNotNull(enableStreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
 		assertEquals(0, enableStreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
-		assertEquals(0, enableStreamingInstance.getRecordStreamingQueueSize(), INITIALIZE_QUEUE_EMPTY);
+		assertEquals(0, enableStreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
 	}
 
 	@Test
@@ -137,7 +137,7 @@ public class RecordStreamManagerTest {
 			when(writeQueueThreadMock.getQueueSize()).thenReturn(i);
 			recordStreamManager.addRecordStreamObject(recordStreamObject);
 			verify(multiStreamMock).add(recordStreamObject);
-			verify(runningAvgsMock).recordStreamQueueSize(i);
+			verify(runningAvgsMock).writeQueueSizeRecordStream(i);
 			// multiStream should not be closed after adding it
 			verify(multiStreamMock, never()).close();
 			assertFalse(recordStreamManager.getInFreeze(),
@@ -155,10 +155,10 @@ public class RecordStreamManagerTest {
 		recordStreamManager.addRecordStreamObject(objectAfterFreeze);
 		// after frozen, when adding object to the RecordStreamManager, multiStream.add(object) should not be called
 		verify(multiStreamMock, never()).add(objectAfterFreeze);
-		// multiStream should be closed when inFreeze is set to be true
+		// multiStreamMock should be closed when inFreeze is set to be true
 		verify(multiStreamMock).close();
 		// should get recordStream queue size and set to runningAvgs
-		verify(runningAvgsMock).recordStreamQueueSize(recordsNum);
+		verify(runningAvgsMock).writeQueueSizeRecordStream(recordsNum);
 	}
 
 	@ParameterizedTest
@@ -184,7 +184,7 @@ public class RecordStreamManagerTest {
 
 		verify(mockLog).info("RecordStream inFreeze is set to be {} ", true);
 		assertTrue(recordStreamManager.getInFreeze());
-		// multiStream should be closed when inFreeze is true;
+		// multiStreamMock should be closed when inFreeze is true;
 		verify(multiStreamMock).close();
 	}
 }

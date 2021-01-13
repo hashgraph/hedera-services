@@ -52,20 +52,18 @@ public class RecordStreamManager {
 
 	/**
 	 * receives {@link RecordStreamObject}s from {@link com.hedera.services.legacy.services.state.AwareProcessLogic}
-	 * .addForStreaming,
+	 * 	 * .addForStreaming,
 	 * then passes to hashQueueThread and writeQueueThread
 	 */
-	private MultiStream<RecordStreamObject> multiStream;
+	private final MultiStream<RecordStreamObject> multiStream;
 
 	/** receives {@link RecordStreamObject}s from multiStream, then passes to hashCalculator */
 	private QueueThread<RecordStreamObject> hashQueueThread;
 	/**
 	 * receives {@link RecordStreamObject}s from hashQueueThread, calculates this object's Hash, then passes to
-	 * runningHashCalculator
+	 * runningHashQueueThread
 	 */
 	private HashCalculatorForStream<RecordStreamObject> hashCalculator;
-	/** receives {@link RecordStreamObject}s from hashCalculator, calculates and set runningHash for this object */
-	private RunningHashCalculatorForStream<RecordStreamObject> runningHashCalculator;
 
 	/** receives {@link RecordStreamObject}s from multiStream, then passes to streamFileWriter */
 	private QueueThread<RecordStreamObject> writeQueueThread;
@@ -94,7 +92,7 @@ public class RecordStreamManager {
 	/**
 	 * an instance for recording the average value of recordStream queue size
 	 */
-	private MiscRunningAvgs runningAvgs;
+	private final MiscRunningAvgs runningAvgs;
 
 	/**
 	 * @param platform
@@ -133,8 +131,16 @@ public class RecordStreamManager {
 
 		this.runningAvgs = runningAvgs;
 
-		runningHashCalculator = new RunningHashCalculatorForStream<>();
-		hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
+		// receives {@link RecordStreamObject}s from runningHashQueueThread, calculates and set runningHash for this object
+		final RunningHashCalculatorForStream<RecordStreamObject> runningHashCalculator =
+				new RunningHashCalculatorForStream<>();
+
+		// receives {@link RecordStreamObject}s from hashCalculator, then passes to runningHashCalculator
+		final QueueThread<RecordStreamObject> runningHashQueueThread = new QueueThread<>("runningHashQueueThread",
+				platform.getSelfId(),
+				runningHashCalculator,
+				nodeLocalProperties.recordStreamQueueCapacity());
+		hashCalculator = new HashCalculatorForStream<>(runningHashQueueThread);
 		hashQueueThread = new QueueThread<>(
 				"hashQueueThread",
 				platform.getSelfId(),
@@ -189,16 +195,17 @@ public class RecordStreamManager {
 			try {
 				multiStream.add(recordStreamObject);
 			} catch (InterruptedException ex) {
-				LOGGER.error("thread interruption ignored in addRecordStreamObject: {}", ex);
+				LOGGER.error("thread interruption ignored in addRecordStreamObject: {}", ex, ex);
 			}
 		}
-		runningAvgs.recordStreamQueueSize(getRecordStreamingQueueSize());
+		runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());
+		runningAvgs.hashQueueSizeRecordStream(getHashQueueSize());
 	}
 
 	/**
 	 * set `inFreeze` to be the given value
 	 *
-	 * @param inFreeze
+	 * @param inFreeze Whether the RecordStream is frozen or not.
 	 */
 	public void setInFreeze(boolean inFreeze) {
 		this.inFreeze = inFreeze;
@@ -241,7 +248,7 @@ public class RecordStreamManager {
 	 * @return current size of working queue for calculating hash and runningHash
 	 */
 	int getHashQueueSize() {
-		return hashQueueThread.getQueueSize();
+		return hashQueueThread == null ? 0 : hashQueueThread.getQueueSize();
 	}
 
 	/**
@@ -249,7 +256,7 @@ public class RecordStreamManager {
 	 *
 	 * @return current size of working queue for writing to record stream files
 	 */
-	int getRecordStreamingQueueSize() {
+	int getWriteQueueSize() {
 		return writeQueueThread == null ? 0 : writeQueueThread.getQueueSize();
 	}
 

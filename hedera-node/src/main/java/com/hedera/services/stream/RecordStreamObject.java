@@ -75,6 +75,7 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 
 	public RecordStreamObject(final TransactionRecord transactionRecord,
 			final Transaction transaction, final Instant consensusTimestamp) {
+		// configurable 50/100/150 bytes
 		this.transactionRecord = transactionRecord;
 		this.transaction = transaction;
 		this.consensusTimestamp = consensusTimestamp;
