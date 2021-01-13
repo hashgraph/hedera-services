@@ -64,12 +64,6 @@ public class RecordStreamManager {
 	 */
 	private HashCalculatorForStream<RecordStreamObject> hashCalculator;
 
-	/** receives {@link RecordStreamObject}s from hashCalculator, then passes to runningHashCalculator */
-	private QueueThread<RecordStreamObject> runningHashQueueThread;
-
-	/** receives {@link RecordStreamObject}s from hashCalculator, calculates and set runningHash for this object */
-	private RunningHashCalculatorForStream<RecordStreamObject> runningHashCalculator;
-
 	/** receives {@link RecordStreamObject}s from multiStream, then passes to streamFileWriter */
 	private QueueThread<RecordStreamObject> writeQueueThread;
 	/**
@@ -140,8 +134,12 @@ public class RecordStreamManager {
 
 		this.runningAvgs = runningAvgs;
 
-		runningHashCalculator = new RunningHashCalculatorForStream<>();
-		runningHashQueueThread = new QueueThread<>("runningHashQueueThread",
+		// receives {@link RecordStreamObject}s from hashCalculator, calculates and set runningHash for this object
+		final RunningHashCalculatorForStream<RecordStreamObject> runningHashCalculator =
+				new RunningHashCalculatorForStream<>();
+
+		// receives {@link RecordStreamObject}s from hashCalculator, then passes to runningHashCalculator
+		final QueueThread<RecordStreamObject> runningHashQueueThread = new QueueThread<>("runningHashQueueThread",
 				platform.getSelfId(),
 				runningHashCalculator,
 				recordStreamQueueCapacity);
@@ -206,7 +204,7 @@ public class RecordStreamManager {
 	/**
 	 * set `inFreeze` to be the given value
 	 *
-	 * @param inFreeze
+	 * @param inFreeze Whether the RecordStream is frozen or not.
 	 */
 	public void setInFreeze(boolean inFreeze) {
 		this.inFreeze = inFreeze;
