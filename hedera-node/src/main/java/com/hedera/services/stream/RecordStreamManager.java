@@ -61,7 +61,7 @@ public class RecordStreamManager {
 	private QueueThread<RecordStreamObject> hashQueueThread;
 	/**
 	 * receives {@link RecordStreamObject}s from hashQueueThread, calculates this object's Hash, then passes to
-	 * runningHashCalculator
+	 * runningHashQueueThread
 	 */
 	private HashCalculatorForStream<RecordStreamObject> hashCalculator;
 
@@ -131,7 +131,7 @@ public class RecordStreamManager {
 
 		this.runningAvgs = runningAvgs;
 
-		// receives {@link RecordStreamObject}s from hashCalculator, calculates and set runningHash for this object
+		// receives {@link RecordStreamObject}s from runningHashQueueThread, calculates and set runningHash for this object
 		final RunningHashCalculatorForStream<RecordStreamObject> runningHashCalculator =
 				new RunningHashCalculatorForStream<>();
 
