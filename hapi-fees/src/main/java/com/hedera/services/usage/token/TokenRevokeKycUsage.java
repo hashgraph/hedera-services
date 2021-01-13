@@ -42,8 +42,8 @@ public class TokenRevokeKycUsage extends TokenTxnUsage<TokenRevokeKycUsage> {
 	}
 
 	public FeeData get() {
-		addAccountBpt();
-		addAccountBpt();
+		addEntityBpt();
+		addEntityBpt();
 		return usageEstimator.get();
 	}
 }

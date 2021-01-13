@@ -118,7 +118,6 @@ public class GetScheduleInfoAnswer implements AnswerService {
                 .build();
     }
 
-    @SuppressWarnings("unchecked")
     private void setAnswerOnly(
             ScheduleGetInfoResponse.Builder response,
             StateView view,

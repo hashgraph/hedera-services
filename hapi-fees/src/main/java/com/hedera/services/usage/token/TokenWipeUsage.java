@@ -42,9 +42,9 @@ public class TokenWipeUsage extends TokenTxnUsage<TokenWipeUsage> {
 	}
 
 	public FeeData get() {
-		addAccountBpt();
+		addEntityBpt();
 		addAmountBpt();
-		addAccountBpt();
+		addEntityBpt();
 		addTokenTransfersRecordRb(1, 1);
 		return usageEstimator.get();
 	}

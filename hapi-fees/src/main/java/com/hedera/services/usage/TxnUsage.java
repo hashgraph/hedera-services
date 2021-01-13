@@ -52,7 +52,7 @@ public abstract class TxnUsage {
 		usageEstimator.addBpt(AMOUNT_REPR_BYTES);
 	}
 
-	protected void addAccountBpt() {
+	protected void addEntityBpt() {
 		usageEstimator.addBpt(BASIC_ENTITY_ID_SIZE);
 	}
 
