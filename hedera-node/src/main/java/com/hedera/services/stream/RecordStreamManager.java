@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
@@ -98,38 +99,34 @@ public class RecordStreamManager {
 	 * 		the platform which initializes this RecordStreamManager instance
 	 * @param runningAvgs
 	 * 		an instance for recording the average value of recordStream queue size
-	 * @param enableRecordStreaming
-	 * 		whether write record stream files or not
-	 * @param recordStreamDir
-	 * 		the directory to which record stream files are written
-	 * @param recordsLogPeriod
-	 * 		period of generating recordStream file
-	 * @param recordStreamQueueCapacity
-	 * 		capacity of the blockingQueue from which we take records and write to RecordStream files
+	 * @param nodeLocalProperties
+	 * 		the node-local property source, which says four things: (1) is the record stream enabled?,
+	 * 	    (2) what directory to write record files to, (3) how many seconds should elapse before
+	 * 	    creating the next record file, and (4) how large a capacity the record stream blocking
+	 * 	    queue should have.
 	 * @throws NoSuchAlgorithmException
 	 * 		is thrown when fails to get required MessageDigest instance
 	 * @throws IOException
 	 * 		is thrown when fails to create directory for record streaming
 	 */
-	public RecordStreamManager(final Platform platform,
+	public RecordStreamManager(
+			final Platform platform,
 			final MiscRunningAvgs runningAvgs,
-			final boolean enableRecordStreaming,
-			final String recordStreamDir,
-			final long recordsLogPeriod,
-			final int recordStreamQueueCapacity,
-			final Hash initialHash) throws NoSuchAlgorithmException, IOException {
-		if (enableRecordStreaming) {
+			final NodeLocalProperties nodeLocalProperties,
+			final String nodeScopedRecordLogDir,
+			final Hash initialHash
+	) throws NoSuchAlgorithmException, IOException {
+		if (nodeLocalProperties.isRecordStreamEnabled()) {
 			// the directory to which record stream files are written
-			Files.createDirectories(Paths.get(recordStreamDir));
-
+			Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
 			streamFileWriter = new TimestampStreamFileWriter<>(
-					recordStreamDir,
-					recordsLogPeriod * SEC_TO_MS,
+					nodeScopedRecordLogDir,
+					nodeLocalProperties.recordLogPeriod() * SEC_TO_MS,
 					platform,
 					startWriteAtCompleteWindow,
 					RecordStreamType.RECORD);
 			writeQueueThread = new QueueThread<>("writeQueueThread", platform.getSelfId(), streamFileWriter,
-					recordStreamQueueCapacity);
+					nodeLocalProperties.recordStreamQueueCapacity());
 		}
 
 		this.runningAvgs = runningAvgs;
@@ -142,24 +139,27 @@ public class RecordStreamManager {
 		final QueueThread<RecordStreamObject> runningHashQueueThread = new QueueThread<>("runningHashQueueThread",
 				platform.getSelfId(),
 				runningHashCalculator,
-				recordStreamQueueCapacity);
+				nodeLocalProperties.recordStreamQueueCapacity());
 		hashCalculator = new HashCalculatorForStream<>(runningHashQueueThread);
-		hashQueueThread = new QueueThread<>("hashQueueThread",
+		hashQueueThread = new QueueThread<>(
+				"hashQueueThread",
 				platform.getSelfId(),
 				hashCalculator,
-				recordStreamQueueCapacity);
+				nodeLocalProperties.recordStreamQueueCapacity());
 
 		multiStream = new MultiStream<>(
-				enableRecordStreaming ? List.of(hashQueueThread, writeQueueThread) : List.of(hashQueueThread));
+				nodeLocalProperties.isRecordStreamEnabled()
+						? List.of(hashQueueThread, writeQueueThread)
+						: List.of(hashQueueThread));
 		this.initialHash = initialHash;
 		multiStream.setRunningHash(initialHash);
 
 		LOGGER.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}," +
 						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}, initialHash: {}",
-				() -> enableRecordStreaming,
-				() -> recordStreamDir,
-				() -> recordsLogPeriod,
-				() -> recordStreamQueueCapacity,
+				nodeLocalProperties::isRecordStreamEnabled,
+				() -> nodeScopedRecordLogDir,
+				nodeLocalProperties::recordLogPeriod,
+				nodeLocalProperties::recordStreamQueueCapacity,
 				() -> initialHash);
 	}
 
@@ -173,7 +173,8 @@ public class RecordStreamManager {
 	 * @param runningAvgs
 	 * 		an instance for recording the average value of recordStream queue size
 	 */
-	RecordStreamManager(final MultiStream<RecordStreamObject> multiStream,
+	RecordStreamManager(
+			final MultiStream<RecordStreamObject> multiStream,
 			final QueueThread<RecordStreamObject> writeQueueThread,
 			final MiscRunningAvgs runningAvgs) {
 		this.multiStream = multiStream;

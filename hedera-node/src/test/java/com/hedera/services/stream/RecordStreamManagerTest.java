@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
@@ -38,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -67,12 +69,36 @@ public class RecordStreamManagerTest {
 	private static final RecordStreamManager RECORD_STREAM_MANAGER = new RecordStreamManager(
 			multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
+	private static NodeLocalProperties disabledProps;
+	private static NodeLocalProperties enabledProps;
+
 	@BeforeAll
 	public static void init() throws Exception {
-		disableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, false, recordStreamDir,
-				recordsLogPeriod, recordStreamQueueCapacity, INITIAL_RANDOM_HASH);
-		enableStreamingInstance = new RecordStreamManager(platform, runningAvgsMock, true, recordStreamDir,
-				recordsLogPeriod, recordStreamQueueCapacity, INITIAL_RANDOM_HASH);
+		disabledProps = mock(NodeLocalProperties.class);
+		given(disabledProps.isRecordStreamEnabled()).willReturn(false);
+		enabledProps = mock(NodeLocalProperties.class);
+		given(enabledProps.isRecordStreamEnabled()).willReturn(true);
+		configProps(disabledProps);
+		configProps(enabledProps);
+
+		disableStreamingInstance = new RecordStreamManager(
+				platform,
+				runningAvgsMock,
+				disabledProps,
+				recordStreamDir,
+				INITIAL_RANDOM_HASH);
+		enableStreamingInstance = new RecordStreamManager(
+				platform,
+				runningAvgsMock,
+				enabledProps,
+				recordStreamDir,
+				INITIAL_RANDOM_HASH);
+	}
+
+	private static void configProps(NodeLocalProperties props) {
+		given(props.recordLogDir()).willThrow(IllegalStateException.class);
+		given(props.recordLogPeriod()).willReturn(recordsLogPeriod);
+		given(props.recordStreamQueueCapacity()).willReturn(recordStreamQueueCapacity);
 	}
 
 	@Test

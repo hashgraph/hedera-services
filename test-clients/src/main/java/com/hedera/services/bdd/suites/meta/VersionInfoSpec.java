@@ -37,8 +37,8 @@ import java.util.List;
 public class VersionInfoSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);
 
-	private static final SemanticVersion EXPECTED_HAPI_PROTO = HapiPropertySource.asSemVer("0.10.0");
-	private static final SemanticVersion EXPECTED_HEDERA_SERVICES = HapiPropertySource.asSemVer("0.10.0");
+	private static final SemanticVersion EXPECTED_HAPI_PROTO = HapiPropertySource.asSemVer("0.11.0");
+	private static final SemanticVersion EXPECTED_HEDERA_SERVICES = HapiPropertySource.asSemVer("0.11.0");
 
 	public static void main(String... args) {
 		new VersionInfoSpec().runSuiteSync();

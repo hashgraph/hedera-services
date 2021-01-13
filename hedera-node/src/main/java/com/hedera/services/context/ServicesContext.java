@@ -1383,13 +1383,13 @@ public class ServicesContext {
 	 */
 	public void initRecordStreamManager() {
 		try {
+			var nodeLocalProps = nodeLocalProperties();
+			var nodeScopedRecordLogDir = getRecordStreamDirectory(nodeLocalProps);
 			recordStreamManager = new RecordStreamManager(
 					platform,
 					runningAvgs(),
-					PropertiesLoader.isEnableRecordStreaming(),
-					getRecordStreamDirectory(),
-					properties.getLongProperty("hedera.recordStream.logPeriod"),
-					5000,
+					nodeLocalProps,
+					nodeScopedRecordLogDir,
 					getRecordsInitialHash());
 		} catch (IOException | NoSuchAlgorithmException ex) {
 			log.error("Fail to initialize RecordStreamManager.", ex);
@@ -1814,10 +1814,10 @@ public class ServicesContext {
 	 *
 	 * @return the direct file folder for writing record stream files
 	 */
-	public String getRecordStreamDirectory() {
+	public String getRecordStreamDirectory(NodeLocalProperties source) {
 		if (recordStreamDir == null) {
 			final String nodeAccountString = EntityIdUtils.asLiteralString(nodeAccount());
-			String parentDir = properties().getStringProperty("hedera.recordStream.logDir");
+			String parentDir = source.recordLogDir();
 			if (!parentDir.endsWith(File.separator)) {
 				parentDir += File.separator;
 			}

@@ -27,6 +27,7 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -86,6 +87,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ServicesState.RELEASE_0100_VERSION;
@@ -112,6 +114,7 @@ import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class ServicesStateTest {
+	Function<String, byte[]> mockHashReader;
 	Consumer<MerkleNode> mockDigest;
 	Supplier<BinaryObjectStore> mockBlobStoreSupplier;
 	BinaryObjectStore blobStore;
@@ -169,6 +172,9 @@ class ServicesStateTest {
 		given(mockBlobStoreSupplier.get()).willReturn(blobStore);
 		ServicesState.blobStoreSupplier = mockBlobStoreSupplier;
 		given(blobStore.isInitializing()).willReturn(false);
+		mockHashReader = (Function<String, byte[]>) mock(Function.class);
+		given(mockHashReader.apply(any())).willReturn(EMPTY_HASH.getValue());
+		ServicesState.hashReader = mockHashReader;
 
 		out = mock(SerializableDataOutputStream.class);
 		in = mock(SerializableDataInputStream.class);
@@ -247,6 +253,11 @@ class ServicesStateTest {
 		systemExits = mock(SystemExits.class);
 
 		subject = new ServicesState();
+	}
+
+	@AfterEach
+	public void testCleanup() {
+		ServicesState.hashReader = RecordStream::readPrevFileHash;
 	}
 
 
