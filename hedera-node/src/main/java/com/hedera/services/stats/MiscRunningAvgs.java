@@ -34,7 +34,6 @@ public class MiscRunningAvgs {
 
 	StatsRunningAverage writeQueueSizeRecordStream;
 	StatsRunningAverage hashQueueSizeRecordStream;
-	StatsRunningAverage bufferQueueSizeRecordStream;
 
 	public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
 		this.runningAvg = runningAvg;
@@ -48,7 +47,6 @@ public class MiscRunningAvgs {
 
 		writeQueueSizeRecordStream = new StatsRunningAverage(halfLife);
 		hashQueueSizeRecordStream = new StatsRunningAverage(halfLife);
-		bufferQueueSizeRecordStream = new StatsRunningAverage(halfLife);
 	}
 
 	public void registerWith(Platform platform) {
@@ -86,13 +84,6 @@ public class MiscRunningAvgs {
 						hashQueueSizeRecordStream
 				)
 		);
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.BUFFER_QUEUE_SIZE_RECORD_STREAM,
-						Descriptions.BUFFER_QUEUE_SIZE_RECORD_STREAM,
-						bufferQueueSizeRecordStream
-				)
-		);
 	}
 
 	public void recordAccountLookupRetries(int num) {
@@ -119,10 +110,6 @@ public class MiscRunningAvgs {
 		hashQueueSizeRecordStream.recordValue(num);
 	}
 
-	public void bufferQueueSizeRecordStream(int num) {
-		bufferQueueSizeRecordStream.recordValue(num);
-	}
-
 	static class Names {
 		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
@@ -131,7 +118,6 @@ public class MiscRunningAvgs {
 
 		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM = "writeQueueSizeRecordStream";
 		public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "hashQueueSizeRecordStream";
-		public static final String BUFFER_QUEUE_SIZE_RECORD_STREAM = "bufferQueueSizeRecordStream";
 	}
 
 	static class Descriptions {
@@ -147,6 +133,5 @@ public class MiscRunningAvgs {
 		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM =
 				"size of the queue from which we take records and write to RecordStream file";
 		public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "size of working queue for calculating hash and runningHash";
-		public static final String BUFFER_QUEUE_SIZE_RECORD_STREAM = "size of the buffer queue from which multiStream polls objects";
 	}
 }
