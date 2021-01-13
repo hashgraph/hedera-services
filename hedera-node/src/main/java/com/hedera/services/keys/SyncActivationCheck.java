@@ -43,6 +43,6 @@ public interface SyncActivationCheck {
 			PlatformSigsFactory sigsFactory,
 			Function<Transaction, PubKeyToSigBytes> sigBytesProvider,
 			Function<byte[], TxnScopedPlatformSigFactory> scopedSigProvider,
-			BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
-			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider);
+			BiPredicate<JKey, Function<byte[], List<TransactionSignature>>> isActive,
+			Function<List<TransactionSignature>, Function<byte[], List<TransactionSignature>>> sigsFnProvider);
 }

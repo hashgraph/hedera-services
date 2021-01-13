@@ -45,5 +45,16 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
                             .get()
             ));
         }
+    },
+    SCHEDULE_SIGN_SIG_DEFAULT_PAYER {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleSign()
+                            .updating(KNOWN_SCHEDULE_WITH_ADMIN)
+                            .sameSignerAsPayer()
+                            .get()
+            ));
+        }
     }
 }

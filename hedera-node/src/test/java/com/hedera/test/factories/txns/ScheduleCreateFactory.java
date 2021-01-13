@@ -21,6 +21,7 @@ package com.hedera.test.factories.txns;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -32,6 +33,7 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
     private boolean omitAdmin = false;
     private boolean omitTransactionBody = false;
     private boolean omitSignature = false;
+    private boolean sameSignerAsPayer = false;
 
     private ScheduleCreateFactory() {}
 
@@ -51,6 +53,11 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
 
     public ScheduleCreateFactory missingSignature() {
         omitSignature = true;
+        return this;
+    }
+
+    public ScheduleCreateFactory sameSignerAsPayer() {
+        sameSignerAsPayer = true;
         return this;
     }
 
@@ -74,11 +81,16 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
             op.setTransactionBody(ByteString.copyFrom(TxnHandlingScenario.SCHEDULE_TX_BODY));
         }
         if (!omitSignature) {
+            var sigPair = SignaturePair.newBuilder()
+                    .setPubKeyPrefix(TxnHandlingScenario.SCHEDULE_SIG_PAIR_PUB_KEY)
+                    .setEd25519(TxnHandlingScenario.SCHEDULE_SIG_PAIR_ED25519_SIG);
+            if (sameSignerAsPayer) {
+                JKey keyList = DEFAULT_PAYER_KT.asJKeyUnchecked();
+                byte[] payerKey = keyList.getKeyList().getKeysList().get(0).getEd25519();
+                sigPair.setPubKeyPrefix(ByteString.copyFrom(payerKey));
+            }
             op.setSigMap(SignatureMap.newBuilder()
-                    .addSigPair(SignaturePair.newBuilder()
-                            .setPubKeyPrefix(TxnHandlingScenario.SCHEDULE_SIG_PAIR_PUB_KEY)
-                            .setEd25519(TxnHandlingScenario.SCHEDULE_SIG_PAIR_ED25519_SIG)
-                            .build())
+                    .addSigPair(sigPair.build())
                     .build());
         }
         txn.setScheduleCreation(op);

@@ -21,15 +21,15 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.SyncActivationCheck;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.Optional;
@@ -37,7 +37,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIGS_ARE_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
@@ -78,7 +78,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 					PlatformSigOps::createEd25519PlatformSigsFrom,
 					DEFAULT_SIG_BYTES::allPartiesSigBytesFor,
 					BodySigningSigFactory::new,
-					(key, sigsFn) -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID),
+					(key, sigsFn) -> isActive(key, sigsFn, ONLY_IF_SIGS_ARE_VALID),
 					HederaKeyActivation::pkToSigMapFrom);
 		}
 	}

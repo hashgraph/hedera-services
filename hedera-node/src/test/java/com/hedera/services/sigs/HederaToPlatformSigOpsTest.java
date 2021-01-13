@@ -181,6 +181,7 @@ public class HederaToPlatformSigOpsTest {
 	public void returnsValidScheduleSignEmptyMap() throws Throwable {
 		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedScheduleSign()
 				.updating(IdUtils.asSchedule("1.2.3"))
+				.missingSignature()
 				.get()));
 		wellBehavedOrdersAndSigSourcesPreHandle();
 		given(keyOrdering.scheduledTxBody(platformTxn.getTxn(), PRE_HANDLE_SCHEDULED_TX_FACTORY))

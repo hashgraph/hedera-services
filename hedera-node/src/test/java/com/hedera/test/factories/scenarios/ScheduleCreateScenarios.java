@@ -40,4 +40,14 @@ public enum  ScheduleCreateScenarios implements TxnHandlingScenario {
             ));
         }
     },
+    SCHEDULE_CREATE_SIG_DEFAULT_PAYER {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleCreate()
+                            .sameSignerAsPayer()
+                            .nonPayerKts(SCHEDULE_ADMIN_KT)
+                            .get()
+            ));
+        }
+    },
 }

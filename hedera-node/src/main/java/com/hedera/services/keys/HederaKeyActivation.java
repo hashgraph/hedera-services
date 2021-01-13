@@ -21,10 +21,14 @@ package com.hedera.services.keys;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.order.SigningOrderResultFactory;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
@@ -33,11 +37,15 @@ import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
+import org.apache.commons.codec.DecoderException;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static com.swirlds.common.crypto.VerificationStatus.*;
@@ -52,10 +60,8 @@ import static java.util.stream.Collectors.toMap;
  * @see JKey
  */
 public class HederaKeyActivation {
-	public static final TransactionSignature INVALID_SIG = new InvalidSignature();
-
-	public static final BiPredicate<JKey, TransactionSignature> ONLY_IF_SIG_IS_VALID =
-			(ignoredKey, sig) -> VALID.equals( sig.getSignatureStatus() );
+	public static final BiPredicate<JKey, List<TransactionSignature>> ONLY_IF_SIGS_ARE_VALID =
+			(ignoredKey, sigs) -> sigs.size() > 0 && sigs.stream().allMatch(s -> VALID.equals(s.getSignatureStatus()));
 
 	private HederaKeyActivation(){
 		throw new IllegalStateException("Utility Class");
@@ -80,7 +86,7 @@ public class HederaKeyActivation {
 		return isActive(
 				payerSummary.getPayerKey(),
 				pkToSigMapFrom(accessor.getPlatformTxn().getSignatures()),
-				ONLY_IF_SIG_IS_VALID);
+				ONLY_IF_SIGS_ARE_VALID);
 	}
 
 	/**
@@ -107,12 +113,28 @@ public class HederaKeyActivation {
 			KeyActivationCharacteristics characteristics
 	) {
 		TransactionBody txn = accessor.getTxn();
-		Function<byte[], TransactionSignature> sigsFn = pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
+		Function<byte[], List<TransactionSignature>> sigsFn = pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
 
 		SigningOrderResult<SignatureStatus> othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
 		for (JKey otherKey : othersResult.getOrderedKeys()) {
-			if (!isActive(otherKey, sigsFn, ONLY_IF_SIG_IS_VALID, characteristics)) {
+			if (!isActive(otherKey, sigsFn, ONLY_IF_SIGS_ARE_VALID, characteristics)) {
 				return false;
+			}
+		}
+
+		if (accessor.getTxn().hasScheduleCreation() || accessor.getTxn().hasScheduleSign()) {
+			SignatureMap map;
+			if (accessor.getTxn().hasScheduleCreation()) {
+				map = accessor.getTxn().getScheduleCreation().getSigMap();
+			} else {
+				map = accessor.getTxn().getScheduleSign().getSigMap();
+			}
+
+			var keys = retrievePubKeys(map);
+			for (JKey key : keys) {
+				if (!isActive(key, sigsFn, ONLY_IF_SIGS_ARE_VALID, characteristics)) {
+					return false;
+				}
 			}
 		}
 		return true;
@@ -133,16 +155,16 @@ public class HederaKeyActivation {
 	 */
 	public static boolean isActive(
 			JKey key,
-			Function<byte[], TransactionSignature> sigsFn,
-			BiPredicate<JKey, TransactionSignature> tests
+			Function<byte[], List<TransactionSignature>> sigsFn,
+			BiPredicate<JKey, List<TransactionSignature>> tests
 	) {
 		return isActive(key, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS);
 	}
 
 	public static boolean isActive(
 			JKey key,
-			Function<byte[], TransactionSignature> sigsFn,
-			BiPredicate<JKey, TransactionSignature> tests,
+			Function<byte[], List<TransactionSignature>> sigsFn,
+			BiPredicate<JKey, List<TransactionSignature>> tests,
 			KeyActivationCharacteristics characteristics
 	) {
 		if (!key.hasKeyList() && !key.hasThresholdKey()) {
@@ -164,26 +186,24 @@ public class HederaKeyActivation {
 	 * @param sigs the backing list of platform sigs.
 	 * @return a supplier that produces the backing list sigs by public key.
 	 */
-	public static Function<byte[], TransactionSignature> pkToSigMapFrom(List<TransactionSignature> sigs) {
-		final Map<ByteString, TransactionSignature> pkSigs = sigs
+	public static Function<byte[], List<TransactionSignature>> pkToSigMapFrom(List<TransactionSignature> sigs) {
+		final Map<ByteString, List<TransactionSignature>> pkSigs = sigs
 				.stream()
-				.collect(toMap(s -> ByteString.copyFrom(s.getExpandedPublicKeyDirect()), s -> s, (a, b) -> a));
+				.collect(Collectors
+						.groupingBy(s ->
+								ByteString.copyFrom(s.getExpandedPublicKeyDirect()),
+								HashMap::new,
+								Collectors.toCollection(ArrayList::new)));
 
-		return ed25519 -> pkSigs.getOrDefault(ByteString.copyFrom(ed25519), INVALID_SIG);
+		return ed25519 -> pkSigs.getOrDefault(ByteString.copyFrom(ed25519), new ArrayList<>());
 	}
 
-	private static class InvalidSignature extends TransactionSignature {
-		private static byte[] MEANINGLESS_BYTE = new byte[] {
-				(byte)0xAB
-		};
-
-		public InvalidSignature() {
-			super(MEANINGLESS_BYTE, 0, 0, 0, 0, 0, 0);
+	private static List<JKey> retrievePubKeys(SignatureMap map) {
+		var result = new ArrayList<JKey>();
+		for (SignaturePair pair : map.getSigPairList()) {
+			result.add(new JEd25519Key(pair.getPubKeyPrefix().toByteArray()));
 		}
 
-		@Override
-		public VerificationStatus getSignatureStatus() {
-			return INVALID;
-		}
+		return result;
 	}
 }

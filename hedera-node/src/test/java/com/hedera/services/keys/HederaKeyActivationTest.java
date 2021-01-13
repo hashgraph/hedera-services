@@ -20,32 +20,34 @@ package com.hedera.services.keys;
  * ‍
  */
 
-import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.test.factories.sigs.SigWrappers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.swirlds.common.crypto.Signature;
+import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.test.factories.sigs.SigWrappers;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
-
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
-import static com.hedera.test.factories.keys.NodeFactory.*;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd25519;
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIGS_ARE_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
+import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd25519;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.keys.NodeFactory.threshold;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class HederaKeyActivationTest {
@@ -53,10 +55,10 @@ public class HederaKeyActivationTest {
 	byte[] pk = "PK".getBytes();
 	byte[] sig = "SIG".getBytes();
 	byte[] data = "DATA".getBytes();
-	Function<byte[], TransactionSignature> sigsFn;
-	BiPredicate<JKey, TransactionSignature> tests;
-	final TransactionSignature VALID_SIG = SigWrappers.asValid(List.of(createEd25519(pk, sig, data))).get(0);
-	final TransactionSignature INVALID_SIG = SigWrappers.asInvalid(List.of(createEd25519(pk, sig, data))).get(0);
+	Function<byte[], List<TransactionSignature>> sigsFn;
+	BiPredicate<JKey, List<TransactionSignature>> tests;
+	final List<TransactionSignature> VALID_SIG = SigWrappers.asValid(List.of(createEd25519(pk, sig, data)));
+	final List<TransactionSignature> INVALID_SIG = SigWrappers.asInvalid(List.of(createEd25519(pk, sig, data)));
 
 	Function<Integer, TransactionSignature> mockSigFn = i -> createEd25519(
 			String.format("PK%d", i).getBytes(),
@@ -78,8 +80,8 @@ public class HederaKeyActivationTest {
 
 	@BeforeEach
 	public void setup() {
-		sigsFn = (Function<byte[], TransactionSignature>)mock(Function.class);
-		tests = (BiPredicate<JKey, TransactionSignature>)mock(BiPredicate.class);
+		sigsFn = (Function<byte[], List<TransactionSignature>>)mock(Function.class);
+		tests = (BiPredicate<JKey, List<TransactionSignature>>)mock(BiPredicate.class);
 	}
 
 	@Test
@@ -95,7 +97,7 @@ public class HederaKeyActivationTest {
 				.willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(VALID_SIG);
 
 		// when:
-		assertTrue(isActive(complexKey, sigsFn, ONLY_IF_SIG_IS_VALID, characteristics));
+		assertTrue(isActive(complexKey, sigsFn, ONLY_IF_SIGS_ARE_VALID, characteristics));
 	}
 
 	@Test
@@ -111,7 +113,7 @@ public class HederaKeyActivationTest {
 				.willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(INVALID_SIG);
 
 		// when:
-		assertFalse(isActive(complexKey, sigsFn, ONLY_IF_SIG_IS_VALID, characteristics));
+		assertFalse(isActive(complexKey, sigsFn, ONLY_IF_SIGS_ARE_VALID, characteristics));
 	}
 
 	@Test
@@ -121,19 +123,19 @@ public class HederaKeyActivationTest {
 		TransactionSignature missingSig = mockSigFn.apply(2);
 
 		// given:
-		Function<byte[], TransactionSignature> sigsFn = pkToSigMapFrom(presentSigs);
+		Function<byte[], List<TransactionSignature>> sigsFn = pkToSigMapFrom(presentSigs);
 
 		// when:
-		TransactionSignature present0 = sigsFn.apply(presentSigs.get(0).getExpandedPublicKeyDirect());
-		TransactionSignature present1 = sigsFn.apply(presentSigs.get(1).getExpandedPublicKeyDirect());
+		List<TransactionSignature> present0 = sigsFn.apply(presentSigs.get(0).getExpandedPublicKeyDirect());
+		List<TransactionSignature> present1 = sigsFn.apply(presentSigs.get(1).getExpandedPublicKeyDirect());
 		// and:
-		TransactionSignature missing = sigsFn.apply(missingSig.getExpandedPublicKeyDirect());
+		List<TransactionSignature> missing = sigsFn.apply(missingSig.getExpandedPublicKeyDirect());
 
 		// then:
-		assertEquals(presentSigs.get(0), present0);
-		assertEquals(presentSigs.get(1), present1);
+		assertEquals(presentSigs.get(0), present0.get(0));
+		assertEquals(presentSigs.get(1), present1.get(0));
 		// and:
-		assertEquals(HederaKeyActivation.INVALID_SIG, missing);
+		assertTrue(missing.isEmpty());
 	}
 
 	@Test
@@ -141,7 +143,7 @@ public class HederaKeyActivationTest {
 		given(sigsFn.apply(any())).willReturn(INVALID_SIG).willReturn(VALID_SIG);
 
 		// when:
-		assertFalse(isActive(complexKey, sigsFn, ONLY_IF_SIG_IS_VALID));
+		assertFalse(isActive(complexKey, sigsFn, ONLY_IF_SIGS_ARE_VALID));
 	}
 
 	@Test
@@ -153,6 +155,6 @@ public class HederaKeyActivationTest {
 				.willReturn(INVALID_SIG).willReturn(VALID_SIG).willReturn(VALID_SIG);
 
 		// when:
-		assertTrue(isActive(complexKey, sigsFn, ONLY_IF_SIG_IS_VALID));
+		assertTrue(isActive(complexKey, sigsFn, ONLY_IF_SIGS_ARE_VALID));
 	}
 }

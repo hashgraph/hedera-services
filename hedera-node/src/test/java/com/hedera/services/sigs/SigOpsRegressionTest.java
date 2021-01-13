@@ -26,7 +26,9 @@ import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.metadata.ScheduleSigningMetadata;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
+import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
@@ -34,6 +36,7 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -41,6 +44,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
@@ -54,6 +58,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
@@ -65,6 +70,7 @@ import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
+import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO;
@@ -73,6 +79,12 @@ import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.NEW_ACCO
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
+import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_MISSING_ADMIN;
+import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_SIG_DEFAULT_PAYER;
+import static com.hedera.test.factories.scenarios.ScheduleSignScenarios.SCHEDULE_SIGN_KNOWN_SCHEDULE;
+import static com.hedera.test.factories.scenarios.ScheduleSignScenarios.SCHEDULE_SIGN_SIG_DEFAULT_PAYER;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_TX_BODY;
 import static com.hedera.test.factories.sigs.SigWrappers.asKind;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
@@ -98,6 +110,7 @@ public class SigOpsRegressionTest {
 	private PlatformTxnAccessor platformTxn;
 	private HederaSigningOrder signingOrder;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> schedules;
 
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(new MockEntityNumbers());
 	private Predicate<TransactionBody> updateAccountSigns = txn ->
@@ -282,6 +295,111 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
+	public void deniesScheduleCreateSigActivation() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_MISSING_ADMIN);
+		// and:
+		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+				platformTxn.getTxn().getScheduleCreation().getSigMap(),
+				new BodySigningSigFactory(platformTxn.getTxn().getScheduleCreation().getTransactionBody().toByteArray())
+		).getPlatformSigs();
+
+		List<TransactionSignature> knownSigs = asKind(List.of(
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), INVALID)));
+
+		// expect:
+		assertFalse(invokeOtherPartySigActivationScenario(knownSigs));
+	}
+
+	@Test
+	public void validatesScheduleCreateSigActivation() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_MISSING_ADMIN);
+		// and:
+		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+				platformTxn.getTxn().getScheduleCreation().getSigMap(),
+				new BodySigningSigFactory(platformTxn.getTxn().getScheduleCreation().getTransactionBody().toByteArray())
+		).getPlatformSigs();
+
+		List<TransactionSignature> knownSigs = asKind(List.of(
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID)));
+
+		// expect:
+		assertTrue(invokeOtherPartySigActivationScenario(knownSigs));
+	}
+
+	@Test
+	public void validatesScheduleCreateSameAsPayer() throws Throwable {
+		// given:
+		List<TransactionSignature> unknownSigs = setupForScheduleCreateSameSigSignerAsPayer();
+		// and:
+		List<TransactionSignature> knownSigs = asKind(List.of(
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(1), VALID),
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(2), VALID)));
+
+		// expect:
+		assertTrue(invokeScheduleSigActivationScenario(knownSigs));
+	}
+
+	@Test
+	public void deniesScheduleCreateSameAsPayer() throws Throwable {
+		// given:
+		List<TransactionSignature> unknownSigs = setupForScheduleCreateSameSigSignerAsPayer();
+		// and:
+		List<TransactionSignature> knownSigs = asKind(List.of(
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(1), VALID),
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(2), INVALID)));
+
+		// expect:
+		assertFalse(invokeScheduleSigActivationScenario(knownSigs));
+	}
+
+	@Test
+	public void deniesScheduleSignSigActivation() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE);
+		// and:
+		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+				platformTxn.getTxn().getScheduleSign().getSigMap(),
+				new BodySigningSigFactory(SCHEDULE_TX_BODY)
+		).getPlatformSigs();
+
+		List<TransactionSignature> knownSigs = asKind(List.of(
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), INVALID)));
+
+		// expect:
+		assertFalse(invokeScheduleSigActivationScenario(knownSigs));
+	}
+
+	@Test
+	public void deniesScheduleSignSigActivationSamePayerSigner() throws Throwable {
+		// given:
+		var unknownSigs = setupForScheduleSignSamePayerSigner();
+		// and:
+		List<TransactionSignature> knownSigs = asKind(List.of(
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(1), INVALID)));
+
+		// expect:
+		assertFalse(invokeScheduleSigActivationScenario(knownSigs));
+	}
+
+	@Test
+	public void validatesScheduleSigActivation() throws Throwable {
+		// given:
+		var unknownSigs = setupForScheduleSignSamePayerSigner();
+		// and:
+		List<TransactionSignature> knownSigs = asKind(List.of(
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
+				new AbstractMap.SimpleEntry<>(unknownSigs.get(1), VALID)));
+
+		// expect:
+		assertTrue(invokeScheduleSigActivationScenario(knownSigs));
+	}
+
+	@Test
 	public void deniesSecondInactiveComplexOtherPartySig() throws Throwable {
 		// given:
 		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO);
@@ -355,6 +473,64 @@ public class SigOpsRegressionTest {
 		return otherPartySigsAreActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
 	}
 
+	private boolean invokeScheduleSigActivationScenario(List<TransactionSignature> knownSigs) {
+		platformTxn.getPlatformTxn().clear();
+		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
+		HederaSigningOrder keysOrder = new HederaSigningOrder(
+				new MockEntityNumbers(),
+				defaultLookupsFor(hfs, () -> accounts, null, ref -> null,
+						schedules),
+				updateAccountSigns,
+				targetWaclSigns);
+
+		return payerSigIsActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY)
+				&& otherPartySigsAreActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
+	}
+
+	private List<TransactionSignature> setupForScheduleCreateSameSigSignerAsPayer() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_SIG_DEFAULT_PAYER);
+		// and:
+		List<TransactionSignature> unknownPayerSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+				List.of(DEFAULT_PAYER_KT.asJKey()),
+				PubKeyToSigBytes.forPayer(platformTxn.getSignedTxn()),
+				new BodySigningSigFactory(platformTxn.getTxnBytes())
+		).getPlatformSigs();
+		List<TransactionSignature> unknownOtherPartiesSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+				List.of(SCHEDULE_ADMIN_KT.asJKey()),
+				PubKeyToSigBytes.forOtherParties(platformTxn.getSignedTxn()),
+				new BodySigningSigFactory(platformTxn.getTxnBytes())
+		).getPlatformSigs();
+		List<TransactionSignature> unknownChildSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+				platformTxn.getTxn().getScheduleCreation().getSigMap(),
+				new BodySigningSigFactory(platformTxn.getTxn().getScheduleCreation().getTransactionBody().toByteArray())
+		).getPlatformSigs();
+		// and:
+		unknownPayerSigs.addAll(unknownOtherPartiesSigs);
+		unknownPayerSigs.addAll(unknownChildSigs);
+
+		return unknownPayerSigs;
+	}
+
+	private List<TransactionSignature> setupForScheduleSignSamePayerSigner() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_SIGN_SIG_DEFAULT_PAYER);
+		// and:
+		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+				List.of(DEFAULT_PAYER_KT.asJKey()),
+				PubKeyToSigBytes.forPayer(platformTxn.getSignedTxn()),
+				new BodySigningSigFactory(platformTxn.getTxnBytes())
+		).getPlatformSigs();
+		List<TransactionSignature> unknownChildSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
+				platformTxn.getTxn().getScheduleSign().getSigMap(),
+				new BodySigningSigFactory(SCHEDULE_TX_BODY)
+		).getPlatformSigs();
+		// and:
+		unknownSigs.addAll(unknownChildSigs);
+
+		return unknownSigs;
+	}
+
 	private SignatureStatus invokeExpansionScenario() {
 		int MAGIC_NUMBER = 10;
 		SigMetadataLookup sigMetaLookups =
@@ -388,12 +564,13 @@ public class SigOpsRegressionTest {
 		speedometers = mock(MiscSpeedometers.class);
 		accounts = scenario.accounts();
 		platformTxn = scenario.platformTxn();
+		schedules = SCHEDULE_REF_LOOKUP_FACTORY.apply(scenario.scheduleStore());
 
 		expectedErrorStatus = null;
 
 		signingOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
+				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, schedules),
 				updateAccountSigns,
 				targetWaclSigns);
 		SigningOrderResult<SignatureStatus> payerKeys =
