@@ -93,6 +93,6 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
                     .addSigPair(sigPair.build())
                     .build());
         }
-        txn.setScheduleCreation(op);
+        txn.setScheduleCreate(op);
     }
 }

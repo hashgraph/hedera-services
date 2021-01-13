@@ -25,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.context.ContextPlatformStatus;
+import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -59,6 +61,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.fcmap.FCMap;
@@ -78,10 +81,7 @@ class QueryValidationTest {
     }
 
   long payerAccountInitialBalance = 100000;
-  private RecordCache recordCache;
   private FCMap<MerkleEntityId, MerkleAccount> map = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
-  ;
   private AccountID nodeAccount =
       AccountID.newBuilder().setAccountNum(3).setRealmNum(0).setShardNum(0).build();
   private AccountID payerAccount =
@@ -97,7 +97,6 @@ class QueryValidationTest {
     Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now());
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payer.getAccountNum(),
         payer.getRealmNum(), payer.getShardNum(), nodeAccount.getAccountNum(),
         nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 100, timestamp, transactionDuration,
@@ -171,15 +170,5 @@ class QueryValidationTest {
 
     ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
     assertEquals(result, ResponseCodeEnum.NOT_SUPPORTED);
-  }
-
-
-  @Test
-  void testValidateGetInfoQuery_validateFee_inSufficientTxFee() throws Exception {
-    Transaction transaction = createQueryHeaderTransfer(lowBalanceAccount);
-    ResponseCodeEnum result =
-            transactionHandler.validateScheduledFee(HederaFunctionality.CryptoGetInfo, transaction, 100);
-    assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, result);
-
   }
 }

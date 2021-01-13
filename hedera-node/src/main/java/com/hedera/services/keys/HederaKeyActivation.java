@@ -122,10 +122,10 @@ public class HederaKeyActivation {
 			}
 		}
 
-		if (accessor.getTxn().hasScheduleCreation() || accessor.getTxn().hasScheduleSign()) {
+		if (accessor.getTxn().hasScheduleCreate() || accessor.getTxn().hasScheduleSign()) {
 			SignatureMap map;
-			if (accessor.getTxn().hasScheduleCreation()) {
-				map = accessor.getTxn().getScheduleCreation().getSigMap();
+			if (accessor.getTxn().hasScheduleCreate()) {
+				map = accessor.getTxn().getScheduleCreate().getSigMap();
 			} else {
 				map = accessor.getTxn().getScheduleSign().getSigMap();
 			}

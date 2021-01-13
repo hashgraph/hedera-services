@@ -74,7 +74,7 @@ public class ScheduleSignFactory extends SignedTxnFactory<ScheduleSignFactory> {
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
         var op = ScheduleSignTransactionBody.newBuilder()
-                .setSchedule(id);
+                .setScheduleID(id);
         if (!omitSignature) {
             var sigPair = SignaturePair.newBuilder()
                     .setPubKeyPrefix(TxnHandlingScenario.SCHEDULE_SIG_PAIR_PUB_KEY)

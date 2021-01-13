@@ -7,6 +7,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -21,10 +22,10 @@ public class ScheduleCreateResourceUsageTest {
     @BeforeEach
     private void setup() throws Throwable {
         scheduleCreateTxn = mock(TransactionBody.class);
-        given(scheduleCreateTxn.hasScheduleCreation()).willReturn(true);
+        given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
 
         nonScheduleCreateTxn = mock(TransactionBody.class);
-        given(nonScheduleCreateTxn.hasScheduleCreation()).willReturn(false);
+        given(nonScheduleCreateTxn.hasScheduleCreate()).willReturn(false);
 
         subject = new ScheduleCreateResourceUsage();
     }
@@ -34,5 +35,10 @@ public class ScheduleCreateResourceUsageTest {
         // expect:
         assertTrue(subject.applicableTo(scheduleCreateTxn));
         assertFalse(subject.applicableTo(nonScheduleCreateTxn));
+    }
+
+    @Test
+    public void usageGivenNotSupported() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.usageGiven(scheduleCreateTxn, null, null));
     }
 }

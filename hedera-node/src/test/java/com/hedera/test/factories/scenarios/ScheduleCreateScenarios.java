@@ -25,7 +25,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleCreateFactory.newSignedScheduleCreate;
 
-public enum  ScheduleCreateScenarios implements TxnHandlingScenario {
+public enum ScheduleCreateScenarios implements TxnHandlingScenario {
     SCHEDULE_CREATE_MISSING_ADMIN {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(

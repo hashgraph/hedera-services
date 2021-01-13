@@ -42,13 +42,7 @@ public class ApplicationConstants {
 	public static String RECORD_LOG_DIR = "data/recordstreams/";
 	public static int RECORD_STREAM_QU_CAP = 500;
 
-	public static int KEY_EXPANSION_DEPTH = 100;
-
-	public static long MINIMUM_AUTORENEW_DURATION = 1l;
-	public static long MAXIMUM_AUTORENEW_DURATION = 1000000000l;
-
 	// Estimates for calculating fees for Smart Contract local calls
-	public static int LOCAL_CALLEST_RET_BYTES = 64;
 	public static String DEFAULT_LISTENING_NODE_ACCT = "0.0.3";
 
 	public static long KEEP_ALIVE_TIME = 20;
@@ -60,5 +54,4 @@ public class ApplicationConstants {
 	public static int NETTY_FLOW_CONTROL_WINDOW = 65535;
 
 	public static int BINARY_OBJECT_QUERY_RETRY_TIMES = 0;
-	public static int MAX_GAS_LIMIT = 300000;
 }

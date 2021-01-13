@@ -195,7 +195,7 @@ public class HederaToPlatformSigOps {
 				}
 			}
 
-			if (txnAccessor.getTxn().hasScheduleCreation() || txnAccessor.getTxn().hasScheduleSign()) {
+			if (txnAccessor.getTxn().hasScheduleCreate() || txnAccessor.getTxn().hasScheduleSign()) {
 				var scheduledTxStatus = expandScheduledTransaction();
 				if ( SUCCESS != scheduledTxStatus.getStatusCode()) {
 					if (log.isDebugEnabled()) {
@@ -232,7 +232,7 @@ public class HederaToPlatformSigOps {
 		private SignatureStatus expandScheduledTransaction() {
 			var txn = txnAccessor.getTxn();
 
-			if (!txn.hasScheduleCreation() && !txn.hasScheduleSign()) {
+			if (!txn.hasScheduleCreate() && !txn.hasScheduleSign()) {
 				return failForInvalidTransaction(false, txnAccessor);
 			}
 
@@ -242,8 +242,8 @@ public class HederaToPlatformSigOps {
 			}
 
 			SignatureMap map;
-			if (txn.hasScheduleCreation()) {
-				map = txn.getScheduleCreation().getSigMap();
+			if (txn.hasScheduleCreate()) {
+				map = txn.getScheduleCreate().getSigMap();
 			} else {
 				map = txn.getScheduleSign().getSigMap();
 			}

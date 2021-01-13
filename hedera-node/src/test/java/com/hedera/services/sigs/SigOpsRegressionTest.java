@@ -300,8 +300,8 @@ public class SigOpsRegressionTest {
 		setupFor(SCHEDULE_CREATE_MISSING_ADMIN);
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				platformTxn.getTxn().getScheduleCreation().getSigMap(),
-				new BodySigningSigFactory(platformTxn.getTxn().getScheduleCreation().getTransactionBody().toByteArray())
+				platformTxn.getTxn().getScheduleCreate().getSigMap(),
+				new BodySigningSigFactory(platformTxn.getTxn().getScheduleCreate().getTransactionBody().toByteArray())
 		).getPlatformSigs();
 
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -317,8 +317,8 @@ public class SigOpsRegressionTest {
 		setupFor(SCHEDULE_CREATE_MISSING_ADMIN);
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				platformTxn.getTxn().getScheduleCreation().getSigMap(),
-				new BodySigningSigFactory(platformTxn.getTxn().getScheduleCreation().getTransactionBody().toByteArray())
+				platformTxn.getTxn().getScheduleCreate().getSigMap(),
+				new BodySigningSigFactory(platformTxn.getTxn().getScheduleCreate().getTransactionBody().toByteArray())
 		).getPlatformSigs();
 
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -502,8 +502,8 @@ public class SigOpsRegressionTest {
 				new BodySigningSigFactory(platformTxn.getTxnBytes())
 		).getPlatformSigs();
 		List<TransactionSignature> unknownChildSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				platformTxn.getTxn().getScheduleCreation().getSigMap(),
-				new BodySigningSigFactory(platformTxn.getTxn().getScheduleCreation().getTransactionBody().toByteArray())
+				platformTxn.getTxn().getScheduleCreate().getSigMap(),
+				new BodySigningSigFactory(platformTxn.getTxn().getScheduleCreate().getTransactionBody().toByteArray())
 		).getPlatformSigs();
 		// and:
 		unknownPayerSigs.addAll(unknownOtherPartiesSigs);

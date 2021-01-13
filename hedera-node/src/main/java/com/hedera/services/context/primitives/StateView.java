@@ -271,7 +271,7 @@ public class StateView {
 
 	public Optional<ScheduleInfo> infoForSchedule(ScheduleID scheduleID) {
 		// TODO: Implement logic for getting information for schedule from store.
-		return Optional.empty();
+		throw new UnsupportedOperationException();
 	}
 
 	TokenFreezeStatus tfsFor(boolean flag) {
@@ -288,7 +288,7 @@ public class StateView {
 
 	public boolean scheduleExists(ScheduleID id) {
 		// TODO: return scheduleStore.resolve(id) != MISSING_SCHEDULE;
-		return false;
+		throw new UnsupportedOperationException();
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {

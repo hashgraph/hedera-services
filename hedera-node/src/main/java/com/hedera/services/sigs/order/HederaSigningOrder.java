@@ -177,10 +177,10 @@ public class HederaSigningOrder {
 	}
 
 	public <T> ScheduledTransactionOrderResult<T> scheduledTxBody(TransactionBody txn, ScheduledTransactionOrderResultFactory<T> factory) {
-		if (txn.hasScheduleCreation()) {
-			return new ScheduledTransactionOrderResult<>(txn.getScheduleCreation().getTransactionBody().toByteArray());
+		if (txn.hasScheduleCreate()) {
+			return new ScheduledTransactionOrderResult<>(txn.getScheduleCreate().getTransactionBody().toByteArray());
 		} else if (txn.hasScheduleSign()) {
-			var id = txn.getScheduleSign().getSchedule();
+			var id = txn.getScheduleSign().getScheduleID();
 			var txnId = txn.getTransactionID();
 			var result = sigMetaLookup.scheduleSigningMetaFor(id);
 			if (!result.succeeded()) {
@@ -252,12 +252,12 @@ public class HederaSigningOrder {
 	private <T> Optional<SigningOrderResult<T>> forSchedule(
 			TransactionBody txn,
 			SigningOrderResultFactory<T> factory) {
-		if (txn.hasScheduleCreation()) {
-			return Optional.of(scheduleCreate(txn.getScheduleCreation(), factory));
+		if (txn.hasScheduleCreate()) {
+			return Optional.of(scheduleCreate(txn.getScheduleCreate(), factory));
 		} else if (txn.hasScheduleSign()) {
-			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getSchedule(), factory));
+			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
 		} else if (txn.hasScheduleDelete()) {
-			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getSchedule(), factory));
+			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(), factory));
 		} else {
 			return Optional.empty();
 		}

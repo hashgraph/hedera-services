@@ -50,11 +50,11 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
     }
 
     private void transitionFor(ScheduleDeleteTransactionBody op) {
-        // TODO: Implement transitionFor() functionality
+        throw new UnsupportedOperationException();
     }
 
     private void abortWith(ResponseCodeEnum cause) {
-        // TODO: Implement abortWith() failure functionality
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -70,7 +70,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
 
-        if (!op.hasSchedule()) {
+        if (!op.hasScheduleID()) {
             return INVALID_SCHEDULE_ID;
         }
         return OK;

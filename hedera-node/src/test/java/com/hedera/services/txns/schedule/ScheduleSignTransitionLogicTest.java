@@ -17,9 +17,11 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -60,11 +62,25 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
+    public void doStateTransitionIsUnsupported() {
+        givenValidTxnCtx();
+        assertThrows(UnsupportedOperationException.class, () -> subject.doStateTransition());
+    }
+
+    @Test
     public void failsOnInvalidScheduleId() {
         givenCtx(true);
 
         // expect:
         assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
+    }
+
+    @Test
+    public void syntaxCheckWorks() {
+        givenValidTxnCtx();
+
+        // expect:
+        assertEquals(OK, subject.syntaxCheck().apply(scheduleSignTxn));
     }
 
     private void givenValidTxnCtx() {
@@ -81,10 +97,10 @@ public class ScheduleSignTransitionLogicTest {
         var builder = TransactionBody.newBuilder();
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()
                 .setSigMap(sigMap)
-                .setSchedule(schedule);
+                .setScheduleID(schedule);
 
         if (invalidScheduleId) {
-            scheduleSign.clearSchedule();
+            scheduleSign.clearScheduleID();
         }
 
         builder.setScheduleSign(scheduleSign);
