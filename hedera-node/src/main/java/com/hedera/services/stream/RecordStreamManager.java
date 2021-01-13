@@ -54,7 +54,7 @@ public class RecordStreamManager {
 	 * 	 * .addForStreaming,
 	 * then passes to hashQueueThread and writeQueueThread
 	 */
-	private MultiStream<RecordStreamObject> multiStream;
+	private final MultiStream<RecordStreamObject> multiStream;
 
 	/** receives {@link RecordStreamObject}s from multiStream, then passes to hashCalculator */
 	private QueueThread<RecordStreamObject> hashQueueThread;
@@ -63,6 +63,10 @@ public class RecordStreamManager {
 	 * runningHashCalculator
 	 */
 	private HashCalculatorForStream<RecordStreamObject> hashCalculator;
+
+	/** receives {@link RecordStreamObject}s from hashCalculator, then passes to runningHashCalculator */
+	private QueueThread<RecordStreamObject> runningHashQueueThread;
+
 	/** receives {@link RecordStreamObject}s from hashCalculator, calculates and set runningHash for this object */
 	private RunningHashCalculatorForStream<RecordStreamObject> runningHashCalculator;
 
@@ -93,7 +97,7 @@ public class RecordStreamManager {
 	/**
 	 * an instance for recording the average value of recordStream queue size
 	 */
-	private MiscRunningAvgs runningAvgs;
+	private final MiscRunningAvgs runningAvgs;
 
 	/**
 	 * @param platform
@@ -137,8 +141,14 @@ public class RecordStreamManager {
 		this.runningAvgs = runningAvgs;
 
 		runningHashCalculator = new RunningHashCalculatorForStream<>();
-		hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
-		hashQueueThread = new QueueThread<>("hashQueueThread", platform.getSelfId(), hashCalculator,
+		runningHashQueueThread = new QueueThread<>("runningHashQueueThread",
+				platform.getSelfId(),
+				runningHashCalculator,
+				recordStreamQueueCapacity);
+		hashCalculator = new HashCalculatorForStream<>(runningHashQueueThread);
+		hashQueueThread = new QueueThread<>("hashQueueThread",
+				platform.getSelfId(),
+				hashCalculator,
 				recordStreamQueueCapacity);
 
 		multiStream = new MultiStream<>(
@@ -186,7 +196,7 @@ public class RecordStreamManager {
 			try {
 				multiStream.add(recordStreamObject);
 			} catch (InterruptedException ex) {
-				LOGGER.error("thread interruption ignored in addRecordStreamObject: {}", ex);
+				LOGGER.error("thread interruption ignored in addRecordStreamObject: {}", ex, ex);
 			}
 		}
 		runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());
