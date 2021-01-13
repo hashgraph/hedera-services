@@ -113,8 +113,6 @@ public class MiscRunningAvgs {
 				"average number of retry attempts made to lookup the account number";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
 				"average size of the handled HCS submit message transaction";
-		public static final String AVERAGE_ENTITY_EXPIRY_NANOS =
-				"average nanoseconds spent purging expired entities in handleTransaction";
 
 		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM =
 				"size of the queue from which we take records and write to RecordStream file";
