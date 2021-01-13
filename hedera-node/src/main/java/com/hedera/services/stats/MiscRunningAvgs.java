@@ -30,7 +30,6 @@ public class MiscRunningAvgs {
 	StatsRunningAverage accountRetryWaitMs;
 	StatsRunningAverage accountLookupRetries;
 	StatsRunningAverage handledSubmitMessageSize;
-	StatsRunningAverage avgEntityExpiryNanos;
 
 	StatsRunningAverage writeQueueSizeRecordStream;
 	StatsRunningAverage hashQueueSizeRecordStream;
@@ -43,7 +42,6 @@ public class MiscRunningAvgs {
 		accountRetryWaitMs = new StatsRunningAverage(halfLife);
 		accountLookupRetries = new StatsRunningAverage(halfLife);
 		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
-		avgEntityExpiryNanos = new StatsRunningAverage(halfLife);
 
 		writeQueueSizeRecordStream = new StatsRunningAverage(halfLife);
 		hashQueueSizeRecordStream = new StatsRunningAverage(halfLife);
@@ -65,13 +63,6 @@ public class MiscRunningAvgs {
 						Names.HANDLED_SUBMIT_MESSAGE_SIZE,
 						Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
 						handledSubmitMessageSize));
-		platform.addAppStatEntry(
-				runningAvg.from(
-						Names.AVERAGE_ENTITY_EXPIRY_NANOS,
-						Descriptions.AVERAGE_ENTITY_EXPIRY_NANOS,
-						hashQueueSizeRecordStream
-				)
-		);
 		platform.addAppStatEntry(
 				runningAvg.from(
 						Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
@@ -98,10 +89,6 @@ public class MiscRunningAvgs {
 		handledSubmitMessageSize.recordValue(bytes);
 	}
 
-	public void recordAvgEntityExpiryNanos(long nanos) {
-		avgEntityExpiryNanos.recordValue(nanos);
-	}
-
 	public void writeQueueSizeRecordStream(int num) {
 		writeQueueSizeRecordStream.recordValue(num);
 	}
@@ -114,7 +101,6 @@ public class MiscRunningAvgs {
 		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
-		public static final String AVERAGE_ENTITY_EXPIRY_NANOS = "avgEntityExpiryNanos";
 
 		public static final String WRITE_QUEUE_SIZE_RECORD_STREAM = "writeQueueSizeRecordStream";
 		public static final String HASH_QUEUE_SIZE_RECORD_STREAM = "hashQueueSizeRecordStream";
