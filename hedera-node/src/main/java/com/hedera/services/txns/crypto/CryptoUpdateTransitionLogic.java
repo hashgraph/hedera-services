@@ -88,14 +88,14 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	HederaAccountCustomizer asCustomizer(CryptoUpdateTransactionBody op) {
+	private HederaAccountCustomizer asCustomizer(CryptoUpdateTransactionBody op) {
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer();
 
 		if (op.hasKey()) {
 			JKey key;
 			try {
 				key = mapKey(op.getKey());
-			} catch (Exception syntaxViolation) {
+			} catch (DecoderException syntaxViolation) {
 				log.warn("Syntax violation in doStateTransition!", syntaxViolation);
 				throw new IllegalArgumentException(syntaxViolation);
 			}

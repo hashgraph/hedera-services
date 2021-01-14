@@ -21,7 +21,6 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.TextFormat;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -152,7 +151,7 @@ public abstract class JKey implements Serializable, Cloneable {
 	 * 		JKey object to be converted
 	 * @return converted Key instance
 	 */
-	private static Key convertJKeyBasic(JKey jkey) throws Exception {
+	private static Key convertJKeyBasic(JKey jkey) throws DecoderException {
 		Key rv = null;
 		if (jkey.hasEd25519Key()) {
 			rv = Key.newBuilder().setEd25519(ByteString.copyFrom(jkey.getEd25519())).build();
@@ -163,7 +162,7 @@ public abstract class JKey implements Serializable, Cloneable {
 		} else if (jkey.hasContractID()) {
 			rv = Key.newBuilder().setContractID(jkey.getContractIDKey().getContractID()).build();
 		} else {
-			throw new Exception("Key type not implemented: key=" + jkey);
+			throw new DecoderException("Key type not implemented: key=" + jkey);
 		}
 
 		return rv;
@@ -178,7 +177,7 @@ public abstract class JKey implements Serializable, Cloneable {
 	 * 		current level that is to be verified. The first level has a value of 1.
 	 * @return converted proto Key
 	 */
-	public static Key convertJKey(JKey jkey, int depth) throws Exception {
+	public static Key convertJKey(JKey jkey, int depth) throws DecoderException {
 		if (depth > KeyExpansion.KEY_EXPANSION_DEPTH) {
 			log.debug("Exceeding max expansion depth of " + KeyExpansion.KEY_EXPANSION_DEPTH);
 		}
@@ -232,7 +231,7 @@ public abstract class JKey implements Serializable, Cloneable {
 	 * 		the JKey to be converted
 	 * @return the converted Key instance
 	 */
-	public static Key mapJKey(JKey jkey) throws Exception {
+	public static Key mapJKey(JKey jkey) throws DecoderException {
 		return convertJKey(jkey, 1);
 	}
 

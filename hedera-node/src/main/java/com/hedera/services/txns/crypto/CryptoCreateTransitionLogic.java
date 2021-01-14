@@ -90,14 +90,14 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
+	private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
 		JKey key;
 		long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
 		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
 
 		try {
 			key = mapKey(op.getKey());
-		} catch (Exception syntaxViolation) {
+		} catch (DecoderException syntaxViolation) {
 			log.warn("Syntax violation in doStateTransition!", syntaxViolation);
 			throw new IllegalArgumentException(syntaxViolation);
 		}
