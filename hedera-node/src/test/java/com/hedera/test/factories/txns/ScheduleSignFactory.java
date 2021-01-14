@@ -52,7 +52,7 @@ public class ScheduleSignFactory extends SignedTxnFactory<ScheduleSignFactory> {
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
         var op = ScheduleSignTransactionBody.newBuilder()
-                .setSchedule(id);
+                .setScheduleID(id);
         txn.setScheduleSign(op);
     }
 }

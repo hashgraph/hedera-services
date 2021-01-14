@@ -55,6 +55,6 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
         if (!omitAdmin) {
             op.setAdminKey(TxnHandlingScenario.SCHEDULE_ADMIN_KT.asKey());
         }
-        txn.setScheduleCreation(op);
+        txn.setScheduleCreate(op);
     }
 }

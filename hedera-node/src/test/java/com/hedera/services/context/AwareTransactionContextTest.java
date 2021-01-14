@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -61,6 +62,7 @@ import static com.hedera.services.context.AwareTransactionContext.EMPTY_KEY;
 import static com.hedera.test.utils.IdUtils.asAccountString;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -93,6 +95,7 @@ public class AwareTransactionContextTest {
 	private AccountID another = asAccount("1.0.300");
 	private TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
 	private TokenID tokenCreated = asToken("3.0.2");
+	private ScheduleID scheduleCreated = asSchedule("0.0.10");
 	private TokenTransferList tokenTransfers = TokenTransferList.newBuilder()
 			.setToken(tokenCreated)
 			.addAllTransfers(withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList())
@@ -502,6 +505,16 @@ public class AwareTransactionContextTest {
 		assertArrayEquals(runningHash, record.getReceipt().getTopicRunningHash().toByteArray());
 		assertEquals(sequenceNumber, record.getReceipt().getTopicSequenceNumber());
 		assertEquals(MerkleTopic.RUNNING_HASH_VERSION, record.getReceipt().getTopicRunningHashVersion());
+	}
+
+	@Test
+	public void getsExpectedReceiptForScheduleCreation() {
+		// when:
+		subject.setCreated(scheduleCreated);
+		record = subject.recordSoFar();
+
+		// then:
+		assertEquals(scheduleCreated, record.getReceipt().getScheduleID());
 	}
 
 	@Test

@@ -43,7 +43,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
     }
 
     private void transitionFor(ScheduleDeleteTransactionBody op) {
-        var outcome = store.delete(op.getSchedule());
+        var outcome = store.delete(op.getScheduleID());
         txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
     }
 
@@ -60,7 +60,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
 
-        if (!op.hasSchedule()) {
+        if (!op.hasScheduleID()) {
             return INVALID_SCHEDULE_ID;
         }
         return OK;

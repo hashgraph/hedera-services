@@ -180,9 +180,9 @@ public interface TransactionContext {
 	void setCreated(TokenID id);
 
 	/**
-	 * Record that the current transaction created a schedule.
+	 * Record that the current transaction created a scheduled transaction.
 	 *
-	 * @param id the created schedule.
+	 * @param id the created scheduled transaction.
 	 */
 	void setCreated(ScheduleID id);
 

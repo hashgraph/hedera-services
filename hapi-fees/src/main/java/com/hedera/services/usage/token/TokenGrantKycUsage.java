@@ -42,8 +42,8 @@ public class TokenGrantKycUsage extends TokenTxnUsage<TokenGrantKycUsage> {
 	}
 
 	public FeeData get() {
-		addAccountBpt();
-		addAccountBpt();
+		addEntityBpt();
+		addEntityBpt();
 		return usageEstimator.get();
 	}
 }

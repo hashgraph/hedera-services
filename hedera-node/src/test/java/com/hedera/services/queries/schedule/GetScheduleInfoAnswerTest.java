@@ -16,6 +16,8 @@ import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,12 +43,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+@RunWith(JUnitPlatform.class)
 public class GetScheduleInfoAnswerTest {
     private Transaction paymentTxn;
     private String node = "0.0.3";
     private String payer = "0.0.12345";
     private AccountID payerAccount = asAccount(payer);
-    private AccountID schedulingAccount = asAccount("0.0.12346");
+    private AccountID creatorAccount = asAccount("0.0.12346");
     private ScheduleID scheduleID = asSchedule("1.2.3");
     private long fee = 1_234L;
 
@@ -60,9 +63,9 @@ public class GetScheduleInfoAnswerTest {
     @BeforeEach
     public void setup() {
         info = ScheduleInfo.newBuilder()
-                .setSchedule(scheduleID)
-                .setPayer(payerAccount)
-                .setSchedulingAccount(schedulingAccount)
+                .setScheduleID(scheduleID)
+                .setPayerAccountID(payerAccount)
+                .setCreatorAccountID(creatorAccount)
                 .build();
 
         view = mock(StateView.class);
@@ -237,7 +240,7 @@ public class GetScheduleInfoAnswerTest {
                 .setResponseType(type);
         ScheduleGetInfoQuery.Builder op = ScheduleGetInfoQuery.newBuilder()
                 .setHeader(header)
-                .setSchedule(id);
+                .setScheduleID(id);
         return Query.newBuilder().setScheduleGetInfo(op).build();
     }
 }

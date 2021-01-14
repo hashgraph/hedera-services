@@ -68,7 +68,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.hedera.services.stats.ServicesStatsConfig.FREEZE_METRIC;
+import static com.hedera.services.grpc.controllers.FreezeController.FREEZE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_UNDELETE_METRIC;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
@@ -86,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.FILEGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYKEY;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYSOLIDITYID;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETVERSIONINFO;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.SCHEDULEGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
@@ -113,7 +114,8 @@ public class MiscUtils {
 			TransactionGetReceipt,
 			TransactionGetRecord,
 			GetVersionInfo,
-			TokenGetInfo
+			TokenGetInfo,
+			ScheduleGetInfo
 	);
 
 	static final String TOKEN_MINT_METRIC = "mintToken";
@@ -129,6 +131,11 @@ public class MiscUtils {
 	static final String TOKEN_ASSOCIATE_METRIC = "associateTokens";
 	static final String TOKEN_DISSOCIATE_METRIC = "dissociateTokens";
 	static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
+
+	static final String SCHEDULE_CREATE_METRIC = "createSchedule";
+	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
+	static final String SCHEDULE_SIGN_METRIC = "signSchedule";
+	static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
 
 	private static final EnumMap<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
@@ -150,6 +157,7 @@ public class MiscUtils {
 		queryFunctions.put(TRANSACTIONGETRECEIPT, TransactionGetReceipt);
 		queryFunctions.put(TRANSACTIONGETRECORD, TransactionGetRecord);
 		queryFunctions.put(TOKENGETINFO, TokenGetInfo);
+		queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
 	}
 
 	public static final EnumMap<HederaFunctionality, String> BASE_STAT_NAMES =
@@ -186,6 +194,9 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(TokenUpdate, TOKEN_UPDATE_METRIC);
 		BASE_STAT_NAMES.put(TokenAssociateToAccount, TOKEN_ASSOCIATE_METRIC);
 		BASE_STAT_NAMES.put(TokenDissociateFromAccount, TOKEN_DISSOCIATE_METRIC);
+		BASE_STAT_NAMES.put(ScheduleCreate, SCHEDULE_CREATE_METRIC);
+		BASE_STAT_NAMES.put(ScheduleSign, SCHEDULE_SIGN_METRIC);
+		BASE_STAT_NAMES.put(ScheduleDelete, SCHEDULE_DELETE_METRIC);
 		BASE_STAT_NAMES.put(UncheckedSubmit, UNCHECKED_SUBMIT_METRIC);
 		BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
 		BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
@@ -207,6 +218,7 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(TransactionGetRecord, GET_RECORD_METRIC);
 		BASE_STAT_NAMES.put(GetVersionInfo, GET_VERSION_INFO_METRIC);
 		BASE_STAT_NAMES.put(TokenGetInfo, TOKEN_GET_INFO_METRIC);
+		BASE_STAT_NAMES.put(ScheduleGetInfo, SCHEDULE_GET_INFO_METRIC);
 	}
 
 	public static String baseStatNameOf(HederaFunctionality function) {
@@ -299,6 +311,8 @@ public class MiscUtils {
 		switch (query.getQueryCase()) {
 			case TOKENGETINFO:
 				return Optional.of(query.getTokenGetInfo().getHeader());
+			case SCHEDULEGETINFO:
+				return Optional.of(query.getScheduleGetInfo().getHeader());
 			case CONSENSUSGETTOPICINFO:
 				return Optional.of(query.getConsensusGetTopicInfo().getHeader());
 			case GETBYSOLIDITYID:
@@ -413,6 +427,12 @@ public class MiscUtils {
 			return TokenAssociateToAccount;
 		} else if (txn.hasTokenDissociate()) {
 			return TokenDissociateFromAccount;
+		} else if (txn.hasScheduleCreate()) {
+			return ScheduleCreate;
+		} else if (txn.hasScheduleSign()) {
+			return ScheduleSign;
+		} else if (txn.hasScheduleDelete()) {
+			return ScheduleDelete;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

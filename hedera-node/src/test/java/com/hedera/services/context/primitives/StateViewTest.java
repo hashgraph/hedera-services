@@ -31,6 +31,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -82,6 +84,7 @@ class StateViewTest {
 	FileID target = asFile("0.0.123");
 	TokenID tokenId = asToken("2.4.5");
 	TokenID missingTokenId = asToken("3.4.5");
+	ScheduleID scheduleId = asSchedule("6.7.8");
 	ContractID cid = asContract("3.2.1");
 	byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
 	ContractID notCid = asContract("1.2.3");
@@ -284,6 +287,16 @@ class StateViewTest {
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
 		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
+	}
+
+	@Test
+	public void infoForScheduleIsUnsupported() {
+		assertThrows(UnsupportedOperationException.class, () -> subject.infoForSchedule(scheduleId));
+	}
+
+	@Test
+	public void scheduleExistsIsUnsupported() {
+		assertThrows(UnsupportedOperationException.class, () -> subject.scheduleExists(scheduleId));
 	}
 
 	@Test

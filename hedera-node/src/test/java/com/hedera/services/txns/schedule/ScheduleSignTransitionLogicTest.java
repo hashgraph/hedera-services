@@ -195,10 +195,15 @@ public class ScheduleSignTransitionLogicTest {
         var builder = TransactionBody.newBuilder();
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()
                 .setSigMap(sigMap)
-                .setSchedule(schedule);
+                .setScheduleID(schedule);
 
         if (invalidScheduleId) {
-            scheduleSign.clearSchedule();
+            scheduleSign.clearScheduleID();
+        }
+
+        if (invalidKeyEncoding) {
+            this.sigMap.clear().addSigPair(SignaturePair.newBuilder().setEd25519(ByteString.copyFromUtf8("some-invalid-signature")).build());
+            scheduleSign.setSigMap(this.sigMap);
         }
 
         if (invalidKeyEncoding) {

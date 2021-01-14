@@ -48,7 +48,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     @Override
     public void doStateTransition() {
         try {
-            transitionFor(txnCtx.accessor().getTxn().getScheduleCreation());
+            transitionFor(txnCtx.accessor().getTxn().getScheduleCreate());
         } catch (Exception e) {
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
             abortWith(FAIL_INVALID);
@@ -56,7 +56,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     }
 
     private void transitionFor(ScheduleCreateTransactionBody op) throws DecoderException {
-        var scheduledTXPayer = op.hasPayer() ? op.getPayer() : txnCtx.activePayer();
+        var scheduledTXPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
         var schedule = store.getScheduleID(op.getTransactionBody().toByteArray(), scheduledTXPayer);
         if (schedule.isEmpty()) {
 
@@ -85,6 +85,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
         var created = schedule.get();
 
+        // TODO check if signatures are "required" for this TX to execute
         Set<JKey> keys = new HashSet<>();
         for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
             keys.add(ed25519ToJKey(signaturePair.getPubKeyPrefix()));
@@ -112,7 +113,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
     @Override
     public Predicate<TransactionBody> applicability() {
-        return TransactionBody::hasScheduleCreation;
+        return TransactionBody::hasScheduleCreate;
     }
 
     @Override
@@ -123,11 +124,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         var validity = OK;
 
-        ScheduleCreateTransactionBody op = txnBody.getScheduleCreation();
-
-        if (!op.getExecuteImmediately()) {
-            return NOT_SUPPORTED;
-        }
+        ScheduleCreateTransactionBody op = txnBody.getScheduleCreate();
 
         validity = checkAdminKey(
                 op.hasAdminKey(), op.getAdminKey()

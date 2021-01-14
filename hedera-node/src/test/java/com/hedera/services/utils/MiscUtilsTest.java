@@ -27,6 +27,7 @@ import com.hedera.services.grpc.controllers.ConsensusController;
 import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
+import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -72,6 +73,10 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -345,7 +350,7 @@ public class MiscUtilsTest {
 			put(FileController.FILE_APPEND_METRIC, new BodySetter<>(FileAppendTransactionBody.class));
 			put(FileController.UPDATE_FILE_METRIC, new BodySetter<>(FileUpdateTransactionBody.class));
 			put(FileController.DELETE_FILE_METRIC, new BodySetter<>(FileDeleteTransactionBody.class));
-			put(ServicesStatsConfig.FREEZE_METRIC, new BodySetter<>(FreezeTransactionBody.class));
+			put(FreezeController.FREEZE_METRIC, new BodySetter<>(FreezeTransactionBody.class));
 			put(ServicesStatsConfig.SYSTEM_DELETE_METRIC, new BodySetter<>(SystemDeleteTransactionBody.class));
 			put(ServicesStatsConfig.SYSTEM_UNDELETE_METRIC, new BodySetter<>(SystemUndeleteTransactionBody.class));
 			put(ConsensusController.CREATE_TOPIC_METRIC, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
@@ -364,6 +369,9 @@ public class MiscUtilsTest {
 			put(TOKEN_WIPE_ACCOUNT_METRIC, new BodySetter<>(TokenWipeAccountTransactionBody.class));
 			put(TOKEN_ASSOCIATE_METRIC, new BodySetter<>(TokenAssociateTransactionBody.class));
 			put(TOKEN_DISSOCIATE_METRIC, new BodySetter<>(TokenDissociateTransactionBody.class));
+			put(SCHEDULE_CREATE_METRIC, new BodySetter<>(ScheduleCreateTransactionBody.class));
+			put(SCHEDULE_SIGN_METRIC, new BodySetter<>(ScheduleSignTransactionBody.class));
+			put(SCHEDULE_DELETE_METRIC, new BodySetter<>(ScheduleDeleteTransactionBody.class));
 		}};
 
 		// expect:
@@ -403,6 +411,7 @@ public class MiscUtilsTest {
 			put(TransactionGetReceipt, new BodySetter<>(TransactionGetReceiptQuery.class));
 			put(TransactionGetRecord, new BodySetter<>(TransactionGetRecordQuery.class));
 			put(TokenGetInfo, new BodySetter<>(TokenGetInfoQuery.class));
+			put(ScheduleGetInfo, new BodySetter<>(ScheduleGetInfoQuery.class));
 		}};
 
 		// expect:
@@ -419,6 +428,16 @@ public class MiscUtilsTest {
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
 				.setTokenGetInfo(op)
+				.build();
+		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
+	}
+
+	@Test
+	public void worksForGetScheduleInfo() {
+		var op = ScheduleGetInfoQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+		var query = Query.newBuilder()
+				.setScheduleGetInfo(op)
 				.build();
 		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
 	}
@@ -620,6 +639,9 @@ public class MiscUtilsTest {
 			put(TokenAccountWipe, new BodySetter<>(TokenWipeAccountTransactionBody.class));
 			put(TokenAssociateToAccount, new BodySetter<>(TokenAssociateTransactionBody.class));
 			put(TokenDissociateFromAccount, new BodySetter<>(TokenDissociateTransactionBody.class));
+			put(ScheduleCreate, new BodySetter<>(ScheduleCreateTransactionBody.class));
+			put(ScheduleSign, new BodySetter<>(ScheduleSignTransactionBody.class));
+			put(ScheduleDelete, new BodySetter<>(ScheduleDeleteTransactionBody.class));
 			put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
 			put(ConsensusCreateTopic, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusUpdateTopic, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));

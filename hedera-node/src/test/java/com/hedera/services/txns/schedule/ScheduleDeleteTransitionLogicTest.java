@@ -132,10 +132,10 @@ public class ScheduleDeleteTransitionLogicTest {
     ) {
         var builder = TransactionBody.newBuilder();
         var scheduleDelete = ScheduleDeleteTransactionBody.newBuilder()
-                .setSchedule(schedule);
+                .setScheduleID(schedule);
 
         if (invalidScheduleId) {
-            scheduleDelete.clearSchedule();
+            scheduleDelete.clearScheduleID();
         }
 
         builder.setScheduleDelete(scheduleDelete);

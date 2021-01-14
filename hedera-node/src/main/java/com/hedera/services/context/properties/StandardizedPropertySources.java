@@ -150,8 +150,6 @@ public class StandardizedPropertySources implements PropertySources {
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
 		/* Global/dynamic properties. */
-		source.put("ledger.autoRenewPeriod.maxDuration", PropertiesLoader::getMaximumAutorenewDuration);
-		source.put("ledger.autoRenewPeriod.minDuration", PropertiesLoader::getMinimumAutorenewDuration);
 		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);
 		source.put("hedera.recordStream.logPeriod", PropertiesLoader::getRecordLogPeriod);
 
