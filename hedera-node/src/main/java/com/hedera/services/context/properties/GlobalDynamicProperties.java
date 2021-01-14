@@ -28,8 +28,8 @@ public class GlobalDynamicProperties {
 	private final PropertySource properties;
 
 	private int maxTokensPerAccount;
-	private int maxTokensSymbolLength;
-	private int maxTokensNameLength;
+	private int maxTokenSymbolUtf8Bytes;
+	private int maxTokenNameUtf8Bytes;
 	private int maxFileSizeKb;
 	private int cacheRecordsTtl;
 	private int maxContractStorageKb;
@@ -51,6 +51,10 @@ public class GlobalDynamicProperties {
 	private int maxGas;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
+	private long maxAutoRenewDuration;
+	private long minAutoRenewDuration;
+	private int localCallEstRetBytes;
+	private int scheduledTxExpiryTimeSecs;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -65,8 +69,8 @@ public class GlobalDynamicProperties {
 	public void reload() {
 		shouldKeepRecordsInState = properties.getBooleanProperty("ledger.keepRecordsInState");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
-		maxTokensSymbolLength = properties.getIntProperty("tokens.maxSymbolLength");
-		maxTokensNameLength = properties.getIntProperty("tokens.maxTokenNameLength");
+		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
+		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
 		maxFileSizeKb = properties.getIntProperty("files.maxSizeKb");
 		fundingAccount = AccountID.newBuilder()
@@ -91,22 +95,26 @@ public class GlobalDynamicProperties {
 		maxGas = properties.getIntProperty("contracts.maxGas");
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
+		maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
+		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
+		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
+		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
 	}
 
 	public int maxTokensPerAccount() {
 		return maxTokensPerAccount;
 	}
 
-	public int maxTokenSymbolLength() {
-		return maxTokensSymbolLength;
+	public int maxTokenSymbolUtf8Bytes() {
+		return maxTokenSymbolUtf8Bytes;
 	}
 
 	public long maxAccountNum() {
 		return maxAccountNum;
 	}
 
-	public int maxTokenNameLength() {
-		return maxTokensNameLength;
+	public int maxTokenNameUtf8Bytes() {
+		return maxTokenNameUtf8Bytes;
 	}
 
 	public int maxFileSizeKb() {
@@ -187,5 +195,21 @@ public class GlobalDynamicProperties {
 
 	public int feesTokenTransferUsageMultiplier() {
 		return feesTokenTransferUsageMultiplier;
+	}
+
+	public long maxAutoRenewDuration() {
+		return maxAutoRenewDuration;
+	}
+
+	public long minAutoRenewDuration() {
+		return minAutoRenewDuration;
+	}
+
+	public int localCallEstRetBytes() {
+		return localCallEstRetBytes;
+	}
+
+	public int scheduledTxExpiryTimeSecs() {
+		return scheduledTxExpiryTimeSecs;
 	}
 }

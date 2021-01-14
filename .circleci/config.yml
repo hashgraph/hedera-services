@@ -133,6 +133,8 @@ commands:
           dsl-args: "RecordStreamValidation"
           ci-properties-map: "recordStreamsDir=/repo/recordstreams"
 
+# insight py is removed from services repo and is stages in platform regression repo.
+# we no longer use this job for publishing stats.
   publish-platform-stats:
     description: Generate the insight.py PDF and publish it (e.g. to Slack)
     parameters:

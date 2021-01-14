@@ -103,8 +103,6 @@ public class TransactionHandlerTest {
 				() -> accounts,
 				nodeAccount,
 				txnThrottling,
-				usagePrices,
-				exchange,
 				fees,
 				stateView,
 				basicPrecheck,

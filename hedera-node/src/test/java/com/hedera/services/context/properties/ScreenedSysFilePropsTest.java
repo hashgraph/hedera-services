@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.Logger;
@@ -39,7 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @RunWith(JUnitPlatform.class)
 class ScreenedSysFilePropsTest {
@@ -148,6 +148,38 @@ class ScreenedSysFilePropsTest {
 				ScreenedSysFileProps.DEPRECATED_PROP_TPL,
 				"defaultFeeCollectionAccount",
 				"ledger.fundingAccount"));
+	}
+
+	@Test
+	public void warnsOfUnusableMaxTokenNameUtf8Bytes() {
+		// setup:
+		String unsupportableValue = "" + (MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1);
+		// when:
+		subject.screenNew(withJust("tokens.maxTokenNameUtf8Bytes", unsupportableValue));
+
+		// then:
+		assertTrue(subject.from121.isEmpty());
+		// and:
+		verify(log).warn(String.format(
+				ScreenedSysFileProps.UNUSABLE_PROP_TPL,
+				unsupportableValue,
+				"tokens.maxTokenNameUtf8Bytes"));
+	}
+
+	@Test
+	public void warnsOfUnusableMaxTokenSymbolUtf8Bytes() {
+		// setup:
+		String unsupportableValue = "" + (MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1);
+		// when:
+		subject.screenNew(withJust("tokens.maxSymbolUtf8Bytes", unsupportableValue));
+
+		// then:
+		assertTrue(subject.from121.isEmpty());
+		// and:
+		verify(log).warn(String.format(
+				ScreenedSysFileProps.UNUSABLE_PROP_TPL,
+				unsupportableValue,
+				"tokens.maxSymbolUtf8Bytes"));
 	}
 
 	@Test

@@ -123,8 +123,6 @@ public class TxnHandlerVerifySigRegressionTest {
 				() -> accounts,
 				DEFAULT_NODE,
 				null,
-				TEST_USAGE_PRICES,
-				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
 				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null),
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
@@ -250,14 +248,14 @@ public class TxnHandlerVerifySigRegressionTest {
 		speedometers = mock(MiscSpeedometers.class);
 		keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null),
+				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns);
 		retryingKeyOrder =
 				new HederaSigningOrder(
 						new MockEntityNumbers(),
 						defaultLookupsPlusAccountRetriesFor(
-								null, () -> accounts, () -> null, ref -> null,
+								null, () -> accounts, () -> null, ref -> null, ref -> null,
 								MN, MN, runningAvgs, speedometers),
 						updateAccountSigns,
 						targetWaclSigns);

@@ -54,7 +54,6 @@ public class ServicesStatsConfig {
 	static final String SPEEDOMETER_ANSWERED_DESC_TPL = "number of %s answered per second";
 	static final String SPEEDOMETER_SUBMITTED_DESC_TPL = "number of %s submitted per second";
 
-	public static final String FREEZE_METRIC = "freeze";
 	public static final String SYSTEM_DELETE_METRIC = "systemDelete";
 	public static final String SYSTEM_UNDELETE_METRIC = "systemUndelete";
 }

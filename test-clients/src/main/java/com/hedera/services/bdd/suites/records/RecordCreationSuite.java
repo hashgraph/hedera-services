@@ -58,8 +58,14 @@ public class RecordCreationSuite extends HapiApiSuite {
 	private HapiApiSpec accountsGetPayerRecordsIfSoConfigured() {
 		return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")
 				.given(
-						cryptoCreate("payer")
+						cryptoCreate("payer"),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("ledger.keepRecordsInState", "false"))
 				).when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("ledger.keepRecordsInState", "false")),
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, FUNDING, 1_000L)
 						).payingWith("payer").via("firstXfer"),
@@ -71,10 +77,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, FUNDING, 1_000L)
 						).payingWith("payer").via("secondXfer"),
-						getAccountRecords("payer").has(inOrder(recordWith().txnId("secondXfer"))),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("ledger.keepRecordsInState", "false"))
+						getAccountRecords("payer").has(inOrder(recordWith().txnId("secondXfer")))
 				);
 	}
 

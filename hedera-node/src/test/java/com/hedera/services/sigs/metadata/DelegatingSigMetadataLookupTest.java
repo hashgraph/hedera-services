@@ -26,7 +26,7 @@ import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;

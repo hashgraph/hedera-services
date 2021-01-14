@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -60,6 +61,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -120,9 +122,11 @@ class ServicesStateTest {
 	FCMap<MerkleEntityId, MerkleAccount> accountsCopy;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageCopy;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
+	FCMap<MerkleEntityId, MerkleSchedule> scheduledTxs;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
 	FCMap<MerkleEntityId, MerkleToken> tokensCopy;
+	FCMap<MerkleEntityId, MerkleSchedule> scheduledTxsCopy;
 	MerkleDiskFs diskFs;
 	MerkleDiskFs diskFsCopy;
 	ExchangeRates midnightRates;
@@ -175,6 +179,7 @@ class ServicesStateTest {
 		tokenAssociations = mock(FCMap.class);
 		tokenAssociationsCopy = mock(FCMap.class);
 		diskFs = mock(MerkleDiskFs.class);
+		scheduledTxs = mock(FCMap.class);
 
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
@@ -182,12 +187,14 @@ class ServicesStateTest {
 		storageCopy = mock(FCMap.class);
 		accountsCopy = mock(FCMap.class);
 		diskFsCopy = mock(MerkleDiskFs.class);
+		scheduledTxsCopy = mock(FCMap.class);
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
 		given(accounts.copy()).willReturn(accountsCopy);
 		given(tokens.copy()).willReturn(tokensCopy);
 		given(tokenAssociations.copy()).willReturn(tokenAssociationsCopy);
 		given(diskFs.copy()).willReturn(diskFsCopy);
+		given(scheduledTxs.copy()).willReturn(scheduledTxsCopy);
 
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
@@ -199,8 +206,10 @@ class ServicesStateTest {
 
 		propertySources = mock(PropertySources.class);
 
+		var crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(self);
+		given(platform.getCryptography()).willReturn(crypto);
 
 		given(ctx.platform()).willReturn(platform);
 		given(ctx.recordsHistorian()).willReturn(historian);
@@ -236,6 +245,7 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_070_CHILDREN, subject.getMinimumChildCount(1));
 		assertEquals(ServicesState.ChildIndices.NUM_080_CHILDREN, subject.getMinimumChildCount(2));
 		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(3));
+		assertEquals(ServicesState.ChildIndices.NUM_0100_CHILDREN, subject.getMinimumChildCount(4));
 	}
 
 	@Test
@@ -273,6 +283,7 @@ class ServicesStateTest {
 		assertNotNull(subject.storage());
 		assertNotNull(subject.accounts());
 		assertNotNull(subject.tokens());
+		assertNotNull(subject.scheduleTxs());
 		assertEquals(book, subject.addressBook());
 		assertEquals(self, actualCtx.id());
 		assertEquals(platform, actualCtx.platform());
@@ -364,6 +375,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 
 		// when:
 		subject.init(platform, book);
@@ -393,12 +405,13 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 
 		// when:
 		subject.init(platform, book);
 
 		// then:
-		InOrder inOrder = inOrder(diskFs, ctx, mockDigest, accounts, storage, topics,
+		InOrder inOrder = inOrder(scheduledTxs, diskFs, ctx, mockDigest, accounts, storage, topics,
 				tokens, tokenAssociations, networkCtx, book, mockLog);
 		inOrder.verify(diskFs).setFsBaseDir(any());
 		inOrder.verify(ctx).nodeAccount();
@@ -411,6 +424,7 @@ class ServicesStateTest {
 		inOrder.verify(tokens).getHash();
 		inOrder.verify(tokenAssociations).getHash();
 		inOrder.verify(diskFs).getHash();
+		inOrder.verify(scheduledTxs).getHash();
 		inOrder.verify(networkCtx).getHash();
 		inOrder.verify(book).getHash();
 		inOrder.verify(mockLog).info(argThat((String s) -> s.startsWith("[SwirldState Hashes]")));
@@ -434,6 +448,7 @@ class ServicesStateTest {
 		Hash accountsRootHash = new Hash("asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes());
 		Hash tokenRelsRootHash = new Hash("asdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdh".getBytes());
 		Hash specialFileSystemHash = new Hash("123456781234567812345678123456781234567812345678".getBytes());
+		Hash scheduledTxsRootHash = new Hash("qlqlqlqlqlqlllqqllqlqlqlqllqlqlqlqllqlqlqllqqlql".getBytes());
 
 		// and:
 		Hash overallHash = new Hash("a!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!df".getBytes());
@@ -446,6 +461,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 
 		// and:
 		var expected = String.format("[SwirldState Hashes]\n" +
@@ -456,6 +472,7 @@ class ServicesStateTest {
 				"  Tokens            :: %s\n" +
 				"  TokenAssociations :: %s\n" +
 				"  DiskFs            :: %s\n" +
+				"  ScheduledTxs      :: %s\n" +
 				"  NetworkContext    :: %s\n" +
 				"  AddressBook       :: %s",
 				overallHash,
@@ -465,6 +482,7 @@ class ServicesStateTest {
 				tokensRootHash,
 				tokenRelsRootHash,
 				specialFileSystemHash,
+				scheduledTxsRootHash,
 				ctxHash,
 				bookHash);
 		subject.setHash(overallHash);
@@ -477,6 +495,7 @@ class ServicesStateTest {
 		given(networkCtx.getHash()).willReturn(ctxHash);
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
+		given(scheduledTxs.getHash()).willReturn(scheduledTxsRootHash);
 
 		// when:
 		subject.printHashes();
@@ -499,6 +518,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
@@ -516,6 +536,7 @@ class ServicesStateTest {
 		assertSame(tokensCopy, copy.tokens());
 		assertSame(tokenAssociationsCopy, copy.tokenAssociations());
 		assertSame(diskFsCopy, copy.diskFs());
+		assertSame(scheduledTxsCopy, copy.scheduleTxs());
 	}
 
 	@Test
@@ -538,6 +559,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 
 		// when:
 		subject.release();
@@ -548,6 +570,7 @@ class ServicesStateTest {
 		verify(topics).decrementReferenceCount();
 		verify(tokens).decrementReferenceCount();
 		verify(tokenAssociations).decrementReferenceCount();
+		verify(scheduledTxs).decrementReferenceCount();
 	}
 
 	@Test

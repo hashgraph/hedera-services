@@ -208,4 +208,10 @@ enum ResponseCodeEnum {
   TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED = 198; // Exceeded the number of token transfers (both from and to) allowed for token transfer list
   EMPTY_TOKEN_TRANSFER_BODY = 199; // TokenTransfersTransactionBody has no TokenTransferList
   EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS = 200; // TokenTransfersTransactionBody has a TokenTransferList with no AccountAmounts
+
+  INVALID_SCHEDULE_ID = 201; // The Scheduled entity does not exist
+  SCHEDULE_IS_IMMUTABLE = 202; // The Scheduled entity cannot be modified. Admin key not set
+  SCHEDULE_WAS_DELETED = 203; // The Scheduled entity was already deleted
+  INVALID_SCHEDULE_PAYER_ID = 204; // The provided Scheduled Payer does not exist
+  INVALID_SCHEDULE_ACCOUNT_ID = 205; // The Schedule Create Transaction TransactionID account does not exist
 }

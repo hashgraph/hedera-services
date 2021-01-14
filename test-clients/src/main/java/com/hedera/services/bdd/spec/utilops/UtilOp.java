@@ -20,12 +20,9 @@ package com.hedera.services.bdd.spec.utilops;
  * ‍
  */
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hederahashgraph.api.proto.java.Transaction;
 
 public abstract class UtilOp extends HapiSpecOperation {
 	@Override
