@@ -97,6 +97,7 @@ class GetAccountRecordsResourceUsageTest {
 		Query answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);
 		Query costAnswerQuery = accountRecordsQuery(a, COST_ANSWER);
 		given(accounts.get(key)).willReturn(aValue);
+		given(accounts.containsKey(key)).willReturn(true);
 		given(usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(someRecords, COST_ANSWER))
 				.willReturn(costAnswerUsage);
 		given(usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(someRecords, ANSWER_ONLY))
