@@ -50,6 +50,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
     }
 
     private void transitionFor(ScheduleSignTransactionBody op) throws DecoderException {
+        // TODO check if signatures are "required" for this TX to execute
         Set<JKey> keys = new HashSet<>();
         for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
             keys.add(ed25519ToJKey(signaturePair.getPubKeyPrefix()));

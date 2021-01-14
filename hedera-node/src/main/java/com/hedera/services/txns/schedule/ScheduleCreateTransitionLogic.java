@@ -85,6 +85,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
         var created = schedule.get();
 
+        // TODO check if signatures are "required" for this TX to execute
         Set<JKey> keys = new HashSet<>();
         for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
             keys.add(ed25519ToJKey(signaturePair.getPubKeyPrefix()));
