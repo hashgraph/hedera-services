@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -114,7 +115,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 		if (op.hasKeys()) {
 			try {
 				wacl = mapKey(wrapped(op.getKeys()));
-			} catch (Exception syntaxViolation) {
+			} catch (DecoderException syntaxViolation) {
 				log.warn("Syntax violation in file creation!", syntaxViolation);
 				throw new IllegalArgumentException(syntaxViolation);
 			}
