@@ -61,6 +61,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -205,8 +206,10 @@ class ServicesStateTest {
 
 		propertySources = mock(PropertySources.class);
 
+		var crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(self);
+		given(platform.getCryptography()).willReturn(crypto);
 
 		given(ctx.platform()).willReturn(platform);
 		given(ctx.recordsHistorian()).willReturn(historian);

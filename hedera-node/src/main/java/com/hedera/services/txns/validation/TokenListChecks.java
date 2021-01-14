@@ -20,7 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import static com.hedera.services.txns.validation.PureValidation.checkKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -143,17 +143,5 @@ public class TokenListChecks {
         }
 
         return validity;
-    }
-
-    public static ResponseCodeEnum checkKey(Key key, ResponseCodeEnum failure) {
-        try {
-            var fcKey = JKey.mapKey(key);
-            if (!fcKey.isValid()) {
-                return failure;
-            }
-            return OK;
-        } catch (Exception ignore) {
-            return failure;
-        }
     }
 }

@@ -22,7 +22,6 @@ package com.hedera.services.context.primitives;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.services.queries.crypto.GetAccountRecordsAnswer;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -32,13 +31,14 @@ import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -55,6 +55,7 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,8 +68,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
-import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
-import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
+import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -268,6 +269,11 @@ public class StateView {
 		}
 	}
 
+	public Optional<ScheduleInfo> infoForSchedule(ScheduleID scheduleID) {
+		// TODO: Implement logic for getting information for schedule from store.
+		throw new UnsupportedOperationException();
+	}
+
 	TokenFreezeStatus tfsFor(boolean flag) {
 		return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
 	}
@@ -278,6 +284,11 @@ public class StateView {
 
 	public boolean tokenExists(TokenID id) {
 		return tokenStore.resolve(id) != MISSING_TOKEN;
+	}
+
+	public boolean scheduleExists(ScheduleID id) {
+		// TODO: return scheduleStore.resolve(id) != MISSING_SCHEDULE;
+		throw new UnsupportedOperationException();
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {

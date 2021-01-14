@@ -65,7 +65,10 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("transferListSizeLimit", "ledger.transfers.maxLen"),
 			entry("txMaximumDuration", "hedera.transaction.maxValidDuration"),
 			entry("txMinimumDuration", "hedera.transaction.minValidDuration"),
-			entry("txMinimumRemaining", "hedera.transaction.minValidityBufferSecs")
+			entry("txMinimumRemaining", "hedera.transaction.minValidityBufferSecs"),
+			entry("maximumAutoRenewDuration", "ledger.autoRenewPeriod.maxDuration"),
+			entry("minimumAutoRenewDuration", "ledger.autoRenewPeriod.minDuration"),
+			entry("localCallEstReturnBytes", "contracts.localCall.estRetBytes")
 	);
 	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
 			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum()),
