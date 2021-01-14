@@ -278,20 +278,8 @@ public class ScheduleCreateTransitionLogicTest {
     }
 
     @Test
-    public void failsOnExecuteImmediatelyFalse() {
-        givenCtx(
-                true,
-                false,
-                false);
-
-        // expect:
-        assertEquals(NOT_SUPPORTED, subject.validate(scheduleCreateTxn));
-    }
-
-    @Test
     public void failsOnInvalidAdminKey() {
         givenCtx(
-                false,
                 true,
                 false);
 
@@ -307,22 +295,15 @@ public class ScheduleCreateTransitionLogicTest {
     }
 
     @Test
-    public void rejectsInvalidExecuteImmediately() {
-        givenCtx(true, false, false);
-
-        assertEquals(NOT_SUPPORTED, subject.syntaxCheck().apply(scheduleCreateTxn));
-    }
-
-    @Test
     public void rejectsInvalidAdminKey() {
-        givenCtx(false, true, false);
+        givenCtx(true, false);
 
         assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
     }
 
     @Test
     public void rejectsInvalidSignature() {
-        givenCtx(false, false, true);
+        givenCtx(false, true);
 
         assertEquals(INVALID_SCHEDULE_SIG_MAP_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
     }
@@ -330,12 +311,10 @@ public class ScheduleCreateTransitionLogicTest {
     private void givenValidTxnCtx() {
         givenCtx(
                 false,
-                false,
                 false);
     }
 
     private void givenCtx(
-            boolean invalidExecuteImmediately,
             boolean invalidAdminKey,
             boolean invalidPubKey
             ) {
@@ -363,18 +342,13 @@ public class ScheduleCreateTransitionLogicTest {
         var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
                 .setSigMap(sigMap)
                 .setAdminKey(key)
-                .setExecuteImmediately(YES)
-                .setPayer(payer)
+                .setPayerAccountID(payer)
                 .setTransactionBody(ByteString.copyFrom(transactionBody));
-
-        if (invalidExecuteImmediately) {
-            scheduleCreate.setExecuteImmediately(NO);
-        }
 
         if (invalidAdminKey) {
             scheduleCreate.setAdminKey(invalidKey);
         }
-        builder.setScheduleCreation(scheduleCreate);
+        builder.setScheduleCreate(scheduleCreate);
 
         this.scheduleCreateTxn = builder.build();
         given(accessor.getTxn()).willReturn(this.scheduleCreateTxn);

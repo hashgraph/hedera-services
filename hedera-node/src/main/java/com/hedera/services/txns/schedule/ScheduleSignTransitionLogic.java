@@ -55,7 +55,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
             keys.add(ed25519ToJKey(signaturePair.getPubKeyPrefix()));
         }
 
-        var outcome = store.addSigners(op.getSchedule(), keys);
+        var outcome = store.addSigners(op.getScheduleID(), keys);
         txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 
         // TODO check if signatures for execution are collected and if so execute it
@@ -74,7 +74,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         ScheduleSignTransactionBody op = txnBody.getScheduleSign();
 
-        if (!op.hasSchedule()) {
+        if (!op.hasScheduleID()) {
             return INVALID_SCHEDULE_ID;
         }
 
