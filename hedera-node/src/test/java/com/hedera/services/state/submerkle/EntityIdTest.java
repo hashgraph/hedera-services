@@ -138,7 +138,6 @@ public class EntityIdTest {
 		assertNull(EntityId.ofNullableTopicId(null));
 		assertNull(EntityId.ofNullableTokenId(null));
 		assertNull(EntityId.ofNullableScheduleId(null));
-
 		// and:
 		assertEquals(subject, EntityId.ofNullableAccountId(accountId));
 		assertEquals(subject, EntityId.ofNullableContractId(contractId));

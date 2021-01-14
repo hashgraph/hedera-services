@@ -52,7 +52,7 @@ public class ScheduleDeleteFactory extends SignedTxnFactory<ScheduleDeleteFactor
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
         var op = ScheduleDeleteTransactionBody.newBuilder()
-                .setSchedule(id);
+                .setScheduleID(id);
         txn.setScheduleDelete(op);
     }
 }

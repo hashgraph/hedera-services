@@ -38,15 +38,14 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -56,29 +55,27 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_SIGNER_ONE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_SIGNER_TWO_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
-import static com.swirlds.common.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-
+@RunWith(JUnitPlatform.class)
 public class HederaScheduleStoreTest {
     static final int SIGNATURE_BYTES = 64;
     EntityIdSource ids;
@@ -517,5 +514,21 @@ public class HederaScheduleStoreTest {
 
         // then:
         assertEquals(INVALID_SCHEDULE_ID, outcome);
+    }
+
+    @Test
+    public void validCompositeKey() {
+        // given:
+        var key = new CompositeKey(transactionBodyHashCode, payerId);
+
+        assertEquals(key, key);
+    }
+
+    @Test
+    public void validDifferentInstanceKey() {
+        // given:
+        var key = new CompositeKey(transactionBodyHashCode, payerId);
+
+        assertNotEquals(key, new Object());
     }
 }

@@ -46,10 +46,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Arrays;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 import static com.swirlds.common.CommonUtils.hex;

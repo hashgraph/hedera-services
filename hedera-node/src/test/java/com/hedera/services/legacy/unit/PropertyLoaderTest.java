@@ -35,7 +35,6 @@ import java.util.Properties;
 
 import com.hedera.services.legacy.config.AsyncPropertiesObject;
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.config.SyncPropertiesObject;
 import com.hedera.services.legacy.logic.CustomProperties;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +49,6 @@ public class PropertyLoaderTest {
 	private final int TX_MAX_DURATION = 120;
 	
 	private final int RECIEPT_TTL_UPD = 280;
-	private final int THRESHOLD_TTL_UPD = 80000;
 	private final int TX_MAX_DURATION_UPD = 220;
 	
 	private final String APP_CONFIG_FILE_PATH = "./configuration/dev/testConfig.properties";
@@ -59,7 +57,6 @@ public class PropertyLoaderTest {
 	public static void initialize(String applicationPropsFilePath, String apiPropertiesFilePath) {
 			PropertiesLoader.applicationProps = propertiesFrom(applicationPropsFilePath);
 			PropertiesLoader.apiProperties = propertiesFrom(apiPropertiesFilePath);
-			SyncPropertiesObject.loadSynchProperties(PropertiesLoader.applicationProps);
 			AsyncPropertiesObject.loadAsynchProperties(PropertiesLoader.applicationProps);
 			AsyncPropertiesObject.loadApiProperties(PropertiesLoader.apiProperties);
 			PropertiesLoader.log.info("Application Properties Populated with these values :: "+ PropertiesLoader.applicationProps.getCustomProperties());

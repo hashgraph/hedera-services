@@ -20,8 +20,6 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -33,6 +31,8 @@ import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 import java.util.function.Function;
 
@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+@RunWith(JUnitPlatform.class)
 public class ScheduleDelegatingSigMetadataLookupTest {
     final int TX_BYTES_LENGTH = 64;
 

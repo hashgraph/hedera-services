@@ -32,17 +32,26 @@ class ContractAnswersTest {
 	GetBytecodeAnswer getBytecodeAnswer = mock(GetBytecodeAnswer.class);
 	GetContractInfoAnswer getContractInfoAnswer = mock(GetContractInfoAnswer.class);
 	GetContractRecordsAnswer getContractRecordsAnswer = mock(GetContractRecordsAnswer.class);
+	ContractCallLocalAnswer contractCallLocalAnswer = mock(ContractCallLocalAnswer.class);
+	GetBySolidityIdAnswer getBySolidityIdAnswer = mock(GetBySolidityIdAnswer.class);
 
 	ContractAnswers subject;
 
 	@Test
 	public void hasExpectedAnswers() {
 		// given:
-		subject = new ContractAnswers(getBytecodeAnswer, getContractInfoAnswer, getContractRecordsAnswer);
+		subject = new ContractAnswers(
+				getBytecodeAnswer,
+				getContractInfoAnswer,
+				getBySolidityIdAnswer,
+				getContractRecordsAnswer,
+				contractCallLocalAnswer);
 
 		// then:
 		assertSame(getBytecodeAnswer, subject.getBytecode());
 		assertSame(getContractInfoAnswer, subject.getContractInfo());
 		assertSame(getContractRecordsAnswer, subject.getContractRecords());
+		assertSame(contractCallLocalAnswer, subject.contractCallLocal());
+		assertSame(getBySolidityIdAnswer, subject.getBySolidityId());
 	}
 }

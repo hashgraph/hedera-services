@@ -156,8 +156,8 @@ class HederaTokenStoreTest {
 	TokenID created = IdUtils.asToken("1.2.666666");
 	TokenID pending = IdUtils.asToken("1.2.555555");
 	int MAX_TOKENS_PER_ACCOUNT = 100;
-	int MAX_TOKEN_SYMBOL_LENGTH = 10;
-	int MAX_TOKEN_NAME_LENGTH = 100;
+	int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
+	int MAX_TOKEN_NAME_UTF8_BYTES = 100;
 	Map.Entry<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
 	Map.Entry<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
 
@@ -215,8 +215,8 @@ class HederaTokenStoreTest {
 
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
-		given(properties.maxTokenSymbolLength()).willReturn(MAX_TOKEN_SYMBOL_LENGTH);
-		given(properties.maxTokenNameLength()).willReturn(MAX_TOKEN_NAME_LENGTH);
+		given(properties.maxTokenSymbolUtf8Bytes()).willReturn(MAX_TOKEN_SYMBOL_UTF8_BYTES);
+		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 
 		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
 		subject.setAccountsLedger(accountsLedger);

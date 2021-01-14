@@ -26,6 +26,9 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
+import java.util.OptionalLong;
+
 import static com.hedera.test.factories.keys.NodeFactory.*;
 
 public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
@@ -38,6 +41,7 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 	private boolean receiverSigRequired = false;
 	private KeyTree accountKt = DEFAULT_ACCOUNT_KT;
 	private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
+	private OptionalLong balance = OptionalLong.empty();
 
 	private CryptoCreateFactory() {}
 	public static CryptoCreateFactory newSignedCryptoCreate() {
@@ -62,6 +66,7 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 				.setReceiverSigRequired(receiverSigRequired)
 				.setSendRecordThreshold(sendThresholdTinybars)
 				.setReceiveRecordThreshold(receiveThresholdTinybars);
+		balance.ifPresent(op::setInitialBalance);
 		txn.setCryptoCreateAccount(op);
 	}
 
@@ -69,6 +74,12 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 		this.accountKt = accountKt;
 		return this;
 	}
+
+	public CryptoCreateFactory balance(long amount) {
+		this.balance = OptionalLong.of(amount);
+		return this;
+	}
+
 	public CryptoCreateFactory receiverSigRequired(boolean isRequired) {
 		this.receiverSigRequired = isRequired;
 		return this;

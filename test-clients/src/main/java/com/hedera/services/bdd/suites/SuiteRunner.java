@@ -34,6 +34,9 @@ import com.hedera.services.bdd.suites.contract.ChildStorageSpec;
 import com.hedera.services.bdd.suites.contract.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
+import com.hedera.services.bdd.suites.contract.ContractDeleteSuite;
+import com.hedera.services.bdd.suites.contract.ContractGetBytecodeSuite;
+import com.hedera.services.bdd.suites.contract.ContractUpdateSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.contract.OCTokenSpec;
@@ -94,6 +97,7 @@ import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringRec
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
+import com.hedera.services.bdd.suites.records.CharacterizationSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
@@ -186,24 +190,24 @@ public class SuiteRunner {
 				new ProtectedFilesUpdateSuite(),
 				new PermissionSemanticsSpec(),
 				new SysDelSysUndelSpec()));
-//		put("CiSmartContractJob", aof(
-//				new NewOpInConstructorSuite(),
-//				new IssueXXXXSpec(),
-//				new ContractCallSuite(),
-//				new ContractCallLocalSuite(),
-//				new ContractUpdateSuite(),
-//				new ContractDeleteSuite(),
-//				new ChildStorageSpec(),
-//				new BigArraySpec(),
-//				new CharacterizationSuite(),
-//				new SmartContractFailFirstSpec(),
-//				new SmartContractSelfDestructSpec(),
-//				new DeprecatedContractKeySuite(),
-//				new ContractRecordsSanityCheckSuite(),
-//				new ContractGetBytecodeSuite(),
-//				new SmartContractInlineAssemblySpec(),
-//				new OCTokenSpec(),
-//				new RecordCreationSuite()));
+		put("CiSmartContractJob", aof(
+				new NewOpInConstructorSuite(),
+				new IssueXXXXSpec(),
+				new ContractCallSuite(),
+				new ContractCallLocalSuite(),
+				new ContractUpdateSuite(),
+				new ContractDeleteSuite(),
+				new ChildStorageSpec(),
+				new BigArraySpec(),
+				new CharacterizationSuite(),
+				new SmartContractFailFirstSpec(),
+				new SmartContractSelfDestructSpec(),
+				new DeprecatedContractKeySuite(),
+				new ContractRecordsSanityCheckSuite(),
+				new ContractGetBytecodeSuite(),
+				new SmartContractInlineAssemblySpec(),
+				new OCTokenSpec(),
+				new RecordCreationSuite()));
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */

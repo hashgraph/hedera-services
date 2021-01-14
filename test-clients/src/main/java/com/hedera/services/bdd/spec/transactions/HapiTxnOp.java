@@ -83,6 +83,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	private long submitTime = 0L;
 	private TxnObs stats;
 	private boolean deferStatusResolution = false;
+	private boolean ensureResolvedStatusIsntFromDuplicate = false;
 
 	protected boolean acceptAnyStatus = false;
 	protected boolean acceptAnyPrecheck = false;
@@ -247,6 +248,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				publishFeeChargedTo(spec);
 			}
 		}
+		if (ensureResolvedStatusIsntFromDuplicate) {
+			assertRecordHasExpectedMemo(spec);
+		}
 	}
 
 	private void rechargePayerFor(HapiApiSpec spec) {
@@ -296,6 +300,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		}
 		long fee = recordOfSubmission.getTransactionFee();
 		spec.recordPayment(new Payment(fee, self().getClass().getSimpleName(), TXN_FEE));
+	}
+
+	private void assertRecordHasExpectedMemo(HapiApiSpec spec) throws Throwable {
+		if (recordOfSubmission == null) {
+			lookupSubmissionRecord(spec);
+		}
+		Assert.assertEquals(
+				"Memo didn't come from submitted transaction!",
+				memo.get(),
+				recordOfSubmission.getMemo());
 	}
 
 	@Override
@@ -436,6 +450,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	/* Fluent builder methods to chain. */
 	public T memo(String text) {
 		memo = Optional.of(text);
+		return self();
+	}
+
+	public T ensuringResolvedStatusIsntFromDuplicate() {
+		ensureResolvedStatusIsntFromDuplicate = true;
+		memo = Optional.of(TxnUtils.randomUppercase(64));
 		return self();
 	}
 

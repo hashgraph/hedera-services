@@ -28,5 +28,5 @@ option java_multiple_files = true;
 import "BasicTypes.proto";
 
 message ScheduleDeleteTransactionBody {
-  ScheduleID schedule = 1; // The ID of the Scheduled Entity
+  ScheduleID scheduleID = 1; // The ID of the Scheduled Entity
 }
