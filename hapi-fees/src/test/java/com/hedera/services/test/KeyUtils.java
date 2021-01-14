@@ -79,4 +79,13 @@ public class KeyUtils {
 									.setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))
 							.addKeys(B_COMPLEX_KEY)))
 			.build();
+
+	public static KeyList DUMMY_KEY_LIST = KeyList.newBuilder()
+			.addKeys(Key.newBuilder()
+					.setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))
+			.addKeys(Key.newBuilder()
+					.setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))
+			.addKeys(Key.newBuilder()
+					.setEd25519(ByteString.copyFrom("cccccccccccccccccccccccccccccccc".getBytes())))
+			.build();
 }

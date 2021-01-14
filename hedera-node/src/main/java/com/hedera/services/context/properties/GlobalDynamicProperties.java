@@ -54,6 +54,7 @@ public class GlobalDynamicProperties {
 	private long maxAutoRenewDuration;
 	private long minAutoRenewDuration;
 	private int localCallEstRetBytes;
+	private int scheduledTxExpiryTimeSecs;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -97,6 +98,7 @@ public class GlobalDynamicProperties {
 		maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
 		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
+		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
 	}
 
 	public int maxTokensPerAccount() {
@@ -205,5 +207,9 @@ public class GlobalDynamicProperties {
 
 	public int localCallEstRetBytes() {
 		return localCallEstRetBytes;
+	}
+
+	public int scheduledTxExpiryTimeSecs() {
+		return scheduledTxExpiryTimeSecs;
 	}
 }
