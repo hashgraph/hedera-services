@@ -36,6 +36,7 @@ import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -77,12 +78,12 @@ class GetAccountRecordsResourceUsageTest {
 	}
 
 	@Test
-	public void throwsIaeWhenAccountIsntKosher() {
+	public void returnsEmptyFeeDataWhenAccountMissing() {
 		// given:
 		Query query = accountRecordsQuery(a, ANSWER_ONLY);
 
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
+		Assertions.assertSame(FeeData.getDefaultInstance(), subject.usageGiven(query, view));
 	}
 
 	@Test

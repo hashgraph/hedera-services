@@ -101,16 +101,6 @@ class GetBytecodeResourceUsageTest {
 		assertSame(answerOnlyEstimate, answerOnlyUsage);
 	}
 
-	@Test
-	public void throwsIaeOnUnexpectedProblem() {
-		Query answerOnlyQuery = bytecodeQuery(target, ANSWER_ONLY);
-
-		given(view.bytecodeOf(any())).willThrow(IllegalStateException.class);
-
-		// then:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(answerOnlyQuery, view));
-	}
-
 	private Query bytecodeQuery(ContractID id, ResponseType type) {
 		ContractGetBytecodeQuery.Builder op = ContractGetBytecodeQuery.newBuilder()
 				.setContractID(id)

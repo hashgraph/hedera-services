@@ -65,13 +65,13 @@ class GetFileInfoResourceUsageTest {
 	}
 
 	@Test
-	public void throwsIaeOnMissingInfo() {
+	public void returnsDefaultSchedulesOnMissing() {
 		Query answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
 
 		given(view.infoForFile(any())).willReturn(Optional.empty());
 
 		// then:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(answerOnlyQuery, view));
+		assertSame(FeeData.getDefaultInstance(), subject.usageGiven(answerOnlyQuery, view));
 	}
 
 	@Test

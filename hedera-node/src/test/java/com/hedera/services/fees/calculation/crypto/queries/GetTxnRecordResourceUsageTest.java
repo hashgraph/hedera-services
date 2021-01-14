@@ -219,17 +219,6 @@ class GetTxnRecordResourceUsageTest {
 	}
 
 	@Test
-	public void rethrowsIae() {
-		// given:
-		Query query = txnRecordQuery(missingTxnId, ANSWER_ONLY);
-		given(usageEstimator.getTransactionRecordQueryFeeMatrices(any(), any()))
-				.willThrow(IllegalStateException.class);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
-	}
-
-	@Test
 	public void recognizesApplicableQueries() {
 		// given:
 		Query no = nonTxnRecordQuery();
