@@ -175,10 +175,8 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 								.totalOpsToSumbit(() ->
 										(int)Math.ceil((double)(settings.getTotalTokens()) / settings.getTotalClients()))
 								.maxOpsPerSec(() -> (EXPECTED_MAX_OPS_PER_SEC / settings.getTotalClients()))
-								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)
-						),
+								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
 						sourcing(() -> runWithProvider(activeTokenAssociatesFactory(settings))
-
 								.lasting(() -> (settings.getTotalTokens() * settings.getTotalTestTokenAccounts()
 												/ EXPECTED_MAX_OPS_PER_SEC) + 30, // 30s as buffering time
 										() -> TimeUnit.SECONDS)
@@ -193,7 +191,6 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 						defaultLoadTest(tokenTransferBurst, settings)
 				);
 	}
-
 
 	private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
 		int tokenNum = r.nextInt(settings.getTotalTokens() / settings.getTotalClients());
