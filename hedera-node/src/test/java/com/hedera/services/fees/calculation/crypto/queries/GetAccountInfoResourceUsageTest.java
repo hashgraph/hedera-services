@@ -144,18 +144,6 @@ class GetAccountInfoResourceUsageTest {
 		assertSame(FeeData.getDefaultInstance(), usage);
 	}
 
-
-	@Test
-	public void throwsIaeWhenAccountIsntKosher() {
-		// given:
-		Query query = accountInfoQuery(a, ANSWER_ONLY);
-		// and:
-		given(accounts.containsKey(any())).willThrow(IllegalStateException.class);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
-	}
-
 	@Test
 	public void recognizesApplicableQuery() {
 		// given:

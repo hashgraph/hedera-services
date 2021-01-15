@@ -166,16 +166,6 @@ class GetTokenInfoResourceUsageTest {
 		assertSame(FeeData.getDefaultInstance(), usage);
 	}
 
-	@Test
-	public void rethrowsIae() {
-		// given:
-		Query query = tokenInfoQuery(target, ANSWER_ONLY);
-		given(view.infoForToken(any())).willThrow(IllegalStateException.class);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
-	}
-
 	private Query tokenInfoQuery(TokenID id, ResponseType type) {
 		TokenGetInfoQuery.Builder op = TokenGetInfoQuery.newBuilder()
 				.setToken(id)
