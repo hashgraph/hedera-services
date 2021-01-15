@@ -48,9 +48,11 @@ import org.apache.commons.lang3.tuple.Pair;
  * @author Michael Tinker
  */
 public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
-	public static final Comparator<Pair<AccountID, TokenID>> RELATIONSHIP_COMPARATOR = Comparator
-			.<Pair<AccountID, TokenID>, AccountID>comparing(Pair::getLeft, ACCOUNT_ID_COMPARATOR)
-			.thenComparing(Pair::getRight, TOKEN_ID_COMPARATOR);
+	public static final Comparator<Pair<AccountID, TokenID>> REL_CMP =
+			Comparator.<Pair<AccountID, TokenID>, AccountID>comparing(Pair::getLeft, ACCOUNT_ID_COMPARATOR)
+					.thenComparing(Pair::getRight, TOKEN_ID_COMPARATOR);
+	private static final Comparator<Map.Entry<Pair<AccountID, TokenID>, MerkleTokenRelStatus>> REL_ENTRY_CMP =
+			Comparator.comparing(Map.Entry::getKey, REL_CMP);
 
 	Set<Pair<AccountID, TokenID>> existingRels = new HashSet<>();
 	Map<Pair<AccountID, TokenID>, MerkleTokenRelStatus> cache = new HashMap<>();
@@ -72,10 +74,9 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 
 	@Override
 	public void flushMutableRefs() {
-		cache.keySet().stream()
-				.sorted(RELATIONSHIP_COMPARATOR)
-				.forEach(key ->
-						delegate.get().replace(fromAccountTokenRel(key.getLeft(), key.getRight()), cache.get(key)));
+		cache.entrySet().stream()
+				.sorted(REL_ENTRY_CMP)
+				.forEach(entry -> delegate.get().replace(fromAccountTokenRel(entry.getKey()), entry.getValue()));
 		cache.clear();
 	}
 
