@@ -151,7 +151,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			case RELEASE_070_VERSION:
 				return ChildIndices.NUM_070_CHILDREN;
 			default:
-				throw new IllegalArgumentException(String.format("unknown version: %d", version));
+				throw new IllegalArgumentException(String.format("Argument 'version=%d' is invalid!", version));
 		}
 	}
 

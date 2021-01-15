@@ -133,7 +133,7 @@ public class BootstrapProperties implements PropertySource {
 		if (bootstrapProps.containsKey(name)) {
 			return bootstrapProps.get(name);
 		} else {
-			throw new IllegalArgumentException(String.format("No such property '%s'!", name));
+			throw new IllegalArgumentException(String.format("Argument 'name=%s' is invalid!", name));
 		}
 	}
 
