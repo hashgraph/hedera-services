@@ -230,15 +230,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		var key = fromTokenId(id);
 		var token = tokens.get().getForModify(key);
-		Exception thrown = null;
 		try {
 			change.accept(token);
 		} catch (Exception e) {
-			thrown = e;
-		}
-		tokens.get().replace(key, token);
-		if (thrown != null) {
-			throw new IllegalArgumentException("Token change failed unexpectedly!", thrown);
+			throw new IllegalArgumentException("Token change failed unexpectedly!", e);
+		} finally {
+			tokens.get().replace(key, token);
 		}
 	}
 
