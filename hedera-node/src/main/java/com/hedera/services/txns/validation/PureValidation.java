@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.codec.DecoderException;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -100,7 +101,7 @@ public class PureValidation {
 				return failure;
 			}
 			return OK;
-		} catch (Exception ignore) {
+		} catch (DecoderException ignore) {
 			return failure;
 		}
 	}
