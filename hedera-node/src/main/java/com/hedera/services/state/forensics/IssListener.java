@@ -91,6 +91,7 @@ public class IssListener implements InvalidSignedStateListener {
 						encodeHexString(issState.topics().getRootHash().getValue()));
 				log.error(msg);
 				dumpFcms(issState, self, round);
+				issEventInfo.decrementRoundsToDump();
 			}
 		} catch (Exception any) {
 			String fallbackMsg = String.format(
