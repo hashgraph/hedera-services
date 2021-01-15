@@ -21,6 +21,8 @@ package com.hedera.services.usage;
  */
 
 import com.hedera.services.test.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -41,6 +43,7 @@ import static com.hedera.services.test.UsageUtils.NETWORK_RBH;
 import static com.hedera.services.test.UsageUtils.NUM_PAYER_KEYS;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -52,6 +55,31 @@ class SingletonEstimatorUtilsTest {
 			asAccount("0.0.2"), -2,
 			asAccount("0.0.3"), 1,
 			asAccount("0.0.4"), 1);
+
+	@Test
+	public void hasExpectedBaseEstimate() {
+		// given:
+		TransactionBody txn = TransactionBody.newBuilder()
+				.setMemo("You won't want to hear this.")
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+						.setTransfers(TransferList.newBuilder()
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(123L)
+										.setAccountID(AccountID.newBuilder().setAccountNum(75231)))))
+				.build();
+		// and:
+		long expectedBpt = ESTIMATOR_UTILS.baseBodyBytes(txn) + sigUsage.sigsSize();
+		long expectedRbs = ESTIMATOR_UTILS.baseRecordBytes(txn) * RECEIPT_STORAGE_TIME_SEC;
+
+		// when:
+		var est = ESTIMATOR_UTILS.baseEstimate(txn, sigUsage);
+
+		// then:
+		assertEquals(1L * INT_SIZE, est.base().getBpr());
+		assertEquals(sigUsage.numSigs(), est.base().getVpt());
+		assertEquals(expectedBpt, est.base().getBpt());
+		assertEquals(expectedRbs, est.getRbs());
+	}
 
 	@Test
 	public void hasExpectedBaseNetworkRbs() {
