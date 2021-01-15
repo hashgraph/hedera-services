@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
@@ -255,6 +256,25 @@ class UsageBasedFeeCalculatorTest {
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.init());
+	}
+
+	@Test
+	public void failsWithIseGivenApplicableButUnusableCalculator() throws InvalidTxBodyException {
+		// setup:
+		SigValueObj expectedSigUsage = new SigValueObj(
+				FeeBuilder.getSignatureCount(signedTxn),
+				9,
+				FeeBuilder.getSignatureSize(signedTxn));
+
+		given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
+		given(txnUsageEstimators.apply(CryptoCreate)).willReturn(List.of(correctOpEstimator));
+		given(correctOpEstimator.usageGiven(
+				argThat(accessor.getTxn()::equals),
+				argThat(factory.apply(expectedSigUsage)),
+				argThat(view::equals))).willThrow(InvalidTxBodyException.class);
+
+		// when:
+		assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, view));
 	}
 
 	@Test
