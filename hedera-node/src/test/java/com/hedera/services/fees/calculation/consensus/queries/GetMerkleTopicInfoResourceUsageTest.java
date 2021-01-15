@@ -79,7 +79,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 		Query query = topicInfoQuery(topicId, ANSWER_ONLY);
 
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
+		assertSame(FeeData.getDefaultInstance(), subject.usageGiven(query, view));
 	}
 
 	@ParameterizedTest
