@@ -290,6 +290,7 @@ import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
@@ -1243,7 +1244,7 @@ public class ServicesContext {
 		return exchange;
 	}
 
-	public BackingStore<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
+	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
 		if (backingTokenRels == null) {
 			backingTokenRels = new BackingTokenRels(this::tokenAssociations);
 		}
@@ -1273,7 +1274,7 @@ public class ServicesContext {
 
 	public TokenStore tokenStore() {
 		if (tokenStore == null) {
-			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
+			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
 					new TransactionalLedger<>(
 							TokenRelProperty.class,
 							MerkleTokenRelStatus::new,
