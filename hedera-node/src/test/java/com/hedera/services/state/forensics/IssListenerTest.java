@@ -200,6 +200,8 @@ class IssListenerTest {
 		inOrder.verify(storageMerkleOut).close();
 		inOrder.verify(topicsMerkleOut).writeMerkleTree(topics);
 		inOrder.verify(topicsMerkleOut).close();
+		// and:
+		inOrder.verify(info).decrementRoundsToDump();
 	}
 
 	@Test
