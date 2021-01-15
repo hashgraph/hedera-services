@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -40,6 +41,7 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.txns.file.FileUpdateTransitionLogic.mapToStatus;
 import static com.hedera.services.txns.file.FileUpdateTransitionLogic.wrapped;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -113,12 +115,8 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	private JFileInfo asAttr(FileCreateTransactionBody op) {
 		JKey wacl;
 		if (op.hasKeys()) {
-			try {
-				wacl = mapKey(wrapped(op.getKeys()));
-			} catch (DecoderException syntaxViolation) {
-				log.warn("Syntax violation in file creation!", syntaxViolation);
-				throw new IllegalArgumentException(syntaxViolation);
-			}
+			/* Note that {@code assessedValidity} above will guarantee this conversion succeeds. */
+			wacl = asFcKeyUnchecked(wrapped(op.getKeys()));
 		} else {
 			wacl = StateView.EMPTY_WACL;
 		}

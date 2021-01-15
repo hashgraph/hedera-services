@@ -151,7 +151,7 @@ public abstract class JKey implements Serializable, Cloneable {
 	 * 		JKey object to be converted
 	 * @return converted Key instance
 	 */
-	private static Key convertJKeyBasic(JKey jkey) throws DecoderException {
+	static Key convertJKeyBasic(JKey jkey) throws DecoderException {
 		Key rv = null;
 		if (jkey.hasEd25519Key()) {
 			rv = Key.newBuilder().setEd25519(ByteString.copyFrom(jkey.getEd25519())).build();
