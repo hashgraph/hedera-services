@@ -41,7 +41,7 @@ import static com.hedera.services.test.UsageUtils.NETWORK_RBH;
 import static com.hedera.services.test.UsageUtils.NUM_PAYER_KEYS;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
+import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(JUnitPlatform.class)
@@ -56,7 +56,7 @@ class SingletonEstimatorUtilsTest {
 	@Test
 	public void hasExpectedBaseNetworkRbs() {
 		// expect:
-		assertEquals( BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
+		assertEquals( BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
 	}
 
 	@Test
