@@ -46,6 +46,7 @@ import org.mockito.ArgumentMatcher;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
@@ -257,10 +258,10 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void failsWithIaeSansApplicableUsageCalculator() {
+	public void failsWithNseeSansApplicableUsageCalculator() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, view));
-		assertThrows(IllegalArgumentException.class,
+		assertThrows(NoSuchElementException.class, () -> subject.computeFee(accessor, payerKey, view));
+		assertThrows(NoSuchElementException.class,
 				() -> subject.computePayment(query, currentPrices, view, at, Collections.emptyMap()));
 	}
 
