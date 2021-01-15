@@ -67,8 +67,6 @@ import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.queries.contract.GetContractRecordsAnswer;
 import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
 import com.hedera.services.queries.schedule.ScheduleAnswers;
-import com.hedera.services.schedules.HederaScheduleStore;
-import com.hedera.services.schedules.ScheduleStore;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -204,6 +202,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.EntityId;
@@ -223,8 +222,10 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
-import com.hedera.services.tokens.HederaTokenStore;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.schedule.HederaScheduleStore;
+import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -336,7 +337,8 @@ import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
-import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
+import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -497,6 +499,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
+	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -531,6 +534,7 @@ public class ServicesContext {
 		queryableStorage().set(storage());
 		queryableTokens().set(tokens());
 		queryableTokenAssociations().set(tokenAssociations());
+		queryableSchedules().set(schedules());
 	}
 
 	public void rebuildBackingStoresIfPresent() {
@@ -895,9 +899,9 @@ public class ServicesContext {
 				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
 				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
 				/* Schedule */
-				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage())),
+				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(globalDynamicProperties()))),
 				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage())),
-				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage())),
+				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(globalDynamicProperties()))),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -925,8 +929,12 @@ public class ServicesContext {
 
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
-			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics,
-					REF_LOOKUP_FACTORY.apply(tokenStore()));
+			var lookups = defaultLookupsFor(
+					hfs(),
+					this::accounts,
+					this::topics,
+					REF_LOOKUP_FACTORY.apply(tokenStore()),
+					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
 			keyOrder = keyOrderWith(lookups);
 		}
 		return keyOrder;
@@ -939,7 +947,8 @@ public class ServicesContext {
 					backingAccounts(),
 					this::topics,
 					this::accounts,
-					REF_LOOKUP_FACTORY.apply(tokenStore()));
+					REF_LOOKUP_FACTORY.apply(tokenStore()),
+					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()));
 			backedKeyOrder = keyOrderWith(lookups);
 		}
 		return backedKeyOrder;
@@ -953,6 +962,7 @@ public class ServicesContext {
 					this::accounts,
 					this::topics,
 					REF_LOOKUP_FACTORY.apply(tokenStore()),
+					SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore()),
 					runningAvgs(),
 					speedometers());
 			lookupRetryingKeyOrder = keyOrderWith(lookups);
@@ -1299,7 +1309,7 @@ public class ServicesContext {
 
 	public ScheduleStore scheduleStore() {
 		if (scheduleStore == null) {
-			scheduleStore = new HederaScheduleStore();
+			scheduleStore = new HederaScheduleStore(ids(), this::schedules);
 		}
 		return scheduleStore;
 	}
@@ -1710,6 +1720,14 @@ public class ServicesContext {
 		return queryableTokenAssociations;
 	}
 
+	public AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules() {
+		if (queryableSchedules == null) {
+			queryableSchedules = new AtomicReference<>(schedules());
+		}
+
+		return queryableSchedules;
+	}
+
 	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
 			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
@@ -1803,6 +1821,10 @@ public class ServicesContext {
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();
+	}
+
+	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
+		return state.scheduleTxs();
 	}
 
 	public MerkleDiskFs diskFs() {

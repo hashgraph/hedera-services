@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -128,6 +129,14 @@ public class SigStatusOrderResultFactory implements SigningOrderResultFactory<Si
 	public SigningOrderResult<SignatureStatus> forMissingToken(TokenID missing, TransactionID txnId) {
 		SignatureStatus error = new SignatureStatus(
 				SignatureStatusCode.INVALID_TOKEN_ID, ResponseCodeEnum.INVALID_TOKEN_ID,
+				inHandleTxnDynamicContext, txnId, missing);
+		return new SigningOrderResult<>(error);
+	}
+
+	@Override
+	public SigningOrderResult<SignatureStatus> forMissingSchedule(ScheduleID missing, TransactionID txnId) {
+		SignatureStatus error = new SignatureStatus(
+				SignatureStatusCode.INVALID_SCHEDULE_ID, ResponseCodeEnum.INVALID_SCHEDULE_ID,
 				inHandleTxnDynamicContext, txnId, missing);
 		return new SigningOrderResult<>(error);
 	}

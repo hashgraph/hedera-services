@@ -154,12 +154,6 @@ public class EntityId implements SelfSerializable {
 				: new EntityId(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
 	}
 
-	public static EntityId ofNullableScheduleId(ScheduleID scheduleId) {
-		return (scheduleId == null )
-				? null
-				: new EntityId(scheduleId.getShardNum(), scheduleId.getRealmNum(), scheduleId.getScheduleNum());
-	}
-
 	public static EntityId ofNullableFileId(FileID fileId) {
 		return (fileId == null )
 				? null
@@ -176,6 +170,12 @@ public class EntityId implements SelfSerializable {
 		return (tokenId == null )
 				? null
 				: new EntityId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
+	}
+
+	public static EntityId ofNullableScheduleId(ScheduleID scheduleID) {
+		return (scheduleID == null )
+				? null
+				: new EntityId(scheduleID.getShardNum(), scheduleID.getRealmNum(), scheduleID.getScheduleNum());
 	}
 
 	public static EntityId ofNullableContractId(ContractID contractId) {
@@ -197,6 +197,14 @@ public class EntityId implements SelfSerializable {
 				.setShardNum(shard)
 				.setRealmNum(realm)
 				.setTokenNum(num)
+				.build();
+	}
+
+	public ScheduleID toGrpcScheduleId() {
+		return ScheduleID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setScheduleNum(num)
 				.build();
 	}
 

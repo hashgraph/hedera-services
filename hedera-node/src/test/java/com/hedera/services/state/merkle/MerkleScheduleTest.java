@@ -140,10 +140,13 @@ public class MerkleScheduleTest {
     }
 
     @Test
-    public void validPutSigner() {
+    public void validAddSigners() {
         var containsBefore = subject.signers().contains(signer3);
+        // setup:
+        var signers = new LinkedHashSet<JKey>();
+        signers.add(signer3);
         // when:
-        subject.addSigner(signer3);
+        subject.addSigners(signers);
 
         // expect:
         var containsAfter = subject.signers().contains(signer3);

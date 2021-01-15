@@ -50,6 +50,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -96,7 +97,7 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
-import com.hedera.services.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
@@ -174,12 +175,14 @@ public class ServicesContextTest {
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+	FCMap<MerkleEntityId, MerkleSchedule> schedules;
 
 	@BeforeEach
 	void setup() {
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
+		schedules = mock(FCMap.class);
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
 		seqNo = mock(SequenceNumber.class);
@@ -192,6 +195,7 @@ public class ServicesContextTest {
 		given(state.topics()).willReturn(topics);
 		given(state.tokens()).willReturn(tokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
+		given(state.scheduleTxs()).willReturn(schedules);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getCryptography()).willReturn(crypto);
@@ -209,12 +213,14 @@ public class ServicesContextTest {
 		var newStorage = mock(FCMap.class);
 		var newTokens = mock(FCMap.class);
 		var newTokenRels = mock(FCMap.class);
+		var newSchedules = mock(FCMap.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
 		given(newState.tokens()).willReturn(newTokens);
 		given(newState.storage()).willReturn(newStorage);
 		given(newState.tokenAssociations()).willReturn(newTokenRels);
+		given(newState.scheduleTxs()).willReturn(newSchedules);
 		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
@@ -223,6 +229,7 @@ public class ServicesContextTest {
 		var storageRef = subject.queryableStorage();
 		var tokensRef = subject.queryableTokens();
 		var tokenRelsRef = subject.queryableTokenAssociations();
+		var schedulesRef = subject.queryableSchedules();
 
 		// when:
 		subject.update(newState);
@@ -234,12 +241,14 @@ public class ServicesContextTest {
 		assertSame(storageRef, subject.queryableStorage());
 		assertSame(tokensRef, subject.queryableTokens());
 		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
+		assertSame(schedulesRef, subject.queryableSchedules());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
 		assertSame(newStorage, subject.queryableStorage().get());
 		assertSame(newTokens, subject.queryableTokens().get());
 		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
+		assertSame(newSchedules, subject.queryableSchedules().get());
 	}
 
 	@Test

@@ -33,12 +33,13 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.tokens.HederaTokenStore;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcqueue.FCQueue;
 
@@ -107,6 +108,9 @@ public class BaseHederaLedgerTest {
 			public TokenID newTokenId(AccountID sponsor) {
 				return TokenID.newBuilder().setTokenNum(nextId++).build();
 			}
+
+			@Override
+			public ScheduleID newScheduleId(AccountID sponsor) { return ScheduleID.newBuilder().setScheduleNum(nextId++).build(); }
 
 			@Override
 			public void reclaimLastId() {
