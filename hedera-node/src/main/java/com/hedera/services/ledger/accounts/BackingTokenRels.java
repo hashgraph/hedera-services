@@ -99,7 +99,7 @@ public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, Token
 			existingRels.add(key);
 		} else if (!cache.containsKey(key) || cache.get(key) != status) {
 			throw new IllegalArgumentException(String.format(
-					"Existing relationship status '%s' can only be changed using a mutable ref!",
+					"Argument 'key=%s' does not map to a mutable ref!",
 					fromAccountTokenRel(key).toAbbrevString()));
 		}
 	}

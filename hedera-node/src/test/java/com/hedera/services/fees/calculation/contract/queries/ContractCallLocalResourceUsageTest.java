@@ -157,7 +157,7 @@ class ContractCallLocalResourceUsageTest {
 		given(delegate.perform(any(), anyLong())).willThrow(Exception.class);
 
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
+		assertThrows(IllegalStateException.class, () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
 		// and:
 		assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
 	}
