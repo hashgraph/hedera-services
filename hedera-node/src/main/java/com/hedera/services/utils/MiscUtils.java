@@ -276,8 +276,8 @@ public class MiscUtils {
 	public static JKey asFcKeyUnchecked(Key key) {
 		try {
 			return JKey.mapKey(key);
-		} catch (Exception impossible) {
-			throw new IllegalArgumentException("Key " + key + " should have been decodable!", impossible);
+		} catch (DecoderException impermissible) {
+			throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
 		}
 	}
 
@@ -288,7 +288,7 @@ public class MiscUtils {
 				return Optional.empty();
 			}
 			return Optional.of(fcKey);
-		} catch (Exception ignore) {
+		} catch (DecoderException ignore) {
 			return Optional.empty();
 		}
 	}

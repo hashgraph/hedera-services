@@ -38,8 +38,8 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -130,9 +130,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 		if (op.hasKey()) {
 			try {
-				JKey converted = JKey.mapKey(op.getKey());
+				JKey fcKey = JKey.mapKey(op.getKey());
 				/* Note that an empty key is never valid. */
-				if (!converted.isValid()) {
+				if (!fcKey.isValid()) {
 					return BAD_ENCODING;
 				}
 			} catch (DecoderException e) {

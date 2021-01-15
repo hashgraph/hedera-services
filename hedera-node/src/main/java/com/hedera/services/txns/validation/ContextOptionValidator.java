@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,7 +74,7 @@ public class ContextOptionValidator implements OptionValidator {
 		try {
 			mapKey(key);
 			return true;
-		} catch (Exception ignore) {
+		} catch (DecoderException ignore) {
 			return false;
 		}
 	}
