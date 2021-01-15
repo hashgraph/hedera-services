@@ -85,7 +85,9 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void throwIfMissing(ScheduleID id) {
 		if (!exists(id)) {
-			throw new IllegalArgumentException(String.format("No such schedule '%s'!", readableId(id)));
+			throw new IllegalArgumentException(String.format(
+					"Argument 'id=%s' does refer to an extant scheduled entity!",
+					readableId(id)));
 		}
 	}
 

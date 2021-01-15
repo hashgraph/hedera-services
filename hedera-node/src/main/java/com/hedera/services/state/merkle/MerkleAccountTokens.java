@@ -63,8 +63,8 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 
 	public MerkleAccountTokens(long[] tokenIds) {
 		if (tokenIds.length % NUM_ID_PARTS != 0) {
-			throw new IllegalArgumentException(
-					"The token ids array length must be divisible by " + NUM_ID_PARTS + "!");
+			throw new IllegalArgumentException(String.format(
+					"Argument 'tokenIds' has length=%d not divisible by %d", tokenIds.length, NUM_ID_PARTS));
 		}
 		this.tokenIds = tokenIds;
 	}

@@ -55,7 +55,7 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 			throw new IllegalStateException("No ids are queued for expiration!");
 		}
 		if (!allExpiries.peek().isExpiredAt(now)) {
-			throw new IllegalArgumentException("Next id is not expired!");
+			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!", now));
 		}
 		return allExpiries.removeFirst().getId();
 	}

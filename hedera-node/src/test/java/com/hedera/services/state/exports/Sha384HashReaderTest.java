@@ -25,6 +25,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -41,9 +42,9 @@ class Sha384HashReaderTest {
 	Sha384HashReader subject = new Sha384HashReader();
 
 	@Test
-	public void rethrowsIllegalArgumentExceptionIfMissingFile() throws IOException, NoSuchAlgorithmException {
+	public void rethrowsIllegalArgumentExceptionIfMissingFile() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.readHash(imaginaryLoc));
+		assertThrows(UncheckedIOException.class, () -> subject.readHash(imaginaryLoc));
 	}
 
 	@Test
