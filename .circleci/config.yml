@@ -1106,7 +1106,7 @@ workflows:
           test-name: "AWS-Daily-Services-Crypto-Migration-4N-1C.json"
   # This workflow will be running normally in master branch on a daily basis
 
-  GCP-Daily-Services-Crypto-Migration-4N-1C:
+  GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
           cron: "35 5 * * *"
@@ -1124,7 +1124,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "GCP-Daily-Services-Crypto-Migration-4N-1C"
+          workflow-name: "GCP-Daily-Services-Crypto-Migration-5N-1C"
 
 # The mainnet migration test needs to be run in a 13-node test network.
 # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
@@ -2028,7 +2028,7 @@ jobs:
         default: ""
       test-name:
         type: string
-        default: "GCP-Daily-Services-Crypto-Migration-4N-1C.json"
+        default: "GCP-Daily-Services-Crypto-Migration-5N-1C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
