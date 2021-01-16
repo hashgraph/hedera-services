@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
@@ -32,24 +33,31 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.util.Arrays;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static com.google.protobuf.ByteString.copyFrom;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.swirlds.common.CommonUtils.hex;
+import static java.util.stream.Collectors.toList;
 
 
 public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     static final int MERKLE_VERSION = 1;
+
+    static final int NUM_ED25519_PUBKEY_BYTES = 32;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d2b7d9e673285fcL;
     static DomainSerdes serdes = new DomainSerdes();
@@ -64,6 +72,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     private RichInstant schedulingTXValidStart;
     private Set<JKey> signers = new LinkedHashSet<>();
     private boolean deleted;
+
+    private Set<ByteString> notary = ConcurrentHashMap.newKeySet();
+    private List<byte[]> signatories = new ArrayList<>();
 
     @Deprecated
     public static final MerkleSchedule.Provider LEGACY_PROVIDER = new MerkleSchedule.Provider();
@@ -88,6 +99,16 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         }
     }
 
+    /* Notary functions */
+    public void witnessValidEd25519Signature(byte[] key) {
+    	signatories.add(key);
+    	notary.add(copyFrom(key));
+    }
+
+    public boolean hasValidEd25519Signature(byte[] key) {
+    	return notary.contains(copyFrom(key));
+    }
+
     /* Object */
     @Override
     public boolean equals(Object o) {
@@ -105,7 +126,21 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
                 Objects.equals(this.schedulingAccount, that.schedulingAccount) &&
                 Objects.equals(this.schedulingTXValidStart, that.schedulingTXValidStart) &&
                 signersMatch(this.signers, that.signers) &&
-                equalUpToDecodability(this.adminKey, that.adminKey);
+                equalUpToDecodability(this.adminKey, that.adminKey) &&
+                signatoriesAreSame(this.signatories, that.signatories);
+    }
+
+    private boolean signatoriesAreSame(List<byte[]> a, List<byte[]> b) {
+        if (a.size() != b.size()) {
+            return false;
+        } else {
+        	for (int i = 0, n = a.size(); i < n; i++) {
+        	    if (!Arrays.areEqual(a.get(i), b.get(i))) {
+        	        return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override
@@ -129,6 +164,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
                 .add("schedulingAccount", schedulingAccount)
                 .add("schedulingTXValidStart", schedulingTXValidStart)
                 .add("signers", readableSigners())
+                .add("signatories", signatories.stream().map(Hex::encodeHexString).collect(toList()))
                 .add("adminKey", describe(adminKey))
                 .toString();
     }
@@ -147,6 +183,10 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         schedulingTXValidStart = RichInstant.from(in);
         deserializeSigners(in);
         adminKey = serdes.readNullable(in, serdes::deserializeKey);
+        int numSignatories = in.readInt();
+        while (numSignatories-- > 0) {
+            witnessValidEd25519Signature(in.readByteArray(NUM_ED25519_PUBKEY_BYTES));
+        }
     }
 
     @Override
@@ -159,6 +199,10 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         schedulingTXValidStart.serialize(out);
         serializeSigners(out);
         serdes.writeNullable(adminKey, out, serdes::serializeKey);
+        out.writeInt(signatories.size());
+        for (byte[] key : signatories) {
+            out.writeByteArray(key);
+        }
     }
 
     @Override

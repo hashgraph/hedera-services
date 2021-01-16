@@ -109,7 +109,7 @@ class GetTxnRecordAnswerTest {
 		Query query = getRecordQuery(targetTxnId, COST_ANSWER, 5L);
 
 		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
 	}
 
 	@Test

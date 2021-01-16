@@ -28,7 +28,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.List;
@@ -47,7 +46,7 @@ public class StandardSyncActivationCheck {
 			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider
 	) {
 		var sigFactory = scopedSigProvider.apply(accessor);
-		var sigBytes = sigBytesProvider.apply(accessor.getSignedTxn());
+		var sigBytes = sigBytesProvider.apply(accessor.getBackwardCompatibleSignedTxn());
 
 		var creationResult = sigsFactory.createEd25519From(keys, sigBytes, sigFactory);
 		if (creationResult.hasFailed()) {

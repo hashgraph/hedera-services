@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import org.apache.logging.log4j.LogManager;
@@ -138,7 +137,7 @@ public class Rationalization {
             return orderResult.getErrorReport();
         }
         PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(
-                orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getSignedTxn()), sigFactory);
+                orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getBackwardCompatibleSignedTxn()), sigFactory);
         if (creationResult.hasFailed()) {
             return creationResult.asSignatureStatus(true, txnAccessor.getTxnId());
         }

@@ -166,7 +166,7 @@ public class AwareTransactionContextTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
-		given(accessor.getSignedTxn()).willReturn(signedTxn);
+		given(accessor.getBackwardCompatibleSignedTxn()).willReturn(signedTxn);
 		given(accessor.getPayer()).willReturn(payer);
 		given(accessor.getHash()).willReturn(hash);
 

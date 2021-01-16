@@ -67,6 +67,8 @@ public class SigMapPubKeyToSigBytesTest {
 
 		// expect:
 		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+		// and:
+		assertThrows(UnsupportedOperationException.class, () -> subject.sigBytesForScheduled(new byte[0]));
 	}
 
 	@Test

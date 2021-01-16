@@ -49,9 +49,6 @@ import static java.util.stream.Collectors.toList;
 public class SigListPubKeyToSigBytes implements PubKeyToSigBytes {
 	private List<Signature> simpleSigs;
 	private int i = 0;
-	public static PubKeyToSigBytes NO_SIGS = ignore -> {
-		throw new KeySignatureCountMismatchException("No signatures were ever available in the list!");
-	};
 
 	public SigListPubKeyToSigBytes(List<Signature> hederaSigs) {
 		simpleSigs = hederaSigs.stream().flatMap(this::flattened).collect(toList());

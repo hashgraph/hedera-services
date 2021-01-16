@@ -21,7 +21,6 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
@@ -204,7 +203,7 @@ public class HederaToPlatformSigOps {
 			}
 
 			var creationResult = createEd25519PlatformSigsFrom(
-					orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getSignedTxn()), sigFactory);
+					orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getBackwardCompatibleSignedTxn()), sigFactory);
 			if (!creationResult.hasFailed()) {
 				txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
 			}

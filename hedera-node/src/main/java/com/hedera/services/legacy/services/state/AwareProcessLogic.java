@@ -25,6 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
@@ -154,7 +155,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void addRecordToStream() {
 		var finalRecord = ctx.recordsHistorian().lastCreatedRecord().get();
-		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
+		addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
 	}
 
 	private void doProcess(PlatformTxnAccessor accessor, Instant consensusTime) {
@@ -308,7 +309,8 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private SignatureStatus rationalizeWithPreConsensusSigs(PlatformTxnAccessor accessor) {
-		var sigStatus = rationalizeIn(accessor, ctx.syncVerifier(), ctx.backedKeyOrder(), DEFAULT_SIG_BYTES);
+		var sigProvider = new ScopedSigBytesProvider(accessor);
+		var sigStatus = rationalizeIn(accessor, ctx.syncVerifier(), ctx.backedKeyOrder(), sigProvider);
 		if (!sigStatus.isError()) {
 			if (sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC) {
 				ctx.speedometers().cycleAsyncVerifications();

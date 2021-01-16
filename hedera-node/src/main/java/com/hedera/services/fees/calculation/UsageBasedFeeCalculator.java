@@ -239,8 +239,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	private SigValueObj getSigUsage(SignedTxnAccessor accessor, JKey payerKey) {
 		return new SigValueObj(
-				FeeBuilder.getSignatureCount(accessor.getSignedTxn()),
+				FeeBuilder.getSignatureCount(accessor.getBackwardCompatibleSignedTxn()),
 				HederaKeyTraversal.numSimpleKeys(payerKey),
-				FeeBuilder.getSignatureSize(accessor.getSignedTxn()));
+				FeeBuilder.getSignatureSize(accessor.getBackwardCompatibleSignedTxn()));
 	}
 }
