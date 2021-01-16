@@ -86,7 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
-import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
+import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -405,7 +405,7 @@ public class TxnUtils {
 	public static FeeData defaultPartitioning(FeeComponents components, int numPayerKeys) {
 		var partitions = FeeData.newBuilder();
 
-		long networkRbh = nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC, HRS_DIVISOR);
+		long networkRbh = nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, HRS_DIVISOR);
 		var network = FeeComponents.newBuilder()
 				.setConstant(FEE_MATRICES_CONST)
 				.setBpt(components.getBpt())

@@ -53,4 +53,8 @@ public class UsageEstimate {
 				.setRbh(estimatorUtils.nonDegenerateDiv(rbs, HRS_DIVISOR))
 				.build();
 	}
+
+	public long getRbs() {
+		return rbs;
+	}
 }
