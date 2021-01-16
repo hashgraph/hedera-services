@@ -295,6 +295,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
@@ -322,7 +323,7 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.stora
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.services.ledger.accounts.BackingTokenRels.RELATIONSHIP_COMPARATOR;
+import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.legacy.config.PropertiesLoader.log;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateAPIPropertiesWithProto;
@@ -1259,7 +1260,7 @@ public class ServicesContext {
 		return exchange;
 	}
 
-	public BackingStore<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
+	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
 		if (backingTokenRels == null) {
 			backingTokenRels = new BackingTokenRels(this::tokenAssociations);
 		}
@@ -1289,13 +1290,13 @@ public class ServicesContext {
 
 	public TokenStore tokenStore() {
 		if (tokenStore == null) {
-			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
+			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
 					new TransactionalLedger<>(
 							TokenRelProperty.class,
 							MerkleTokenRelStatus::new,
 							backingTokenRels(),
 							new ChangeSummaryManager<>());
-			tokenRelsLedger.setKeyComparator(RELATIONSHIP_COMPARATOR);
+			tokenRelsLedger.setKeyComparator(REL_CMP);
 			tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 			tokenStore = new HederaTokenStore(
 					ids(),
