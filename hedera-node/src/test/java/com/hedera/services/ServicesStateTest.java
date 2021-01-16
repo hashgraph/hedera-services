@@ -289,7 +289,9 @@ class ServicesStateTest {
 
 		Throwable throwable = assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(RELEASE_0110_VERSION + 1));
-		assertTrue(throwable.getMessage().contains("unknown version"));
+		assertEquals(
+				String.format(ServicesState.UNSUPPORTED_VERSION_MSG_TPL, RELEASE_0110_VERSION + 1),
+				throwable.getMessage());
 	}
 
 	@Test
