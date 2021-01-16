@@ -46,7 +46,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue
 	@Deprecated
 	public static final MerkleTokenRelStatus.Provider LEGACY_PROVIDER = new MerkleTokenRelStatus.Provider();
 
-	public MerkleTokenRelStatus() { }
+	public MerkleTokenRelStatus() {
+	}
 
 	public MerkleTokenRelStatus(long balance, boolean frozen, boolean kycGranted) {
 		this.balance = balance;
@@ -97,7 +98,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue
 			return false;
 		}
 
-		var that = (MerkleTokenRelStatus)o;
+		var that = (MerkleTokenRelStatus) o;
 		return new EqualsBuilder()
 				.append(balance, that.balance)
 				.append(frozen, that.frozen)
@@ -146,18 +147,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue
 	@Override
 	public MerkleTokenRelStatus copy() {
 		return new MerkleTokenRelStatus(balance, frozen, kycGranted);
-	}
-
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override

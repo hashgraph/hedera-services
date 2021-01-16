@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -107,7 +108,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	private final TransactionalLedger<
-			Map.Entry<AccountID, TokenID>,
+			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
@@ -120,7 +121,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			OptionValidator validator,
 			GlobalDynamicProperties properties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
+			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		super(ids);
 		this.tokens = tokens;

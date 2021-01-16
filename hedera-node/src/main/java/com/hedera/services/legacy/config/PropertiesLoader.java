@@ -63,22 +63,6 @@ public class PropertiesLoader {
 		log.info("API Properties Populated with these values :: " + apiProperties.getCustomProperties());
 	}
 
-	public static long getRecordLogPeriod() {
-		return AsyncPropertiesObject.getRecordLogPeriod();
-	}
-
-	public static String getRecordLogDir() {
-		return AsyncPropertiesObject.getRecordLogDir();
-	}
-
-	public static int getRecordStreamQueueCapacity() {
-		return AsyncPropertiesObject.getRecordStreamQueueCapacity();
-	}
-
-	public static boolean isEnableRecordStreaming() {
-		return AsyncPropertiesObject.isEnableRecordStreaming();
-	}
-
 	public static Map<String, PermissionedAccountsRange> getApiPermission() {
 		return AsyncPropertiesObject.getApiPermission();
 	}

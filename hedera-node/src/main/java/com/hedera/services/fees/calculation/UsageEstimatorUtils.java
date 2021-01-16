@@ -37,7 +37,7 @@ import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
+import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 
 public class UsageEstimatorUtils {
 	public static FeeComponents.Builder withBaseTxnUsage(
@@ -48,7 +48,7 @@ public class UsageEstimatorUtils {
 		components.setBpr(INT_SIZE);
 		components.setVpt(sigUsage.getTotalSigCount());
 		components.setBpt(baseBodyBytes(txn) + sigUsage.getSignatureSize());
-		components.setRbh(nonDegenerateDiv(baseRecordBytes(txn) * RECIEPT_STORAGE_TIME_SEC, HRS_DIVISOR));
+		components.setRbh(nonDegenerateDiv(baseRecordBytes(txn) * RECEIPT_STORAGE_TIME_SEC, HRS_DIVISOR));
 
 		return components;
 	}
@@ -97,7 +97,7 @@ public class UsageEstimatorUtils {
 	public static FeeData defaultPartitioning(FeeComponents components, int numPayerKeys) {
 		var partitions = FeeData.newBuilder();
 
-		long networkRbh = nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC, HRS_DIVISOR);
+		long networkRbh = nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, HRS_DIVISOR);
 		var network = FeeComponents.newBuilder()
 				.setConstant(FEE_MATRICES_CONST)
 				.setBpt(components.getBpt())

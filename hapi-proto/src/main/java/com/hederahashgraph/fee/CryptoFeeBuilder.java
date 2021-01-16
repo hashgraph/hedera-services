@@ -69,8 +69,8 @@ public class CryptoFeeBuilder extends FeeBuilder {
     bpt = txBodySize + cryptoCreateSize + sigValObj.getSignatureSize();
     vpt = sigValObj.getTotalSigCount();
     rbs = getCryptoRBS(txBody, cryptoCreateSize)
-        + getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC; // TxRecord
-    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECIEPT_STORAGE_TIME_SEC);
+        + getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC; // TxRecord
+    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
     bpr = INT_SIZE;
 
@@ -111,7 +111,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     bpt = txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
     vpt = sigValObj.getTotalSigCount();
     // TxRecord
-    rbs = getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+    rbs = getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
     long rbsNetwork = getDefaultRBHNetworkSize();
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -150,7 +150,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     bpr = INT_SIZE;
 
-    rbs = getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+    rbs = getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
 
     long rbsNetwork = getDefaultRBHNetworkSize();
 
@@ -186,7 +186,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     // bpt - Bytes per Transaction
     bpt = txBodySize + getCryptoUpdateBodyTxSize(txBody) +  sigValObj.getSignatureSize();
 
-    rbs = getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+    rbs = getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
@@ -641,7 +641,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     vpt = sigValObj.getTotalSigCount();
     long rbsNetwork = getDefaultRBHNetworkSize();
     rbs = getCryptoLiveHashStorageBytesSec(txBody)
-        + getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+        + getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
 
     bpr = INT_SIZE;
 
@@ -680,7 +680,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     long rbsNetwork = getDefaultRBHNetworkSize();
     rbs = getCryptoLiveHashStorageBytesSec(txBody)
-        + getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+        + getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 

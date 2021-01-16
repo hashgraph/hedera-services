@@ -40,14 +40,23 @@ import org.junit.runner.RunWith;
 import java.time.Instant;
 import java.util.List;
 
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.baseRecordBytes;
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.changeInSbsUsage;
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.defaultPartitioning;
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.keyBytes;
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.memoBytesUtf8;
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.nonDegenerateDiv;
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.relativeLifetime;
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.transferListBytes;
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.withBaseTxnUsage;
+import static com.hedera.services.fees.calculation.UsageEstimatorUtils.zeroedComponents;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
-import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
+import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hederahashgraph.fee.FeeBuilder.getDefaultRBHNetworkSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static com.hedera.services.fees.calculation.UsageEstimatorUtils.*;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class UsageEstimatorUtilsTest {
@@ -172,7 +181,7 @@ class UsageEstimatorUtilsTest {
 		verify(components).setVpt(expectedVpt);
 		verify(components).setBpr(FeeBuilder.INT_SIZE);
 		verify(components).setRbh(
-				nonDegenerateDiv(baseRecordBytes(txn) * RECIEPT_STORAGE_TIME_SEC, HRS_DIVISOR));
+				nonDegenerateDiv(baseRecordBytes(txn) * RECEIPT_STORAGE_TIME_SEC, HRS_DIVISOR));
 	}
 
 	@Test

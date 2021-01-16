@@ -124,16 +124,6 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
-	public void unsupportedOperationsThrow() {
-		// given:
-		var defaultSubject = new MerkleBlobMeta();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
-	}
-
-	@Test
 	public void toStringWorks() {
 		// expect:
 		assertEquals(

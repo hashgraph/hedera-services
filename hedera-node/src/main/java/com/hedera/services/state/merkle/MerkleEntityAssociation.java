@@ -31,11 +31,10 @@ import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.AbstractMap;
-import java.util.Map;
 
 public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKey {
 	static final int MERKLE_VERSION = 1;
@@ -62,8 +61,8 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKe
 		this.toNum = toNum;
 	}
 
-	public static MerkleEntityAssociation fromAccountTokenRel(Map.Entry<AccountID, TokenID> key) {
-		return fromAccountTokenRel(key.getKey(), key.getValue());
+	public static MerkleEntityAssociation fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
+		return fromAccountTokenRel(rel.getLeft(), rel.getRight());
 	}
 
 	public static MerkleEntityAssociation fromAccountTokenRel(AccountID account, TokenID token) {
@@ -72,8 +71,8 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKe
 				token.getShardNum(), token.getRealmNum(), token.getTokenNum());
 	}
 
-	public Map.Entry<AccountID, TokenID> asAccountTokenRel() {
-		return new AbstractMap.SimpleImmutableEntry<>(
+	public Pair<AccountID, TokenID> asAccountTokenRel() {
+		return Pair.of(
 				AccountID.newBuilder()
 						.setShardNum(fromShard)
 						.setRealmNum(fromRealm)
@@ -154,18 +153,6 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKe
 	@Override
 	public MerkleEntityAssociation copy() {
 		return new MerkleEntityAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
-	}
-
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
 	}
 
 	/* --- Bean --- */

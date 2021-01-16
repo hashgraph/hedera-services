@@ -20,7 +20,6 @@ package com.hederahashgraph.fee;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -76,8 +75,8 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
 
     bpr = INT_SIZE;
-    rbs =  getBaseTransactionRecordSize(txBody) * (RECIEPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
-    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECIEPT_STORAGE_TIME_SEC);
+    rbs =  getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
+    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -178,7 +177,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     long rbsNetwork = getDefaultRBHNetworkSize()  ;
     
-    rbs =  getBaseTransactionRecordSize(txBody) * (RECIEPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
+    rbs =  getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -217,7 +216,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     bpr = INT_SIZE;
 
-    rbs =  getBaseTransactionRecordSize(txBody) * (RECIEPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
+    rbs =  getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
     long rbsNetwork = getDefaultRBHNetworkSize() ;
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -655,8 +654,8 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     bpr = INT_SIZE;
 
-    rbs =  getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
-    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECIEPT_STORAGE_TIME_SEC);
+    rbs =  getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
+    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
