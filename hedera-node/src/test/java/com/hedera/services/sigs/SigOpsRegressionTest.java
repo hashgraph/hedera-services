@@ -367,7 +367,7 @@ public class SigOpsRegressionTest {
 				updateAccountSigns,
 				targetWaclSigns);
 
-		return expandIn(platformTxn, keyOrder, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
+		return expandIn(platformTxn, keyOrder, DefaultSigBytesProvider.DEFAULT_SIG_BYTES, BodySigningSigFactory::new);
 	}
 
 	private SignatureStatus invokeRationalizationScenario() throws Exception {

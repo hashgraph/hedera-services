@@ -20,6 +20,7 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
@@ -139,7 +140,7 @@ public class HederaToPlatformSigOpsTest {
 		wellBehavedOrdersAndSigSourcesPreHandle();
 
 		// when:
-		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider);
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider, BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(successStatus.toString(), status.toString());
@@ -152,7 +153,7 @@ public class HederaToPlatformSigOpsTest {
 				.willReturn(new SigningOrderResult<>(failureStatus));
 
 		// when:
-		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider);
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider, BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(failureStatus.toString(), status.toString());
@@ -171,7 +172,7 @@ public class HederaToPlatformSigOpsTest {
 				.willThrow(KeySignatureCountMismatchException.class);
 
 		// when:
-		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider);
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider, BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(successStatus.toString(), status.toString());

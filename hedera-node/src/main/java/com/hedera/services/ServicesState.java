@@ -50,7 +50,6 @@ import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -308,7 +307,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void expandSignatures(Transaction platformTxn) {
 		try {
 			var accessor = new PlatformTxnAccessor(platformTxn);
-			expandIn(accessor, ctx.lookupRetryingKeyOrder(), DEFAULT_SIG_BYTES);
+			expandIn(
+					accessor,
+					ctx.lookupRetryingKeyOrder(),
+					DEFAULT_SIG_BYTES,
+					ctx.sigFactoryCreator()::createScopedFactory);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("expandSignatures called with non-gRPC txn!", e);
 		} catch (Exception race) {

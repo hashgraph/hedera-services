@@ -67,6 +67,7 @@ import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.queries.contract.GetContractRecordsAnswer;
 import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
 import com.hedera.services.queries.schedule.ScheduleAnswers;
+import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -438,7 +439,6 @@ public class ServicesContext {
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private TokenController tokenGrpc;
-	private ScheduleController scheduleGrpc;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 	private ServicesNodeType nodeType;
@@ -456,14 +456,16 @@ public class ServicesContext {
 	private NetworkController networkGrpc;
 	private GrpcServerManager grpc;
 	private TxnResponseHelper txnResponseHelper;
-	private TransactionContext txnCtx;
+	private SigFactoryCreator sigFactoryCreator;
 	private BlobStorageSource bytecodeDb;
+	private TransactionContext txnCtx;
 	private TransactionHandler txns;
 	private ContractController contractsGrpc;
 	private HederaSigningOrder keyOrder;
 	private HederaSigningOrder backedKeyOrder;
 	private HederaSigningOrder lookupRetryingKeyOrder;
 	private StoragePersistence storagePersistence;
+	private ScheduleController scheduleGrpc;
 	private ConsensusController consensusGrpc;
 	private QueryResponseHelper queryResponseHelper;
 	private UsagePricesProvider usagePrices;
@@ -545,6 +547,13 @@ public class ServicesContext {
 		if (backingAccounts != null) {
 			backingAccounts.rebuildFromSources();
 		}
+	}
+
+	public SigFactoryCreator sigFactoryCreator() {
+		if (sigFactoryCreator == null) {
+			sigFactoryCreator = new SigFactoryCreator(this::schedules);
+		}
+		return sigFactoryCreator;
 	}
 
 	public HapiOpCounters opCounters() {

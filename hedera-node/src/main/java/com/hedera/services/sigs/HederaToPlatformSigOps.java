@@ -30,6 +30,7 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.crypto.SignatureStatus;
@@ -109,11 +110,12 @@ public class HederaToPlatformSigOps {
 	public static SignatureStatus expandIn(
 			PlatformTxnAccessor txnAccessor,
 			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytesProvider sigsProvider
+			PubKeyToSigBytesProvider sigsProvider,
+			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 	) {
 		txnAccessor.getPlatformTxn().clear();
 
-		return new Expansion(txnAccessor, keyOrderer, sigsProvider).execute();
+		return new Expansion(txnAccessor, keyOrderer, sigsProvider, sigFactoryCreator).execute();
 	}
 
 	/**
@@ -158,13 +160,14 @@ public class HederaToPlatformSigOps {
 		public Expansion(
 				PlatformTxnAccessor txnAccessor,
 				HederaSigningOrder keyOrderer,
-				PubKeyToSigBytesProvider sigsProvider
+				PubKeyToSigBytesProvider sigsProvider,
+				Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 		) {
 			this.txnAccessor = txnAccessor;
 			this.keyOrderer = keyOrderer;
 			this.sigsProvider = sigsProvider;
 
-			sigFactory = new BodySigningSigFactory(txnAccessor);
+			sigFactory = sigFactoryCreator.apply(txnAccessor);
 		}
 
 		public SignatureStatus execute() {

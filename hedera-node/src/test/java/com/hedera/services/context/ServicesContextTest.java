@@ -42,6 +42,7 @@ import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.queries.schedule.ScheduleAnswers;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
@@ -114,6 +115,7 @@ import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.utils.SleepingPause;
+import com.hedera.test.factories.sigs.SigFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
@@ -481,6 +483,7 @@ public class ServicesContextTest {
 		assertThat(ctx.semVers(), instanceOf(SemanticVersions.class));
 		assertThat(ctx.freezeGrpc(), instanceOf(FreezeController.class));
 		assertThat(ctx.contractsGrpc(), instanceOf(ContractController.class));
+		assertThat(ctx.sigFactoryCreator(), instanceOf(SigFactoryCreator.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
