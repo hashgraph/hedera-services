@@ -77,7 +77,7 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		nodeAccount = 3l;
 		payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
 		nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
-		fcMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+		fcMap = new FCMap<>();
 		feeAccount = RequestBuilder.getAccountIdBuild(98l, 0l, 0l);
 		accountAmountsList = new LinkedList<>();
 		hederaFunc = HederaFunctionality.CryptoTransfer;

@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.10.1-SNAPSHOT</version>
+    <version>0.11.0-alpha.3</version>
   </parent>
 
   <properties>
@@ -277,18 +277,14 @@
       <version>${sshj.version}</version>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hedera-protobuf-java-api</artifactId>
-      <version>0.10.1-SNAPSHOT</version>
+      <version>0.11.0-alpha.3</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.10.1-SNAPSHOT</version>
+      <version>0.11.0-alpha.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>

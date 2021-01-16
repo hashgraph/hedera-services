@@ -149,10 +149,6 @@ public class StandardizedPropertySources implements PropertySources {
 		/* Bootstrap properties, which must include defaults for every system property. */
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
-		/* Global/dynamic properties. */
-		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);
-		source.put("hedera.recordStream.logPeriod", PropertiesLoader::getRecordLogPeriod);
-
 		source.put("binary.object.query.retry.times", PropertiesLoader::getBinaryObjectQueryRetryTimes);
 
 		/* Node-local properties. */

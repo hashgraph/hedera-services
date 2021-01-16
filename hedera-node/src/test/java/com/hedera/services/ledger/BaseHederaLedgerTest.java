@@ -124,7 +124,7 @@ public class BaseHederaLedgerTest {
 	}
 
 	protected FCQueue<ExpirableTxnRecord> asExpirableRecords(long... expiries) {
-		FCQueue<ExpirableTxnRecord> records = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
+		FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
 		for (int i = 0; i < expiries.length; i++) {
 			ExpirableTxnRecord record = new ExpirableTxnRecord();
 			record.setExpiry(expiries[i]);

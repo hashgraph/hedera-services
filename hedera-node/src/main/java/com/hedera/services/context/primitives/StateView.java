@@ -87,22 +87,22 @@ public class StateView {
 	public static final JKey EMPTY_WACL = new JKeyList();
 
 	public static final FCMap<MerkleEntityId, MerkleTopic> EMPTY_TOPICS =
-			new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider());
+			new FCMap<>();
 	public static final Supplier<FCMap<MerkleEntityId, MerkleTopic>> EMPTY_TOPICS_SUPPLIER =
 			() -> EMPTY_TOPICS;
 
 	public static final FCMap<MerkleEntityId, MerkleAccount> EMPTY_ACCOUNTS =
-			new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+			new FCMap<>();
 	public static final Supplier<FCMap<MerkleEntityId, MerkleAccount>> EMPTY_ACCOUNTS_SUPPLIER =
 			() -> EMPTY_ACCOUNTS;
 
 	public static final FCMap<MerkleBlobMeta, MerkleOptionalBlob> EMPTY_STORAGE =
-			new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+			new FCMap<>();
 	public static final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> EMPTY_STORAGE_SUPPLIER =
 			() -> EMPTY_STORAGE;
 
 	public static final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> EMPTY_TOKEN_ASSOCIATIONS =
-			new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER);
+			new FCMap<>();
 	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_TOKEN_ASSOCIATIONS;
 

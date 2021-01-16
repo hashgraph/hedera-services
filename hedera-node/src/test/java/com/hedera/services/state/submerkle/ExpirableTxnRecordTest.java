@@ -262,13 +262,6 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void unsupportedOperationsThrow() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyFromExtra(null));
-	}
-
-	@Test
 	public void grpcInterconversionWorks() {
 		// given:
 		subject.setExpiry(0L);
