@@ -1084,7 +1084,7 @@ workflows:
           workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
 
 # This workflow will be running normally in master branch on a daily basis
-  AWS-Daily-Services-Crypto-Migration-4N-1C:
+  AWS-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
           - schedule:
               cron: "30 5 * * *"
@@ -1102,8 +1102,8 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "AWS-Daily-Services-Crypto-Migration-4N-1C"
-          test-name: "AWS-Daily-Services-Crypto-Migration-4N-1C.json"
+          workflow-name: "AWS-Daily-Services-Crypto-Migration-5N-1C"
+          test-name: "AWS-Daily-Services-Crypto-Migration-5N-1C.json"
   # This workflow will be running normally in master branch on a daily basis
 
   GCP-Daily-Services-Crypto-Migration-5N-1C:
