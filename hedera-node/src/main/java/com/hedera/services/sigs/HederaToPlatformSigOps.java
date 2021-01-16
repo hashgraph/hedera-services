@@ -164,7 +164,7 @@ public class HederaToPlatformSigOps {
 			this.keyOrderer = keyOrderer;
 			this.sigsProvider = sigsProvider;
 
-			sigFactory = new BodySigningSigFactory(txnAccessor.getTxnBytes());
+			sigFactory = new BodySigningSigFactory(txnAccessor);
 		}
 
 		public SignatureStatus execute() {

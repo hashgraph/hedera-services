@@ -68,7 +68,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static com.hedera.services.legacy.stream.RecordStream.readPrevFileHash;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;

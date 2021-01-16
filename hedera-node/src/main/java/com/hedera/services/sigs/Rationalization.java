@@ -74,7 +74,7 @@ public class Rationalization {
         this.sigsProvider = sigsProvider;
 
         txnSigs = txnAccessor.getPlatformTxn().getSignatures();
-        sigFactory = new BodySigningSigFactory(txnAccessor.getTxnBytes());
+        sigFactory = new BodySigningSigFactory(txnAccessor);
     }
 
     public SignatureStatus execute() {

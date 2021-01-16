@@ -26,6 +26,7 @@ import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -51,7 +52,6 @@ import static com.hedera.services.keys.StandardSyncActivationCheck.*;
 
 @RunWith(JUnitPlatform.class)
 class StandardSyncActivationCheckTest {
-	byte[] body = "Goodness".getBytes();
 	JKey key;
 	Transaction signedTxn;
 	List<TransactionSignature> sigs;
@@ -64,7 +64,7 @@ class StandardSyncActivationCheckTest {
 	TxnScopedPlatformSigFactory scopedSig;
 	Function<byte[], TransactionSignature> sigsFn;
 	Function<Transaction, PubKeyToSigBytes> sigBytesProvider;
-	Function<byte[], TxnScopedPlatformSigFactory> scopedSigProvider;
+	Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider;
 	BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive;
 	Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider;
 
@@ -88,7 +88,7 @@ class StandardSyncActivationCheckTest {
 		given(sigsFnProvider.apply(sigs)).willReturn(sigsFn);
 		scopedSig = mock(TxnScopedPlatformSigFactory.class);
 		scopedSigProvider = mock(Function.class);
-		given(scopedSigProvider.apply(argThat((byte[] bytes) -> Arrays.equals(body, bytes)))).willReturn(scopedSig);
+		given(scopedSigProvider.apply(any())).willReturn(scopedSig);
 		sigsFactory = mock(PlatformSigsFactory.class);
 		given(sigsFactory.createEd25519From(List.of(key), sigBytes, scopedSig)).willReturn(result);
 	}

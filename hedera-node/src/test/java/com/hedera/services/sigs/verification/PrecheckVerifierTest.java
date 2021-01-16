@@ -90,7 +90,7 @@ public class PrecheckVerifierTest {
 				KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),
 				KeyTree.withRoot(ed25519()).asJKey());
 		expectedSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				reqKeys, VALID_PROVIDER_FACTORY.get(), new BodySigningSigFactory(accessor.getTxnBytes())
+				reqKeys, VALID_PROVIDER_FACTORY.get(), new BodySigningSigFactory(accessor)
 		).getPlatformSigs();
 	}
 

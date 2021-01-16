@@ -21,20 +21,30 @@ package com.hedera.services.sigs.factories;
  */
 
 import com.google.protobuf.ByteString;
-import com.swirlds.common.crypto.Signature;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.*;
+
+import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.EXPECTED_SIG;
+import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.data;
+import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.pk;
+import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.sig;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class BodySigningSigFactoryTest {
 	@Test
 	public void createsExpectedSig() {
+		// setup:
+		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+		given(accessor.getTxnBytes()).willReturn(data);
+
 		// given:
-		BodySigningSigFactory subject = new BodySigningSigFactory(data);
+		BodySigningSigFactory subject = new BodySigningSigFactory(accessor);
 
 		// when:
 		TransactionSignature actualSig = subject.create(ByteString.copyFrom(pk), ByteString.copyFrom(sig));
