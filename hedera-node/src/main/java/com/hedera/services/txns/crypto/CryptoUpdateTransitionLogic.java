@@ -94,7 +94,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 		if (op.hasKey()) {
 			/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
-			var fcKey = MiscUtils.asFcKeyUnchecked(op.getKey());
+			var fcKey = asFcKeyUnchecked(op.getKey());
 			customizer.key(fcKey);
 		}
 		if (op.hasExpirationTime()) {
