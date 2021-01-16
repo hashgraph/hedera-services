@@ -1398,6 +1398,7 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
+          test-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
 
   AWS-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
