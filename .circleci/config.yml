@@ -1271,6 +1271,7 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C.json"
 
   AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
     triggers:
@@ -1313,6 +1314,7 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
 
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
