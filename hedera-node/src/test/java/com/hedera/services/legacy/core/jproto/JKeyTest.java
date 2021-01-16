@@ -66,6 +66,14 @@ public class JKeyTest {
 			public boolean isValid() {
 				return false;
 			}
+
+			@Override
+			public void setForScheduledTxn(boolean flag) { }
+
+			@Override
+			public boolean isForScheduledTxn() {
+				return false;
+			}
 		}));
 	}
 }
