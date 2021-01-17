@@ -71,11 +71,10 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void transitionFor(ScheduleCreateTransactionBody op) throws DecoderException {
+	private void transitionFor(ScheduleCreateTransactionBody op) {
 		var scheduledTXPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
 		var schedule = store.getScheduleID(op.getTransactionBody().toByteArray(), scheduledTXPayer);
 		if (schedule.isEmpty()) {
-
 			var bytes = op.getTransactionBody().toByteArray();
 			var schedulingAccount = txnCtx.activePayer();
 			var now = RichInstant.fromJava(txnCtx.consensusTime());
@@ -83,36 +82,22 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			if (op.hasAdminKey()) {
 				adminKey = asUsableFcKey(op.getAdminKey());
 			}
-
 			var result = store.createProvisionally(
 					bytes,
 					scheduledTXPayer,
 					schedulingAccount,
 					now,
 					adminKey);
-
 			if (result.getStatus() != OK) {
 				abortWith(result.getStatus());
 				return;
 			}
-
 			schedule = result.getCreated();
 		}
 
 		var created = schedule.get();
 
 		// TODO check if signatures are "required" for this TX to execute
-		Set<JKey> keys = new HashSet<>();
-		for (SignaturePair signaturePair : op.getSigMap().getSigPairList()) {
-			keys.add(ed25519ToJKey(signaturePair.getPubKeyPrefix()));
-		}
-
-		var outcome = store.addSigners(created, keys);
-		if (outcome != OK) {
-			abortWith(outcome);
-			return;
-		}
-
 		// TODO check if signatures for execution are collected and if so execute it
 
 		store.commitCreation();

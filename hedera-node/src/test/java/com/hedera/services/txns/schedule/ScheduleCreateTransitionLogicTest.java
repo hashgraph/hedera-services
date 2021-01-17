@@ -23,12 +23,10 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.KeysHelper;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
@@ -147,18 +145,6 @@ public class ScheduleCreateTransitionLogicTest {
                 eq(RichInstant.fromJava(now)),
                 argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
         // and:
-        verify(store).addSigners(
-                eq(schedule),
-                argThat((Set<JKey> set) -> {
-                    assertEquals(set.size(), jKeySet.size());
-                    var setIterator = set.iterator();
-                    var jKeySetIterator = set.iterator();
-                    while (setIterator.hasNext()) {
-                        assertTrue(equalUpToDecodability(setIterator.next(), jKeySetIterator.next()));
-                    }
-                    return true;
-                }));
-        // and:
         verify(store).commitCreation();
         verify(txnCtx).setStatus(SUCCESS);
     }
@@ -186,17 +172,6 @@ public class ScheduleCreateTransitionLogicTest {
                 eq(RichInstant.fromJava(now)),
                 argThat(jKey -> true));
         // and:
-        verify(store).addSigners(
-                eq(schedule),
-                argThat((Set<JKey> set) -> {
-                    assertEquals(set.size(), jKeySet.size());
-                    var setIterator = set.iterator();
-                    var jKeySetIterator = set.iterator();
-                    while (setIterator.hasNext()) {
-                        assertTrue(equalUpToDecodability(setIterator.next(), jKeySetIterator.next()));
-                    }
-                    return true;
-                }));
         verify(store).commitCreation();
         verify(txnCtx).setStatus(SUCCESS);
     }
@@ -231,53 +206,6 @@ public class ScheduleCreateTransitionLogicTest {
         verify(store, never()).addSigners(schedule, jKeySet);
         verify(store, never()).commitCreation();
         verify(txnCtx, never()).setStatus(SUCCESS);
-    }
-
-    @Test
-    public void capturesFailingSignersAddition() {
-        // given:
-        givenValidTxnCtx();
-
-        // and:
-        given(store.getScheduleID(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
-        given(store.createProvisionally(
-                eq(transactionBody),
-                eq(payer),
-                eq(payer),
-                eq(RichInstant.fromJava(now)),
-                argThat(jKey -> true)))
-                .willReturn(CreationResult.success(schedule));
-        given(store.addSigners(
-                eq(schedule),
-                argThat(jKeySet -> true))).willReturn(NOT_OK);
-
-        subject.doStateTransition();
-
-        // then:
-        verify(store).getScheduleID(transactionBody, payer);
-        // and:
-        verify(store).createProvisionally(
-                eq(transactionBody),
-                eq(payer),
-                eq(payer),
-                eq(RichInstant.fromJava(now)),
-                argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
-        // and:
-        verify(store).addSigners(
-                eq(schedule),
-                argThat((Set<JKey> set) -> {
-                    assertEquals(set.size(), jKeySet.size());
-                    var setIterator = set.iterator();
-                    var jKeySetIterator = set.iterator();
-                    while (setIterator.hasNext()) {
-                        assertTrue(equalUpToDecodability(setIterator.next(), jKeySetIterator.next()));
-                    }
-                    return true;
-                }));
-        // and:
-        verify(store, never()).commitCreation();
-        verify(txnCtx).setStatus(NOT_OK);
-        verify(store).rollbackCreation();
     }
 
     @Test

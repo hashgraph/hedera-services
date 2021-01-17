@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,8 +32,11 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateNonsense;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -49,14 +53,28 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						rejectsUnparseableTxn(),
+//						rejectsUnparseableTxn(),
+						rejectsUnresolvableReqSigners(),
 				}
 		);
 	}
 
+	public HapiApiSpec rejectsUnresolvableReqSigners() {
+		return defaultHapiSpec("RejectsUnresolvableReqSigners")
+				.given().when().then(
+						scheduleCreate(
+								"xferWithImaginaryAccount",
+								cryptoTransfer(
+										tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1),
+										tinyBarsFromTo("1.2.3", FUNDING, 1)
+								).signedBy(DEFAULT_PAYER)
+						).hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS)
+				);
+	}
+
 	public HapiApiSpec rejectsUnparseableTxn() {
 		return defaultHapiSpec("RejectsUnparseableTxn")
-				.given( ).when().then(
+				.given().when().then(
 						scheduleCreateNonsense("absurd")
 								.hasKnownStatus(UNPARSEABLE_SCHEDULED_TRANSACTION)
 				);
