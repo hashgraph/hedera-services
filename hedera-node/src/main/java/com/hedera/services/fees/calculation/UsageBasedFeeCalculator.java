@@ -33,15 +33,17 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -111,14 +113,9 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			Timestamp at,
 			Function<QueryResourceUsageEstimator, FeeData> usageFn
 	) {
-		try {
-			var usageEstimator = getQueryUsageEstimator(query);
-			var queryUsage = usageFn.apply(usageEstimator);
-			return FeeBuilder.getFeeObject(usagePrices, queryUsage, exchange.rate(at));
-		} catch (Exception illegal) {
-			log.warn("Unexpected failure for {}!", query, illegal);
-			throw new IllegalArgumentException("UsageBasedFeeCalculator#computeGiven");
-		}
+		var usageEstimator = getQueryUsageEstimator(query);
+		var queryUsage = usageFn.apply(usageEstimator);
+		return FeeBuilder.getFeeObject(usagePrices, queryUsage, exchange.rate(at));
 	}
 
 	@Override
@@ -197,14 +194,17 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			FeeData prices,
 			ExchangeRate rate
 	) {
+		var sigUsage = getSigUsage(accessor, payerKey);
+		var usageEstimator = getTxnUsageEstimator(accessor);
 		try {
-			var sigUsage = getSigUsage(accessor, payerKey);
-			var usageEstimator = getTxnUsageEstimator(accessor);
-			var metrics = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
+			FeeData metrics = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
 			return FeeBuilder.getFeeObject(prices, metrics, rate);
-		} catch (Exception illegal) {
-			var msg = String.format("Unable to compute fee for %s, key %s!", accessor.getSignedTxn4Log(), payerKey);
-			throw new IllegalArgumentException(msg, illegal);
+		} catch (InvalidTxBodyException e) {
+			log.warn(
+					"Argument accessor={} malformed for implied estimator {}!",
+					accessor.getSignedTxn4Log(),
+					usageEstimator);
+			throw new IllegalArgumentException(e);
 		}
 	}
 
@@ -216,25 +216,20 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		if (usageEstimator.isPresent()) {
 			return usageEstimator.get();
 		}
-		throw new IllegalArgumentException("Missing query usage estimator!");
+		throw new NoSuchElementException("No estimator exists for the given query");
 	}
 
 	private TxnResourceUsageEstimator getTxnUsageEstimator(SignedTxnAccessor accessor) {
-		var usageEstimator = Optional.ofNullable(txnUsageEstimators.apply(accessor.getFunction()))
-				.map(estimators -> from(estimators, accessor.getTxn()));
-		if (usageEstimator.isPresent()) {
-			return usageEstimator.get();
-		}
-		throw new IllegalArgumentException("Missing txn usage estimator!");
-	}
-
-	private TxnResourceUsageEstimator from(List<TxnResourceUsageEstimator> estimators, TransactionBody txn) {
-		for (TxnResourceUsageEstimator candidate : estimators) {
-			if (candidate.applicableTo(txn)) {
-				return candidate;
+		var txn = accessor.getTxn();
+		var estimators = Optional
+				.ofNullable(txnUsageEstimators.apply(accessor.getFunction()))
+				.orElse(Collections.emptyList());
+		for (TxnResourceUsageEstimator estimator : estimators) {
+			if (estimator.applicableTo(txn)) {
+				return estimator;
 			}
 		}
-		throw new IllegalArgumentException("Missing txn usage estimator!");
+		throw new NoSuchElementException("No estimator exists for the given transaction");
 	}
 
 	private SigValueObj getSigUsage(SignedTxnAccessor accessor, JKey payerKey) {

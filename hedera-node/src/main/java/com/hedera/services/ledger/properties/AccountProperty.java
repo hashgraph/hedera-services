@@ -80,7 +80,8 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 				try {
 					a.setBalance((long) v);
 				} catch (NegativeAccountBalanceException nabe) {
-					throw new IllegalArgumentException("Account balances must be nonnegative!");
+					throw new IllegalArgumentException(String.format(
+							"Argument 'v=%d' would cause account 'a=%s' to have a negative balance!", v, a));
 				}
 			};
 		}

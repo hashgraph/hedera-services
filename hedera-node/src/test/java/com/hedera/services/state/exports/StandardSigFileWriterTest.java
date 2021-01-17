@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -49,7 +50,7 @@ class StandardSigFileWriterTest {
 	@Test
 	public void rethrowsIaeOnIoFailure() {
 		// expect:
-		Assertions.assertThrows(IllegalArgumentException.class, () ->
+		Assertions.assertThrows(UncheckedIOException.class, () ->
 				subject.writeSigFile(cannotSign, new byte[0], new byte[0]));
 	}
 

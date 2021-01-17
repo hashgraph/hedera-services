@@ -120,7 +120,7 @@ class EntityExpiryMapFactoryTest {
 	}
 
 	@Test
-	public void throwsIseOnNonsense() {
+	public void throwsIaeOnNonsense() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> EntityExpiryMapFactory.toLong("wtf".getBytes()));
 	}

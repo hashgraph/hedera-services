@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -94,6 +95,14 @@ public class CryptoCreateTransitionLogicTest {
 		// expect:
 		assertTrue(subject.applicability().test(cryptoCreateTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
+
+	@Test
+	public void returnsKeyRequiredOnEmptyKey() {
+		givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+
+		// expect:
+		assertEquals(KEY_REQUIRED, subject.syntaxCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -279,6 +288,10 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
+		givenValidTxnCtx(key);
+	}
+
+	private void givenValidTxnCtx(Key toUse) {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
@@ -289,7 +302,7 @@ public class CryptoCreateTransitionLogicTest {
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
 								.setReceiveRecordThreshold(customReceiveThreshold)
 								.setSendRecordThreshold(customSendThreshold)
-								.setKey(key)
+								.setKey(toUse)
 								.build()
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);

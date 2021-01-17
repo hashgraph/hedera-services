@@ -260,7 +260,8 @@ public class MiscUtils {
 		try {
 			return new JEd25519Key(commonsHexToBytes(b64Reader.hexedABytesFrom(storeLoc, kpId)));
 		} catch (DecoderException e) {
-			throw new IllegalArgumentException(e);
+			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
+			throw new IllegalArgumentException(msg, e);
 		}
 	}
 
