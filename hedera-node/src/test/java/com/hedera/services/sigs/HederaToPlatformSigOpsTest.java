@@ -185,7 +185,12 @@ public class HederaToPlatformSigOpsTest {
 		wellBehavedOrdersAndSigSourcesInHandle();
 
 		// when:
-		SignatureStatus status = rationalizeIn(platformTxn, ALWAYS_VALID, keyOrdering, sigBytesProvider);
+		SignatureStatus status = rationalizeIn(
+				platformTxn,
+				ALWAYS_VALID,
+				keyOrdering,
+				sigBytesProvider,
+				BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
@@ -199,7 +204,12 @@ public class HederaToPlatformSigOpsTest {
 				.willReturn(new SigningOrderResult<>(rationalizingFailureStatus));
 
 		// when:
-		SignatureStatus status = rationalizeIn(platformTxn, ALWAYS_VALID, keyOrdering, sigBytesProvider);
+		SignatureStatus status = rationalizeIn(
+				platformTxn,
+				ALWAYS_VALID,
+				keyOrdering,
+				sigBytesProvider,
+				BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(rationalizingFailureStatus.toString(), status.toString());
@@ -213,7 +223,12 @@ public class HederaToPlatformSigOpsTest {
 				.willReturn(new SigningOrderResult<>(rationalizingFailureStatus));
 
 		// when:
-		SignatureStatus status = rationalizeIn(platformTxn, ALWAYS_VALID, keyOrdering, sigBytesProvider);
+		SignatureStatus status = rationalizeIn(
+				platformTxn,
+				ALWAYS_VALID,
+				keyOrdering,
+				sigBytesProvider,
+				BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(rationalizingFailureStatus.toString(), status.toString());
@@ -232,7 +247,12 @@ public class HederaToPlatformSigOpsTest {
 				.willThrow(KeySignatureCountMismatchException.class);
 
 		// when:
-		SignatureStatus status = rationalizeIn(platformTxn, ALWAYS_VALID, keyOrdering, sigBytesProvider);
+		SignatureStatus status = rationalizeIn(
+				platformTxn,
+				ALWAYS_VALID,
+				keyOrdering,
+				sigBytesProvider,
+				BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(sigCreationFailureStatus.toString(), status.toString());
@@ -254,7 +274,12 @@ public class HederaToPlatformSigOpsTest {
 		};
 
 		// when:
-		SignatureStatus status = rationalizeIn(platformTxn, syncVerifier, keyOrdering, sigBytesProvider);
+		SignatureStatus status = rationalizeIn(
+				platformTxn,
+				syncVerifier,
+				keyOrdering,
+				sigBytesProvider,
+				BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
@@ -269,7 +294,12 @@ public class HederaToPlatformSigOpsTest {
 		platformTxn.getPlatformTxn().addAll(expectedSigsWithNoErrors().subList(0, 1).toArray(new TransactionSignature[0]));
 
 		// when:
-		SignatureStatus status = rationalizeIn(platformTxn, ALWAYS_VALID, keyOrdering, sigBytesProvider);
+		SignatureStatus status = rationalizeIn(
+				platformTxn,
+				ALWAYS_VALID,
+				keyOrdering,
+				sigBytesProvider,
+				BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
@@ -290,7 +320,12 @@ public class HederaToPlatformSigOpsTest {
 		};
 
 		// when:
-		SignatureStatus status = rationalizeIn(platformTxn, syncVerifier, keyOrdering, sigBytesProvider);
+		SignatureStatus status = rationalizeIn(
+				platformTxn,
+				syncVerifier,
+				keyOrdering,
+				sigBytesProvider,
+				BodySigningSigFactory::new);
 
 		// then:
 		assertEquals(asyncSuccessStatus.toString(), status.toString());

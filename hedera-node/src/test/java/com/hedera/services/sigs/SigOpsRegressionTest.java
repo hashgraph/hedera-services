@@ -379,7 +379,12 @@ public class SigOpsRegressionTest {
 				updateAccountSigns,
 				targetWaclSigns);
 
-		return rationalizeIn(platformTxn, syncVerifier, keyOrder, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
+		return rationalizeIn(
+				platformTxn,
+				syncVerifier,
+				keyOrder,
+				DefaultSigBytesProvider.DEFAULT_SIG_BYTES,
+				BodySigningSigFactory::new);
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {

@@ -317,7 +317,12 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private SignatureStatus rationalizeWithPreConsensusSigs(PlatformTxnAccessor accessor) {
 		var sigProvider = new ScopedSigBytesProvider(accessor);
-		var sigStatus = rationalizeIn(accessor, ctx.syncVerifier(), ctx.backedKeyOrder(), sigProvider);
+		var sigStatus = rationalizeIn(
+				accessor,
+				ctx.syncVerifier(),
+				ctx.backedKeyOrder(),
+				sigProvider,
+				ctx.sigFactoryCreator()::createScopedFactory);
 		if (!sigStatus.isError()) {
 			if (sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC) {
 				ctx.speedometers().cycleAsyncVerifications();
