@@ -155,7 +155,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				}
 				else {
 					log.error("{} Status resolution failed due to unrecoverable runtime exception, possibly network connection lost." ,txn);
-					throw new Exception("Unable to resolve op status!");
+					throw new Exception("Unable to resolve txn status!");
 				}
 			}
 
@@ -185,15 +185,15 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					expectedPrecheck = Optional.of(actualPrecheck);
 				} else {
 					log.error(
-							"{} {} Precheck was {}, not one of {}!",spec.logPrefix(), this,
+							"{} {} Wrong actual precheck status {}, not one of {}!",spec.logPrefix(), this,
 							actualPrecheck,
 							permissiblePrechecks.get());
-					throw new Exception(String.format("Wrong Precheck was %s, expected %s", actualStatus ,permissibleStatuses.get()));
+					throw new Exception(String.format("Wrong actual precheck status %s, expected %s", actualStatus ,permissibleStatuses.get()));
 				}
 			} else {
 				if(getExpectedPrecheck() != actualPrecheck) {
-					log.error( "{} {} Wrong precheck actual status {}, expecting {}", spec.logPrefix(), this, actualPrecheck, getExpectedPrecheck());
-					throw new Exception(String.format("Wrong precheck status! expected %s, actial %s", getExpectedPrecheck(), actualPrecheck));
+					log.error( "{} {} Wrong actual precheck status {}, expecting {}", spec.logPrefix(), this, actualPrecheck, getExpectedPrecheck());
+					throw new Exception(String.format("Wrong precheck status! expected %s, actual %s", getExpectedPrecheck(), actualPrecheck));
 				}
 			}
 		}
@@ -240,10 +240,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				expectedStatus = Optional.of(actualStatus);
 			} else {
 				log.error(
-						"{} {} Status was {}, not one of {}!", spec.logPrefix(), this,
+						"{} {} Wrong actual status {}, not one of {}!", spec.logPrefix(), this,
 								actualStatus,
 								permissibleStatuses.get());
-				throw new Exception(String.format("Wrong status actual %s, expected %s", actualStatus ,permissibleStatuses.get()));
+				throw new Exception(String.format("Wrong actual status %s, expected %s", actualStatus ,permissibleStatuses.get()));
 			}
 		} else {
 			if(getExpectedStatus() != actualStatus) {

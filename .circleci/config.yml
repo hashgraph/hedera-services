@@ -1238,8 +1238,7 @@ workflows:
           filters:
             branches:
               only:
-#                - Disable-master
-                - X-00887-D-refactor-test-client-error-message-handling
+                - Disable-master
 
     jobs:
       - build-platform-and-services
@@ -1303,8 +1302,7 @@ workflows:
           filters:
             branches:
               only:
-#                - master
-                - X-00887-D-refactor-test-client-error-message-handling
+                - master
 
     jobs:
       - build-platform-and-services
@@ -1369,8 +1367,7 @@ workflows:
           filters:
             branches:
               only:
- #               - Disable-master
-                - X-00887-D-refactor-test-client-error-message-handling
+                - Disable-master
 
     jobs:
       - build-platform-and-services
@@ -1412,8 +1409,7 @@ workflows:
           filters:
             branches:
               only:
-#                - Disable-master
-                - X-00887-D-refactor-test-client-error-message-handling
+                - Disable-master
 
     jobs:
       - build-platform-and-services
@@ -1782,7 +1778,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00887-D-refactor-test-client-error-message-handling
+
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -2373,7 +2369,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 00887-D-refactor-test-client-error-message-handling;
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
