@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -69,6 +70,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		try {
 			transitionFor(txnCtx.accessor().getTxn().getScheduleCreate());
 		} catch (Exception e) {
+			e.printStackTrace();
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
 			abortWith(FAIL_INVALID);
 		}
@@ -98,9 +100,10 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		}
 		sb.append(" - Resolved scheduleId: ").append(readableId(scheduleId)).append("\n");
 
-		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
-			log.info("--- BEGIN ScheduleCreate TRANSITION ---\n{}--- END ScheduleCreate TRANSITION ---", sb);
-		}
+		/* Uncomment for temporary log-based testing locally */
+//		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
+//			log.info("--- BEGIN ScheduleCreate TRANSITION ---\n{}--- END ScheduleCreate TRANSITION ---", sb);
+//		}
 
 		if (store.isCreationPending()) {
 			store.commitCreation();
