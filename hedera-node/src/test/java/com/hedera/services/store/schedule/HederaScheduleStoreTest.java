@@ -454,7 +454,7 @@ public class HederaScheduleStoreTest {
         given(subject.get(created)).willReturn(schedule);
 
         // when:
-        var scheduleId = subject.getScheduleID(transactionBody, payerId);
+        var scheduleId = subject.lookupScheduleId(transactionBody, payerId);
 
         assertEquals(Optional.of(created), scheduleId);
     }
@@ -467,7 +467,7 @@ public class HederaScheduleStoreTest {
         subject.pendingTxHashCode = transactionBodyHashCode;
 
         // when:
-        var scheduleId = subject.getScheduleID(transactionBody, payerId);
+        var scheduleId = subject.lookupScheduleId(transactionBody, payerId);
 
         assertEquals(Optional.of(created), scheduleId);
     }
@@ -475,7 +475,7 @@ public class HederaScheduleStoreTest {
     @Test
     public void failsToGetScheduleID() {
         // when:
-        var scheduleId = subject.getScheduleID(transactionBody, payerId);
+        var scheduleId = subject.lookupScheduleId(transactionBody, payerId);
 
         assertTrue(scheduleId.isEmpty());
     }

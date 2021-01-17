@@ -1339,6 +1339,7 @@ public class ServicesContext {
 					creator(),
 					recordsHistorian(),
 					accountsLedger);
+			scheduleStore().setAccountsLedger(accountsLedger);
 		}
 		return ledger;
 	}

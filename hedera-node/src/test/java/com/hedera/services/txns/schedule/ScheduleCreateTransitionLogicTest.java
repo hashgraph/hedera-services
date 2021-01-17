@@ -119,7 +119,7 @@ public class ScheduleCreateTransitionLogicTest {
     public void followsHappyPath() {
         givenValidTxnCtx();
 
-        given(store.getScheduleID(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
+        given(store.lookupScheduleId(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
         given(store.createProvisionally(
                 eq(transactionBody),
                 eq(payer),
@@ -136,7 +136,7 @@ public class ScheduleCreateTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        verify(store).getScheduleID(transactionBody, payer);
+        verify(store).lookupScheduleId(transactionBody, payer);
         // and:
         verify(store).createProvisionally(
                 eq(transactionBody),
@@ -155,7 +155,7 @@ public class ScheduleCreateTransitionLogicTest {
         givenValidTxnCtx();
 
         // and:
-        given(store.getScheduleID(transactionBody, payer)).willReturn(Optional.of(schedule));
+        given(store.lookupScheduleId(transactionBody, payer)).willReturn(Optional.of(schedule));
         given(store.addSigners(
                 eq(schedule),
                 argThat(jKeySet -> true))).willReturn(OK);
@@ -164,7 +164,7 @@ public class ScheduleCreateTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        verify(store).getScheduleID(transactionBody, payer);
+        verify(store).lookupScheduleId(transactionBody, payer);
         // and:
         verify(store, never()).createProvisionally( eq(transactionBody),
                 eq(payer),
@@ -182,7 +182,7 @@ public class ScheduleCreateTransitionLogicTest {
         givenValidTxnCtx();
 
         // and:
-        given(store.getScheduleID(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
+        given(store.lookupScheduleId(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
         given(store.createProvisionally(
                 eq(transactionBody),
                 eq(payer),
@@ -195,7 +195,7 @@ public class ScheduleCreateTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        verify(store).getScheduleID(transactionBody, payer);
+        verify(store).lookupScheduleId(transactionBody, payer);
         // and:
         verify(store).createProvisionally(
                 eq(transactionBody),
@@ -212,13 +212,13 @@ public class ScheduleCreateTransitionLogicTest {
     public void setsFailInvalidIfUnhandledException() {
         givenValidTxnCtx();
         // and:
-        given(store.getScheduleID(transactionBody, payer)).willThrow(IllegalArgumentException.class);
+        given(store.lookupScheduleId(transactionBody, payer)).willThrow(IllegalArgumentException.class);
 
         // when:
         subject.doStateTransition();
 
         // then:
-        verify(store).getScheduleID(transactionBody, payer);
+        verify(store).lookupScheduleId(transactionBody, payer);
         // and:
         verify(txnCtx).setStatus(FAIL_INVALID);
     }

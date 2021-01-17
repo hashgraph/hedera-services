@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,11 +34,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateNonsense;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ScheduleCreateSpecs extends HapiApiSuite {
@@ -54,9 +50,25 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						rejectsUnparseableTxn(),
-						rejectsUnresolvableReqSigners(),
+//						rejectsUnresolvableReqSigners(),
+						triggersWithBothReqSimpleSigs(),
 				}
 		);
+	}
+
+	public HapiApiSpec triggersWithBothReqSimpleSigs() {
+		return defaultHapiSpec("TriggersWithTwoReqSimpleSig")
+				.given(
+						cryptoCreate("sender"),
+						cryptoCreate("receiver").receiverSigRequired(true)
+				).when().then(
+						scheduleCreate(
+								"basicXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								).signedBy("sender", "receiver")
+						)
+				);
 	}
 
 	public HapiApiSpec rejectsUnresolvableReqSigners() {

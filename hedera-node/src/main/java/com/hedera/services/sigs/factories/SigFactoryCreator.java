@@ -24,12 +24,16 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 
 public class SigFactoryCreator {
+	public static Logger log = LogManager.getLogger(SigFactoryCreator.class);
+
 	static final byte[] MISSING_SCHEDULED_TXN_BYTES = new byte[0];
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> scheduledTxns;
@@ -39,8 +43,11 @@ public class SigFactoryCreator {
 	}
 
 	public TxnScopedPlatformSigFactory createScopedFactory(SignedTxnAccessor accessor) {
+		System.out.println("Function: " + accessor.getFunction());
+		log.info("Function {}", accessor.getFunction());
 		switch (accessor.getFunction()) {
 			case ScheduleCreate:
+				log.info("The scheduled body is {}", accessor.getTxn().getScheduleCreate().getTransactionBody());
 				return new ScheduleBodySigningSigFactory(
 						accessor.getTxnBytes(),
 						accessor.getTxn().getScheduleCreate().getTransactionBody().toByteArray());

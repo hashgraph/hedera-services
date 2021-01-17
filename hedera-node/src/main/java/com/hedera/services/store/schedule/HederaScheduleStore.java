@@ -212,7 +212,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer) {
+	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer) {
 		var txHashCode = Arrays.hashCode(bodyBytes);
 		var keyToCheckFor = new CompositeKey(txHashCode, scheduledTxPayer);
 

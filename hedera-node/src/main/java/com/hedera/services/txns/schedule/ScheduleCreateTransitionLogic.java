@@ -20,27 +20,28 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.keys.KeysHelper.ed25519ToJKey;
+import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
+import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -48,6 +49,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
+
+	private static final ScheduleID NOT_YET_RESOLVED = null;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
@@ -72,37 +75,42 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 	}
 
 	private void transitionFor(ScheduleCreateTransactionBody op) {
-		var scheduledTXPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
-		var schedule = store.getScheduleID(op.getTransactionBody().toByteArray(), scheduledTXPayer);
-		if (schedule.isEmpty()) {
-			var bytes = op.getTransactionBody().toByteArray();
-			var schedulingAccount = txnCtx.activePayer();
-			var now = RichInstant.fromJava(txnCtx.consensusTime());
-			Optional<JKey> adminKey = Optional.empty();
-			if (op.hasAdminKey()) {
-				adminKey = asUsableFcKey(op.getAdminKey());
-			}
+		var scheduleId = NOT_YET_RESOLVED;
+		var scheduledPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
+
+		var sb = new StringBuilder();
+
+		var extantId = store.lookupScheduleId(op.getTransactionBody().toByteArray(), scheduledPayer);
+		if (extantId.isPresent()) {
+			scheduleId = extantId.get();
+		} else {
 			var result = store.createProvisionally(
-					bytes,
-					scheduledTXPayer,
-					schedulingAccount,
-					now,
-					adminKey);
-			if (result.getStatus() != OK) {
+					op.getTransactionBody().toByteArray(),
+					scheduledPayer,
+					txnCtx.activePayer(),
+					fromJava(txnCtx.consensusTime()),
+					adminKeyFor(op));
+			if (result.getCreated().isEmpty()) {
 				abortWith(result.getStatus());
 				return;
 			}
-			schedule = result.getCreated();
+			scheduleId = result.getCreated().get();
+		}
+		sb.append(" - Resolved scheduleId: ").append(readableId(scheduleId)).append("\n");
+
+		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
+			log.info("--- BEGIN ScheduleCreate TRANSITION ---\n{}--- END ScheduleCreate TRANSITION ---", sb);
 		}
 
-		var created = schedule.get();
-
-		// TODO check if signatures are "required" for this TX to execute
-		// TODO check if signatures for execution are collected and if so execute it
-
-		store.commitCreation();
-		txnCtx.setCreated(created);
+		if (store.isCreationPending()) {
+			store.commitCreation();
+		}
+		txnCtx.setCreated(scheduleId);
 		txnCtx.setStatus(SUCCESS);
+	}
+
+	private Optional<JKey> adminKeyFor(ScheduleCreateTransactionBody op) {
+		return op.hasAdminKey() ? asUsableFcKey(op.getAdminKey()) : Optional.empty();
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {
