@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -126,8 +127,7 @@ public class TxnFactory {
 		Consumer<TransactionBody.Builder> composedBodySpec = defaultBodySpec().andThen(spec);
 		TransactionBody.Builder bodyBuilder = TransactionBody.newBuilder();
 		composedBodySpec.accept(bodyBuilder);
-		return Transaction.newBuilder()
-			.setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
+		return Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
 	}
 
 	public TransactionID sampleRecentTxnId() {
@@ -332,6 +332,10 @@ public class TxnFactory {
 	}
 
 	public Consumer<CryptoTransferTransactionBody.Builder> defaultDef_CryptoTransferTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<ScheduleCreateTransactionBody.Builder> defaultDef_ScheduleCreateTransactionBody() {
 		return builder -> {};
 	}
 }

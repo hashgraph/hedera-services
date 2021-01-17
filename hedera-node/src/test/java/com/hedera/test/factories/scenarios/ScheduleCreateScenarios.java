@@ -30,6 +30,21 @@ import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryp
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 public enum ScheduleCreateScenarios implements TxnHandlingScenario {
+    SCHEDULE_CREATE_NESTED_SCHEDULE_CREATE {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleCreate()
+                            .missingAdmin()
+                            .creating(newSignedScheduleCreate()
+                                            .missingAdmin()
+                                            .creatingNonsense(Transaction.newBuilder()
+                                                    .setBodyBytes(ByteString.copyFromUtf8("NONSENSE"))
+                                                    .build())
+                                            .get())
+                            .get()
+            ));
+        }
+    },
     SCHEDULE_CREATE_NONSENSE {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(

@@ -633,6 +633,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return self();
 	}
 
+	public T sansTxnId() {
+		omitTxnId = true;
+		return self();
+	}
+
+	public T withLegacyProtoStructure() {
+		alwaysWithLegacyProtoStructure = true;
+		return self();
+	}
+
 	public T asTxnWithSignedTxnBytesAndSigMap() {
 		asTxnWithSignedTxnBytesAndSigMap = true;
 		return self();

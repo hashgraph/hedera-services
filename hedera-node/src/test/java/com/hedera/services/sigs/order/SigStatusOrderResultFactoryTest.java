@@ -281,4 +281,22 @@ public class SigStatusOrderResultFactoryTest {
 		// expect:
 		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
 	}
+
+	@Test
+	public void reportsNestedScheduleCreate() {
+		// setup:
+		SignatureStatus expectedError = new SignatureStatus(
+				SignatureStatusCode.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
+				ResponseCodeEnum.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
+				inHandleTxnDynamicContext,
+				txnId);
+
+		// given:
+		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
+		var summary = subject.forNestedScheduleCreate(txnId);
+		SignatureStatus error = summary.getErrorReport();
+
+		// expect:
+		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
+	}
 }

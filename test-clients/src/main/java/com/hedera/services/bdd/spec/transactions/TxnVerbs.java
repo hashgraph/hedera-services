@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicDelete;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
@@ -153,6 +154,14 @@ public class TxnVerbs {
 	}
 	public static HapiTokenBurn burnToken(String token, long amount) {
 		return new HapiTokenBurn(token, amount);
+	}
+
+	public static <T extends HapiTxnOp<T>> HapiScheduleCreate<T> scheduleCreate(String scheduled, HapiTxnOp<T> txn) {
+		return new HapiScheduleCreate<>(scheduled, txn);
+	}
+
+	public static HapiScheduleCreate<HapiCryptoCreate> scheduleCreateNonsense(String scheduled) {
+		return new HapiScheduleCreate<>(scheduled, cryptoCreate("doomed")).garbled();
 	}
 
 	/* SYSTEM */

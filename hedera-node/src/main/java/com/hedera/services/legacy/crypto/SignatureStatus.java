@@ -161,6 +161,7 @@ public class SignatureStatus {
 		formatArguments.add(errorReport.getResponseCode().toString());
 		break;
       case UNPARSEABLE_SCHEDULED_TRANSACTION:
+      case NESTED_SCHEDULE_CREATE_NOT_ALLOWED:
       case GENERAL_PAYER_ERROR:
       case GENERAL_TRANSACTION_ERROR:
       case KEY_COUNT_MISMATCH:

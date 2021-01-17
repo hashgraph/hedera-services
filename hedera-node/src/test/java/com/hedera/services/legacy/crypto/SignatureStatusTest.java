@@ -56,4 +56,22 @@ class SignatureStatusTest {
 		// expect:
 		assertEquals(expMsg, subject.toLogMessage());
 	}
+
+	@Test
+	public void formatsNestedScheduleCreate() {
+		// setup:
+		var txnId = TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.75231")).build();
+		// given:
+		String expMsg = String.format("Invalid attempt to schedule a schedule create " +
+				"[ source = 'handleTransaction', transactionId = '%s' ]", SignatureStatus.format(txnId));
+		// and:
+		var subject = new SignatureStatus(
+				SignatureStatusCode.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
+				ResponseCodeEnum.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
+				true,
+				txnId);
+
+		// expect:
+		assertEquals(expMsg, subject.toLogMessage());
+	}
 }

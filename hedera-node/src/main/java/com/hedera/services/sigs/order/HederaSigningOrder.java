@@ -843,6 +843,9 @@ public class HederaSigningOrder {
 				required);
 		try {
 			var scheduled = TransactionBody.parseFrom(op.getTransactionBody());
+			if (scheduled.hasScheduleCreate()) {
+				return factory.forNestedScheduleCreate(txnId);
+			}
 			var scheduledOrderResult = keysForOtherParties(scheduled, factory);
 			if (scheduledOrderResult.hasErrorReport()) {
 				return factory.forUnresolvableRequiredSigners(

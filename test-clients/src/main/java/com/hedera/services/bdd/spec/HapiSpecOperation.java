@@ -63,7 +63,6 @@ import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import org.apache.logging.log4j.LogManager;
@@ -85,6 +84,7 @@ public abstract class HapiSpecOperation {
 	protected SmartContractFeeBuilder scFees = new SmartContractFeeBuilder();
 	protected ConsensusServiceFeeBuilder hcsFees = new ConsensusServiceFeeBuilder();
 
+	protected boolean omitTxnId = false;
 	protected boolean loggingOff = false;
 	protected boolean suppressStats = false;
 	protected boolean verboseLoggingOn = false;
@@ -93,11 +93,12 @@ public abstract class HapiSpecOperation {
 	protected boolean useDefaultTxnAsAnswerOnlyPayment = false;
 	protected boolean usePresetTimestamp = false;
 	protected boolean asTxnWithOnlySigMap = false;
+	protected boolean alwaysWithLegacyProtoStructure = false;
 	protected boolean asTxnWithSignedTxnBytesAndSigMap = false;
 	protected boolean asTxnWithSignedTxnBytesAndBodyBytes = false;
 
 	protected boolean useTls = false;
-	protected HapiSpecSetup.TxnConfig txnConfig = HapiSpecSetup.TxnConfig.ALTERNATE;
+	protected HapiSpecSetup.TxnProtoStructure txnProtoStructure = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
 	protected boolean useRandomNode = false;
 	protected boolean unavailableNode = false;
 	protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
@@ -148,8 +149,10 @@ public abstract class HapiSpecOperation {
 		useTls = spec.setup().getConfigTLS();
 	}
 
-	protected void configureTxnFor(HapiApiSpec spec) {
-		txnConfig = spec.setup().txnConfig();
+	private void configureProtoStructureFor(HapiApiSpec spec) {
+		txnProtoStructure = alwaysWithLegacyProtoStructure
+				? HapiSpecSetup.TxnProtoStructure.OLD
+				: spec.setup().txnProtoStructure();
 	}
 
 	protected void fixNodeFor(HapiApiSpec spec) {
@@ -174,7 +177,7 @@ public abstract class HapiSpecOperation {
 
 	public Optional<Throwable> execFor(HapiApiSpec spec) {
 		pauseIfRequested();
-		configureTxnFor(spec);
+		configureProtoStructureFor(spec);
 		try {
 			boolean hasCompleteLifecycle = submitOp(spec);
 
@@ -229,27 +232,31 @@ public abstract class HapiSpecOperation {
 
 	protected Consumer<TransactionBody.Builder> bodyDef(HapiApiSpec spec) {
 		return builder -> {
-			payer.ifPresent(payerId -> {
-				var id = TxnUtils.asId(payerId, spec);
-				TransactionID txnId = builder.getTransactionID().toBuilder().setAccountID(id).build();
-				builder.setTransactionID(txnId);
-			});
-			if (usePresetTimestamp) {
-				TransactionID txnId = builder.getTransactionID().toBuilder().setTransactionValidStart(
-						spec.registry().getTimestamp(txnName)).build();
-				builder.setTransactionID(txnId);
+			if (omitTxnId) {
+				builder.clearTransactionID();
+			} else {
+				payer.ifPresent(payerId -> {
+					var id = TxnUtils.asId(payerId, spec);
+					TransactionID txnId = builder.getTransactionID().toBuilder().setAccountID(id).build();
+					builder.setTransactionID(txnId);
+				});
+				if (usePresetTimestamp) {
+					TransactionID txnId = builder.getTransactionID().toBuilder()
+							.setTransactionValidStart(spec.registry().getTimestamp(txnName)).build();
+					builder.setTransactionID(txnId);
+				}
+				customTxnId.ifPresent(name -> {
+					TransactionID id = spec.registry().getTxnId(name);
+					builder.setTransactionID(id);
+				});
 			}
-			customTxnId.ifPresent(name -> {
-				TransactionID id = spec.registry().getTxnId(name);
-				builder.setTransactionID(id);
-			});
 
-			node.ifPresent(nodeId -> builder.setNodeAccountID(nodeId));
+			node.ifPresent(builder::setNodeAccountID);
 			validDurationSecs.ifPresent(s -> {
 				builder.setTransactionValidDuration(Duration.newBuilder().setSeconds(s).build());
 			});
-			genRecord.ifPresent(g -> builder.setGenerateRecord(g));
-			memo.ifPresent(m -> builder.setMemo(m));
+			genRecord.ifPresent(builder::setGenerateRecord);
+			memo.ifPresent(builder::setMemo);
 		};
 	}
 
@@ -289,10 +296,14 @@ public abstract class HapiSpecOperation {
 		return finalizedTxnFromTxnWithBodyBytesAndSigMap(txn);
 	}
 
-	private Transaction finalizedTxnFromTxnWithBodyBytesAndSigMap(Transaction txnWithBodyBytesAndSigMap
+	private Transaction finalizedTxnFromTxnWithBodyBytesAndSigMap(
+			Transaction txnWithBodyBytesAndSigMap
 	) throws Throwable {
 		if (asTxnWithOnlySigMap) {
 			return txnWithBodyBytesAndSigMap.toBuilder().clearBodyBytes().build();
+		}
+		if (txnProtoStructure == HapiSpecSetup.TxnProtoStructure.OLD) {
+			return txnWithBodyBytesAndSigMap;
 		}
 
 		ByteString bodyByteString = CommonUtils.extractTransactionBodyByteString(txnWithBodyBytesAndSigMap);
@@ -310,10 +321,6 @@ public abstract class HapiSpecOperation {
 
 		if (asTxnWithSignedTxnBytesAndBodyBytes) {
 			return txnWithSignedTxnBytesBuilder.setBodyBytes(bodyByteString).build();
-		}
-
-		if (HapiSpecSetup.TxnConfig.OLD == txnConfig) {
-			return txnWithBodyBytesAndSigMap;
 		}
 
 		return txnWithSignedTxnBytesBuilder.build();
@@ -334,7 +341,7 @@ public abstract class HapiSpecOperation {
 		}
 	}
 
-	List<Key> signersToUseFor(HapiApiSpec spec) {
+	private List<Key> signersToUseFor(HapiApiSpec spec) {
 		List<Key> active = signers
 				.orElse(defaultSigners())
 				.stream()

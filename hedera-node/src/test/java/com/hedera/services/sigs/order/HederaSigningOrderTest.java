@@ -52,12 +52,14 @@ import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
+
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.*;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NESTED_SCHEDULE_CREATE_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static java.util.stream.Collectors.toList;
@@ -74,11 +76,9 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.test.utils.IdUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.*;
@@ -1670,6 +1670,19 @@ public class HederaSigningOrderTest {
 		assertTrue(summary.getOrderedKeys().isEmpty());
 		// and:
 		assertEquals(SignatureStatusCode.INVALID_AUTO_RENEW_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
+	public void getsNestedScheduleCreates() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_CREATE);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(NESTED_SCHEDULE_CREATE_NOT_ALLOWED, summary.getErrorReport().getResponseCode());
 	}
 
 	@Test

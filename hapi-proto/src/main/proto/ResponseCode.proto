@@ -217,4 +217,5 @@ enum ResponseCodeEnum {
   INVALID_SCHEDULE_SIG_MAP_KEY = 206; // One of the provided Signature pub keys is not valid
   UNRESOLVABLE_REQUIRED_SIGNERS = 207; // The required signers for a scheduled transaction cannot be resolved, for example because they do not exist or have been deleted
   UNPARSEABLE_SCHEDULED_TRANSACTION = 208; // The bytes allegedly representing a transaction to be scheduled could not be parsed
+  NESTED_SCHEDULE_CREATE_NOT_ALLOWED = 209; // Schedule create transaction cannot be scheduled
 }

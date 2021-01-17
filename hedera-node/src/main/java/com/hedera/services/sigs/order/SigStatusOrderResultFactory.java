@@ -161,4 +161,14 @@ public class SigStatusOrderResultFactory implements SigningOrderResultFactory<Si
 				inHandleTxnDynamicContext, txnId);
 		return new SigningOrderResult<>(error);
 	}
+
+	@Override
+	public SigningOrderResult<SignatureStatus> forNestedScheduleCreate(TransactionID txnId) {
+		SignatureStatus error = new SignatureStatus(
+				SignatureStatusCode.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
+				ResponseCodeEnum.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
+				inHandleTxnDynamicContext,
+				txnId);
+		return new SigningOrderResult<>(error);
+	}
 }

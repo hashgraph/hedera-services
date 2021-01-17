@@ -94,11 +94,6 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         ScheduleSignTransactionBody op = txnBody.getScheduleSign();
-
-        if (!op.hasScheduleID()) {
-            return INVALID_SCHEDULE_ID;
-        }
-
-        return ScheduleChecks.validateSignatureMap(op.getSigMap());
+        return op.hasScheduleID() ? OK : INVALID_SCHEDULE_ID;
     }
 }

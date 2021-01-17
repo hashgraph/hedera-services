@@ -159,14 +159,6 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void failsOnInvalidKeyEncoding() {
-        givenCtx(false, true);
-
-        // expect:
-        assertEquals(INVALID_KEY_ENCODING, subject.validate(scheduleSignTxn));
-    }
-
-    @Test
     public void acceptsValidTxn() {
         givenValidTxnCtx();
 
@@ -178,13 +170,6 @@ public class ScheduleSignTransitionLogicTest {
         givenCtx(true, false);
 
         assertEquals(INVALID_SCHEDULE_ID, subject.syntaxCheck().apply(scheduleSignTxn));
-    }
-
-    @Test
-    public void rejectsInvalidKeyEncoding() {
-        givenCtx(false, true);
-
-        assertEquals(INVALID_KEY_ENCODING, subject.syntaxCheck().apply(scheduleSignTxn));
     }
 
     private void givenValidTxnCtx() {

@@ -1474,7 +1474,7 @@ public class ServicesContext {
 
 	public ScheduleController scheduleGrpc() {
 		if (scheduleGrpc == null) {
-			scheduleGrpc = new ScheduleController(scheduleAnswers(), txnResponseHelper(), queryResponseHelper()); // TODO: Create controller functionality
+			scheduleGrpc = new ScheduleController(scheduleAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return scheduleGrpc;
 	}
@@ -1523,7 +1523,8 @@ public class ServicesContext {
 							contractsGrpc(),
 							consensusGrpc(),
 							networkGrpc(),
-							tokenGrpc()),
+							tokenGrpc(),
+							scheduleGrpc()),
 					Collections.emptyList());
 		}
 		return grpc;

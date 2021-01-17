@@ -48,7 +48,9 @@ public enum SignatureStatusCode {
   UNRESOLVABLE_REQUIRED_SIGNERS(
           "Cannot resolve required signers for scheduled txn [ source = '%s', scheduled = '%s', error = '%s' ]"),
   UNPARSEABLE_SCHEDULED_TRANSACTION(
-          "Cannot parse scheduled txn [ source = '%s', transactionId = '%s' ]");
+          "Cannot parse scheduled txn [ source = '%s', transactionId = '%s' ]"),
+  NESTED_SCHEDULE_CREATE_NOT_ALLOWED(
+          "Invalid attempt to schedule a schedule create [ source = '%s', transactionId = '%s' ]");
 
   private String message;
 

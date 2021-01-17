@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -105,8 +106,8 @@ public interface HapiPropertySource {
 	default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
 		return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
 	}
-	default HapiSpecSetup.TxnConfig getTxnConfig(String property) {
-		return HapiSpecSetup.TxnConfig.valueOf(get(property).toUpperCase());
+	default HapiSpecSetup.TxnProtoStructure getTxnConfig(String property) {
+		return HapiSpecSetup.TxnProtoStructure.valueOf(get(property).toUpperCase());
 	}
 	default HapiSpecSetup.NodeSelection getNodeSelector(String property) {
 		return HapiSpecSetup.NodeSelection.valueOf(get(property).toUpperCase());
@@ -184,6 +185,10 @@ public interface HapiPropertySource {
 	}
 	static String asContractString(ContractID contract) {
 		return String.format("%d.%d.%d", contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
+	}
+
+	static String asScheduleString(ScheduleID schedule) {
+		return String.format("%d.%d.%d", schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
 	}
 
 	static SemanticVersion asSemVer(String v) {

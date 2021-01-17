@@ -174,4 +174,12 @@ public interface SigningOrderResultFactory<T> {
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forUnparseableScheduledTxn(TransactionID txnId);
+
+	/**
+	 * Report an invalid attempt to schedule a schedule create txn .
+	 *
+	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate}.
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forNestedScheduleCreate(TransactionID txnId);
 }

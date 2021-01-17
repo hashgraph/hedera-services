@@ -58,8 +58,6 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_SIG_MAP_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
@@ -319,13 +317,6 @@ public class ScheduleCreateTransitionLogicTest {
         givenCtx(true, false);
 
         assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
-    }
-
-    @Test
-    public void rejectsInvalidSignature() {
-        givenCtx(false, true);
-
-        assertEquals(INVALID_SCHEDULE_SIG_MAP_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
     }
 
     private void givenValidTxnCtx() {
