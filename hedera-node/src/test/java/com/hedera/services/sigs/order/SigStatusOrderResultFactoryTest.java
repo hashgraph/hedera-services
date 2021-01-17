@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
@@ -236,6 +237,45 @@ public class SigStatusOrderResultFactoryTest {
 		// given:
 		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
 		SigningOrderResult<SignatureStatus> summary = subject.forMissingAutoRenewAccount(missing, txnId);
+		SignatureStatus error = summary.getErrorReport();
+
+		// expect:
+		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
+	}
+
+	@Test
+	public void reportsUnresolvableSigners() {
+		// setup:
+		var errorReport = new SignatureStatus(
+				SignatureStatusCode.INVALID_SCHEDULE_ID,
+				ResponseCodeEnum.INVALID_SCHEDULE_ID,
+				true,
+				TransactionID.getDefaultInstance(),
+				ScheduleID.getDefaultInstance());
+		TransactionBody scheduled = TransactionBody.getDefaultInstance();
+		SignatureStatus expectedError = new SignatureStatus(
+				SignatureStatusCode.UNRESOLVABLE_REQUIRED_SIGNERS, ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS,
+				inHandleTxnDynamicContext, txnId, scheduled, errorReport);
+
+		// given:
+		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
+		var summary = subject.forUnresolvableRequiredSigners(scheduled, txnId, errorReport);
+		SignatureStatus error = summary.getErrorReport();
+
+		// expect:
+		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
+	}
+
+	@Test
+	public void reportsUnparseableTxn() {
+		// setup:
+		SignatureStatus expectedError = new SignatureStatus(
+				SignatureStatusCode.UNPARSEABLE_SCHEDULED_TRANSACTION, ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION,
+				inHandleTxnDynamicContext, txnId);
+
+		// given:
+		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
+		var summary = subject.forUnparseableScheduledTxn(txnId);
 		SignatureStatus error = summary.getErrorReport();
 
 		// expect:

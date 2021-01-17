@@ -20,6 +20,7 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -234,9 +235,10 @@ public class HederaSigningOrder {
 
 	private <T> Optional<SigningOrderResult<T>> forSchedule(
 			TransactionBody txn,
-			SigningOrderResultFactory<T> factory) {
+			SigningOrderResultFactory<T> factory
+	) {
 		if (txn.hasScheduleCreate()) {
-			return Optional.of(scheduleCreate(txn.getScheduleCreate(), factory));
+			return Optional.of(scheduleCreate(txn.getTransactionID(), txn.getScheduleCreate(), factory));
 		} else if (txn.hasScheduleSign()) {
 			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
 		} else if (txn.hasScheduleDelete()) {
@@ -828,6 +830,7 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> scheduleCreate(
+			TransactionID txnId,
 			ScheduleCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -838,6 +841,22 @@ public class HederaSigningOrder {
 				ScheduleCreateTransactionBody::hasAdminKey,
 				ScheduleCreateTransactionBody::getAdminKey,
 				required);
+		try {
+			var scheduled = TransactionBody.parseFrom(op.getTransactionBody());
+			var scheduledOrderResult = keysForOtherParties(scheduled, factory);
+			if (scheduledOrderResult.hasErrorReport()) {
+				return factory.forUnresolvableRequiredSigners(
+						scheduled,
+						txnId,
+						scheduledOrderResult.getErrorReport());
+			} else {
+				var scheduledKeys = scheduledOrderResult.getOrderedKeys();
+				scheduledKeys.forEach(k -> k.setForScheduledTxn(true));
+				required.addAll(scheduledKeys);
+			}
+		} catch (InvalidProtocolBufferException e) {
+			return factory.forUnparseableScheduledTxn(txnId);
+		}
 
 		return factory.forValidOrder(required);
 	}

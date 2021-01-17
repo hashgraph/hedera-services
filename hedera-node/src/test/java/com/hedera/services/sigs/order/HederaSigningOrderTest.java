@@ -58,6 +58,8 @@ import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.*;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static java.util.stream.Collectors.toList;
 import org.junit.runner.RunWith;
 import java.util.List;
@@ -1671,20 +1673,35 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
-	public void getsScheduleCreateAdminKeyOnly() throws Throwable {
+	public void getsScheduleCreateNonsense() throws Throwable {
 		// given:
-		setupFor(SCHEDULE_CREATE_MISSING_ADMIN);
+		setupFor(SCHEDULE_CREATE_NONSENSE);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
 		// then:
-		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNPARSEABLE_SCHEDULED_TRANSACTION, summary.getErrorReport().getResponseCode());
 	}
 
 	@Test
-	public void getsScheduleCreateNoAdmin() throws Throwable {
+	public void getsScheduleCreateInvalidXfer() throws Throwable {
 		// given:
-		setupFor(SCHEDULE_CREATE_WITH_ADMIN);
+		setupFor(SCHEDULE_CREATE_INVALID_XFER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNRESOLVABLE_REQUIRED_SIGNERS, summary.getErrorReport().getResponseCode());
+	}
+
+	@Test
+	public void getsScheduleCreateXferNoAdmin() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_XFER_NO_ADMIN);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1692,7 +1709,27 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(SCHEDULE_ADMIN_KT.asKey()));
+				contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
+	}
+
+	@Test
+	public void getsScheduleCreateNoAdmin() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(SCHEDULE_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(2).isForScheduledTxn());
 	}
 
 	@Test

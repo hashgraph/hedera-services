@@ -20,23 +20,65 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.Transaction;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleCreateFactory.newSignedScheduleCreate;
+import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 public enum ScheduleCreateScenarios implements TxnHandlingScenario {
-    SCHEDULE_CREATE_MISSING_ADMIN {
+    SCHEDULE_CREATE_NONSENSE {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(
-                    newSignedScheduleCreate().missingAdmin().get()
+                    newSignedScheduleCreate()
+                            .missingAdmin()
+                            .creatingNonsense(Transaction.newBuilder()
+                                    .setBodyBytes(ByteString.copyFromUtf8("NONSENSE"))
+                                    .build())
+                            .get()
             ));
         }
     },
-    SCHEDULE_CREATE_WITH_ADMIN {
+    SCHEDULE_CREATE_XFER_NO_ADMIN {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(
-                    newSignedScheduleCreate().get()
+                    newSignedScheduleCreate()
+                            .missingAdmin()
+                            .creating(newSignedCryptoTransfer()
+                                    .skipPayerSig()
+                                    .nonPayerKts(MISC_ACCOUNT_KT, RECEIVER_SIG_KT)
+                                    .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+                                    .get())
+                            .get()
+            ));
+        }
+    },
+    SCHEDULE_CREATE_INVALID_XFER {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleCreate()
+                            .missingAdmin()
+                            .creating(newSignedCryptoTransfer()
+                                    .skipPayerSig()
+                                    .transfers(tinyBarsFromTo(MISSING_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+                                    .get())
+                            .get()
+            ));
+        }
+    },
+    SCHEDULE_CREATE_XFER_WITH_ADMIN {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleCreate()
+                            .creating(newSignedCryptoTransfer()
+                                    .skipPayerSig()
+                                    .nonPayerKts(MISC_ACCOUNT_KT, RECEIVER_SIG_KT)
+                                    .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+                                    .get())
+                            .get()
             ));
         }
     },
