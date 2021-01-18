@@ -43,11 +43,8 @@ public class SigFactoryCreator {
 	}
 
 	public TxnScopedPlatformSigFactory createScopedFactory(SignedTxnAccessor accessor) {
-		System.out.println("Function: " + accessor.getFunction());
-		log.info("Function {}", accessor.getFunction());
 		switch (accessor.getFunction()) {
 			case ScheduleCreate:
-				log.info("The scheduled body is {}", accessor.getTxn().getScheduleCreate().getTransactionBody());
 				return new ScheduleBodySigningSigFactory(
 						accessor.getTxnBytes(),
 						accessor.getTxn().getScheduleCreate().getTransactionBody().toByteArray());

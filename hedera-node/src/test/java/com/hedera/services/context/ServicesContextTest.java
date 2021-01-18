@@ -33,6 +33,8 @@ import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.keys.CharacteristicsFactory;
+import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
@@ -484,6 +486,8 @@ public class ServicesContextTest {
 		assertThat(ctx.freezeGrpc(), instanceOf(FreezeController.class));
 		assertThat(ctx.contractsGrpc(), instanceOf(ContractController.class));
 		assertThat(ctx.sigFactoryCreator(), instanceOf(SigFactoryCreator.class));
+		assertThat(ctx.activationHelper(), instanceOf(InHandleActivationHelper.class));
+		assertThat(ctx.characteristics(), instanceOf(CharacteristicsFactory.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

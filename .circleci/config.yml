@@ -1718,6 +1718,7 @@ workflows:
             filters:
               branches:
                 ignore:
+                  - sched-sig-libs-reuse
                   - /.*-PERF/
                   - /.*-REGRESSION/
 
@@ -1728,6 +1729,7 @@ workflows:
           filters:
             branches:
               ignore:
+                - sched-sig-libs-reuse
                 - /.*-PERF/
                 - /.*-REGRESSION/
           workflow-name: "Continuous integration"

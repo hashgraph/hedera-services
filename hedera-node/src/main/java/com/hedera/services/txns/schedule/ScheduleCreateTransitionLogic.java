@@ -20,13 +20,14 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
-import com.hedera.services.context.SingletonContextsManager;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.keys.HederaKeyActivation;
+import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -34,18 +35,17 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleCreateTransitionLogic implements TransitionLogic {
@@ -57,12 +57,16 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 	private final ScheduleStore store;
 	private final TransactionContext txnCtx;
+	private final InHandleActivationHelper activationHelper;
 
 	public ScheduleCreateTransitionLogic(
 			ScheduleStore store,
-			TransactionContext txnCtx) {
+			TransactionContext txnCtx,
+			InHandleActivationHelper activationHelper
+	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
+		this.activationHelper = activationHelper;
 	}
 
 	@Override
@@ -98,12 +102,19 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			}
 			scheduleId = result.getCreated().get();
 		}
+
 		sb.append(" - Resolved scheduleId: ").append(readableId(scheduleId)).append("\n");
+		var scheduledTxn = uncheckedParse(op.getTransactionBody());
+		if (activationHelper.areScheduledPartiesActive(scheduledTxn, ONLY_IF_SIG_IS_VALID)) {
+			sb.append(" - Sigs are already valid!").append("\n");
+		} else {
+			sb.append(" - Sigs not yet valid.").append("\n");
+		}
 
 		/* Uncomment for temporary log-based testing locally */
-//		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
-//			log.info("--- BEGIN ScheduleCreate TRANSITION ---\n{}--- END ScheduleCreate TRANSITION ---", sb);
-//		}
+		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
+			log.info("\n>>> START ScheduleCreate >>>\n{}<<< END ScheduleCreate END <<<", sb);
+		}
 
 		if (store.isCreationPending()) {
 			store.commitCreation();
@@ -114,6 +125,14 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 	private Optional<JKey> adminKeyFor(ScheduleCreateTransactionBody op) {
 		return op.hasAdminKey() ? asUsableFcKey(op.getAdminKey()) : Optional.empty();
+	}
+
+	private TransactionBody uncheckedParse(ByteString rawScheduledTxn) {
+		try {
+			return TransactionBody.parseFrom(rawScheduledTxn);
+		} catch (InvalidProtocolBufferException e) {
+			throw new AssertionError("Not implemented!");
+		}
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {

@@ -44,6 +44,7 @@ import java.time.LocalDateTime;
 import java.util.EnumSet;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.keys.RevocationServiceCharacteristics.forTopLevelFile;
@@ -211,10 +212,14 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
-		if (!hasActiveNonPayerEntitySigs(accessor)) {
+		if (!ctx.activationHelper().areOtherPartiesActive(ONLY_IF_SIG_IS_VALID)) {
 			ctx.txnCtx().setStatus(INVALID_SIGNATURE);
 			return;
 		}
+//		if (!hasActiveNonPayerEntitySigs(accessor)) {
+//			ctx.txnCtx().setStatus(INVALID_SIGNATURE);
+//			return;
+//		}
 
 		var sysAuthStatus = ctx.systemOpPolicies().check(accessor).asStatus();
 		if (sysAuthStatus != OK) {

@@ -61,6 +61,9 @@ import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.FreezeController;
+import com.hedera.services.keys.CharacteristicsFactory;
+import com.hedera.services.keys.InHandleActivationHelper;
+import com.hedera.services.keys.KeyActivationCharacteristics;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hedera.services.queries.contract.GetBySolidityIdAnswer;
 import com.hedera.services.grpc.controllers.ScheduleController;
@@ -277,6 +280,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -413,9 +417,7 @@ public class ServicesContext {
 	private MetaAnswers metaAnswers;
 	private RecordCache recordCache;
 	private TokenStore tokenStore;
-	private ScheduleStore scheduleStore;
 	private TokenAnswers tokenAnswers;
-	private ScheduleAnswers scheduleAnswers;
 	private HederaLedger ledger;
 	private SyncVerifier syncVerifier;
 	private IssEventInfo issEventInfo;
@@ -428,6 +430,7 @@ public class ServicesContext {
 	private EntityNumbers entityNums;
 	private FreezeHandler freeze;
 	private CryptoAnswers cryptoAnswers;
+	private ScheduleStore scheduleStore;
 	private AccountNumbers accountNums;
 	private SubmissionFlow submissionFlow;
 	private PropertySource properties;
@@ -440,6 +443,7 @@ public class ServicesContext {
 	private LedgerValidator ledgerValidator;
 	private TokenController tokenGrpc;
 	private MiscRunningAvgs runningAvgs;
+	private ScheduleAnswers scheduleAnswers;
 	private MiscSpeedometers speedometers;
 	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
@@ -488,8 +492,10 @@ public class ServicesContext {
 	private SystemAccountsCreator systemAccountsCreator;
 	private ItemizableFeeCharging itemizableFeeCharging;
 	private ServicesRepositoryRoot repository;
+	private CharacteristicsFactory characteristics;
 	private AccountRecordsHistorian recordsHistorian;
 	private GlobalDynamicProperties globalDynamicProperties;
+	private InHandleActivationHelper activationHelper;
 	private PlatformSubmissionManager submissionManager;
 	private SmartContractRequestHandler contracts;
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
@@ -500,9 +506,9 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
+	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -617,6 +623,16 @@ public class ServicesContext {
 			ledgerValidator = new BasedLedgerValidator(hederaNums(), properties(), globalDynamicProperties());
 		}
 		return ledgerValidator;
+	}
+
+	public InHandleActivationHelper activationHelper() {
+		if (activationHelper == null) {
+			activationHelper = new InHandleActivationHelper(
+					backedKeyOrder(),
+					characteristics(),
+					txnCtx()::accessor);
+		}
+		return activationHelper;
 	}
 
 	public IssEventInfo issEventInfo() {
@@ -1188,7 +1204,7 @@ public class ServicesContext {
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* Schedule */
 				entry(ScheduleCreate,
-						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx()))),
+						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
 				entry(ScheduleSign,
 						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx()))),
 				entry(ScheduleDelete,
@@ -1242,6 +1258,13 @@ public class ServicesContext {
 					txnHistories());
 		}
 		return recordCache;
+	}
+
+	public CharacteristicsFactory characteristics() {
+		if (characteristics == null) {
+			characteristics = new CharacteristicsFactory(hfs());
+		}
+		return characteristics;
 	}
 
 	public AccountRecordsHistorian recordsHistorian() {

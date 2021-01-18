@@ -40,7 +40,6 @@ public class ScopedSigBytesProvider implements PubKeyToSigBytesProvider {
 				break;
 			case ScheduleCreate:
 				var scheduleCreateSigMap = accessor.getTxn().getScheduleCreate().getSigMap();
-				log.info("The scheduled sig map is {}", scheduleCreateSigMap);
 				delegate = new ScheduledPubKeyToSigBytes(
 						new SigMapPubKeyToSigBytes(accessor.getSigMap()),
 						new SigMapPubKeyToSigBytes(scheduleCreateSigMap));

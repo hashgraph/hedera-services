@@ -51,13 +51,41 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 //						rejectsUnparseableTxn(),
 //						rejectsUnresolvableReqSigners(),
-						triggersWithBothReqSimpleSigs(),
+						triggersImmediatelyWithBothReqSimpleSigs(),
+//						onlySchedulesWithMissingReqSimpleSigs(),
 				}
 		);
 	}
 
-	public HapiApiSpec triggersWithBothReqSimpleSigs() {
-		return defaultHapiSpec("TriggersWithTwoReqSimpleSig")
+	public HapiApiSpec onlySchedulesWithMissingReqSimpleSigs() {
+		/*
+		>>> START ScheduleCreate >>>
+		 - Resolved scheduleId: 0.0.1003
+		 - Sigs not yet valid.
+		<<< END ScheduleCreate END <<<
+		*/
+		return defaultHapiSpec("onlySchedulesWithMissingReqSimpleSigs")
+				.given(
+						cryptoCreate("sender"),
+						cryptoCreate("receiver").receiverSigRequired(true)
+				).when().then(
+						scheduleCreate(
+								"basicXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								).signedBy("sender")
+						)
+				);
+	}
+
+	public HapiApiSpec triggersImmediatelyWithBothReqSimpleSigs() {
+		/*
+		>>> START ScheduleCreate >>>
+		 - Resolved scheduleId: 0.0.1006
+		 - Sigs are already valid!
+		<<< END ScheduleCreate END <<<
+		 */
+		return defaultHapiSpec("TriggersImmediatelyWithBothReqSimpleSigs")
 				.given(
 						cryptoCreate("sender"),
 						cryptoCreate("receiver").receiverSigRequired(true)

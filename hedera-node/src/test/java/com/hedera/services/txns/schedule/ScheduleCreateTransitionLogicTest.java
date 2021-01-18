@@ -22,6 +22,7 @@ package com.hedera.services.txns.schedule;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.KeysHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -80,9 +81,6 @@ public class ScheduleCreateTransitionLogicTest {
 	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	private final Key invalidKey = Key.newBuilder().build();
 	private Optional<JKey> jAdminKey;
-	private final boolean NO = false;
-	private final boolean YES = true;
-	private final ResponseCodeEnum NOT_OK = null;
 
 	private ScheduleStore store;
 	private PlatformTxnAccessor accessor;
@@ -92,6 +90,7 @@ public class ScheduleCreateTransitionLogicTest {
 	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
 
 	private TransactionBody scheduleCreateTxn;
+	private InHandleActivationHelper activationHelper;
 	private SignatureMap sigMap;
 	private Set<JKey> jKeySet;
 
@@ -101,11 +100,12 @@ public class ScheduleCreateTransitionLogicTest {
 	private void setup() {
 		store = mock(ScheduleStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
+		activationHelper = mock(InHandleActivationHelper.class);
 
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.activePayer()).willReturn(payer);
 
-		subject = new ScheduleCreateTransitionLogic(store, txnCtx);
+		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper);
 	}
 
 	@Test
