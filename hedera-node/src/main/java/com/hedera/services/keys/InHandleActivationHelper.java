@@ -30,10 +30,14 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 
 public class InHandleActivationHelper {
@@ -66,17 +70,35 @@ public class InHandleActivationHelper {
 		this.accessorSource = accessorSource;
 	}
 
-	public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> givenTests) {
+	public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> tests) {
 		ensureUpToDate();
-		return arePartiesActive(false, accessor.getTxn(), givenTests);
+		return arePartiesActive(false, accessor.getTxn(), tests);
 	}
 
 	public boolean areScheduledPartiesActive(
 			TransactionBody scheduledTxn,
-			BiPredicate<JKey, TransactionSignature> givenTests
+			BiPredicate<JKey, TransactionSignature> tests
 	) {
 		ensureUpToDate();
-		return arePartiesActive(true, scheduledTxn, givenTests);
+		return arePartiesActive(true, scheduledTxn, tests);
+	}
+
+	public int testScheduledCryptoSigs(BiPredicate<JKey, TransactionSignature> cryptoTests) {
+		ensureUpToDate();
+
+		var successes = new AtomicInteger();
+		Consumer<JKey> visitor = key -> {
+			var sig = sigsFn.apply(key.getEd25519());
+			if (cryptoTests.test(key, sig)) {
+				successes.getAndIncrement();
+			}
+		};
+		for (JKey req : otherParties) {
+			if (req.isForScheduledTxn()) {
+				visitSimpleKeys(req, visitor);
+			}
+		}
+		return successes.get();
 	}
 
 	private boolean arePartiesActive(

@@ -46,6 +46,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
@@ -65,6 +66,7 @@ class InHandleActivationHelperTest {
 	HederaSigningOrder keyOrderer;
 	PlatformTxnAccessor accessor;
 
+	TransactionSignature sig;
 	CharacteristicsFactory characteristicsFactory;
 	Function<byte[], TransactionSignature> sigsFn;
 	List<TransactionSignature> sigs = new ArrayList<>();
@@ -92,6 +94,7 @@ class InHandleActivationHelperTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getPlatformTxn()).willReturn(platformTxn);
 
+		sig = mock(TransactionSignature.class);
 		sigsFn = mock(Function.class);
 
 		sigsFnSource =
@@ -156,6 +159,28 @@ class InHandleActivationHelperTest {
 
 		// then:
 		assertTrue(ans);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void countsKeysAsExpected() {
+		// setup:
+		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+
+		given(sigsFn.apply(scheduled.getEd25519())).willReturn(sig);
+
+		given(tests.test(scheduled, sig)).willReturn(true);
+		// when:
+		int shouldBeOne = subject.testScheduledCryptoSigs(tests);
+		// then:
+		assertEquals(1, shouldBeOne);
+
+		// and:
+		given(tests.test(scheduled, sig)).willReturn(false);
+		// when:
+		int shouldBeZero = subject.testScheduledCryptoSigs(tests);
+		// then:
+		assertEquals(0, shouldBeZero);
 	}
 
 	@AfterEach
