@@ -25,7 +25,10 @@ import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -34,6 +37,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 
 public class InHandleActivationHelper {
+	private static final Logger log = LogManager.getLogger(InHandleActivationHelper.class);
+
 	private static final List<JKey> NO_OTHER_PARTIES = null;
 	private static final PlatformTxnAccessor NO_LAST_ACCESSOR = null;
 	private static final Function<byte[], TransactionSignature> NO_LAST_SIGS_FN = null;
@@ -96,9 +101,12 @@ public class InHandleActivationHelper {
 		if (accessor != current) {
 			var otherOrderingResult = keyOrderer.keysForOtherParties(current.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
 			if (otherOrderingResult.hasErrorReport()) {
-				throw new AssertionError("Not implemented!");
+				var errorReport = otherOrderingResult.getErrorReport();
+				log.warn("Allowing active other-party sigs: {} ({})!", errorReport, errorReport.getResponseCode());
+				otherParties = Collections.emptyList();
+			} else {
+				otherParties = otherOrderingResult.getOrderedKeys();
 			}
-			otherParties = otherOrderingResult.getOrderedKeys();
 			sigsFn = sigsFnSource.apply(current.getPlatformTxn().getSignatures());
 			accessor = current;
 		}

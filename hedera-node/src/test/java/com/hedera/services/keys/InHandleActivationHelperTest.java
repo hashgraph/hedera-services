@@ -68,7 +68,6 @@ class InHandleActivationHelperTest {
 	CharacteristicsFactory characteristicsFactory;
 	Function<byte[], TransactionSignature> sigsFn;
 	List<TransactionSignature> sigs = new ArrayList<>();
-	Supplier<PlatformTxnAccessor> accessorSource;
 
 	InHandleActivationHelper.Activation activation;
 	Function<
@@ -105,6 +104,24 @@ class InHandleActivationHelperTest {
 
 		InHandleActivationHelper.activation = activation;
 		InHandleActivationHelper.sigsFnSource = sigsFnSource;
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void usesEmptyKeysOnErrorReport() {
+		// setup:
+		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+
+		given(keyOrderer.<SignatureStatus>keysForOtherParties(any(), any())).willReturn(impermissible);
+
+		// when:
+		boolean ans = subject.areOtherPartiesActive(tests);
+
+		// then:
+		assertTrue(ans);
+
+		// and:
+		verify(activation, never()).test(any(), any(), any(), any());
 	}
 
 	@Test
