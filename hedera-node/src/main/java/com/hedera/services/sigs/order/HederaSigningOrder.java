@@ -854,8 +854,11 @@ public class HederaSigningOrder {
 						scheduledOrderResult.getErrorReport());
 			} else {
 				var scheduledKeys = scheduledOrderResult.getOrderedKeys();
-				scheduledKeys.forEach(k -> k.setForScheduledTxn(true));
-				required.addAll(scheduledKeys);
+				for (JKey key : scheduledKeys) {
+					var dup = key.duplicate();
+					dup.setForScheduledTxn(true);
+					required.add(dup);
+				}
 			}
 		} catch (InvalidProtocolBufferException e) {
 			return factory.forUnparseableScheduledTxn(txnId);
