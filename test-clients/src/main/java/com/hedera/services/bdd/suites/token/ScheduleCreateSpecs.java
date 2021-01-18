@@ -21,6 +21,9 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.keys.ControlForKey;
+import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,10 +31,18 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
+import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateNonsense;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -51,10 +62,48 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 //						rejectsUnparseableTxn(),
 //						rejectsUnresolvableReqSigners(),
-						triggersImmediatelyWithBothReqSimpleSigs(),
+//						triggersImmediatelyWithBothReqSimpleSigs(),
 //						onlySchedulesWithMissingReqSimpleSigs(),
+						triggersImmediatelyAsRevocationService(),
 				}
 		);
+	}
+
+	private HapiApiSpec triggersImmediatelyAsRevocationService() {
+		/*
+		>>> START ScheduleCreate >>>
+		 - Resolved scheduleId: 0.0.1011
+		 - Sigs are already valid!
+		<<< END ScheduleCreate END <<<
+		...
+		>>> START ScheduleCreate >>>
+		 - Resolved scheduleId: 0.0.1012
+		 - Sigs not yet valid.
+		<<< END ScheduleCreate END <<<
+		 */
+		KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
+		SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
+		SigControl inadequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, OFF, OFF)));
+
+		String shouldBeInstaDeleted = "tbd";
+		String shouldBeUntouched = "stillHere";
+
+		return defaultHapiSpec("TriggersImmediatelyAsRevocationService")
+				.given(
+						fileCreate(shouldBeInstaDeleted).waclShape(waclShape),
+						fileCreate(shouldBeUntouched).waclShape(waclShape)
+				).when().then(
+						scheduleCreate(
+								"validRevocation",
+								fileDelete(shouldBeInstaDeleted)
+										.sigControl(ControlForKey.forKey(shouldBeInstaDeleted, adequateSigs))
+						),
+						scheduleCreate(
+								"notYetValidRevocation",
+								fileDelete(shouldBeUntouched)
+										.sigControl(ControlForKey.forKey(shouldBeUntouched, inadequateSigs))
+						)
+				);
 	}
 
 	public HapiApiSpec onlySchedulesWithMissingReqSimpleSigs() {

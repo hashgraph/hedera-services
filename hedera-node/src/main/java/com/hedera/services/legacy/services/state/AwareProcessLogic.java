@@ -216,10 +216,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.txnCtx().setStatus(INVALID_SIGNATURE);
 			return;
 		}
-//		if (!hasActiveNonPayerEntitySigs(accessor)) {
-//			ctx.txnCtx().setStatus(INVALID_SIGNATURE);
-//			return;
-//		}
 
 		var sysAuthStatus = ctx.systemOpPolicies().check(accessor).asStatus();
 		if (sysAuthStatus != OK) {
@@ -252,28 +248,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			log.warn("Almost inconceivably, when testing payer sig activation:", edgeCase);
 		}
 		return false;
-	}
-
-	private boolean hasActiveNonPayerEntitySigs(PlatformTxnAccessor accessor) {
-		if (isMeaningfulFileDelete(accessor.getTxn())) {
-			var id = accessor.getTxn().getFileDelete().getFileID();
-			JKey wacl = ctx.hfs().getattr(id).getWacl();
-			return otherPartySigsAreActive(
-					accessor,
-					ctx.backedKeyOrder(),
-					IN_HANDLE_SUMMARY_FACTORY,
-					forTopLevelFile((JKeyList)wacl));
-		} else {
-			return otherPartySigsAreActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
-		}
-	}
-
-	private boolean isMeaningfulFileDelete(TransactionBody txn) {
-		if (!txn.hasFileDelete() || !txn.getFileDelete().hasFileID()) {
-			return false;
-		} else {
-			return ctx.hfs().exists(txn.getFileDelete().getFileID());
-		}
 	}
 
 	private boolean nodeIgnoredDueDiligence(DuplicateClassification duplicity) {
