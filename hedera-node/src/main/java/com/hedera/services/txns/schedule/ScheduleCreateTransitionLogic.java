@@ -112,9 +112,9 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		}
 
 		/* Uncomment for temporary log-based testing locally */
-		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
-			log.info("\n>>> START ScheduleCreate >>>\n{}<<< END ScheduleCreate END <<<", sb);
-		}
+//		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
+//			log.info("\n>>> START ScheduleCreate >>>\n{}<<< END ScheduleCreate END <<<", sb);
+//		}
 
 		if (store.isCreationPending()) {
 			store.commitCreation();
