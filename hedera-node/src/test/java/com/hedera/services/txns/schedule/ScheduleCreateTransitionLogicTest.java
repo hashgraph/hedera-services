@@ -75,7 +75,10 @@ import static org.mockito.Mockito.verify;
 public class ScheduleCreateTransitionLogicTest {
 	long thisSecond = 1_234_567L;
 	private Instant now = Instant.ofEpochSecond(thisSecond);
-	private byte[] transactionBody = TxnUtils.randomUtf8Bytes(6);
+	private byte[] transactionBody = TransactionBody.newBuilder()
+			.setMemo("Just this")
+			.build()
+			.toByteArray();
 
 	private final Optional<ScheduleID> EMPTY_SCHEDULE = Optional.empty();
 	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
