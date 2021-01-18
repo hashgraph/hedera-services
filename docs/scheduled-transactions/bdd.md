@@ -109,10 +109,13 @@ Expect:
 <br>**When**: New Scheduled is created with the same `txBytes`, `admin` and `payer`.
 <br>**Expect**: New Scheduled Transaction to be created (even though `txBytes`, `admin` and `payer` are the same) 
 
-
-
-- create scheduled tx, wait for tx to expire, create second one (with same tx bytes, admin and payer) and check that new TX was created
-- create scheduled tx, append all required signatures (tx executes), create second one (with same tx bytes, admin and payer) and check that new TX was created
+**12. Check for TX creation after previous identical TX expiry**
+<br>**Given**:
+0. Configure very low `txExpirySecs`
+1. Scheduled Transaction created with `txBytes`, `admin` and `payer`.
+2. Wait for Transaction to expire
+<br>**When**: New Scheduled is created with the same `txBytes`, `admin` and `payer`.
+<br>**Expect**: New Scheduled Transaction to be created (even though `txBytes`, `admin` and `payer` are the same) 
 
 ### Negative
  
