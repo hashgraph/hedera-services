@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author hua Created on 2018-11-02
  */
-public abstract class JKey implements Serializable, Cloneable {
+public abstract class JKey implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private static final Logger log = LogManager.getLogger(JKey.class);
 	private static boolean USE_HEX_ENCODED_KEY = KeyExpansion.USE_HEX_ENCODED_KEY;
@@ -303,8 +303,7 @@ public abstract class JKey implements Serializable, Cloneable {
 		return null;
 	}
 
-	@Override
-	public JKey clone() {
+	public JKey duplicate() {
 		try {
 			var buf = serialize();
 			try (var bs = new ByteArrayInputStream(buf)) {

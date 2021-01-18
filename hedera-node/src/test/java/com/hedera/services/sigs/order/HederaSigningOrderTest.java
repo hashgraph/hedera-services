@@ -1893,7 +1893,7 @@ public class HederaSigningOrderTest {
 		);
 	}
 
-	private List<Key> sanityRestored(List<JKey> jKeys) {
+	public static List<Key> sanityRestored(List<JKey> jKeys) {
 		return jKeys.stream().map(jKey -> {
 					try {
 						return JKey.mapJKey(jKey);
