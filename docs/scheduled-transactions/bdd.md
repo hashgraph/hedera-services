@@ -8,7 +8,7 @@ Listed below are the set of bdd tests defined for Scheduled Transactions.
 
 **1. Should be able to create Scheduled Transaction with `transactionBody` only**
 
-Expect:
+**Expect**:
 - New Schedule entity must be created and its ID must be specified in the `TransactionReceipt`'s `ScheduleID` property.
 - When querying the Schedule Entity by the `ScheduleID` form the `transactionReceipt`:
     - it must have the same `ScheduleID` as specified in the `TransactionReceipt`
@@ -21,7 +21,7 @@ Expect:
 
 **2. Should be able to create Scheduled Transaction with `transactionBody` and `adminKey` only**
 
-Expect:
+**Expect**:
 - New Schedule entity must be created and its ID must be specified in the `TransactionReceipt`'s `ScheduleID` property.
 - When querying the Schedule Entity by the `ScheduleID` form the `transactionReceipt`:
     - it must have the same `ScheduleID` as specified in the `TransactionReceipt`
@@ -34,7 +34,7 @@ Expect:
     
 **3. Should be able to create Scheduled Transaction with `transactionBody` and `payerAccountID` only**
 
-Expect:
+**Expect**:
 - New Schedule entity must be created and its ID must be specified in the `TransactionReceipt`'s `ScheduleID` property.
 - When querying the Schedule Entity by the `ScheduleID` form the `transactionReceipt`:
     - it must have the same `ScheduleID` as specified in the `TransactionReceipt`
@@ -47,7 +47,7 @@ Expect:
     
 **4. Should be able to create Scheduled Transaction with `transactionBody` and `memo`**
 
-Expect:
+**Expect**:
 - New Schedule entity must be created and its ID must be specified in the `TransactionReceipt`'s `ScheduleID` property.
 - When querying the Schedule Entity by the `ScheduleID` form the `transactionReceipt`:
     - it must have the same `ScheduleID` as specified in the `TransactionReceipt`
@@ -62,7 +62,7 @@ Expect:
 
 When creating the Scheduled Transaction, populate the `SignatureMap` with one or more signatures by `Key`(s) required by the transaction that is being scheduled.
 
-Expect: 
+**Expect**: 
 - New Schedule entity must be created and its ID must be specified in the `TransactionReceipt`'s `ScheduleID` property.
 - When querying the Schedule Entity by the `ScheduleID` form the `transactionReceipt`:
     - it must have the same `ScheduleID` as specified in the `TransactionReceipt`
@@ -106,7 +106,8 @@ Expect:
 1. Scheduled Transaction created with `txBytes`, `admin` and `payer`.
 2. Append required signatures for the transaction using `ScheduleSign`
 3. Transaction Executes
-<br>**When**: New Scheduled is created with the same `txBytes`, `admin` and `payer`.
+
+**When**: New Scheduled is created with the same `txBytes`, `admin` and `payer`.
 <br>**Expect**: New Scheduled Transaction to be created (even though `txBytes`, `admin` and `payer` are the same) 
 
 **12. Check for TX creation after previous identical TX expiry**
@@ -114,7 +115,8 @@ Expect:
 0. Configure very low `txExpirySecs`
 1. Scheduled Transaction created with `txBytes`, `admin` and `payer`.
 2. Wait for Transaction to expire
-<br>**When**: New Scheduled is created with the same `txBytes`, `admin` and `payer`.
+
+**When**: New Scheduled is created with the same `txBytes`, `admin` and `payer`.
 <br>**Expect**: New Scheduled Transaction to be created (even though `txBytes`, `admin` and `payer` are the same) 
 
 ### Negative
