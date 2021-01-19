@@ -77,7 +77,6 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-		FCMap<MerkleEntityId, MerkleSchedule> schedules = new FCMap<>();
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				() -> new MerkleTokenRelStatus(),
@@ -90,8 +89,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new MockGlobalDynamicProps(),
 				() -> tokens,
 				tokenRelsLedger);
-		scheduleStore = new HederaScheduleStore(ids, () -> schedules);
-		subject = new HederaLedger(tokenStore, scheduleStore, ids, creator, historian, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
 	}
 
 	@Test

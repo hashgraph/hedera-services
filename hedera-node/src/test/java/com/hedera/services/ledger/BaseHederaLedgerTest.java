@@ -214,9 +214,7 @@ public class BaseHederaLedgerTest {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		scheduleStore = mock(HederaScheduleStore.class);
-
-		subject = new HederaLedger(tokenStore, scheduleStore, ids, creator, historian, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 	}
 

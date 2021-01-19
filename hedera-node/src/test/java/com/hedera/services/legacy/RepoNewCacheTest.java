@@ -75,7 +75,6 @@ public class RepoNewCacheTest {
 				new ChangeSummaryManager<>());
 		HederaLedger ledger = new HederaLedger(
 				mock(TokenStore.class),
-				mock(ScheduleStore.class),
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				mock(AccountRecordsHistorian.class),
@@ -172,7 +171,6 @@ public class RepoNewCacheTest {
 		backingAccounts.put(IdUtils.asAccount("0.0.2"), someOtherAccount);
 		HederaLedger ledger = new HederaLedger(
 				mock(TokenStore.class),
-				mock(ScheduleStore.class),
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				mock(AccountRecordsHistorian.class),

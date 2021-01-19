@@ -340,7 +340,6 @@ import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
 import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
-import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -1329,11 +1328,12 @@ public class ServicesContext {
 			accountsLedger.setKeyComparator(ACCOUNT_ID_COMPARATOR);
 			ledger = new HederaLedger(
 					tokenStore(),
-					scheduleStore(),
 					ids(),
 					creator(),
 					recordsHistorian(),
 					accountsLedger);
+			scheduleStore().setAccountsLedger(accountsLedger);
+			scheduleStore().setHederaLedger(ledger);
 		}
 		return ledger;
 	}
@@ -1608,7 +1608,6 @@ public class ServicesContext {
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
 					NOOP_TOKEN_STORE,
-					NOOP_SCHEDULE_STORE,
 					NOOP_ID_SOURCE,
 					NOOP_EXPIRING_CREATIONS,
 					NOOP_RECORDS_HISTORIAN,

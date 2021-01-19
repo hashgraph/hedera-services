@@ -156,7 +156,6 @@ public class SmartContractRequestHandlerStorageTest {
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),
-            mock(ScheduleStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
