@@ -83,22 +83,14 @@ public class InHandleActivationHelper {
 		return arePartiesActive(true, scheduledTxn, tests);
 	}
 
-	public int testScheduledCryptoSigs(BiPredicate<JKey, TransactionSignature> cryptoTests) {
+	public void visitScheduledCryptoSigs(BiConsumer<JKey, TransactionSignature> visitor) {
 		ensureUpToDate();
 
-		var successes = new AtomicInteger();
-		Consumer<JKey> visitor = key -> {
-			var sig = sigsFn.apply(key.getEd25519());
-			if (cryptoTests.test(key, sig)) {
-				successes.getAndIncrement();
-			}
-		};
 		for (JKey req : otherParties) {
 			if (req.isForScheduledTxn()) {
-				visitSimpleKeys(req, visitor);
+				visitSimpleKeys(req, key -> visitor.accept(key, sigsFn.apply(key.getEd25519())));
 			}
 		}
-		return successes.get();
 	}
 
 	private boolean arePartiesActive(

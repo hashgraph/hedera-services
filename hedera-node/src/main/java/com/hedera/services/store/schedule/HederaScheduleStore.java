@@ -99,15 +99,12 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		throwIfMissing(id);
 		var key = fromScheduleId(id);
 		var schedule = schedules.get().getForModify(key);
-		Exception thrown = null;
 		try {
 			change.accept(schedule);
 		} catch (Exception e) {
-			thrown = e;
-		}
-		schedules.get().replace(key, schedule);
-		if (thrown != null) {
-			throw new IllegalArgumentException("Schedule change failed unexpectedly!", thrown);
+			throw new IllegalArgumentException("Schedule change failed unexpectedly!", e);
+		} finally {
+			schedules.get().replace(key, schedule);
 		}
 	}
 

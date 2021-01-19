@@ -40,9 +40,9 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
@@ -165,22 +165,15 @@ class InHandleActivationHelperTest {
 	@SuppressWarnings("unchecked")
 	public void countsKeysAsExpected() {
 		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+		BiConsumer<JKey, TransactionSignature> visitor = (BiConsumer<JKey, TransactionSignature>) mock(BiConsumer.class);
 
 		given(sigsFn.apply(scheduled.getEd25519())).willReturn(sig);
 
-		given(tests.test(scheduled, sig)).willReturn(true);
 		// when:
-		int shouldBeOne = subject.testScheduledCryptoSigs(tests);
-		// then:
-		assertEquals(1, shouldBeOne);
+		subject.visitScheduledCryptoSigs(visitor);
 
-		// and:
-		given(tests.test(scheduled, sig)).willReturn(false);
-		// when:
-		int shouldBeZero = subject.testScheduledCryptoSigs(tests);
 		// then:
-		assertEquals(0, shouldBeZero);
+		verify(visitor).accept(scheduled, sig);
 	}
 
 	@AfterEach

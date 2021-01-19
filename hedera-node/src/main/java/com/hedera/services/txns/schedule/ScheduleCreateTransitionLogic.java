@@ -23,7 +23,6 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -32,10 +31,14 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.VerificationStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -99,16 +102,44 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			if (result.getCreated().isEmpty()) {
 				abortWith(result.getStatus());
 				return;
+			} else {
+				sb.append(" - Created new schedule...").append("\n");
+				store.commitCreation();
 			}
 			scheduleId = result.getCreated().get();
 		}
 
 		sb.append(" - Resolved scheduleId: ").append(readableId(scheduleId)).append("\n");
+
+		List<byte[]> validKeys = new ArrayList<>();
+		activationHelper.visitScheduledCryptoSigs((key, sig) -> {
+			if (sig.getSignatureStatus() == VerificationStatus.VALID) {
+				validKeys.add(key.getEd25519());
+			}
+		});
+
+		AtomicInteger numWitnessed = new AtomicInteger();
+		store.apply(scheduleId, schedule -> {
+			for (byte[] key : validKeys) {
+				if (schedule.witnessValidEd25519Signature(key)) {
+					numWitnessed.getAndIncrement();
+				}
+			}
+		});
+		sb.append(" - The resolved schedule has now witnessed ")
+				.append(numWitnessed.get())
+				.append(" (additional) valid keys sign.\n");
+
+		var schedule = store.get(scheduleId);
+		sb.append(" - ").append(schedule).append("\n");
 		var scheduledTxn = uncheckedParse(op.getTransactionBody());
-		if (activationHelper.areScheduledPartiesActive(scheduledTxn, ONLY_IF_SIG_IS_VALID)) {
-			sb.append(" - Sigs are already valid!").append("\n");
+		var isReadyToExecute = activationHelper.areScheduledPartiesActive(
+				scheduledTxn,
+				(key, sig) -> schedule.hasValidEd25519Signature(key.getEd25519()));
+		if (isReadyToExecute) {
+			sb.append(" - Ready for execution!").append("\n");
 		} else {
-			sb.append(" - Sigs not yet valid.").append("\n");
+			sb.append(" - Not ready for execution yet.").append("\n");
 		}
 
 		/* Uncomment for temporary log-based testing locally */
@@ -116,9 +147,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 //			log.info("\n>>> START ScheduleCreate >>>\n{}<<< END ScheduleCreate END <<<", sb);
 //		}
 
-		if (store.isCreationPending()) {
-			store.commitCreation();
-		}
 		txnCtx.setCreated(scheduleId);
 		txnCtx.setStatus(SUCCESS);
 	}

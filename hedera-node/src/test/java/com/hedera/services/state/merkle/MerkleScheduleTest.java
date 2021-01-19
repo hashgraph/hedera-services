@@ -142,6 +142,13 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
+	void witnessOnlyTrueIfNewSignatory() {
+		// expect:
+		assertTrue(subject.witnessValidEd25519Signature(fpk));
+		assertFalse(subject.witnessValidEd25519Signature(fpk));
+	}
+
+	@Test
 	public void deleteIsNoop() {
 		// expect:
 		assertDoesNotThrow(subject::release);

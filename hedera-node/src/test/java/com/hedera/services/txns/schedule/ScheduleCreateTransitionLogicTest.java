@@ -24,22 +24,24 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.KeysHelper;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.crypto.VerificationStatus;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
@@ -47,12 +49,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
@@ -67,6 +72,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -96,6 +102,10 @@ public class ScheduleCreateTransitionLogicTest {
 	private InHandleActivationHelper activationHelper;
 	private SignatureMap sigMap;
 	private Set<JKey> jKeySet;
+	private AtomicBoolean returnValid;
+	private JKey goodKey = new JEd25519Key("angelic".getBytes());
+	private JKey badKey = new JEd25519Key("demonic".getBytes());
+	private TransactionSignature validSig, invalidSig;
 
 	private ScheduleCreateTransitionLogic subject;
 
@@ -104,6 +114,22 @@ public class ScheduleCreateTransitionLogicTest {
 		store = mock(ScheduleStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		activationHelper = mock(InHandleActivationHelper.class);
+
+		returnValid = new AtomicBoolean(true);
+		validSig = mock(TransactionSignature.class);
+		given(validSig.getSignatureStatus()).willReturn(VerificationStatus.VALID);
+		invalidSig = mock(TransactionSignature.class);
+		given(invalidSig.getSignatureStatus()).willReturn(VerificationStatus.INVALID);
+		willAnswer(inv -> {
+			BiConsumer<JKey, TransactionSignature> visitor = inv.getArgument(0);
+			if (returnValid.get()) {
+				visitor.accept(goodKey, validSig);
+				returnValid.set(false);
+			} else {
+				visitor.accept(badKey, invalidSig);
+			}
+			return null;
+		}).given(activationHelper).visitScheduledCryptoSigs(any());
 
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.activePayer()).willReturn(payer);
@@ -122,6 +148,10 @@ public class ScheduleCreateTransitionLogicTest {
 
 	@Test
 	public void followsHappyPath() {
+		// setup:
+		ArgumentCaptor<Consumer<MerkleSchedule>> captor = ArgumentCaptor.forClass(Consumer.class);
+		MerkleSchedule created = mock(MerkleSchedule.class);
+
 		givenValidTxnCtx();
 
         given(store.lookupScheduleId(transactionBody, payer)).willReturn(EMPTY_SCHEDULE);
@@ -150,6 +180,12 @@ public class ScheduleCreateTransitionLogicTest {
 				eq(RichInstant.fromJava(now)),
 				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
 		// and:
+		verify(store).apply(argThat(schedule::equals), captor.capture());
+		captor.getValue().accept(created);
+		verify(created).witnessValidEd25519Signature(goodKey.getEd25519());
+		verify(created, never()).witnessValidEd25519Signature(badKey.getEd25519());
+
+		// and:
 		verify(store).commitCreation();
 		verify(txnCtx).setStatus(SUCCESS);
 	}
@@ -177,7 +213,7 @@ public class ScheduleCreateTransitionLogicTest {
 				eq(RichInstant.fromJava(now)),
 				argThat(jKey -> true));
 		// and:
-		verify(store).commitCreation();
+		verify(store, never()).commitCreation();
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 

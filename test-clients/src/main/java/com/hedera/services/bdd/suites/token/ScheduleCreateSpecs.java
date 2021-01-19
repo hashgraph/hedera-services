@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -31,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -64,44 +64,64 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 //						rejectsUnresolvableReqSigners(),
 //						triggersImmediatelyWithBothReqSimpleSigs(),
 //						onlySchedulesWithMissingReqSimpleSigs(),
-						triggersImmediatelyAsRevocationService(),
+						preservesRevocationServiceSemanticsForFileDelete(),
 				}
 		);
 	}
 
-	private HapiApiSpec triggersImmediatelyAsRevocationService() {
+	private HapiApiSpec preservesRevocationServiceSemanticsForFileDelete() {
 		/*
-		>>> START ScheduleCreate >>>
-		 - Resolved scheduleId: 0.0.1011
-		 - Sigs are already valid!
-		<<< END ScheduleCreate END <<<
-		...
-		>>> START ScheduleCreate >>>
-		 - Resolved scheduleId: 0.0.1012
-		 - Sigs not yet valid.
-		<<< END ScheduleCreate END <<<
-		 */
+2021-01-18 20:46:34.104 INFO  147  ScheduleCreateTransitionLogic -
+>>> START ScheduleCreate >>>
+ - Created new schedule...
+ - Resolved scheduleId: 0.0.1003
+ - The resolved schedule has now witnessed 2 (additional) valid keys sign.
+ - MerkleSchedule{deleted=false, transactionBody=..., payer=0.0.2, schedulingAccount=EntityId{shard=0, realm=0, num=2}, schedulingTXValidStart=RichInstant{seconds=1611024393, nanos=580513000}, signers=[], signatories=[8479e6a35f11f9b4f9e5cd0062b2c8b4add6356af49f8b0d68d66f9f88469561, a17fe7d29389a3c37bb95ae15127502e7304fc6501e6ae19cd6345ad4a43d8a2], adminKey=<N/A>}
+ - Ready for execution!
+<<< END ScheduleCreate END <<<
+...
+>>> START ScheduleCreate >>>
+ - Created new schedule...
+ - Resolved scheduleId: 0.0.1004
+ - The resolved schedule has now witnessed 1 (additional) valid keys sign.
+ - MerkleSchedule{deleted=false, transactionBody=..., payer=0.0.2, schedulingAccount=EntityId{shard=0, realm=0, num=2}, schedulingTXValidStart=RichInstant{seconds=1611024394, nanos=580295000}, signers=[], signatories=[807ddbdac4a1c5ac9da10a00830e4ca4d37a1d05d09d954a6d3b05ba921d5a39], adminKey=<N/A>}
+ - Not ready for execution yet.
+<<< END ScheduleCreate END <<<
+...
+>>> START ScheduleCreate >>>
+ - Resolved scheduleId: 0.0.1004
+ - The resolved schedule has now witnessed 1 (additional) valid keys sign.
+ - MerkleSchedule{deleted=false, transactionBody=..., payer=0.0.2, schedulingAccount=EntityId{shard=0, realm=0, num=2}, schedulingTXValidStart=RichInstant{seconds=1611024394, nanos=580295000}, signers=[], signatories=[807ddbdac4a1c5ac9da10a00830e4ca4d37a1d05d09d954a6d3b05ba921d5a39, e889abcf521f9bd4d96c928c55f205758249ef9b9848b3418207d59f5f89e896], adminKey=<N/A>}
+ - Ready for execution!
+<<< END ScheduleCreate END <<<
+		*/
 		KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
 		SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
 		SigControl inadequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, OFF, OFF)));
+		SigControl compensatorySigs = waclShape.signedWith(sigs(OFF, sigs(OFF, OFF, ON)));
 
 		String shouldBeInstaDeleted = "tbd";
-		String shouldBeUntouched = "stillHere";
+		String shouldBeDeletedEventually = "tbdl";
 
-		return defaultHapiSpec("TriggersImmediatelyAsRevocationService")
+		return defaultHapiSpec("PreservesRevocationServiceSemanticsForFileDelete")
 				.given(
 						fileCreate(shouldBeInstaDeleted).waclShape(waclShape),
-						fileCreate(shouldBeUntouched).waclShape(waclShape)
+						fileCreate(shouldBeDeletedEventually).waclShape(waclShape)
 				).when().then(
 						scheduleCreate(
 								"validRevocation",
 								fileDelete(shouldBeInstaDeleted)
-										.sigControl(ControlForKey.forKey(shouldBeInstaDeleted, adequateSigs))
+										.sigControl(forKey(shouldBeInstaDeleted, adequateSigs))
 						),
 						scheduleCreate(
 								"notYetValidRevocation",
-								fileDelete(shouldBeUntouched)
-										.sigControl(ControlForKey.forKey(shouldBeUntouched, inadequateSigs))
+								fileDelete(shouldBeDeletedEventually)
+										.sigControl(forKey(shouldBeDeletedEventually, inadequateSigs))
+						),
+						scheduleCreate(
+								"nowValidRevocation",
+								fileDelete(shouldBeDeletedEventually)
+										.sigControl(forKey(shouldBeDeletedEventually, compensatorySigs))
 						)
 				);
 	}

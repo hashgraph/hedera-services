@@ -100,9 +100,15 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     }
 
     /* Notary functions */
-    public void witnessValidEd25519Signature(byte[] key) {
-    	signatories.add(key);
-    	notary.add(copyFrom(key));
+    public boolean witnessValidEd25519Signature(byte[] key) {
+    	var usableKey = copyFrom(key);
+    	if (notary.contains(usableKey)) {
+    		return false;
+        } else {
+            signatories.add(key);
+            notary.add(usableKey);
+            return true;
+        }
     }
 
     public boolean hasValidEd25519Signature(byte[] key) {
@@ -222,8 +228,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         var fc = new MerkleSchedule(
                 transactionBody,
                 schedulingAccount,
-                schedulingTXValidStart
-        );
+                schedulingTXValidStart);
 
         fc.setDeleted(deleted);
         fc.setSigners(signersCopy);
@@ -232,6 +237,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         }
         if (adminKey != UNUSED_KEY) {
             fc.setAdminKey(adminKey);
+        }
+        for (byte[] signatory : signatories) {
+            fc.witnessValidEd25519Signature(signatory);
         }
 
         return fc;
