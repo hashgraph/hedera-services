@@ -125,8 +125,7 @@ public class RecordStreamManager {
 					platform,
 					startWriteAtCompleteWindow,
 					RecordStreamType.RECORD);
-			writeQueueThread = new QueueThread<>("writeQueueThread", platform.getSelfId(), streamFileWriter,
-					nodeLocalProperties.recordStreamQueueCapacity());
+			writeQueueThread = new QueueThread<>("writeQueueThread", platform.getSelfId(), streamFileWriter);
 		}
 
 		this.runningAvgs = runningAvgs;
@@ -139,8 +138,7 @@ public class RecordStreamManager {
 		hashQueueThread = new QueueThread<>(
 				"hashQueueThread",
 				platform.getSelfId(),
-				hashCalculator,
-				nodeLocalProperties.recordStreamQueueCapacity());
+				hashCalculator);
 
 		multiStream = new MultiStream<>(
 				nodeLocalProperties.isRecordStreamEnabled()
