@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,8 @@ public class MerkleBlobMeta extends AbstractMerkleLeaf implements FCMKey {
 
 	private String path;
 
-	public MerkleBlobMeta() { }
+	public MerkleBlobMeta() {
+	}
 
 	public MerkleBlobMeta(String path) {
 		this.path = path;
@@ -54,7 +55,7 @@ public class MerkleBlobMeta extends AbstractMerkleLeaf implements FCMKey {
 		@Override
 		public FastCopyable deserialize(DataInputStream _in) throws IOException {
 			var path = new MerkleBlobMeta();
-			var in = (SerializableDataInputStream)_in;
+			var in = (SerializableDataInputStream) _in;
 
 			in.readLong();
 			in.readLong();
@@ -100,7 +101,7 @@ public class MerkleBlobMeta extends AbstractMerkleLeaf implements FCMKey {
 			return false;
 		}
 
-		var that = (MerkleBlobMeta)o;
+		var that = (MerkleBlobMeta) o;
 
 		return Objects.equals(this.path, that.path);
 	}
@@ -108,18 +109,6 @@ public class MerkleBlobMeta extends AbstractMerkleLeaf implements FCMKey {
 	@Override
 	public int hashCode() {
 		return Arrays.hashCode(getNormalisedStringBytes(path));
-	}
-
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
 	}
 
 	/* --- Bean --- */

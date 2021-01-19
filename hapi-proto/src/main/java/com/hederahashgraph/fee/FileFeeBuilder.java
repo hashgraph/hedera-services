@@ -74,9 +74,9 @@ public class FileFeeBuilder extends FeeBuilder {
 
     bpr = INT_SIZE;
     
-    rbs =  (getBaseTransactionRecordSize(txBody) + BASIC_ENTITY_ID_SIZE/* Added for File ID size*/) * RECIEPT_STORAGE_TIME_SEC;
+    rbs =  (getBaseTransactionRecordSize(txBody) + BASIC_ENTITY_ID_SIZE/* Added for File ID size*/) * RECEIPT_STORAGE_TIME_SEC;
 
-    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECIEPT_STORAGE_TIME_SEC);
+    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -140,7 +140,7 @@ public class FileFeeBuilder extends FeeBuilder {
       sbs = sbsStorageSize * seconds;
     }
     
-    rbs =  getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+    rbs =  getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
 
     long rbsNetwork = getDefaultRBHNetworkSize();
 
@@ -196,7 +196,7 @@ public class FileFeeBuilder extends FeeBuilder {
       long seconds = duration.getSeconds();
       sbs = sbsStorageSize * seconds;
     }
-    rbs =  getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+    rbs =  getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
     long rbsNetwork = getDefaultRBHNetworkSize();
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -413,7 +413,7 @@ public class FileFeeBuilder extends FeeBuilder {
     bpt = bpt + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
     vpt = numSignatures.getTotalSigCount();
     
-    rbs =  getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+    rbs =  getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
     
     long rbsNetwork = getDefaultRBHNetworkSize();
 
@@ -445,7 +445,7 @@ public class FileFeeBuilder extends FeeBuilder {
     bpt = getCommonTransactionBodyBytes(txBody);
     bpt = bpt + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
     vpt = numSignatures.getTotalSigCount();
-    rbs =  getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+    rbs =  getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
     long rbsNetwork = getDefaultRBHNetworkSize();
 
     // sbs should not be charged as the fee for storage was already paid. What if expiration is changed though?
@@ -483,7 +483,7 @@ public class FileFeeBuilder extends FeeBuilder {
     bpr = INT_SIZE;
 
    
-    rbs =  getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
+    rbs =  getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
 
     long rbsNetwork = getDefaultRBHNetworkSize();
 

@@ -1084,7 +1084,7 @@ workflows:
           workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
 
 # This workflow will be running normally in master branch on a daily basis
-  AWS-Daily-Services-Crypto-Migration-4N-1C:
+  AWS-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
           - schedule:
               cron: "30 5 * * *"
@@ -1102,11 +1102,11 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "AWS-Daily-Services-Crypto-Migration-4N-1C"
-          test-name: "AWS-Daily-Services-Crypto-Migration-4N-1C.json"
+          workflow-name: "AWS-Daily-Services-Crypto-Migration-5N-1C"
+          test-name: "AWS-Daily-Services-Crypto-Migration-5N-1C.json"
   # This workflow will be running normally in master branch on a daily basis
 
-  GCP-Daily-Services-Crypto-Migration-4N-1C:
+  GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
           cron: "35 5 * * *"
@@ -1124,7 +1124,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "GCP-Daily-Services-Crypto-Migration-4N-1C"
+          workflow-name: "GCP-Daily-Services-Crypto-Migration-5N-1C"
 
 # The mainnet migration test needs to be run in a 13-node test network.
 # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
@@ -1271,6 +1271,7 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C.json"
 
   AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
     triggers:
@@ -1313,6 +1314,7 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C.json"
 
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
@@ -1396,6 +1398,7 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
+          test-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C.json"
 
   AWS-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
@@ -2028,7 +2031,7 @@ jobs:
         default: ""
       test-name:
         type: string
-        default: "GCP-Daily-Services-Crypto-Migration-4N-1C.json"
+        default: "GCP-Daily-Services-Crypto-Migration-5N-1C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>

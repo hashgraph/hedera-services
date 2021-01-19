@@ -22,12 +22,10 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 
-import java.util.AbstractMap;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +37,7 @@ import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * A store that provides efficient access to the mutable representations
@@ -48,13 +47,15 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  *
  * @author Michael Tinker
  */
-public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> {
-	public static final Comparator<Map.Entry<AccountID, TokenID>> RELATIONSHIP_COMPARATOR = Comparator
-			.<Map.Entry<AccountID, TokenID>, AccountID>comparing(Map.Entry::getKey, ACCOUNT_ID_COMPARATOR)
-			.thenComparing(Map.Entry::getValue, TOKEN_ID_COMPARATOR);
+public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
+	public static final Comparator<Pair<AccountID, TokenID>> REL_CMP =
+			Comparator.<Pair<AccountID, TokenID>, AccountID>comparing(Pair::getLeft, ACCOUNT_ID_COMPARATOR)
+					.thenComparing(Pair::getRight, TOKEN_ID_COMPARATOR);
+	private static final Comparator<Map.Entry<Pair<AccountID, TokenID>, MerkleTokenRelStatus>> REL_ENTRY_CMP =
+			Comparator.comparing(Map.Entry::getKey, REL_CMP);
 
-	Set<Map.Entry<AccountID, TokenID>> existingRels = new HashSet<>();
-	Map<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> cache = new HashMap<>();
+	Set<Pair<AccountID, TokenID>> existingRels = new HashSet<>();
+	Map<Pair<AccountID, TokenID>, MerkleTokenRelStatus> cache = new HashMap<>();
 
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> delegate;
 
@@ -73,27 +74,26 @@ public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, Token
 
 	@Override
 	public void flushMutableRefs() {
-		cache.keySet().stream()
-				.sorted(RELATIONSHIP_COMPARATOR)
-				.forEach(key ->
-						delegate.get().replace(fromAccountTokenRel(key.getKey(), key.getValue()), cache.get(key)));
+		cache.entrySet().stream()
+				.sorted(REL_ENTRY_CMP)
+				.forEach(entry -> delegate.get().replace(fromAccountTokenRel(entry.getKey()), entry.getValue()));
 		cache.clear();
 	}
 
 	@Override
-	public boolean contains(Map.Entry<AccountID, TokenID> key) {
+	public boolean contains(Pair<AccountID, TokenID> key) {
 		return existingRels.contains(key);
 	}
 
 	@Override
-	public MerkleTokenRelStatus getRef(Map.Entry<AccountID, TokenID> key) {
+	public MerkleTokenRelStatus getRef(Pair<AccountID, TokenID> key) {
 		return cache.computeIfAbsent(
 				key,
-				ignore -> delegate.get().getForModify(fromAccountTokenRel(key.getKey(), key.getValue())));
+				ignore -> delegate.get().getForModify(fromAccountTokenRel(key.getLeft(), key.getRight())));
 	}
 
 	@Override
-	public void put(Map.Entry<AccountID, TokenID> key, MerkleTokenRelStatus status) {
+	public void put(Pair<AccountID, TokenID> key, MerkleTokenRelStatus status) {
 		if (!existingRels.contains(key)) {
 			delegate.get().put(fromAccountTokenRel(key), status);
 			existingRels.add(key);
@@ -105,26 +105,26 @@ public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, Token
 	}
 
 	@Override
-	public void remove(Map.Entry<AccountID, TokenID> key) {
-		existingRels.remove(key);
-		delegate.get().remove(fromAccountTokenRel(key));
+	public void remove(Pair<AccountID, TokenID> id) {
+		existingRels.remove(id);
+		delegate.get().remove(fromAccountTokenRel(id));
 	}
 
 	@Override
-	public MerkleTokenRelStatus getUnsafeRef(Map.Entry<AccountID, TokenID> id) {
+	public MerkleTokenRelStatus getUnsafeRef(Pair<AccountID, TokenID> id) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public Set<Map.Entry<AccountID, TokenID>> idSet() {
+	public Set<Pair<AccountID, TokenID>> idSet() {
 		throw new UnsupportedOperationException();
 	}
 
-	public static Map.Entry<AccountID, TokenID> asTokenRel(AccountID account, TokenID token) {
-		return new AbstractMap.SimpleImmutableEntry<>(account, token);
+	public static Pair<AccountID, TokenID> asTokenRel(AccountID account, TokenID token) {
+		return Pair.of(account, token);
 	}
 
-	public static String readableTokenRel(Map.Entry<AccountID, TokenID> relationship) {
-		return String.format("%s <-> %s", readableId(relationship.getKey()), readableId(relationship.getValue()));
+	public static String readableTokenRel(Pair<AccountID, TokenID> rel) {
+		return String.format("%s <-> %s", readableId(rel.getLeft()), readableId(rel.getRight()));
 	}
 }

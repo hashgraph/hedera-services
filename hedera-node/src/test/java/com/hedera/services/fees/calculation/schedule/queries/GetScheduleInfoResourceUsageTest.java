@@ -20,6 +20,8 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Optional;
@@ -35,6 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+@RunWith(JUnitPlatform.class)
 public class GetScheduleInfoResourceUsageTest {
     ScheduleID target = IdUtils.asSchedule("0.0.123");
 
@@ -152,16 +155,6 @@ public class GetScheduleInfoResourceUsageTest {
         assertFalse(queryCtx.containsKey(GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY));
         // and:
         assertSame(FeeData.getDefaultInstance(), usage);
-    }
-
-    @Test
-    public void rethrowsIae() {
-        // given:
-        Query query = scheduleInfoQuery(target);
-        given(view.infoForSchedule(any())).willThrow(IllegalStateException.class);
-
-        // expect:
-        assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
     }
 
     private Query scheduleInfoQuery(ScheduleID id) {

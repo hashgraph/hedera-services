@@ -79,19 +79,6 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
-	public void unsupportedOperationsThrow() {
-		// given:
-		var defaultSubject = new MerkleTokenRelStatus();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
-		assertThrows(UnsupportedOperationException.class, ()
-				-> MerkleTokenRelStatus.LEGACY_PROVIDER.deserialize(null));
-
-	}
-
-	@Test
 	public void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleTokenRelStatus.MERKLE_VERSION, subject.getVersion());

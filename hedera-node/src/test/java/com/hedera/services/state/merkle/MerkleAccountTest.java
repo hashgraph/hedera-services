@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -34,8 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -50,12 +47,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.will;
 
 @RunWith(JUnitPlatform.class)
 public class MerkleAccountTest {
@@ -150,7 +144,8 @@ public class MerkleAccountTest {
 	@Test
 	public void immutableAccountThrowsIse() {
 		// setup:
-		MerkleAccount.stackDump = () -> {};
+		MerkleAccount.stackDump = () -> {
+		};
 
 		// given:
 		var original = new MerkleAccount();
@@ -240,13 +235,6 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void unsupportedOperationsThrow() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyFromExtra(null));
-	}
-
-	@Test
 	public void objectContractMet() {
 		// given:
 		var one = new MerkleAccount();
@@ -322,56 +310,6 @@ public class MerkleAccountTest {
 		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));
 		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_RECORDS));
 		assertThat(subject.getChild(RELEASE_090_ASSOCIATED_TOKENS), instanceOf(MerkleAccountTokens.class));
-	}
-
-	@Test
-	public void legacyProviderWorks() throws IOException {
-		// setup:
-		var expectedState = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy);
-		// and:
-		var in = mock(DataInputStream.class);
-
-		given(in.readLong())
-				.willReturn(1L)
-				.willReturn(2L)
-				.willReturn(balance)
-				.willReturn(senderThreshold)
-				.willReturn(receiverThreshold)
-				.willReturn(1L)
-				.willReturn(2L)
-				.willReturn(proxy.shard())
-				.willReturn(proxy.realm())
-				.willReturn(proxy.num())
-				.willReturn(autoRenewSecs)
-				.willReturn(expiry);
-		given(in.readChar())
-				.willReturn(ApplicationConstants.P);
-		given(in.readUTF())
-				.willReturn(memo);
-		given(in.readByte())
-				.willReturn((byte)(receiverSigRequired ? 1 : 0))
-				.willReturn((byte)1)
-				.willReturn((byte)(smartContract ? 1 : 0));
-		given(serdes.deserializeKey(in)).willReturn(key);
-		given(serdes.deserializeId(in)).willReturn(proxy);
-		will(invoke -> {
-			@SuppressWarnings("unchecked")
-			FCQueue<ExpirableTxnRecord> records = invoke.getArgument(1);
-			records.offer(new ExpirableTxnRecord());
-			records.offer(new ExpirableTxnRecord());
-			return null;
-		}).given(serdes).deserializeIntoRecords(argThat(in::equals), any());
-
-		// when:
-		var providedSubject = (MerkleAccount)new MerkleAccount.Provider().deserialize(in);
-
-		// then:
-		assertEquals(expectedState, providedSubject.state());
 	}
 
 	@Test
