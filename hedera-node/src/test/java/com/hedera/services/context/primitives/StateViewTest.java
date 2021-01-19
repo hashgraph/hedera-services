@@ -287,7 +287,7 @@ class StateViewTest {
 		assertEquals(scheduleId, info.getScheduleID());
 		assertEquals(schedule.creatorAccountID().toGrpcAccountId(), info.getCreatorAccountID());
 		assertEquals(schedule.payerAccountID().toGrpcAccountId(), info.getPayerAccountID());
-//		assertEquals(schedule.signers(), info.getSigners()); // TODO: Find a way to compare
+		// TODO compare signatories once added
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(ByteString.copyFrom(schedule.transactionBody()), info.getTransactionBody());
 	}

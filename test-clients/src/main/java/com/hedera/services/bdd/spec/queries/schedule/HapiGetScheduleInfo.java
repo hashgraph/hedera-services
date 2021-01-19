@@ -55,7 +55,6 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     Optional<String> expectedPayerAccountID = Optional.empty();
     Optional<byte[]> expectedTransactionBody = Optional.empty();
     Optional<String> expectedAdminKey = Optional.empty();
-    Optional<String[]> expectedSigners = Optional.empty();
 
     public HapiGetScheduleInfo hasScheduleId(String s) {
         expectedScheduleId = Optional.of(s);
@@ -82,58 +81,26 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
         return this;
     }
 
-    public HapiGetScheduleInfo hasSigners(String[] s) {
-        expectedSigners = Optional.of(s);
-        return this;
-    }
-
     @Override
     protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
         var actualInfo = response.getScheduleGetInfo().getScheduleInfo();
 
-        if (expectedCreatorAccountID.isPresent()) {
-            Assert.assertEquals(
-                    "Wrong schedule creator account ID!",
-                    expectedCreatorAccountID.get(),
-                    actualInfo.getCreatorAccountID());
-        }
+        expectedCreatorAccountID.ifPresent(s -> Assert.assertEquals(
+                "Wrong schedule creator account ID!",
+                TxnUtils.asId(s, spec),
+                actualInfo.getCreatorAccountID()));
 
-        if (expectedPayerAccountID.isPresent()) {
-            Assert.assertEquals(
-                    "Wrong schedule payer account ID!",
-                    expectedPayerAccountID.get(),
-                    actualInfo.getPayerAccountID());
-        }
+        expectedPayerAccountID.ifPresent(s -> Assert.assertEquals(
+                "Wrong schedule payer account ID!",
+                TxnUtils.asId(s, spec),
+                actualInfo.getPayerAccountID()));
 
-        if (expectedTransactionBody.isPresent()) {
-            Assert.assertEquals(
-                    "Wrong schedule transaction body!",
-                    expectedTransactionBody.get(),
-                    actualInfo.getTransactionBody());
-        }
+        expectedTransactionBody.ifPresent(bytes -> Assert.assertEquals(
+                "Wrong schedule transaction body!",
+                bytes,
+                actualInfo.getTransactionBody().toByteArray()));
 
-        if (expectedSigners.isPresent()) {
-            Assert.assertEquals(
-                    "Wrong schedule signers!",
-                    expectedSigners.get(),
-                    actualInfo.getSigners());
-        }
-
-        if (expectedSigners.isPresent()) {
-            var signers = expectedSigners.get();
-            var actualSigners = actualInfo.getSigners().getKeysList();
-            for (String s : signers) {
-                Key potentialOne = Key.newBuilder().setECDSA384(ByteString.copyFrom(s.getBytes())).build();
-                Key potentialTwo = Key.newBuilder().setEd25519(ByteString.copyFrom(s.getBytes())).build();
-                Key potentialThree = Key.newBuilder().setRSA3072(ByteString.copyFrom(s.getBytes())).build();
-                Assert.assertEquals(
-                        "Wrong schedule signers!",
-                        true,
-                        actualSigners.contains(potentialOne) ||
-                                actualSigners.contains(potentialTwo) ||
-                                actualSigners.contains(potentialThree));
-            }
-        }
+        // TODO compare signatories once added
 
         var registry = spec.registry();
         assertFor(
