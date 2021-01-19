@@ -24,44 +24,45 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class HashMapBackingTokenRels implements BackingStore<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> {
-	private Map<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> rels = new HashMap<>();
+public class HashMapBackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
+	private Map<Pair<AccountID, TokenID>, MerkleTokenRelStatus> rels = new HashMap<>();
 
 	@Override
 	public void flushMutableRefs() { }
 
 	@Override
-	public MerkleTokenRelStatus getRef(Map.Entry<AccountID, TokenID> id) {
+	public MerkleTokenRelStatus getRef(Pair<AccountID, TokenID> id) {
 		return rels.get(id);
 	}
 
 	@Override
-	public void put(Map.Entry<AccountID, TokenID> id, MerkleTokenRelStatus rel) {
+	public void put(Pair<AccountID, TokenID> id, MerkleTokenRelStatus rel) {
 		rels.put(id, rel);
 	}
 
 	@Override
-	public boolean contains(Map.Entry<AccountID, TokenID> id) {
+	public boolean contains(Pair<AccountID, TokenID> id) {
 		return rels.containsKey(id);
 	}
 
 	@Override
-	public void remove(Map.Entry<AccountID, TokenID> id) {
+	public void remove(Pair<AccountID, TokenID> id) {
 		rels.remove(id);
 	}
 
 	@Override
-	public Set<Map.Entry<AccountID, TokenID>> idSet() {
+	public Set<Pair<AccountID, TokenID>> idSet() {
 		return rels.keySet();
 	}
 
 	@Override
-	public MerkleTokenRelStatus getUnsafeRef(Map.Entry<AccountID, TokenID> id) {
+	public MerkleTokenRelStatus getUnsafeRef(Pair<AccountID, TokenID> id) {
 		return rels.get(id);
 	}
 }

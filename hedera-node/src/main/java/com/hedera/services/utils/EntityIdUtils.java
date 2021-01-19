@@ -73,24 +73,23 @@ public class EntityIdUtils {
 
 		try {
 			parts = asDotDelimitedLongArray(repr);
-		} catch (NumberFormatException nfe) {
-			throw new IllegalArgumentException(String.format("'%s' does not represent an account!", repr), nfe);
-		}
-
-		try {
 			return AccountID.newBuilder()
 					.setShardNum(parts[0])
 					.setRealmNum(parts[1])
 					.setAccountNum(parts[2])
 					.build();
-		} catch (ArrayIndexOutOfBoundsException aioobe) {
-			throw new IllegalArgumentException(String.format("'%s' does not represent an account!", repr), aioobe);
+		} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+			throw new IllegalArgumentException(String.format("Argument 'repr=%s' is not an account!", repr), e);
 		}
 	}
 
 	public static long[] asDotDelimitedLongArray(String s) {
 		String[] parts = s.split("[.]");
-		return Stream.of(parts).mapToLong(Long::valueOf).toArray();
+		long[] longParts = new long[parts.length];
+		for (int i = 0; i < parts.length; i++) {
+			longParts[i] = Long.parseLong(parts[i]);
+		}
+		return longParts;
 	}
 
 	public static AccountID asAccount(ContractID cid) {

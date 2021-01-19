@@ -225,6 +225,20 @@ public class MiscUtilsTest {
 	}
 
 	@Test
+	public void translatesDecoderException() {
+		// setup:
+		String tmpLoc = "src/test/resources/PretendKeystore.txt";
+
+		// when:
+		assertThrows(IllegalArgumentException.class, () -> lookupInCustomStore(new LegacyEd25519KeyReader() {
+			@Override
+			public String hexedABytesFrom(String b64EncodedKeyPairLoc, String keyPairId) {
+				return "This isn't actually hex!";
+			}
+		}, tmpLoc, "START_ACCOUNT"));
+	}
+
+	@Test
 	public void recoversKeypair() throws Exception {
 		// setup:
 		String tmpLoc = "src/test/resources/PretendKeystore.txt";

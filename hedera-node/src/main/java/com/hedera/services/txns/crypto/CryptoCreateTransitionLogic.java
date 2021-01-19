@@ -27,18 +27,17 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.core.jproto.JKey;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -95,6 +94,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
 		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
 
+		/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
 		JKey key = asFcKeyUnchecked(op.getKey());
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.key(key)
@@ -126,14 +126,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		if (!validator.hasGoodEncoding(op.getKey())) {
 			return BAD_ENCODING;
 		}
-
-		try {
-			JKey fcKey = mapKey(op.getKey());
-			/* Note that an empty key is never valid. */
-			if (!fcKey.isValid()) {
-				return BAD_ENCODING;
-			}
-		} catch (DecoderException e) {
+		var fcKey = asFcKeyUnchecked(op.getKey());
+		if (fcKey.isEmpty()) {
+			return KEY_REQUIRED;
+		}
+		if (!fcKey.isValid()) {
 			return BAD_ENCODING;
 		}
 

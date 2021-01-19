@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
@@ -46,6 +47,7 @@ import org.mockito.ArgumentMatcher;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
@@ -257,10 +259,29 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void failsWithIaeSansApplicableUsageCalculator() {
-		// expect:
+	public void failsWithIseGivenApplicableButUnusableCalculator() throws InvalidTxBodyException {
+		// setup:
+		SigValueObj expectedSigUsage = new SigValueObj(
+				FeeBuilder.getSignatureCount(signedTxn),
+				9,
+				FeeBuilder.getSignatureSize(signedTxn));
+
+		given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
+		given(txnUsageEstimators.apply(CryptoCreate)).willReturn(List.of(correctOpEstimator));
+		given(correctOpEstimator.usageGiven(
+				argThat(accessor.getTxn()::equals),
+				argThat(factory.apply(expectedSigUsage)),
+				argThat(view::equals))).willThrow(InvalidTxBodyException.class);
+
+		// when:
 		assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, view));
-		assertThrows(IllegalArgumentException.class,
+	}
+
+	@Test
+	public void failsWithNseeSansApplicableUsageCalculator() {
+		// expect:
+		assertThrows(NoSuchElementException.class, () -> subject.computeFee(accessor, payerKey, view));
+		assertThrows(NoSuchElementException.class,
 				() -> subject.computePayment(query, currentPrices, view, at, Collections.emptyMap()));
 	}
 
