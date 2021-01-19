@@ -1752,8 +1752,14 @@ public class HederaSigningOrderTest {
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
 		// then:
-		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
 	}
 
 	@Test

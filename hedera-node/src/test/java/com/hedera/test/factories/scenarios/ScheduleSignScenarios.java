@@ -24,6 +24,8 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
+import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 public enum ScheduleSignScenarios implements TxnHandlingScenario {
     SCHEDULE_SIGN_MISSING_SCHEDULE {
@@ -44,6 +46,16 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
                             .updating(KNOWN_SCHEDULE_WITH_ADMIN)
                             .get()
             ));
+        }
+
+        @Override
+        public byte[] extantScheduleTxnBytes() throws Throwable {
+            return newSignedCryptoTransfer()
+					.sansTxnId()
+                    .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
+                    .get()
+                    .getBodyBytes()
+                    .toByteArray();
         }
     }
 }

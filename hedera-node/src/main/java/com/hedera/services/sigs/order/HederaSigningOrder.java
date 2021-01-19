@@ -878,8 +878,36 @@ public class HederaSigningOrder {
 		if (!result.succeeded()) {
 			return factory.forMissingSchedule(id, txnId);
 		}
+		var mergeError = mergeScheduledKeys(result.metadata().txnBytes(), required, txnId, factory);
+		return mergeError.orElseGet(() -> factory.forValidOrder(required));
+	}
 
-		return factory.forValidOrder(required);
+	private <T> Optional<SigningOrderResult<T>> mergeScheduledKeys(
+			byte[] txnBytes,
+			List<JKey> required,
+			TransactionID txnId,
+			SigningOrderResultFactory<T> factory
+	) {
+		try {
+			var scheduled = TransactionBody.parseFrom(txnBytes);
+			var scheduledOrderResult = keysForOtherParties(scheduled, factory);
+			if (scheduledOrderResult.hasErrorReport()) {
+				return Optional.of(factory.forUnresolvableRequiredSigners(
+						scheduled,
+						txnId,
+						scheduledOrderResult.getErrorReport()));
+			} else {
+				var scheduledKeys = scheduledOrderResult.getOrderedKeys();
+				for (JKey key : scheduledKeys) {
+					var dup = key.duplicate();
+					dup.setForScheduledTxn(true);
+					required.add(dup);
+				}
+			}
+		} catch (InvalidProtocolBufferException e) {
+			return Optional.of(factory.forUnparseableScheduledTxn(txnId));
+		}
+		return Optional.empty();
 	}
 
 	private <T> SigningOrderResult<T> scheduleDelete(

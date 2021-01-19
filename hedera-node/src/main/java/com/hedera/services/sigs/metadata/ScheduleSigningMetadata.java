@@ -26,20 +26,26 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import java.util.Optional;
 
 public class ScheduleSigningMetadata {
+    private final byte[] txnBytes;
     private final Optional<JKey> adminKey;
 
     private ScheduleSigningMetadata(
+            byte[] txnBytes,
             Optional<JKey> adminKey
     ) {
+        this.txnBytes = txnBytes;
         this.adminKey = adminKey;
     }
 
     public static ScheduleSigningMetadata from(MerkleSchedule schedule) {
-        return new ScheduleSigningMetadata(
-                schedule.adminKey());
+        return new ScheduleSigningMetadata(schedule.transactionBody(), schedule.adminKey());
     }
 
     public Optional<JKey> adminKey() {
         return adminKey;
+    }
+
+    public byte[] txnBytes() {
+        return txnBytes;
     }
 }
