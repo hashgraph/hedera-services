@@ -131,16 +131,11 @@ public class RecordStreamManager {
 
 		this.runningAvgs = runningAvgs;
 
-		// receives {@link RecordStreamObject}s from runningHashQueueThread, calculates and set runningHash for this object
+		// receives {@link RecordStreamObject}s from hashCalculator, calculates and set runningHash for this object
 		final RunningHashCalculatorForStream<RecordStreamObject> runningHashCalculator =
 				new RunningHashCalculatorForStream<>();
 
-		// receives {@link RecordStreamObject}s from hashCalculator, then passes to runningHashCalculator
-		final QueueThread<RecordStreamObject> runningHashQueueThread = new QueueThread<>("runningHashQueueThread",
-				platform.getSelfId(),
-				runningHashCalculator,
-				nodeLocalProperties.recordStreamQueueCapacity());
-		hashCalculator = new HashCalculatorForStream<>(runningHashQueueThread);
+		hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
 		hashQueueThread = new QueueThread<>(
 				"hashQueueThread",
 				platform.getSelfId(),
