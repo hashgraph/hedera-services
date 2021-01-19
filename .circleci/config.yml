@@ -1238,7 +1238,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
