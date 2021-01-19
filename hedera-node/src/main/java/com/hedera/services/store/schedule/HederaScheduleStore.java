@@ -124,8 +124,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		pendingCreation = new MerkleSchedule(
 				bodyBytes,
 				EntityId.ofNullableAccountId(schedulingAccount),
-				schedulingTXValidStart
-		);
+				schedulingTXValidStart);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		pendingCreation.setPayer(EntityId.ofNullableAccountId(payer));
 
@@ -175,7 +174,8 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var id = fromScheduleId(pendingId);
 
 		schedules.get().put(id, pendingCreation);
-		txToEntityId.put(new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId()), id);
+		var key = new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId());
+		txToEntityId.put(key, id);
 		resetPendingCreation();
 	}
 

@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.token;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,17 +42,19 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateNonsense;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ScheduleCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
-
 
 	public static void main(String... args) {
 		new ScheduleCreateSpecs().runSuiteSync();
@@ -60,11 +63,12 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						rejectsUnparseableTxn(),
-//						rejectsUnresolvableReqSigners(),
-//						triggersImmediatelyWithBothReqSimpleSigs(),
-//						onlySchedulesWithMissingReqSimpleSigs(),
+						rejectsUnparseableTxn(),
+						rejectsUnresolvableReqSigners(),
+						triggersImmediatelyWithBothReqSimpleSigs(),
+						onlySchedulesWithMissingReqSimpleSigs(),
 						preservesRevocationServiceSemanticsForFileDelete(),
+						detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
 				}
 		);
 	}
@@ -126,12 +130,61 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec detectsKeysChangedBetweenExpandSigsAndHandleTxn() {
+		/*
+2021-01-18 22:53:14.752 INFO  147  ScheduleCreateTransitionLogic -
+>>> START ScheduleCreate >>>
+ - Created new schedule...
+ - Resolved scheduleId: 0.0.1003
+ - The resolved schedule has now witnessed 1 (additional) valid keys sign.
+ - MerkleSchedule{deleted=false, transactionBody=..., payer=0.0.2, schedulingAccount=EntityId{shard=0, realm=0, num=2}, schedulingTXValidStart=RichInstant{seconds=1611031994, nanos=286014000}, signers=[], signatories=[5c86f7bc94a13e9f1b1d6502c3d9e8bc3a532311ce2157ebed0343d746da39f4], adminKey=<N/A>}
+ - Not ready for execution yet.
+<<< END ScheduleCreate END <<<
+...
+>>> START ScheduleCreate >>>
+ - Resolved scheduleId: 0.0.1003
+ - The resolved schedule has now witnessed 2 (additional) valid keys sign.
+ - MerkleSchedule{deleted=false, transactionBody=..., payer=0.0.2, schedulingAccount=EntityId{shard=0, realm=0, num=2}, schedulingTXValidStart=RichInstant{seconds=1611031994, nanos=286014000}, signers=[], signatories=[5c86f7bc94a13e9f1b1d6502c3d9e8bc3a532311ce2157ebed0343d746da39f4, c1e69c8765941bb68198dd6d8588abdfe6b906b02078727f1204d3d54f6df204, 5985f1afb3a3983a2f31bea45682c5958c3a6236f5bc2349f6b6088896165c07], adminKey=<N/A>}
+ - Ready for execution!
+<<< END ScheduleCreate END <<<
+		 */
+		KeyShape firstShape = listOf(3);
+		KeyShape secondShape = threshOf(2, 4);
+		SigControl justEnough = secondShape.signedWith(sigs(ON, OFF, ON, OFF));
+
+		return defaultHapiSpec("DetectsKeysChangedBetweenExpandSigsAndHandleTxn")
+				.given(
+						newKeyNamed("a").shape(firstShape),
+						newKeyNamed("b").shape(secondShape)
+				).when(
+						cryptoCreate("sender"),
+						cryptoCreate("receiver")
+								.key("a")
+								.receiverSigRequired(true)
+				).then(
+						cryptoUpdate("receiver").key("b").deferStatusResolution(),
+						scheduleCreate(
+								"outdatedXferSigs",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								).fee(ONE_HBAR).signedBy("sender", "a")
+						),
+						scheduleCreate(
+								"currentXferSigs",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								).fee(ONE_HBAR).signedBy("sender", "b")
+										.sigControl(forKey("b", justEnough))
+						)
+				);
+	}
+
 	public HapiApiSpec onlySchedulesWithMissingReqSimpleSigs() {
 		/*
-		>>> START ScheduleCreate >>>
-		 - Resolved scheduleId: 0.0.1003
-		 - Sigs not yet valid.
-		<<< END ScheduleCreate END <<<
+>>> START ScheduleCreate >>>
+ - Resolved scheduleId: 0.0.1003
+ - Sigs not yet valid.
+<<< END ScheduleCreate END <<<
 		*/
 		return defaultHapiSpec("onlySchedulesWithMissingReqSimpleSigs")
 				.given(
@@ -149,10 +202,10 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec triggersImmediatelyWithBothReqSimpleSigs() {
 		/*
-		>>> START ScheduleCreate >>>
-		 - Resolved scheduleId: 0.0.1006
-		 - Sigs are already valid!
-		<<< END ScheduleCreate END <<<
+>>> START ScheduleCreate >>>
+ - Resolved scheduleId: 0.0.1006
+ - Sigs are already valid!
+<<< END ScheduleCreate END <<<
 		 */
 		return defaultHapiSpec("TriggersImmediatelyWithBothReqSimpleSigs")
 				.given(

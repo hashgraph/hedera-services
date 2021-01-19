@@ -35,6 +35,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Optional;
 import java.util.function.Consumer;
