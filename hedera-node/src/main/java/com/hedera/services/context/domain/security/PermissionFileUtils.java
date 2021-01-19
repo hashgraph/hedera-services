@@ -72,6 +72,9 @@ public class PermissionFileUtils {
 		permissionKeys.put(ConsensusUpdateTopic, "updateTopic");
 		permissionKeys.put(ConsensusDeleteTopic, "deleteTopic");
 		permissionKeys.put(ConsensusSubmitMessage, "submitMessage");
+		permissionKeys.put(ScheduleCreate, "scheduleCreate");
+		permissionKeys.put(ScheduleSign, "scheduleSign");
+		permissionKeys.put(ScheduleDelete, "scheduleDelete");
 		permissionKeys.put(TokenCreate, "tokenCreate");
 		permissionKeys.put(TokenFreezeAccount, "tokenFreezeAccount");
 		permissionKeys.put(TokenUnfreezeAccount, "tokenUnfreezeAccount");
@@ -105,5 +108,6 @@ public class PermissionFileUtils {
 		permissionKeys.put(TransactionGetRecord, "getTxRecordByTxID");
 		permissionKeys.put(GetVersionInfo, "getVersionInfo");
 		permissionKeys.put(TokenGetInfo, "tokenGetInfo");
+		permissionKeys.put(ScheduleGetInfo, "scheduleGetInfo");
 	}
 }

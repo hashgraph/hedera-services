@@ -125,9 +125,9 @@ public class HederaScheduleStoreTest {
         given(schedule.hasAdminKey()).willReturn(true);
         given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
         given(schedule.signers()).willReturn(signers);
-        given(schedule.payer()).willReturn(EntityId.ofNullableAccountId(payerId));
+        given(schedule.payerAccountID()).willReturn(EntityId.ofNullableAccountId(payerId));
 
-        given(anotherSchedule.payer()).willReturn(EntityId.ofNullableAccountId(anotherPayerId));
+        given(anotherSchedule.payerAccountID()).willReturn(EntityId.ofNullableAccountId(anotherPayerId));
 
         ids = mock(EntityIdSource.class);
         given(ids.newScheduleId(schedulingAccount)).willReturn(created);
@@ -309,7 +309,7 @@ public class HederaScheduleStoreTest {
     public void createProvisionallyWorks() {
         var expected = new MerkleSchedule(transactionBody, entitySchedulingAccount, schedulingTXValidStart);
         expected.setAdminKey(adminJKey);
-        expected.setPayer(entityPayer);
+        expected.setPayerAccountId(entityPayer);
         // when:
         var outcome = subject
                 .createProvisionally(

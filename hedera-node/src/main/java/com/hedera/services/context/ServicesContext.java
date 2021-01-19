@@ -327,6 +327,7 @@ import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FAC
 import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
+import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
@@ -611,6 +612,7 @@ public class ServicesContext {
 		if (stateViews == null) {
 			stateViews = () -> new StateView(
 					tokenStore(),
+					scheduleStore(),
 					() -> queryableTopics().get(),
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
@@ -625,6 +627,7 @@ public class ServicesContext {
 		if (currentView == null) {
 			currentView = new StateView(
 					tokenStore(),
+					scheduleStore(),
 					this::topics,
 					this::accounts,
 					this::storage,
@@ -1309,6 +1312,7 @@ public class ServicesContext {
 			accountsLedger.setKeyComparator(ACCOUNT_ID_COMPARATOR);
 			ledger = new HederaLedger(
 					tokenStore(),
+					scheduleStore(),
 					ids(),
 					creator(),
 					recordsHistorian(),
@@ -1494,7 +1498,8 @@ public class ServicesContext {
 							contractsGrpc(),
 							consensusGrpc(),
 							networkGrpc(),
-							tokenGrpc()),
+							tokenGrpc(),
+							scheduleGrpc()),
 					Collections.emptyList());
 		}
 		return grpc;
@@ -1583,6 +1588,7 @@ public class ServicesContext {
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
 					NOOP_TOKEN_STORE,
+					NOOP_SCHEDULE_STORE,
 					NOOP_ID_SOURCE,
 					NOOP_EXPIRING_CREATIONS,
 					NOOP_RECORDS_HISTORIAN,

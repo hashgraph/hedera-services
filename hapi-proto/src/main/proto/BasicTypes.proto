@@ -135,8 +135,8 @@ message Key {
     oneof key {
         ContractID contractID = 1; // smart contract instance that is authorized as if it had signed with a key
         bytes ed25519 = 2; // ed25519 public key bytes
-        bytes RSA_3072 = 3; //RSA-3072 public key bytes
-        bytes ECDSA_384 = 4; //ECDSA with the p-384 curve public key bytes
+        bytes RSA_3072 = 3; // RSA-3072 public key bytes
+        bytes ECDSA_384 = 4; // ECDSA with the p-384 curve public key bytes
         ThresholdKey thresholdKey = 5; // a threshold N followed by a list of M keys, any N of which are required to form a valid signature
         KeyList keyList = 6; // A list of Keys of the Key type.
     }

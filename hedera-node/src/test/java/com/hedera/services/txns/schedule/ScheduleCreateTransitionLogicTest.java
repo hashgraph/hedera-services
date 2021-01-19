@@ -3,7 +3,6 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.KeysHelper;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
@@ -308,6 +307,13 @@ public class ScheduleCreateTransitionLogicTest {
         assertEquals(INVALID_SCHEDULE_SIG_MAP_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
     }
 
+    public void syntaxCheckWorks() {
+        givenValidTxnCtx();
+
+        // expect:
+        assertEquals(OK, subject.syntaxCheck().apply(scheduleCreateTxn));
+    }
+
     private void givenValidTxnCtx() {
         givenCtx(
                 false,
@@ -348,6 +354,7 @@ public class ScheduleCreateTransitionLogicTest {
         if (invalidAdminKey) {
             scheduleCreate.setAdminKey(invalidKey);
         }
+
         builder.setScheduleCreate(scheduleCreate);
 
         this.scheduleCreateTxn = builder.build();

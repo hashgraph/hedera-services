@@ -34,6 +34,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -120,6 +121,7 @@ public class HederaLedger {
 			.thenComparingLong(FileID::getShardNum)
 			.thenComparingLong(FileID::getRealmNum);
 	private final TokenStore tokenStore;
+	private final ScheduleStore scheduleStore;
 	private final EntityIdSource ids;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 	private final AccountRecordsHistorian historian;
@@ -135,6 +137,7 @@ public class HederaLedger {
 
 	public HederaLedger(
 			TokenStore tokenStore,
+			ScheduleStore scheduleStore,
 			EntityIdSource ids,
 			EntityCreator creator,
 			AccountRecordsHistorian historian,
@@ -143,6 +146,7 @@ public class HederaLedger {
 		this.ids = ids;
 		this.historian = historian;
 		this.tokenStore = tokenStore;
+		this.scheduleStore = scheduleStore;
 		this.accountsLedger = accountsLedger;
 
 		creator.setLedger(this);
@@ -150,6 +154,8 @@ public class HederaLedger {
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
+		scheduleStore.setAccountsLedger(accountsLedger);
+		scheduleStore.setHederaLedger(this);
 	}
 
 	public void setTokenRelsLedger(

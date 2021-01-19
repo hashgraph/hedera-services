@@ -28,8 +28,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -44,6 +46,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,14 +71,15 @@ public class GetAccountBalanceAnswerTest {
 	private AccountID target = asAccount(accountIdLit);
 	private String contractIdLit = "0.0.12346";
 	private long balance = 1_234L;
-	private TokenID aToken = IdUtils.asToken("0.0.3");
 	private long aBalance = 345;
 	private long bBalance = 456;
+	private TokenID aToken = IdUtils.asToken("0.0.3");
 	private TokenID bToken = IdUtils.asToken("0.0.4");
 	private TokenID cToken = IdUtils.asToken("0.0.5");
 	private TokenID dToken = IdUtils.asToken("0.0.6");
 	TokenStore tokenStore;
-	MerkleToken notDeleted, deleted;
+	ScheduleStore scheduleStore;
+	MerkleToken notDeletedToken, deletedToken;
 	private MerkleAccount accountV = MerkleAccountFactory.newAccount()
 			.balance(balance)
 			.tokens(aToken, bToken, cToken, dToken)
@@ -87,10 +91,10 @@ public class GetAccountBalanceAnswerTest {
 
 	@BeforeEach
 	private void setup() {
-		deleted = mock(MerkleToken.class);
-		given(deleted.isDeleted()).willReturn(true);
-		notDeleted = mock(MerkleToken.class);
-		given(notDeleted.isDeleted()).willReturn(false);
+		deletedToken = mock(MerkleToken.class);
+		given(deletedToken.isDeleted()).willReturn(true);
+		notDeletedToken = mock(MerkleToken.class);
+		given(notDeletedToken.isDeleted()).willReturn(false);
 
 		tokenRels = new FCMap<>();
 		tokenRels.put(
@@ -110,12 +114,15 @@ public class GetAccountBalanceAnswerTest {
 		given(tokenStore.exists(bToken)).willReturn(true);
 		given(tokenStore.exists(cToken)).willReturn(true);
 		given(tokenStore.exists(dToken)).willReturn(false);
-		given(tokenStore.get(aToken)).willReturn(notDeleted);
-		given(tokenStore.get(bToken)).willReturn(notDeleted);
-		given(tokenStore.get(cToken)).willReturn(deleted);
+		given(tokenStore.get(aToken)).willReturn(notDeletedToken);
+		given(tokenStore.get(bToken)).willReturn(notDeletedToken);
+		given(tokenStore.get(cToken)).willReturn(deletedToken);
+
+		scheduleStore = mock(ScheduleStore.class);
 
 		view = new StateView(
 				tokenStore,
+				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> accounts,
 				StateView.EMPTY_STORAGE_SUPPLIER,

@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -146,8 +147,11 @@ public interface HapiPropertySource {
 				.setTokenNum(nativeParts[2])
 				.build();
 	}
-	static String asTokenString(TokenID account) {
-		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getTokenNum());
+	static String asTokenString(TokenID token) {
+		return String.format("%d.%d.%d", token.getShardNum(), token.getRealmNum(), token.getTokenNum());
+	}
+	static String asScheduleString(ScheduleID schedule) {
+		return String.format("%d.%d.%d", schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
 	}
 
 	static AccountID asAccount(String v) {
@@ -168,6 +172,15 @@ public interface HapiPropertySource {
 				.setShardNum(nativeParts[0])
 				.setRealmNum(nativeParts[1])
 				.setTopicNum(nativeParts[2])
+				.build();
+	}
+
+	static ScheduleID asSchedule(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return ScheduleID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setScheduleNum(nativeParts[2])
 				.build();
 	}
 	static String asTopicString(TopicID topic) {

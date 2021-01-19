@@ -25,6 +25,7 @@ import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
@@ -35,13 +36,17 @@ import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -75,6 +80,7 @@ import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 class StateViewTest {
+	RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
 	long expiry = 2_000_000L;
 	byte[] data = "SOMETHING".getBytes();
 	byte[] expectedBytecode = "A Supermarket in California".getBytes();
@@ -84,11 +90,14 @@ class StateViewTest {
 	FileID target = asFile("0.0.123");
 	TokenID tokenId = asToken("2.4.5");
 	TokenID missingTokenId = asToken("3.4.5");
+	AccountID payerAccountId = asAccount("9.9.9");
 	ScheduleID scheduleId = asSchedule("6.7.8");
+	ScheduleID missingScheduleId = asSchedule("7.8.9");
 	ContractID cid = asContract("3.2.1");
 	byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
 	ContractID notCid = asContract("1.2.3");
 	AccountID autoRenew = asAccount("2.4.6");
+	AccountID creatorAccountID = asAccount("3.5.7");
 	long autoRenewPeriod = 1_234_567;
 
 	FileGetInfoResponse.FileInfo expected;
@@ -102,8 +111,11 @@ class StateViewTest {
 
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
 	TokenStore tokenStore;
+	ScheduleStore scheduleStore;
+	byte[] scheduleBody = "abc".getBytes();
 
 	MerkleToken token;
+	MerkleSchedule schedule;
 	MerkleAccount contract;
 	MerkleAccount notContract;
 	PropertySource propertySource;
@@ -170,6 +182,18 @@ class StateViewTest {
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
 		given(tokenStore.get(tokenId)).willReturn(token);
 
+		scheduleStore = mock(ScheduleStore.class);
+		schedule = new MerkleSchedule(
+			scheduleBody,
+			EntityId.ofNullableAccountId(creatorAccountID),
+			now
+		);
+		schedule.setPayerAccountId(EntityId.ofNullableAccountId(payerAccountId));
+		schedule.setAdminKey(SCHEDULE_ADMIN_KT.asJKey());
+		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
+		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
+		given(scheduleStore.get(scheduleId)).willReturn(schedule);
+
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
 		storage = mock(Map.class);
@@ -186,6 +210,7 @@ class StateViewTest {
 
 		subject = new StateView(
 				tokenStore,
+				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> contracts,
 				propertySource,
@@ -209,6 +234,13 @@ class StateViewTest {
 	}
 
 	@Test
+	public void scheduleExistsWorks() {
+		// expect:
+		assertTrue(subject.scheduleExists(scheduleId));
+		assertFalse(subject.scheduleExists(missingScheduleId));
+	}
+
+	@Test
 	public void tokenWithWorks() {
 		given(tokenStore.exists(tokenId)).willReturn(true);
 		given(tokenStore.get(tokenId)).willReturn(token);
@@ -226,6 +258,41 @@ class StateViewTest {
 	}
 
 	@Test
+	public void recognizesMissingSchedule() {
+		// when:
+		var info = subject.infoForSchedule(missingScheduleId);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void infoForScheduleFailsGracefully() {
+		given(scheduleStore.get(any())).willThrow(IllegalArgumentException.class);
+
+		// when:
+		var info = subject.infoForSchedule(scheduleId);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void getsScheduleInfo() {
+		// when:
+		var gotten = subject.infoForSchedule(scheduleId);
+		var info = gotten.get();
+
+		// then:
+		assertEquals(scheduleId, info.getScheduleID());
+		assertEquals(schedule.creatorAccountID().toGrpcAccountId(), info.getCreatorAccountID());
+		assertEquals(schedule.payerAccountID().toGrpcAccountId(), info.getPayerAccountID());
+//		assertEquals(schedule.signers(), info.getSigners()); // TODO: Find a way to compare
+		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
+		assertEquals(ByteString.copyFrom(schedule.transactionBody()), info.getTransactionBody());
+	}
+
+	@Test
 	public void recognizesMissingToken() {
 		// when:
 		var info = subject.infoForToken(missingTokenId);
@@ -235,7 +302,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void failsGracefully() {
+	public void infoForTokenFailsGracefully() {
 		given(tokenStore.get(any())).willThrow(IllegalArgumentException.class);
 
 		// when:
@@ -287,16 +354,6 @@ class StateViewTest {
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
 		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
-	}
-
-	@Test
-	public void infoForScheduleIsUnsupported() {
-		assertThrows(UnsupportedOperationException.class, () -> subject.infoForSchedule(scheduleId));
-	}
-
-	@Test
-	public void scheduleExistsIsUnsupported() {
-		assertThrows(UnsupportedOperationException.class, () -> subject.scheduleExists(scheduleId));
 	}
 
 	@Test

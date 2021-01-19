@@ -130,7 +130,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 				schedulingTXValidStart
 		);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
-		pendingCreation.setPayer(EntityId.ofNullableAccountId(payer));
+		pendingCreation.setPayerAccountId(EntityId.ofNullableAccountId(payer));
 
 		return success(pendingId);
 	}
@@ -168,7 +168,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		apply(id, DELETION);
-		txToEntityId.remove(new CompositeKey(Arrays.hashCode(schedule.transactionBody()), schedule.payer().toGrpcAccountId()));
+		txToEntityId.remove(new CompositeKey(Arrays.hashCode(schedule.transactionBody()), schedule.payerAccountID().toGrpcAccountId()));
 		return OK;
 	}
 
@@ -178,7 +178,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var id = fromScheduleId(pendingId);
 
 		schedules.get().put(id, pendingCreation);
-		txToEntityId.put(new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId()), id);
+		txToEntityId.put(new CompositeKey(pendingTxHashCode, pendingCreation.payerAccountID().toGrpcAccountId()), id);
 		resetPendingCreation();
 	}
 
@@ -208,7 +208,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void buildTxToEntityIdMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
 		var schedulesMap = schedules.get();
-		schedulesMap.forEach((key, value) -> txToEntityId.put(new CompositeKey(Arrays.hashCode(value.transactionBody()), value.payer().toGrpcAccountId()), key));
+		schedulesMap.forEach((key, value) -> txToEntityId.put(new CompositeKey(Arrays.hashCode(value.transactionBody()), value.payerAccountID().toGrpcAccountId()), key));
 	}
 
 	@Override
@@ -217,7 +217,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var keyToCheckFor = new CompositeKey(txHashCode, scheduledTxPayer);
 
 		if (isCreationPending()) {
-			var pendingKey = new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId());
+			var pendingKey = new CompositeKey(pendingTxHashCode, pendingCreation.payerAccountID().toGrpcAccountId());
 
 			if (keyToCheckFor.equals(pendingKey)) {
 				return Optional.of(pendingId);

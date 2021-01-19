@@ -130,13 +130,13 @@ public class MerkleScheduleTest {
         assertEquals(transactionBody, subject.transactionBody());
         assertEquals(isDeleted, subject.isDeleted());
         assertEquals(signers, subject.signers());
-        assertEquals(payer, subject.payer());
-        assertEquals(schedulingAccount, subject.schedulingAccount());
+        assertEquals(payer, subject.payerAccountID());
+        assertEquals(schedulingAccount, subject.creatorAccountID());
         assertEquals(schedulingTXValidStart, subject.schedulingTXValidStart());
         assertTrue(subject.hasAdminKey());
         assertTrue(equalUpToDecodability(adminKey, subject.adminKey().get()));
         assertTrue(subject.signers().containsAll(signers));
-        assertTrue(subject.hasPayer());
+        assertTrue(subject.hasPayerAccountID());
     }
 
     @Test
@@ -305,7 +305,7 @@ public class MerkleScheduleTest {
         setOptionalElements(other);
 
         // when:
-        other.setPayer(otherPayer);
+        other.setPayerAccountId(otherPayer);
 
         // expect:
         assertNotEquals(subject, other);
@@ -334,8 +334,8 @@ public class MerkleScheduleTest {
         assertEquals("MerkleSchedule{" +
                     "deleted=" + isDeleted + ", " +
                     "transactionBody=" + hex(transactionBody) + ", " +
-                    "payer=" + payer.toAbbrevString() + ", " +
-                    "schedulingAccount=" + schedulingAccount + ", " +
+                    "payerAccountID=" + payer.toAbbrevString() + ", " +
+                    "creatorAccountID=" + schedulingAccount + ", " +
                     "schedulingTXValidStart=" + schedulingTXValidStart + ", " +
                     "signers=[" + signersToString() + "], " +
                     "adminKey=" + describe(adminKey) + "}",
@@ -406,7 +406,7 @@ public class MerkleScheduleTest {
 
     private void setOptionalElements(MerkleSchedule schedule) {
         schedule.setSigners(signers);
-        schedule.setPayer(payer);
+        schedule.setPayerAccountId(payer);
         schedule.setDeleted(isDeleted);
         schedule.setAdminKey(adminKey);
     }

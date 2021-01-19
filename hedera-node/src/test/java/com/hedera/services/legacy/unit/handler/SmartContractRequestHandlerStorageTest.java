@@ -37,6 +37,7 @@ import com.hedera.services.legacy.util.SCEncoding;
 import static com.hedera.services.legacy.util.SCEncoding.*;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -155,6 +156,7 @@ public class SmartContractRequestHandlerStorageTest {
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),
+            mock(ScheduleStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),

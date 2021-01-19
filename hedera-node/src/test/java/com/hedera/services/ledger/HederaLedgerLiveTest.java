@@ -31,8 +31,10 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
@@ -76,6 +78,8 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens =
 				new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER);
+		FCMap<MerkleEntityId, MerkleSchedule> schedules =
+				new FCMap<>(new MerkleEntityId.Provider(), MerkleSchedule.LEGACY_PROVIDER);
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				() -> new MerkleTokenRelStatus(),
@@ -88,7 +92,8 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new MockGlobalDynamicProps(),
 				() -> tokens,
 				tokenRelsLedger);
-		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
+		scheduleStore = new HederaScheduleStore(ids, () -> schedules);
+		subject = new HederaLedger(tokenStore, scheduleStore, ids, creator, historian, accountsLedger);
 	}
 
 	@Test

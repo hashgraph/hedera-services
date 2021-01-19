@@ -25,6 +25,9 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicDelete;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
@@ -115,6 +118,17 @@ public class TxnVerbs {
 	}
 	public static HapiFileDelete fileDelete(Supplier<String> fileNameSupplier) {
 		return new HapiFileDelete(fileNameSupplier);
+	}
+
+	/* SCHEDULE */
+	public static HapiScheduleCreate scheduleCreate(String schedule) {
+		return new HapiScheduleCreate(schedule);
+	}
+	public static HapiScheduleDelete scheduleDelete(String schedule) {
+		return new HapiScheduleDelete(schedule);
+	}
+	public static HapiScheduleSign scheduleSign(String schedule) {
+		return new HapiScheduleSign(schedule);
 	}
 
 	/* TOKEN */
