@@ -1717,9 +1717,8 @@ workflows:
             workflow-name: "Continuous Integration GCP"
             filters:
               branches:
-                ignore:
-                  - /.*-PERF/
-                  - /.*-REGRESSION/
+                only:
+                  - 0866-TE-DisplayCIjobLinkUserNameGCP
 
   continuous-integration:
     jobs:
@@ -1728,6 +1727,7 @@ workflows:
           filters:
             branches:
               ignore:
+                - 0866-TE-DisplayCIjobLinkUserNameGCP
                 - /.*-PERF/
                 - /.*-REGRESSION/
           workflow-name: "Continuous integration"
@@ -2211,7 +2211,8 @@ jobs:
           command: |
             cd /swirlds-platform/regression;
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json
+            /repo ${CIRCLE_USERNAME} ${CIRCLE_BUILD_URL}
 
       - run:
           name: Sync results of continuous integration to circelCI job
@@ -2321,6 +2322,7 @@ jobs:
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
             cd regression;
+            git checkout 0808-E-DisplayCIjobLinkUserNameGC;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
