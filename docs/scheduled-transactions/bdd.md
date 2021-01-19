@@ -122,7 +122,7 @@ When creating the Scheduled Transaction, populate the `SignatureMap` with one or
 ### Negative
 
 **1. Creating Scheduled Transaction with non-existing `payerAccountID` must fail**
-<br>**When**: New Scheduled transaction created with non-existing `payerAccountID`
+<br>**When**: New Scheduled transaction created with non-existing `payerAccountID` is created.
 <br>**Expect**: The `ScheduleCreate` operation to fail with `` TODO response code.
 
 **2. Creating Scheduled Transaction with non-required signature must fail.**
