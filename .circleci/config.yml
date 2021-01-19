@@ -2209,10 +2209,12 @@ jobs:
           name: Run continuous integration tests
           no_output_timeout: 30m
           command: |
+            echo ${CIRCLE_USERNAME}
+            echo ${CIRCLE_BUILD_URL}
             cd /swirlds-platform/regression;
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json
-            /repo ${CIRCLE_USERNAME} ${CIRCLE_BUILD_URL}
+            /repo "${CIRCLE_USERNAME}" "${CIRCLE_BUILD_URL}"
 
       - run:
           name: Sync results of continuous integration to circelCI job
