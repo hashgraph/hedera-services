@@ -173,7 +173,7 @@ enum ResponseCodeEnum {
   INVALID_CHUNK_NUMBER = 163; // chunk number must be from 1 to total (chunks) inclusive.
   INVALID_CHUNK_TRANSACTION_ID = 164; // For every chunk, the payer account that is part of initialTransactionID must match the Payer Account of this transaction. The entire initialTransactionID should match the transactionID of the first chunk, but this is not checked or enforced by Hedera except when the chunk number is 1.
   ACCOUNT_FROZEN_FOR_TOKEN = 165; // Account is frozen and cannot transact with the token
-  TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED = 166; // Maximum number of token relations for a given account is exceeded
+  TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED = 166; // An involved account already has more than <tt>tokens.maxPerAccount</tt> associations with non-deleted tokens.
   INVALID_TOKEN_ID = 167; // The token is invalid or does not exist
   INVALID_TOKEN_DECIMALS = 168; // Invalid token decimals
   INVALID_TOKEN_INITIAL_SUPPLY = 169; // Invalid token initial supply
