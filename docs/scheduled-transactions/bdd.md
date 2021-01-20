@@ -73,7 +73,7 @@ When creating the Scheduled Transaction, populate the `SignatureMap` with one or
     - it must have empty `adminKey`
     - it must have empty `memo` 
     
-6. Check for idempotent creation #1
+#### 6. Check for idempotent creation #1
 **Given**: Scheduled Transaction created with `txBytes`, `admin` and `payer`.
 <br>**When**: New Scheduled is created with the same `txBytes`, but different `admin` and `payer`.
 <br>**Expect**: New Scheduled Transaction to be created.
@@ -234,9 +234,9 @@ Given**: Scheduled Transaction created with `txBytes`, `admin` and `payer`.
 
 ## Execution
 
+TODO add Execution BDD use-cases
+
 ### Happy Paths
 
 ### Negative
-
-- create scheduled transaction that is actually a scheduled transaction (schedule-ception), append all required signatures. Make sure that the scheduled transaction is triggered for execution fails.
 
