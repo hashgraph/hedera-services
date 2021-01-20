@@ -984,7 +984,7 @@ workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "3 6 * * *"
+          cron: "33 3 * * *"
           filters:
             branches:
               only:
