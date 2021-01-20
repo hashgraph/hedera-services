@@ -221,7 +221,7 @@ Performance tests will be performed to see how many TPS we can do and how many w
 Transactions of scheduled type will have the following format of `TransactionID` **on submission**!  
 ```  
 message TransactionID {  
-  uint32 nonce // Used to add addditional option for clients to create idempotent Transactions. Default 0
+  bytes nonce // (optional) Used to manipulate the uniqueness check for idempotent schedule transaction creation. Max length - 64 bytes
 }  
 ```   
 This is to say that the encoded Transaction in the `transactionBytes` of the Scheduled Transaction could be submitted without any of the `TransactionID` properties populated.
@@ -230,8 +230,8 @@ Once the transaction is executed (all required signatures are collected), the tr
 message TransactionID {  
   Timestamp transactionValidStart // Inherited from original ScheduleCreate TX
   AccountID accountID // Inherited from original ScheduleCreate TX  
-  bool scheduled // true  
-  uint32 nonce // The nonce that was populated in the Transaction Bytes on submission
+  bool scheduled // Whether the Transaction is of type Scheduled or no
+  bytes nonce // (optional) Used to manipulate the uniqueness check for idempotent schedule transaction creation. Max length - 64 bytes
 }  
 ```  
 Once the check for `readyForExecution` determines that the Scheduled Transaction is ready to be executed, the transition logic (whether it is `Create` or `Sign`) creates `SignedTxAccessor` instance and sets it in the `Transaction Context`.
@@ -243,7 +243,7 @@ The validations for Scheduled Transaction are different from normal transactions
   
 is **no longer** performed.  
   
-`transactionValidStart`, `accountID` and `scheduled` are populated by Hedera nodes when the TX starts execution. Users will submit Scheduled Transactions with `TransactionID` populating only `nonce` properties.  
+`transactionValidStart`, `accountID` and `scheduled` are populated by Hedera nodes when the TX starts execution. Users will submit Scheduled Transactions with `TransactionID` populating only the `nonce` property.  
   
 Nonce will be an additional option presented to users so that they can create multiple sequential Scheduled Transactions that have the same `transaction body`. Using the `nonce` users will be able to create multiple scheduled transactions and all of them will be considered separate Scheduled TX (since the hash of the transaction body will be different for every TX)  
   
