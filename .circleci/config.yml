@@ -981,26 +981,6 @@ workflows:
           workflow-name: "AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C"
           test-name: "AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C.json"
 
-  GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
-    triggers:
-      - schedule:
-          cron: "8 4 * * *"
-          filters:
-            branches:
-              only:
-                - 00984-D-enable-15-node-weekly-perf-regression
-    jobs:
-      - build-platform-and-services
-      - weekly-run-crypto-transfer-start-from-saved-state-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C"
-
   AWS-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
@@ -1022,14 +1002,35 @@ workflows:
           workflow-name: "AWS-Weekly-Services-HCS-Restart-Performance-15N-15C"
           test-name: "AWS-Daily-Services-Comp-Basic-4N-1C.json"
 
-  GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
+
+  GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 10 * * 6,0"
+          cron: "25 7 * * *"
           filters:
             branches:
               only:
-                - Disable-master
+                - 00984-D-enable-15-node-weekly-perf-regression
+    jobs:
+      - build-platform-and-services
+      - weekly-run-crypto-transfer-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C"
+
+  GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
+    triggers:
+      - schedule:
+          cron: "25 21 * * *"
+          filters:
+            branches:
+              only:
+                - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
       - weekly-run-HCS-start-from-saved-state-regression:
@@ -1041,6 +1042,29 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Weekly-Services-HCS-Restart-Performance-15N-15C"
+
+
+
+  GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
+    triggers:
+      - schedule:
+          cron: "25 2 * * *"
+          filters:
+            branches:
+              only:
+                - Disable-master
+    jobs:
+      - build-platform-and-services
+      - weekly-run-HTS-start-from-saved-state-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Weekly-Services-HTS-Restart-Performance-15N-15C"
+
 
   AWS-Daily-Services-Comp-NetError-4N-1C:
     triggers:
@@ -2247,7 +2271,7 @@ jobs:
             ./regression_services_circleci.sh configs/services/suites/weekly/<< parameters.test-name >> /repo
 
       - run:
-          name: Sync results of software update regression to AWS
+          name: Sync results of software update regression to cloud storage
           command: |
             cd /swirlds-platform/regression/results/15N_15C/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/15N_15C/ s3://hedera-service-regression-jrs;
@@ -2282,7 +2306,7 @@ jobs:
             ./regression_services_circleci.sh configs/services/suites/weekly/<< parameters.test-name >> /repo
 
       - run:
-          name: Sync results of software update regression to AWS
+          name: Sync results of software update regression to cloud storage
           command: |
             cd /swirlds-platform/regression/results/15N_15C/; find . -type d -name data -prune -exec rm -rf {} \;
             aws s3 sync /swirlds-platform/regression/results/15N_15C/ s3://hedera-service-regression-jrs;
@@ -2290,6 +2314,42 @@ jobs:
 
       - store_artifacts:
           path: /results.tar.gz
+
+  weekly-run-HTS-start-from-saved-state-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+      test-name:
+        type: string
+        default: "GCP-Weekly-Services-HTS-Restart-Performance-15N-15C.json"
+    executor:
+      name: build-executor
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Modify Payer account for Public testnet start from saved state test
+          command: |
+            echo -n "$KEY_DevTestNetTreasury";    echo -n /repo/test-clients/src/main/resource/StartUpAccount.txt;
+      #            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+      - run:
+          name: Run start from saved state regression tests
+          no_output_timeout: 180m
+          command: |
+            cd /swirlds-platform/regression;
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ./regression_services_circleci.sh configs/services/suites/weekly/<< parameters.test-name >> /repo
+
+      - run:
+          name: Sync results of software update regression to cloud storage
+          command: |
+            cd /swirlds-platform/regression/results/15N_15C/; find . -type d -name data -prune -exec rm -rf {} \;
+            aws s3 sync /swirlds-platform/regression/results/15N_15C/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/15N_15C/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
 
   build-platform-and-services:
     parameters:
