@@ -67,7 +67,7 @@ public class SignatoryUtils {
 				var i = sig.getMessageOffset();
 				var isCorrectMatter = Arrays.equals(
 						correctBytes, 0, correctBytes.length,
-						sig.getContentsDirect(), i, i +  + sig.getMessageLength());
+						sig.getContentsDirect(), i, i + sig.getMessageLength());
 				if (isCorrectMatter) {
 					signatories.add(key.getEd25519());
 				}
