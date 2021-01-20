@@ -984,11 +984,11 @@ workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 5 * * 6,0"
+          cron: "3 6 * * *"
           filters:
             branches:
               only:
-                - Disable-master
+                - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
       - weekly-run-crypto-transfer-start-from-saved-state-regression:
@@ -2320,7 +2320,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 00984-D-enable-15-node-weekly-perf-regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
