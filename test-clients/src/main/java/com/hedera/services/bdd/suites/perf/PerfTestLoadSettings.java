@@ -48,12 +48,36 @@ public class PerfTestLoadSettings {
 	private int threads = DEFAULT_THREADS;
 	private int hcsSubmitMessageSize = DEFAULT_SUBMIT_MESSAGE_SIZE;
 	private int hcsSubmitMessageSizeVar = DEFAULT_SUBMIT_MESSAGE_SIZE_VAR;
+
+	/** totalTestAccounts specifies how many Crypto accounts in the state file.  All of them
+	 * participate random crypto transfer perf test */
 	private int totalTestAccounts = DEFAULT_TOTAL_TEST_ACCOUNTS;
+
+	/** totalTestTopics specifies total topics in the state file. They are all used in random
+	 * HCS submitMessage perf test */
 	private int totalTestTopics = DEFAULT_TOTAL_TEST_TOPICS;
+
+	/** totalTestTokens specifies how many tokens are created on the fly for each run in addition to
+	 * those tokens (if any) restored from state file.
+	 * These tokens are actively used in random HCS submitMessage perf test */
 	private int totalTestTokens = DEFAULT_TOTAL_TEST_TOKENS;
+
+	/** totalTestTokenAccounts specifies the range of accounts, say 10000, starting from
+	 * testTrasureStartAccount that will be associated with each active test tokens and will actively
+	 * participate random token transfer perf test. */
 	private int totalTestTokenAccounts = DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
+
+	/** testTreasureStartAccount specifies the first account number (by default, 1001) of a range
+	 * accounts that will be serve as the treasures of the totalTestTokens. One account for each
+	 * active test token */
 	private int testTreasureStartAccount = DEFAULT_TEST_TREASURE_START_ACCOUNT;
-	// This is only needed for running HTS performance regression tests to setup the context
+
+	/** The totalClients denotes total how many test clients (SuiteRunners) will be used to
+	 * create tokens and send HTS traffic to hedera services. This parameter is used to tell
+	 * each test client how many tokens and token association it needs to create for current
+	 * test setup.
+	 * When running fron SuiteRunner, it will use the total client node number as its value if this
+	 * parameter is not explicitly provided. */
 	private int totalClients = DEFAULT_TOTAL_CLIENTS;
 
 	private HapiPropertySource ciProps = null;
