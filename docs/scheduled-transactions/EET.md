@@ -1,6 +1,7 @@
-# Scheduled Transactions -- BDD tests specification
+# Scheduled Transactions -- End-to-End Tests specification
 
-Listed below are the set of bdd tests defined for Scheduled Transactions.
+Listed below are the set of EET defined for Scheduled Transactions.
+This is not the full list of EETs. More will be added in the coming days/weeks.
 
 ## Creation
 
@@ -265,7 +266,7 @@ When creating the Scheduled Transaction, populate the `SignatureMap` with one or
 **Expect**: 
 - The `ScheduleSign` operation to succeed.
 - `ScheduleSign` record to have `consensusTimestamp=Z`
-- `Cryptotransfer` record to fail with `INSUFFICIENT_PAYER_BALANCE`
+- `CryptoTransfer` record to fail with `INSUFFICIENT_PAYER_BALANCE`
 - `CryptoTransfer` record to have `consensusTimestamp= Z+1 nano`
 - `CryptoTransfer` record to have Transaction ID -> `transactionValidStart=X`; `accountID=Y`; `scheduled=true` and empty `nonce` property
 - `CryptoTransfer` record to have `scheduleRef=S`
@@ -280,7 +281,7 @@ When creating the Scheduled Transaction, populate the `SignatureMap` with one or
 **Expect**: 
 - The `ScheduleSign` operation to succeed.
 - `ScheduleSign` record to have `consensusTimestamp=Z`
-- `Cryptotransfer` record to fail with `INSUFFICIENT_PAYER_BALANCE`
+- `CryptoTransfer` record to fail with `INSUFFICIENT_PAYER_BALANCE`
 - `CryptoTransfer` record to have `consensusTimestamp= Z+1 nano`
 - `CryptoTransfer` record to have Transaction ID -> `transactionValidStart=X`; `accountID=Y`; `scheduled=true` and empty `nonce` property
 - `CryptoTransfer` record to have `scheduleRef=S`
