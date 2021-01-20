@@ -242,7 +242,8 @@ public class HederaSigningOrder {
 		} else if (txn.hasScheduleSign()) {
 			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
 		} else if (txn.hasScheduleDelete()) {
-			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(), factory));
+			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(),
+					factory));
 		} else {
 			return Optional.empty();
 		}
@@ -841,30 +842,8 @@ public class HederaSigningOrder {
 				ScheduleCreateTransactionBody::hasAdminKey,
 				ScheduleCreateTransactionBody::getAdminKey,
 				required);
-		try {
-			var scheduled = TransactionBody.parseFrom(op.getTransactionBody());
-			if (scheduled.hasScheduleCreate()) {
-				return factory.forNestedScheduleCreate(txnId);
-			}
-			var scheduledOrderResult = keysForOtherParties(scheduled, factory);
-			if (scheduledOrderResult.hasErrorReport()) {
-				return factory.forUnresolvableRequiredSigners(
-						scheduled,
-						txnId,
-						scheduledOrderResult.getErrorReport());
-			} else {
-				var scheduledKeys = scheduledOrderResult.getOrderedKeys();
-				for (JKey key : scheduledKeys) {
-					var dup = key.duplicate();
-					dup.setForScheduledTxn(true);
-					required.add(dup);
-				}
-			}
-		} catch (InvalidProtocolBufferException e) {
-			return factory.forUnparseableScheduledTxn(txnId);
-		}
-
-		return factory.forValidOrder(required);
+		var mergeError = mergeScheduledKeys(op.getTransactionBody().toByteArray(), required, txnId, factory);
+		return mergeError.orElseGet(() -> factory.forValidOrder(required));
 	}
 
 	private <T> SigningOrderResult<T> scheduleSign(
@@ -890,6 +869,9 @@ public class HederaSigningOrder {
 	) {
 		try {
 			var scheduled = TransactionBody.parseFrom(txnBytes);
+			if (scheduled.hasScheduleCreate()) {
+				return Optional.of(factory.forNestedScheduleCreate(txnId));
+			}
 			var scheduledOrderResult = keysForOtherParties(scheduled, factory);
 			if (scheduledOrderResult.hasErrorReport()) {
 				return Optional.of(factory.forUnresolvableRequiredSigners(

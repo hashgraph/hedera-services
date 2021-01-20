@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -336,6 +337,10 @@ public class TxnFactory {
 	}
 
 	public Consumer<ScheduleCreateTransactionBody.Builder> defaultDef_ScheduleCreateTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<ScheduleSignTransactionBody.Builder> defaultDef_ScheduleSignTransactionBody() {
 		return builder -> {};
 	}
 }

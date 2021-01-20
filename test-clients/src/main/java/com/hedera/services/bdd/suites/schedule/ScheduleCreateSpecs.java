@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.token;
+package com.hedera.services.bdd.suites.schedule;
 
 /*-
  * ‌
@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.token;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,7 +49,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateN
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ScheduleCreateSpecs extends HapiApiSuite {

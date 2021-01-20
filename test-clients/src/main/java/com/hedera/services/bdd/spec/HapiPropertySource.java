@@ -187,6 +187,15 @@ public interface HapiPropertySource {
 		return String.format("%d.%d.%d", contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
 	}
 
+	static ScheduleID asSchedule(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return ScheduleID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setScheduleNum(nativeParts[2])
+				.build();
+	}
+
 	static String asScheduleString(ScheduleID schedule) {
 		return String.format("%d.%d.%d", schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
 	}

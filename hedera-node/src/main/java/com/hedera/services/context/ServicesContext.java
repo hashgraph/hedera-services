@@ -1206,7 +1206,7 @@ public class ServicesContext {
 				entry(ScheduleCreate,
 						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
 				entry(ScheduleSign,
-						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx()))),
+						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
 				entry(ScheduleDelete,
 						List.of(new ScheduleDeleteTransitionLogic(scheduleStore(), txnCtx()))),
 				/* System */

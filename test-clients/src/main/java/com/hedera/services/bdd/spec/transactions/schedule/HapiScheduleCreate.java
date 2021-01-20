@@ -42,11 +42,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
 	private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
 
 	private boolean scheduleNonsense = false;
+	private ByteString bytesSigned = ByteString.EMPTY;
 
 	private final String entity;
 	private final HapiTxnOp<T> scheduled;
@@ -54,7 +56,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
 		this.entity = scheduled;
 		this.scheduled = txn.withLegacyProtoStructure().sansTxnId();
-//		this.scheduled = txn.sansTxnId();
 	}
 
 	public HapiScheduleCreate<T> garbled() {
@@ -87,6 +88,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							if (scheduleNonsense) {
 								b.setTransactionBody(ByteString.copyFromUtf8("NONSENSE"));
 							} else {
+								bytesSigned = subOp.getBodyBytes();
 								b.setTransactionBody(subOp.getBodyBytes());
 							}
 							b.setSigMap(schedSigMap);
@@ -111,6 +113,22 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 				.add("entity", entity);
 		helper.add("id", createdSchedule().orElse("<N/A>"));
 		return helper;
+	}
+
+	@Override
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (actualStatus != SUCCESS) {
+			return;
+		}
+		if (verboseLoggingOn) {
+			log.info("Created schedule '{}' as {}", entity, createdSchedule().get());
+		}
+		spec.registry().saveScheduleId(entity, lastReceipt.getScheduleID());
+		spec.registry().saveBytes(registryBytesTag(entity), bytesSigned);
+	}
+
+	static String registryBytesTag(String name) {
+		return name + "BytesSigned";
 	}
 
 	private Optional<String> createdSchedule() {

@@ -118,6 +118,9 @@ public class ScheduleCreateTransitionLogicTest {
 		returnValid = new AtomicBoolean(true);
 		validSig = mock(TransactionSignature.class);
 		given(validSig.getSignatureStatus()).willReturn(VerificationStatus.VALID);
+		given(validSig.getContentsDirect()).willReturn(transactionBody);
+		given(validSig.getMessageOffset()).willReturn(0);
+		given(validSig.getMessageLength()).willReturn(transactionBody.length);
 		invalidSig = mock(TransactionSignature.class);
 		given(invalidSig.getSignatureStatus()).willReturn(VerificationStatus.INVALID);
 		willAnswer(inv -> {
@@ -151,6 +154,7 @@ public class ScheduleCreateTransitionLogicTest {
 		// setup:
 		ArgumentCaptor<Consumer<MerkleSchedule>> captor = ArgumentCaptor.forClass(Consumer.class);
 		MerkleSchedule created = mock(MerkleSchedule.class);
+		given(created.transactionBody()).willReturn(transactionBody);
 
 		givenValidTxnCtx();
 
@@ -160,12 +164,9 @@ public class ScheduleCreateTransitionLogicTest {
                 eq(payer),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
-                argThat(jKey -> true)))
-                .willReturn(CreationResult.success(schedule));
+                argThat(jKey -> true))).willReturn(CreationResult.success(schedule));
         // and:
-        given(store.addSigners(
-                eq(schedule),
-                argThat(jKeySet -> true))).willReturn(OK);
+        given(store.get(schedule)).willReturn(created);
 
 		// when:
 		subject.doStateTransition();
@@ -195,11 +196,12 @@ public class ScheduleCreateTransitionLogicTest {
 		// given:
 		givenValidTxnCtx();
 
+		MerkleSchedule created = mock(MerkleSchedule.class);
+		given(created.transactionBody()).willReturn(transactionBody);
+
 		// and:
 		given(store.lookupScheduleId(transactionBody, payer)).willReturn(Optional.of(schedule));
-		given(store.addSigners(
-				eq(schedule),
-				argThat(jKeySet -> true))).willReturn(OK);
+		given(store.get(schedule)).willReturn(created);
 
 		// when:
 		subject.doStateTransition();

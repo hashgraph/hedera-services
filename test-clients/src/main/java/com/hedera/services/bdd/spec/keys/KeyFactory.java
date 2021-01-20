@@ -188,7 +188,7 @@ public class KeyFactory implements Serializable {
 			SigMapGenerator.Nature sigMapGen) throws Throwable {
 		return sign(txn, sigMapGen, authorsFor(keys, overrides));
 	}
-	private List<Entry<Key, SigControl>> authorsFor(List<Key> keys, Map<Key, SigControl> overrides) {
+	public List<Entry<Key, SigControl>> authorsFor(List<Key> keys, Map<Key, SigControl> overrides) {
 		return keys.stream().map(k -> asAuthor(k, overrides)).collect(toList());
 	}
 	private Entry<Key, SigControl> asAuthor(Key key, Map<Key, SigControl> overrides) {
@@ -209,7 +209,7 @@ public class KeyFactory implements Serializable {
 		return txn.build();
 	}
 
-	class Ed25519Signing {
+	public class Ed25519Signing {
 		private Set<String> used = new HashSet<>();
 		private List<Entry<byte[], byte[]>> keySigs = new ArrayList<>();
 		private final byte[] data;

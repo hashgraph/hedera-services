@@ -22,8 +22,11 @@ package com.hedera.services.txns.schedule;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.KeysHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -40,16 +43,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,6 +63,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
@@ -66,24 +71,29 @@ public class ScheduleSignTransitionLogicTest {
     private ScheduleStore store;
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
+    private byte[] transactionBody = TransactionBody.newBuilder()
+            .setMemo("Just this")
+            .build()
+            .toByteArray();
 
     private TransactionBody scheduleSignTxn;
 
+    InHandleActivationHelper activationHelper;
     private SignatureMap.Builder sigMap;
     private Set<JKey> jKeySet;
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
-    private final ResponseCodeEnum NOT_OK = null;
 
     @BeforeEach
     private void setup() {
         store = mock(ScheduleStore.class);
         accessor = mock(PlatformTxnAccessor.class);
+        activationHelper = mock(InHandleActivationHelper.class);
 
         txnCtx = mock(TransactionContext.class);
 
-        subject = new ScheduleSignTransitionLogic(store, txnCtx);
+        subject = new ScheduleSignTransitionLogic(store, txnCtx, activationHelper);
     }
 
     @Test
@@ -96,58 +106,16 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void followsHappyPath() {
-        // given:
-        givenValidTxnCtx();
-
-        // and:
-        given(store.addSigners(eq(schedule), argThat(jKeySet -> true))).willReturn(OK);
-
-        // when:
-        subject.doStateTransition();
-
-        // then
-        verify(store).addSigners(eq(schedule), argThat((Set<JKey> set) -> {
-            assertEquals(set.size(), jKeySet.size());
-            var setIterator = set.iterator();
-            var jKeySetIterator = set.iterator();
-            while (setIterator.hasNext()) {
-                assertTrue(equalUpToDecodability(setIterator.next(), jKeySetIterator.next()));
-            }
-            return true;
-        }));
-        verify(txnCtx).setStatus(SUCCESS);
-    }
-
-    @Test
     public void setsFailInvalidIfUnhandledException() {
         givenValidTxnCtx();
         // and:
-        given(store.addSigners(eq(schedule), any())).willThrow(IllegalArgumentException.class);
+        given(store.get(any())).willThrow(IllegalArgumentException.class);
 
         // when:
         subject.doStateTransition();
 
-        // then:
-        verify(store).addSigners(eq(schedule), any());
         // and:
         verify(txnCtx).setStatus(FAIL_INVALID);
-    }
-
-    @Test
-    public void failsWithResponseErrorsOnAddingSigners() {
-        // given:
-        givenValidTxnCtx();
-
-        // and:
-        given(store.addSigners(eq(schedule), any())).willReturn(NOT_OK);
-
-        // when:
-        subject.doStateTransition();
-
-        // then
-        verify(store).addSigners(eq(schedule), any());
-        verify(txnCtx).setStatus(NOT_OK);
     }
 
     @Test
@@ -161,8 +129,28 @@ public class ScheduleSignTransitionLogicTest {
     @Test
     public void acceptsValidTxn() {
         givenValidTxnCtx();
+        given(store.exists(schedule)).willReturn(true);
 
         assertEquals(OK, subject.syntaxCheck().apply(scheduleSignTxn));
+    }
+
+    @Test
+    public void followsHappyPath() {
+        // setup:
+        MerkleSchedule present = mock(MerkleSchedule.class);
+        given(present.transactionBody()).willReturn(transactionBody);
+
+        givenValidTxnCtx();
+
+        given(store.exists(schedule)).willReturn(true);
+        // and:
+        given(store.get(schedule)).willReturn(present);
+
+        // when:
+        subject.doStateTransition();
+
+        // and:
+        verify(txnCtx).setStatus(SUCCESS);
     }
 
     @Test

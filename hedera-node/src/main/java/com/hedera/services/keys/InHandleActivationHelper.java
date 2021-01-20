@@ -85,7 +85,6 @@ public class InHandleActivationHelper {
 
 	public void visitScheduledCryptoSigs(BiConsumer<JKey, TransactionSignature> visitor) {
 		ensureUpToDate();
-
 		for (JKey req : otherParties) {
 			if (req.isForScheduledTxn()) {
 				visitSimpleKeys(req, key -> visitor.accept(key, sigsFn.apply(key.getEd25519())));

@@ -20,8 +20,6 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -31,19 +29,15 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.crypto.VerificationStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -108,39 +102,9 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			}
 			scheduleId = result.getCreated().get();
 		}
-
 		sb.append(" - Resolved scheduleId: ").append(readableId(scheduleId)).append("\n");
 
-		List<byte[]> validKeys = new ArrayList<>();
-		activationHelper.visitScheduledCryptoSigs((key, sig) -> {
-			if (sig.getSignatureStatus() == VerificationStatus.VALID) {
-				validKeys.add(key.getEd25519());
-			}
-		});
-
-		AtomicInteger numWitnessed = new AtomicInteger();
-		store.apply(scheduleId, schedule -> {
-			for (byte[] key : validKeys) {
-				if (schedule.witnessValidEd25519Signature(key)) {
-					numWitnessed.getAndIncrement();
-				}
-			}
-		});
-		sb.append(" - The resolved schedule has now witnessed ")
-				.append(numWitnessed.get())
-				.append(" (additional) valid keys sign.\n");
-
-		var schedule = store.get(scheduleId);
-		sb.append(" - ").append(schedule).append("\n");
-		var scheduledTxn = uncheckedParse(op.getTransactionBody());
-		var isReadyToExecute = activationHelper.areScheduledPartiesActive(
-				scheduledTxn,
-				(key, sig) -> schedule.hasValidEd25519Signature(key.getEd25519()));
-		if (isReadyToExecute) {
-			sb.append(" - Ready for execution!").append("\n");
-		} else {
-			sb.append(" - Not ready for execution yet.").append("\n");
-		}
+		var isNowReady = SignatoryUtils.witnessInScope(scheduleId, store, activationHelper, sb);
 
 		/* Uncomment for temporary log-based testing locally */
 //		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
@@ -153,14 +117,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 	private Optional<JKey> adminKeyFor(ScheduleCreateTransactionBody op) {
 		return op.hasAdminKey() ? asUsableFcKey(op.getAdminKey()) : Optional.empty();
-	}
-
-	private TransactionBody uncheckedParse(ByteString rawScheduledTxn) {
-		try {
-			return TransactionBody.parseFrom(rawScheduledTxn);
-		} catch (InvalidProtocolBufferException e) {
-			throw new AssertionError("Not implemented!");
-		}
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {

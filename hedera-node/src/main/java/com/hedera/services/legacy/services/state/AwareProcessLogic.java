@@ -57,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -77,6 +78,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			INVALID_FILE_ID,
 			INVALID_TOKEN_ID,
 			INVALID_ACCOUNT_ID,
+			INVALID_SCHEDULE_ID,
 			INVALID_SIGNATURE,
 			KEY_PREFIX_MISMATCH,
 			INVALID_SIGNATURE_COUNT_MISMATCHING_KEY,

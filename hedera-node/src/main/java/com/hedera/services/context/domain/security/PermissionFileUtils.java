@@ -88,9 +88,9 @@ public class PermissionFileUtils {
 		permissionKeys.put(SystemUndelete, "systemUndelete");
 		permissionKeys.put(Freeze, "freeze");
 		permissionKeys.put(UncheckedSubmit, "uncheckedSubmit");
-		permissionKeys.put(ScheduleCreate, "ScheduleCreate");
-		permissionKeys.put(ScheduleDelete, "ScheduleDelete");
-		permissionKeys.put(ScheduleSign, "ScheduleSign");
+		permissionKeys.put(ScheduleCreate, "scheduleCreate");
+		permissionKeys.put(ScheduleDelete, "scheduleDelete");
+		permissionKeys.put(ScheduleSign, "scheduleSign");
 		/* Queries */
 		permissionKeys.put(ConsensusGetTopicInfo, "getTopicInfo");
 		permissionKeys.put(GetBySolidityID, "getBySolidityID");
@@ -108,6 +108,6 @@ public class PermissionFileUtils {
 		permissionKeys.put(TransactionGetRecord, "getTxRecordByTxID");
 		permissionKeys.put(GetVersionInfo, "getVersionInfo");
 		permissionKeys.put(TokenGetInfo, "tokenGetInfo");
-		permissionKeys.put(ScheduleGetInfo, "ScheduleGetInfo");
+		permissionKeys.put(ScheduleGetInfo, "scheduleGetInfo");
 	}
 }
