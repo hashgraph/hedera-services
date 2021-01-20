@@ -1719,6 +1719,8 @@ workflows:
               branches:
                 only:
                   - 0866-TE-DisplayCIjobLinkUserNameGCP
+                ignore:
+                  - master
 
   continuous-integration:
     jobs:
