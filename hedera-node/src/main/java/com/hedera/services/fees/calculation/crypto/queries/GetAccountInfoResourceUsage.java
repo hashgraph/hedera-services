@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,25 +51,20 @@ public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator 
 
 	@Override
 	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		try {
-			var op = query.getCryptoGetInfo();
-			var key = fromAccountId(op.getAccountID());
-			if (view.accounts().containsKey(key)) {
-				var account = view.accounts().get(key);
-				var estimate = factory.apply(query)
-						.givenCurrentKey(asKeyUnchecked(account.getKey()))
-						.givenCurrentMemo(account.getMemo())
-						.givenCurrentTokenAssocs(account.tokens().numAssociations());
-				if (account.getProxy() != null) {
-					estimate.givenCurrentlyUsingProxy();
-				}
-				return estimate.get();
-			} else {
-				return FeeData.getDefaultInstance();
+		var op = query.getCryptoGetInfo();
+		var key = fromAccountId(op.getAccountID());
+		if (view.accounts().containsKey(key)) {
+			var account = view.accounts().get(key);
+			var estimate = factory.apply(query)
+					.givenCurrentKey(asKeyUnchecked(account.getKey()))
+					.givenCurrentMemo(account.getMemo())
+					.givenCurrentTokenAssocs(account.tokens().numAssociations());
+			if (account.getProxy() != null) {
+				estimate.givenCurrentlyUsingProxy();
 			}
-		} catch (Exception illegal) {
-			log.warn("Usage estimation unexpectedly failed for {}!", query, illegal);
-			throw new IllegalArgumentException();
+			return estimate.get();
+		} else {
+			return FeeData.getDefaultInstance();
 		}
 	}
 }

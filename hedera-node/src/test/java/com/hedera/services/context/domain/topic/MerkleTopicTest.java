@@ -138,16 +138,6 @@ public class MerkleTopicTest {
 	}
 
 	@Test
-	public void unimplementedMethodsThrowUnsupported() {
-		// given:
-		MerkleTopic merkleTopic = new MerkleTopic();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> merkleTopic.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> merkleTopic.copyFromExtra(null));
-	}
-
-	@Test
 	public void equalsDefault() {
 		// expect:
 		assertTrue(new MerkleTopic().equals(new MerkleTopic()));

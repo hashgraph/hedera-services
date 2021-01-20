@@ -92,19 +92,6 @@ class MerkleEntityAssociationTest {
 	}
 
 	@Test
-	public void unsupportedOperationsThrow() {
-		// given:
-		var defaultSubject = new MerkleEntityAssociation();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
-		assertThrows(UnsupportedOperationException.class, ()
-				-> MerkleEntityAssociation.LEGACY_PROVIDER.deserialize(null));
-
-	}
-
-	@Test
 	public void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleEntityAssociation.MERKLE_VERSION, subject.getVersion());

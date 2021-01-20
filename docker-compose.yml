@@ -36,7 +36,6 @@ services:
   postgres:
     container_name: hedera-postgres
     image: postgres:10.9-alpine
-    stop_grace_period: 2m
     environment:
       - POSTGRES_PASSWORD=password
       - POSTGRES_USER=swirlds

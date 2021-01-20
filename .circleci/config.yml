@@ -1084,7 +1084,7 @@ workflows:
           workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
 
 # This workflow will be running normally in master branch on a daily basis
-  AWS-Daily-Services-Crypto-Migration-4N-1C:
+  AWS-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
           - schedule:
               cron: "30 5 * * *"
@@ -1102,11 +1102,11 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "AWS-Daily-Services-Crypto-Migration-4N-1C"
-          test-name: "AWS-Daily-Services-Crypto-Migration-4N-1C.json"
+          workflow-name: "AWS-Daily-Services-Crypto-Migration-5N-1C"
+          test-name: "AWS-Daily-Services-Crypto-Migration-5N-1C.json"
   # This workflow will be running normally in master branch on a daily basis
 
-  GCP-Daily-Services-Crypto-Migration-4N-1C:
+  GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
           cron: "35 5 * * *"
@@ -1124,7 +1124,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "GCP-Daily-Services-Crypto-Migration-4N-1C"
+          workflow-name: "GCP-Daily-Services-Crypto-Migration-5N-1C"
 
 # The mainnet migration test needs to be run in a 13-node test network.
 # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
@@ -1440,6 +1440,7 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
+          test-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C.json"
 
   AWS-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
@@ -2079,7 +2080,7 @@ jobs:
         default: ""
       test-name:
         type: string
-        default: "GCP-Daily-Services-Crypto-Migration-4N-1C.json"
+        default: "GCP-Daily-Services-Crypto-Migration-5N-1C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
@@ -2100,9 +2101,9 @@ jobs:
       - run:
           name: Sync results of public testnet migration test to AWS
           command: |
-            cd /swirlds-platform/regression/results/4N_1C/Migration/; find . -type d -name data -prune -exec rm -rf {} \;
-            aws s3 sync /swirlds-platform/regression/results/4N_1C/Migration/ s3://hedera-service-regression-jrs;
-            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/Migration/*
+            cd /swirlds-platform/regression/results/5N_1C/Migration/; find . -type d -name data -prune -exec rm -rf {} \;
+            aws s3 sync /swirlds-platform/regression/results/5N_1C/Migration/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/5N_1C/Migration/*
 
       - store_artifacts:
           path: /results.tar.gz

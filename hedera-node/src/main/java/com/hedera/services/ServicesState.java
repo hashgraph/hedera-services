@@ -25,6 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.exceptions.ContextNotFoundException;
+import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -38,41 +39,46 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.blob.BinaryObjectStore;
-import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
-import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.ImmutableHash;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
+import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.io.File;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
+import static com.hedera.services.legacy.stream.RecordStream.readPrevFileHash;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
-public class ServicesState extends AbstractMerkleInternal implements SwirldState.SwirldState2 {
+public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
+
+	private static final ImmutableHash emptyHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
@@ -82,8 +88,10 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	static final int MERKLE_VERSION = RELEASE_0110_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
+	static final String UNSUPPORTED_VERSION_MSG_TPL = "Argument 'version=%d' is invalid!";
+
+	static Function<String, byte[]> hashReader = RecordStream::readPrevFileHash;
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
-	static Supplier<AddressBook> legacyTmpBookSupplier = AddressBook::new;
 	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
 	NodeId nodeId = null;
@@ -104,7 +112,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		static final int NUM_090_CHILDREN = 8;
 		static final int NUM_0100_CHILDREN = 8;
 		static final int SCHEDULE_TXS = 8;
-		static final int NUM_0110_CHILDREN = 9;
+		static final int RECORD_STREAM_RUNNING_HASH = 9;
+		static final int NUM_0110_CHILDREN = 10;
 	}
 
 	ServicesContext ctx;
@@ -151,7 +160,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			case RELEASE_070_VERSION:
 				return ChildIndices.NUM_070_CHILDREN;
 			default:
-				throw new IllegalArgumentException(String.format("unknown version: %d", version));
+				throw new IllegalArgumentException(String.format(UNSUPPORTED_VERSION_MSG_TPL, version));
 		}
 	}
 
@@ -159,12 +168,12 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	public void initialize(MerkleInternal previous) {
 		if (tokens() == null) {
 			setChild(ChildIndices.TOKENS,
-					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
+					new FCMap<>());
 			log.info("Created tokens FCMap after 0.7.0 state restoration");
 		}
 		if (tokenAssociations() == null) {
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
-					new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER));
+					new FCMap<>());
 			log.info("Created token associations FCMap after <=0.8.0 state restoration");
 		}
 		if (diskFs() == null) {
@@ -173,9 +182,14 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			skipDiskFsHashCheck = true;
 		}
 		if (scheduleTxs() == null) {
-			setChild(ChildIndices.SCHEDULE_TXS,
-					new FCMap<>(new MerkleEntityId.Provider(), MerkleSchedule.LEGACY_PROVIDER));
+			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 			log.info("Created scheduled transactions FCMap after <=0.10.0 state restoration");
+		}
+		if (runningHashLeaf() == null) {
+			final RunningHash runningHash = new RunningHash(emptyHash);
+			RecordsRunningHashLeaf initialRecordsRunningHashLeaf = new RecordsRunningHashLeaf(runningHash);
+			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, initialRecordsRunningHashLeaf);
+			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
 		}
 	}
 
@@ -201,26 +215,22 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
+		boolean initWithMerkle = true;
 		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN) {
+			initWithMerkle = false;
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX,
 					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart),
 							new ExchangeRates()));
-			setChild(ChildIndices.TOPICS,
-					new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
-			setChild(ChildIndices.STORAGE,
-					new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider()));
-			setChild(ChildIndices.ACCOUNTS,
-					new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER));
-			setChild(ChildIndices.TOKENS,
-					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
-			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
-					new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER));
+			setChild(ChildIndices.TOPICS, new FCMap<>());
+			setChild(ChildIndices.STORAGE, new FCMap<>());
+			setChild(ChildIndices.ACCOUNTS, new FCMap<>());
+			setChild(ChildIndices.TOKENS, new FCMap<>());
+			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			setChild(ChildIndices.DISK_FS,
 					new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
-			setChild(ChildIndices.SCHEDULE_TXS,
-					new FCMap<>(new MerkleEntityId.Provider(), MerkleSchedule.LEGACY_PROVIDER));
+			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 
@@ -234,7 +244,24 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			if (!skipDiskFsHashCheck) {
 				restoredDiskFs.checkHashesAgainstDiskContents();
 			}
+		}
 
+		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN
+				|| runningHashLeaf().getRunningHash().getHash().equals(emptyHash)) {
+			// read file hash from the last record stream .rcd_sig file and set it as initial value of
+			// records running Hash
+			byte[] lastHash = hashReader.apply(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties()));
+			ImmutableHash hash = new ImmutableHash(lastHash);
+			final RunningHash runningHash = new RunningHash();
+			runningHash.setHash(hash);
+			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));
+		}
+		log.info("initial Hash in RecordsRunningHashLeaf: {}", () -> runningHashLeaf().getRunningHash().getHash());
+		// set records initialHash
+		ctx.setRecordsInitialHash(runningHashLeaf().getRunningHash().getHash());
+
+		if (initWithMerkle) {
+			// only digest when initialize with Merkle state
 			merkleDigest.accept(this);
 			printHashes();
 		}
@@ -249,14 +276,14 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	private void initializeContext(final ServicesContext ctx) {
 		/* Set the primitive state in the context and signal the managing stores (if
-		* they are already constructed) to rebuild their auxiliary views of the state.
-		* All the initialization that follows will be a function of the primitive state. */
+		 * they are already constructed) to rebuild their auxiliary views of the state.
+		 * All the initialization that follows will be a function of the primitive state. */
 		ctx.update(this);
 		ctx.rebuildBackingStoresIfPresent();
 
 		/* Use any payer records stored in state to rebuild the recent transaction
-		* history. This history has two main uses: Purging expired records, and
-		* classifying duplicate transactions. */
+		 * history. This history has two main uses: Purging expired records, and
+		 * classifying duplicate transactions. */
 		ctx.recordsHistorian().reviewExistingRecords();
 		if (!blobStoreSupplier.get().isInitializing()) {
 			ctx.systemFilesManager().loadAllSystemFiles();
@@ -274,8 +301,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			boolean isConsensus,
 			Instant creationTime,
 			Instant consensusTime,
-			com.swirlds.common.Transaction transaction,
-			@Nullable Address toBeCreated
+			com.swirlds.common.Transaction transaction
 	) {
 		if (isConsensus) {
 			ctx.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
@@ -311,38 +337,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				tokens().copy(),
 				tokenAssociations().copy(),
 				diskFs().copy(),
-				scheduleTxs().copy()
+				scheduleTxs().copy(),
+				runningHashLeaf().copy()
 		));
-	}
-
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) throws IOException {
-		log.info("Restoring context of Services node {} from legacy (Platform v0.6.x) state...", nodeId);
-		in.readLong();
-		networkCtx().seqNo().deserialize(in);
-		legacyTmpBookSupplier.get().copyFrom(in);
-		accounts().copyFrom(in);
-		storage().copyFrom(in);
-		in.readBoolean();
-		in.readLong();
-		in.readLong();
-		networkCtx().midnightRates().deserialize(in, ExchangeRates.MERKLE_VERSION);
-		if (in.readBoolean()) {
-			networkCtx().setConsensusTimeOfLastHandledTxn(in.readInstant());
-		}
-		topics().copyFrom(in);
-		log.info("...done, context is restored for Services node {}!", nodeId);
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) throws IOException {
-		in.readLong();
-		legacyTmpBookSupplier.get().copyFromExtra(in);
-		accounts().copyFromExtra(in);
-		storage().copyFromExtra(in);
-		topics().copyFromExtra(in);
 	}
 
 	/* --------------- */
@@ -364,7 +361,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 						"  DiskFs            :: %s\n" +
 						"  ScheduledTxs      :: %s\n" +
 						"  NetworkContext    :: %s\n" +
-						"  AddressBook       :: %s",
+						"  AddressBook       :: %s\n" +
+						"  RecordsRunningHashLeaf:: %s\n" +
+						"  running Hash saved in RecordsRunningHashLeaf:: %s",
 				getHash(),
 				accounts().getHash(),
 				storage().getHash(),
@@ -374,7 +373,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				diskFs().getHash(),
 				scheduleTxs().getHash(),
 				networkCtx().getHash(),
-				addressBook().getHash()));
+				addressBook().getHash(),
+				runningHashLeaf().getHash(),
+				runningHashLeaf().getRunningHash().getHash()));
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
@@ -411,5 +412,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	public MerkleDiskFs diskFs() {
 		return getChild((ChildIndices.DISK_FS));
+	}
+
+	public RecordsRunningHashLeaf runningHashLeaf() {
+		return getChild(ChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 }

@@ -62,6 +62,7 @@ import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
+import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
@@ -318,6 +319,8 @@ public class SuiteRunner {
 		/* Query payment validation */
 		put("QueryPaymentSuite", aof(new QueryPaymentSuite()));
 		put("SimpleFreezeOnly", aof(new SimpleFreezeOnly()));
+		/* Transfer then freeze */
+		put("CryptoTransferThenFreezeTest", aof(new CryptoTransferThenFreezeTest()));
 	}};
 
 	static boolean runAsync;

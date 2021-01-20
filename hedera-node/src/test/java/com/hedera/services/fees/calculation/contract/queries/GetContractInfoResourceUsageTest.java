@@ -155,17 +155,6 @@ class GetContractInfoResourceUsageTest {
 		assertSame(FeeData.getDefaultInstance(), actual);
 	}
 
-	@Test
-	public void rethrowsIae() {
-		// given:
-		Query query = contractInfoQuery(target, ANSWER_ONLY);
-		given(factory.apply(any()))
-				.willThrow(IllegalStateException.class);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
-	}
-
 	private Query contractInfoQuery(ContractID id, ResponseType type) {
 		ContractGetInfoQuery.Builder op = ContractGetInfoQuery.newBuilder()
 				.setContractID(id)

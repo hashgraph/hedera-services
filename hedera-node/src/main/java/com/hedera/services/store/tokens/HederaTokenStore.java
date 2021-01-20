@@ -24,11 +24,9 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -43,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -109,7 +108,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	private final TransactionalLedger<
-			Map.Entry<AccountID, TokenID>,
+			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
@@ -122,7 +121,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			OptionValidator validator,
 			GlobalDynamicProperties properties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
+			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		super(ids);
 		this.tokens = tokens;
@@ -230,15 +229,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		var key = fromTokenId(id);
 		var token = tokens.get().getForModify(key);
-		Exception thrown = null;
 		try {
 			change.accept(token);
-		} catch (Exception e) {
-			thrown = e;
-		}
-		tokens.get().replace(key, token);
-		if (thrown != null) {
-			throw new IllegalArgumentException("Token change failed unexpectedly!", thrown);
+		} catch (Exception internal) {
+			throw new IllegalArgumentException("Token change failed unexpectedly!", internal);
+		} finally {
+			tokens.get().replace(key, token);
 		}
 	}
 
@@ -415,7 +411,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private void throwIfKnownTreasuryIsMissing(AccountID aId) {
 		if (!knownTreasuries.containsKey(aId)) {
-			throw new IllegalArgumentException(String.format("No such known treasury '%s'!", readableId(aId)));
+			throw new IllegalArgumentException(String.format(
+					"Argument 'aId=%s' does not refer to a known treasury!",
+					readableId(aId)));
 		}
 	}
 
@@ -636,7 +634,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private void throwIfMissing(TokenID id) {
 		if (!exists(id)) {
-			throw new IllegalArgumentException(String.format("No such token '%s'!", readableId(id)));
+			throw new IllegalArgumentException(String.format(
+					"Argument 'id=%s' does not refer to a known token!",
+					readableId(id)));
 		}
 	}
 

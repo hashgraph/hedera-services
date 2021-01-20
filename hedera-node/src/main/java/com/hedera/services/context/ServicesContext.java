@@ -34,6 +34,63 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.context.properties.SemanticVersions;
+import com.hedera.services.fees.AwareHbarCentExchange;
+import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage;
+import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
+import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
+import com.hedera.services.fees.calculation.contract.queries.GetContractRecordsResourceUsage;
+import com.hedera.services.fees.calculation.schedule.queries.GetScheduleInfoResourceUsage;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleDeleteResourceUsage;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleSignResourceUsage;
+import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
+import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.grpc.controllers.ContractController;
+import com.hedera.services.grpc.controllers.FreezeController;
+import com.hedera.services.queries.contract.ContractCallLocalAnswer;
+import com.hedera.services.queries.contract.GetBySolidityIdAnswer;
+import com.hedera.services.grpc.controllers.ScheduleController;
+import com.hedera.services.queries.contract.GetContractRecordsAnswer;
+import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
+import com.hedera.services.queries.schedule.ScheduleAnswers;
+import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.keys.LegacyEd25519KeyReader;
+import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
+import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
+import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
+import com.hedera.services.queries.contract.ContractAnswers;
+import com.hedera.services.queries.contract.GetBytecodeAnswer;
+import com.hedera.services.queries.contract.GetContractInfoAnswer;
+import com.hedera.services.queries.token.GetTokenInfoAnswer;
+import com.hedera.services.queries.token.TokenAnswers;
+import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
+import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.exports.SignedStateBalancesExporter;
+import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.contracts.execution.SolidityLifecycle;
 import com.hedera.services.contracts.execution.SoliditySigsVerifier;
@@ -41,13 +98,10 @@ import com.hedera.services.contracts.execution.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.contracts.persistence.BlobStoragePersistence;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
-import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
@@ -55,10 +109,6 @@ import com.hedera.services.fees.calculation.consensus.txns.CreateTopicResourceUs
 import com.hedera.services.fees.calculation.consensus.txns.DeleteTopicResourceUsage;
 import com.hedera.services.fees.calculation.consensus.txns.SubmitMessageResourceUsage;
 import com.hedera.services.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
-import com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage;
-import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
-import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
-import com.hedera.services.fees.calculation.contract.queries.GetContractRecordsResourceUsage;
 import com.hedera.services.fees.calculation.contract.txns.ContractCallResourceUsage;
 import com.hedera.services.fees.calculation.contract.txns.ContractCreateResourceUsage;
 import com.hedera.services.fees.calculation.contract.txns.ContractDeleteResourceUsage;
@@ -79,28 +129,10 @@ import com.hedera.services.fees.calculation.file.txns.FileUpdateResourceUsage;
 import com.hedera.services.fees.calculation.file.txns.SystemDeleteFileResourceUsage;
 import com.hedera.services.fees.calculation.file.txns.SystemUndeleteFileResourceUsage;
 import com.hedera.services.fees.calculation.meta.queries.GetVersionInfoResourceUsage;
-import com.hedera.services.fees.calculation.schedule.queries.GetScheduleInfoResourceUsage;
-import com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
-import com.hedera.services.fees.calculation.schedule.txns.ScheduleDeleteResourceUsage;
-import com.hedera.services.fees.calculation.schedule.txns.ScheduleSignResourceUsage;
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
-import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.DataMapFactory;
-import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.MetadataMapFactory;
@@ -113,26 +145,17 @@ import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.grpc.controllers.ConsensusController;
-import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
-import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
-import com.hedera.services.grpc.controllers.ScheduleController;
-import com.hedera.services.grpc.controllers.TokenController;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
-import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
@@ -140,20 +163,12 @@ import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.netty.NettyServerManager;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
-import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.answering.StakedAnswerFlow;
-import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.consensus.GetTopicInfoAnswer;
 import com.hedera.services.queries.consensus.HcsAnswers;
-import com.hedera.services.queries.contract.ContractAnswers;
-import com.hedera.services.queries.contract.ContractCallLocalAnswer;
-import com.hedera.services.queries.contract.GetBySolidityIdAnswer;
-import com.hedera.services.queries.contract.GetBytecodeAnswer;
-import com.hedera.services.queries.contract.GetContractInfoAnswer;
-import com.hedera.services.queries.contract.GetContractRecordsAnswer;
 import com.hedera.services.queries.crypto.CryptoAnswers;
 import com.hedera.services.queries.crypto.GetAccountBalanceAnswer;
 import com.hedera.services.queries.crypto.GetAccountInfoAnswer;
@@ -168,42 +183,26 @@ import com.hedera.services.queries.meta.GetTxnReceiptAnswer;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.queries.meta.GetVersionInfoAnswer;
 import com.hedera.services.queries.meta.MetaAnswers;
-import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
-import com.hedera.services.queries.schedule.ScheduleAnswers;
-import com.hedera.services.queries.token.GetTokenInfoAnswer;
-import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordCacheFactory;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
-import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
-import com.hedera.services.state.exports.SignedStateBalancesExporter;
-import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.EntityId;
@@ -219,13 +218,14 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.RunningAvgFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.SpeedometerFactory;
+import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.throttling.BucketThrottling;
+import com.hedera.services.throttling.ThrottlingPropsBuilder;
+import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.throttling.BucketThrottling;
-import com.hedera.services.throttling.ThrottlingPropsBuilder;
-import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -273,6 +273,7 @@ import com.hedera.services.txns.token.TokenWipeTransitionLogic;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
@@ -289,13 +290,21 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.ImmutableHash;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
 import org.ethereum.db.ServicesRepositoryRoot;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -314,8 +323,9 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.stora
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.services.ledger.accounts.BackingTokenRels.RELATIONSHIP_COMPARATOR;
+import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.legacy.config.PropertiesLoader.log;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateAPIPropertiesWithProto;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateApplicationPropertiesWithProto;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
@@ -324,12 +334,12 @@ import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.back
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultAccountRetryingLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FACTORY;
-import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
-import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
+import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
+import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -386,7 +396,10 @@ public class ServicesContext {
 	private final PropertySources propertySources;
 
 	/* Context-sensitive singletons. */
-	private Thread recordStreamThread;
+	/** the directory to which we writes .rcd and .rcd_sig files */
+	private String recordStreamDir;
+	/** the initialHash of RecordStreamManager */
+	private Hash recordsInitialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 	private Address address;
 	private Console console;
 	private HederaFs hfs;
@@ -406,7 +419,6 @@ public class ServicesContext {
 	private SyncVerifier syncVerifier;
 	private IssEventInfo issEventInfo;
 	private ProcessLogic logic;
-	private RecordStream recordStream;
 	private QueryFeeCheck queryFeeCheck;
 	private HederaNumbers hederaNums;
 	private ExpiryManager expiries;
@@ -457,6 +469,7 @@ public class ServicesContext {
 	private UsagePricesProvider usagePrices;
 	private Supplier<StateView> stateViews;
 	private FeeSchedulesManager feeSchedulesManager;
+	private RecordStreamManager recordStreamManager;
 	private Map<String, byte[]> blobStore;
 	private Map<EntityId, Long> entityExpiries;
 	private NodeLocalProperties nodeLocalProperties;
@@ -536,21 +549,24 @@ public class ServicesContext {
 
 	public HapiOpCounters opCounters() {
 		if (opCounters == null) {
-			opCounters = new HapiOpCounters(new CounterFactory() {}, runningAvgs(), txnCtx(), MiscUtils::baseStatNameOf);
+			opCounters = new HapiOpCounters(new CounterFactory() {
+			}, runningAvgs(), txnCtx(), MiscUtils::baseStatNameOf);
 		}
 		return opCounters;
 	}
 
 	public MiscRunningAvgs runningAvgs() {
 		if (runningAvgs == null) {
-			runningAvgs = new MiscRunningAvgs(new RunningAvgFactory() {}, nodeLocalProperties());
+			runningAvgs = new MiscRunningAvgs(new RunningAvgFactory() {
+			}, nodeLocalProperties());
 		}
 		return runningAvgs;
 	}
 
 	public MiscSpeedometers speedometers() {
 		if (speedometers == null) {
-			speedometers = new MiscSpeedometers(new SpeedometerFactory() {}, nodeLocalProperties());
+			speedometers = new MiscSpeedometers(new SpeedometerFactory() {
+			}, nodeLocalProperties());
 		}
 		return speedometers;
 	}
@@ -566,7 +582,8 @@ public class ServicesContext {
 		if (statsManager == null) {
 			var opSpeedometers = new HapiOpSpeedometers(
 					opCounters(),
-					new SpeedometerFactory() {},
+					new SpeedometerFactory() {
+					},
 					nodeLocalProperties(),
 					MiscUtils::baseStatNameOf);
 			statsManager = new ServicesStatsManager(
@@ -883,9 +900,9 @@ public class ServicesContext {
 				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
 				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
 				/* Schedule */
-				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage())),
+				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(globalDynamicProperties()))),
 				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage())),
-				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage())),
+				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(globalDynamicProperties()))),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -1034,7 +1051,7 @@ public class ServicesContext {
 	MerkleDiskFs getCurrentSpecialFileSystem() {
 		return this.state.diskFs();
 	}
-	
+
 	public SoliditySigsVerifier soliditySigsVerifier() {
 		if (soliditySigsVerifier == null) {
 			soliditySigsVerifier = new TxnAwareSoliditySigsVerifier(
@@ -1243,7 +1260,7 @@ public class ServicesContext {
 		return exchange;
 	}
 
-	public BackingStore<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
+	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
 		if (backingTokenRels == null) {
 			backingTokenRels = new BackingTokenRels(this::tokenAssociations);
 		}
@@ -1273,13 +1290,13 @@ public class ServicesContext {
 
 	public TokenStore tokenStore() {
 		if (tokenStore == null) {
-			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
+			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
 					new TransactionalLedger<>(
 							TokenRelProperty.class,
 							MerkleTokenRelStatus::new,
 							backingTokenRels(),
 							new ChangeSummaryManager<>());
-			tokenRelsLedger.setKeyComparator(RELATIONSHIP_COMPARATOR);
+			tokenRelsLedger.setKeyComparator(REL_CMP);
 			tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 			tokenStore = new HederaTokenStore(
 					ids(),
@@ -1354,14 +1371,6 @@ public class ServicesContext {
 		return freeze;
 	}
 
-	public Thread recordStreamThread() {
-		if (recordStreamThread == null) {
-			recordStreamThread = new Thread(recordStream());
-			recordStreamThread.setName("record_stream_" + address().getMemo());
-		}
-		return recordStreamThread;
-	}
-
 	public void updateFeature() {
 		if (freeze != null) {
 			String os = System.getProperty("os.name").toLowerCase();
@@ -1375,16 +1384,27 @@ public class ServicesContext {
 		}
 	}
 
-	public RecordStream recordStream() {
-		if (recordStream == null) {
-			recordStream = new RecordStream(
+	public RecordStreamManager recordStreamManager() {
+		return recordStreamManager;
+	}
+
+	/**
+	 * RecordStreamManager should only be initialized after system files have been loaded,
+	 * which means enableRecordStreaming has been read from file
+	 */
+	public void initRecordStreamManager() {
+		try {
+			var nodeLocalProps = nodeLocalProperties();
+			var nodeScopedRecordLogDir = getRecordStreamDirectory(nodeLocalProps);
+			recordStreamManager = new RecordStreamManager(
 					platform,
 					runningAvgs(),
-					nodeAccount(),
-					properties().getStringProperty("hedera.recordStream.logDir"),
-					properties());
+					nodeLocalProps,
+					nodeScopedRecordLogDir,
+					getRecordsInitialHash());
+		} catch (IOException | NoSuchAlgorithmException ex) {
+			log.error("Fail to initialize RecordStreamManager.", ex);
 		}
-		return recordStream;
 	}
 
 	public FileUpdateInterceptor exchangeRatesManager() {
@@ -1810,6 +1830,56 @@ public class ServicesContext {
 
 	public MerkleDiskFs diskFs() {
 		return state.diskFs();
+	}
+
+	/**
+	 * return the directory to which record stream files should be write
+	 *
+	 * @return the direct file folder for writing record stream files
+	 */
+	public String getRecordStreamDirectory(NodeLocalProperties source) {
+		if (recordStreamDir == null) {
+			final String nodeAccountString = EntityIdUtils.asLiteralString(nodeAccount());
+			String parentDir = source.recordLogDir();
+			if (!parentDir.endsWith(File.separator)) {
+				parentDir += File.separator;
+			}
+			recordStreamDir = parentDir + "record" + nodeAccountString;
+		}
+		return recordStreamDir;
+	}
+
+	/**
+	 * update the runningHash instance saved in runningHashLeaf
+	 *
+	 * @param runningHash
+	 * 		new runningHash instance
+	 */
+	public void updateRecordRunningHash(final RunningHash runningHash) {
+		state.runningHashLeaf().setRunningHash(runningHash);
+	}
+
+	/**
+	 * set recordsInitialHash, which will be set to RecordStreamManager as initialHash.
+	 * recordsInitialHash is read at restart, either from the state's runningHashLeaf,
+	 * or from the last old .rcd_sig file in migration.
+	 * When recordsInitialHash is read, the RecordStreamManager might not be initialized yet,
+	 * because RecordStreamManager can only be initialized after system files are loaded so that enableRecordStream
+	 * setting is read.
+	 * Thus we save the initialHash in the context, and use it when initializing RecordStreamManager
+	 *
+	 * @param recordsInitialHash
+	 * 		initial running Hash of records
+	 */
+	public void setRecordsInitialHash(final Hash recordsInitialHash) {
+		this.recordsInitialHash = recordsInitialHash;
+		if (recordStreamManager() != null) {
+			recordStreamManager().setInitialHash(recordsInitialHash);
+		}
+	}
+
+	Hash getRecordsInitialHash() {
+		return recordsInitialHash;
 	}
 
 	void setBackingTokenRels(BackingTokenRels backingTokenRels) {

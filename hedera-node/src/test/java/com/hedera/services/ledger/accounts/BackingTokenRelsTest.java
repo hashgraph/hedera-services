@@ -201,6 +201,7 @@ class BackingTokenRelsTest {
 	private void setupMocked() {
 		rels = mock(FCMap.class);
 		given(rels.keySet()).willReturn(Collections.emptySet());
+		given(rels.entrySet()).willReturn(Collections.emptySet());
 		subject = new BackingTokenRels(() -> rels);
 	}
 }

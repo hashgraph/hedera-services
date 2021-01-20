@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -87,25 +87,20 @@ public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 	}
 
 	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
-		try {
-			var record = answerFunctions.txnRecord(recordCache, view, query).orElse(MISSING_RECORD_STANDIN);
-			var usages = usageEstimator.getTransactionRecordQueryFeeMatrices(record, type);
-			if (record != MISSING_RECORD_STANDIN) {
-				queryCtx.ifPresent(ctx -> ctx.put(PRIORITY_RECORD_CTX_KEY, record));
-				var op = query.getTransactionGetRecord();
-				if (op.getIncludeDuplicates()) {
-					var duplicateRecords = recordCache.getDuplicateRecords(op.getTransactionID());
-					queryCtx.ifPresent(ctx -> ctx.put(DUPLICATE_RECORDS_CTX_KEY, duplicateRecords));
-					for (TransactionRecord duplicate : duplicateRecords) {
-						var duplicateUsage = usageEstimator.getTransactionRecordQueryFeeMatrices(duplicate, type);
-						usages = sumFn.apply(usages, duplicateUsage);
-					}
+		var record = answerFunctions.txnRecord(recordCache, view, query).orElse(MISSING_RECORD_STANDIN);
+		var usages = usageEstimator.getTransactionRecordQueryFeeMatrices(record, type);
+		if (record != MISSING_RECORD_STANDIN) {
+			queryCtx.ifPresent(ctx -> ctx.put(PRIORITY_RECORD_CTX_KEY, record));
+			var op = query.getTransactionGetRecord();
+			if (op.getIncludeDuplicates()) {
+				var duplicateRecords = recordCache.getDuplicateRecords(op.getTransactionID());
+				queryCtx.ifPresent(ctx -> ctx.put(DUPLICATE_RECORDS_CTX_KEY, duplicateRecords));
+				for (TransactionRecord duplicate : duplicateRecords) {
+					var duplicateUsage = usageEstimator.getTransactionRecordQueryFeeMatrices(duplicate, type);
+					usages = sumFn.apply(usages, duplicateUsage);
 				}
 			}
-			return usages;
-		} catch (Exception e) {
-			log.warn("Usage estimation unexpectedly failed for {}!", query, e);
-			throw new IllegalArgumentException(e);
 		}
+		return usages;
 	}
 }

@@ -57,14 +57,14 @@ public class BootstrapProperties implements PropertySource {
 		}
 		return in;
 	};
-	static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
+	private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
 
 	String BOOTSTRAP_PROPS_RESOURCE = "bootstrap.properties";
 	String BOOTSTRAP_OVERRIDE_PROPS_LOC = "data/config/bootstrap.properties";
 
 	Map<String, Object> bootstrapProps = MISSING_PROPS;
 
-	void initPropsFromResource() {
+	private void initPropsFromResource() {
 		var resourceProps = new Properties();
 		load(BOOTSTRAP_PROPS_RESOURCE, resourceProps);
 		loadOverride(BOOTSTRAP_OVERRIDE_PROPS_LOC, resourceProps, fileStreamProvider, log);
@@ -105,9 +105,7 @@ public class BootstrapProperties implements PropertySource {
 	}
 
 	private void load(String resource, Properties intoProps) {
-		InputStream fin;
-		try {
-			fin = resourceStreamProvider.newInputStream(resource);
+		try (InputStream fin = resourceStreamProvider.newInputStream(resource)) {
 			intoProps.load(fin);
 		} catch (IOException e) {
 			throw new IllegalStateException(
@@ -133,7 +131,7 @@ public class BootstrapProperties implements PropertySource {
 		if (bootstrapProps.containsKey(name)) {
 			return bootstrapProps.get(name);
 		} else {
-			throw new IllegalArgumentException(String.format("No such property '%s'!", name));
+			throw new IllegalArgumentException(String.format("Argument 'name=%s' is invalid!", name));
 		}
 	}
 
@@ -209,6 +207,7 @@ public class BootstrapProperties implements PropertySource {
 			"ledger.maxAccountNum",
 			"ledger.transfers.maxLen",
 			"ledger.tokenTransfers.maxLen",
+			"ledger.schedule.txExpiryTimeSecs",
 			"rates.intradayChangeLimitPercent",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolUtf8Bytes",
@@ -219,6 +218,10 @@ public class BootstrapProperties implements PropertySource {
 			"grpc.port",
 			"grpc.tlsPort",
 			"hedera.profiles.active",
+			"hedera.recordStream.isEnabled",
+			"hedera.recordStream.logDir",
+			"hedera.recordStream.logPeriod",
+			"hedera.recordStream.queueCapacity",
 			"precheck.account.maxLookupRetries",
 			"precheck.account.lookupRetryBackoffIncrementMs",
 			"stats.hapiOps.speedometerUpdateIntervalMs",
@@ -261,6 +264,9 @@ public class BootstrapProperties implements PropertySource {
 			entry("hedera.numReservedSystemEntities", AS_LONG),
 			entry("hedera.profiles.active", AS_PROFILE),
 			entry("hedera.realm", AS_LONG),
+			entry("hedera.recordStream.logPeriod", AS_LONG),
+			entry("hedera.recordStream.isEnabled", AS_BOOLEAN),
+			entry("hedera.recordStream.queueCapacity", AS_INT),
 			entry("hedera.shard", AS_LONG),
 			entry("hedera.transaction.maxMemoUtf8Bytes", AS_INT),
 			entry("hedera.transaction.maxValidDuration", AS_LONG),
@@ -288,6 +294,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("ledger.transfers.maxLen", AS_INT),
 			entry("ledger.tokenTransfers.maxLen", AS_INT),
 			entry("ledger.totalTinyBarFloat", AS_LONG),
+			entry("ledger.schedule.txExpiryTimeSecs", AS_INT),
 			entry("tokens.maxPerAccount", AS_INT),
 			entry("tokens.maxSymbolUtf8Bytes", AS_INT),
 			entry("tokens.maxTokenNameUtf8Bytes", AS_INT),

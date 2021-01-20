@@ -22,7 +22,7 @@ package com.hedera.services.fees.calculation.token.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.UsageEstimatorUtils;
-import com.hedera.services.queries.contract.GetContractInfoAnswer;
+import com.hedera.services.queries.token.GetTokenInfoAnswer;
 import com.hedera.services.usage.token.TokenGetInfoUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -151,7 +151,7 @@ class GetTokenInfoResourceUsageTest {
 	}
 
 	@Test
-	public void onlySetsContractInfoInQueryCxtIfFound() {
+	public void onlySetsTokenInfoInQueryCxtIfFound() {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 
@@ -161,19 +161,9 @@ class GetTokenInfoResourceUsageTest {
 		var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
 		// then:
-		assertFalse(queryCtx.containsKey(GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY));
+		assertFalse(queryCtx.containsKey(GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY));
 		// and:
 		assertSame(FeeData.getDefaultInstance(), usage);
-	}
-
-	@Test
-	public void rethrowsIae() {
-		// given:
-		Query query = tokenInfoQuery(target, ANSWER_ONLY);
-		given(view.infoForToken(any())).willThrow(IllegalStateException.class);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
 	}
 
 	private Query tokenInfoQuery(TokenID id, ResponseType type) {

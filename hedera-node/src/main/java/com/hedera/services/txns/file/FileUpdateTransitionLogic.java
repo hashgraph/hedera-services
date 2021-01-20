@@ -26,12 +26,14 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +42,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.files.TieredHederaFs.firstUnsuccessful;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -48,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static java.lang.Boolean.TRUE;
 import static java.lang.Math.max;
 
@@ -111,7 +113,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 			Optional<HederaFs.UpdateResult> changeResult = Optional.empty();
 			if (replaceResult.map(HederaFs.UpdateResult::fileReplaced).orElse(TRUE)) {
 				if (op.hasKeys()) {
-					attr.setWacl(mapKey(wrapped(op.getKeys())));
+					attr.setWacl(asFcKeyUnchecked(wrapped(op.getKeys())));
 				}
 				changeResult = Optional.of(hfs.setattr(target, attr));
 			}
@@ -130,6 +132,10 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	static void mapToStatus(IllegalArgumentException iae, TransactionContext txnCtx) {
+		if (iae.getCause() instanceof DecoderException) {
+			txnCtx.setStatus(BAD_ENCODING);
+			return;
+		}
 		try {
 			var type = TieredHederaFs.IllegalArgumentType.valueOf(iae.getMessage());
 			txnCtx.setStatus(type.suggestedStatus());

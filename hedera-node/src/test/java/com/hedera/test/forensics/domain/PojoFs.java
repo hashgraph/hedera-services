@@ -38,15 +38,6 @@ import static java.util.stream.Collectors.toList;
 public class PojoFs {
 	private List<PojoFile> files;
 
-	public static PojoFs fromDisk(String dumpLoc) throws Exception {
-		try (SerializableDataInputStream fin = new SerializableDataInputStream(Files.newInputStream(Path.of(dumpLoc)))) {
-			FCMap<MerkleBlobMeta, MerkleOptionalBlob> fcm = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
-			fcm.copyFrom(fin);
-			fcm.copyFromExtra(fin);
-			return from(fcm);
-		}
-	}
-
 	public static PojoFs from(FCMap<MerkleBlobMeta, MerkleOptionalBlob> fs) {
 		var pojo = new PojoFs();
 		var readable = fs.entrySet()

@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.legacy.exception.DeserializationException;
 import com.hedera.services.legacy.exception.InvalidFileWACLException;
 import com.hedera.services.legacy.exception.SerializationException;
+import org.apache.commons.codec.DecoderException;
+
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.Serializable;
@@ -98,7 +100,7 @@ public class JFileInfo implements Serializable {
    * @return converted JFileInfo object
    * @throws Exception
    */
-  public static JFileInfo convert(FileInfo fi) throws Exception {
+  public static JFileInfo convert(FileInfo fi) throws DecoderException {
     JFileInfo jfi = new JFileInfo(fi.getDeleted(),
         JKey.mapKey(Key.newBuilder().setKeyList(fi.getKeys()).build()), fi.getExpirationTime().getSeconds());
     return jfi;
@@ -130,7 +132,7 @@ public class JFileInfo implements Serializable {
   public static JKey convertWacl(KeyList waclAsKeyList) throws InvalidFileWACLException {
     try {
       return JKey.mapKey(Key.newBuilder().setKeyList(waclAsKeyList).build());
-    } catch (Exception e) {
+    } catch (DecoderException e) {
       throw new InvalidFileWACLException("input wacl=" + waclAsKeyList, e);
     }
   }

@@ -71,10 +71,12 @@ class IssEventInfoTest {
 		assertTrue(subject.shouldDumpThisRound());
 
 		// and when:
+		subject.decrementRoundsToDump();
 		subject.alert(recentIssTime);
 		// then:
 		assertEquals(recentIssTime, subject.consensusTimeOfRecentAlert().get());
 		assertTrue(subject.shouldDumpThisRound());
+		subject.decrementRoundsToDump();
 		assertFalse(subject.shouldDumpThisRound());
 	}
 
