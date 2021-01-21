@@ -26,6 +26,7 @@ import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.TxnFeeType;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -90,7 +91,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 		return Optional.ofNullable(submittingNodeFeesCharged.get(fee)).orElse(0L);
 	}
 
-	public void resetFor(SignedTxnAccessor accessor, AccountID submittingNode) {
+	public void resetFor(TxnAccessor accessor, AccountID submittingNode) {
 		super.resetFor(accessor);
 
 		node = accessor.getTxn().getNodeAccountID();

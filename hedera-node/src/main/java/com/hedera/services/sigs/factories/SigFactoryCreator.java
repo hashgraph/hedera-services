@@ -22,7 +22,7 @@ package com.hedera.services.sigs.factories;
 
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,7 +42,7 @@ public class SigFactoryCreator {
 		this.scheduledTxns = scheduledTxns;
 	}
 
-	public TxnScopedPlatformSigFactory createScopedFactory(SignedTxnAccessor accessor) {
+	public TxnScopedPlatformSigFactory createScopedFactory(TxnAccessor accessor) {
 		switch (accessor.getFunction()) {
 			case ScheduleCreate:
 				return new ScheduleBodySigningSigFactory(

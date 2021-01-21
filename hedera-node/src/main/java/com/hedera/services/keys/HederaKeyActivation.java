@@ -21,19 +21,16 @@ package com.hedera.services.keys;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.sigs.order.SigningOrderResultFactory;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hedera.services.sigs.order.SigningOrderResultFactory;
+import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import org.apache.commons.codec.binary.Hex;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,8 +40,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
-import static com.swirlds.common.crypto.VerificationStatus.*;
-import static java.util.Arrays.copyOfRange;
+import static com.swirlds.common.crypto.VerificationStatus.INVALID;
+import static com.swirlds.common.crypto.VerificationStatus.VALID;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -79,7 +76,7 @@ public class HederaKeyActivation {
 	 * @return whether the payer's Hedera key is active.
 	 */
 	public static boolean payerSigIsActive(
-			PlatformTxnAccessor accessor,
+			TxnAccessor accessor,
 			HederaSigningOrder keyOrder,
 			SigningOrderResultFactory<SignatureStatus> summaryFactory
 	) {
@@ -132,7 +129,7 @@ public class HederaKeyActivation {
 	}
 
 	public static Function<byte[], TransactionSignature> aproposPkToSigMapFrom(
-		SignedTxnAccessor accessor,
+		TxnAccessor accessor,
 		List<TransactionSignature> sigs
 	) {
 		switch (accessor.getFunction()) {

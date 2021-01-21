@@ -21,7 +21,7 @@ package com.hedera.services.sigs.factories;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 
 /**
@@ -32,9 +32,9 @@ import com.swirlds.common.crypto.TransactionSignature;
  * @author Michael Tinker
  */
 public class BodySigningSigFactory implements TxnScopedPlatformSigFactory {
-	private final SignedTxnAccessor accessor;
+	private final TxnAccessor accessor;
 
-	public BodySigningSigFactory(SignedTxnAccessor accessor) {
+	public BodySigningSigFactory(TxnAccessor accessor) {
 		this.accessor = accessor;
 	}
 

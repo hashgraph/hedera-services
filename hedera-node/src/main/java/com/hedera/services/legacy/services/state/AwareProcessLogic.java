@@ -29,6 +29,7 @@ import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
@@ -91,6 +92,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	private final ServicesTxnManager txnManager = new ServicesTxnManager(
 			this::processTxnInCtx,
 			this::addRecordToStream,
+			this::processTriggeredTxnInCtx,
 			this::warnOf);
 	private final ServicesContext ctx;
 
@@ -106,10 +108,20 @@ public class AwareProcessLogic implements ProcessLogic {
 	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
 			PlatformTxnAccessor accessor = new PlatformTxnAccessor(platformTxn);
-			if (!txnSanityChecks(accessor, consensusTime, submittingMember)) {
+			Instant timestamp = consensusTime;
+			if (accessor.canTriggerTxn()) {
+				timestamp = timestamp.minusNanos(1);
+			}
+
+			if (!txnSanityChecks(accessor, timestamp, submittingMember)) {
 				return;
 			}
-			txnManager.process(accessor, consensusTime, submittingMember, ctx);
+			txnManager.process(accessor, timestamp, submittingMember, ctx);
+
+			if (ctx.txnCtx().triggeredTxn() != null) {
+				TxnAccessor scopedAccessor = ctx.txnCtx().triggeredTxn();
+				txnManager.process(scopedAccessor, consensusTime, submittingMember, ctx);
+			}
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}
@@ -142,6 +154,10 @@ public class AwareProcessLogic implements ProcessLogic {
 		doProcess(ctx.txnCtx().accessor(), ctx.txnCtx().consensusTime());
 	}
 
+	private void processTriggeredTxnInCtx() {
+		doTriggeredProcess(ctx.txnCtx().accessor(), ctx.txnCtx().consensusTime());
+	}
+
 	private void warnOf(Exception e, String context) {
 		String tpl = "Possibly CATASTROPHIC failure in {} :: {} ==>> {} ==>>";
 		try {
@@ -162,12 +178,25 @@ public class AwareProcessLogic implements ProcessLogic {
 		addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
 	}
 
-	private void doProcess(PlatformTxnAccessor accessor, Instant consensusTime) {
+	private void doTriggeredProcess(TxnAccessor accessor, Instant consensusTime) {
 		/* Side-effects of advancing data-driven clock to consensus time. */
 		updateMidnightRatesIfAppropriateAt(consensusTime);
 		ctx.updateConsensusTimeOfLastHandledTxn(consensusTime);
-		ctx.recordsHistorian().purgeExpiredRecords();
 
+		updateIssEventInfo(consensusTime);
+
+		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
+
+		var chargingOutcome = ctx.txnChargingPolicy().apply(ctx.charging(), fee);
+		if (chargingOutcome != OK) {
+			ctx.txnCtx().setStatus(chargingOutcome);
+			return;
+		}
+
+		process(accessor);
+	}
+
+	private void updateIssEventInfo(Instant consensusTime) {
 		if (ctx.issEventInfo().status() == ONGOING_ISS) {
 			var resetPeriod = ctx.properties().getIntProperty("iss.reset.periodSecs");
 			var resetTime = ctx.issEventInfo().consensusTimeOfRecentAlert().get().plus(resetPeriod, SECONDS);
@@ -175,6 +204,15 @@ public class AwareProcessLogic implements ProcessLogic {
 				ctx.issEventInfo().relax();
 			}
 		}
+	}
+
+	private void doProcess(TxnAccessor accessor, Instant consensusTime) {
+		/* Side-effects of advancing data-driven clock to consensus time. */
+		updateMidnightRatesIfAppropriateAt(consensusTime);
+		ctx.updateConsensusTimeOfLastHandledTxn(consensusTime);
+		ctx.recordsHistorian().purgeExpiredRecords();
+
+		updateIssEventInfo(consensusTime);
 
 		final SignatureStatus sigStatus = rationalizeWithPreConsensusSigs(accessor);
 		if (hasActivePayerSig(accessor)) {
@@ -214,19 +252,21 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
+		process(accessor);
+	}
+
+	private void process(TxnAccessor accessor) {
 		var sysAuthStatus = ctx.systemOpPolicies().check(accessor).asStatus();
 		if (sysAuthStatus != OK) {
 			ctx.txnCtx().setStatus(sysAuthStatus);
 			return;
 		}
-
 		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
 		if (transitionLogic.isEmpty()) {
 			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxn4Log);
 			ctx.txnCtx().setStatus(FAIL_INVALID);
 			return;
 		}
-
 		var logic = transitionLogic.get();
 		var opValidity = logic.syntaxCheck().apply(accessor.getTxn());
 		if (opValidity != OK) {
@@ -238,7 +278,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		ctx.opCounters().countHandled(accessor.getFunction());
 	}
 
-	private boolean hasActivePayerSig(PlatformTxnAccessor accessor) {
+	private boolean hasActivePayerSig(TxnAccessor accessor) {
 		try {
 			return payerSigIsActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
 		} catch (Exception edgeCase) {
@@ -249,7 +289,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private boolean nodeIgnoredDueDiligence(DuplicateClassification duplicity) {
 		Instant consensusTime = ctx.txnCtx().consensusTime();
-		PlatformTxnAccessor accessor = ctx.txnCtx().accessor();
+		TxnAccessor accessor = ctx.txnCtx().accessor();
 
 		var swirldsMemberAccount = ctx.txnCtx().submittingNodeAccount();
 		var designatedNodeAccount = accessor.getTxn().getNodeAccountID();
@@ -290,7 +330,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		return false;
 	}
 
-	private SignatureStatus rationalizeWithPreConsensusSigs(PlatformTxnAccessor accessor) {
+	private SignatureStatus rationalizeWithPreConsensusSigs(TxnAccessor accessor) {
 		var sigProvider = new ScopedSigBytesProvider(accessor);
 		var sigStatus = rationalizeIn(
 				accessor,
