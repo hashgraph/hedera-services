@@ -22,9 +22,10 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Message;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.usage.schedule.ScheduleCreateUsage;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -33,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
@@ -41,6 +43,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -52,6 +55,8 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
 	private final String entity;
 	private final HapiTxnOp<T> scheduled;
+	private Optional<String> adminKey = Optional.empty();
+	private Optional<String> payerAccountID = Optional.empty();
 
 	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
 		this.entity = scheduled;
@@ -60,6 +65,16 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
 	public HapiScheduleCreate<T> garbled() {
 		scheduleNonsense = true;
+		return this;
+	}
+
+	public HapiScheduleCreate adminKey(String s) {
+		adminKey = Optional.of(s);
+		return this;
+	}
+
+	public HapiScheduleCreate payer(String s) {
+		payerAccountID = Optional.of(s);
 		return this;
 	}
 
@@ -92,6 +107,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 								b.setTransactionBody(subOp.getBodyBytes());
 							}
 							b.setSigMap(schedSigMap);
+							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
+							payerAccountID.ifPresent(a -> {
+								var payer = TxnUtils.asId(a, spec);
+								b.setPayerAccountID(payer);
+							});
 						}
 				);
 		return b -> b.setScheduleCreate(opBody);
@@ -103,8 +123,13 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	}
 
 	@Override
-	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) {
-		return spec.fees().maxFeeTinyBars();
+	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+		return spec.fees().forActivityBasedOp(
+				HederaFunctionality.ScheduleCreate, this::usageEstimate, txn, numPayerKeys);
+	}
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return ScheduleCreateUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
 	@Override
@@ -125,6 +150,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		}
 		spec.registry().saveScheduleId(entity, lastReceipt.getScheduleID());
 		spec.registry().saveBytes(registryBytesTag(entity), bytesSigned);
+		adminKey.ifPresent(k -> spec.registry().saveAdminKey(entity, spec.registry().getKey(k)));
 	}
 
 	static String registryBytesTag(String name) {

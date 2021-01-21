@@ -142,6 +142,13 @@ public class ScheduleDeleteTransitionLogicTest {
         assertEquals(INVALID_SCHEDULE_ID, subject.syntaxCheck().apply(scheduleDeleteTxn));
     }
 
+    public void syntaxCheckWorks() {
+        givenValidTxnCtx();
+
+        // expect:
+        assertEquals(OK, subject.syntaxCheck().apply(scheduleDeleteTxn));
+    }
+
     private void givenValidTxnCtx() {
         givenCtx(false);
     }

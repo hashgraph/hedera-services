@@ -653,6 +653,7 @@ public class ServicesContext {
 		if (stateViews == null) {
 			stateViews = () -> new StateView(
 					tokenStore(),
+					scheduleStore(),
 					() -> queryableTopics().get(),
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
@@ -667,6 +668,7 @@ public class ServicesContext {
 		if (currentView == null) {
 			currentView = new StateView(
 					tokenStore(),
+					scheduleStore(),
 					this::topics,
 					this::accounts,
 					this::storage,
@@ -1363,6 +1365,7 @@ public class ServicesContext {
 					recordsHistorian(),
 					accountsLedger);
 			scheduleStore().setAccountsLedger(accountsLedger);
+			scheduleStore().setHederaLedger(ledger);
 		}
 		return ledger;
 	}

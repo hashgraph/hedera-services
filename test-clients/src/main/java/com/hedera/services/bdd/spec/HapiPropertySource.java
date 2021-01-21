@@ -147,8 +147,8 @@ public interface HapiPropertySource {
 				.setTokenNum(nativeParts[2])
 				.build();
 	}
-	static String asTokenString(TokenID account) {
-		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getTokenNum());
+	static String asTokenString(TokenID token) {
+		return String.format("%d.%d.%d", token.getShardNum(), token.getRealmNum(), token.getTokenNum());
 	}
 
 	static AccountID asAccount(String v) {
@@ -171,6 +171,7 @@ public interface HapiPropertySource {
 				.setTopicNum(nativeParts[2])
 				.build();
 	}
+
 	static String asTopicString(TopicID topic) {
 		return String.format("%d.%d.%d", topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
 	}

@@ -20,6 +20,7 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -31,6 +32,7 @@ import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -38,6 +40,8 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -68,6 +72,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
+import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
@@ -116,6 +122,7 @@ public class StateView {
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, JFileInfo> fileAttrs;
 	private final TokenStore tokenStore;
+	private final ScheduleStore scheduleStore;
 	private final Supplier<MerkleDiskFs> diskFs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
@@ -129,21 +136,23 @@ public class StateView {
 			PropertySource properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
+		this(NOOP_TOKEN_STORE, NOOP_SCHEDULE_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
 	}
 
 	public StateView(
 			TokenStore tokenStore,
+			ScheduleStore scheduleStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			PropertySource properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
+		this(tokenStore, scheduleStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
 	}
 
 	public StateView(
 			TokenStore tokenStore,
+			ScheduleStore scheduleStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
@@ -155,6 +164,7 @@ public class StateView {
 		this.accounts = accounts;
 		this.tokenStore = tokenStore;
 		this.tokenAssociations = tokenAssociations;
+		this.scheduleStore = scheduleStore;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
 
@@ -270,8 +280,35 @@ public class StateView {
 	}
 
 	public Optional<ScheduleInfo> infoForSchedule(ScheduleID scheduleID) {
-		// TODO: Implement logic for getting information for schedule from store.
-		throw new UnsupportedOperationException();
+		try {
+			var id = scheduleStore.resolve(scheduleID);
+			if (id == MISSING_SCHEDULE) {
+				return Optional.empty();
+			}
+			var schedule = scheduleStore.get(id);
+			var signers = schedule.signers();
+			KeyList signersList = KeyList.newBuilder().build();
+			signers.forEach(a -> signersList.getKeysList().add(Key.newBuilder().setEd25519(ByteString.copyFrom(a.getEd25519())).build()));
+			var info = ScheduleInfo.newBuilder()
+					.setScheduleID(id)
+					.setTransactionBody(ByteString.copyFrom(schedule.transactionBody()))
+					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
+					.setPayerAccountID(schedule.payer().toGrpcAccountId())
+					.setSigners(signersList);
+
+			// TODO add signatories once we remove signers completely
+
+			var adminCandidate = schedule.adminKey();
+			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
+
+			return Optional.of(info.build());
+		} catch (Exception unexpected) {
+			log.warn(
+					"Unexpected failure getting info for schedule {}!",
+					readableId(scheduleID),
+					unexpected);
+			return Optional.empty();
+		}
 	}
 
 	TokenFreezeStatus tfsFor(boolean flag) {
@@ -287,8 +324,7 @@ public class StateView {
 	}
 
 	public boolean scheduleExists(ScheduleID id) {
-		// TODO: return scheduleStore.resolve(id) != MISSING_SCHEDULE;
-		throw new UnsupportedOperationException();
+		return scheduleStore.resolve(id) != MISSING_SCHEDULE;
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {

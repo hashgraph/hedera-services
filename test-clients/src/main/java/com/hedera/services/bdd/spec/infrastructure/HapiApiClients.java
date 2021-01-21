@@ -63,6 +63,7 @@ public class HapiApiClients {
 	private static Map<String, FileServiceBlockingStub> fileSvcStubs = new HashMap<>();
 	private static Map<String, CryptoServiceBlockingStub> cryptoSvcStubs = new HashMap<>();
 	private static Map<String, TokenServiceBlockingStub> tokenSvcStubs = new HashMap<>();
+	private static Map<String, ScheduleServiceBlockingStub> scheduleSvcStubs = new HashMap<>();
 	private static Map<String, FreezeServiceBlockingStub> freezeSvcStubs = new HashMap<>();
 	private static Map<String, NetworkServiceBlockingStub> networkSvcStubs = new HashMap<>();
 	private static Map<String, ScheduleServiceBlockingStub> schedSvcStubs = new HashMap<>();
@@ -116,6 +117,7 @@ public class HapiApiClients {
 			fileSvcStubs.put(uri, FileServiceGrpc.newBlockingStub(channel));
 			schedSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
 			tokenSvcStubs.put(uri, TokenServiceGrpc.newBlockingStub(channel));
+			scheduleSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
 			cryptoSvcStubs.put(uri, CryptoServiceGrpc.newBlockingStub(channel));
 			freezeSvcStubs.put(uri, FreezeServiceGrpc.newBlockingStub(channel));
 			networkSvcStubs.put(uri, NetworkServiceGrpc.newBlockingStub(channel));
@@ -150,7 +152,8 @@ public class HapiApiClients {
 				tokenSvcStubs.size() +
 				cryptoSvcStubs.size() +
 				freezeSvcStubs.size() +
-				networkSvcStubs.size();
+				networkSvcStubs.size() +
+				scheduleSvcStubs.size();
 	}
 
 	public static HapiApiClients clientsFor(HapiSpecSetup setup) {
@@ -221,6 +224,7 @@ public class HapiApiClients {
 		consSvcStubs.clear();
 		fileSvcStubs.clear();
 		tokenSvcStubs.clear();
+		scheduleSvcStubs.clear();
 		cryptoSvcStubs.clear();
 		freezeSvcStubs.clear();
 		networkSvcStubs.clear();

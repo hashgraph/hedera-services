@@ -22,6 +22,9 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
+import com.hedera.services.usage.schedule.ScheduleCreateUsage;
+import com.hedera.services.usage.schedule.ScheduleSignUsage;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -29,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,6 +43,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.withNature;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asScheduleId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static java.util.stream.Collectors.toList;
 
@@ -93,8 +98,13 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	}
 
 	@Override
-	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) {
-		return spec.fees().maxFeeTinyBars();
+	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+		return spec.fees().forActivityBasedOp(
+				HederaFunctionality.ScheduleSign, this::usageEstimate, txn, numPayerKeys);
+	}
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return ScheduleSignUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
 	@Override

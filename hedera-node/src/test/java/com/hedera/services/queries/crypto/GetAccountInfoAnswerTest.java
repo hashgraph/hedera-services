@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -75,6 +76,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KE
 class GetAccountInfoAnswerTest {
 	private StateView view;
 	private TokenStore tokenStore;
+	private ScheduleStore scheduleStore;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	private OptionValidator optionValidator;
@@ -133,6 +135,8 @@ class GetAccountInfoAnswerTest {
 		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
 		given(token.symbol()).willReturn("HEYMA");
 
+		scheduleStore = mock(ScheduleStore.class);
+
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
 		payerAccount = MerkleAccountFactory.newAccount()
@@ -153,6 +157,7 @@ class GetAccountInfoAnswerTest {
 		propertySource = mock(PropertySource.class);
 		view = new StateView(
 				tokenStore,
+				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> accounts,
 				StateView.EMPTY_STORAGE_SUPPLIER,
