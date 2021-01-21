@@ -1026,7 +1026,7 @@ workflows:
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 7 * * *"
+          cron: "6 5 * * *"
           filters:
             branches:
               only:
@@ -1729,7 +1729,16 @@ workflows:
 
   continuous-integration-gcp:
       jobs:
-        - build-platform-and-services
+        - build-platform-and-services:
+            context: SonarCloud
+            filters:
+              branches:
+                ignore:
+                  - /.*-PERF/
+                  - /.*-REGRESSION/
+                  - 00984-D-enable-15-node-weekly-perf-regression
+            workflow-name: "Continuous Integration GCP"
+
         - run-continuous-integration-gcp:
             context: Slack
             requires:
@@ -1754,6 +1763,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 00984-D-enable-15-node-weekly-perf-regression
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
