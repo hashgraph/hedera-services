@@ -30,7 +30,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;

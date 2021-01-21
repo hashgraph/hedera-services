@@ -22,11 +22,11 @@ package com.hedera.services.legacy.services.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.state.logic.ServicesTxnManager;
+import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -329,13 +329,15 @@ public class AwareProcessLogic implements ProcessLogic {
 				!inSameUtcDay(ctx.consensusTimeOfLastHandledTxn(), dataDrivenNow);
 	}
 
-	private void addForStreaming(
+	void addForStreaming(
 			com.hederahashgraph.api.proto.java.Transaction grpcTransaction,
 			TransactionRecord transactionRecord,
 			Instant consensusTimeStamp
 	) {
-		if (PropertiesLoader.isEnableRecordStreaming()) {
-			ctx.recordStream().addRecord(grpcTransaction, transactionRecord, consensusTimeStamp);
-		}
+		final RecordStreamObject recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp);
+		// update runningHash instance in the leaf of ServicesState
+		// the Hash in the runningHash instance will be calculated and set by the runningHashCalculator in the RecordStreamManager
+		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
+		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
 	}
 }

@@ -412,18 +412,6 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		return this;
 	}
 
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
 	/* --- Helpers --- */
 
 	public static ExpirableTxnRecord fromGprc(TransactionRecord record) {

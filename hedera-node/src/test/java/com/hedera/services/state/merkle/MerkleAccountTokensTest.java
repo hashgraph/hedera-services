@@ -24,6 +24,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -82,6 +83,14 @@ class MerkleAccountTokensTest {
 		assertEquals("[0.0.1, 0.0.2, 1.1.2, 0.0.3]", subject.readableTokenIds());
 		// and:
 		assertEquals(2, effectiveAssociations);
+	}
+
+	@Test
+	void rejectsIndivisibleParts() {
+		// expect:
+		Assertions.assertThrows(
+				IllegalArgumentException.class,
+				() -> new MerkleAccountTokens(new long[MerkleAccountTokens.NUM_ID_PARTS + 1]));
 	}
 
 	@Test

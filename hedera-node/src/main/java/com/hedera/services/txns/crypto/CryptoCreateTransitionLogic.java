@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,17 +27,17 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.core.jproto.JKey;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -90,17 +90,12 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
-		JKey key;
+	private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
 		long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
 		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
 
-		try {
-			key = mapKey(op.getKey());
-		} catch (Exception syntaxViolation) {
-			log.warn("Syntax violation in doStateTransition!", syntaxViolation);
-			throw new IllegalArgumentException(syntaxViolation);
-		}
+		/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
+		JKey key = asFcKeyUnchecked(op.getKey());
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.key(key)
 				.expiry(expiry)
@@ -131,18 +126,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		if (!validator.hasGoodEncoding(op.getKey())) {
 			return BAD_ENCODING;
 		}
-
-		try {
-			//convert to JKey and check if after the expansion the key is empty
-			JKey converted = JKey.mapKey(op.getKey());
-			if (converted.isEmpty()) {
-				return KEY_REQUIRED;
-			}
-
-			if (!converted.isValid()) {
-				return BAD_ENCODING;
-			}
-		} catch (DecoderException e) {
+		var fcKey = asFcKeyUnchecked(op.getKey());
+		if (fcKey.isEmpty()) {
+			return KEY_REQUIRED;
+		}
+		if (!fcKey.isValid()) {
 			return BAD_ENCODING;
 		}
 

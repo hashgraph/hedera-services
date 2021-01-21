@@ -503,6 +503,10 @@ public class HapiSpecRegistry {
 		return getOrElse(account + "RechargeWindow", Integer.class, ZERO);
 	}
 
+	public boolean hasTokenId(String name) {
+		return hasVia(this::getTokenID, name);
+	}
+
 	public boolean hasAccountId(String name) {
 		return hasVia(this::getAccountID, name);
 	}

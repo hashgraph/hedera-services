@@ -151,4 +151,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int localCallEstRetBytes() {
 		return 32;
 	}
+
+	@Override
+	public int scheduledTxExpiryTimeSecs() {
+		return 1800;
+	}
 }

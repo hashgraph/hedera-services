@@ -45,13 +45,14 @@ public class FeeBuilder {
   public static final int KEY_SIZE = 32;
   public static final int TX_HASH_SIZE = 48;
   public static final int DEFAULT_PAYER_ACC_SIG_COUNT = 0;
-  public static final int RECIEPT_STORAGE_TIME_SEC = 180;
+  public static final int RECEIPT_STORAGE_TIME_SEC = 180;
   public static final int THRESHOLD_STORAGE_TIME_SEC = 90000;
   public static final int DEFAULT_RBS_NETWORK = 0;
   public static final int FEE_DIVISOR_FACTOR = 1000;
   public static final int SIGNATURE_SIZE = 64;
   public static final int HRS_DIVISOR = 3600;
   public static final int BASIC_ENTITY_ID_SIZE = (3 * LONG_SIZE);
+  public static final int BASIC_RICH_INSTANT_SIZE = LONG_SIZE + INT_SIZE;
   public static final int BASIC_ACCOUNT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int BASIC_TX_ID_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int EXCHANGE_RATE_SIZE = 2 * INT_SIZE + LONG_SIZE;
@@ -345,7 +346,7 @@ public class FeeBuilder {
   }
 
   public static long getDefaultRBHNetworkSize() {
-    return (BASIC_RECEIPT_SIZE) * (RECIEPT_STORAGE_TIME_SEC);
+    return (BASIC_RECEIPT_SIZE) * (RECEIPT_STORAGE_TIME_SEC);
   }
 
   public static int getBaseTransactionRecordSize(TransactionBody txBody) {

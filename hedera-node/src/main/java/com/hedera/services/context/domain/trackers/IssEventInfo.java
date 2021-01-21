@@ -45,7 +45,11 @@ public class IssEventInfo {
 	}
 
 	public boolean shouldDumpThisRound() {
-		return remainingRoundsToDump-- > 0;
+		return remainingRoundsToDump > 0;
+	}
+
+	public void decrementRoundsToDump() {
+		remainingRoundsToDump--;
 	}
 
 	public synchronized void alert(Instant roundConsensusTime) {

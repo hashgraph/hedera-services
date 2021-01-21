@@ -42,7 +42,7 @@ public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 	}
 
 	public FeeData get() {
-		addAccountBpt();
+		addEntityBpt();
 		addAmountBpt();
 		addTokenTransfersRecordRb(1, 1);
 		return usageEstimator.get();

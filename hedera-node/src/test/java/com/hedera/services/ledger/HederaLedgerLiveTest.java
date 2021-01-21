@@ -33,7 +33,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.TxnUtils;
@@ -74,8 +74,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				() -> new MerkleAccount(),
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		FCMap<MerkleEntityId, MerkleToken> tokens =
-				new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER);
+		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				() -> new MerkleTokenRelStatus(),

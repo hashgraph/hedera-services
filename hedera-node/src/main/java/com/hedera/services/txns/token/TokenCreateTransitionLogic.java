@@ -22,7 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

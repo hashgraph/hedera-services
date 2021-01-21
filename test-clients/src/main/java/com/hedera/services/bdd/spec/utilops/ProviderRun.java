@@ -54,6 +54,7 @@ public class ProviderRun extends UtilOp {
 	private static final int DEFAULT_BACKLOG_SLEEPOFF_SECS = 1;
 	private static final long DEFAULT_DURATION = 30;
 	private static final TimeUnit DEFAULT_UNIT = TimeUnit.SECONDS;
+	private static final int DEFAULT_TOTAL_OPS_TO_SUBMIT = -1;
 
 	private final Function<HapiApiSpec, OpProvider> providerFn;
 	private IntSupplier maxOpsPerSecSupplier = () -> DEFAULT_MAX_OPS_PER_SEC;
@@ -61,6 +62,8 @@ public class ProviderRun extends UtilOp {
 	private IntSupplier backoffSleepSecsSupplier = () -> DEFAULT_BACKLOG_SLEEPOFF_SECS;
 	private LongSupplier durationSupplier = () -> DEFAULT_DURATION;
 	private Supplier<TimeUnit> unitSupplier = () -> DEFAULT_UNIT;
+	private IntSupplier totalOpsToSubmit = () -> DEFAULT_TOTAL_OPS_TO_SUBMIT;
+
 	private Map<HederaFunctionality, AtomicInteger> counts = new HashMap<>();
 
 	public ProviderRun(Function<HapiApiSpec, OpProvider> providerFn) {
@@ -71,6 +74,11 @@ public class ProviderRun extends UtilOp {
 	public ProviderRun lasting(LongSupplier durationSupplier, Supplier<TimeUnit> unitSupplier) {
 		this.unitSupplier = unitSupplier;
 		this.durationSupplier = durationSupplier;
+		return this;
+	}
+
+	public ProviderRun totalOpsToSumbit(IntSupplier totalOpsSupplier) {
+		this.totalOpsToSubmit = totalOpsSupplier;
 		return this;
 	}
 
@@ -104,6 +112,8 @@ public class ProviderRun extends UtilOp {
 		TimeUnit unit = unitSupplier.get();
 		Stopwatch stopwatch = Stopwatch.createStarted();
 
+		final var remainingOpsToSubmit = new AtomicInteger(totalOpsToSubmit.getAsInt());
+		final boolean fixedOpSubmission = (remainingOpsToSubmit.get() < 0) ? false : true;
 		int submittedSoFar = 0;
 		long durationMs = unit.toMillis(duration);
 		long logIncrementMs = durationMs / 100;
@@ -124,6 +134,7 @@ public class ProviderRun extends UtilOp {
 				if (delta != lastDeltaLogged) {
 					log.info(delta + " "
 							+ unit.toString().toLowerCase()
+							+ (fixedOpSubmission ? (" or " + remainingOpsToSubmit + " ops ") : "")
 							+ " left in test - "
 							+ submittedSoFar
 							+ " ops submitted so far ("
@@ -136,9 +147,18 @@ public class ProviderRun extends UtilOp {
 				}
 			}
 
+			if(fixedOpSubmission && remainingOpsToSubmit.get() <= 0) {
+				if(numPending > 0) {
+					continue;
+				}
+				log.info("Finished submission of total {} operations", totalOpsToSubmit.getAsInt());
+				break;
+			}
 			if (numPending < MAX_PENDING_OPS) {
 				HapiSpecOperation[] burst = IntStream
-						.range(0, Math.min(MAX_N, MAX_OPS_PER_SEC - opsThisSecond.get()))
+						.range(0, Math.min(MAX_N,
+								fixedOpSubmission ? Math.min(remainingOpsToSubmit.get(), MAX_OPS_PER_SEC - opsThisSecond.get())
+								:  MAX_OPS_PER_SEC - opsThisSecond.get()))
 						.mapToObj(ignore -> provider.get())
 						.flatMap(Optional::stream)
 						.peek(op -> counts.get(op.type()).getAndIncrement())
@@ -146,6 +166,9 @@ public class ProviderRun extends UtilOp {
 				if (burst.length > 0) {
 					allRunFor(spec, inParallel(burst));
 					submittedSoFar += burst.length;
+					if(fixedOpSubmission) {
+						remainingOpsToSubmit.getAndAdd(-burst.length);
+					}
 					opsThisSecond.getAndAdd(burst.length);
 				}
 			} else {

@@ -402,16 +402,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public void adjustTotalSupplyBy(long amount) {
 		var newTotalSupply = totalSupply + amount;
 		if (newTotalSupply < 0) {
-			throw new IllegalArgumentException(String.format("Cannot set token totalSupply to %d!", newTotalSupply));
+			throw new IllegalArgumentException(String.format(
+					"Argument 'amount=%d' would negate totalSupply=%d!",
+					amount, totalSupply));
 		}
 		totalSupply += amount;
 	}
 
-	void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
-		this.accountsFrozenByDefault = accountsFrozenByDefault;
-	}
-
-	void setAccountsKycGrantedByDefault(boolean accountKycGrantedByDefault) {
-		this.accountsKycGrantedByDefault = accountKycGrantedByDefault;
-	}
 }

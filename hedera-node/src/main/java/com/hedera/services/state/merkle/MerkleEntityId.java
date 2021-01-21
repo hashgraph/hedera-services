@@ -23,6 +23,7 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.FCMKey;
@@ -67,6 +68,10 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 
 	public static MerkleEntityId fromContractId(ContractID grpc) {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getContractNum());
+	}
+
+	public static MerkleEntityId fromScheduleId(ScheduleID grpc) {
+		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getScheduleNum());
 	}
 
 	@Deprecated
@@ -144,18 +149,6 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 		return new MerkleEntityId(shard, realm, num);
 	}
 
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
 	/* --- Bean --- */
 	public long getShard() {
 		return shard;
@@ -207,6 +200,14 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 				.setShardNum(shard)
 				.setRealmNum(realm)
 				.setTokenNum(num)
+				.build();
+	}
+
+	public ScheduleID toScheduleId() {
+		return ScheduleID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setScheduleNum(num)
 				.build();
 	}
 }

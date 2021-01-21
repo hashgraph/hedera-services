@@ -47,8 +47,9 @@ public class LegacyEd25519KeyReader {
 			return keyPairs.get(0).getKeyPairList().get(0).getPublicKeyAbyteStr();
 		} catch (Exception e) {
 			throw new IllegalArgumentException(
-					String.format("No key could be decrypted from '%s'!", b64EncodedKeyPairLoc),
-					e);
+					String.format(
+							"Argument 'b64EncodedKeyPairLoc=%s' not a Base64-encoded key pair!",
+							b64EncodedKeyPairLoc), e);
 		}
 	}
 

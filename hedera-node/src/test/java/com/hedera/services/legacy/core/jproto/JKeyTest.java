@@ -52,4 +52,20 @@ public class JKeyTest {
 		assertThrows(DecoderException.class, () -> JKey.convertKey(accountKey, KeyExpansion.KEY_EXPANSION_DEPTH+1),
 				"Exceeding max expansion depth of " + KeyExpansion.KEY_EXPANSION_DEPTH);
 	}
+
+	@Test
+	public void rejectsEmptyKey() {
+		// expect:
+		assertThrows(DecoderException.class, () -> JKey.convertJKeyBasic(new JKey() {
+			@Override
+			public boolean isEmpty() {
+				return false;
+			}
+
+			@Override
+			public boolean isValid() {
+				return false;
+			}
+		}));
+	}
 }

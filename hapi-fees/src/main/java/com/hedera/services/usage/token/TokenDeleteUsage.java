@@ -42,7 +42,7 @@ public class TokenDeleteUsage extends TokenTxnUsage<TokenDeleteUsage> {
 	}
 
 	public FeeData get() {
-		addAccountBpt();
+		addEntityBpt();
 		return usageEstimator.get();
 	}
 }

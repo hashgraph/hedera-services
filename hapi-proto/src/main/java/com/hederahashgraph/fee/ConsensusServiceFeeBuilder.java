@@ -53,7 +53,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 txBody, sigValObj,
                 variableSize + LONG_SIZE,  // For autoRenewPeriod
                 extraRbsServices,
-                BASIC_ENTITY_ID_SIZE * RECIEPT_STORAGE_TIME_SEC);  // For topicID in receipt
+                BASIC_ENTITY_ID_SIZE * RECEIPT_STORAGE_TIME_SEC);  // For topicID in receipt
     }
 
     /**
@@ -173,7 +173,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 txBody, sigValObj,
                 submitMessageTxBodySize,
                 0,
-                (LONG_SIZE + TX_HASH_SIZE) * RECIEPT_STORAGE_TIME_SEC);  // For topicSequenceNumber, topicRunningHash
+                (LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC);  // For topicSequenceNumber, topicRunningHash
     }
 
     /**
@@ -196,7 +196,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 + txBodyDataSize
                 + sigValObj.getSignatureSize());
         feeComponentsBuilder.setRbh(
-                getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC
+                getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC
                 + extraRbsServices);
         long rbsNetwork = getDefaultRBHNetworkSize() + extraRbsNetwork;
         return getFeeDataMatrices(feeComponentsBuilder.build(), sigValObj.getPayerAcctSigCount(), rbsNetwork);

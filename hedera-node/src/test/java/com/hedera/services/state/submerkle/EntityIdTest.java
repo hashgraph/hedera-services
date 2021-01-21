@@ -207,5 +207,6 @@ public class EntityIdTest {
 		assertEquals(accountId, subject.toGrpcAccountId());
 		assertEquals(contractId, subject.toGrpcContractId());
 		assertEquals(tokenId, subject.toGrpcTokenId());
+		assertEquals(scheduleId, subject.toGrpcScheduleId());
 	}
 }

@@ -37,12 +37,11 @@ import com.hedera.services.legacy.util.SCEncoding;
 import static com.hedera.services.legacy.util.SCEncoding.*;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
-import com.hedera.test.mocks.TestProperties;
 import com.hedera.test.mocks.TestUsagePricesProvider;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -174,8 +173,8 @@ public class SmartContractRequestHandlerStorageTest {
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
     contractFileId = RequestBuilder.getFileIdBuild(contractFileNumber, 0L, 0L);
 
-    contracts = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-    storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+    contracts = new FCMap<>();
+    storageMap = new FCMap<>();
     createAccount(payerAccountId, 1_000_000_000L);
     createAccount(nodeAccountId, 10_000L);
     createAccount(feeCollAccountId, 10_000L);
