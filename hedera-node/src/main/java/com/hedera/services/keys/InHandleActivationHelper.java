@@ -22,7 +22,7 @@ package com.hedera.services.keys;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
@@ -42,7 +42,7 @@ public class InHandleActivationHelper {
 	private static final Logger log = LogManager.getLogger(InHandleActivationHelper.class);
 
 	private static final List<JKey> NO_OTHER_PARTIES = null;
-	private static final PlatformTxnAccessor NO_LAST_ACCESSOR = null;
+	private static final TxnAccessor NO_LAST_ACCESSOR = null;
 	private static final Function<byte[], TransactionSignature> NO_LAST_SIGS_FN = null;
 
 	static Activation activation = HederaKeyActivation::isActive;
@@ -53,17 +53,17 @@ public class InHandleActivationHelper {
 
 	private final HederaSigningOrder keyOrderer;
 	private final CharacteristicsFactory characteristics;
-	private final Supplier<PlatformTxnAccessor> accessorSource;
+	private final Supplier<TxnAccessor> accessorSource;
 
 	private List<JKey> otherParties = NO_OTHER_PARTIES;
-	private PlatformTxnAccessor accessor = NO_LAST_ACCESSOR;
+	private TxnAccessor accessor = NO_LAST_ACCESSOR;
 	private Function<byte[], TransactionSignature> scheduledSigsFn = NO_LAST_SIGS_FN;
 	private Function<byte[], TransactionSignature> nonScheduledSigsFn = NO_LAST_SIGS_FN;
 
 	public InHandleActivationHelper(
 			HederaSigningOrder keyOrderer,
 			CharacteristicsFactory characteristics,
-			Supplier<PlatformTxnAccessor> accessorSource
+			Supplier<TxnAccessor> accessorSource
 	) {
 		this.keyOrderer = keyOrderer;
 		this.characteristics = characteristics;

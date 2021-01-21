@@ -21,7 +21,6 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.DomainSerdesTest;
@@ -299,7 +298,7 @@ class ExpirableTxnRecordTest {
 						"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, " +
 						"txnHash=6e6f742d7265616c6c792d612d68617368, " +
 						"txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
-						"validStart=RichInstant{seconds=9999999999, nanos=0}}, " +
+						"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false}, " +
 						"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, " +
 						"expiry=1234567, submittingMember=1, memo=Alpha bravo charlie, " +
 						"contractCreation=SolidityFnResult{gasUsed=55, bloom=, " +

@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -37,6 +38,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
@@ -197,6 +199,8 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec triggersImmediatelyWithBothReqSimpleSigs() {
+		long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
+		long transferAmount = 1;
 		/*
 >>> START ScheduleCreate >>>
  - Resolved scheduleId: 0.0.1006
@@ -207,13 +211,16 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given(
 						cryptoCreate("sender"),
 						cryptoCreate("receiver").receiverSigRequired(true)
-				).when().then(
+				).when(
 						scheduleCreate(
 								"basicXfer",
 								cryptoTransfer(
-										tinyBarsFromTo("sender", "receiver", 1)
+										tinyBarsFromTo("sender", "receiver", transferAmount)
 								).signedBy("sender", "receiver")
 						)
+				).then(
+						getAccountBalance("sender").hasTinyBars(initialBalance - transferAmount),
+						getAccountBalance("receiver").hasTinyBars(initialBalance + transferAmount)
 				);
 	}
 

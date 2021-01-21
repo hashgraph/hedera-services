@@ -21,6 +21,7 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
@@ -28,12 +29,10 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.VerificationStatus;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 
@@ -127,11 +126,11 @@ public class HederaToPlatformSigOps {
 	 * @return a representation of the outcome.
 	 */
 	public static SignatureStatus rationalizeIn(
-			PlatformTxnAccessor txnAccessor,
+			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
 			PubKeyToSigBytesProvider sigsProvider,
-			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
+			Function<TxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 	) {
 		return new Rationalization(
 				txnAccessor,

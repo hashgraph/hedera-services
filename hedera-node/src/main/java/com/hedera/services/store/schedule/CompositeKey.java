@@ -20,7 +20,10 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hederahashgraph.api.proto.java.AccountID;
+
+import java.util.Arrays;
 
 public class CompositeKey {
     private final int hash;
@@ -52,5 +55,9 @@ public class CompositeKey {
             result = 31 * result + id.hashCode();
         }
         return result;
+    }
+
+    public static CompositeKey fromMerkleSchedule(MerkleSchedule schedule) {
+        return new CompositeKey(Arrays.hashCode(schedule.transactionBody()), schedule.payer().toGrpcAccountId());
     }
 }

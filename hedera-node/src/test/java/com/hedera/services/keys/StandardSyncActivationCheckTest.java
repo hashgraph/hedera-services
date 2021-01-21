@@ -20,33 +20,33 @@ package com.hedera.services.keys;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigsCreationResult;
 import com.hedera.services.sigs.PlatformSigsFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static com.hedera.services.keys.StandardSyncActivationCheck.allKeysAreActive;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.keys.StandardSyncActivationCheck.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class StandardSyncActivationCheckTest {
@@ -62,7 +62,7 @@ class StandardSyncActivationCheckTest {
 	TxnScopedPlatformSigFactory scopedSig;
 	Function<byte[], TransactionSignature> sigsFn;
 	Function<Transaction, PubKeyToSigBytes> sigBytesProvider;
-	Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider;
+	Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider;
 	BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive;
 	Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider;
 

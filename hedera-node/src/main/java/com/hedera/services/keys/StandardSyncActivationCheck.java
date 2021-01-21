@@ -20,14 +20,13 @@ package com.hedera.services.keys;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigsFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.List;
@@ -38,10 +37,10 @@ public class StandardSyncActivationCheck {
 	public static boolean allKeysAreActive(
 			List<JKey> keys,
 			SyncVerifier syncVerifier,
-			PlatformTxnAccessor accessor,
+			TxnAccessor accessor,
 			PlatformSigsFactory sigsFactory,
 			Function<Transaction, PubKeyToSigBytes> sigBytesProvider,
-			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider,
+			Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider,
 			BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
 			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider
 	) {

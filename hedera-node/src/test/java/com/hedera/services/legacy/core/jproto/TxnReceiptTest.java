@@ -58,7 +58,6 @@ public class TxnReceiptTest {
   ExchangeRates mockRates;
   TxnReceipt subject;
 
-
   private TopicID getTopicId(long shard, long realm, long num) {
     return TopicID.newBuilder().setShardNum(shard).setRealmNum(realm).setTopicNum(num).build();
   }
