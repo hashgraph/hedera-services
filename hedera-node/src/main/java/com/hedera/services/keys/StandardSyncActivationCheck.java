@@ -25,9 +25,9 @@ import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.List;
@@ -41,12 +41,12 @@ public class StandardSyncActivationCheck {
 			PlatformTxnAccessor accessor,
 			PlatformSigsFactory sigsFactory,
 			Function<Transaction, PubKeyToSigBytes> sigBytesProvider,
-			Function<byte[], TxnScopedPlatformSigFactory> scopedSigProvider,
+			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider,
 			BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
 			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider
 	) {
-		var sigFactory = scopedSigProvider.apply(accessor.getTxnBytes());
-		var sigBytes = sigBytesProvider.apply(accessor.getSignedTxn());
+		var sigFactory = scopedSigProvider.apply(accessor);
+		var sigBytes = sigBytesProvider.apply(accessor.getBackwardCompatibleSignedTxn());
 
 		var creationResult = sigsFactory.createEd25519From(keys, sigBytes, sigFactory);
 		if (creationResult.hasFailed()) {

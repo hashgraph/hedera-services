@@ -106,8 +106,8 @@ public interface HapiPropertySource {
 	default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
 		return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
 	}
-	default HapiSpecSetup.TxnConfig getTxnConfig(String property) {
-		return HapiSpecSetup.TxnConfig.valueOf(get(property).toUpperCase());
+	default HapiSpecSetup.TxnProtoStructure getTxnConfig(String property) {
+		return HapiSpecSetup.TxnProtoStructure.valueOf(get(property).toUpperCase());
 	}
 	default HapiSpecSetup.NodeSelection getNodeSelector(String property) {
 		return HapiSpecSetup.NodeSelection.valueOf(get(property).toUpperCase());
@@ -197,6 +197,19 @@ public interface HapiPropertySource {
 	}
 	static String asContractString(ContractID contract) {
 		return String.format("%d.%d.%d", contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
+	}
+
+	static ScheduleID asSchedule(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return ScheduleID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setScheduleNum(nativeParts[2])
+				.build();
+	}
+
+	static String asScheduleString(ScheduleID schedule) {
+		return String.format("%d.%d.%d", schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
 	}
 
 	static SemanticVersion asSemVer(String v) {

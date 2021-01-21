@@ -80,7 +80,7 @@ public class HapiSpecSetup {
 
 	public enum NodeSelection { FIXED, RANDOM }
 	public enum TlsConfig { ON, OFF, ALTERNATE }
-	public enum TxnConfig { NEW, OLD, ALTERNATE }
+	public enum TxnProtoStructure { NEW, OLD, ALTERNATE }
 
 	public HapiSpecSetup(HapiPropertySource props) {
 		this.props = props;
@@ -384,16 +384,16 @@ public class HapiSpecSetup {
 		return useTls;
 	}
 
-	public TxnConfig txnConfig() {
-		TxnConfig config = props.getTxnConfig("txn");
-		if (TxnConfig.ALTERNATE == config) {
+	TxnProtoStructure txnProtoStructure() {
+		var protoStructure = props.getTxnConfig("txn.proto.structure");
+		if (TxnProtoStructure.ALTERNATE == protoStructure) {
 			if (r.nextBoolean()) {
-				return TxnConfig.NEW;
+				return TxnProtoStructure.NEW;
 			} else {
-				return TxnConfig.OLD;
+				return TxnProtoStructure.OLD;
 			}
 		}
-		return config;
+		return protoStructure;
 	}
 	public long txnStartOffsetSecs() {
 		return props.getLong("txn.start.offset.secs");

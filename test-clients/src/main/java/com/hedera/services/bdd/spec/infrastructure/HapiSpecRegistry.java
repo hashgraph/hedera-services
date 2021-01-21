@@ -455,6 +455,15 @@ public class HapiSpecRegistry {
 		put(asAccountString(id), name);
 	}
 
+	public void saveScheduleId(String name, ScheduleID id) {
+		put(name, id);
+		put(asScheduleString(id), name);
+	}
+
+	public ScheduleID getScheduleId(String name) {
+		return get(name, ScheduleID.class);
+	}
+
 	public void saveTokenId(String name, TokenID id) {
 		put(name, id);
 		put(asTokenString(id), name);

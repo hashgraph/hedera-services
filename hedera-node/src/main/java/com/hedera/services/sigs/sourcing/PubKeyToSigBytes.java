@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 
 import java.util.List;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMapOrUseDefault;
+
 /**
  * Defines a type that is a source of the cryptographic signatures associated to
  * given public keys. It is useful to define an explicit type for this simple behavior,
@@ -50,6 +52,8 @@ import java.util.List;
  * @author Michael Tinker
  */
 public interface PubKeyToSigBytes {
+	byte[] EMPTY_SIG = {};
+
 	/**
 	 * Return the cryptographic signature associated to a given public key in some
 	 * context (presumably the creation of a {@link com.swirlds.common.crypto.Signature}).
@@ -59,6 +63,19 @@ public interface PubKeyToSigBytes {
 	 * @throws Exception if the desired cryptographic signature is unavailable.
 	 */
 	byte[] sigBytesFor(byte[] pubKey) throws Exception;
+
+	/**
+	 * Return the cryptographic signature associated to a given public key relative
+	 * to a scheduled transaction linked to some context (presumably the creation of
+	 * a {@link com.swirlds.common.crypto.Signature}).
+	 *
+	 * @param pubKey a public key whose private key was used to sign some data.
+	 * @return the cryptographic signature that resulted.
+	 * @throws Exception if the desired cryptographic signature is unavailable.
+	 */
+	default byte[] sigBytesForScheduled(byte[] pubKey) {
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * Create a {@code PubKeyToSigBytes} implementation backed by the given map.
@@ -90,7 +107,7 @@ public interface PubKeyToSigBytes {
 	 * @return a source of the raw signatures associated to the payer for the txn.
 	 */
 	static PubKeyToSigBytes forPayer(Transaction signedTxn) {
-		return from(CommonUtils.extractSignatureMapOrUseDefault(signedTxn));
+		return from(extractSignatureMapOrUseDefault(signedTxn));
 	}
 
 	/**

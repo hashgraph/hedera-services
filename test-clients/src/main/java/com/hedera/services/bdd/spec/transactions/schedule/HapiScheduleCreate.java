@@ -22,158 +22,144 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-public class HapiScheduleCreate extends HapiTxnOp<HapiScheduleCreate> {
-    static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
+public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
+	private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
 
-    @Override
-    public HederaFunctionality type() {
-        return HederaFunctionality.ScheduleCreate;
-    }
+	private boolean scheduleNonsense = false;
+	private ByteString bytesSigned = ByteString.EMPTY;
 
-    private String schedule;
+	private final String entity;
+	private final HapiTxnOp<T> scheduled;
+	private Optional<String> adminKey = Optional.empty();
+	private Optional<String> payerAccountID = Optional.empty();
 
-    private boolean advertiseCreation = false;
-    Optional<ByteString> transactionBody = Optional.empty();
-    Optional<String> adminKey = Optional.empty();
-    Optional<String> payerAccountID = Optional.empty();
-    Optional<ByteString[]> sigMap = Optional.empty();
+	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
+		this.entity = scheduled;
+		this.scheduled = txn.withLegacyProtoStructure().sansTxnId();
+	}
 
-    public HapiScheduleCreate(String schedule) {
-        this.schedule = schedule;
-    }
+	public HapiScheduleCreate<T> garbled() {
+		scheduleNonsense = true;
+		return this;
+	}
 
-    public HapiScheduleCreate advertisingCreation() {
-        advertiseCreation = true;
-        return this;
-    }
+	public HapiScheduleCreate adminKey(String s) {
+		adminKey = Optional.of(s);
+		return this;
+	}
 
-    public HapiScheduleCreate transactionBody(ByteString s) {
-        transactionBody = Optional.of(s);
-        return this;
-    }
+	public HapiScheduleCreate payer(String s) {
+		payerAccountID = Optional.of(s);
+		return this;
+	}
 
-    public HapiScheduleCreate adminKey(String s) {
-        adminKey = Optional.of(s);
-        return this;
-    }
+	@Override
+	protected HapiScheduleCreate<T> self() {
+		return this;
+	}
 
-    public HapiScheduleCreate payer(String s) {
-        payerAccountID = Optional.of(s);
-        return this;
-    }
+	@Override
+	public HederaFunctionality type() {
+		return ScheduleCreate;
+	}
 
-    public HapiScheduleCreate sigMap(ByteString[] s) {
-        sigMap = Optional.of(s);
-        return this;
-    }
+	@Override
+	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+		var subOp = scheduled.signedTxnFor(spec);
+		var schedSigMap = subOp.getSigMap();
+		if (verboseLoggingOn) {
+			var schedTxn = TransactionBody.parseFrom(subOp.getBodyBytes());
+			log.info("Scheduling {} with sigs {}", schedTxn, schedSigMap);
+		}
+		ScheduleCreateTransactionBody opBody = spec
+				.txns()
+				.<ScheduleCreateTransactionBody, ScheduleCreateTransactionBody.Builder>body(
+						ScheduleCreateTransactionBody.class, b -> {
+							if (scheduleNonsense) {
+								b.setTransactionBody(ByteString.copyFromUtf8("NONSENSE"));
+							} else {
+								bytesSigned = subOp.getBodyBytes();
+								b.setTransactionBody(subOp.getBodyBytes());
+							}
+							b.setSigMap(schedSigMap);
+							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
+							payerAccountID.ifPresent(a -> {
+								var payer = TxnUtils.asId(a, spec);
+								b.setPayerAccountID(payer);
+							});
+						}
+				);
+		return b -> b.setScheduleCreate(opBody);
+	}
 
-    @Override
-    protected HapiScheduleCreate self() {
-        return this;
-    }
+	@Override
+	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+		return spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls)::createSchedule;
+	}
 
-    @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-        ScheduleCreateTransactionBody opBody = spec
-                .txns()
-                .<ScheduleCreateTransactionBody, ScheduleCreateTransactionBody.Builder>body(
-                        ScheduleCreateTransactionBody.class, b -> {
-                            transactionBody.ifPresent(b::setTransactionBody);
-                            adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
-                            payerAccountID.ifPresent(a -> {
-                                var payer = TxnUtils.asId(a, spec);
-                                b.setPayerAccountID(payer);
-                            });
-                            if (sigMap.isPresent()) {
-                                var signatureMap = SignatureMap.newBuilder();
-                                for (ByteString s : sigMap.get()) {
-                                    signatureMap.addSigPair(SignaturePair.newBuilder().setEd25519(s).build());
-                                }
-                                b.setSigMap(signatureMap);
-                            }
-                        });
-        return b -> b.setScheduleCreate(opBody);
-    }
+	@Override
+	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) {
+		return spec.fees().forActivityBasedOp(
+				HederaFunctionality.ScheduleCreate, this::usageEstimate, txn, numPayerKeys);
+	}
 
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-        return spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls)::createSchedule;
-    }
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return ScheduleCreateUsage.newEstimate(txn, suFrom(svo)).get();
+	}
 
-    @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-        return spec.fees().forActivityBasedOp(
-                HederaFunctionality.ScheduleCreate, this::usageEstimate, txn, numPayerKeys);
-    }
+	@Override
+	protected MoreObjects.ToStringHelper toStringHelper() {
+		MoreObjects.ToStringHelper helper = super.toStringHelper()
+				.add("entity", entity);
+		helper.add("id", createdSchedule().orElse("<N/A>"));
+		return helper;
+	}
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-        return ScheduleCreateUsage.newEstimate(txn, suFrom(svo)).get();
-    }
+	@Override
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (actualStatus != SUCCESS) {
+			return;
+		}
+		if (verboseLoggingOn) {
+			log.info("Created schedule '{}' as {}", entity, createdSchedule().get());
+		}
+		spec.registry().saveScheduleId(entity, lastReceipt.getScheduleID());
+		spec.registry().saveBytes(registryBytesTag(entity), bytesSigned);
+		adminKey.ifPresent(k -> spec.registry().saveAdminKey(entity, spec.registry().getKey(k)));
+	}
 
-    @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
-        if (actualStatus != SUCCESS) {
-            return;
-        }
-        var registry = spec.registry();
-        registry.saveScheduleId(schedule, lastReceipt.getScheduleID());
+	static String registryBytesTag(String name) {
+		return name + "BytesSigned";
+	}
 
-        adminKey.ifPresent(k -> registry.saveAdminKey(schedule, registry.getKey(k)));
-
-        if (advertiseCreation) {
-            String banner = "\n\n" + bannerWith(
-                    String.format(
-                            "Created schedule '%s' with id '0.0.%d'.", schedule, lastReceipt.getScheduleID().getScheduleNum()));
-            log.info(banner);
-        }
-    }
-
-    @Override
-    protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper()
-                .add("schedule", schedule);
-        Optional
-                .ofNullable(lastReceipt)
-                .ifPresent(receipt -> {
-                    if (receipt.getScheduleID().getScheduleNum() != 0) {
-                        helper.add("schedule", receipt.getScheduleID().getScheduleNum());
-                    }
-                });
-        return helper;
-    }
-
-    @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec))));
-        adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
-        return signers;
-    }
+	private Optional<String> createdSchedule() {
+		return Optional
+				.ofNullable(lastReceipt)
+				.map(receipt -> HapiPropertySource.asScheduleString(receipt.getScheduleID()));
+	}
 }

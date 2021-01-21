@@ -22,16 +22,14 @@ package com.hedera.services.legacy.services.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.Transaction;
@@ -43,13 +41,11 @@ import java.time.LocalDateTime;
 import java.util.EnumSet;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
-import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
-import static com.hedera.services.keys.RevocationServiceCharacteristics.forTopLevelFile;
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS_VERIFY_ASYNC;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
-import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
@@ -61,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -68,6 +65,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -78,11 +78,16 @@ public class AwareProcessLogic implements ProcessLogic {
 			INVALID_FILE_ID,
 			INVALID_TOKEN_ID,
 			INVALID_ACCOUNT_ID,
+			INVALID_SCHEDULE_ID,
 			INVALID_SIGNATURE,
 			KEY_PREFIX_MISMATCH,
 			INVALID_SIGNATURE_COUNT_MISMATCHING_KEY,
 			MODIFYING_IMMUTABLE_CONTRACT,
-			INVALID_CONTRACT_ID);
+			INVALID_CONTRACT_ID,
+			UNRESOLVABLE_REQUIRED_SIGNERS,
+			UNPARSEABLE_SCHEDULED_TRANSACTION,
+			UNSCHEDULABLE_TRANSACTION);
+
 	private final ServicesTxnManager txnManager = new ServicesTxnManager(
 			this::processTxnInCtx,
 			this::addRecordToStream,
@@ -154,7 +159,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void addRecordToStream() {
 		var finalRecord = ctx.recordsHistorian().lastCreatedRecord().get();
-		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
+		addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
 	}
 
 	private void doProcess(PlatformTxnAccessor accessor, Instant consensusTime) {
@@ -204,7 +209,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
-		if (!hasActiveNonPayerEntitySigs(accessor)) {
+		if (!ctx.activationHelper().areOtherPartiesActive(ONLY_IF_SIG_IS_VALID)) {
 			ctx.txnCtx().setStatus(INVALID_SIGNATURE);
 			return;
 		}
@@ -240,28 +245,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			log.warn("Almost inconceivably, when testing payer sig activation:", edgeCase);
 		}
 		return false;
-	}
-
-	private boolean hasActiveNonPayerEntitySigs(PlatformTxnAccessor accessor) {
-		if (isMeaningfulFileDelete(accessor.getTxn())) {
-			var id = accessor.getTxn().getFileDelete().getFileID();
-			JKey wacl = ctx.hfs().getattr(id).getWacl();
-			return otherPartySigsAreActive(
-					accessor,
-					ctx.backedKeyOrder(),
-					IN_HANDLE_SUMMARY_FACTORY,
-					forTopLevelFile((JKeyList)wacl));
-		} else {
-			return otherPartySigsAreActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
-		}
-	}
-
-	private boolean isMeaningfulFileDelete(TransactionBody txn) {
-		if (!txn.hasFileDelete() || !txn.getFileDelete().hasFileID()) {
-			return false;
-		} else {
-			return ctx.hfs().exists(txn.getFileDelete().getFileID());
-		}
 	}
 
 	private boolean nodeIgnoredDueDiligence(DuplicateClassification duplicity) {
@@ -308,7 +291,13 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private SignatureStatus rationalizeWithPreConsensusSigs(PlatformTxnAccessor accessor) {
-		var sigStatus = rationalizeIn(accessor, ctx.syncVerifier(), ctx.backedKeyOrder(), DEFAULT_SIG_BYTES);
+		var sigProvider = new ScopedSigBytesProvider(accessor);
+		var sigStatus = rationalizeIn(
+				accessor,
+				ctx.syncVerifier(),
+				ctx.backedKeyOrder(),
+				sigProvider,
+				ctx.sigFactoryCreator()::createScopedFactory);
 		if (!sigStatus.isError()) {
 			if (sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC) {
 				ctx.speedometers().cycleAsyncVerifications();

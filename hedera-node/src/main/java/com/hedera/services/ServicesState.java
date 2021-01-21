@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.exceptions.ContextNotFoundException;
 import com.hedera.services.legacy.stream.RecordStream;
+import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -50,7 +51,6 @@ import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -68,9 +68,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static com.hedera.services.legacy.stream.RecordStream.readPrevFileHash;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -309,7 +307,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void expandSignatures(Transaction platformTxn) {
 		try {
 			var accessor = new PlatformTxnAccessor(platformTxn);
-			expandIn(accessor, ctx.lookupRetryingKeyOrder(), DEFAULT_SIG_BYTES);
+			expandIn(
+					accessor,
+					ctx.lookupRetryingKeyOrder(),
+					new ScopedSigBytesProvider(accessor),
+					ctx.sigFactoryCreator()::createScopedFactory);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("expandSignatures called with non-gRPC txn!", e);
 		} catch (Exception race) {

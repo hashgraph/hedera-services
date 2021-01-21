@@ -26,10 +26,10 @@ import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,6 @@ import org.junit.platform.runner.JUnitPlatform;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -51,7 +50,6 @@ import static com.hedera.services.keys.StandardSyncActivationCheck.*;
 
 @RunWith(JUnitPlatform.class)
 class StandardSyncActivationCheckTest {
-	byte[] body = "Goodness".getBytes();
 	JKey key;
 	Transaction signedTxn;
 	List<TransactionSignature> sigs;
@@ -64,7 +62,7 @@ class StandardSyncActivationCheckTest {
 	TxnScopedPlatformSigFactory scopedSig;
 	Function<byte[], TransactionSignature> sigsFn;
 	Function<Transaction, PubKeyToSigBytes> sigBytesProvider;
-	Function<byte[], TxnScopedPlatformSigFactory> scopedSigProvider;
+	Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider;
 	BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive;
 	Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider;
 
@@ -79,7 +77,7 @@ class StandardSyncActivationCheckTest {
 		result = mock(PlatformSigsCreationResult.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getTxnBytes()).willReturn("Goodness".getBytes());
-		given(accessor.getSignedTxn()).willReturn(signedTxn);
+		given(accessor.getBackwardCompatibleSignedTxn()).willReturn(signedTxn);
 		isActive = mock(BiPredicate.class);
 		syncVerifier = mock(SyncVerifier.class);
 		sigBytesProvider = mock(Function.class);
@@ -88,7 +86,7 @@ class StandardSyncActivationCheckTest {
 		given(sigsFnProvider.apply(sigs)).willReturn(sigsFn);
 		scopedSig = mock(TxnScopedPlatformSigFactory.class);
 		scopedSigProvider = mock(Function.class);
-		given(scopedSigProvider.apply(argThat((byte[] bytes) -> Arrays.equals(body, bytes)))).willReturn(scopedSig);
+		given(scopedSigProvider.apply(any())).willReturn(scopedSig);
 		sigsFactory = mock(PlatformSigsFactory.class);
 		given(sigsFactory.createEd25519From(List.of(key), sigBytes, scopedSig)).willReturn(result);
 	}

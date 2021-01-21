@@ -99,15 +99,12 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		throwIfMissing(id);
 		var key = fromScheduleId(id);
 		var schedule = schedules.get().getForModify(key);
-		Exception thrown = null;
 		try {
 			change.accept(schedule);
 		} catch (Exception e) {
-			thrown = e;
-		}
-		schedules.get().replace(key, schedule);
-		if (thrown != null) {
-			throw new IllegalArgumentException("Schedule change failed unexpectedly!", thrown);
+			throw new IllegalArgumentException("Schedule change failed unexpectedly!", e);
+		} finally {
+			schedules.get().replace(key, schedule);
 		}
 	}
 
@@ -127,10 +124,9 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		pendingCreation = new MerkleSchedule(
 				bodyBytes,
 				EntityId.ofNullableAccountId(schedulingAccount),
-				schedulingTXValidStart
-		);
+				schedulingTXValidStart);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
-		pendingCreation.setPayerAccountId(EntityId.ofNullableAccountId(payer));
+		pendingCreation.setPayer(EntityId.ofNullableAccountId(payer));
 
 		return success(pendingId);
 	}
@@ -178,7 +174,8 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var id = fromScheduleId(pendingId);
 
 		schedules.get().put(id, pendingCreation);
-		txToEntityId.put(new CompositeKey(pendingTxHashCode, pendingCreation.payerAccountID().toGrpcAccountId()), id);
+		var key = new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId());
+		txToEntityId.put(key, id);
 		resetPendingCreation();
 	}
 
@@ -208,16 +205,16 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void buildTxToEntityIdMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
 		var schedulesMap = schedules.get();
-		schedulesMap.forEach((key, value) -> txToEntityId.put(new CompositeKey(Arrays.hashCode(value.transactionBody()), value.payerAccountID().toGrpcAccountId()), key));
+		schedulesMap.forEach((key, value) -> txToEntityId.put(new CompositeKey(Arrays.hashCode(value.transactionBody()), value.payer().toGrpcAccountId()), key));
 	}
 
 	@Override
-	public Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer) {
+	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer) {
 		var txHashCode = Arrays.hashCode(bodyBytes);
 		var keyToCheckFor = new CompositeKey(txHashCode, scheduledTxPayer);
 
 		if (isCreationPending()) {
-			var pendingKey = new CompositeKey(pendingTxHashCode, pendingCreation.payerAccountID().toGrpcAccountId());
+			var pendingKey = new CompositeKey(pendingTxHashCode, pendingCreation.payer().toGrpcAccountId());
 
 			if (keyToCheckFor.equals(pendingKey)) {
 				return Optional.of(pendingId);

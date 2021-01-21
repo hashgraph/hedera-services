@@ -121,7 +121,7 @@ class GetBytecodeAnswerTest {
 		Query query = validQuery(COST_ANSWER, fee, target);
 
 		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
 	}
 
 	@Test

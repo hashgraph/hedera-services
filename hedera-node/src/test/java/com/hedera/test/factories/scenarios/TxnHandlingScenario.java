@@ -25,8 +25,10 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -45,7 +47,10 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
+
+import java.time.Instant;
 
 import static com.hedera.test.factories.keys.KeyTree.withRoot;
 import static org.mockito.BDDMockito.given;
@@ -242,22 +247,34 @@ public interface TxnHandlingScenario {
 		return tokenStore;
 	}
 
+	default byte[] extantScheduleTxnBytes() throws Throwable {
+		return new byte[0];
+	}
+
 	default ScheduleStore scheduleStore() {
 		var scheduleStore = mock(ScheduleStore.class);
 
-		var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
-
-		var immutableSchedule = new MerkleSchedule(null, null, null);
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_IMMUTABLE))
 				.willReturn(KNOWN_SCHEDULE_IMMUTABLE);
-		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE)).willReturn(immutableSchedule);
+		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE))
+				.willAnswer(inv ->
+					new MerkleSchedule(
+							extantScheduleTxnBytes(),
+							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							RichInstant.fromJava(Instant.now())));
 
-		var vanillaSchedule = new MerkleSchedule(null, null, null);
-		vanillaSchedule.setAdminKey(adminKey);
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_ADMIN))
 				.willReturn(KNOWN_SCHEDULE_WITH_ADMIN);
-		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_ADMIN)).willReturn(vanillaSchedule);
-
+		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_ADMIN))
+				.willAnswer(inv -> {
+					var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
+					var entity = new MerkleSchedule(
+							extantScheduleTxnBytes(),
+							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							RichInstant.fromJava(Instant.now()));
+					entity.setAdminKey(adminKey);
+					return entity;
+				});
 
 		given(scheduleStore.resolve(UNKNOWN_SCHEDULE))
 				.willReturn(ScheduleStore.MISSING_SCHEDULE);

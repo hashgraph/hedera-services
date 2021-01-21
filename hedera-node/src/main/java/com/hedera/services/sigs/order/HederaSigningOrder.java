@@ -20,6 +20,7 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -234,13 +235,15 @@ public class HederaSigningOrder {
 
 	private <T> Optional<SigningOrderResult<T>> forSchedule(
 			TransactionBody txn,
-			SigningOrderResultFactory<T> factory) {
+			SigningOrderResultFactory<T> factory
+	) {
 		if (txn.hasScheduleCreate()) {
-			return Optional.of(scheduleCreate(txn.getScheduleCreate(), factory));
+			return Optional.of(scheduleCreate(txn.getTransactionID(), txn.getScheduleCreate(), factory));
 		} else if (txn.hasScheduleSign()) {
 			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
 		} else if (txn.hasScheduleDelete()) {
-			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(), factory));
+			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(),
+					factory));
 		} else {
 			return Optional.empty();
 		}
@@ -828,6 +831,7 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> scheduleCreate(
+			TransactionID txnId,
 			ScheduleCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -838,8 +842,8 @@ public class HederaSigningOrder {
 				ScheduleCreateTransactionBody::hasAdminKey,
 				ScheduleCreateTransactionBody::getAdminKey,
 				required);
-
-		return factory.forValidOrder(required);
+		var mergeError = mergeScheduledKeys(op.getTransactionBody().toByteArray(), required, txnId, factory);
+		return mergeError.orElseGet(() -> factory.forValidOrder(required));
 	}
 
 	private <T> SigningOrderResult<T> scheduleSign(
@@ -853,8 +857,39 @@ public class HederaSigningOrder {
 		if (!result.succeeded()) {
 			return factory.forMissingSchedule(id, txnId);
 		}
+		var mergeError = mergeScheduledKeys(result.metadata().txnBytes(), required, txnId, factory);
+		return mergeError.orElseGet(() -> factory.forValidOrder(required));
+	}
 
-		return factory.forValidOrder(required);
+	private <T> Optional<SigningOrderResult<T>> mergeScheduledKeys(
+			byte[] txnBytes,
+			List<JKey> required,
+			TransactionID txnId,
+			SigningOrderResultFactory<T> factory
+	) {
+		try {
+			var scheduled = TransactionBody.parseFrom(txnBytes);
+			if (scheduled.hasScheduleCreate() || scheduled.hasScheduleSign()) {
+				return Optional.of(factory.forUnschedulableTxn(txnId));
+			}
+			var scheduledOrderResult = keysForOtherParties(scheduled, factory);
+			if (scheduledOrderResult.hasErrorReport()) {
+				return Optional.of(factory.forUnresolvableRequiredSigners(
+						scheduled,
+						txnId,
+						scheduledOrderResult.getErrorReport()));
+			} else {
+				var scheduledKeys = scheduledOrderResult.getOrderedKeys();
+				for (JKey key : scheduledKeys) {
+					var dup = key.duplicate();
+					dup.setForScheduledTxn(true);
+					required.add(dup);
+				}
+			}
+		} catch (InvalidProtocolBufferException e) {
+			return Optional.of(factory.forUnparseableScheduledTxn(txnId));
+		}
+		return Optional.empty();
 	}
 
 	private <T> SigningOrderResult<T> scheduleDelete(

@@ -673,7 +673,7 @@ public class MiscUtilsTest {
 		Transaction transaction = mock(Transaction.class);
 		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
 		given(transaction.toByteArray()).willReturn(testBytes);
-		given(accessor.getSignedTxn()).willReturn(transaction);
+		given(accessor.getBackwardCompatibleSignedTxn()).willReturn(transaction);
 
 		assertArrayEquals(expectedHash, CommonUtils.noThrowSha384HashOf(testBytes));
 		assertArrayEquals(expectedHash, CommonUtils.sha384HashOf(testBytes).toByteArray());

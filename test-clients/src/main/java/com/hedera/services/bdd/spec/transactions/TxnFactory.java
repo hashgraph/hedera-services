@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -127,8 +126,7 @@ public class TxnFactory {
 		Consumer<TransactionBody.Builder> composedBodySpec = defaultBodySpec().andThen(spec);
 		TransactionBody.Builder bodyBuilder = TransactionBody.newBuilder();
 		composedBodySpec.accept(bodyBuilder);
-		return Transaction.newBuilder()
-			.setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
+		return Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
 	}
 
 	public TransactionID sampleRecentTxnId() {
@@ -217,23 +215,6 @@ public class TxnFactory {
 			builder.setInitialSupply(setup.defaultTokenInitialSupply());
 			builder.setSymbol(TxnUtils.randomUppercase(8));
 			builder.setExpiry(defaultExpiry());
-		};
-	}
-
-	public Consumer<ScheduleCreateTransactionBody.Builder> defaultDef_ScheduleCreateTransactionBody() {
-		return builder -> {
-		};
-	}
-
-
-	public Consumer<ScheduleSignTransactionBody.Builder> defaultDef_ScheduleSignTransactionBody() {
-		return builder -> {
-		};
-	}
-
-
-	public Consumer<ScheduleDeleteTransactionBody.Builder> defaultDef_ScheduleDeleteTransactionBody() {
-		return builder -> {
 		};
 	}
 
@@ -351,5 +332,18 @@ public class TxnFactory {
 
 	public Consumer<CryptoTransferTransactionBody.Builder> defaultDef_CryptoTransferTransactionBody() {
 		return builder -> {};
+	}
+
+	public Consumer<ScheduleCreateTransactionBody.Builder> defaultDef_ScheduleCreateTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<ScheduleSignTransactionBody.Builder> defaultDef_ScheduleSignTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<ScheduleDeleteTransactionBody.Builder> defaultDef_ScheduleDeleteTransactionBody() {
+		return builder -> {
+		};
 	}
 }

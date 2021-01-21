@@ -44,6 +44,7 @@ public class PlatformSigFactoryTest {
 	public static String DATA = "Not really a Hedera GRPCA transaction!";
 	public static String DIFFERENT_DATA = "NOT really a Hedera GRPCA transaction!";
 	public static String CONTENTS = SIG + DATA;
+	public static String DIFFERENT_CONTENTS = DIFFERENT_SIG + DIFFERENT_DATA;
 	public static byte[] pk = PK.getBytes();
 	public static byte[] differentPk = DIFFERENT_PK.getBytes();
 	public static byte[] sig = SIG.getBytes();
@@ -55,6 +56,11 @@ public class PlatformSigFactoryTest {
 			0, sig.length,
 			pk, 0, pk.length,
 			sig.length, data.length);
+	public static TransactionSignature EXPECTED_DIFFERENT_SIG = new TransactionSignature(
+			DIFFERENT_CONTENTS.getBytes(),
+			0, differentSig.length,
+			pk, 0, pk.length,
+			differentSig.length, differentData.length);
 
 	@Test
 	public void createsExpectedSig() {

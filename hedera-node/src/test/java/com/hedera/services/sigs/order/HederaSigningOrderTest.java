@@ -52,12 +52,16 @@ import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
+
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.*;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static java.util.stream.Collectors.toList;
 import org.junit.runner.RunWith;
 import java.util.List;
@@ -72,11 +76,9 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.test.utils.IdUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.*;
@@ -1671,20 +1673,61 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
-	public void getsScheduleCreateAdminKeyOnly() throws Throwable {
+	public void getsNestedScheduleSign() throws Throwable {
 		// given:
-		setupFor(SCHEDULE_CREATE_MISSING_ADMIN);
+		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_SIGN);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
 		// then:
-		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
 	}
 
 	@Test
-	public void getsScheduleCreateNoAdmin() throws Throwable {
+	public void getsNestedScheduleCreates() throws Throwable {
 		// given:
-		setupFor(SCHEDULE_CREATE_WITH_ADMIN);
+		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_CREATE);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
+	}
+
+	@Test
+	public void getsScheduleCreateNonsense() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_NONSENSE);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNPARSEABLE_SCHEDULED_TRANSACTION, summary.getErrorReport().getResponseCode());
+	}
+
+	@Test
+	public void getsScheduleCreateInvalidXfer() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_INVALID_XFER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNRESOLVABLE_REQUIRED_SIGNERS, summary.getErrorReport().getResponseCode());
+	}
+
+	@Test
+	public void getsScheduleCreateXferNoAdmin() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_XFER_NO_ADMIN);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1692,7 +1735,27 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(SCHEDULE_ADMIN_KT.asKey()));
+				contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
+	}
+
+	@Test
+	public void getsScheduleCreateNoAdmin() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(SCHEDULE_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(2).isForScheduledTxn());
 	}
 
 	@Test
@@ -1702,8 +1765,14 @@ public class HederaSigningOrderTest {
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
 		// then:
-		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
 	}
 
 	@Test
@@ -1843,7 +1912,7 @@ public class HederaSigningOrderTest {
 		);
 	}
 
-	private List<Key> sanityRestored(List<JKey> jKeys) {
+	public static List<Key> sanityRestored(List<JKey> jKeys) {
 		return jKeys.stream().map(jKey -> {
 					try {
 						return JKey.mapJKey(jKey);
