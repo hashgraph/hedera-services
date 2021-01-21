@@ -77,6 +77,8 @@ import com.hedera.services.bdd.suites.misc.FileQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
 import com.hedera.services.bdd.suites.perf.ContractCallLoadTest;
+import com.hedera.services.bdd.suites.perf.CreateTopicPerfSuite;
+import com.hedera.services.bdd.suites.perf.CryptoCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.FileUpdateLoadTest;
 import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
@@ -84,6 +86,7 @@ import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.TokenRelStatusChanges;
+import com.hedera.services.bdd.suites.perf.TokenTransferBasicLoadTest;
 import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
 import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
@@ -212,6 +215,7 @@ public class SuiteRunner {
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
+		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
 		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
 		put("TokenRelChangesLoad", aof(new TokenRelStatusChanges()));
 		put("FileUpdateLoadTest", aof(new FileUpdateLoadTest()));
@@ -221,6 +225,8 @@ public class SuiteRunner {
 		put("MixedTransferAndSubmitLoadTest", aof(new MixedTransferAndSubmitLoadTest()));
 		put("MixedTransferCallAndSubmitLoadTest", aof(new MixedTransferCallAndSubmitLoadTest()));
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
+		put("CryptoCreatePerfSuite", aof(new CryptoCreatePerfSuite()));
+		put("CreateTopicPerfSuite", aof(new CreateTopicPerfSuite()));
 		/* Functional tests - RECONNECT */
 		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
@@ -350,6 +356,12 @@ public class SuiteRunner {
 					NETWORK_SIZE_ARG,
 					"" + EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
+			// For HTS perf regression test, we need to know the number of clients to distribute
+			// the creation of the test tokens and token associations to each client.
+			// For current perf test setup, this number will be the size of test network.
+			if(!otherOverrides.containsKey("totalClients")) {
+				otherOverrides.put("totalClients", "" + expectedNetworkSize);
+			}
 			createPayerAccount(System.getenv("NODES"), args[1]);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
