@@ -34,7 +34,7 @@ public class ScheduleSignFactory extends SignedTxnFactory<ScheduleSignFactory> {
         return new ScheduleSignFactory();
     }
 
-    public ScheduleSignFactory updating(ScheduleID id) {
+    public ScheduleSignFactory signing(ScheduleID id) {
         this.id = id;
         return this;
     }

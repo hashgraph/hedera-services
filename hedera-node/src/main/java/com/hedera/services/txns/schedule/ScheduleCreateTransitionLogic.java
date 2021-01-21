@@ -107,9 +107,9 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		var isNowReady = SignatoryUtils.witnessInScope(scheduleId, store, activationHelper, sb);
 
 		/* Uncomment for temporary log-based testing locally */
-//		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
-//			log.info("\n>>> START ScheduleCreate >>>\n{}<<< END ScheduleCreate END <<<", sb);
-//		}
+		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
+			log.info("\n>>> START ScheduleCreate >>>\n{}<<< END ScheduleCreate END <<<", sb);
+		}
 
 		txnCtx.setCreated(scheduleId);
 		txnCtx.setStatus(SUCCESS);

@@ -286,14 +286,14 @@ public class SigStatusOrderResultFactoryTest {
 	public void reportsNestedScheduleCreate() {
 		// setup:
 		SignatureStatus expectedError = new SignatureStatus(
-				SignatureStatusCode.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
-				ResponseCodeEnum.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
+				SignatureStatusCode.UNSCHEDULABLE_TRANSACTION,
+				ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION,
 				inHandleTxnDynamicContext,
 				txnId);
 
 		// given:
 		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
-		var summary = subject.forNestedScheduleCreate(txnId);
+		var summary = subject.forUnschedulableTxn(txnId);
 		SignatureStatus error = summary.getErrorReport();
 
 		// expect:

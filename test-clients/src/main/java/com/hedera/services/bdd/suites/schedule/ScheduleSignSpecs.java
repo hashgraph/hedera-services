@@ -64,6 +64,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						triggersUponAdditionalNeededSig(),
 						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
+						scheduleSigIrrelevantToSchedulingTxn(),
 				}
 		);
 	}
@@ -137,6 +138,33 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						).payingWith("payerWithSharedKey").logged(),
 						scheduleSign("deferredCreation")
 								.withSignatories("sharedKey")
+				);
+	}
+
+	public HapiApiSpec scheduleSigIrrelevantToSchedulingTxn() {
+		/*
+		 */
+		return defaultHapiSpec("ScheduleSigIrrelevantToSchedulingTxn")
+				.given(
+						newKeyNamed("origKey"),
+						newKeyNamed("sharedKey"),
+
+						cryptoCreate("payerToHaveSharedKey").key("origKey")
+				).when().then(
+						cryptoUpdate("payerToHaveSharedKey")
+								.key("sharedKey")
+								.deferStatusResolution(),
+
+						scheduleCreate(
+								"deferredCreation",
+								cryptoCreate("yetToBe")
+										.signedBy("sharedKey")
+										.receiverSigRequired(true)
+										.key("sharedKey")
+										.fee(ONE_HBAR)
+						).payingWith("payerToHaveSharedKey")
+								.signedBy("origKey")
+								.hasKnownStatus(INVALID_PAYER_SIGNATURE)
 				);
 	}
 

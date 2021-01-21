@@ -163,10 +163,10 @@ public class SigStatusOrderResultFactory implements SigningOrderResultFactory<Si
 	}
 
 	@Override
-	public SigningOrderResult<SignatureStatus> forNestedScheduleCreate(TransactionID txnId) {
+	public SigningOrderResult<SignatureStatus> forUnschedulableTxn(TransactionID txnId) {
 		SignatureStatus error = new SignatureStatus(
-				SignatureStatusCode.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
-				ResponseCodeEnum.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
+				SignatureStatusCode.UNSCHEDULABLE_TRANSACTION,
+				ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION,
 				inHandleTxnDynamicContext,
 				txnId);
 		return new SigningOrderResult<>(error);

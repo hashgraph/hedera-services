@@ -86,8 +86,8 @@ class SignatureStatusTest {
 				"[ source = 'handleTransaction', transactionId = '%s' ]", SignatureStatus.format(txnId));
 		// and:
 		var subject = new SignatureStatus(
-				SignatureStatusCode.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
-				ResponseCodeEnum.NESTED_SCHEDULE_CREATE_NOT_ALLOWED,
+				SignatureStatusCode.UNSCHEDULABLE_TRANSACTION,
+				ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION,
 				true,
 				txnId);
 

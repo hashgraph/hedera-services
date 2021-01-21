@@ -59,9 +59,9 @@ import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.*;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NESTED_SCHEDULE_CREATE_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static java.util.stream.Collectors.toList;
 import org.junit.runner.RunWith;
 import java.util.List;
@@ -1673,6 +1673,19 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
+	public void getsNestedScheduleSign() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_SIGN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
+	}
+
+	@Test
 	public void getsNestedScheduleCreates() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_CREATE);
@@ -1682,7 +1695,7 @@ public class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(NESTED_SCHEDULE_CREATE_NOT_ALLOWED, summary.getErrorReport().getResponseCode());
+		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
 	}
 
 	@Test

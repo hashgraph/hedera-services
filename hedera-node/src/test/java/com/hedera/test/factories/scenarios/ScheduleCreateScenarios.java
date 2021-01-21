@@ -28,8 +28,19 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleCreateFactory.newSignedScheduleCreate;
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
+import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
 
 public enum ScheduleCreateScenarios implements TxnHandlingScenario {
+    SCHEDULE_CREATE_NESTED_SCHEDULE_SIGN {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleCreate()
+                            .missingAdmin()
+                            .creating(newSignedScheduleSign().signing(KNOWN_SCHEDULE_IMMUTABLE).get())
+                            .get()
+            ));
+        }
+    },
     SCHEDULE_CREATE_NESTED_SCHEDULE_CREATE {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(

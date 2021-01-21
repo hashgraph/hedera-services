@@ -181,5 +181,5 @@ public interface SigningOrderResultFactory<T> {
 	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate}.
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forNestedScheduleCreate(TransactionID txnId);
+	SigningOrderResult<T> forUnschedulableTxn(TransactionID txnId);
 }

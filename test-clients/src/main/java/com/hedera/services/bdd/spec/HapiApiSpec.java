@@ -275,6 +275,8 @@ public class HapiApiSpec implements Runnable {
 			if (finishingError.get().isPresent()) {
 				status = FAILED;
 			}
+		} else {
+			finalizingFuture.join();
 		}
 		tearDown();
 		log.info(logPrefix() + "final status: " + status + "!");
@@ -315,8 +317,7 @@ public class HapiApiSpec implements Runnable {
 									} else {
 										try {
 											Thread.sleep(500L);
-										} catch (InterruptedException irrelevant) {
-										}
+										} catch (InterruptedException irrelevant) { }
 									}
 								}
 							}

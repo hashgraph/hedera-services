@@ -30,10 +30,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -51,6 +49,7 @@ public class InHandleActivationHelper {
 	static Function<
 			List<TransactionSignature>,
 			Function<byte[], TransactionSignature>> sigsFnSource = HederaKeyActivation::pkToSigMapFrom;
+	static PkToSigMapFactory scopedSigsFnSource = HederaKeyActivation::matchingPkToSigMapFrom;
 
 	private final HederaSigningOrder keyOrderer;
 	private final CharacteristicsFactory characteristics;
@@ -58,7 +57,8 @@ public class InHandleActivationHelper {
 
 	private List<JKey> otherParties = NO_OTHER_PARTIES;
 	private PlatformTxnAccessor accessor = NO_LAST_ACCESSOR;
-	private Function<byte[], TransactionSignature> sigsFn = NO_LAST_SIGS_FN;
+	private Function<byte[], TransactionSignature> scheduledSigsFn = NO_LAST_SIGS_FN;
+	private Function<byte[], TransactionSignature> nonScheduledSigsFn = NO_LAST_SIGS_FN;
 
 	public InHandleActivationHelper(
 			HederaSigningOrder keyOrderer,
@@ -80,14 +80,16 @@ public class InHandleActivationHelper {
 			BiPredicate<JKey, TransactionSignature> tests
 	) {
 		ensureUpToDate();
+		ensureScheduledSigsFnPresent();
 		return arePartiesActive(true, scheduledTxn, tests);
 	}
 
 	public void visitScheduledCryptoSigs(BiConsumer<JKey, TransactionSignature> visitor) {
 		ensureUpToDate();
+		ensureScheduledSigsFnPresent();
 		for (JKey req : otherParties) {
 			if (req.isForScheduledTxn()) {
-				visitSimpleKeys(req, key -> visitor.accept(key, sigsFn.apply(key.getEd25519())));
+				visitSimpleKeys(req, key -> visitor.accept(key, scheduledSigsFn.apply(key.getEd25519())));
 			}
 		}
 	}
@@ -98,6 +100,7 @@ public class InHandleActivationHelper {
 			BiPredicate<JKey, TransactionSignature> givenTests
 	) {
 		var activeCharacter = characteristics.inferredFor(txn);
+		Function<byte[], TransactionSignature> sigsFn = useScheduleKeys ? scheduledSigsFn : nonScheduledSigsFn;
 		for (JKey req : otherParties) {
 			if (req.isForScheduledTxn() != useScheduleKeys) {
 				continue;
@@ -107,6 +110,12 @@ public class InHandleActivationHelper {
 			}
 		}
 		return true;
+	}
+
+	private void ensureScheduledSigsFnPresent() {
+		if (scheduledSigsFn == NO_LAST_SIGS_FN) {
+			throw new IllegalStateException("No scheduled sigs function available!");
+		}
 	}
 
 	private void ensureUpToDate() {
@@ -120,7 +129,19 @@ public class InHandleActivationHelper {
 			} else {
 				otherParties = otherOrderingResult.getOrderedKeys();
 			}
-			sigsFn = sigsFnSource.apply(current.getPlatformTxn().getSignatures());
+
+			var sigs = current.getPlatformTxn().getSignatures();
+			switch (current.getFunction()) {
+				case ScheduleSign:
+				case ScheduleCreate:
+					var scopedTxnBytes = current.getTxnBytes();
+					nonScheduledSigsFn = scopedSigsFnSource.get(scopedTxnBytes, true, sigs);
+					scheduledSigsFn = scopedSigsFnSource.get(scopedTxnBytes, false, sigs);
+					break;
+				default:
+					scheduledSigsFn = NO_LAST_SIGS_FN;
+					nonScheduledSigsFn = sigsFnSource.apply(sigs);
+			}
 			accessor = current;
 		}
 	}
@@ -132,5 +153,10 @@ public class InHandleActivationHelper {
 				Function<byte[], TransactionSignature> sigsFn,
 				BiPredicate<JKey, TransactionSignature> tests,
 				KeyActivationCharacteristics characteristics);
+	}
+
+	@FunctionalInterface
+	interface PkToSigMapFactory {
+		Function<byte[], TransactionSignature> get(byte[] msg, boolean shouldMatch, List<TransactionSignature> sigs);
 	}
 }

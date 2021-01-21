@@ -33,7 +33,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(
                     newSignedScheduleSign()
-                            .updating(UNKNOWN_SCHEDULE)
+                            .signing(UNKNOWN_SCHEDULE)
                             .get()
             ));
         }
@@ -43,7 +43,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(
                     newSignedScheduleSign()
-                            .updating(KNOWN_SCHEDULE_WITH_ADMIN)
+                            .signing(KNOWN_SCHEDULE_WITH_ADMIN)
                             .get()
             ));
         }

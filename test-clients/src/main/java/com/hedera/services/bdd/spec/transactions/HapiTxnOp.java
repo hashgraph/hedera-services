@@ -79,6 +79,11 @@ import static com.hedera.services.bdd.spec.fees.Payment.Reason.*;
 
 public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiTxnOp.class);
+	private static final Response UNKNOWN_RESPONSE = Response.newBuilder()
+					.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
+							.setReceipt(TransactionReceipt.newBuilder()
+									.setStatus(UNKNOWN)))
+					.build();
 
 	private long submitTime = 0L;
 	private TxnObs stats;
@@ -393,23 +398,23 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		int allowedUnrecognizedExceptions = 10;
 		while (response == null) {
 			try {
-				response = spec.clients()
-						.getCryptoSvcStub(targetNodeFor(spec), useTls)
-						.getTransactionReceipts(receiptQuery);
+				var cryptoSvcStub = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls);
+				if (cryptoSvcStub == null) {
+					response = UNKNOWN_RESPONSE;
+				} else {
+					response = cryptoSvcStub.getTransactionReceipts(receiptQuery);
+				}
 			} catch (Exception e) {
 				var msg = e.toString();
 				if (isRecognizedRecoverable(msg)) {
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				}
-				log.warn("Status resolution failed with unrecognized exception", e);
+				log.warn("({}) Status resolution failed with unrecognized exception",
+						Thread.currentThread().getName(), e);
 				allowedUnrecognizedExceptions--;
 				if (allowedUnrecognizedExceptions == 0) {
-					response = Response.newBuilder()
-							.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
-									.setReceipt(TransactionReceipt.newBuilder()
-											.setStatus(UNKNOWN)))
-							.build();
+					response = UNKNOWN_RESPONSE;
 				}
 			}
 		}
