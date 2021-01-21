@@ -1006,7 +1006,7 @@ workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "25 7 * * *"
+          cron: "5 12 * * *"
           filters:
             branches:
               only:
@@ -1026,7 +1026,7 @@ workflows:
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "25 21 * * *"
+          cron: "5 7 * * *"
           filters:
             branches:
               only:
@@ -1048,11 +1048,11 @@ workflows:
   GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "25 2 * * *"
+          cron: "10 2 * * *"
           filters:
             branches:
               only:
-                - Disable-master
+                - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
       - weekly-run-HTS-start-from-saved-state-regression:
