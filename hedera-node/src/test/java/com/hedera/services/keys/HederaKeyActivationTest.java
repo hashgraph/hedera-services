@@ -28,6 +28,7 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,6 +89,12 @@ public class HederaKeyActivationTest {
 	public void setup() {
 		sigsFn = (Function<byte[], TransactionSignature>) mock(Function.class);
 		tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+	}
+
+	@AfterEach
+	void cleanup() {
+		HederaKeyActivation.scheduleFactory = HederaKeyActivation::scopedPkToSigMapFrom;
+		HederaKeyActivation.nonScheduleFactory = HederaKeyActivation::pkToSigMapFrom;
 	}
 
 	@Test
