@@ -23,9 +23,9 @@ package com.hedera.services.utils;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.function.Function;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMap;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.sha384HashOf;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
@@ -44,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  *
  * @author Michael Tinker
  */
-public class SignedTxnAccessor {
+public class SignedTxnAccessor implements TxnAccessor {
 	private byte[] txnBytes;
 	private byte[] backwardCompatibleSignedTxnBytes;
 	private Transaction backwardCompatibleSignedTxn;
@@ -134,4 +133,13 @@ public class SignedTxnAccessor {
 	public ByteString getHash() {
 		return hash;
 	}
+
+	@Override
+	public boolean canTriggerTxn() {
+		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
+	}
+
+	public boolean isTriggeredTxn() { return false; }
+
+	public ScheduleID getScheduleRef() { return ScheduleID.getDefaultInstance(); }
 }

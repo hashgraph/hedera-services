@@ -23,6 +23,7 @@ package com.hedera.services.fees.charging;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.TxnFeeType;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 import java.util.EnumMap;
@@ -40,7 +41,7 @@ public class FieldSourcedFeeScreening implements TxnScopedFeeScreening {
 	private boolean payerExemption;
 	private BalanceCheck check;
 	private final FeeExemptions exemptions;
-	protected SignedTxnAccessor accessor;
+	protected TxnAccessor accessor;
 	EnumMap<TxnFeeType, Long> feeAmounts = new EnumMap<>(TxnFeeType.class);
 
 	public FieldSourcedFeeScreening(FeeExemptions exemptions) {
@@ -51,7 +52,7 @@ public class FieldSourcedFeeScreening implements TxnScopedFeeScreening {
 		this.check = check;
 	}
 
-	public void resetFor(SignedTxnAccessor accessor) {
+	public void resetFor(TxnAccessor accessor) {
 		this.accessor = accessor;
 		payerExemption = exemptions.hasExemptPayer(accessor);
 	}

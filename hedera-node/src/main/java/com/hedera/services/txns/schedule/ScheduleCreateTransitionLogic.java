@@ -20,6 +20,7 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -32,28 +33,25 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-public class ScheduleCreateTransitionLogic implements TransitionLogic {
+public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
 	private static final ScheduleID NOT_YET_RESOLVED = null;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-	private final ScheduleStore store;
-	private final TransactionContext txnCtx;
 	private final InHandleActivationHelper activationHelper;
 
 	public ScheduleCreateTransitionLogic(
@@ -61,8 +59,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			TransactionContext txnCtx,
 			InHandleActivationHelper activationHelper
 	) {
-		this.store = store;
-		this.txnCtx = txnCtx;
+		super(store, txnCtx);
 		this.activationHelper = activationHelper;
 	}
 
@@ -77,7 +74,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void transitionFor(ScheduleCreateTransactionBody op) {
+	private void transitionFor(ScheduleCreateTransactionBody op) throws InvalidProtocolBufferException {
 		var scheduleId = NOT_YET_RESOLVED;
 		var scheduledPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
 
@@ -110,9 +107,13 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 //		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
 //			log.info("\n>>> START ScheduleCreate >>>\n{}<<< END ScheduleCreate END <<<", sb);
 //		}
+		var outcome = OK;
+		if (isNowReady) {
+			outcome = processExecution(scheduleId);
+		}
 
 		txnCtx.setCreated(scheduleId);
-		txnCtx.setStatus(SUCCESS);
+		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 	}
 
 	private Optional<JKey> adminKeyFor(ScheduleCreateTransactionBody op) {

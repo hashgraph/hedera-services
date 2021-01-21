@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,6 @@ import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.KeysHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -43,15 +42,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -59,11 +56,9 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
@@ -84,6 +79,7 @@ public class ScheduleSignTransitionLogicTest {
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
+    private final ResponseCodeEnum NOT_OK = null;
 
     @BeforeEach
     private void setup() {
@@ -99,7 +95,6 @@ public class ScheduleSignTransitionLogicTest {
     @Test
     public void hasCorrectApplicability() {
         givenValidTxnCtx();
-
         // expect:
         assertTrue(subject.applicability().test(scheduleSignTxn));
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
@@ -114,14 +109,13 @@ public class ScheduleSignTransitionLogicTest {
         // when:
         subject.doStateTransition();
 
-        // and:
+        // then:
         verify(txnCtx).setStatus(FAIL_INVALID);
     }
 
     @Test
     public void failsOnInvalidScheduleId() {
         givenCtx(true, false);
-
         // expect:
         assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
     }
@@ -131,6 +125,7 @@ public class ScheduleSignTransitionLogicTest {
         givenValidTxnCtx();
         given(store.exists(schedule)).willReturn(true);
 
+        // expect:
         assertEquals(OK, subject.syntaxCheck().apply(scheduleSignTxn));
     }
 
@@ -156,7 +151,6 @@ public class ScheduleSignTransitionLogicTest {
     @Test
     public void rejectsInvalidScheduleId() {
         givenCtx(true, false);
-
         assertEquals(INVALID_SCHEDULE_ID, subject.syntaxCheck().apply(scheduleSignTxn));
     }
 
@@ -189,11 +183,9 @@ public class ScheduleSignTransitionLogicTest {
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()
                 .setSigMap(sigMap)
                 .setScheduleID(schedule);
-
         if (invalidScheduleId) {
             scheduleSign.clearScheduleID();
         }
-
         if (invalidKeyEncoding) {
             this.sigMap.clear().addSigPair(SignaturePair.newBuilder().setEd25519(ByteString.copyFromUtf8("some-invalid-signature")).build());
             scheduleSign.setSigMap(this.sigMap);
@@ -202,6 +194,7 @@ public class ScheduleSignTransitionLogicTest {
         builder.setScheduleSign(scheduleSign);
 
         scheduleSignTxn = builder.build();
+
         given(accessor.getTxn()).willReturn(scheduleSignTxn);
         given(txnCtx.accessor()).willReturn(accessor);
     }

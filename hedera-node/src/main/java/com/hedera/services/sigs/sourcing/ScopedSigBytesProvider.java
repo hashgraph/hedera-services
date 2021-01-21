@@ -20,7 +20,7 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,7 +30,7 @@ public class ScopedSigBytesProvider implements PubKeyToSigBytesProvider {
 
 	final PubKeyToSigBytes delegate;
 
-	public ScopedSigBytesProvider(SignedTxnAccessor accessor) {
+	public ScopedSigBytesProvider(TxnAccessor accessor) {
 		switch (accessor.getFunction()) {
 			case ScheduleSign:
 				var scheduleSignSigMap = accessor.getTxn().getScheduleSign().getSigMap();

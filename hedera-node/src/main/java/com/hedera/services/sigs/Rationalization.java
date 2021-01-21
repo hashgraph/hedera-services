@@ -29,8 +29,7 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -57,17 +56,17 @@ public class Rationalization {
 
 	private final SyncVerifier syncVerifier;
 	private final List<TransactionSignature> txnSigs;
-	private final PlatformTxnAccessor txnAccessor;
+	private final TxnAccessor txnAccessor;
 	private final HederaSigningOrder keyOrderer;
 	private final PubKeyToSigBytesProvider sigsProvider;
 	private final TxnScopedPlatformSigFactory sigFactory;
 
 	public Rationalization(
-			PlatformTxnAccessor txnAccessor,
+			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
 			PubKeyToSigBytesProvider sigsProvider,
-			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
+			Function<TxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 	) {
 		this.txnAccessor = txnAccessor;
 		this.syncVerifier = syncVerifier;

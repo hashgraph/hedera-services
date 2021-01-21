@@ -23,7 +23,7 @@ package com.hedera.services.context;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -75,6 +75,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	private final ServicesContext ctx;
+	private TxnAccessor triggeredTxn = null;
 
 	private final Consumer<TransactionRecord.Builder> noopRecordConfig = ignore -> {
 	};
@@ -88,7 +89,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private Timestamp consensusTimestamp;
 	private ByteString hash;
 	private ResponseCodeEnum statusSoFar;
-	private PlatformTxnAccessor accessor;
+	private TxnAccessor accessor;
 	private Consumer<TransactionRecord.Builder> recordConfig = noopRecordConfig;
 	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
 
@@ -100,10 +101,11 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void resetFor(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
+	public void resetFor(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
 		this.accessor = accessor;
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
+		this.triggeredTxn = null;
 
 		otherNonThresholdFees = 0L;
 		hash = accessor.getHash();
@@ -166,6 +168,9 @@ public class AwareTransactionContext implements TransactionContext {
 				.setTransactionHash(hash)
 				.setConsensusTimestamp(consensusTimestamp)
 				.addAllTokenTransferLists(ctx.ledger().netTokenTransfersInTxn());
+		if (accessor.isTriggeredTxn()) {
+			recordSoFar.setScheduleRef(accessor.getScheduleRef());
+		}
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
@@ -226,7 +231,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public PlatformTxnAccessor accessor() {
+	public TxnAccessor accessor() {
 		return accessor;
 	}
 
@@ -301,5 +306,18 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public void payerSigIsKnownActive() {
 		isPayerSigKnownActive = true;
+	}
+
+	@Override
+	public void trigger(TxnAccessor scopedAccessor) {
+		if (this.accessor().isTriggeredTxn()) {
+			throw new IllegalStateException("Unable to trigger txns in triggered txns");
+		}
+		this.triggeredTxn = scopedAccessor;
+	}
+
+	@Override
+	public TxnAccessor triggeredTxn() {
+		return triggeredTxn;
 	}
 }
