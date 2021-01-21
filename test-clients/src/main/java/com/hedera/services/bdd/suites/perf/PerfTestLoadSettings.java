@@ -63,7 +63,7 @@ public class PerfTestLoadSettings {
 	private int totalTestTokens = DEFAULT_TOTAL_TEST_TOKENS;
 
 	/** totalTestTokenAccounts specifies the range of accounts, say 10000, starting from
-	 * testTrasureStartAccount that will be associated with each active test tokens and will actively
+	 * testTreasureStartAccount that will be associated with each active test tokens and will actively
 	 * participate random token transfer perf test. */
 	private int totalTestTokenAccounts = DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
 
@@ -76,7 +76,7 @@ public class PerfTestLoadSettings {
 	 * create tokens and send HTS traffic to hedera services. This parameter is used to tell
 	 * each test client how many tokens and token association it needs to create for current
 	 * test setup.
-	 * When running fron SuiteRunner, it will use the total client node number as its value if this
+	 * When running from SuiteRunner, it will use the total client node number as its value if this
 	 * parameter is not explicitly provided. */
 	private int totalClients = DEFAULT_TOTAL_CLIENTS;
 
