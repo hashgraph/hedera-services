@@ -92,7 +92,7 @@ public class GetAccountBalanceAnswerTest {
 
 	@BeforeEach
 	private void setup() {
-		notDeleted = mock(MerkleToken.class);
+		deleted = mock(MerkleToken.class);
 		given(deleted.isDeleted()).willReturn(true);
 		notDeleted = mock(MerkleToken.class);
 		given(notDeleted.isDeleted()).willReturn(false);
