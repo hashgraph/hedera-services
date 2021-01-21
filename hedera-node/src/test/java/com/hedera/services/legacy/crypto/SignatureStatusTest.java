@@ -82,7 +82,7 @@ class SignatureStatusTest {
 		// setup:
 		var txnId = TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.75231")).build();
 		// given:
-		String expMsg = String.format("Invalid attempt to schedule a schedule create " +
+		String expMsg = String.format("Specified txn cannot be scheduled " +
 				"[ source = 'handleTransaction', transactionId = '%s' ]", SignatureStatus.format(txnId));
 		// and:
 		var subject = new SignatureStatus(

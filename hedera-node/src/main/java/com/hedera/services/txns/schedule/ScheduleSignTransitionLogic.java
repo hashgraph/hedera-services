@@ -81,9 +81,9 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
         var sb = new StringBuilder();
         var isNowReady = witnessInScope(op.getScheduleID(), store, activationHelper, sb);
         /* Uncomment for temporary log-based testing locally */
-		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
-			log.info("\n>>> START ScheduleSign >>>\n{}<<< END ScheduleSign END <<<", sb);
-		}
+//		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
+//			log.info("\n>>> START ScheduleSign >>>\n{}<<< END ScheduleSign END <<<", sb);
+//		}
 		txnCtx.setStatus(SUCCESS);
     }
 
