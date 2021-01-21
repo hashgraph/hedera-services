@@ -51,6 +51,14 @@ public class HapiSpecSetup {
 
 	private Random r = new Random();
 
+	private static final HapiPropertySource defaultNodeProps;
+	static {
+		defaultNodeProps = new JutilPropertySource("bootstrap.properties");
+	}
+	public static HapiPropertySource getDefaultNodeProps() {
+		return defaultNodeProps;
+	}
+
 	private HapiPropertySource ciPropertiesMap = null;
 	private static HapiPropertySource DEFAULT_PROPERTY_SOURCE = null;
 	private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE = JutilPropertySource.getDefaultInstance();

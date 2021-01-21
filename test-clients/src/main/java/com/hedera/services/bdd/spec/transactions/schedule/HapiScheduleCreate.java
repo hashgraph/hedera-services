@@ -22,7 +22,10 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -31,13 +34,9 @@ import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -49,6 +48,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
 	private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
+
+	private static final int defaultScheduleTxnExpiry = HapiSpecSetup.getDefaultNodeProps()
+			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
 	private boolean scheduleNonsense = false;
 	private ByteString bytesSigned = ByteString.EMPTY;
@@ -129,7 +131,9 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return ScheduleCreateUsage.newEstimate(txn, suFrom(svo)).get();
+		return ScheduleCreateUsage.newEstimate(txn, suFrom(svo))
+				.givenScheduledTxExpirationTimeSecs(defaultScheduleTxnExpiry)
+				.get();
 	}
 
 	@Override
