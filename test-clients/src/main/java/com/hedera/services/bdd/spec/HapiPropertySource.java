@@ -150,9 +150,6 @@ public interface HapiPropertySource {
 	static String asTokenString(TokenID token) {
 		return String.format("%d.%d.%d", token.getShardNum(), token.getRealmNum(), token.getTokenNum());
 	}
-	static String asScheduleString(ScheduleID schedule) {
-		return String.format("%d.%d.%d", schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
-	}
 
 	static AccountID asAccount(String v) {
 		 long[] nativeParts = asDotDelimitedLongArray(v);
@@ -175,14 +172,6 @@ public interface HapiPropertySource {
 				.build();
 	}
 
-	static ScheduleID asSchedule(String v) {
-		long[] nativeParts = asDotDelimitedLongArray(v);
-		return ScheduleID.newBuilder()
-				.setShardNum(nativeParts[0])
-				.setRealmNum(nativeParts[1])
-				.setScheduleNum(nativeParts[2])
-				.build();
-	}
 	static String asTopicString(TopicID topic) {
 		return String.format("%d.%d.%d", topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
 	}

@@ -292,9 +292,11 @@ public class StateView {
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
 					.setTransactionBody(ByteString.copyFrom(schedule.transactionBody()))
-					.setCreatorAccountID(schedule.creatorAccountID().toGrpcAccountId())
-					.setPayerAccountID(schedule.payerAccountID().toGrpcAccountId())
+					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
+					.setPayerAccountID(schedule.payer().toGrpcAccountId())
 					.setSigners(signersList);
+
+			// TODO add signatories once we remove signers completely
 
 			var adminCandidate = schedule.adminKey();
 			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));

@@ -168,10 +168,6 @@ public class HapiApiClients {
 		return tokenSvcStubs.get(stubId(nodeId, useTls));
 	}
 
-	public ScheduleServiceGrpc.ScheduleServiceBlockingStub getScheduleSvcStub(AccountID nodeId, boolean useTls) {
-		return scheduleSvcStubs.get(stubId(nodeId, useTls));
-	}
-
 	public CryptoServiceBlockingStub getCryptoSvcStub(AccountID nodeId, boolean useTls) {
 		return cryptoSvcStubs.get(stubId(nodeId, useTls));
 	}

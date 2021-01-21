@@ -188,7 +188,7 @@ class StateViewTest {
 			EntityId.ofNullableAccountId(creatorAccountID),
 			now
 		);
-		schedule.setPayerAccountId(EntityId.ofNullableAccountId(payerAccountId));
+		schedule.setPayer(EntityId.ofNullableAccountId(payerAccountId));
 		schedule.setAdminKey(SCHEDULE_ADMIN_KT.asJKey());
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
@@ -285,8 +285,8 @@ class StateViewTest {
 
 		// then:
 		assertEquals(scheduleId, info.getScheduleID());
-		assertEquals(schedule.creatorAccountID().toGrpcAccountId(), info.getCreatorAccountID());
-		assertEquals(schedule.payerAccountID().toGrpcAccountId(), info.getPayerAccountID());
+		assertEquals(schedule.schedulingAccount().toGrpcAccountId(), info.getCreatorAccountID());
+		assertEquals(schedule.payer().toGrpcAccountId(), info.getPayerAccountID());
 		// TODO compare signatories once added
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(ByteString.copyFrom(schedule.transactionBody()), info.getTransactionBody());

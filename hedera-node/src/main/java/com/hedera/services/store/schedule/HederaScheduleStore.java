@@ -164,7 +164,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		apply(id, DELETION);
-		txToEntityId.remove(new CompositeKey(Arrays.hashCode(schedule.transactionBody()), schedule.payerAccountID().toGrpcAccountId()));
+		txToEntityId.remove(new CompositeKey(Arrays.hashCode(schedule.transactionBody()), schedule.payer().toGrpcAccountId()));
 		return OK;
 	}
 

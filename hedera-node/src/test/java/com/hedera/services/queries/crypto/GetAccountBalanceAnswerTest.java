@@ -79,7 +79,8 @@ public class GetAccountBalanceAnswerTest {
 	private TokenID dToken = IdUtils.asToken("0.0.6");
 	TokenStore tokenStore;
 	ScheduleStore scheduleStore;
-	MerkleToken notDeletedToken, deletedToken;
+
+	MerkleToken notDeleted, deleted;
 	private MerkleAccount accountV = MerkleAccountFactory.newAccount()
 			.balance(balance)
 			.tokens(aToken, bToken, cToken, dToken)
@@ -91,10 +92,10 @@ public class GetAccountBalanceAnswerTest {
 
 	@BeforeEach
 	private void setup() {
-		deletedToken = mock(MerkleToken.class);
-		given(deletedToken.isDeleted()).willReturn(true);
-		notDeletedToken = mock(MerkleToken.class);
-		given(notDeletedToken.isDeleted()).willReturn(false);
+		notDeleted = mock(MerkleToken.class);
+		given(deleted.isDeleted()).willReturn(true);
+		notDeleted = mock(MerkleToken.class);
+		given(notDeleted.isDeleted()).willReturn(false);
 
 		tokenRels = new FCMap<>();
 		tokenRels.put(
@@ -114,9 +115,9 @@ public class GetAccountBalanceAnswerTest {
 		given(tokenStore.exists(bToken)).willReturn(true);
 		given(tokenStore.exists(cToken)).willReturn(true);
 		given(tokenStore.exists(dToken)).willReturn(false);
-		given(tokenStore.get(aToken)).willReturn(notDeletedToken);
-		given(tokenStore.get(bToken)).willReturn(notDeletedToken);
-		given(tokenStore.get(cToken)).willReturn(deletedToken);
+		given(tokenStore.get(aToken)).willReturn(notDeleted);
+		given(tokenStore.get(bToken)).willReturn(notDeleted);
+		given(tokenStore.get(cToken)).willReturn(deleted);
 
 		scheduleStore = mock(ScheduleStore.class);
 

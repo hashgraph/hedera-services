@@ -73,12 +73,12 @@ public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-        var tId = TxnUtils.asScheduleId(schedule, spec);
+        var sId = TxnUtils.asScheduleId(schedule, spec);
         ScheduleDeleteTransactionBody opBody = spec
                 .txns()
                 .<ScheduleDeleteTransactionBody, ScheduleDeleteTransactionBody.Builder>body(
                         ScheduleDeleteTransactionBody.class, b -> {
-                            b.setScheduleID(tId);
+                            b.setScheduleID(sId);
                         });
         return b -> b.setScheduleDelete(opBody);
     }

@@ -180,7 +180,7 @@ public class TxnUtils {
 	}
 
 	public static ScheduleID asScheduleId(String s, HapiApiSpec lookupSpec) {
-		return isIdLiteral(s) ? asSchedule(s) : lookupSpec.registry().getScheduleID(s);
+		return isIdLiteral(s) ? asSchedule(s) : lookupSpec.registry().getScheduleId(s);
 	}
 
 	public static TopicID asTopicId(String s, HapiApiSpec lookupSpec) {

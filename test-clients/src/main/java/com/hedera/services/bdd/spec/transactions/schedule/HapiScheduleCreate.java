@@ -123,7 +123,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	}
 
 	@Override
-	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) {
+	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
 				HederaFunctionality.ScheduleCreate, this::usageEstimate, txn, numPayerKeys);
 	}

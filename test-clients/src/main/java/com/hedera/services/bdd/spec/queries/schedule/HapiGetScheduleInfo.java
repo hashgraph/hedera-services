@@ -106,7 +106,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
         assertFor(
                 actualInfo.getScheduleID(),
                 expectedScheduleId,
-                (n, r) -> r.getScheduleID(n),
+                (n, r) -> r.getScheduleId(n),
                 "Wrong schedule id!",
                 registry);
 

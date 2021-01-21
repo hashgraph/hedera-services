@@ -469,11 +469,6 @@ public class HapiSpecRegistry {
 		put(asTokenString(id), name);
 	}
 
-	public void saveScheduleId(String name, ScheduleID id) {
-		put(name, id);
-		put(asScheduleString(id), name);
-	}
-
 	public void saveTreasury(String token, String treasury) {
 		put(token + "Treasury", treasury);
 	}
@@ -551,10 +546,6 @@ public class HapiSpecRegistry {
 
 	public TokenID getTokenID(String name) {
 		return get(name, TokenID.class);
-	}
-
-	public ScheduleID getScheduleID(String name) {
-		return get(name, ScheduleID.class);
 	}
 
 	public boolean hasFileId(String name) {
