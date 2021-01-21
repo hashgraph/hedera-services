@@ -21,7 +21,7 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.TxnId;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;

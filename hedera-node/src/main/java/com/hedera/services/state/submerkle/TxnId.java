@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.core.jproto;
+package com.hedera.services.state.submerkle;
 
 /*-
  * ‌
@@ -21,17 +21,19 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
+import com.google.protobuf.ByteString;
+import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,9 +46,17 @@ import static com.hedera.services.utils.EntityIdUtils.asAccount;
 public class TxnId implements SelfSerializable {
 	private static final Logger log = LogManager.getLogger(TxnId.class);
 
-	public static final int MERKLE_VERSION = 1;
+	private static final byte[] ABSENT_NONCE = null;
+
+	public static final int MAX_PERMISSIBLE_NONCE_BYTES = 48;
+
+	static final int PRE_RELEASE_0120_VERSION = 1;
+	static final int RELEASE_0120_VERSION = 2;
+	public static final int MERKLE_VERSION = RELEASE_0120_VERSION;
+
 	public static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
 
+	static DomainSerdes serdes = new DomainSerdes();
 	static EntityId.Provider legacyIdProvider = EntityId.LEGACY_PROVIDER;
 	static RichInstant.Provider legacyInstantProvider = RichInstant.LEGACY_PROVIDER;
 
@@ -71,14 +81,23 @@ public class TxnId implements SelfSerializable {
 		}
 	}
 
+	private byte[] nonce = ABSENT_NONCE;
+	private boolean scheduled = false;
 	private EntityId payerAccount = MISSING_ENTITY_ID;
 	private RichInstant validStart = MISSING_INSTANT;
 
 	public TxnId() { }
 
-	public TxnId(EntityId payerAccount, RichInstant validStart) {
+	public TxnId(
+			EntityId payerAccount,
+			RichInstant validStart,
+			boolean scheduled,
+			byte[] nonce
+	) {
+		this.scheduled = scheduled;
 		this.validStart = validStart;
 		this.payerAccount = payerAccount;
+		this.nonce = nonce;
 	}
 
 	public EntityId getPayerAccount() {
@@ -90,7 +109,6 @@ public class TxnId implements SelfSerializable {
 	}
 
 	/* --- SelfSerializable --- */
-
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
@@ -104,17 +122,30 @@ public class TxnId implements SelfSerializable {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		payerAccount = in.readSerializable(true, EntityId::new);
-		validStart = RichInstant.from(in);
+		validStart = serdes.deserializeTimestamp(in);
+		if (version >= RELEASE_0120_VERSION) {
+			scheduled = in.readBoolean();
+			var hasNonce = in.readBoolean();
+			if (hasNonce) {
+				nonce = in.readByteArray(MAX_PERMISSIBLE_NONCE_BYTES);
+			}
+		}
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeSerializable(payerAccount, true);
-		validStart.serialize(out);
+		serdes.serializeTimestamp(validStart, out);
+		out.writeBoolean(scheduled);
+		if (nonce == ABSENT_NONCE) {
+			out.writeBoolean(false);
+		} else {
+			out.writeBoolean(true);
+			out.writeByteArray(nonce);
+		}
 	}
 
 	/* --- Objects --- */
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -124,36 +155,57 @@ public class TxnId implements SelfSerializable {
 			return false;
 		}
 		var that = (TxnId)o;
-		return Objects.equals(payerAccount, that.payerAccount) && Objects.equals(validStart, that.validStart);
+		return this.scheduled == that.scheduled &&
+				Objects.equals(payerAccount, that.payerAccount) &&
+				Objects.equals(validStart, that.validStart) &&
+				Arrays.equals(this.nonce, that.nonce);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(MERKLE_VERSION, RUNTIME_CONSTRUCTABLE_ID, payerAccount, validStart);
+		return Objects.hash(
+				MERKLE_VERSION,
+				RUNTIME_CONSTRUCTABLE_ID,
+				payerAccount,
+				validStart,
+				scheduled,
+				nonce);
 	}
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(this)
+		var helper = MoreObjects.toStringHelper(this)
 				.add("payer", payerAccount)
 				.add("validStart", validStart)
-				.toString();
+				.add("scheduled", scheduled);
+		if (nonce != ABSENT_NONCE) {
+			helper.add("nonce", Hex.encodeHexString(nonce));
+		}
+		return helper.toString();
 	}
 
 	/* --- Helpers --- */
-
 	public static TxnId fromGrpc(final TransactionID grpc) {
+		var grpcNonce = grpc.getNonce();
+		byte[] nonce = grpcNonce.isEmpty() ? ABSENT_NONCE : grpcNonce.toByteArray();
 		return new TxnId(
 				ofNullableAccountId(grpc.getAccountID()),
-				RichInstant.fromGrpc(grpc.getTransactionValidStart()));
+				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
+				grpc.getScheduled(),
+				nonce);
 	}
 
 	public TransactionID toGrpc() {
-		var grpc = TransactionID.newBuilder()
-				.setAccountID(asAccount(payerAccount));
+		var grpc = TransactionID.newBuilder().setAccountID(asAccount(payerAccount));
+
 		if (!validStart.isMissing()) {
 			grpc.setTransactionValidStart(validStart.toGrpc());
 		}
+		grpc.setScheduled(scheduled);
+		if (nonce != ABSENT_NONCE) {
+			grpc.setNonce(ByteString.copyFrom(nonce));
+		}
+
 		return grpc.build();
 	}
 }
