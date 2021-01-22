@@ -62,7 +62,7 @@ public class KeyInventoryCreation {
 										this::someListSize,
 										this::someType,
 										this::someThresholdSizes)))
-				.toArray(n -> new HapiSpecOperation[n]);
+				.toArray(HapiSpecOperation[]::new);
 	}
 
 	public KeyFactory.KeyType someType() {

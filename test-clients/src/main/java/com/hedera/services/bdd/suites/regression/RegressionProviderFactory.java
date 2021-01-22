@@ -51,12 +51,14 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.files.RandomFil
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyInventoryCreation;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomReceipt;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomRecord;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.function.Function;
@@ -74,6 +76,8 @@ public class RegressionProviderFactory {
 					Key.class, spec.registry(), new RandomSelector());
 			var files = new RegistrySourcedNameProvider<>(
 					FileID.class, spec.registry(), new RandomSelector());
+			var tokens = new RegistrySourcedNameProvider<>(
+					TokenID.class, spec.registry(), new RandomSelector());
 			var allAccounts = new RegistrySourcedNameProvider<>(
 					AccountID.class, spec.registry(), new RandomSelector());
 			var unstableAccounts = new RegistrySourcedNameProvider<>(
@@ -165,7 +169,6 @@ public class RegressionProviderFactory {
 					.withOp(
 							new RandomTopicInfo(allTopics),
 							intPropOrElse("randomTopicInfo.bias", 0, props))
-
 					/* ---- FILE ---- */
 					.withOp(
 							new RandomFile(files)
@@ -189,6 +192,10 @@ public class RegressionProviderFactory {
 					.withOp(
 							new RandomContents(files),
 							intPropOrElse("randomContents.bias", 0, props))
+					/* ---- TOKEN ---- */
+					.withOp(
+							new RandomToken(keys, tokens, allAccounts),
+							props.getInteger("randomToken.bias"))
 					/* ---- CONTRACT ---- */
 					.withOp(
 							new RandomCall(calls),

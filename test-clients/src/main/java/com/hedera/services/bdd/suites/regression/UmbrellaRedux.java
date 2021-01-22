@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.regression.RegressionProviderFactory.factoryFrom;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -78,8 +79,7 @@ public class UmbrellaRedux extends HapiApiSuite {
 								.balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
 								.withRecharging()
 								.via("createUniquePayer"),
-						UtilVerbs.sleepFor(10000)
-
+						sleepFor(10000)
 				).when(
 						getTxnRecord("createUniquePayer").logged()
 				).then(
