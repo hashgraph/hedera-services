@@ -31,8 +31,6 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
@@ -40,7 +38,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class ConsensusControllerTest {
 	Query query = Query.getDefaultInstance();
 	Transaction txn = Transaction.getDefaultInstance();

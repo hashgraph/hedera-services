@@ -25,11 +25,8 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.*;
 
-@RunWith(JUnitPlatform.class)
 public class BodySigningSigFactoryTest {
 	@Test
 	public void createsExpectedSig() {

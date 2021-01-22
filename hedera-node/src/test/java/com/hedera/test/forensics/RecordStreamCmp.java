@@ -40,8 +40,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -72,7 +70,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 
 @Disabled
-@RunWith(JUnitPlatform.class)
 public class RecordStreamCmp {
 	static ObjectMapper om = new ObjectMapper();
 

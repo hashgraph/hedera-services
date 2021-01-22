@@ -24,8 +24,6 @@ import com.hedera.services.config.HederaNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -33,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class GlobalDynamicPropertiesTest {
 	static final String[] balanceExportPaths = new String[] {
 			"/opt/hgcapp/accountBalances",

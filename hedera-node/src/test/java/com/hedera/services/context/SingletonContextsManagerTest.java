@@ -31,8 +31,6 @@ import com.swirlds.common.Platform;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 
@@ -45,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 public class SingletonContextsManagerTest {
 	private final NodeId id = new NodeId(false, 1L);
 

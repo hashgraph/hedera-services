@@ -28,8 +28,6 @@ import com.hederahashgraph.api.proto.java.Response;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
@@ -40,7 +38,6 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 
-@RunWith(JUnitPlatform.class)
 class QueryResponseHelperTest {
 	Query query = Query.getDefaultInstance();
 	String metric = "imaginary";

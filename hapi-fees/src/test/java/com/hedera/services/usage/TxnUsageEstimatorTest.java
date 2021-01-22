@@ -23,8 +23,6 @@ package com.hedera.services.usage;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.test.SigUtils.A_SIG_MAP;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
@@ -38,7 +36,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class TxnUsageEstimatorTest {
 	int numPayerKeys = 2;
 	long networkRbs = 123;

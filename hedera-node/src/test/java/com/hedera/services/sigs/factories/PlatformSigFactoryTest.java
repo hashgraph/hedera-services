@@ -26,8 +26,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 
@@ -35,7 +33,6 @@ import static com.hedera.services.sigs.factories.PlatformSigFactory.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-@RunWith(JUnitPlatform.class)
 public class PlatformSigFactoryTest {
 	public static String PK = "Not really a ed25519 public key!";
 	public static String DIFFERENT_PK = "NOT really a ed25519 public key!";

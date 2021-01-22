@@ -37,8 +37,6 @@ import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.util.function.BiPredicate;
@@ -52,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class TxnAwareRatesManagerTest {
 	private JFileInfo attr;
 	byte[] invalidBytes = "Definitely not an ExchangeRateSet".getBytes();

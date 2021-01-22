@@ -31,8 +31,6 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -43,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class GetContractRecordsResourceUsageTest {
 	StateView view;
 	SmartContractFeeBuilder usageEstimator;

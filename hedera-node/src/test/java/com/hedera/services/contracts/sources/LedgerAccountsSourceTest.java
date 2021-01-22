@@ -37,8 +37,6 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.core.AccountState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
@@ -48,7 +46,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static org.mockito.BDDMockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(JUnitPlatform.class)
 class LedgerAccountsSourceTest {
 	long balance = 1_234_567L;
 	long autoRenew = 1_234L;

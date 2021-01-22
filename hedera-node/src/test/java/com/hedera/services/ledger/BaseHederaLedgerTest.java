@@ -43,8 +43,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Collections;
 import java.util.Map;
@@ -62,7 +60,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(JUnitPlatform.class)
 public class BaseHederaLedgerTest {
 	protected long GENESIS_BALANCE = 50_000_000_000L;
 	protected long NEXT_ID = 1_000_000L;

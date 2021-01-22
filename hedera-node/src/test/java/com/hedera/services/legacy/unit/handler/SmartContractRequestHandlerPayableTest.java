@@ -91,8 +91,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -104,7 +102,6 @@ import static org.mockito.Mockito.mock;
  */
 
 @Disabled
-@RunWith(JUnitPlatform.class)
 public class SmartContractRequestHandlerPayableTest {
 
   public static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";

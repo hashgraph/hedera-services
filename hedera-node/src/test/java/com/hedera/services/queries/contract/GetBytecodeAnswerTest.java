@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -58,7 +56,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class GetBytecodeAnswerTest {
 	private Transaction paymentTxn;
 	private String node = "0.0.3";

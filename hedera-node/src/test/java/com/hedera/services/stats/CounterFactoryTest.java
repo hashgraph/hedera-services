@@ -22,8 +22,6 @@ package com.hedera.services.stats;
 
 import com.swirlds.common.StatEntry;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.function.Supplier;
 
@@ -31,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-@RunWith(JUnitPlatform.class)
 class CounterFactoryTest {
 	CounterFactory subject = new CounterFactory() { };
 

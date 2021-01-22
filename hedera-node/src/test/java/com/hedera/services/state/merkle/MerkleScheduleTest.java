@@ -34,8 +34,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -60,7 +58,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class MerkleScheduleTest {
     final int TX_BYTES = 64;
     byte[] transactionBody, otherTransactionBody;

@@ -22,8 +22,6 @@ package com.hedera.services.contracts.sources;
 
 import com.hedera.services.utils.EntityIdUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,7 +31,6 @@ import java.util.stream.Collectors;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(JUnitPlatform.class)
 class AddressKeyedMapFactoryTest {
 	@Test
 	public void toAddressConversion() {

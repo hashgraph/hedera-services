@@ -24,13 +24,10 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
 
-@RunWith(JUnitPlatform.class)
 class ExportExistingAccountsTest {
 	private static final String LEGACY_ACCOUNTS_LOC = "src/test/resources/testAccounts.fcm";
 	private static final String LEGACY_EXPORT_LOC = "src/test/resources/legacyAccounts.json";

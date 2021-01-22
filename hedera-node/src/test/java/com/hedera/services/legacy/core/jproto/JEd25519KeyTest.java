@@ -21,13 +21,10 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(JUnitPlatform.class)
 public class JEd25519KeyTest {
   @Test
   public void emptyJEd25519KeyTest() {

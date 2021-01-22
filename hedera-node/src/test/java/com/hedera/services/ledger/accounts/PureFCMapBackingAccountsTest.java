@@ -27,8 +27,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Set;
 
@@ -40,7 +38,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class PureFCMapBackingAccountsTest {
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("3.2.1");

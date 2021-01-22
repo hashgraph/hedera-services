@@ -35,8 +35,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,7 +61,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class MerkleDiskFsTest {
 	MerkleDiskFs subject;
 	AccountID nodeAccount = AccountID.newBuilder().setAccountNum(3).build();

@@ -21,13 +21,10 @@ package com.hedera.services.state.exports;
  */
 
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(JUnitPlatform.class)
 class AccountBalanceTest {
 	@Test
 	public void comparesAllIdParts() {

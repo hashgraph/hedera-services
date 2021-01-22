@@ -30,8 +30,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
@@ -49,7 +47,6 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
-@RunWith(JUnitPlatform.class)
 public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	@BeforeEach
 	private void setup() {

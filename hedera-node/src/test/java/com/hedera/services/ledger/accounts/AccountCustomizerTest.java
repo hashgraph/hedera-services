@@ -27,8 +27,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.EnumMap;
 
@@ -38,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.*;
 
-@RunWith(JUnitPlatform.class)
 public class AccountCustomizerTest {
 	private TestAccountCustomizer subject;
 	private ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager;
