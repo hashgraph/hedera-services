@@ -33,4 +33,5 @@ message ScheduleCreateTransactionBody {
   Key adminKey = 2; // (optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed)
   AccountID payerAccountID = 3; // (optional) The account which is going to pay for the execution of the Scheduled TX. If not populated, the scheduling account is charged
   SignatureMap sigMap = 4; // (optional) Signatures that could be provided (similarly to how signatures are provided in ScheduleSign operation) on Scheduled Transaction creation
+  string memo = 5; // (optional) Publicly visible information about the Scheduled entity, up to 100 bytes. No guarantee of uniqueness.
 }

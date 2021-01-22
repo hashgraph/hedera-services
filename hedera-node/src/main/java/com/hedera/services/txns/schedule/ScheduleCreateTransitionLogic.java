@@ -26,6 +26,7 @@ import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -42,6 +43,7 @@ import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -52,15 +54,18 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
+	private final OptionValidator validator;
 	private final InHandleActivationHelper activationHelper;
 
 	public ScheduleCreateTransitionLogic(
 			ScheduleStore store,
 			TransactionContext txnCtx,
-			InHandleActivationHelper activationHelper
+			InHandleActivationHelper activationHelper,
+			OptionValidator validator
 	) {
 		super(store, txnCtx);
 		this.activationHelper = activationHelper;
+		this.validator = validator;
 	}
 
 	@Override
@@ -89,7 +94,8 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 					scheduledPayer,
 					txnCtx.activePayer(),
 					fromJava(txnCtx.consensusTime()),
-					adminKeyFor(op));
+					adminKeyFor(op),
+					Optional.of(op.getMemo()));
 			if (result.getCreated().isEmpty()) {
 				abortWith(result.getStatus());
 				return;
@@ -137,8 +143,19 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 		return SYNTAX_CHECK;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody txn) {
-		var op = txn.getScheduleCreate();
-		return checkAdminKey(op.hasAdminKey(), op.getAdminKey());
+	public ResponseCodeEnum validate(TransactionBody txnBody) {
+		var validity = OK;
+		ScheduleCreateTransactionBody op = txnBody.getScheduleCreate();
+		validity = checkAdminKey(
+				op.hasAdminKey(), op.getAdminKey()
+		);
+		if (validity != OK) {
+			return validity;
+		}
+
+		if (!validator.isValidEntityMemo(op.getMemo())) {
+			return MEMO_TOO_LONG;
+		}
+		return validity;
 	}
 }

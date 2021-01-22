@@ -47,8 +47,8 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 	public FeeData get() {
 		var op = this.op.getScheduleCreate();
 
-		var txBytes = op.getTransactionBody().toByteArray().length;
-		var ramBytes = scheduleEntitySizes.bytesInBaseReprGiven(op.getTransactionBody().toByteArray());
+		var txBytes = op.getTransactionBody().toByteArray().length + op.getMemoBytes().size();
+		var ramBytes = scheduleEntitySizes.bytesInBaseReprGiven(op.getTransactionBody().toByteArray(), op.getMemoBytes());
 		if (op.hasAdminKey()) {
 			long keySize = getAccountKeyStorageSize(op.getAdminKey());
 			txBytes += keySize;

@@ -88,6 +88,7 @@ public class HederaScheduleStoreTest {
     MerkleAccount account;
 
     byte[] transactionBody;
+    String entityMemo;
     int transactionBodyHashCode;
     RichInstant schedulingTXValidStart;
     Key adminKey;
@@ -108,6 +109,7 @@ public class HederaScheduleStoreTest {
     @BeforeEach
     public void setup() {
         transactionBody = TxnUtils.randomUtf8Bytes(SIGNATURE_BYTES);
+        entityMemo = "Some memo here";
         transactionBodyHashCode = Arrays.hashCode(transactionBody);
         schedulingTXValidStart = new RichInstant(123, 456);
         adminKey = SCHEDULE_ADMIN_KT.asKey();
@@ -298,6 +300,8 @@ public class HederaScheduleStoreTest {
         var expected = new MerkleSchedule(transactionBody, entitySchedulingAccount, schedulingTXValidStart);
         expected.setAdminKey(adminJKey);
         expected.setPayer(entityPayer);
+        expected.setMemo(entityMemo);
+
         // when:
         var outcome = subject
                 .createProvisionally(
@@ -305,7 +309,8 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
-                        Optional.of(adminJKey));
+                        Optional.of(adminJKey),
+                        Optional.of(entityMemo));
 
         // then:
         assertEquals(OK, outcome.getStatus());
@@ -324,7 +329,8 @@ public class HederaScheduleStoreTest {
                         null,
                         schedulingAccount,
                         schedulingTXValidStart,
-                        Optional.of(adminJKey));
+                        Optional.of(adminJKey),
+                        Optional.of(entityMemo));
 
         // then:
         assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.getStatus());
@@ -353,7 +359,8 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
-                        Optional.of(adminJKey));
+                        Optional.of(adminJKey),
+                        Optional.of(entityMemo));
 
         // then:
         assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.getStatus());
@@ -375,7 +382,8 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
-                        Optional.of(adminJKey));
+                        Optional.of(adminJKey),
+                        Optional.of(entityMemo));
 
         // then:
         assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.getStatus());
@@ -397,7 +405,8 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
-                        Optional.of(adminJKey));
+                        Optional.of(adminJKey),
+                        Optional.of(entityMemo));
 
         // then:
         assertEquals(INVALID_SCHEDULE_ACCOUNT_ID, outcome.getStatus());
@@ -419,7 +428,8 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
-                        Optional.of(adminJKey));
+                        Optional.of(adminJKey),
+                        Optional.of(entityMemo));
 
         // then:
         assertEquals(INVALID_SCHEDULE_ACCOUNT_ID, outcome.getStatus());

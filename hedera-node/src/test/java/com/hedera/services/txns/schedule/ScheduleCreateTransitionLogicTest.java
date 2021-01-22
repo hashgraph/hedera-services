@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
@@ -63,6 +64,7 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
@@ -91,12 +93,14 @@ public class ScheduleCreateTransitionLogicTest {
 	private final Key invalidKey = Key.newBuilder().build();
 	private Optional<JKey> jAdminKey;
 
+	private OptionValidator validator;
 	private ScheduleStore store;
 	private PlatformTxnAccessor accessor;
 	private TransactionContext txnCtx;
 
 	private AccountID payer = IdUtils.asAccount("1.2.3");
 	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
+	private String entityMemo = "some cool memo?";
 
 	private TransactionBody scheduleCreateTxn;
 	private InHandleActivationHelper activationHelper;
@@ -111,6 +115,7 @@ public class ScheduleCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
+		validator = mock(OptionValidator.class);
 		store = mock(ScheduleStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		activationHelper = mock(InHandleActivationHelper.class);
@@ -137,7 +142,7 @@ public class ScheduleCreateTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.activePayer()).willReturn(payer);
 
-		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper);
+		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper, validator);
 	}
 
 	@Test
@@ -164,7 +169,8 @@ public class ScheduleCreateTransitionLogicTest {
                 eq(payer),
                 eq(payer),
                 eq(RichInstant.fromJava(now)),
-                argThat(jKey -> true))).willReturn(CreationResult.success(schedule));
+                argThat(jKey -> true),
+				argThat(memo -> true))).willReturn(CreationResult.success(schedule));
         // and:
         given(store.get(schedule)).willReturn(created);
 
@@ -179,7 +185,8 @@ public class ScheduleCreateTransitionLogicTest {
 				eq(payer),
 				eq(payer),
 				eq(RichInstant.fromJava(now)),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
+				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				argThat((Optional<String> memo) -> memo.get().equals(entityMemo)));
 		// and:
 		verify(store).apply(argThat(schedule::equals), captor.capture());
 		captor.getValue().accept(created);
@@ -213,7 +220,8 @@ public class ScheduleCreateTransitionLogicTest {
 				eq(payer),
 				eq(payer),
 				eq(RichInstant.fromJava(now)),
-				argThat(jKey -> true));
+				argThat(jKey -> true),
+				argThat(memo -> true));
 		// and:
 		verify(store, never()).commitCreation();
 		verify(txnCtx).setStatus(SUCCESS);
@@ -231,7 +239,8 @@ public class ScheduleCreateTransitionLogicTest {
 				eq(payer),
 				eq(payer),
 				eq(RichInstant.fromJava(now)),
-				argThat(jKey -> true)))
+				argThat(jKey -> true),
+				argThat(memo -> true)))
 				.willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
 
 		// when:
@@ -245,7 +254,8 @@ public class ScheduleCreateTransitionLogicTest {
 				eq(payer),
 				eq(payer),
 				eq(RichInstant.fromJava(now)),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
+				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				argThat((Optional<String> m) -> m.get().equals(entityMemo)));
 		verify(store, never()).addSigners(schedule, jKeySet);
 		verify(store, never()).commitCreation();
 		verify(txnCtx, never()).setStatus(SUCCESS);
@@ -270,10 +280,22 @@ public class ScheduleCreateTransitionLogicTest {
 	public void failsOnInvalidAdminKey() {
 		givenCtx(
 				true,
+				false,
 				false);
 
 		// expect:
 		assertEquals(INVALID_ADMIN_KEY, subject.validate(scheduleCreateTxn));
+	}
+
+	@Test
+	public void failsOnInvalidMemo() {
+		givenCtx(
+				false,
+				false,
+				true);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, subject.validate(scheduleCreateTxn));
 	}
 
 	@Test
@@ -285,7 +307,7 @@ public class ScheduleCreateTransitionLogicTest {
 
 	@Test
 	public void rejectsInvalidAdminKey() {
-		givenCtx(true, false);
+		givenCtx(true, false, false);
 
 		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
 	}
@@ -293,12 +315,14 @@ public class ScheduleCreateTransitionLogicTest {
 	private void givenValidTxnCtx() {
 		givenCtx(
 				false,
+				false,
 				false);
 	}
 
 	private void givenCtx(
 			boolean invalidAdminKey,
-			boolean invalidPubKey
+			boolean invalidPubKey,
+			boolean invalidMemo
 	) {
 		var pair = new KeyPairGenerator().generateKeyPair();
 		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
@@ -325,6 +349,7 @@ public class ScheduleCreateTransitionLogicTest {
 				.setSigMap(sigMap)
 				.setAdminKey(key)
 				.setPayerAccountID(payer)
+				.setMemo(entityMemo)
 				.setTransactionBody(ByteString.copyFrom(transactionBody));
 
 		if (invalidAdminKey) {
@@ -334,6 +359,7 @@ public class ScheduleCreateTransitionLogicTest {
 
 		this.scheduleCreateTxn = builder.build();
 
+		given(validator.isValidEntityMemo(entityMemo)).willReturn(!invalidMemo);
 		given(accessor.getTxn()).willReturn(this.scheduleCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);

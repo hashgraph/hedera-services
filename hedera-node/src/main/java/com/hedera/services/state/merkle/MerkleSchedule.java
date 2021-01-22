@@ -58,6 +58,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     static final int MERKLE_VERSION = 1;
 
     static final int NUM_ED25519_PUBKEY_BYTES = 32;
+    static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d2b7d9e673285fcL;
     static DomainSerdes serdes = new DomainSerdes();
@@ -66,6 +67,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     public static final EntityId UNUSED_PAYER = null;
 
     private byte[] transactionBody;
+    private String memo;
     private JKey adminKey = UNUSED_KEY;
     private EntityId payer = UNUSED_PAYER;
     private EntityId schedulingAccount;
@@ -128,6 +130,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         var that = (MerkleSchedule) o;
         return this.deleted == that.deleted &&
                 Arrays.areEqual(this.transactionBody, that.transactionBody) &&
+                Objects.equals(this.memo, that.memo) &&
                 Objects.equals(this.payer, that.payer) &&
                 Objects.equals(this.schedulingAccount, that.schedulingAccount) &&
                 Objects.equals(this.schedulingTXValidStart, that.schedulingTXValidStart) &&
@@ -154,6 +157,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         return Objects.hash(
                 deleted,
                 transactionBody,
+                memo,
                 payer,
                 schedulingAccount,
                 schedulingTXValidStart,
@@ -166,6 +170,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         return MoreObjects.toStringHelper(MerkleSchedule.class)
                 .add("deleted", deleted)
                 .add("transactionBody", hex(transactionBody))
+                .add("memo", memo)
                 .add("payer", readablePayer())
                 .add("schedulingAccount", schedulingAccount)
                 .add("schedulingTXValidStart", schedulingTXValidStart)
@@ -193,6 +198,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         while (numSignatories-- > 0) {
             witnessValidEd25519Signature(in.readByteArray(NUM_ED25519_PUBKEY_BYTES));
         }
+        memo = serdes.readNullableString(in, UPPER_BOUND_MEMO_UTF8_BYTES);
     }
 
     @Override
@@ -209,6 +215,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         for (byte[] key : signatories) {
             out.writeByteArray(key);
         }
+        serdes.writeNullableString(memo, out);
     }
 
     @Override
@@ -230,6 +237,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
                 schedulingAccount,
                 schedulingTXValidStart);
 
+        fc.setMemo(memo);
         fc.setDeleted(deleted);
         fc.setSigners(signersCopy);
         if (payer != UNUSED_PAYER) {
@@ -246,6 +254,10 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     }
 
     public byte[] transactionBody() { return this.transactionBody; }
+
+    public String memo() { return this.memo; }
+
+    public void setMemo(String memo) { this.memo = memo; }
 
     public boolean hasAdminKey() {
         return adminKey != UNUSED_KEY;
