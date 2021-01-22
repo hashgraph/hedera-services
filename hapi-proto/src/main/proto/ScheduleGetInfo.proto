@@ -43,6 +43,7 @@ message ScheduleInfo {
   bytes transactionBody = 4; // The transaction serialized into bytes that must be signed
   KeyList signers = 5; // The keys that have provided signatures so far for the Scheduled TX
   Key adminKey = 6; // The Key which is able to delete the Scheduled Transaction if set
+  string memo = 7; // Publicly visible information about the Scheduled entity, up to 100 bytes. No guarantee of uniqueness.
 }
 
 message ScheduleGetInfoResponse {

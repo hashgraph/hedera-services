@@ -1206,7 +1206,7 @@ public class ServicesContext {
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* Schedule */
 				entry(ScheduleCreate,
-						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
+						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx(), activationHelper(), validator()))),
 				entry(ScheduleSign,
 						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
 				entry(ScheduleDelete,

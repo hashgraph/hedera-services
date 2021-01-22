@@ -20,6 +20,7 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 
@@ -44,23 +45,15 @@ public enum ScheduleEntitySizes {
 				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
 	}
 
-	public int bytesInBaseReprGiven(byte[] transactionBody) {
-		return fixedBytesInScheduleRepr() + transactionBody.length;
+	public int bytesInBaseReprGiven(byte[] transactionBody, ByteString memo) {
+		return fixedBytesInScheduleRepr() + transactionBody.length + memo.size();
 	}
 
 	/**
 	 * Signature map is not stored in state, we only need it for bpt
 	 */
 	public int bptScheduleReprGiven(SignatureMap sigMap) {
-		var bytes = 0;
-		for (SignaturePair signaturePair : sigMap.getSigPairList()) {
-			bytes += signaturePair.getPubKeyPrefix().size() +
-					signaturePair.getEd25519().size() +
-					signaturePair.getContract().size() +
-					signaturePair.getRSA3072().size() +
-					signaturePair.getECDSA384().size();
-		}
-		return bytes;
+		return sigMap.toByteArray().length;
 	}
 
 	/**
