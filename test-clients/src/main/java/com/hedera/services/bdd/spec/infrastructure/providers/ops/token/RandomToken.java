@@ -87,7 +87,7 @@ public class RandomToken implements OpProvider {
 		randomlyConfigureAutoRenew(op);
 		randomlyConfigureStrings(op);
 
-		return Optional.empty();
+		return Optional.of(op);
 	}
 
 	private void randomlyConfigureStrings(HapiTokenCreate op) {

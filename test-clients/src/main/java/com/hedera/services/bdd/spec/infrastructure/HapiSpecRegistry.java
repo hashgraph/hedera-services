@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
@@ -456,6 +457,14 @@ public class HapiSpecRegistry {
 	public void saveTokenId(String name, TokenID id) {
 		put(name, id);
 		put(asTokenString(id), name);
+	}
+
+	public void saveTokenRel(String account, String token) {
+		put(tokenRelKey(account, token), new TokenAccountRegistryRel(token, account));
+	}
+
+	private String tokenRelKey(String account, String token) {
+		return account + "|" + token;
 	}
 
 	public void saveTreasury(String token, String treasury) {

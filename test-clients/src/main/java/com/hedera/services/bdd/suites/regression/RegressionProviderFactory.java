@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.regression;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
@@ -52,6 +53,7 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyIn
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomReceipt;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomRecord;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -78,6 +80,8 @@ public class RegressionProviderFactory {
 					FileID.class, spec.registry(), new RandomSelector());
 			var tokens = new RegistrySourcedNameProvider<>(
 					TokenID.class, spec.registry(), new RandomSelector());
+			var tokenRels = new RegistrySourcedNameProvider<>(
+					TokenAccountRegistryRel.class, spec.registry(), new RandomSelector());
 			var allAccounts = new RegistrySourcedNameProvider<>(
 					AccountID.class, spec.registry(), new RandomSelector());
 			var unstableAccounts = new RegistrySourcedNameProvider<>(
@@ -196,6 +200,13 @@ public class RegressionProviderFactory {
 					.withOp(
 							new RandomToken(keys, tokens, allAccounts),
 							props.getInteger("randomToken.bias"))
+					.withOp(
+							new RandomTokenAssociation(tokens, allAccounts, tokenRels)
+									.ceiling(intPropOrElse(
+											"randomTokenAssociation.ceilingNUm",
+											RandomTokenAssociation.DEFAULT_CEILING_NUM,
+											props)),
+							props.getInteger("randomTokenAssociation.bias"))
 					/* ---- CONTRACT ---- */
 					.withOp(
 							new RandomCall(calls),
