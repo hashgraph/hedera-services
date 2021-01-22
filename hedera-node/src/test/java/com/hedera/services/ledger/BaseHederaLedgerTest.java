@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcqueue.FCQueue;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Collections;
 import java.util.Map;
@@ -71,7 +72,7 @@ public class BaseHederaLedgerTest {
 	protected ExpiringCreations creator;
 	protected AccountRecordsHistorian historian;
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	protected TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	protected AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
 	protected long MISC_BALANCE = 1_234L;
 	protected long RAND_BALANCE = 2_345L;
@@ -124,7 +125,7 @@ public class BaseHederaLedgerTest {
 	}
 
 	protected FCQueue<ExpirableTxnRecord> asExpirableRecords(long... expiries) {
-		FCQueue<ExpirableTxnRecord> records = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
+		FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
 		for (int i = 0; i < expiries.length; i++) {
 			ExpirableTxnRecord record = new ExpirableTxnRecord();
 			record.setExpiry(expiries[i]);

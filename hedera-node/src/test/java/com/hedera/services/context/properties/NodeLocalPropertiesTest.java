@@ -20,10 +20,9 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
@@ -32,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class NodeLocalPropertiesTest {
 	PropertySource properties;
 
@@ -61,6 +59,10 @@ class NodeLocalPropertiesTest {
 		assertEquals(6L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
 		assertEquals(7.0, subject.statsSpeedometerHalfLifeSecs());
 		assertEquals(8.0, subject.statsRunningAvgHalfLifeSecs());
+		assertEquals(logDir(9), subject.recordLogDir());
+		assertEquals(10L, subject.recordLogPeriod());
+		Assertions.assertTrue(subject.isRecordStreamEnabled());
+		assertEquals(12, subject.recordStreamQueueCapacity());
 	}
 
 	@Test
@@ -79,6 +81,10 @@ class NodeLocalPropertiesTest {
 		assertEquals(7L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
 		assertEquals(8.0, subject.statsSpeedometerHalfLifeSecs());
 		assertEquals(9.0, subject.statsRunningAvgHalfLifeSecs());
+		assertEquals(logDir(10), subject.recordLogDir());
+		assertEquals(11L, subject.recordLogPeriod());
+		Assertions.assertFalse(subject.isRecordStreamEnabled());
+		assertEquals(13, subject.recordStreamQueueCapacity());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -90,5 +96,13 @@ class NodeLocalPropertiesTest {
 		given(properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs")).willReturn(i + 5L);
 		given(properties.getDoubleProperty("stats.speedometerHalfLifeSecs")).willReturn(i + 6.0);
 		given(properties.getDoubleProperty("stats.runningAvgHalfLifeSecs")).willReturn(i + 7.0);
+		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(logDir(i + 8));
+		given(properties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(i + 9L);
+		given(properties.getBooleanProperty("hedera.recordStream.isEnabled")).willReturn(i % 2 == 1);
+		given(properties.getIntProperty("hedera.recordStream.queueCapacity")).willReturn(i + 11);
+	}
+
+	static String logDir(int num) {
+		return "myRecords/dir" + num;
 	}
 }

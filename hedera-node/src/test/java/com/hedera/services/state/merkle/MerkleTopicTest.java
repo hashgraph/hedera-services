@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,13 +20,12 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.LegacyTopicsTest;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.TopicSerde;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.serdes.TopicSerde;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -34,8 +33,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -46,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class MerkleTopicTest {
 	String[] memos = new String[] {
 			"First memo",
@@ -76,10 +72,10 @@ class MerkleTopicTest {
 		MerkleTopic.legacyIdProvider = legacyIdProvider;
 		MerkleTopic.topicSerde = serde;
 		// and:
-		var expected = LegacyTopicsTest.topicFrom(1);
+		var expected = topicFrom(1);
 
-		given(in.readShort()).willReturn((short)-1)
-				.willReturn((short)-2);
+		given(in.readShort()).willReturn((short) -1)
+				.willReturn((short) -2);
 		given(in.readBoolean())
 				.willReturn(true)
 				.willReturn(true)
@@ -104,7 +100,7 @@ class MerkleTopicTest {
 				.willReturn(expected.getAutoRenewAccountId());
 
 		// when:
-		var topic = (MerkleTopic)(MerkleTopic.LEGACY_PROVIDER.deserialize(in));
+		var topic = (MerkleTopic) (MerkleTopic.LEGACY_PROVIDER.deserialize(in));
 
 		// then:
 		assertEquals(expected, topic);
@@ -140,7 +136,8 @@ class MerkleTopicTest {
 						"deleted=false, " +
 						"adminKey=" + MiscUtils.describe(adminKeys[1]) + ", " +
 						"submitKey=" + MiscUtils.describe(submitKeys[1]) + ", " +
-						"runningHash=3c8e1604b2cd20068f02976fa10217491561cc864b7bff28451e1f1a0a8c58c02df56f60562f129e845e0ba16e3420eb, " +
+						"runningHash" +
+						"=3c8e1604b2cd20068f02976fa10217491561cc864b7bff28451e1f1a0a8c58c02df56f60562f129e845e0ba16e3420eb, " +
 						"sequenceNumber=1, " +
 						"autoRenewSecs=2234567, " +
 						"autoRenewAccount=2.4.6}",
@@ -153,7 +150,8 @@ class MerkleTopicTest {
 						"deleted=false, " +
 						"adminKey=" + MiscUtils.describe(adminKeys[2]) + ", " +
 						"submitKey=" + MiscUtils.describe(submitKeys[2]) + ", " +
-						"runningHash=a19f77d351424204e3eeec1bb42bcdc728e521483bb99103dc7fa7c527db0c14aeefe4b0a8a7d0924b2f2c4a1d237bc5, " +
+						"runningHash" +
+						"=a19f77d351424204e3eeec1bb42bcdc728e521483bb99103dc7fa7c527db0c14aeefe4b0a8a7d0924b2f2c4a1d237bc5, " +
 						"sequenceNumber=2, " +
 						"autoRenewSecs=3234567, " +
 						"autoRenewAccount=3.6.9}",
@@ -181,4 +179,5 @@ class MerkleTopicTest {
 		}
 		return topic;
 	}
+
 }

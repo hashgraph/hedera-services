@@ -33,9 +33,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.keys.StandardSyncActivationCheck.*;
 
-@RunWith(JUnitPlatform.class)
 class StandardSyncActivationCheckTest {
 	byte[] body = "Goodness".getBytes();
 	JKey key;

@@ -40,8 +40,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +56,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseType.*;
 
-@RunWith(JUnitPlatform.class)
 class GetTxnRecordResourceUsageTest {
 	private TransactionID targetTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount("0.0.2"))
@@ -216,17 +213,6 @@ class GetTxnRecordResourceUsageTest {
 		// then:
 		assertFalse(queryCtx.containsKey(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY));
 		assertSame(answerOnlyUsage, actual);
-	}
-
-	@Test
-	public void rethrowsIae() {
-		// given:
-		Query query = txnRecordQuery(missingTxnId, ANSWER_ONLY);
-		given(usageEstimator.getTransactionRecordQueryFeeMatrices(any(), any()))
-				.willThrow(IllegalStateException.class);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
 	}
 
 	@Test

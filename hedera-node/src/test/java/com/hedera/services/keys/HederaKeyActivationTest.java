@@ -29,11 +29,9 @@ import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -47,7 +45,6 @@ import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd2551
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 
-@RunWith(JUnitPlatform.class)
 public class HederaKeyActivationTest {
 	static JKey complexKey;
 	byte[] pk = "PK".getBytes();

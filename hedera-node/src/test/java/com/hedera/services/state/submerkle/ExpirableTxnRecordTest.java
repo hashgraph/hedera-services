@@ -36,8 +36,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -61,7 +59,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willAnswer;
 
-@RunWith(JUnitPlatform.class)
 class ExpirableTxnRecordTest {
 	long expiry = 1_234_567L;
 	long submittingMember = 1L;
@@ -259,13 +256,6 @@ class ExpirableTxnRecordTest {
 		// expect;
 		assertEquals(ExpirableTxnRecord.MERKLE_VERSION, subject.getVersion());
 		assertEquals(ExpirableTxnRecord.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-	}
-
-	@Test
-	public void unsupportedOperationsThrow() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyFromExtra(null));
 	}
 
 	@Test

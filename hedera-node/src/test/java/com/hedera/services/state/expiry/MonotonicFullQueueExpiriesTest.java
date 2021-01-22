@@ -22,15 +22,12 @@ package com.hedera.services.state.expiry;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(JUnitPlatform.class)
 class MonotonicFullQueueExpiriesTest {
 	String k1 = "first", k2 = "second", k3 = "third";
 	long expiry1 = 50, expiry2 = 100, expiry3 = 1000;

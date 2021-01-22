@@ -63,8 +63,8 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 
 	public MerkleAccountTokens(long[] tokenIds) {
 		if (tokenIds.length % NUM_ID_PARTS != 0) {
-			throw new IllegalArgumentException(
-					"The token ids array length must be divisible by " + NUM_ID_PARTS + "!");
+			throw new IllegalArgumentException(String.format(
+					"Argument 'tokenIds' has length=%d not divisible by %d", tokenIds.length, NUM_ID_PARTS));
 		}
 		this.tokenIds = tokenIds;
 	}
@@ -223,8 +223,7 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 				if (isGone.test(id)) {
 					continue;
 				}
-				System.arraycopy(tokenIds, i * NUM_ID_PARTS, newTokenIds, j * NUM_ID_PARTS, NUM_ID_PARTS);
-				j++;
+				set(newTokenIds, j++, id);
 			}
 			this.tokenIds = newTokenIds;
 		}
@@ -252,10 +251,10 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		return i * NUM_ID_PARTS + SHARD_OFFSET;
 	}
 
-	int logicalIndexOf(TokenID token) {
+	private int logicalIndexOf(TokenID token) {
 		int lo = 0, hi = tokenIds.length / NUM_ID_PARTS - 1;
 		while (lo <= hi) {
-			int mid = (lo + (hi - lo) / NUM_ID_PARTS);
+			int mid = lo + (hi - lo) / 2;
 			int comparison = compareImplied(mid, token);
 			if (comparison == 0) {
 				return mid;

@@ -52,8 +52,6 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.util.List;
@@ -75,7 +73,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 
-@RunWith(JUnitPlatform.class)
 public class AwareTransactionContextTest {
 	private long fee = 123L;
 	private long memberId = 3;

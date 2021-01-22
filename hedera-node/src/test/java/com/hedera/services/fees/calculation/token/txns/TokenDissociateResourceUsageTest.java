@@ -37,8 +37,6 @@ import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.function.BiFunction;
 
@@ -49,7 +47,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class TokenDissociateResourceUsageTest {
 	private TokenDissociateResourceUsage subject;
 

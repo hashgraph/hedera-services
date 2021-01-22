@@ -9,9 +9,9 @@ package com.hedera.services.txns.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,8 +22,12 @@ package com.hedera.services.txns.consensus;
 
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -36,27 +40,40 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISSING_ACCOUNT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISSING_TOPIC;
 import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.mockito.BDDMockito.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class MerkleTopicUpdateTransitionLogicTest {
 	final private Key updatedAdminKey = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private Key updatedSubmitKey = MISC_ACCOUNT_KT.asKey();
@@ -78,9 +95,8 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private TransactionContext transactionContext;
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts =
-			new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider());
+	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
+	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>();
 	private TopicUpdateTransitionLogic subject;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
@@ -95,7 +111,8 @@ class MerkleTopicUpdateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
 				.willReturn(true);
-		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(INVALID_AUTORENEW_PERIOD_SECONDS).build()))
+		given(validator.isValidAutoRenewPeriod(
+				Duration.newBuilder().setSeconds(INVALID_AUTORENEW_PERIOD_SECONDS).build()))
 				.willReturn(false);
 		given(validator.isValidEntityMemo("")).willReturn(true);
 		given(validator.isValidEntityMemo(VALID_MEMO)).willReturn(true);
@@ -354,7 +371,8 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	private void givenExistingTopicWithAdminKey() throws Throwable {
-		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), null, EXISTING_AUTORENEW_PERIOD_SECONDS, null,
+		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), null,
+				EXISTING_AUTORENEW_PERIOD_SECONDS, null,
 				EXISTING_EXPIRATION_TIME);
 		topics.put(MerkleEntityId.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
@@ -375,7 +393,8 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	private void givenExistingTopicWithAutoRenewAccount() throws Throwable {
-		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), null, EXISTING_AUTORENEW_PERIOD_SECONDS,
+		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), null,
+				EXISTING_AUTORENEW_PERIOD_SECONDS,
 				EntityId.ofNullableAccountId(MISC_ACCOUNT), EXISTING_EXPIRATION_TIME);
 		topics.put(MerkleEntityId.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
@@ -399,7 +418,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenTransaction(
 				ConsensusUpdateTopicTransactionBody.newBuilder()
 						.setTopicID(MISSING_TOPIC)
-				.setMemo(StringValue.of(VALID_MEMO))
+						.setMemo(StringValue.of(VALID_MEMO))
 		);
 		given(validator.queryableTopicStatus(MISSING_TOPIC, topics)).willReturn(INVALID_TOPIC_ID);
 	}
@@ -467,7 +486,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private void givenTransactionWithMemo() {
 		givenTransaction(
 				getBasicValidTransactionBodyBuilder()
-				.setMemo(StringValue.of(VALID_MEMO))
+						.setMemo(StringValue.of(VALID_MEMO))
 		);
 	}
 

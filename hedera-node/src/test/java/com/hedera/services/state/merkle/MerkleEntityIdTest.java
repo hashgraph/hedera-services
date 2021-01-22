@@ -25,8 +25,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.DataInputStream;
@@ -39,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class MerkleEntityIdTest {
 	long shard = 13;
 	long realm = 25;
@@ -84,30 +81,6 @@ class MerkleEntityIdTest {
 		// and:
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
-	}
-
-	@Test
-	public void unsupportedOperationsThrow() {
-		// given:
-		var defaultSubject = new MerkleEntityId();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
-	}
-
-	@Test
-	public void legacyProviderWorks() throws IOException {
-		// setup:
-		var in = mock(DataInputStream.class);
-
-		given(in.readLong()).willReturn(0l).willReturn(0l).willReturn(1l).willReturn(2l).willReturn(3l);
-
-		// when:
-		var id = (MerkleEntityId) (new MerkleEntityId.Provider().deserialize(in));
-
-		// then:
-		assertEquals(new MerkleEntityId(2, 1, 3), id);
 	}
 
 	@Test

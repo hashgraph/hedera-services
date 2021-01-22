@@ -21,15 +21,12 @@ package com.hedera.services.utils;
  */
 
 import org.junit.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(JUnitPlatform.class)
 public class HederaDateTimeFormatterTest {
 	@Test
 	public void shouldFormatInstantCorrectly() {

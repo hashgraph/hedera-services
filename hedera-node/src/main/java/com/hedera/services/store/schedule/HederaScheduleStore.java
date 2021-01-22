@@ -85,7 +85,9 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void throwIfMissing(ScheduleID id) {
 		if (!exists(id)) {
-			throw new IllegalArgumentException(String.format("No such schedule '%s'!", readableId(id)));
+			throw new IllegalArgumentException(String.format(
+					"Argument 'id=%s' does refer to an extant scheduled entity!",
+					readableId(id)));
 		}
 	}
 
@@ -97,17 +99,15 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	@Override
 	public void apply(ScheduleID id, Consumer<MerkleSchedule> change) {
 		throwIfMissing(id);
+
 		var key = fromScheduleId(id);
 		var schedule = schedules.get().getForModify(key);
-		Exception thrown = null;
 		try {
 			change.accept(schedule);
 		} catch (Exception e) {
-			thrown = e;
-		}
-		schedules.get().replace(key, schedule);
-		if (thrown != null) {
-			throw new IllegalArgumentException("Schedule change failed unexpectedly!", thrown);
+			throw new IllegalArgumentException("Schedule change failed unexpectedly!", e);
+		} finally {
+			schedules.get().replace(key, schedule);
 		}
 	}
 

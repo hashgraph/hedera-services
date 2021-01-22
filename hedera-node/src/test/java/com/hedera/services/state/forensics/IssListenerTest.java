@@ -22,10 +22,12 @@ package com.hedera.services.state.forensics;
 import com.hedera.services.ServicesMain;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.events.Event;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.fcmap.FCMap;
@@ -35,8 +37,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.File;
@@ -52,7 +52,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class IssListenerTest {
 	long selfId = 1, otherId = 2, round = 1_234_567, numConsEvents = 111;
 	NodeId self = new NodeId(false, selfId);
@@ -69,6 +68,13 @@ class IssListenerTest {
 	String srHashHex = Hex.encodeHexString(storageRootHash);
 	byte[] accountsRootHash = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes();
 	String acHashHex = Hex.encodeHexString(accountsRootHash);
+
+	byte[] runningHashLeafHash = "qasdqasdqasdqasdqasdqasdqasdqasdqasdqasdqasdqasd".getBytes();
+	String leafHashHex = Hex.encodeHexString(runningHashLeafHash);
+
+	byte[] runningHashHash = "kqaskqaskqaskqaskqaskqaskqaskqaskqaskqaskqaskqas".getBytes();
+	String runningHashHex = Hex.encodeHexString(runningHashHash);
+
 	Instant consensusTime = Instant.now();
 
 	FCMap topics;
@@ -79,6 +85,8 @@ class IssListenerTest {
 	AddressBook book;
 	IssEventInfo info;
 	ServicesState state;
+	RunningHash runningHash;
+	RecordsRunningHashLeaf runningHashLeaf;
 
 	IssListener subject;
 
@@ -95,11 +103,15 @@ class IssListenerTest {
 		given(accounts.getRootHash()).willReturn(new Hash(accountsRootHash));
 		given(storage.getRootHash()).willReturn(new Hash(storageRootHash));
 		given(topics.getRootHash()).willReturn(new Hash(topicRootHash));
+
+		runningHash = mock(RunningHash.class);
+		runningHashLeaf = new RecordsRunningHashLeaf(runningHash);
 		// and:
 		state = mock(ServicesState.class);
 		given(state.topics()).willReturn(topics);
 		given(state.storage()).willReturn(storage);
 		given(state.accounts()).willReturn(accounts);
+		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
 
 		IssListener.log = mockLog;
 
@@ -137,7 +149,7 @@ class IssListenerTest {
 				round,
 				String.valueOf(self),
 				String.valueOf(other));
-		verify(mockLog).warn((String)argThat(msg::equals), any(Exception.class));
+		verify(mockLog).warn((String) argThat(msg::equals), any(Exception.class));
 	}
 
 	@Test
@@ -189,7 +201,7 @@ class IssListenerTest {
 		// then:
 		String msg = String.format(
 				IssListener.ISS_ERROR_MSG_PATTERN,
-				round, selfId, otherId, sigHex, hashHex, acHashHex, srHashHex, trHashHex);
+				round, selfId, otherId, sigHex, hashHex, acHashHex, srHashHex, trHashHex, runningHashLeaf.toString());
 		verify(mockLog).error(msg);
 		// and
 		inOrder.verify(info).alert(consensusTime);
@@ -200,6 +212,8 @@ class IssListenerTest {
 		inOrder.verify(storageMerkleOut).close();
 		inOrder.verify(topicsMerkleOut).writeMerkleTree(topics);
 		inOrder.verify(topicsMerkleOut).close();
+		// and:
+		inOrder.verify(info).decrementRoundsToDump();
 	}
 
 	@Test

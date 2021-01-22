@@ -29,8 +29,6 @@ import com.swirlds.common.StatEntry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.function.Function;
 
@@ -49,7 +47,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
-@RunWith(JUnitPlatform.class)
 class HapiOpCountersTest {
 	Platform platform;
 	CounterFactory factory;

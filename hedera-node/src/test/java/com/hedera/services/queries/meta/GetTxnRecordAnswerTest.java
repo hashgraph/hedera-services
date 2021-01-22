@@ -45,8 +45,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,7 +63,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hedera.test.utils.TxnUtils.*;
 
-@RunWith(JUnitPlatform.class)
 class GetTxnRecordAnswerTest {
 	private String payer = "0.0.12345";
 	private TransactionID targetTxnId = TransactionID.newBuilder()

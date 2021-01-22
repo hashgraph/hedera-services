@@ -93,6 +93,8 @@ import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsManager;
+import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -128,12 +130,12 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.time.Instant;
@@ -141,17 +143,20 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import static com.hedera.services.stream.RecordStreamManagerTest.INITIAL_RANDOM_HASH;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(JUnitPlatform.class)
 public class ServicesContextTest {
-	private final NodeId id = new NodeId(false, 1L);
+	private final long id = 1L;
+	private final NodeId nodeId = new NodeId(false, id);
+	private static final String recordStreamDir = "somePath/recordStream";
 
 	RichInstant consensusTimeOfLastHandledTxn = RichInstant.fromJava(Instant.now());
 	Platform platform;
@@ -214,7 +219,7 @@ public class ServicesContextTest {
 		given(newState.tokenAssociations()).willReturn(newTokenRels);
 		given(newState.scheduleTxs()).willReturn(newSchedules);
 		// given:
-		var subject = new ServicesContext(id, platform, state, propertySources);
+		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
 		var accountsRef = subject.queryableAccounts();
 		var topicsRef = subject.queryableTopics();
@@ -249,7 +254,7 @@ public class ServicesContextTest {
 		InOrder inOrder = inOrder(state);
 
 		// given:
-		var subject = new ServicesContext(id, platform, state, propertySources);
+		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// when:
 		subject.addressBook();
@@ -281,7 +286,7 @@ public class ServicesContextTest {
 		given(state.addressBook()).willReturn(book);
 
 		// when:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// then:
 		assertEquals(ctx.address(), address);
@@ -294,7 +299,7 @@ public class ServicesContextTest {
 		Instant dataDrivenNow = Instant.now();
 		ServicesContext ctx =
 				new ServicesContext(
-						id,
+						nodeId,
 						platform,
 						state,
 						propertySources);
@@ -313,7 +318,7 @@ public class ServicesContextTest {
 		given(platform.createConsole(true)).willReturn(console);
 
 		// when:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// then:
 		assertEquals(console, ctx.console());
@@ -331,7 +336,7 @@ public class ServicesContextTest {
 		given(state.addressBook()).willReturn(book);
 
 		// given:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// expect:
 		assertEquals(ServicesNodeType.ZERO_STAKE_NODE, ctx.nodeType());
@@ -346,7 +351,7 @@ public class ServicesContextTest {
 		FCMapBackingAccounts backingAccounts = mock(FCMapBackingAccounts.class);
 
 		// given:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 
 		// expect:
 		assertDoesNotThrow(ctx::rebuildBackingStoresIfPresent);
@@ -372,17 +377,15 @@ public class ServicesContextTest {
 		given(address.getStake()).willReturn(1_234_567L);
 		given(book.getAddress(1L)).willReturn(address);
 		given(state.addressBook()).willReturn(book);
-		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn("src/main/resources");
 
 		// given:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
 		ctx.platformStatus().set(PlatformStatus.DISCONNECTED);
 
 		// expect:
 		assertEquals(SleepingPause.SLEEPING_PAUSE, ctx.pause());
 		assertEquals(PlatformStatus.DISCONNECTED, ctx.platformStatus().get());
-		assertEquals("record_stream_0.0.3", ctx.recordStreamThread().getName());
 		assertEquals(ctx.properties(), properties);
 		assertEquals(ctx.propertySources(), propertySources);
 		// and expect TDD:
@@ -480,7 +483,6 @@ public class ServicesContextTest {
 		// and expect legacy:
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));
 		assertThat(ctx.contracts(), instanceOf(SmartContractRequestHandler.class));
-		assertThat(ctx.recordStream(), instanceOf(RecordStream.class));
 		assertThat(ctx.accountsExporter(), instanceOf(DefaultAccountsExporter.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
@@ -503,9 +505,100 @@ public class ServicesContextTest {
 		given(diskFs.contains(any())).willReturn(true);
 		given(diskFs.contentsOf(any())).willReturn(fileContents);
 
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		var subject = ctx.systemFilesManager();
 
 		assertDoesNotThrow(() -> subject.loadFeeSchedules());
+	}
+
+	@Test
+	public void getRecordStreamDirectoryTest() {
+		String expectedDir = "/here/we/are";
+
+		NodeLocalProperties sourceProps = mock(NodeLocalProperties.class);
+		given(sourceProps.recordLogDir()).willReturn(expectedDir);
+		final AddressBook book = mock(AddressBook.class);
+		final Address address = mock(Address.class);
+		given(state.addressBook()).willReturn(book);
+		given(book.getAddress(id)).willReturn(address);
+		given(address.getMemo()).willReturn("0.0.3");
+
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
+		assertEquals(expectedDir + "/record0.0.3", ctx.getRecordStreamDirectory(sourceProps));
+	}
+
+	@Test
+	public void updateRecordRunningHashTest() {
+		// given:
+		final RunningHash runningHash = mock(RunningHash.class);
+		final RecordsRunningHashLeaf runningHashLeaf = new RecordsRunningHashLeaf();
+		when(state.runningHashLeaf()).thenReturn(runningHashLeaf);
+
+		ServicesContext ctx =
+				new ServicesContext(
+						nodeId,
+						platform,
+						state,
+						propertySources);
+
+		// when:
+		ctx.updateRecordRunningHash(runningHash);
+
+		// then:
+		assertEquals(runningHash, ctx.state.runningHashLeaf().getRunningHash());
+	}
+
+	@Test
+	public void initRecordStreamManagerTest() {
+		// given:
+		final AddressBook book = mock(AddressBook.class);
+		final Address address = mock(Address.class);
+		given(state.addressBook()).willReturn(book);
+		given(book.getAddress(id)).willReturn(address);
+		given(address.getMemo()).willReturn("0.0.3");
+		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(recordStreamDir);
+		given(properties.getIntProperty("hedera.recordStream.queueCapacity")).willReturn(123);
+		given(properties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(1L);
+		given(properties.getBooleanProperty("hedera.recordStream.isEnabled")).willReturn(true);
+		final Hash initialHash = INITIAL_RANDOM_HASH;
+
+		ServicesContext ctx =
+				new ServicesContext(
+						nodeId,
+						platform,
+						state,
+						propertySources);
+
+		assertNull(ctx.recordStreamManager());
+
+		// when:
+		ctx.setRecordsInitialHash(initialHash);
+		ctx.initRecordStreamManager();
+
+		// then:
+		assertEquals(initialHash, ctx.getRecordsInitialHash());
+		assertNotNull(ctx.recordStreamManager());
+		assertEquals(initialHash, ctx.recordStreamManager().getInitialHash());
+	}
+
+	@Test
+	public void setRecordsInitialHashTest() {
+		// given:
+		final Hash initialHash = INITIAL_RANDOM_HASH;
+
+		ServicesContext ctx = spy(new ServicesContext(
+				nodeId,
+				platform,
+				state,
+				propertySources));
+		RecordStreamManager recordStreamManager = mock(RecordStreamManager.class);
+
+		when(ctx.recordStreamManager()).thenReturn(recordStreamManager);
+
+		// when:
+		ctx.setRecordsInitialHash(initialHash);
+
+		// then:
+		verify(recordStreamManager).setInitialHash(initialHash);
 	}
 }

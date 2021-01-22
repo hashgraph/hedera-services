@@ -46,8 +46,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 
@@ -61,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 	long thisSecond = 1_234_567L;
 
@@ -74,8 +71,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				() -> new MerkleAccount(),
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		FCMap<MerkleEntityId, MerkleToken> tokens =
-				new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER);
+		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				() -> new MerkleTokenRelStatus(),

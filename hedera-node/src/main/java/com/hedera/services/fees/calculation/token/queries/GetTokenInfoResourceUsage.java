@@ -69,30 +69,25 @@ public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
 	}
 
 	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
-		try {
-			var op = query.getTokenGetInfo();
-			var optionalInfo = view.infoForToken(op.getToken());
-			if (optionalInfo.isPresent()) {
-				var info = optionalInfo.get();
-				queryCtx.ifPresent(ctx -> ctx.put(TOKEN_INFO_CTX_KEY, info));
-				var estimate = factory.apply(query)
-						.givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
-						.givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
-						.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
-						.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
-						.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
-						.givenCurrentName(info.getName())
-						.givenCurrentSymbol(info.getSymbol());
-				if (info.hasAutoRenewAccount()) {
-					estimate.givenCurrentlyUsingAutoRenewAccount();
-				}
-				return estimate.get();
-			} else {
-				return FeeData.getDefaultInstance();
+		var op = query.getTokenGetInfo();
+		var optionalInfo = view.infoForToken(op.getToken());
+		if (optionalInfo.isPresent()) {
+			var info = optionalInfo.get();
+			queryCtx.ifPresent(ctx -> ctx.put(TOKEN_INFO_CTX_KEY, info));
+			var estimate = factory.apply(query)
+					.givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
+					.givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
+					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
+					.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
+					.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+					.givenCurrentName(info.getName())
+					.givenCurrentSymbol(info.getSymbol());
+			if (info.hasAutoRenewAccount()) {
+				estimate.givenCurrentlyUsingAutoRenewAccount();
 			}
-		} catch (Exception e) {
-			log.warn("Usage estimation unexpectedly failed for {}!", query, e);
-			throw new IllegalArgumentException(e);
+			return estimate.get();
+		} else {
+			return FeeData.getDefaultInstance();
 		}
 	}
 

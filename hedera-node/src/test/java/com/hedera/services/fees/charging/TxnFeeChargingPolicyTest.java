@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NODE_FEE;
@@ -46,7 +44,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.services.fees.TxnFeeType.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
-@RunWith(JUnitPlatform.class)
 class TxnFeeChargingPolicyTest {
 	private TxnFeeChargingPolicy subject = new TxnFeeChargingPolicy();
 	private final long node = 1, network = 2, service = 3;

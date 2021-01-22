@@ -23,15 +23,11 @@ package com.hedera.services.files;
 import com.google.common.primitives.Longs;
 import com.hedera.services.files.store.BytesStoreAdapter;
 import com.hedera.services.state.submerkle.EntityId;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.regex.Pattern;
 
 public final class EntityExpiryMapFactory {
-	private static final Logger log = LogManager.getLogger(EntityExpiryMapFactory.class);
-
 	private static final String LEGACY_PATH_TEMPLATE = "/%d/e%d";
 	private static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/e(\\d+)");
 	private static final int REALM_INDEX = 1;
@@ -63,12 +59,7 @@ public final class EntityExpiryMapFactory {
 	}
 
 	static Long toLong(byte[] bytes) {
-		try {
-			return (bytes == null) ? null : Longs.fromByteArray(bytes);
-		} catch (Exception impossible) {
-			log.warn("Expiry data not a serialized long!", impossible);
-			throw new IllegalArgumentException(impossible);
-		}
+		return (bytes == null) ? null : Longs.fromByteArray(bytes);
 	}
 
 	static String toKeyString(EntityId id) {

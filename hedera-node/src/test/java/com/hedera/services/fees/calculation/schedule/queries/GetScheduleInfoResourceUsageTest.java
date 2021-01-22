@@ -154,16 +154,6 @@ public class GetScheduleInfoResourceUsageTest {
         assertSame(FeeData.getDefaultInstance(), usage);
     }
 
-    @Test
-    public void rethrowsIae() {
-        // given:
-        Query query = scheduleInfoQuery(target);
-        given(view.infoForSchedule(any())).willThrow(IllegalStateException.class);
-
-        // expect:
-        assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
-    }
-
     private Query scheduleInfoQuery(ScheduleID id) {
         return Query.newBuilder()
                 .setScheduleGetInfo(ScheduleGetInfoQuery.newBuilder()

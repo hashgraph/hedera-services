@@ -129,7 +129,12 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		try {
 			return bytesHelper.allBytesFrom(pathToContentsOf(fid));
 		} catch (IOException e) {
-			log.error("Error reading '{}' @ {}!", asLiteralString(fid), pathToContentsOf(fid), e);
+			if(log.isDebugEnabled()) {
+				log.warn("Not able to read '{}' @ {}!", asLiteralString(fid), pathToContentsOf(fid), e);
+			}
+			else {
+				log.warn("Not able to read '{}' @ {}!", asLiteralString(fid), pathToContentsOf(fid));
+			}
 			return MISSING_CONTENT;
 		}
 	}

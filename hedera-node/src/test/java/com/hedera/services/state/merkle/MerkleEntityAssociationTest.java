@@ -24,8 +24,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -42,7 +40,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class MerkleEntityAssociationTest {
 	long fromShard = 13;
 	long fromRealm = 25;
@@ -89,19 +86,6 @@ class MerkleEntityAssociationTest {
 		assertEquals(
 				subject,
 				MerkleEntityAssociation.fromAccountTokenRel(asAccount("13.25.7"), asToken("31.52.0")));
-	}
-
-	@Test
-	public void unsupportedOperationsThrow() {
-		// given:
-		var defaultSubject = new MerkleEntityAssociation();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
-		assertThrows(UnsupportedOperationException.class, ()
-				-> MerkleEntityAssociation.LEGACY_PROVIDER.deserialize(null));
-
 	}
 
 	@Test

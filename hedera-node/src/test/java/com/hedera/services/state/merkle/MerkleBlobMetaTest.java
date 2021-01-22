@@ -24,8 +24,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -39,7 +37,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.inOrder;
 
-@RunWith(JUnitPlatform.class)
 class MerkleBlobMetaTest {
 	String path = "/a/b/c123";
 
@@ -121,16 +118,6 @@ class MerkleBlobMetaTest {
 		// and:
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());
-	}
-
-	@Test
-	public void unsupportedOperationsThrow() {
-		// given:
-		var defaultSubject = new MerkleBlobMeta();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
 	}
 
 	@Test

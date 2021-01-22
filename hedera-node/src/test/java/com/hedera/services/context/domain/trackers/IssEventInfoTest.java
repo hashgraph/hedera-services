@@ -23,8 +23,6 @@ package com.hedera.services.context.domain.trackers;
 import com.hedera.services.context.properties.PropertySource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -36,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static com.hedera.services.context.domain.trackers.IssEventStatus.*;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class IssEventInfoTest {
 	Instant firstIssTime = Instant.now().minus(30, ChronoUnit.SECONDS);
 	Instant recentIssTime = Instant.now();
@@ -71,10 +68,12 @@ class IssEventInfoTest {
 		assertTrue(subject.shouldDumpThisRound());
 
 		// and when:
+		subject.decrementRoundsToDump();
 		subject.alert(recentIssTime);
 		// then:
 		assertEquals(recentIssTime, subject.consensusTimeOfRecentAlert().get());
 		assertTrue(subject.shouldDumpThisRound());
+		subject.decrementRoundsToDump();
 		assertFalse(subject.shouldDumpThisRound());
 	}
 

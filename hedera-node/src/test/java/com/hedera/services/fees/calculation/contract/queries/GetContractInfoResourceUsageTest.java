@@ -38,8 +38,6 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.List;
@@ -59,7 +57,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class GetContractInfoResourceUsageTest {
 	String memo = "Stay cold...";
 	ContractID target = asContract("0.0.123");
@@ -153,17 +150,6 @@ class GetContractInfoResourceUsageTest {
 		// then:
 		assertFalse(queryCtx.containsKey(GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY));
 		assertSame(FeeData.getDefaultInstance(), actual);
-	}
-
-	@Test
-	public void rethrowsIae() {
-		// given:
-		Query query = contractInfoQuery(target, ANSWER_ONLY);
-		given(factory.apply(any()))
-				.willThrow(IllegalStateException.class);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
 	}
 
 	private Query contractInfoQuery(ContractID id, ResponseType type) {

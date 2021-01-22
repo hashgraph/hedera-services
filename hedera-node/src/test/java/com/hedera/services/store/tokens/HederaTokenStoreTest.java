@@ -45,10 +45,9 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -114,7 +113,6 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.spy;
 
-@RunWith(JUnitPlatform.class)
 class HederaTokenStoreTest {
 	long thisSecond = 1_234_567L;
 
@@ -122,7 +120,7 @@ class HederaTokenStoreTest {
 	GlobalDynamicProperties properties;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
 	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	HederaLedger hederaLedger;
 
 	MerkleToken token;
@@ -158,8 +156,8 @@ class HederaTokenStoreTest {
 	int MAX_TOKENS_PER_ACCOUNT = 100;
 	int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
 	int MAX_TOKEN_NAME_UTF8_BYTES = 100;
-	Map.Entry<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
-	Map.Entry<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
+	Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
+	Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
 
 	HederaTokenStore subject;
 

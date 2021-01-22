@@ -9,9 +9,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,8 +37,6 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,14 +50,13 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(JUnitPlatform.class)
 public class MerkleAccountPropertyTest {
 	@Test
 	public void cannotSetNegativeBalance() {
@@ -107,9 +104,9 @@ public class MerkleAccountPropertyTest {
 		JKey newKey = new JKeyList();
 		String newMemo = "b";
 		EntityId newProxy = new EntityId(0, 0, 2);
-		FCQueue<ExpirableTxnRecord> newRecords = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
+		FCQueue<ExpirableTxnRecord> newRecords = new FCQueue<>();
 		newRecords.offer(expirableRecord(ResponseCodeEnum.SUCCESS));
-		FCQueue<ExpirableTxnRecord> newPayerRecords = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
+		FCQueue<ExpirableTxnRecord> newPayerRecords = new FCQueue<>();
 		newPayerRecords.offer(expirableRecord(ResponseCodeEnum.INVALID_FILE_ID));
 		// and:
 		MerkleAccount account = new HederaAccountCustomizer()
@@ -178,8 +175,8 @@ public class MerkleAccountPropertyTest {
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {
 		return ExpirableTxnRecord.fromGprc(
 				TransactionRecord.newBuilder()
-					.setReceipt(TransactionReceipt.newBuilder().setStatus(status))
-				.build()
+						.setReceipt(TransactionReceipt.newBuilder().setStatus(status))
+						.build()
 		);
 	}
 }

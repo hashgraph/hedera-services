@@ -41,13 +41,10 @@ import com.swirlds.fcmap.internal.FCMTree;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 
 @Disabled
-@RunWith(JUnitPlatform.class)
 public class FcmToJsonUtil {
 	final List<String> accountsLocs = List.of(new String[] {
 			"/Users/tinkerm/Dev/iss/stable/node00-logs/data/saved/com.hedera.services" + ".ServicesMain/0/accounts-round38056100.fcm",
@@ -100,13 +97,6 @@ public class FcmToJsonUtil {
 
 		for (String dumpLoc : accountsLocs) {
 			PojoLedger.fromDisk(dumpLoc).asJsonTo(jsonSuffixed(dumpLoc));
-		}
-	}
-
-	@Test
-	public void convertStorageToJson() throws Exception {
-		for (String dumpLoc : storageLocs) {
-			PojoFs.fromDisk(dumpLoc).asJsonTo(jsonSuffixed(dumpLoc));
 		}
 	}
 

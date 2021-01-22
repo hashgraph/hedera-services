@@ -25,8 +25,6 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.util.AbstractMap;
@@ -48,7 +46,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class FcBlobsBytesStoreTest {
 	byte[] aData = "BlobA".getBytes(), bData = "BlobB".getBytes();
 	MerkleBlobMeta pathA = new MerkleBlobMeta("pathA"), pathB = new MerkleBlobMeta("pathB");
@@ -236,7 +233,7 @@ class FcBlobsBytesStoreTest {
 	@Test
 	public void putDeletesReplacedValueIfNoCopyIsHeld() {
 		// setup:
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>();
 
 		// given:
 		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));
@@ -251,7 +248,7 @@ class FcBlobsBytesStoreTest {
 	@Test
 	public void putDoesNotDeleteReplacedValueIfCopyIsHeld() {
 		// setup:
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>();
 
 		// given:
 		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));

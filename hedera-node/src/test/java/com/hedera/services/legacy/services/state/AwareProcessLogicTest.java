@@ -40,6 +40,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -57,14 +59,13 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Transaction;
+import com.swirlds.common.crypto.RunningHash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -76,7 +77,6 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class AwareProcessLogicTest {
 	Logger mockLog;
 	Transaction platformTxn;
@@ -235,5 +235,19 @@ class AwareProcessLogicTest {
 
 		// then:
 		verify(mockLog).warn(argThat((String s) -> s.startsWith("Ignoring a transaction submitted by zero-stake")));
+	}
+
+	@Test
+	public void addForStreamingTest() {
+		//setup:
+		RecordStreamManager recordStreamManager = mock(RecordStreamManager.class);
+		when(ctx.recordStreamManager()).thenReturn(recordStreamManager);
+
+		//when:
+		subject.addForStreaming(mock(com.hederahashgraph.api.proto.java.Transaction.class),
+				mock(TransactionRecord.class), Instant.now());
+		//then:
+		verify(ctx).updateRecordRunningHash(any(RunningHash.class));
+		verify(recordStreamManager).addRecordStreamObject(any(RecordStreamObject.class));
 	}
 }

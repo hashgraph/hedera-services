@@ -25,8 +25,6 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.function.Predicate;
 
@@ -50,7 +48,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class StandardizedPropertySourcesTest {
 	Predicate fileSourceExists;
 	PropertySource bootstrapProps;
@@ -209,8 +206,6 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("hedera.accountsExportPath"));
 		assertTrue(properties.containsProperty("hedera.exportAccountsOnStartup"));
 		assertTrue(properties.containsProperty("hedera.profiles.active"));
-		assertTrue(properties.containsProperty("hedera.recordStream.logDir"));
-		assertTrue(properties.containsProperty("hedera.recordStream.logPeriod"));
 		assertTrue(properties.containsProperty("hedera.transaction.maxMemoUtf8Bytes"));
 		assertTrue(properties.containsProperty("hedera.transaction.maxValidDuration"));
 		assertTrue(properties.containsProperty("hedera.transaction.minValidDuration"));

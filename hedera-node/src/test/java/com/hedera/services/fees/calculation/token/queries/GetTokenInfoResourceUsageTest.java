@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Optional;
@@ -53,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class GetTokenInfoResourceUsageTest {
 	public static final FeeData MOCK_TOKEN_GET_INFO_USAGE = UsageEstimatorUtils.defaultPartitioning(
 			FeeComponents.newBuilder()
@@ -164,16 +161,6 @@ class GetTokenInfoResourceUsageTest {
 		assertFalse(queryCtx.containsKey(GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY));
 		// and:
 		assertSame(FeeData.getDefaultInstance(), usage);
-	}
-
-	@Test
-	public void rethrowsIae() {
-		// given:
-		Query query = tokenInfoQuery(target, ANSWER_ONLY);
-		given(view.infoForToken(any())).willThrow(IllegalStateException.class);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
 	}
 
 	private Query tokenInfoQuery(TokenID id, ResponseType type) {

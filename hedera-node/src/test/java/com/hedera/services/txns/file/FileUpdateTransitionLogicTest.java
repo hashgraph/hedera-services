@@ -42,10 +42,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
@@ -68,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class FileUpdateTransitionLogicTest {
 	enum UpdateTarget { KEY, EXPIRY, CONTENTS }
 
@@ -398,6 +396,20 @@ class FileUpdateTransitionLogicTest {
 
 		// expect:
 		verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
+	}
+
+	@Test
+	public void transitionCatchesBadlyEncodedKey() {
+		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.KEY));
+		// and:
+		willThrow(new IllegalArgumentException(new DecoderException()))
+				.given(hfs).setattr(argThat(nonSysFileTarget::equals), any());
+
+		// when:
+		subject.doStateTransition();
+
+		// expect:
+		verify(txnCtx).setStatus(BAD_ENCODING);
 	}
 
 	@Test

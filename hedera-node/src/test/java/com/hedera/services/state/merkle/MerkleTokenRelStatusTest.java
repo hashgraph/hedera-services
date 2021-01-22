@@ -25,8 +25,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -44,7 +42,6 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.times;
 
-@RunWith(JUnitPlatform.class)
 class MerkleTokenRelStatusTest {
 	long balance = 666;
 	boolean frozen = true;
@@ -76,19 +73,6 @@ class MerkleTokenRelStatusTest {
 		// and:
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(subject.hashCode(), five.hashCode());
-	}
-
-	@Test
-	public void unsupportedOperationsThrow() {
-		// given:
-		var defaultSubject = new MerkleTokenRelStatus();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
-		assertThrows(UnsupportedOperationException.class, ()
-				-> MerkleTokenRelStatus.LEGACY_PROVIDER.deserialize(null));
-
 	}
 
 	@Test

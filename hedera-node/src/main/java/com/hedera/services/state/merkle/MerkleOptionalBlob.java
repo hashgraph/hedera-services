@@ -38,7 +38,7 @@ import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, MerkleExternalLeaf {
-	static final int MERKLE_VERSION = (int)BinaryObject.CLASS_VERSION;
+	static final int MERKLE_VERSION = (int)BinaryObject.ClassVersion.ORIGINAL;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4cefb15eb131d9e3L;
 	static final Hash MISSING_DELEGATE_HASH = new Hash(new byte[] {
 			(byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03,
@@ -72,27 +72,6 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, 
 
 	public MerkleOptionalBlob(BinaryObject delegate) {
 		this.delegate = delegate;
-	}
-
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream _in) throws IOException {
-			var in = (SerializableDataInputStream)_in;
-
-			in.readLong();
-			in.readLong();
-
-			var hasData = in.readBoolean();
-			if (hasData) {
-				var delegate = blobSupplier.get();
-				delegate.copyFrom(in);
-				delegate.copyFromExtra(in);
-				return new MerkleOptionalBlob(delegate);
-			} else {
-				return new MerkleOptionalBlob();
-			}
-		}
 	}
 
 	public void modify(byte[] newContents) {
@@ -197,18 +176,6 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, 
 	@Override
 	public int hashCode() {
 		return Objects.hash(Objects.hashCode(delegate));
-	}
-
-	@Override
-	@Deprecated
-	public void copyFrom(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
 	}
 
 	/* --- Bean --- */

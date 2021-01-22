@@ -76,7 +76,7 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 			existingAccounts.add(id);
 		} else if (!cache.containsKey(id) || (cache.get(id) != account)) {
 			throw new IllegalArgumentException(String.format(
-					"Existing account '%s' can only be changed using a mutable ref!",
+					"Argument 'id=%s' does not map to a mutable ref!",
 					readableId(id)));
 		}
 	}

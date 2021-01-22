@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,6 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -41,6 +40,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
+import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.utils.IdUtils;
@@ -51,14 +51,18 @@ import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
+import com.swirlds.common.SwirldState;
+import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.NotificationFactory;
+import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
+import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.PrintStream;
@@ -68,6 +72,8 @@ import java.time.Instant;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -78,7 +84,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
 
-@RunWith(JUnitPlatform.class)
 public class ServicesMainTest {
 	final long NODE_ID = 1L;
 	final String PATH = "/this/was/mr/bleaneys/room";
@@ -87,14 +92,12 @@ public class ServicesMainTest {
 	FCMap accounts;
 	FCMap storage;
 	Pause pause;
-	Thread recordStreamThread;
 	Logger mockLog;
 	Console console;
 	Platform platform;
 	SystemExits systemExits;
 	AddressBook addressBook;
 	PrintStream consoleOut;
-	RecordStream recordStream;
 	FeeCalculator fees;
 	ServicesMain subject;
 	ServicesContext ctx;
@@ -113,6 +116,7 @@ public class ServicesMainTest {
 	AccountRecordsHistorian recordsHistorian;
 	GlobalDynamicProperties globalDynamicProperties;
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
+	RecordStreamManager recordStreamManager;
 
 	@BeforeEach
 	private void setup() {
@@ -127,9 +131,8 @@ public class ServicesMainTest {
 		consoleOut = mock(PrintStream.class);
 		platform = mock(Platform.class);
 		systemExits = mock(SystemExits.class);
-		recordStream = mock(RecordStream.class);
-		recordStreamThread = mock(Thread.class);
-		backingAccounts = (BackingStore<AccountID, MerkleAccount>)mock(BackingStore.class);
+		recordStreamManager = mock(RecordStreamManager.class);
+		backingAccounts = (BackingStore<AccountID, MerkleAccount>) mock(BackingStore.class);
 		statsManager = mock(ServicesStatsManager.class);
 		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
@@ -162,13 +165,12 @@ public class ServicesMainTest {
 		given(ctx.consoleOut()).willReturn(consoleOut);
 		given(ctx.addressBook()).willReturn(addressBook);
 		given(ctx.platform()).willReturn(platform);
-		given(ctx.recordStream()).willReturn(recordStream);
+		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
 		given(ctx.platformStatus()).willReturn(platformStatus);
 		given(ctx.ledgerValidator()).willReturn(ledgerValidator);
-		given(ctx.recordStreamThread()).willReturn(recordStreamThread);
 		given(ctx.propertySources()).willReturn(propertySources);
 		given(ctx.properties()).willReturn(properties);
-		given(ctx.recordStream()).willReturn(recordStream);
+		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
 		given(ctx.stateMigrations()).willReturn(stateMigrations);
 		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
 		given(ctx.backingAccounts()).willReturn(backingAccounts);
@@ -248,11 +250,11 @@ public class ServicesMainTest {
 				platform,
 				stateMigrations,
 				ledgerValidator,
-				recordStreamThread,
 				recordsHistorian,
 				fees,
 				grpc,
-				statsManager);
+				statsManager,
+				ctx);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -266,7 +268,7 @@ public class ServicesMainTest {
 		inOrder.verify(platform).setSleepAfterSync(0L);
 		inOrder.verify(platform).addSignedStateListener(any(IssListener.class));
 		inOrder.verify(statsManager).initializeFor(platform);
-		inOrder.verify(recordStreamThread).start();
+		inOrder.verify(ctx).initRecordStreamManager();
 	}
 
 	@Test
@@ -441,7 +443,7 @@ public class ServicesMainTest {
 
 		// then:
 		verify(platformStatus).set(newStatus);
-		verifyNoInteractions(recordStream);
+		verifyNoInteractions(recordStreamManager);
 	}
 
 	@Test
@@ -455,7 +457,7 @@ public class ServicesMainTest {
 
 		// then:
 		verify(platformStatus).set(newStatus);
-		verify(recordStream).setInFreeze(true);
+		verify(recordStreamManager).setInFreeze(true);
 	}
 
 	@Test
@@ -469,7 +471,7 @@ public class ServicesMainTest {
 
 		// then:
 		verify(platformStatus).set(newStatus);
-		verify(recordStream).setInFreeze(false);
+		verify(recordStreamManager).setInFreeze(false);
 	}
 
 	@Test
@@ -587,5 +589,29 @@ public class ServicesMainTest {
 	public void returnsAppState() {
 		// expect:
 		assertTrue(subject.newState() instanceof ServicesState);
+	}
+
+	@Test
+	public void registerReconnectCompleteListenerTest() {
+		NotificationEngine engineMock = mock(NotificationEngine.class);
+		subject.registerReconnectCompleteListener(engineMock);
+		verify(engineMock).register(eq(ReconnectCompleteListener.class), any());
+	}
+
+	@Test
+	public void reconnectCompleteListenerTest() {
+		// setup
+		subject.ctx = ctx;
+		// register
+		subject.registerReconnectCompleteListener(NotificationFactory.getEngine());
+		final long roundNumber = RandomUtils.nextLong();
+		final Instant consensusTimestamp = Instant.now();
+		final SwirldState state = mock(ServicesState.class);
+		// dispatch a notification
+		final ReconnectCompleteNotification notification = new ReconnectCompleteNotification(roundNumber,
+				consensusTimestamp, state);
+		NotificationFactory.getEngine().dispatch(ReconnectCompleteListener.class, notification);
+		// should receive this notification
+		verify(recordStreamManager).setStartWriteAtCompleteWindow(true);
 	}
 }

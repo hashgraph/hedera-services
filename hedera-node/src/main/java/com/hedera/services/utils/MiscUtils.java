@@ -260,7 +260,8 @@ public class MiscUtils {
 		try {
 			return new JEd25519Key(commonsHexToBytes(b64Reader.hexedABytesFrom(storeLoc, kpId)));
 		} catch (DecoderException e) {
-			throw new IllegalArgumentException(e);
+			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
+			throw new IllegalArgumentException(msg, e);
 		}
 	}
 
@@ -275,8 +276,8 @@ public class MiscUtils {
 	public static JKey asFcKeyUnchecked(Key key) {
 		try {
 			return JKey.mapKey(key);
-		} catch (Exception impossible) {
-			throw new IllegalArgumentException("Key " + key + " should have been decodable!", impossible);
+		} catch (DecoderException impermissible) {
+			throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
 		}
 	}
 
@@ -287,7 +288,7 @@ public class MiscUtils {
 				return Optional.empty();
 			}
 			return Optional.of(fcKey);
-		} catch (Exception ignore) {
+		} catch (DecoderException ignore) {
 			return Optional.empty();
 		}
 	}
@@ -305,6 +306,10 @@ public class MiscUtils {
 				.setSeconds(when.getEpochSecond())
 				.setNanos(when.getNano())
 				.build();
+	}
+
+	public static Instant timestampToInstant(Timestamp timestamp) {
+		return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
 	}
 
 	public static Optional<QueryHeader> activeHeaderFrom(Query query) {

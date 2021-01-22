@@ -43,8 +43,6 @@ import com.swirlds.common.crypto.VerificationStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,7 +59,6 @@ import java.util.function.Predicate;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
 import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
 
-@RunWith(JUnitPlatform.class)
 public class HederaToPlatformSigOpsTest {
 	static List<JKey> payerKey;
 	static List<JKey> otherKeys;

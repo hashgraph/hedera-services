@@ -28,8 +28,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -50,7 +48,6 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class MerkleOptionalBlobTest {
 	byte[] stuff = "abcdefghijklmnopqrstuvwxyz".getBytes();
 	byte[] newStuff = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes();
@@ -290,56 +287,6 @@ class MerkleOptionalBlobTest {
 
 		// then:
 		verify(stuffDelegate, never()).release();
-	}
-
-	@Test
-	public void legacyProviderWorksWithoutDelegate() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		InOrder inOrder = inOrder(newDelegate, in);
-
-		given(in.readLong()).willReturn(0l).willReturn(1l);
-		given(in.readBoolean()).willReturn(false);
-
-		// when:
-		var something = new MerkleOptionalBlob.Provider().deserialize(in);
-
-		// then:
-		inOrder.verify(in, times(2)).readLong();
-		inOrder.verify(in).readBoolean();
-		assertNotNull(something);
-	}
-
-	@Test
-	public void legacyProviderWorksWithDelegate() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		InOrder inOrder = inOrder(newDelegate, in);
-
-		given(in.readLong()).willReturn(0l).willReturn(1l);
-		given(in.readBoolean()).willReturn(true);
-
-		// when:
-		var something = new MerkleOptionalBlob.Provider().deserialize(in);
-
-		// then:
-		inOrder.verify(in, times(2)).readLong();
-		inOrder.verify(in).readBoolean();
-		inOrder.verify(newDelegate).copyFrom(in);
-		inOrder.verify(newDelegate).copyFromExtra(in);
-		assertNotNull(something);
-	}
-
-	@Test
-	public void unsupportedOperationsThrow() {
-		// given:
-		var defaultSubject = new MerkleOptionalBlob();
-
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
 	}
 
 	@Test

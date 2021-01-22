@@ -26,14 +26,12 @@ import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsRunningAverage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class MiscRunningAvgsTest {
 	double halfLife = 10.0;
 	Platform platform;
@@ -71,9 +69,9 @@ class MiscRunningAvgsTest {
 				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS::equals),
 				argThat(subject.accountRetryWaitMs::equals))).willReturn(waitMs);
 		given(factory.from(
-				argThat(MiscRunningAvgs.Names.RECORD_STREAM_QUEUE_SIZE::equals),
-				argThat(MiscRunningAvgs.Descriptions.RECORD_STREAM_QUEUE_SIZE::equals),
-				argThat(subject.recordStreamQueueSize::equals))).willReturn(queueSizes);
+				argThat(MiscRunningAvgs.Names.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
+				argThat(MiscRunningAvgs.Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
+				argThat(subject.writeQueueSizeRecordStream::equals))).willReturn(queueSizes);
 		given(factory.from(
 				argThat(MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
 				argThat(MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
@@ -100,13 +98,13 @@ class MiscRunningAvgsTest {
 		subject.accountLookupRetries = retries;
 		subject.accountRetryWaitMs = waitMs;
 		subject.handledSubmitMessageSize = submitSizes;
-		subject.recordStreamQueueSize = queueSize;
+		subject.writeQueueSizeRecordStream = queueSize;
 
 		// when:
 		subject.recordAccountLookupRetries(1);
 		subject.recordAccountRetryWaitMs(2.0);
 		subject.recordHandledSubmitMessageSize(3);
-		subject.recordStreamQueueSize(4);
+		subject.writeQueueSizeRecordStream(4);
 
 		// then:
 		verify(retries).recordValue(1.0);

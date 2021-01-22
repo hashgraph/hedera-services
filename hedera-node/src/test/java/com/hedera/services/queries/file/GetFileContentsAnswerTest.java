@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -53,7 +51,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hedera.test.utils.TxnUtils.*;
 
-@RunWith(JUnitPlatform.class)
 class GetFileContentsAnswerTest {
 	int size = 1_234;
 	byte[] data = "SOMETHING".getBytes();

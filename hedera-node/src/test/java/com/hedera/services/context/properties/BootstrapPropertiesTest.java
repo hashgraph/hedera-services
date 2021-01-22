@@ -24,8 +24,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.Map;
@@ -37,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class BootstrapPropertiesTest {
 	BootstrapProperties subject = new BootstrapProperties();
 
@@ -96,6 +93,10 @@ class BootstrapPropertiesTest {
 			entry("hedera.numReservedSystemEntities", 1_000L),
 			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),
+			entry("hedera.recordStream.logDir", "/opt/hgcapp/recordStreams"),
+			entry("hedera.recordStream.logPeriod", 2L),
+			entry("hedera.recordStream.isEnabled", true),
+			entry("hedera.recordStream.queueCapacity", 5000),
 			entry("hedera.shard", 0L),
 			entry("hedera.transaction.maxMemoUtf8Bytes", 100),
 			entry("hedera.transaction.minValidDuration", 15L),

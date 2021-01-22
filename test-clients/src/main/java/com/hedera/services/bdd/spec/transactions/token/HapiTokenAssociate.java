@@ -75,6 +75,10 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 		this.account = account;
 		this.tokens.addAll(List.of(tokens));
 	}
+	public HapiTokenAssociate(String account, List<String> tokens) {
+		this.account = account;
+		this.tokens.addAll(tokens);
+	}
 
 	@Override
 	protected HapiTokenAssociate self() {
@@ -156,6 +160,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) {
+		/* No-op. */
 	}
 
 	@Override

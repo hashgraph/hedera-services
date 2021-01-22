@@ -21,13 +21,15 @@ package com.hedera.services.files;
  */
 
 import com.hedera.services.files.store.BytesStoreAdapter;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hederahashgraph.api.proto.java.FileID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
 public class MetadataMapFactory {
 	private static final Logger log = LogManager.getLogger(MetadataMapFactory.class);
@@ -70,18 +72,22 @@ public class MetadataMapFactory {
 	static JFileInfo toAttr(byte[] bytes) {
 		try {
 			return (bytes == null) ? null : JFileInfo.deserialize(bytes);
-		} catch (Exception impossible) {
-			log.warn("File attr data not a serialized JFileInfo!", impossible);
-			throw new IllegalArgumentException(impossible);
+		} catch (Exception internal) {
+			log.warn("Argument 'bytes={}' was not a serialized JFileInfo!", encodeHexString(bytes));
+			throw new IllegalArgumentException(internal);
 		}
 	}
 
 	static byte[] toValueBytes(JFileInfo attr) {
 		try {
 			return attr.serialize();
-		} catch (Exception impossible) {
-			log.warn("Given JFileInfo cannot be serialized!", impossible);
-			throw new IllegalArgumentException(impossible);
+		} catch (Exception internal) {
+			try {
+				log.warn("Argument 'attr={}' could not be serialized!", attr);
+			} catch (Exception terminal) {
+				log.warn("Argument 'attr' could not be serialized, nor represented as a string!", terminal);
+			}
+			throw new IllegalArgumentException(internal);
 		}
 	}
 }

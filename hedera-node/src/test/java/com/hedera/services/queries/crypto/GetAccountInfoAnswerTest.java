@@ -49,8 +49,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.spongycastle.util.encoders.Hex;
 
 import java.util.List;
@@ -71,7 +69,6 @@ import static com.hedera.test.utils.IdUtils.*;
 import static com.hedera.test.utils.TxnUtils.*;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 
-@RunWith(JUnitPlatform.class)
 class GetAccountInfoAnswerTest {
 	private StateView view;
 	private TokenStore tokenStore;

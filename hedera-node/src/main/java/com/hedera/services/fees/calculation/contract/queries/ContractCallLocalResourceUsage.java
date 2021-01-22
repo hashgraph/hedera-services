@@ -99,13 +99,12 @@ public class ContractCallLocalResourceUsage implements QueryResourceUsageEstimat
 					op.getFunctionParameters().size(),
 					response.getFunctionResult(),
 					type);
-			var ans = nonGasUsage.toBuilder()
+			return nonGasUsage.toBuilder()
 					.setNodedata(nonGasUsage.getNodedata().toBuilder().setGas(op.getGas()))
 					.build();
-			return ans;
-		} catch (Exception e) {
-			log.warn("Usage estimation unexpectedly failed for {}!", query, e);
-			throw new IllegalArgumentException(e);
+		} catch (Exception internal) {
+			log.warn("Usage estimation unexpectedly failed for {}!", query, internal);
+			throw new IllegalStateException(internal);
 		}
 	}
 

@@ -142,6 +142,9 @@
         <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="EVENT_PARSER" onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="DENY"/>
+        <!-- Record Stream -->
+        <MarkerFilter marker="OBJECT_STREAM_FILE"     onMatch="DENY" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="OBJECT_STREAM"          onMatch="DENY" onMismatch="NEUTRAL"/>
       </Filters>
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="fileLog"/>
