@@ -375,7 +375,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						newKeyNamed("adminKey")
 				).when().then(
-						tokenCreate("shouldntWorkEither")
+						tokenCreate("shouldWork")
 								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
 								.adminKey("adminKey")
