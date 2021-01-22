@@ -41,8 +41,6 @@ import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
 
 import java.util.Collections;
@@ -73,7 +71,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
-@RunWith(JUnitPlatform.class)
 class UsageBasedFeeCalculatorTest {
 	FeeComponents mockFees = FeeComponents.newBuilder()
 			.setMax(1_234_567L)

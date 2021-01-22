@@ -25,13 +25,10 @@ import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.utils.Pause;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class StdStateMigrationsTest {
 	Pause pause;
 	ServicesContext ctx;

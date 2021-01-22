@@ -29,8 +29,6 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.throttle.Throttle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -49,7 +47,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.services.throttling.bucket.BucketConfig.*;
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.*;
 
-@RunWith(JUnitPlatform.class)
 class BucketThrottlingTest {
 	int networkSize = 5;
 	HederaFunctionality txn = FileAppend;

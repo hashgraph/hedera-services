@@ -40,8 +40,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +56,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseType.*;
 
-@RunWith(JUnitPlatform.class)
 class GetTxnRecordResourceUsageTest {
 	private TransactionID targetTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount("0.0.2"))

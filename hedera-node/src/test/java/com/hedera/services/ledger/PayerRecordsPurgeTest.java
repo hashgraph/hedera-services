@@ -24,8 +24,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
@@ -43,7 +41,6 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class PayerRecordsPurgeTest extends BaseHederaLedgerTest {
 	@BeforeEach
 	void setup() {

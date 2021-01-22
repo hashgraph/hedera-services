@@ -40,8 +40,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.function.Function;
 
@@ -60,7 +58,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class GetAccountInfoResourceUsageTest {
 	public static final FeeData MOCK_CRYPTO_GET_INFO_USAGE = UsageEstimatorUtils.defaultPartitioning(
 			FeeComponents.newBuilder()

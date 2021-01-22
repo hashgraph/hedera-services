@@ -22,14 +22,11 @@ package com.hedera.services.context.domain.security;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.context.domain.security.PermissionedAccountsRange.from;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-@RunWith(JUnitPlatform.class)
 class PermissionedAccountsRangeTest {
 	@Test
 	void recognizesDegenerate() {

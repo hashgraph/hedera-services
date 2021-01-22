@@ -22,8 +22,6 @@ package com.hedera.services.txns.validation;
 
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(JUnitPlatform.class)
 class PureValidationTest {
 	Instant now = Instant.now();
 	long impossiblySmallSecs = Instant.MIN.getEpochSecond() - 1;

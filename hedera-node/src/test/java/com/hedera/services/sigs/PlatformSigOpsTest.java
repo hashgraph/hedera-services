@@ -34,10 +34,8 @@ import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.runner.RunWith;
 import static com.hedera.test.factories.keys.NodeFactory.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -50,7 +48,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@RunWith(JUnitPlatform.class)
 public class PlatformSigOpsTest {
 	private final byte[] EMPTY_SIG = new byte[0];
 	private final byte[] MOCK_SIG = "FIRST".getBytes();

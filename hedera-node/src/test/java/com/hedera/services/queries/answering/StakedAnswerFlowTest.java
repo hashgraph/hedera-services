@@ -43,8 +43,6 @@ import com.hedera.services.legacy.handler.TransactionHandler;
 import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -55,7 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 
-@RunWith(JUnitPlatform.class)
 class StakedAnswerFlowTest {
 	Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
 	HederaFunctionality function = HederaFunctionality.ConsensusGetTopicInfo;
