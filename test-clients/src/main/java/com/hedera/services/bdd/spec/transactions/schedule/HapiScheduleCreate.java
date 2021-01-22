@@ -57,6 +57,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
 	private final String entity;
 	private final HapiTxnOp<T> scheduled;
+	private Optional<byte[]> nonce = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<String> payerAccountID = Optional.empty();
 
@@ -70,12 +71,17 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
-	public HapiScheduleCreate adminKey(String s) {
+	public HapiScheduleCreate<T> withNonce(byte[] nonce) {
+		this.nonce = Optional.of(nonce);
+		return this;
+	}
+
+	public HapiScheduleCreate<T> adminKey(String s) {
 		adminKey = Optional.of(s);
 		return this;
 	}
 
-	public HapiScheduleCreate payer(String s) {
+	public HapiScheduleCreate<T> payer(String s) {
 		payerAccountID = Optional.of(s);
 		return this;
 	}
@@ -92,7 +98,9 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		var subOp = scheduled.signedTxnFor(spec);
+		var subOp = nonce.isPresent()
+				? scheduled.signedTxnFor(spec, nonce.get())
+				: scheduled.signedTxnFor(spec);
 		var schedSigMap = subOp.getSigMap();
 		if (verboseLoggingOn) {
 			var schedTxn = TransactionBody.parseFrom(subOp.getBodyBytes());

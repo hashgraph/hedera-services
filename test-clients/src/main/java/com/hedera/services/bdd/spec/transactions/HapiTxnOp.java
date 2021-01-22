@@ -79,6 +79,7 @@ import static com.hedera.services.bdd.spec.fees.Payment.Reason.*;
 
 public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiTxnOp.class);
+
 	private static final Response UNKNOWN_RESPONSE = Response.newBuilder()
 					.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
 							.setReceipt(TransactionReceipt.newBuilder()
@@ -130,6 +131,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	}
 
 	public Transaction signedTxnFor(HapiApiSpec spec) throws Throwable {
+		return finalizedTxn(spec, opBodyDef(spec));
+	}
+
+	public Transaction signedTxnFor(HapiApiSpec spec, byte[] nonce) throws Throwable {
+		this.nonce = nonce;
 		return finalizedTxn(spec, opBodyDef(spec));
 	}
 

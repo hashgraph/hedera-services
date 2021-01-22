@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -71,9 +71,12 @@ import org.apache.logging.log4j.Logger;
 public abstract class HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
 
+	private static final byte[] NO_NONCE = null;
+
 	private Random r = new Random();
 
 	/* Note that an op may _be_ a txn; or just a query that submits a txn as payment. */
+	protected byte[] nonce = NO_NONCE;
 	protected String txnName = UUID.randomUUID().toString().substring(0, 8);
 	protected Transaction txnSubmitted;
 	protected TransactionRecord recordOfSubmission;
@@ -249,6 +252,9 @@ public abstract class HapiSpecOperation {
 					TransactionID id = spec.registry().getTxnId(name);
 					builder.setTransactionID(id);
 				});
+				if (nonce != NO_NONCE) {
+					builder.getTransactionIDBuilder().setNonce(ByteString.copyFrom(nonce));
+				}
 			}
 
 			node.ifPresent(builder::setNodeAccountID);
@@ -397,6 +403,7 @@ public abstract class HapiSpecOperation {
 	public Optional<String> getPayer() {
 		return payer;
 	}
+
 	protected void considerRecording(HapiApiSpec spec, OpObs obs) {
 		if (!suppressStats) {
 			spec.registry().record(obs);

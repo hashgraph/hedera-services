@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+
 public abstract class ScheduleReadyForExecution {
     protected final ScheduleStore store;
     protected final TransactionContext txnCtx;
@@ -48,7 +50,7 @@ public abstract class ScheduleReadyForExecution {
         var transactionBody = TransactionBody.parseFrom(schedule.transactionBody());
         var transactionId = TransactionID.newBuilder()
                 .setAccountID(schedule.schedulingAccount().toGrpcAccountId())
-                .setTransactionValidStart(MiscUtils.asTimestamp(schedule.schedulingTXValidStart().toJava()))
+                .setTransactionValidStart(asTimestamp(schedule.schedulingTXValidStart().toJava()))
                 .setNonce(transactionBody.getTransactionID().getNonce())
                 .setScheduled(true)
                 .build();

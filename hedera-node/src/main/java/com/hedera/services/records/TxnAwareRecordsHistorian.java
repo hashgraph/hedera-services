@@ -20,14 +20,19 @@ package com.hedera.services.records;
  * ‍
  */
 
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -38,6 +43,8 @@ import java.util.function.Supplier;
  * @author Michael Tinker
  */
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
+	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
+
 	private HederaLedger ledger;
 	private TransactionRecord lastCreatedRecord;
 
@@ -92,6 +99,9 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 				accessor.getTxnId(),
 				lastCreatedRecord.getReceipt().getStatus(),
 				payerRecord);
+//		if (SingletonContextsManager.CONTEXTS.lookup(0L).txnCtx() == txnCtx) {
+//			log.info("Created ({}) -> {}", accessor.getTxnId(), payerRecord);
+//		}
 	}
 
 	@Override
