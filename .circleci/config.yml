@@ -1066,11 +1066,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "2 3 * * *"
+          cron: "20 5 * * *"
           filters:
             branches:
               only:
-                - 00906-D-token-test-failure
+                - master
     jobs:
       - build-platform-and-services
       - run-network-error-regression:
@@ -1730,7 +1730,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00906-D-token-test-failure
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
