@@ -1459,7 +1459,10 @@ workflows:
           workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
           requires:
             - build-platform-and-services
-
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
 #      - run-network-error-regression:
 #          context: Slack
 #          requires:
