@@ -65,7 +65,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	}
 
 	private HapiApiSpec createAccount() {
-		long initialBalance = 5_000_000_000_000L;
+		long initialBalance = 100_000_000_000_000L;
 
 		return customHapiSpec("CreatePayerAccountForEachClient")
 				.withProperties(Map.of(
