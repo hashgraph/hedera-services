@@ -1448,14 +1448,15 @@ workflows:
           workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
 
       - jrs-regression:
-          name: GCP-Daily-Services-Comp-NetError-4N-1C
+          name: "GCP-Daily-Services-Comp-NetError-4N-1C"
           context: Slack
-          runtime: build-executor
+#          runtime: build-executor
           result_path: regression/results/4N_1C/NetError
           automated_run: true
           slack_results_channel: "hedera-regression"
           slack_summary_channel: "hedera-regression-summary"
-          config_file: "configs/services/suites/daily/4N/GCP-Daily-Services-Comp-NetError-4N-1C.json"
+          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
+          workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
           requires:
             - build-platform-and-services
 
@@ -3318,7 +3319,10 @@ jobs:
   jrs-regression:
     parameters:
       runtime:
-        type: executor
+#        type: executor
+        type: string
+        default: ci-test-executor
+#        workflow-name: << parameters.workflow-name >>
       config_file:
         type: string
       regression_path:
@@ -3345,7 +3349,12 @@ jobs:
       slack_summary_channel:
         type: string
         default: ""
-    executor: << parameters.runtime >>
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: << parameters.runtime >>
+      workflow-name:  << parameters.workflow-name >>
     steps:
 #      - git_main_repo_checkout
 #      - mvn_version_info
