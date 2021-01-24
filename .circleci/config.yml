@@ -1753,6 +1753,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
+                  - 0940-M-CreateYahcli
             workflow-name: "Continuous integration GCP"
 
         - run-continuous-integration-gcp:
@@ -1767,6 +1768,7 @@ workflows:
             filters:
               branches:
                 ignore:
+                  - 0940-M-CreateYahcli
                   - /.*-PERF/
                   - /.*-REGRESSION/
 
@@ -1777,6 +1779,7 @@ workflows:
           filters:
             branches:
               ignore:
+                - 0940-M-CreateYahcli
                 - /.*-PERF/
                 - /.*-REGRESSION/
           workflow-name: "Continuous integration"

@@ -153,6 +153,24 @@
             </configuration>
           </execution>
           <execution>
+            <id>yahcli-jar</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>yahcli</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifest>
+                  <mainClass>com.hedera.services.yahcli.Yahcli</mainClass>
+                </manifest>
+              </archive>
+              <descriptors>
+                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
             <id>puv-jar</id>
             <goals>
               <goal>single</goal>

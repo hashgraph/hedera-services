@@ -20,7 +20,7 @@ package com.hedera.services.bdd.suites.validation;
  * ‍
  */
 
-import com.hedera.services.bdd.suites.validation.domain.PuvConfig;
+import com.hedera.services.yahcli.config.domain.GlobalConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
@@ -44,7 +44,7 @@ public class PostUpgradeValidation implements Callable<Integer> {
 
 	private static final String CONFIG_LOC = "config.yml";
 
-	private PuvConfig config = null;
+	private TopLevelConfig config = null;
 
 	@Option(names = { "-t", "--token" }, description =  "include token service")
 	boolean validateTokenService;
@@ -91,7 +91,7 @@ public class PostUpgradeValidation implements Callable<Integer> {
 	}
 
 	private void loadConfig() {
-		var yamlIn = new Yaml(new Constructor(PuvConfig.class));
+		var yamlIn = new Yaml(new Constructor(TopLevelConfig.class));
 		try {
 			config = yamlIn.load(Files.newInputStream(Paths.get(CONFIG_LOC)));
 		} catch (IOException e) {

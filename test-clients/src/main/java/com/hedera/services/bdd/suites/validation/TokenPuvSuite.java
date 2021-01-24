@@ -25,12 +25,7 @@ import com.hedera.services.bdd.spec.persistence.Account;
 import com.hedera.services.bdd.spec.persistence.Entity;
 import com.hedera.services.bdd.spec.persistence.PemKey;
 import com.hedera.services.bdd.spec.persistence.Token;
-import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.validation.domain.NetworkInfo;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -59,9 +54,9 @@ public class TokenPuvSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenPuvSuite.class);
 
 	private final MiscConfig miscConfig;
-	private final NetworkInfo targetInfo;
+	private final NetworkConfig targetInfo;
 
-	public TokenPuvSuite(MiscConfig miscConfig, NetworkInfo targetInfo) {
+	public TokenPuvSuite(MiscConfig miscConfig, NetworkConfig targetInfo) {
 		this.miscConfig = miscConfig;
 		this.targetInfo = targetInfo;
 	}

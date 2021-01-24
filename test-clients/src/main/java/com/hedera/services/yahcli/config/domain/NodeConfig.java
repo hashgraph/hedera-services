@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.validation.domain;
+package com.hedera.services.yahcli.config.domain;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.validation.domain;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,16 +20,37 @@ package com.hedera.services.bdd.suites.validation.domain;
  * ‍
  */
 
-import java.util.Map;
+public class NodeConfig {
+	private int id;
+	private long account;
+	private String ipv4Addr;
 
-public class PuvConfig {
-	private Map<String, NetworkInfo> networks;
-
-	public Map<String, NetworkInfo> getNetworks() {
-		return networks;
+	public long getAccount() {
+		return account;
 	}
 
-	public void setNetworks(Map<String, NetworkInfo> networks) {
-		this.networks = networks;
+	public void setAccount(long account) {
+		this.account = account;
+	}
+
+	public String getIpv4Addr() {
+		return ipv4Addr;
+	}
+
+	public void setIpv4Addr(String ipv4Addr) {
+		this.ipv4Addr = ipv4Addr;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s:0.0.%d#%d", ipv4Addr, account, id);
 	}
 }
