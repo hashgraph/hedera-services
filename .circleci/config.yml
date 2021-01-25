@@ -35,6 +35,9 @@ commands:
             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
             gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
             gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
+            sudo apt-get install gcc python3-dev python3-setuptools;
+            sudo pip3 uninstall crcmod;
+            sudo pip3 install --no-cache-dir -U crcmod;
 
 
 
@@ -3338,15 +3341,15 @@ jobs:
       result_path:
         type: string
         default: "regression/results"
-      summary_path:
-        type: string
-        default: "summaryHistory"
-      summary_bucket:
-        type: string
-        default: "hedera-service-regression-jrs/summaryHistory/"
       result_bucket:
         type: string
         default: "services-regression-jrs-files"
+      summary_path:
+        type: string
+        default: "regression/summaryHistory/"
+      summary_bucket:
+        type: string
+        default: "hedera-service-regression-jrs/summaryHistory"
       automated_run:
         type: boolean
         default: false
