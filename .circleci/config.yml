@@ -80,7 +80,6 @@ commands:
           name: "GCP Storage RSync [Source: '<< parameters.src >>', Destination: '<< parameters.dest >>']"
           command: |
             set -x;
-            cd /swirlds-platform/regression;
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             gsutil -m rsync -r "<< parameters.src >>" "<< parameters.dest >>"
 
@@ -397,7 +396,7 @@ commands:
               -Djrs.circleci.user="${JRS_USER}" \
               -Djrs.circleci.branch="${JRS_BRANCH}" \
               -Djrs.circleci.ssh.login="${JRS_SSH_USER_NAME}" \
-              -Djrs.circleci.ssh.keyfile="/tmp/jrs-ssh-keyfile" \
+              -Djrs.circleci.ssh.keyfile="/swirlds-platform/regression/keys/services-regression.pem" \
               -Djrs.circleci.web.hostname="${JRS_WEB_HOSTNAME}" \
               -Djrs.circleci.web.port="${JRS_WEB_PORT}" \
               ${JRS_OPTIONS} \
@@ -1470,6 +1469,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
+
 #      - run-network-error-regression:
 #          context: Slack
 #          requires:
@@ -3340,13 +3340,13 @@ jobs:
         default: "regression"
       result_path:
         type: string
-        default: "regression/results"
+        default: "results"
       result_bucket:
         type: string
         default: "services-regression-jrs-files"
       summary_path:
         type: string
-        default: "regression/summaryHistory/"
+        default: "summaryHistory/"
       summary_bucket:
         type: string
         default: "hedera-service-regression-jrs/summaryHistory"
