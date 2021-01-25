@@ -340,7 +340,7 @@ commands:
           name: "Execute JRS Regression (<< parameters.config_file >>)"
           command: |
             set -x
-
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             REGRESSION_PATH="<< parameters.regression_path >>"
             if [[ ! -d "${REGRESSION_PATH}" ]]; then exit 15; fi
 
@@ -391,7 +391,7 @@ commands:
               -Djrs.circleci.user="${JRS_USER}" \
               -Djrs.circleci.branch="${JRS_BRANCH}" \
               -Djrs.circleci.ssh.login="${JRS_SSH_USER_NAME}" \
-              -Djrs.circleci.ssh.keyfile="/swirlds-platform/regression/keys/services-regression.pem" \
+              -Djrs.circleci.ssh.keyfile="/swirlds-platform/regression/keys/services-regression" \
               -Djrs.circleci.web.hostname="${JRS_WEB_HOSTNAME}" \
               -Djrs.circleci.web.port="${JRS_WEB_PORT}" \
               ${JRS_OPTIONS} \
@@ -1438,14 +1438,14 @@ workflows:
 #          filters:
 #            branches:
 #              only:
-#                - 00955-D-regression-history
+#                - master
     jobs:
       - build-platform-and-services:
           context: SonarCloud
           filters:
             branches:
               only:
-                - 00955-D-regression-history
+                - 00995-D-regression-history
           workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
 
       - jrs-regression:
@@ -2146,7 +2146,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 00955-D-regression-history
+                  - 00995-D-regression-history
             workflow-name: "Continuous integration GCP"
 
         - run-continuous-integration-gcp:
@@ -2173,7 +2173,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00955-D-regression-history
+                - 00995-D-regression-history
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
