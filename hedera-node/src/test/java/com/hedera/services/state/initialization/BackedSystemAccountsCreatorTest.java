@@ -59,7 +59,6 @@ class BackedSystemAccountsCreatorTest {
 	private long shard = 1;
 	private long realm = 2;
 	private long totalBalance = 100l;
-	private long recordThresholds = 100l;
 	private long expiry = Instant.now().getEpochSecond() + 1_234_567L;
 	private int numAccounts = 4;
 	private String b64Loc = "somewhere";
