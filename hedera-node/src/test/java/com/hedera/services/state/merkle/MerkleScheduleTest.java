@@ -164,7 +164,7 @@ public class MerkleScheduleTest {
 	public void validGetters() {
 		// expect:
 		assertEquals(transactionBody, subject.transactionBody());
-		assertEquals(entityMemo, subject.memo());
+		assertEquals(entityMemo, subject.memo().get());
 		assertEquals(isDeleted, subject.isDeleted());
 		assertEquals(signers, subject.signers());
 		assertEquals(payer, subject.payer());

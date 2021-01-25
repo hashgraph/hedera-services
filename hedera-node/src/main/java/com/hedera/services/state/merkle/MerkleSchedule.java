@@ -255,7 +255,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     public byte[] transactionBody() { return this.transactionBody; }
 
-    public String memo() { return this.memo; }
+    public Optional<String> memo() { return Optional.ofNullable(this.memo); }
 
     public void setMemo(String memo) { this.memo = memo; }
 
