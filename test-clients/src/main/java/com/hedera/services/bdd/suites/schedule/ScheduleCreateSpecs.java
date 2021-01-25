@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateNonsense;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
@@ -64,22 +65,20 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-//						bodyOnlyCreation(),
-//						onlyBodyAndAdminCreation(),
-						onlyBodyAndMemoCreation(),
-						bodyAndPayerCreation(),
-						allowsScheduledTransactionsWithDuplicatingBody(),
-//						allowsScheduledTransactionsWithDuplicatingBodyAndAdmin(),
-//						allowsScheduledTransactionsWithDuplicatingBodyAndPayer(),
-//						rejectsUnparseableTxn(),
-//						rejectsUnresolvableReqSigners(),
-//						triggersImmediatelyWithBothReqSimpleSigs(),
-//						onlySchedulesWithMissingReqSimpleSigs(),
-//						preservesRevocationServiceSemanticsForFileDelete(),
-//						detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				}
-		);
+		return List.of(
+				bodyOnlyCreation(),
+				onlyBodyAndAdminCreation(),
+				onlyBodyAndMemoCreation(),
+				bodyAndPayerCreation(),
+				allowsScheduledTransactionsWithDuplicatingBody(),
+				allowsScheduledTransactionsWithDuplicatingBodyAndAdmin(),
+				allowsScheduledTransactionsWithDuplicatingBodyAndPayer(),
+				rejectsUnparseableTxn(),
+				rejectsUnresolvableReqSigners(),
+				triggersImmediatelyWithBothReqSimpleSigs(),
+				onlySchedulesWithMissingReqSimpleSigs(),
+				preservesRevocationServiceSemanticsForFileDelete(),
+				detectsKeysChangedBetweenExpandSigsAndHandleTxn());
 	}
 
 	private HapiApiSpec bodyOnlyCreation() {
@@ -148,7 +147,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						cryptoCreate("payer2"),
 						newKeyNamed("admin"),
 						newKeyNamed("admin2"),
-						scheduleCreate("primary", txnBody)
+						scheduleCreate("first", txnBody)
 								.adminKey("admin")
 								.payer("payer")
 								.via("first")
@@ -160,14 +159,15 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.via("second")
 				)
 				.then(
-//						UtilVerbs.withOpContext((spec, opLog) -> {
-//							var tx1 = getTxnRecord("first");
-//							var tx2 = getTxnRecord("second");
-//							Assert.assertNotEquals(
-//									tx1.getResponseRecord().getReceipt().getScheduleID(),
-//									tx2.getResponseRecord().getReceipt().getScheduleID());
-//						}),
-						getScheduleInfo("primary")
+						UtilVerbs.withOpContext((spec, opLog) -> {
+							var firstTx = getTxnRecord("first");
+							var secondTx = getTxnRecord("second");
+							allRunFor(spec, firstTx, secondTx);
+							Assert.assertNotEquals(
+									firstTx.getResponseRecord().getReceipt().getScheduleID(),
+									secondTx.getResponseRecord().getReceipt().getScheduleID());
+						}),
+						getScheduleInfo("first")
 								.hasAdminKey("admin")
 								.hasPayerAccountID("payer")
 								.hasValidTxBytes(),
@@ -185,7 +185,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						cryptoCreate("payer"),
 						cryptoCreate("payer2"),
 						newKeyNamed("admin"),
-						scheduleCreate("primary", txnBody)
+						scheduleCreate("first", txnBody)
 								.adminKey("admin")
 								.payer("payer")
 								.via("first")
@@ -196,13 +196,14 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.via("second")
 				).then(
 						UtilVerbs.withOpContext((spec, opLog) -> {
-							var tx1 = getTxnRecord("first");
-							var tx2 = getTxnRecord("second");
+							var firstTx = getTxnRecord("first");
+							var secondTx = getTxnRecord("second");
+							allRunFor(spec, firstTx, secondTx);
 							Assert.assertNotEquals(
-									tx1.getResponseRecord().getReceipt().getScheduleID(),
-									tx2.getResponseRecord().getReceipt().getScheduleID());
+									firstTx.getResponseRecord().getReceipt().getScheduleID(),
+									secondTx.getResponseRecord().getReceipt().getScheduleID());
 						}),
-						getScheduleInfo("primary")
+						getScheduleInfo("first")
 								.hasAdminKey("admin")
 								.hasPayerAccountID("payer"),
 						getScheduleInfo("second")
@@ -218,7 +219,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						cryptoCreate("payer"),
 						newKeyNamed("admin"),
 						newKeyNamed("admin2"),
-						scheduleCreate("primary", txnBody)
+						scheduleCreate("first", txnBody)
 								.adminKey("admin")
 								.payer("payer")
 								.via("first")
@@ -229,11 +230,12 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.via("second")
 				).then(
 						UtilVerbs.withOpContext((spec, opLog) -> {
-							var tx1 = getTxnRecord("first");
-							var tx2 = getTxnRecord("second");
+							var firstTx = getTxnRecord("first");
+							var secondTx = getTxnRecord("second");
+							allRunFor(spec, firstTx, secondTx);
 							Assert.assertNotEquals(
-									tx1.getResponseRecord().getReceipt().getScheduleID(),
-									tx2.getResponseRecord().getReceipt().getScheduleID());
+									firstTx.getResponseRecord().getReceipt().getScheduleID(),
+									secondTx.getResponseRecord().getReceipt().getScheduleID());
 						}),
 						getScheduleInfo("first")
 								.hasAdminKey("admin")
