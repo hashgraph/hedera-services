@@ -23,8 +23,6 @@ package com.hedera.services.contracts.persistence;
 import com.hedera.services.utils.EntityIdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -35,7 +33,6 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class BlobStoragePersistenceTest {
 	byte[] address = EntityIdUtils.asSolidityAddress(0, 0, 13257);
 	byte[] addressStorage = "STUFF".getBytes();

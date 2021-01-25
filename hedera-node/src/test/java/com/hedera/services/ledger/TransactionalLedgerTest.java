@@ -30,8 +30,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.util.Comparator;
@@ -58,7 +56,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 import static org.mockito.BDDMockito.willThrow;
 
-@RunWith(JUnitPlatform.class)
 public class TransactionalLedgerTest {
 	Supplier<TestAccount> newAccountFactory;
 	BackingStore<Long, TestAccount> backingAccounts;

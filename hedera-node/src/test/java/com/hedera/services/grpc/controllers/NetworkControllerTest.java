@@ -31,13 +31,10 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.grpc.controllers.NetworkController.*;
 
-@RunWith(JUnitPlatform.class)
 class NetworkControllerTest {
 	Query query = Query.getDefaultInstance();
 	Transaction txn = Transaction.getDefaultInstance();

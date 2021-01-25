@@ -178,4 +178,12 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		});
 		return this;
 	}
+
+	public AccountInfoAsserts totalAssociatedTokens(int n) {
+		registerProvider((spec, o) -> {
+			Assert.assertEquals("Bad num associated tokens!",
+					n, ((AccountInfo)o).getTokenRelationshipsCount());
+		});
+		return this;
+	}
 }

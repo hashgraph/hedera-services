@@ -38,14 +38,11 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 
-@RunWith(JUnitPlatform.class)
 class CryptoUpdateResourceUsageTest {
 	Key currKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
 	MerkleEntityId accountKey = new MerkleEntityId(0, 0, 1234);

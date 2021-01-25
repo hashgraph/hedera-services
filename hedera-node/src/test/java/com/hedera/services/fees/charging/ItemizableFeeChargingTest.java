@@ -31,8 +31,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -48,7 +46,6 @@ import static org.mockito.BDDMockito.*;
 import com.hedera.services.fees.TxnFeeType;
 import static com.hedera.services.fees.TxnFeeType.*;
 
-@RunWith(JUnitPlatform.class)
 class ItemizableFeeChargingTest {
 	long network = 500L, service = 200L, node = 100L;
 

@@ -48,8 +48,6 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -115,7 +113,6 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.spy;
 
-@RunWith(JUnitPlatform.class)
 class HederaTokenStoreTest {
 	long thisSecond = 1_234_567L;
 

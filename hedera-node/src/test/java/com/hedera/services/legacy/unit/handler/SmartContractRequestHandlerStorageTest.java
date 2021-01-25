@@ -101,8 +101,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -114,7 +112,6 @@ import static org.mockito.Mockito.mock;
  */
 
 @Disabled
-@RunWith(JUnitPlatform.class)
 public class SmartContractRequestHandlerStorageTest {
   public static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
   public static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";

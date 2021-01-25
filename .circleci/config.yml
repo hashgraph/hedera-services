@@ -1231,10 +1231,10 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Recovery-4N-1C"
 
-  AWS-Daily-Services-Comp-Basic-Performance-4N-4C:
+  AWS-Daily-Services-Comp-Restart-Performance-Random-4N-4C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "6 17 * * *"
           filters:
             branches:
               only:
@@ -1249,10 +1249,10 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "AWS-Daily-Services-Comp-Basic-Performance-4N-4C"
-          test-name: "AWS-Daily-Services-Comp-Basic-Performance-4N-4C.json"
+          workflow-name: "AWS-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
+          test-name: "AWS-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
 
-  GCP-Daily-Services-Comp-Basic-Performance-4N-4C:
+  GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C:
     triggers:
       - schedule:
           cron: "35 6 * * *"
@@ -1270,10 +1270,31 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C"
-          test-name: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C.json"
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C"
 
-  AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
+  GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C:
+    triggers:
+      - schedule:
+          cron: "30 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
+
+  AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C:
     triggers:
       - schedule:
           cron: "30 4 * * *"
@@ -1292,10 +1313,31 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
-          test-name: "AWS-Daily-Services-Comp-Basic-HCS-Performance-4N-4C.json"
+          workflow-name: "AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C"
+          test-name: "AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C.json"
 
-  GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C:
+  GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C:
+    triggers:
+      - schedule:
+          cron: "30 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C.json"
+
+  GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C:
     triggers:
       - schedule:
           cron: "30 10 * * *"
@@ -1313,8 +1355,8 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C"
-          test-name: "GCP-Daily-Services-Comp-Basic-HCS-Performance-4N-4C.json"
+          workflow-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C"
+          test-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C"
 
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
@@ -1705,7 +1747,14 @@ workflows:
 
   continuous-integration-gcp:
       jobs:
-        - build-platform-and-services
+        - build-platform-and-services:
+            context: SonarCloud
+            filters:
+              branches:
+                ignore:
+                  - /.*-PERF/
+            workflow-name: "Continuous integration GCP"
+
         - run-continuous-integration-gcp:
             context: Slack
             requires:
@@ -1981,7 +2030,7 @@ jobs:
         default: ""
       test-name:
         type: string
-        default: "GCP-Daily-Services-Comp-Basic-Performance-4N-4C.json"
+        default: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
@@ -2211,7 +2260,7 @@ jobs:
           command: |
             cd /swirlds-platform/regression;
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json /repo
+            ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json /repo $CIRCLE_USERNAME $CIRCLE_BUILD_URL
 
       - run:
           name: Sync results of continuous integration to circelCI job

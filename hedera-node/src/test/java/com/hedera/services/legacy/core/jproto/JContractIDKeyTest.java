@@ -22,12 +22,9 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(JUnitPlatform.class)
 public class JContractIDKeyTest {
   @Test
   public void zeroContractIDKeyTest() {

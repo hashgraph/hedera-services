@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.time.Instant;
@@ -60,7 +58,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
-@RunWith(JUnitPlatform.class)
 class ExpiryManagerTest {
 	long a = 13257, b = 75231;
 	long[] aPayer = { 55 };

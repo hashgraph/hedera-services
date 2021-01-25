@@ -48,15 +48,12 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 
 import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
-@RunWith(JUnitPlatform.class)
 class AwareFcfsUsagePricesTest {
 	FileID schedules = IdUtils.asFile("0.0.111");
 	long currentExpiry = 1_234_567;
