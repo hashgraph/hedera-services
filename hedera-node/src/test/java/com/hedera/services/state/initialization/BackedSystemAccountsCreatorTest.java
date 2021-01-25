@@ -58,9 +58,7 @@ import static org.mockito.Mockito.verify;
 class BackedSystemAccountsCreatorTest {
 	private long shard = 1;
 	private long realm = 2;
-	private long nodeBalance = 10l;
-	private long stdBalance = 5l;
-	private long treasuryBalance = 80l;
+	private long totalBalance = 100l;
 	private long recordThresholds = 100l;
 	private long expiry = Instant.now().getEpochSecond() + 1_234_567L;
 	private int numAccounts = 4;
@@ -98,11 +96,7 @@ class BackedSystemAccountsCreatorTest {
 		given(properties.getIntProperty("ledger.numSystemAccounts"))
 				.willReturn(numAccounts);
 		given(properties.getLongProperty("ledger.totalTinyBarFloat"))
-				.willReturn(100L);
-		given(properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance"))
-				.willReturn(10L);
-		given(properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance"))
-				.willReturn(5L);
+				.willReturn(totalBalance);
 		given(properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"))
 				.willReturn(legacyId);
 		given(properties.getStringProperty("bootstrap.genesisB64Keystore.path"))
@@ -122,10 +116,10 @@ class BackedSystemAccountsCreatorTest {
 				accountWith(2),
 				accountWith(3),
 				accountWith(4)));
-		given(backingAccounts.getUnsafeRef(accountWith(1))).willReturn(withExpectedBalance(stdBalance));
-		given(backingAccounts.getUnsafeRef(accountWith(2))).willReturn(withExpectedBalance(treasuryBalance));
-		given(backingAccounts.getUnsafeRef(accountWith(3))).willReturn(withExpectedBalance(nodeBalance));
-		given(backingAccounts.getUnsafeRef(accountWith(4))).willReturn(withExpectedBalance(stdBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(1))).willReturn(withExpectedBalance(0));
+		given(backingAccounts.getUnsafeRef(accountWith(2))).willReturn(withExpectedBalance(totalBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(3))).willReturn(withExpectedBalance(0));
+		given(backingAccounts.getUnsafeRef(accountWith(4))).willReturn(withExpectedBalance(0));
 
 		subject = new BackedSystemAccountsCreator(
 				hederaNums,
@@ -136,11 +130,11 @@ class BackedSystemAccountsCreatorTest {
 
 	@Test
 	public void throwsOnNegativeBalance() {
-		givenMissingNode();
+		givenMissingTreasury();
 		// and:
 		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
 		// and:
-		given(properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance"))
+		given(properties.getLongProperty("ledger.totalTinyBarFloat"))
 				.willReturn(-100L);
 
 		// expect:
@@ -177,7 +171,7 @@ class BackedSystemAccountsCreatorTest {
 		subject.ensureSystemAccounts(backingAccounts, book);
 
 		// then:
-		verify(backingAccounts).put(accountWith(3), withExpectedBalance(nodeBalance));
+		verify(backingAccounts).put(accountWith(3), withExpectedBalance(0));
 	}
 
 	@Test
@@ -190,7 +184,7 @@ class BackedSystemAccountsCreatorTest {
 		subject.ensureSystemAccounts(backingAccounts, book);
 
 		// then:
-		verify(backingAccounts).put(accountWith(4), withExpectedBalance(stdBalance));
+		verify(backingAccounts).put(accountWith(4), withExpectedBalance(0));
 	}
 
 	@Test
@@ -203,7 +197,7 @@ class BackedSystemAccountsCreatorTest {
 		subject.ensureSystemAccounts(backingAccounts, book);
 
 		// then:
-		verify(backingAccounts).put(accountWith(2), withExpectedBalance(treasuryBalance));
+		verify(backingAccounts).put(accountWith(2), withExpectedBalance(totalBalance));
 	}
 
 	@Test
@@ -231,7 +225,7 @@ class BackedSystemAccountsCreatorTest {
 		verify(backingAccounts, never()).put(any(), any());
 		// and:
 		verify(BackedSystemAccountsCreator.log).info(String.format(
-				"Ledger float is %d tinyBars in %d accounts.", 100, 4));
+				"Ledger float is %d tinyBars in %d accounts.", totalBalance, 4));
 
 		// cleanup:
 		BackedSystemAccountsCreator.log = LogManager.getLogger(BackedSystemAccountsCreator.class);

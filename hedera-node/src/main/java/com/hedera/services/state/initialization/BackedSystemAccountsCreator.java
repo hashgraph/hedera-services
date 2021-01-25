@@ -83,11 +83,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		long N = properties.getIntProperty("ledger.numSystemAccounts");
 		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
 		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
-		long nodeBalance = properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance");
-		long defaultBalance = properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance");
-		long treasuryBalance = tinyBarFloat
-				- (nodeBalance * nodeAccountNums.size())
-				- (defaultBalance * (N - nodeAccountNums.size() - 1));
 
 		for (long num = 1; num <= N; num++) {
 			var id = idWith(num);
@@ -95,11 +90,9 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 				continue;
 			}
 			if (num == accountNums.treasury()) {
-				accounts.put(id, accountWith(treasuryBalance, expiry));
-			} else if (nodeAccountNums.contains(num)) {
-				accounts.put(id, accountWith(nodeBalance, expiry));
+				accounts.put(id, accountWith(tinyBarFloat, expiry));
 			} else {
-				accounts.put(id, accountWith(defaultBalance, expiry));
+				accounts.put(id, accountWith(0, expiry));
 			}
 		}
 
