@@ -31,7 +31,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -78,8 +77,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 			BackingStore<AccountID, MerkleAccount> accounts,
 			AddressBook addressBook
 	) {
-		var nodeAccountNums = MiscUtils.getNodeAccountNums(addressBook);
-
 		long N = properties.getIntProperty("ledger.numSystemAccounts");
 		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
 		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
