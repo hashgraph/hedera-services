@@ -1452,6 +1452,7 @@ workflows:
           name: "GCP-Daily-Services-Comp-NetError-4N-1C"
           context: Slack
 #          runtime: build-executor
+          regression_path: /swirlds-platform/regression
           result_path: regression/results/4N_1C/NetError
           automated_run: true
           slack_results_channel: "hedera-regression"
