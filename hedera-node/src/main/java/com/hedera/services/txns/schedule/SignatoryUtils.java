@@ -53,11 +53,6 @@ public class SignatoryUtils {
 	 *
 	 * Otherwise returns {@code Pair.of(OK, true)} if the new signatories activated the
 	 * schedule, and {@code Pair.of(OK, false)} if they did not.
-	 *
-	 * @param id
-	 * @param store
-	 * @param activationHelper
-	 * @return
 	 */
 	static Pair<ResponseCodeEnum, Boolean> witnessInScope(
 			int numSigs,
@@ -65,10 +60,29 @@ public class SignatoryUtils {
 			ScheduleStore store,
 			InHandleActivationHelper activationHelper
 	) {
-		if (numSigs == 0) {
-			return Pair.of(OK, false);
+		var status = OK;
+		if (numSigs > 0) {
+			status = witnessInNonTrivialScope(numSigs, id, store, activationHelper);
 		}
 
+		if (status == SOME_SIGNATURES_WERE_INVALID) {
+			return Pair.of(SOME_SIGNATURES_WERE_INVALID, false);
+		}
+
+		var revisedSchedule = store.get(id);
+		var isReadyToExecute = isReady(revisedSchedule, activationHelper);
+		if (isReadyToExecute) {
+			status = OK;
+		}
+		return Pair.of(status, isReadyToExecute);
+	}
+
+	private static ResponseCodeEnum witnessInNonTrivialScope(
+			int numSigs,
+			ScheduleID id,
+			ScheduleStore store,
+			InHandleActivationHelper activationHelper
+	) {
 		AtomicInteger numInvalid = new AtomicInteger();
 		List<byte[]> signatories = new ArrayList<>();
 		activationHelper.visitScheduledCryptoSigs((key, sig) -> {
@@ -81,17 +95,11 @@ public class SignatoryUtils {
 
 		int numValid = signatories.size();
 		if (numValid < numSigs && numInvalid.get() > 0) {
-			return Pair.of(SOME_SIGNATURES_WERE_INVALID, false);
+			return SOME_SIGNATURES_WERE_INVALID;
 		}
 
 		int numWitnessed = witness(store, id, signatories);
-		if (numWitnessed == 0) {
-			return Pair.of(NO_NEW_VALID_SIGNATURES, false);
-		}
-
-		var revisedSchedule = store.get(id);
-		var isReadyToExecute = isReady(revisedSchedule, activationHelper);
-		return Pair.of(OK, isReadyToExecute);
+		return (numWitnessed == 0) ? NO_NEW_VALID_SIGNATURES : OK;
 	}
 
 	private static void appendIfUnique(List<byte[]> l, byte[] bytes) {

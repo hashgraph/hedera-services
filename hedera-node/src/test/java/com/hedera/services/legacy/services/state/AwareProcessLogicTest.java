@@ -59,6 +59,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -201,6 +202,7 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
+	@Disabled
 	public void shortCircuitsWithErrorOnNonIncreasingConsensusTime() {
 		// setup:
 		var now = Instant.now();

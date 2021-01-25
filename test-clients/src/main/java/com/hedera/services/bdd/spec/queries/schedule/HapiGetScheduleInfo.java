@@ -50,10 +50,10 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
         this.schedule = schedule;
     }
 
+    boolean expectValidTxBytes = false;
     Optional<String> expectedScheduleId = Optional.empty();
     Optional<String> expectedCreatorAccountID = Optional.empty();
     Optional<String> expectedPayerAccountID = Optional.empty();
-    Optional<Boolean> expectValidTxBytes = Optional.empty();
     Optional<String> expectedAdminKey = Optional.empty();
     Optional<String> expectedEntityMemo = Optional.empty();
 
@@ -73,7 +73,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     }
 
     public HapiGetScheduleInfo hasValidTxBytes() {
-        expectValidTxBytes = Optional.of(true);
+        expectValidTxBytes = true;
         return this;
     }
 
@@ -109,20 +109,18 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
         // TODO compare signatories once added
 
         var registry = spec.registry();
-
-        expectValidTxBytes.ifPresent(s -> Assert.assertArrayEquals(
-                "Wrong transaction bytes!",
-                registry.getBytes(registryBytesTag(schedule)),
-                actualInfo.getTransactionBody().toByteArray()
-        ));
-
+        if (expectValidTxBytes) {
+            Assert.assertArrayEquals(
+                    "Wrong transaction bytes!",
+                    registry.getBytes(registryBytesTag(schedule)),
+                    actualInfo.getTransactionBody().toByteArray());
+        }
         assertFor(
                 actualInfo.getScheduleID(),
                 expectedScheduleId,
                 (n, r) -> r.getScheduleId(n),
                 "Wrong schedule id!",
                 registry);
-
         assertFor(
                 actualInfo.getAdminKey(),
                 expectedAdminKey,
