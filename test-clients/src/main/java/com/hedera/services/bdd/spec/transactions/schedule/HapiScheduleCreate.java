@@ -69,6 +69,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<String> payerAccountID = Optional.empty();
 	private Optional<List<String>> signatories = Optional.empty();
+	private Optional<String> entityMemo = Optional.empty();
 
 	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
 		this.entity = scheduled;
@@ -97,6 +98,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
 	public HapiScheduleCreate<T> signatories(List<String> s) {
 		signatories = Optional.of(s);
+		return this;
+	}
+
+	public HapiScheduleCreate<T> withEntityMemo(String entityMemo) {
+		this.entityMemo = Optional.of(entityMemo);
 		return this;
 	}
 
@@ -148,6 +154,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							}
 							b.setSigMap(finalSchedSigMap);
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
+							entityMemo.ifPresent(b::setMemo);
 							payerAccountID.ifPresent(a -> {
 								var payer = TxnUtils.asId(a, spec);
 								b.setPayerAccountID(payer);
@@ -204,7 +211,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return signers;
 	}
 
-	static String registryBytesTag(String name) {
+	public static String registryBytesTag(String name) {
 		return name + "BytesSigned";
 	}
 

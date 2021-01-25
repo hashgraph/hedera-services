@@ -20,31 +20,26 @@ package com.hedera.services.bdd.spec.queries.schedule;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.vm.trace.Op;
 import org.junit.Assert;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.registryBytesTag;
 
 public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     private static final Logger log = LogManager.getLogger(HapiGetScheduleInfo.class);
@@ -58,9 +53,9 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     Optional<String> expectedScheduleId = Optional.empty();
     Optional<String> expectedCreatorAccountID = Optional.empty();
     Optional<String> expectedPayerAccountID = Optional.empty();
-    Optional<HapiTxnOp> expectedTransactionBody = Optional.empty();
+    Optional<Boolean> expectValidTxBytes = Optional.empty();
     Optional<String> expectedAdminKey = Optional.empty();
-    Optional<String> expectedMemo = Optional.empty();
+    Optional<String> expectedEntityMemo = Optional.empty();
     Optional<List<String>> expectedSignatories = Optional.empty();
 
     public HapiGetScheduleInfo hasScheduleId(String s) {
@@ -78,8 +73,8 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
         return this;
     }
 
-    public HapiGetScheduleInfo hasTransactionBody(HapiTxnOp s) {
-        expectedTransactionBody = Optional.of(s);
+    public HapiGetScheduleInfo hasValidTxBytes() {
+        expectValidTxBytes = Optional.of(true);
         return this;
     }
 
@@ -88,8 +83,8 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
         return this;
     }
 
-    public HapiGetScheduleInfo hasMemo(String s) {
-        expectedMemo = Optional.of(s);
+    public HapiGetScheduleInfo hasEntityMemo(String s) {
+        expectedEntityMemo = Optional.of(s);
         return this;
     }
 
@@ -112,23 +107,20 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
                 TxnUtils.asId(s, spec),
                 actualInfo.getPayerAccountID()));
 
-        expectedTransactionBody.ifPresent(bytes -> Assert.assertEquals(
-                "Wrong schedule transaction body!",
-                bytes,
-                actualInfo.getTransactionBody().toByteArray()));
+        expectedEntityMemo.ifPresent(s -> Assert.assertEquals(
+                "Wrong memo!",
+                s,
+                actualInfo.getMemo()));
 
-        // TODO check expected memo property when added
+        // TODO check expected signatories property when added
 
         var registry = spec.registry();
 
-        expectedSignatories.ifPresent(signatories -> {
-            List<Key> expectedKeyList = new ArrayList<>();
-            signatories.forEach(signatory -> {
-            var assertingKey = spec.registry().getKey(signatory);
-                expectedKeyList.add(assertingKey);
-            });
-            Assert.assertArrayEquals("Wrong signatories!", expectedKeyList.toArray(), actualInfo.getSigners().getKeysList().toArray());
-        });
+        expectValidTxBytes.ifPresent(s -> Assert.assertArrayEquals(
+                "Wrong transaction bytes!",
+                registry.getBytes(registryBytesTag(schedule)),
+                actualInfo.getTransactionBody().toByteArray()
+        ));
 
         assertFor(
                 actualInfo.getScheduleID(),
