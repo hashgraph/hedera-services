@@ -96,7 +96,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						getScheduleInfo("onlyBody")
 								.logged()
 								.hasScheduleId("onlyBody")
-								.hasTransactionBody(creation)
 				);
 	}
 
@@ -154,6 +153,8 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						cryptoCreate("payer2").balance(500L),
 						newKeyNamed("admin"),
 						newKeyNamed("admin2"),
+						newKeyNamed("signer1"),
+						newKeyNamed("signer2"),
 						scheduleCreate("primary", txnBody)
 								.adminKey("admin")
 								.payer("payer")
