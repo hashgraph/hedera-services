@@ -97,6 +97,12 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	@Override
 	public void apply(ScheduleID id, Consumer<MerkleSchedule> change) {
 		throwIfMissing(id);
+
+		if (id.equals(pendingId)) {
+			applyProvisionally(change);
+			return;
+		}
+
 		var key = fromScheduleId(id);
 		var schedule = schedules.get().getForModify(key);
 		try {
@@ -106,6 +112,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		} finally {
 			schedules.get().replace(key, schedule);
 		}
+	}
+
+	private void applyProvisionally(Consumer<MerkleSchedule> change) {
+		change.accept(pendingCreation);
 	}
 
 	@Override
@@ -170,8 +180,8 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	@Override
 	public void commitCreation() {
 		throwIfNoCreationPending();
-		var id = fromScheduleId(pendingId);
 
+		var id = fromScheduleId(pendingId);
 		schedules.get().put(id, pendingCreation);
 		var key = fromMerkleSchedule(pendingCreation);
 		txToEntityId.put(key, id);

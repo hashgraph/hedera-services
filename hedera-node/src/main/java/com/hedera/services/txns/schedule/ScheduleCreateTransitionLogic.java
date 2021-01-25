@@ -40,7 +40,6 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -56,6 +55,9 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 
 	private final OptionValidator validator;
 	private final InHandleActivationHelper activationHelper;
+
+	ExecutionProcessor executor = this::processExecution;
+	SignatoryUtils.SigningsWitness signingsWitness = SignatoryUtils::witnessInScope;
 
 	public ScheduleCreateTransitionLogic(
 			ScheduleStore store,
@@ -83,8 +85,6 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 		var scheduleId = NOT_YET_RESOLVED;
 		var scheduledPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
 
-		var sb = new StringBuilder();
-
 		var extantId = store.lookupScheduleId(op.getTransactionBody().toByteArray(), scheduledPayer);
 		if (extantId.isPresent()) {
 			scheduleId = extantId.get();
@@ -99,27 +99,26 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			if (result.getCreated().isEmpty()) {
 				abortWith(result.getStatus());
 				return;
-			} else {
-				sb.append(" - Created new schedule...").append("\n");
-				store.commitCreation();
 			}
 			scheduleId = result.getCreated().get();
 		}
-		sb.append(" - Resolved scheduleId: ").append(readableId(scheduleId)).append("\n");
 
-		var isNowReady = SignatoryUtils.witnessInScope(scheduleId, store, activationHelper, sb);
-
-		/* Uncomment for temporary log-based testing locally */
-//		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
-//			log.info("\n>>> START ScheduleCreate >>>\n{}<<< END ScheduleCreate END <<<", sb);
-//		}
-		var outcome = OK;
-		if (isNowReady) {
-			outcome = processExecution(scheduleId);
+		int numSigs = op.getSigMap().getSigPairCount();
+		var signingOutcome = signingsWitness.observeInScope(numSigs, scheduleId, store, activationHelper);
+		if (signingOutcome.getLeft() != OK) {
+			abortWith(signingOutcome.getLeft());
+			return;
 		}
 
+		if (store.isCreationPending()) {
+			store.commitCreation();
+		}
+		var finalOutcome = OK;
+		if (signingOutcome.getRight()) {
+			finalOutcome = executor.doProcess(scheduleId);
+		}
 		txnCtx.setCreated(scheduleId);
-		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+		txnCtx.setStatus(finalOutcome == OK ? SUCCESS : finalOutcome);
 	}
 
 	private Optional<JKey> adminKeyFor(ScheduleCreateTransactionBody op) {
@@ -146,9 +145,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		var validity = OK;
 		ScheduleCreateTransactionBody op = txnBody.getScheduleCreate();
-		validity = checkAdminKey(
-				op.hasAdminKey(), op.getAdminKey()
-		);
+		validity = checkAdminKey(op.hasAdminKey(), op.getAdminKey());
 		if (validity != OK) {
 			return validity;
 		}
