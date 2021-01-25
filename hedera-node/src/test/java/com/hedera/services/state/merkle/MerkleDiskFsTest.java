@@ -167,8 +167,21 @@ public class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void fileNotExist() throws IOException {
+	public void fileNotExistNoDebug() throws IOException {
 		// setup:
+		subject = new MerkleDiskFs("this/doesnt/exist", asLiteralString(nodeAccount));
+
+		given(getter.allBytesFrom(any())).willThrow(IOException.class);
+
+		Assertions.assertSame(MerkleDiskFs.MISSING_CONTENT, subject.contentsOf(file150));
+	}
+
+	@Test
+	public void fileNotExistDebugEnabled() throws IOException {
+		// setup:
+		Logger log = mock(Logger.class);
+		given(log.isDebugEnabled()).willReturn(true);
+		MerkleDiskFs.log = log;
 		subject = new MerkleDiskFs("this/doesnt/exist", asLiteralString(nodeAccount));
 
 		given(getter.allBytesFrom(any())).willThrow(IOException.class);
