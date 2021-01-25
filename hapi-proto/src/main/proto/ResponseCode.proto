@@ -214,8 +214,9 @@ enum ResponseCodeEnum {
   SCHEDULE_WAS_DELETED = 203; // The Scheduled entity was already deleted
   INVALID_SCHEDULE_PAYER_ID = 204; // The provided Scheduled Payer does not exist
   INVALID_SCHEDULE_ACCOUNT_ID = 205; // The Schedule Create Transaction TransactionID account does not exist
-  INVALID_SCHEDULE_SIG_MAP_KEY = 206; // One of the provided Signature pub keys is not valid
+  NO_NEW_VALID_SIGNATURES = 206; // The provided sig map did not contain any new valid signatures from required signers of the scheduled transaction
   UNRESOLVABLE_REQUIRED_SIGNERS = 207; // The required signers for a scheduled transaction cannot be resolved, for example because they do not exist or have been deleted
   UNPARSEABLE_SCHEDULED_TRANSACTION = 208; // The bytes allegedly representing a transaction to be scheduled could not be parsed
   UNSCHEDULABLE_TRANSACTION = 209; // ScheduleCreate and ScheduleSign transactions cannot be scheduled
+  SOME_SIGNATURES_WERE_INVALID = 210; // At least one of the signatures in the provided sig map did not represent a valid signature for any required signer
 }

@@ -262,6 +262,22 @@ public class HederaScheduleStoreTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void provisionalApplicationWorks() {
+        // setup:
+        Consumer<MerkleSchedule> change = mock(Consumer.class);
+        subject.pendingId = created;
+        subject.pendingCreation = schedule;
+
+        // when:
+        subject.apply(created, change);
+
+        // then:
+		verify(change).accept(schedule);
+        verify(schedules, never()).getForModify(fromScheduleId(created));
+    }
+
+    @Test
     public void applicationWorks() {
         // setup:
         var change = mock(Consumer.class);

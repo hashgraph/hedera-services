@@ -99,9 +99,9 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 				accessor.getTxnId(),
 				lastCreatedRecord.getReceipt().getStatus(),
 				payerRecord);
-//		if (SingletonContextsManager.CONTEXTS.lookup(0L).txnCtx() == txnCtx) {
-//			log.info("Created ({}) -> {}", accessor.getTxnId(), payerRecord);
-//		}
+		if (SingletonContextsManager.CONTEXTS.lookup(0L).txnCtx() == txnCtx) {
+			log.info("Created ({}) -> {}", accessor.getTxnId(), payerRecord);
+		}
 	}
 
 	@Override

@@ -39,14 +39,12 @@ public abstract class ScheduleReadyForExecution {
     protected final ScheduleStore store;
     protected final TransactionContext txnCtx;
 
-    protected ScheduleReadyForExecution(
-            ScheduleStore store,
-            TransactionContext context) {
+    ScheduleReadyForExecution(ScheduleStore store, TransactionContext context) {
         this.store = store;
         this.txnCtx = context;
     }
 
-    protected Transaction prepareTransaction(MerkleSchedule schedule) throws InvalidProtocolBufferException {
+    private Transaction prepareTransaction(MerkleSchedule schedule) throws InvalidProtocolBufferException {
         var transactionBody = TransactionBody.parseFrom(schedule.transactionBody());
         var transactionId = TransactionID.newBuilder()
                 .setAccountID(schedule.schedulingAccount().toGrpcAccountId())
@@ -67,7 +65,7 @@ public abstract class ScheduleReadyForExecution {
                 .build();
     }
 
-    protected ResponseCodeEnum processExecution(ScheduleID id) throws InvalidProtocolBufferException {
+    ResponseCodeEnum processExecution(ScheduleID id) throws InvalidProtocolBufferException {
         var schedule = store.get(id);
         var transaction = prepareTransaction(schedule);
 
@@ -78,5 +76,10 @@ public abstract class ScheduleReadyForExecution {
                         id));
 
         return store.markAsExecuted(id);
+    }
+
+    @FunctionalInterface
+    interface ExecutionProcessor {
+        ResponseCodeEnum doProcess(ScheduleID id) throws InvalidProtocolBufferException;
     }
 }

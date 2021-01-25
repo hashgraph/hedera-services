@@ -372,7 +372,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		stats.setConsensusLatency(consensusTime - submitTime);
 	}
 
-	protected ResponseCodeEnum resolvedStatusOfSubmission(HapiApiSpec spec) throws Throwable {
+	private ResponseCodeEnum resolvedStatusOfSubmission(HapiApiSpec spec) throws Throwable {
 		long delayMS = spec.setup().statusPreResolvePauseMs();
 		long elapsedMS = System.currentTimeMillis() - submitTime;
 		if (elapsedMS <= delayMS) {

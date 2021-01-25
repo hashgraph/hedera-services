@@ -34,7 +34,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.schedule.SignatoryUtils.witnessInScope;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -46,6 +45,9 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
     private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
     private final InHandleActivationHelper activationHelper;
+
+    SignatoryUtils.SigningsWitness signingsWitness = SignatoryUtils::witnessInScope;
+    ExecutionProcessor executor = this::processExecution;
 
     public ScheduleSignTransitionLogic(
             ScheduleStore store,
@@ -61,24 +63,21 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
         try {
             transitionFor(txnCtx.accessor().getTxn().getScheduleSign());
         } catch (Exception e) {
-            e.printStackTrace();
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
             txnCtx.setStatus(FAIL_INVALID);
         }
     }
 
     private void transitionFor(ScheduleSignTransactionBody op) throws InvalidProtocolBufferException {
-        var sb = new StringBuilder();
-        var isNowReady = witnessInScope(op.getScheduleID(), store, activationHelper, sb);
-        /* Uncomment for temporary log-based testing locally */
-//		if (store == CONTEXTS.lookup(0L).scheduleStore()) {
-//			log.info("\n>>> START ScheduleSign >>>\n{}<<< END ScheduleSign END <<<", sb);
-//		}
-        var outcome = OK;
-        if (isNowReady) {
-            outcome = processExecution(op.getScheduleID());
+        int numSigs = op.getSigMap().getSigPairCount();
+        var scheduleId = op.getScheduleID();
+        var signingOutcome = signingsWitness.observeInScope(numSigs, scheduleId, store, activationHelper);
+
+        var outcome = signingOutcome.getLeft();
+        if (outcome == OK && signingOutcome.getRight()) {
+            outcome = executor.doProcess(scheduleId);
         }
-		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+		txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
     }
 
     @Override
@@ -92,6 +91,7 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
+        /* TODO - reject deleted schedules? */
         ScheduleSignTransactionBody op = txnBody.getScheduleSign();
 
         return (op.hasScheduleID() && store.exists(op.getScheduleID())) ? OK : INVALID_SCHEDULE_ID;

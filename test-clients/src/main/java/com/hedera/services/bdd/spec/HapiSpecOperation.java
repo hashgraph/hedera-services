@@ -341,8 +341,7 @@ public abstract class HapiSpecOperation {
 	private void setKeyControlOverrides(HapiApiSpec spec) {
 		if (controlOverrides.isPresent()) {
 			overrides = new HashMap<>();
-			Stream
-					.of(controlOverrides.get())
+			Stream.of(controlOverrides.get())
 					.forEach(c -> overrides.put(lookupKey(spec, c.getKeyName()), c.getController()));
 		}
 	}
