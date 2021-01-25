@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Contains current {@code com.swirlds.common.crypto.RunningHash) which contains a Hash which is a running
+ * Contains current {@code com.swirlds.common.crypto.RunningHash} which contains a Hash which is a running
  * Hash calculated from all {@link RecordStreamObject} in history
  */
 public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
