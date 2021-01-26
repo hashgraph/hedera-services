@@ -119,7 +119,7 @@ commands:
         default: "GCP_PROJECT_ID"
     steps:
       - run:
-          name: Import the Google Cloud Service Account
+          name: Import the Google Cloud Service  Account
           command: |
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc
             echo "${<< parameters.keyfile_variable >>}" > "/tmp/gcloud_account_key.json"
