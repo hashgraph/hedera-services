@@ -143,7 +143,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	public HapiApiSpec overlappingKeysTreatedAsExpected() {
 		var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
-		return defaultHapiSpec("ScheduleSigIrrelevantToSchedulingTxn")
+		return defaultHapiSpec("OverlappingKeysTreatedAsExpected")
 				.given(
 						newKeyNamed("aKey").generator(keyGen),
 						newKeyNamed("bKey").generator(keyGen),
