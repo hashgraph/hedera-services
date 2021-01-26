@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateNonsense;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
@@ -71,19 +72,20 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				bodyOnlyCreation(),
-//				onlyBodyAndAdminCreation(),
-//				onlyBodyAndMemoCreation(),
-//				bodyAndPayerCreation(),
-//				allowsScheduledTransactionsWithDuplicatingBody(),
-//				allowsScheduledTransactionsWithDuplicatingBodyAndAdmin(),
-//				allowsScheduledTransactionsWithDuplicatingBodyAndPayer(),
-//				rejectsUnparseableTxn(),
-//				rejectsUnresolvableReqSigners(),
-//				triggersImmediatelyWithBothReqSimpleSigs(),
-//				onlySchedulesWithMissingReqSimpleSigs(),
-//				preservesRevocationServiceSemanticsForFileDelete(),
+				bodyOnlyCreation(),
+				onlyBodyAndAdminCreation(),
+				onlyBodyAndMemoCreation(),
+				bodyAndPayerCreation(),
+				allowsScheduledTransactionsWithDuplicatingBody(),
+				allowsScheduledTransactionsWithDuplicatingBodyAndAdmin(),
+				allowsScheduledTransactionsWithDuplicatingBodyAndPayer(),
+				rejectsUnparseableTxn(),
+				rejectsUnresolvableReqSigners(),
+				triggersImmediatelyWithBothReqSimpleSigs(),
+				onlySchedulesWithMissingReqSimpleSigs(),
+				preservesRevocationServiceSemanticsForFileDelete(),
 				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+				retestsActivationOnCreateWithEmptySigMap(),
 		});
 	}
 
@@ -380,6 +382,33 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given().when().then(
 						scheduleCreateNonsense("absurd")
 								.hasKnownStatus(UNPARSEABLE_SCHEDULED_TRANSACTION)
+				);
+	}
+
+	public HapiApiSpec retestsActivationOnCreateWithEmptySigMap() {
+		return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
+				.given(
+						newKeyNamed("a"),
+						newKeyNamed("b"),
+						newKeyListNamed("ab", List.of("a", "b"))
+				).when(
+						cryptoCreate("sender").key("ab").balance(667L),
+						scheduleCreate(
+								"deferredFall",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", FUNDING, 1)
+								).fee(ONE_HBAR).signedBy("a")
+						).inheritingScheduledSigs(),
+						getAccountBalance("sender").hasTinyBars(667L),
+						cryptoUpdate("sender").key("a")
+				).then(
+						scheduleCreate(
+								"triggeredFall",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", FUNDING, 1)
+								).fee(ONE_HBAR).signedBy()
+						),
+						getAccountBalance("sender").hasTinyBars(666L)
 				);
 	}
 

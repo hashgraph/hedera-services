@@ -1737,10 +1737,21 @@ workflows:
             - build-artifact
           workflow-name: "Continuous integration"
           infra-branch: services-with-platform070
-      - run-token-scenarios:
+      - run-schedule-scenarios:
           context: Slack
           requires:
             - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
+      - run-token-scenarios:
+          context: Slack
+          requires:
+            - run-schedule-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
@@ -2432,6 +2443,25 @@ jobs:
           dsl-args: "SuperusersAreNeverThrottled"
       - run-eet-suites:
           dsl-args: "CannotDeleteSystemEntitiesSuite"
+
+  run-schedule-scenarios:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run-eet-suites:
+          dsl-args: "ScheduleCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "ScheduleSignSpecs"
+      - run-eet-suites:
+          dsl-args: "ScheduleRecordSpecs"
 
   run-token-scenarios:
     parameters:
