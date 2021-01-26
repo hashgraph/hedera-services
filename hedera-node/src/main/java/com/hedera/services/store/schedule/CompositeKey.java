@@ -22,16 +22,26 @@ package com.hedera.services.store.schedule;
 
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
 
+/**
+ * Set of properties used to describe unique instance of Scheduled Transaction
+ */
 public class CompositeKey {
-    private final int hash;
-    private final AccountID id;
+    private final int txBytesHashCode;
+    private final AccountID payer;
+    private final Optional<Key> adminKey;
+    private final Optional<String> entityMemo;
 
-    public CompositeKey(int hash, AccountID id) {
-        this.hash = hash;
-        this.id = id;
+    public CompositeKey(int txBytesHashCode, AccountID payer, Optional<Key> adminKey, Optional<String> entityMemo) {
+        this.txBytesHashCode = txBytesHashCode;
+        this.payer = payer;
+        this.adminKey = adminKey;
+        this.entityMemo = entityMemo;
     }
 
     @Override
@@ -42,22 +52,26 @@ public class CompositeKey {
             return false;
         CompositeKey other = (CompositeKey)o;
 
-        boolean hashEquals = this.hash == other.hash;
-        boolean idEquals = this.id.equals(other.id);
+        boolean hashEquals = this.txBytesHashCode == other.txBytesHashCode;
+        boolean payerEquals = Objects.equals(this.payer, other.payer);
+        boolean adminKeyEquals = Objects.equals(this.adminKey, other.adminKey);
+        boolean memoEquals = Objects.equals(this.entityMemo, other.entityMemo);
 
-        return hashEquals && idEquals;
+        return hashEquals && payerEquals && adminKeyEquals && memoEquals;
     }
 
     @Override
     public final int hashCode() {
-        int result = hash;
-        if (id != null) {
-            result = 31 * result + id.hashCode();
+        int result = txBytesHashCode;
+        if (payer != null) {
+            result = 31 * result + payer.hashCode();
         }
         return result;
     }
 
     public static CompositeKey fromMerkleSchedule(MerkleSchedule schedule) {
-        return new CompositeKey(Arrays.hashCode(schedule.transactionBody()), schedule.payer().toGrpcAccountId());
+        return new CompositeKey(
+                Arrays.hashCode(schedule.transactionBody()),
+                schedule.payer().toGrpcAccountId(), Optional.empty(), schedule.memo()); // TODO admin
     }
 }
