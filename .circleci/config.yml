@@ -121,7 +121,7 @@ commands:
       - run:
           name: Import the Google Cloud Service Account
           command: |
-            echo "${<< parameters.keyfile_variable >>}" | base64 -d > "/tmp/gcloud_account_key.json"
+            echo "${<< parameters.keyfile_variable >>}" > "/tmp/gcloud_account_key.json"
             set -x
             gcloud auth activate-service-account "${<< parameters.username_variable >>}" --key-file="/tmp/gcloud_account_key.json" --project="${<< parameters.project_variable >>}"
 
@@ -283,6 +283,8 @@ commands:
             gsutil -m rsync -r "<< parameters.result_path >>" "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/"
           when: always
 
+
+
   ######################################################################################################################
   # Command Name:                     jrs_regression_execute
   # Command Version:                  1.0
@@ -345,7 +347,7 @@ commands:
             if [[ ! -d "${REGRESSION_PATH}" ]]; then exit 15; fi
 
             if [[ -z "${CIRCLE_USERNAME}" ]]; then
-              JRS_USER="swirlds-automation"
+              JRS_USER="hedera-service-automation"
             else
               JRS_USER="${CIRCLE_USERNAME}"
             fi
@@ -390,14 +392,12 @@ commands:
               -Djrs.circleci=true \
               -Djrs.circleci.user="${JRS_USER}" \
               -Djrs.circleci.branch="${JRS_BRANCH}" \
-              -Djrs.circleci.ssh.login="${JRS_SSH_USER_NAME}" \
-              -Djrs.circleci.ssh.keyfile="/swirlds-platform/regression/keys/services-regression" \
-              -Djrs.circleci.web.hostname="${JRS_WEB_HOSTNAME}" \
-              -Djrs.circleci.web.port="${JRS_WEB_PORT}" \
               ${JRS_OPTIONS} \
+              -Daws.accessKeyId=AKIARLBM6VADFE5EUMHY \
+              -Daws.secretKey=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 \
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
-              -jar regression.jar "${CONFIG_PATH}"
+              -jar regression.jar "${CONFIG_PATH}" 
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
@@ -1245,8 +1245,9 @@ executors:
         type: string
         default: ""
     docker:
-      - image: qnswirlds/java-builder:0.1.3
+#      - image: qnswirlds/java-builder:0.1.3
 #      - image: nathanklick/cci-openjdk-infer:12.0.2
+      - image: nathanklick/cci-openjdk-regression:12.0.2
       - image: postgres:10
         environment:
           POSTGRES_USER: swirlds
@@ -1285,6 +1286,40 @@ executors:
       INFRASTRUCTURE_REPO: /infrastructure
       WORKFLOW-NAME: << parameters.workflow-name >>
     working_directory: /repo
+
+  ######################################################################################################################
+  # Executor Name:          openjdk_12_regression   (docker)
+  # Executor Meta Version:  1.0
+  # Resource Class:         xlarge                  (8 vCPU, 16GB RAM)
+  # OS Version:             Ubuntu 18.04            (bionic)
+  # Java Version:           12.0.2
+  # Maven Version:          3.6.1
+  # PostgreSQL Version:     10.14                   (Alpine OS)
+  # GnuPG Version:          2.2
+  # GCloud SDK Version:     323.0.0
+  #
+  # Description:
+  #
+  #   Provides a Ubuntu based docker container with OpenJDK, Maven, GnuPG, and the Google Cloud SDK preinstalled.
+  #   This executor also launches a second PostgreSQL docker container to provide the necessary database services
+  #   during compilation and unit testing.
+  #
+  ######################################################################################################################
+  openjdk_12_regression:
+    docker:
+      - image: nathanklick/cci-openjdk-regression:12.0.2
+      - image: postgres:10.14-alpine
+        environment:
+          POSTGRES_USER: swirlds
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: fcfs
+    working_directory: /repos
+    resource_class: xlarge
+    environment:
+      MAVEN_OPTS: -Xmx5200m
+      JAVA_OPTS: -Xmx15g
+      LC_ALL: C.UTF-8
+      DEBIAN_FRONTEND: noninteractive
 
 workflows:
   AWS-Daily-Services-Crypto-Update-5N-1C:
@@ -3364,7 +3399,10 @@ jobs:
     steps:
 #      - git_main_repo_checkout
 #      - mvn_version_info
-#      - gcp_import_credentials
+      - gcp_import_credentials:
+         username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
+         keyfile_variable: GCLOUD_SERVICE_KEY
+         project_variable: GOOGLE_PROJECT_ID
 #      - mvn_compile
       - when:
           condition: << parameters.automated_run >>
