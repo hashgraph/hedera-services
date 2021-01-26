@@ -140,8 +140,6 @@ import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.time.Instant;
@@ -159,7 +157,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(JUnitPlatform.class)
 public class ServicesContextTest {
 	private final long id = 1L;
 	private final NodeId nodeId = new NodeId(false, id);

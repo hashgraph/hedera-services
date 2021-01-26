@@ -35,8 +35,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,7 +61,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class MerkleDiskFsTest {
 	MerkleDiskFs subject;
 	AccountID nodeAccount = AccountID.newBuilder().setAccountNum(3).build();
@@ -167,8 +164,21 @@ public class MerkleDiskFsTest {
 	}
 
 	@Test
-	public void fileNotExist() throws IOException {
+	public void fileNotExistNoDebug() throws IOException {
 		// setup:
+		subject = new MerkleDiskFs("this/doesnt/exist", asLiteralString(nodeAccount));
+
+		given(getter.allBytesFrom(any())).willThrow(IOException.class);
+
+		Assertions.assertSame(MerkleDiskFs.MISSING_CONTENT, subject.contentsOf(file150));
+	}
+
+	@Test
+	public void fileNotExistDebugEnabled() throws IOException {
+		// setup:
+		Logger log = mock(Logger.class);
+		given(log.isDebugEnabled()).willReturn(true);
+		MerkleDiskFs.log = log;
 		subject = new MerkleDiskFs("this/doesnt/exist", asLiteralString(nodeAccount));
 
 		given(getter.allBytesFrom(any())).willThrow(IOException.class);

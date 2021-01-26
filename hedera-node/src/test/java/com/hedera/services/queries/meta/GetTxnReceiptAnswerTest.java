@@ -34,8 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 
@@ -47,7 +45,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
 
-@RunWith(JUnitPlatform.class)
 class GetTxnReceiptAnswerTest {
 	private TransactionID validTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount("0.0.2"))

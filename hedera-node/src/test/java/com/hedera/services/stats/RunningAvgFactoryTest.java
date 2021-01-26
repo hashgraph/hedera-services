@@ -23,14 +23,11 @@ package com.hedera.services.stats;
 import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsRunningAverage;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class RunningAvgFactoryTest {
 	RunningAvgFactory subject = new RunningAvgFactory() { };
 

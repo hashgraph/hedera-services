@@ -35,8 +35,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -65,7 +63,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class MerkleScheduleTest {
 	byte[] fpk = "firstPretendKey".getBytes();
 	byte[] spk = "secondPretendKey".getBytes();
@@ -164,7 +161,7 @@ public class MerkleScheduleTest {
 	public void validGetters() {
 		// expect:
 		assertEquals(transactionBody, subject.transactionBody());
-		assertEquals(entityMemo, subject.memo());
+		assertEquals(entityMemo, subject.memo().get());
 		assertEquals(isDeleted, subject.isDeleted());
 		assertEquals(signers, subject.signers());
 		assertEquals(payer, subject.payer());

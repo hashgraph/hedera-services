@@ -75,7 +75,8 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
-	public static final ImmutableHash emptyHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+
+	private static final ImmutableHash emptyHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
@@ -84,6 +85,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	static final int RELEASE_0110_VERSION = 5;
 	static final int MERKLE_VERSION = RELEASE_0110_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
+
+	static final String UNSUPPORTED_VERSION_MSG_TPL = "Argument 'version=%d' is invalid!";
 
 	static Function<String, byte[]> hashReader = RecordStream::readPrevFileHash;
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
@@ -155,7 +158,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			case RELEASE_070_VERSION:
 				return ChildIndices.NUM_070_CHILDREN;
 			default:
-				throw new IllegalArgumentException(String.format("unknown version: %d", version));
+				throw new IllegalArgumentException(String.format(UNSUPPORTED_VERSION_MSG_TPL, version));
 		}
 	}
 

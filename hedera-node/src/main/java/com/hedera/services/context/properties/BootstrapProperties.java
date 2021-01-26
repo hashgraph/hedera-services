@@ -57,14 +57,14 @@ public class BootstrapProperties implements PropertySource {
 		}
 		return in;
 	};
-	static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
+	private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
 
 	String BOOTSTRAP_PROPS_RESOURCE = "bootstrap.properties";
 	String BOOTSTRAP_OVERRIDE_PROPS_LOC = "data/config/bootstrap.properties";
 
 	Map<String, Object> bootstrapProps = MISSING_PROPS;
 
-	void initPropsFromResource() {
+	private void initPropsFromResource() {
 		var resourceProps = new Properties();
 		load(BOOTSTRAP_PROPS_RESOURCE, resourceProps);
 		loadOverride(BOOTSTRAP_OVERRIDE_PROPS_LOC, resourceProps, fileStreamProvider, log);
@@ -105,9 +105,7 @@ public class BootstrapProperties implements PropertySource {
 	}
 
 	private void load(String resource, Properties intoProps) {
-		InputStream fin;
-		try {
-			fin = resourceStreamProvider.newInputStream(resource);
+		try (InputStream fin = resourceStreamProvider.newInputStream(resource)) {
 			intoProps.load(fin);
 		} catch (IOException e) {
 			throw new IllegalStateException(
@@ -133,7 +131,7 @@ public class BootstrapProperties implements PropertySource {
 		if (bootstrapProps.containsKey(name)) {
 			return bootstrapProps.get(name);
 		} else {
-			throw new IllegalArgumentException(String.format("No such property '%s'!", name));
+			throw new IllegalArgumentException(String.format("Argument 'name=%s' is invalid!", name));
 		}
 	}
 

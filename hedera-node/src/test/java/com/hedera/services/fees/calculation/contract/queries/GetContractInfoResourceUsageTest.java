@@ -38,8 +38,6 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.List;
@@ -59,7 +57,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class GetContractInfoResourceUsageTest {
 	String memo = "Stay cold...";
 	ContractID target = asContract("0.0.123");

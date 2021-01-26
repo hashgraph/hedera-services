@@ -66,15 +66,12 @@ import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.legacy.handler.TransactionHandler.GET_TOPIC_INFO_QUERY_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
 
-@RunWith(JUnitPlatform.class)
 class PermissionFileUtilsTest {
 	@Test
 	public void returnsEmptyKeyForBlankTxn() {

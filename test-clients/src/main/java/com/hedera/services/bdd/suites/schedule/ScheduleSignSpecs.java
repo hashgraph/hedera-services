@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -64,6 +65,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
 						scheduleSigIrrelevantToSchedulingTxn(),
 						overlappingKeysTreatedAsExpected(),
+						retestsActivationOnSignWithEmptySigMap(),
 				}
 		);
 	}
@@ -79,7 +81,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", 1)
 								).fee(ONE_HBAR).signedBy("sender")
-						).logged(),
+						).inheritingScheduledSigs(),
 						getAccountBalance("receiver").hasTinyBars(0L),
 						scheduleSign("twoSigXfer").withSignatories("receiver")
 				).then(
@@ -101,7 +103,9 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 										.key("sharedKey")
 										.balance(123L)
 										.fee(ONE_HBAR)
-						).payingWith("payerWithSharedKey").via("creation"),
+						).inheritingScheduledSigs()
+								.payingWith("payerWithSharedKey")
+								.via("creation"),
 						getTxnRecord("creation")
 								.scheduled()
 								.hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)
@@ -129,7 +133,8 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 										.receiverSigRequired(true)
 										.key("sharedKey")
 										.fee(ONE_HBAR)
-						).payingWith("payerToHaveSharedKey")
+						).inheritingScheduledSigs()
+								.payingWith("payerToHaveSharedKey")
 								.signedBy("origKey")
 								.hasKnownStatus(INVALID_PAYER_SIGNATURE)
 				);
@@ -138,7 +143,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	public HapiApiSpec overlappingKeysTreatedAsExpected() {
 		var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
-		return defaultHapiSpec("ScheduleSigIrrelevantToSchedulingTxn")
+		return defaultHapiSpec("OverlappingKeysTreatedAsExpected")
 				.given(
 						newKeyNamed("aKey").generator(keyGen),
 						newKeyNamed("bKey").generator(keyGen),
@@ -150,8 +155,9 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleCreate("deferredXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("aSender", ADDRESS_BOOK_CONTROL, 1),
-										tinyBarsFromTo("cSender", ADDRESS_BOOK_CONTROL, 1))
-										.signedBy())
+										tinyBarsFromTo("cSender", ADDRESS_BOOK_CONTROL, 1)
+								).signedBy()
+						).inheritingScheduledSigs()
 				).then(
 						scheduleSign("deferredXfer")
 								.withSignatories("aKey"),
@@ -165,6 +171,28 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								.withSignatories("aKey", "cKey"),
 						getAccountBalance(ADDRESS_BOOK_CONTROL)
 								.hasTinyBars(changeFromSnapshot("before", +2))
+				);
+	}
+
+	public HapiApiSpec retestsActivationOnSignWithEmptySigMap() {
+		return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
+				.given(
+						newKeyNamed("a"),
+						newKeyNamed("b"),
+						newKeyListNamed("ab", List.of("a", "b"))
+				).when(
+						cryptoCreate("sender").key("ab").balance(667L),
+						scheduleCreate(
+								"deferredFall",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", FUNDING, 1)
+								).fee(ONE_HBAR).signedBy("a")
+						).inheritingScheduledSigs(),
+						getAccountBalance("sender").hasTinyBars(667L),
+						cryptoUpdate("sender").key("a")
+				).then(
+						scheduleSign("deferredFall").withSignatories(),
+						getAccountBalance("sender").hasTinyBars(666L)
 				);
 	}
 

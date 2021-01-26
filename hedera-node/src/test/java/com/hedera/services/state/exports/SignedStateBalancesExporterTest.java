@@ -43,8 +43,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -75,7 +73,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class SignedStateBalancesExporterTest {
 	FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 	FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();

@@ -39,8 +39,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -55,7 +53,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KE
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 
-@RunWith(JUnitPlatform.class)
 class GetAccountRecordsAnswerTest {
 	long fee = 1_234L;
 	StateView view;

@@ -40,8 +40,6 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 
@@ -61,7 +59,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-@RunWith(JUnitPlatform.class)
 class ContractCallLocalResourceUsageTest {
 	int gas = 1_234;
 	ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
@@ -157,7 +154,7 @@ class ContractCallLocalResourceUsageTest {
 		given(delegate.perform(any(), anyLong())).willThrow(Exception.class);
 
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
+		assertThrows(IllegalStateException.class, () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
 		// and:
 		assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
 	}

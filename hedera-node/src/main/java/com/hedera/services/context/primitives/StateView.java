@@ -295,6 +295,7 @@ public class StateView {
 					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
 					.setPayerAccountID(schedule.payer().toGrpcAccountId())
 					.setSigners(signersList);
+			schedule.memo().ifPresent(info::setMemo);
 
 			// TODO add signatories once we remove signers completely
 

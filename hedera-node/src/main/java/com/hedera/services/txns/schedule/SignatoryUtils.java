@@ -1,5 +1,25 @@
 package com.hedera.services.txns.schedule;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -53,11 +73,6 @@ public class SignatoryUtils {
 	 *
 	 * Otherwise returns {@code Pair.of(OK, true)} if the new signatories activated the
 	 * schedule, and {@code Pair.of(OK, false)} if they did not.
-	 *
-	 * @param id
-	 * @param store
-	 * @param activationHelper
-	 * @return
 	 */
 	static Pair<ResponseCodeEnum, Boolean> witnessInScope(
 			int numSigs,
@@ -65,10 +80,29 @@ public class SignatoryUtils {
 			ScheduleStore store,
 			InHandleActivationHelper activationHelper
 	) {
-		if (numSigs == 0) {
-			return Pair.of(OK, false);
+		var status = OK;
+		if (numSigs > 0) {
+			status = witnessInNonTrivialScope(numSigs, id, store, activationHelper);
 		}
 
+		if (status == SOME_SIGNATURES_WERE_INVALID) {
+			return Pair.of(SOME_SIGNATURES_WERE_INVALID, false);
+		}
+
+		var revisedSchedule = store.get(id);
+		var isReadyToExecute = isReady(revisedSchedule, activationHelper);
+		if (isReadyToExecute) {
+			status = OK;
+		}
+		return Pair.of(status, isReadyToExecute);
+	}
+
+	private static ResponseCodeEnum witnessInNonTrivialScope(
+			int numSigs,
+			ScheduleID id,
+			ScheduleStore store,
+			InHandleActivationHelper activationHelper
+	) {
 		AtomicInteger numInvalid = new AtomicInteger();
 		List<byte[]> signatories = new ArrayList<>();
 		activationHelper.visitScheduledCryptoSigs((key, sig) -> {
@@ -81,17 +115,11 @@ public class SignatoryUtils {
 
 		int numValid = signatories.size();
 		if (numValid < numSigs && numInvalid.get() > 0) {
-			return Pair.of(SOME_SIGNATURES_WERE_INVALID, false);
+			return SOME_SIGNATURES_WERE_INVALID;
 		}
 
 		int numWitnessed = witness(store, id, signatories);
-		if (numWitnessed == 0) {
-			return Pair.of(NO_NEW_VALID_SIGNATURES, false);
-		}
-
-		var revisedSchedule = store.get(id);
-		var isReadyToExecute = isReady(revisedSchedule, activationHelper);
-		return Pair.of(OK, isReadyToExecute);
+		return (numWitnessed == 0) ? NO_NEW_VALID_SIGNATURES : OK;
 	}
 
 	private static void appendIfUnique(List<byte[]> l, byte[] bytes) {

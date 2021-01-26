@@ -27,8 +27,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +40,6 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@RunWith(JUnitPlatform.class)
 class TransitionLogicLookupTest {
 	TransitionLogic a = withApplicability(txn -> txn.getTransactionID().getAccountID().equals(asAccount("0.0.2")));
 	TransitionLogic b = withApplicability(txn -> txn.getTransactionID().getAccountID().equals(asAccount("2.2.0")));

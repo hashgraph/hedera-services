@@ -27,11 +27,8 @@ import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class CryptoDeleteResourceUsageTest {
 	private SigValueObj sigUsage;
 	private CryptoFeeBuilder usageEstimator;

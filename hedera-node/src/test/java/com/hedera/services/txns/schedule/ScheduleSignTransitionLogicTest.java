@@ -35,8 +35,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -52,7 +50,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class ScheduleSignTransitionLogicTest {
     private ScheduleStore store;
     private PlatformTxnAccessor accessor;

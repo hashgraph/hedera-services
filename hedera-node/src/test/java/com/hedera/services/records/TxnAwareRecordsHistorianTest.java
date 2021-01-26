@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 
@@ -51,7 +49,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class TxnAwareRecordsHistorianTest {
 	final private long submittingMember = 1L;
 	final private AccountID a = asAccount("0.0.1111");

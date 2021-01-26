@@ -51,8 +51,6 @@ import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -88,7 +86,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class SigOpsRegressionTest {
 	private HederaFs hfs;
 	private MiscRunningAvgs runningAvgs;

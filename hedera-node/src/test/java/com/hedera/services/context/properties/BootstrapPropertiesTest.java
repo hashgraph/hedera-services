@@ -24,8 +24,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.Map;
@@ -37,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class BootstrapPropertiesTest {
 	BootstrapProperties subject = new BootstrapProperties();
 

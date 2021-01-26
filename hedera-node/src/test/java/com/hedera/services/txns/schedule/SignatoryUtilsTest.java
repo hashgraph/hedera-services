@@ -49,6 +49,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -103,6 +104,19 @@ class SignatoryUtilsTest {
 	}
 
 	@Test
+	void respondsToNoAttemptsButNowActiveCorrectly() {
+		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
+
+		// when:
+		var outcome = SignatoryUtils.witnessInScope(0, id, store, activationHelper);
+
+		// then:
+		assertEquals(Pair.of(OK, true), outcome);
+		// and:
+		verify(activationHelper, never()).visitScheduledCryptoSigs(any());
+	}
+
+	@Test
 	void respondsToPresumedInvalidCorrectly() {
 		// when:
 		var outcome = SignatoryUtils.witnessInScope(2, id, store, activationHelper);
@@ -112,7 +126,7 @@ class SignatoryUtilsTest {
 	}
 
 	@Test
-	void respondsToRepeatedCorrectly() {
+	void respondsToRepeatedCorrectlyIfNotActive() {
 		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(false);
 
 		// when:
@@ -120,6 +134,18 @@ class SignatoryUtilsTest {
 
 		// then:
 		assertEquals(Pair.of(NO_NEW_VALID_SIGNATURES, false), outcome);
+	}
+
+	@Test
+	void respondsToRepeatedCorrectlyIfActive() {
+		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(false);
+		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
+
+		// when:
+		var outcome = SignatoryUtils.witnessInScope(1, id, store, activationHelper);
+
+		// then:
+		assertEquals(Pair.of(OK, true), outcome);
 	}
 
 	@Test

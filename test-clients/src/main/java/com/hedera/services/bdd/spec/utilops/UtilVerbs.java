@@ -33,6 +33,7 @@ import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
+import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
 import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
@@ -162,6 +163,10 @@ public class UtilVerbs {
 
 	public static NewSpecKey newKeyNamed(String key) {
 		return new NewSpecKey(key);
+	}
+
+	public static NewSpecKeyList newKeyListNamed(String key, List<String> childKeys) {
+		return new NewSpecKeyList(key, childKeys);
 	}
 
 	public static ParallelSpecOps inParallel(HapiSpecOperation... subs) {

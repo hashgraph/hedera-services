@@ -55,8 +55,6 @@ import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -84,7 +82,6 @@ import static org.mockito.BDDMockito.anyInt;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class TxnHandlerVerifySigRegressionTest {
 	private SyncVerifier syncVerifier;
 	private PrecheckKeyReqs precheckKeyReqs;

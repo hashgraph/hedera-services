@@ -25,12 +25,15 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.TrieSigMapGenerator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -38,13 +41,18 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.stream.Collectors.toList;
 
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
 	private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
@@ -53,17 +61,25 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
 	private boolean scheduleNonsense = false;
+	private boolean inheritScheduledSigs = false;
 	private ByteString bytesSigned = ByteString.EMPTY;
+	private List<String> signatories = Collections.emptyList();
 
 	private final String entity;
 	private final HapiTxnOp<T> scheduled;
 	private Optional<byte[]> nonce = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<String> payerAccountID = Optional.empty();
+	private Optional<String> entityMemo = Optional.empty();
 
 	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
 		this.entity = scheduled;
 		this.scheduled = txn.withLegacyProtoStructure().sansTxnId();
+	}
+
+	public HapiScheduleCreate<T> inheritingScheduledSigs() {
+		inheritScheduledSigs = true;
+		return this;
 	}
 
 	public HapiScheduleCreate<T> garbled() {
@@ -86,6 +102,16 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
+	public HapiScheduleCreate<T> signatories(List<String> s) {
+		signatories = s;
+		return this;
+	}
+
+	public HapiScheduleCreate<T> withEntityMemo(String entityMemo) {
+		this.entityMemo = Optional.of(entityMemo);
+		return this;
+	}
+
 	@Override
 	protected HapiScheduleCreate<T> self() {
 		return this;
@@ -101,11 +127,17 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		var subOp = nonce.isPresent()
 				? scheduled.signedTxnFor(spec, nonce.get())
 				: scheduled.signedTxnFor(spec);
-		var schedSigMap = subOp.getSigMap();
-		if (verboseLoggingOn) {
-			var schedTxn = TransactionBody.parseFrom(subOp.getBodyBytes());
-			log.info("Scheduling {} with sigs {}", schedTxn, schedSigMap);
+		var schedTxn = TransactionBody.parseFrom(subOp.getBodyBytes());
+		SignatureMap.Builder sigMap = SignatureMap.newBuilder();
+		if (inheritScheduledSigs) {
+			sigMap.mergeFrom(subOp.getSigMap());
 		}
+		this.bytesSigned = subOp.getBodyBytes();
+		mergeSignatories(bytesSigned.toByteArray(), spec, sigMap);
+		if (verboseLoggingOn) {
+			log.info("Scheduling {} with sigs {}", schedTxn, sigMap.build());
+		}
+
 		ScheduleCreateTransactionBody opBody = spec
 				.txns()
 				.<ScheduleCreateTransactionBody, ScheduleCreateTransactionBody.Builder>body(
@@ -113,11 +145,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							if (scheduleNonsense) {
 								b.setTransactionBody(ByteString.copyFromUtf8("NONSENSE"));
 							} else {
-								bytesSigned = subOp.getBodyBytes();
 								b.setTransactionBody(subOp.getBodyBytes());
 							}
-							b.setSigMap(schedSigMap);
+							b.setSigMap(sigMap.build());
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
+							entityMemo.ifPresent(b::setMemo);
 							payerAccountID.ifPresent(a -> {
 								var payer = TxnUtils.asId(a, spec);
 								b.setPayerAccountID(payer);
@@ -125,6 +157,18 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 						}
 				);
 		return b -> b.setScheduleCreate(opBody);
+	}
+
+	private void mergeSignatories(
+			byte[] body,
+			HapiApiSpec spec,
+			SignatureMap.Builder builder
+	) throws Throwable {
+		var signingKeys = signatories.stream().map(k -> spec.registry().getKey(k)).collect(toList());
+		var authors = spec.keys().authorsFor(signingKeys, Collections.emptyMap());
+		var cryptoSigs = spec.keys().new Ed25519Signing(body, authors).completed();
+		var sigMap = TrieSigMapGenerator.withNature(UNIQUE).forEd25519Sigs(cryptoSigs);
+		builder.mergeFrom(sigMap);
 	}
 
 	@Override
@@ -160,12 +204,21 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		if (verboseLoggingOn) {
 			log.info("Created schedule '{}' as {}", entity, createdSchedule().get());
 		}
-		spec.registry().saveScheduleId(entity, lastReceipt.getScheduleID());
-		spec.registry().saveBytes(registryBytesTag(entity), bytesSigned);
-		adminKey.ifPresent(k -> spec.registry().saveAdminKey(entity, spec.registry().getKey(k)));
+		var registry = spec.registry();
+		registry.saveScheduleId(entity, lastReceipt.getScheduleID());
+		registry.saveBytes(registryBytesTag(entity), bytesSigned);
+		adminKey.ifPresent(k -> registry.saveAdminKey(entity, spec.registry().getKey(k)));
 	}
 
-	static String registryBytesTag(String name) {
+	@Override
+	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(List.of(
+				spec -> spec.registry().getKey(effectivePayer(spec))));
+		adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
+		return signers;
+	}
+
+	public static String registryBytesTag(String name) {
 		return name + "BytesSigned";
 	}
 

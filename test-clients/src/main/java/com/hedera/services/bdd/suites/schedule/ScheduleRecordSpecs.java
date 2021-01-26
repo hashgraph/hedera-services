@@ -50,13 +50,13 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						bothRecordsAreQueryable(),
+						allRecordsAreQueryable(),
 				}
 		);
 	}
 
-	public HapiApiSpec bothRecordsAreQueryable() {
-		return defaultHapiSpec("BothRecordsAreQueryable")
+	public HapiApiSpec allRecordsAreQueryable() {
+		return defaultHapiSpec("AllRecordsAreQueryable")
 				.given(
 						cryptoCreate("payer"),
 						cryptoCreate("receiver").receiverSigRequired(true).balance(0L)
@@ -66,10 +66,16 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								cryptoTransfer(
 										tinyBarsFromTo("payer", "receiver", 1)
 								).fee(ONE_HBAR).signedBy("payer")
-						).payingWith("payer").via("creation")
+						).inheritingScheduledSigs()
+								.payingWith("payer")
+								.via("creation"),
+						getAccountBalance("receiver").hasTinyBars(0L)
 				).then(
-						scheduleSign("twoSigXfer").withSignatories("receiver"),
+						scheduleSign("twoSigXfer")
+								.via("trigger")
+								.withSignatories("receiver"),
 						getAccountBalance("receiver").hasTinyBars(1L),
+						getTxnRecord("trigger").logged(),
 						getTxnRecord("creation").logged(),
 						getTxnRecord("creation").scheduled().logged()
 				);

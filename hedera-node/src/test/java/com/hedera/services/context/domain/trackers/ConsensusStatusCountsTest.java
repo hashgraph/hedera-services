@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -46,7 +44,6 @@ import static com.hedera.services.context.domain.trackers.IssEventStatus.*;
 import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
-@RunWith(JUnitPlatform.class)
 class ConsensusStatusCountsTest {
 	ConsensusStatusCounts subject;
 

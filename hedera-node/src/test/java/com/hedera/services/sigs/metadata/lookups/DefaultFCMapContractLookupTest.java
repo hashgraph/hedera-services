@@ -30,8 +30,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
@@ -40,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(JUnitPlatform.class)
 public class DefaultFCMapContractLookupTest {
 	private final String id = "0.0.1337";
 	private final ContractID contract = IdUtils.asContract(id);

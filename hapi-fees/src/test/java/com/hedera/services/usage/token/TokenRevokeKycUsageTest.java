@@ -33,8 +33,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static org.junit.Assert.assertEquals;
@@ -44,7 +42,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
-@RunWith(JUnitPlatform.class)
 public class TokenRevokeKycUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;

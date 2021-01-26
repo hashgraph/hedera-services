@@ -21,8 +21,6 @@ package com.hedera.services.usage.crypto.entities;
  */
 
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
@@ -30,7 +28,6 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.*;
 
-@RunWith(JUnitPlatform.class)
 class CryptoEntitySizesTest {
 	CryptoEntitySizes subject = CRYPTO_ENTITY_SIZES;
 
