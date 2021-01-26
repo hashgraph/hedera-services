@@ -122,7 +122,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasToken(relationshipWith("a"))
 								.hasNoTokenRelationship("b")
 								.hasToken(relationshipWith("c"))
-								.hasNoTokenRelationship("tbd")
+								.hasToken(relationshipWith("tbd"))
 								.logged()
 				);
 	}
@@ -150,7 +150,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasToken(relationshipWith("a"))
 								.hasNoTokenRelationship("b")
 								.hasToken(relationshipWith("c"))
-								.hasNoTokenRelationship("tbd")
+								.hasToken(relationshipWith("tbd"))
 								.logged()
 				);
 	}
