@@ -59,14 +59,10 @@ public class ExpectedTokenRel {
 			for (TokenRelationship actualRel : actualRels) {
 				var unexpectedId = spec.registry().getTokenID(unexpectedToken);
 				if (actualRel.getTokenId().equals(unexpectedId)) {
-					log.error(String.format(
-							"Account '%s' should have had no relationship with token '%s'!",
-							account,
-							unexpectedToken));
-					throw new Exception(String.format(
-							"Account '%s' should have had no relationship with token '%s'!",
-							account,
-							unexpectedToken));
+					String errMsg = String.format("Account '%s' should have had no relationship with token '%s'!",
+							account,unexpectedToken);
+					log.error(errMsg);
+					throw new Exception(errMsg);
 				}
 			}
 		}
@@ -90,14 +86,10 @@ public class ExpectedTokenRel {
 				}
 			}
 			if (!found) {
-				log.error(String.format(
-						"Account '%s' had no relationship with token '%s'!",
-						account,
-						rel.getToken()));
-				throw new Exception(String.format(
-						"Account '%s' had no relationship with token '%s'!",
-						account,
-						rel.getToken()));
+				String errMsg = String.format("Account '%s' had no relationship with token '%s'!",
+						account,rel.getToken());
+				log.error(errMsg);
+				throw new Exception(errMsg);
 			}
 		}
 	}

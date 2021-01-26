@@ -1298,11 +1298,11 @@ workflows:
   AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C:
     triggers:
       - schedule:
-          cron: "18 21 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:
-                - master
+                - Disable-master
 
     jobs:
       - build-platform-and-services
@@ -1341,7 +1341,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C:
     triggers:
       - schedule:
-          cron: "56 21 * * *"
+          cron: "30 10 * * *"
           filters:
             branches:
               only:
@@ -1363,7 +1363,7 @@ workflows:
   AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "15 20 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
@@ -1405,7 +1405,7 @@ workflows:
   AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "15 20 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:
