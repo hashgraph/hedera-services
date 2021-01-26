@@ -486,11 +486,11 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void associatingRejectsIfCappedAssociationsEvenAfterPurging() {
+	public void associatingRejectsIfCappedAssociationsLimit() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(false);
-		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(tokens.numAssociations()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
 		// when:

@@ -154,9 +154,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 				}
 			}
-			int effectiveRelationships = accountTokens.purge(id -> !exists(id), id -> get(id).isDeleted());
 			var validity = OK;
-			if ((effectiveRelationships + tokenIds.size()) > properties.maxTokensPerAccount()) {
+			if ((accountTokens.numAssociations() + tokenIds.size()) > properties.maxTokensPerAccount()) {
 				validity = TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 			} else {
 				accountTokens.associateAll(new HashSet<>(tokenIds));
@@ -184,6 +183,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
 			for (TokenID tId : tokenIds) {
+				var token = get(tId);
 				if (!accountTokens.includes(tId)) {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 				}
@@ -195,8 +195,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					return ACCOUNT_FROZEN_FOR_TOKEN;
 				}
 				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-				if (balance > 0) {
-					return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+				if(!token.isDeleted()){
+					if (balance > 0) {
+						return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+					}
 				}
 			}
 			accountTokens.dissociateAll(new HashSet<>(tokenIds));
