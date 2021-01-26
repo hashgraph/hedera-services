@@ -41,8 +41,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -70,7 +68,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class ContractCallLocalAnswerTest {
 	private String node = "0.0.3";
 	private long gas = 123L;

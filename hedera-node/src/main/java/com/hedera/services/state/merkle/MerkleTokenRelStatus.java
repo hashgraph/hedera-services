@@ -122,10 +122,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue
 
 	public void setBalance(long balance) {
 		if (balance < 0) {
-			throw new IllegalArgumentException(String.format(
-					"Cannot set %s balance to %d!",
-					this,
-					balance));
+			throw new IllegalArgumentException(String.format("Argument 'balance=%d' would negate %s!", balance, this));
 		}
 		this.balance = balance;
 	}

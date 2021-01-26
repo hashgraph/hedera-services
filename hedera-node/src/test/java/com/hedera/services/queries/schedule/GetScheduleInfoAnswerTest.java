@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,7 +61,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class GetScheduleInfoAnswerTest {
     private Transaction paymentTxn;
     private String node = "0.0.3";

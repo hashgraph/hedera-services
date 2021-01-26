@@ -28,8 +28,6 @@ import com.swirlds.common.Platform;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.util.function.Function;
@@ -39,7 +37,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class ServicesStatsManagerTest {
 	long updateIntervalMs = 1_234;
 

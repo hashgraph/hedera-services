@@ -23,8 +23,6 @@ package com.hedera.services.throttling.bucket;
 import com.swirlds.common.throttle.Throttle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,7 +31,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
-@RunWith(JUnitPlatform.class)
 class CapacityTestTest {
 	double req = 123.0;
 	BucketThrottle bucket;

@@ -54,8 +54,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.Assert;
 /**
@@ -64,7 +62,6 @@ import org.junit.Assert;
  * JKeyList Key , sez & desez 3) Create a JEd25519Key, sez & desez 4) Create a JECDSA_383Key, sez &
  * desez 5) Create a Key Proto, sez & desez
  */
-@RunWith(JUnitPlatform.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @DisplayName("JKeySerializer Test Suite")

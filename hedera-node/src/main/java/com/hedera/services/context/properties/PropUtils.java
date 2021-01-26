@@ -33,9 +33,7 @@ public class PropUtils {
 			ThrowingStreamProvider fileStreamProvider,
 			Logger log
 	) {
-		InputStream fin;
-		try {
-			fin = fileStreamProvider.newInputStream(loc);
+		try (InputStream fin = fileStreamProvider.newInputStream(loc)) {
 			intoProps.load(fin);
 		} catch (IOException ignore) {
 			log.info("No overrides present at {}.", loc);

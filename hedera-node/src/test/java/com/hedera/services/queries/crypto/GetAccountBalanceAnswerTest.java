@@ -51,8 +51,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 
@@ -61,7 +59,6 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
-@RunWith(JUnitPlatform.class)
 public class GetAccountBalanceAnswerTest {
 	private FCMap accounts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;

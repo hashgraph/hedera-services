@@ -28,8 +28,6 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.function.Predicate;
 
@@ -38,7 +36,6 @@ import static com.hedera.test.factories.txns.CryptoUpdateFactory.*;
 import static com.hedera.services.sigs.utils.PrecheckUtils.*;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.*;
 
-@RunWith(JUnitPlatform.class)
 public class PrecheckUtilsTest {
 	final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
 	final AccountID node = SignedTxnFactory.DEFAULT_NODE;

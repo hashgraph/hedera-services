@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Optional;
 
@@ -50,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.TxnUtils.*;
 
-@RunWith(JUnitPlatform.class)
 class GetVersionInfoAnswerTest {
 	private String node = "0.0.3";
 	private long fee = 1_234L;

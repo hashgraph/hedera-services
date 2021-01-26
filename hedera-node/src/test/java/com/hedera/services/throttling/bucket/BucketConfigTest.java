@@ -24,8 +24,6 @@ import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import org.junit.jupiter.api.Test;
 import com.hedera.services.context.properties.PropertySource;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.Set;
@@ -36,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.throttling.bucket.BucketConfig.*;
 
-@RunWith(JUnitPlatform.class)
 class BucketConfigTest {
 	String bucket = "mine";
 	String overflow = "yours";
