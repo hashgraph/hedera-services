@@ -68,6 +68,7 @@ public class GetAccountBalanceAnswerTest {
 	private TokenID aToken = IdUtils.asToken("0.0.3");
 	private long aBalance = 345;
 	private long bBalance = 456;
+	private long cBalance = 567;
 	private TokenID bToken = IdUtils.asToken("0.0.4");
 	private TokenID cToken = IdUtils.asToken("0.0.5");
 	private TokenID dToken = IdUtils.asToken("0.0.6");
@@ -96,6 +97,9 @@ public class GetAccountBalanceAnswerTest {
 		tokenRels.put(
 				fromAccountTokenRel(target, bToken),
 				new MerkleTokenRelStatus(bBalance, false, false));
+		tokenRels.put(
+				fromAccountTokenRel(target, cToken),
+				new MerkleTokenRelStatus(cBalance, false, false));
 
 		accounts = mock(FCMap.class);
 		propertySource = mock(PropertySource.class);
@@ -257,7 +261,9 @@ public class GetAccountBalanceAnswerTest {
 		// expect:
 		assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
 		assertEquals(
-				List.of(tokenBalanceWith(aToken, aBalance), tokenBalanceWith(bToken, bBalance)),
+				List.of(tokenBalanceWith(aToken, aBalance),
+						tokenBalanceWith(bToken, bBalance),
+						tokenBalanceWith(cToken, cBalance)),
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);
 		assertEquals(balance, answer);

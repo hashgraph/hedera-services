@@ -174,18 +174,16 @@ public class StateView {
 			var optionalToken = view.tokenWith(tId);
 			if (optionalToken.isPresent()) {
 				var token = optionalToken.get();
-				if (!token.isDeleted()) {
-					var relKey = fromAccountTokenRel(id, tId);
-					var relationship = view.tokenAssociations().get().get(relKey);
-					relationships.add(new RawTokenRelationship(
-							relationship.getBalance(),
-							tId.getShardNum(),
-							tId.getRealmNum(),
-							tId.getTokenNum(),
-							relationship.isFrozen(),
-							relationship.isKycGranted()
-					).asGrpcFor(token));
-				}
+				var relKey = fromAccountTokenRel(id, tId);
+				var relationship = view.tokenAssociations().get().get(relKey);
+				relationships.add(new RawTokenRelationship(
+						relationship.getBalance(),
+						tId.getShardNum(),
+						tId.getRealmNum(),
+						tId.getTokenNum(),
+						relationship.isFrozen(),
+						relationship.isKycGranted()
+				).asGrpcFor(token));
 			}
 		}
 		return relationships;
