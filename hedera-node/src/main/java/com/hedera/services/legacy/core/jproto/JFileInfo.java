@@ -98,7 +98,7 @@ public class JFileInfo implements Serializable {
    * 
    * @param fi a FileInfo object to be converted
    * @return converted JFileInfo object
-   * @throws Exception
+   * @throws DecoderException
    */
   public static JFileInfo convert(FileInfo fi) throws DecoderException {
     JFileInfo jfi = new JFileInfo(fi.getDeleted(),
