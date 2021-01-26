@@ -121,6 +121,7 @@ commands:
       - run:
           name: Import the Google Cloud Service Account
           command: |
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc
             echo "${<< parameters.keyfile_variable >>}" > "/tmp/gcloud_account_key.json"
             set -x
             gcloud auth activate-service-account "${<< parameters.username_variable >>}" --key-file="/tmp/gcloud_account_key.json" --project="${<< parameters.project_variable >>}"
@@ -393,11 +394,9 @@ commands:
               -Djrs.circleci.user="${JRS_USER}" \
               -Djrs.circleci.branch="${JRS_BRANCH}" \
               ${JRS_OPTIONS} \
-              -Daws.accessKeyId=AKIARLBM6VADFE5EUMHY \
-              -Daws.secretKey=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 \
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
-              -jar regression.jar "${CONFIG_PATH}" 
+              -jar regression.jar "${CONFIG_PATH}"
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
