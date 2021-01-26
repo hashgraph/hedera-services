@@ -61,10 +61,10 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						triggersUponAdditionalNeededSig(),
-//						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
-//						scheduleSigIrrelevantToSchedulingTxn(),
-//						overlappingKeysTreatedAsExpected(),
+						triggersUponAdditionalNeededSig(),
+						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
+						scheduleSigIrrelevantToSchedulingTxn(),
+						overlappingKeysTreatedAsExpected(),
 						retestsActivationOnSignWithEmptySigMap(),
 				}
 		);
