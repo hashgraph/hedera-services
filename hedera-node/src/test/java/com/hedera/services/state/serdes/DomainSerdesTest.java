@@ -38,8 +38,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -63,7 +61,6 @@ import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.times;
 
-@RunWith(JUnitPlatform.class)
 public class DomainSerdesTest {
 	private DomainSerdes subject = new DomainSerdes();
 

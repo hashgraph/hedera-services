@@ -26,15 +26,12 @@ import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsRunningAverage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class MiscRunningAvgsTest {
 	double halfLife = 10.0;
 	Platform platform;

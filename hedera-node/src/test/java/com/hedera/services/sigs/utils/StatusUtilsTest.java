@@ -27,12 +27,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.*;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-@RunWith(JUnitPlatform.class)
 public class StatusUtilsTest {
 	@Test
 	public void usesTxnIdForStatus() throws Throwable {

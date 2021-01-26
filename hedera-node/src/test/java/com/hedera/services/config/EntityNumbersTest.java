@@ -24,10 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
-@RunWith(JUnitPlatform.class)
 class EntityNumbersTest {
 	FileNumbers fileNumbers;
 	HederaNumbers hederaNumbers;

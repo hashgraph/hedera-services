@@ -43,8 +43,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.util.Set;
@@ -57,7 +55,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class BackedSystemAccountsCreatorTest {
 	private long shard = 1;
 	private long realm = 2;

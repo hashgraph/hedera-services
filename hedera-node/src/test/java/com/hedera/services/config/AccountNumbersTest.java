@@ -25,13 +25,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.hedera.services.context.properties.PropertySource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class AccountNumbersTest {
 	PropertySource properties;
 	AccountNumbers subject;

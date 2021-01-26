@@ -25,8 +25,6 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -41,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.services.files.MetadataMapFactory.*;
 
-@RunWith(JUnitPlatform.class)
 class MetadataMapFactoryTest {
 	private long expiry = 1_234_567L;
 

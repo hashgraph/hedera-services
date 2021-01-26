@@ -28,14 +28,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import static com.hedera.services.files.interceptors.PureRatesValidation.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(JUnitPlatform.class)
 class PureRatesValidationTest {
 	private static int currentHbarEquiv = 30000, nextHbarEquiv = 30000;
 	private static int currentCentEquiv = 120000, nextCentEquiv = 120000;

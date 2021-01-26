@@ -60,6 +60,7 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileDelete;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -126,6 +127,9 @@ public class TxnVerbs {
 		return new HapiTokenDissociate(account, tokens);
 	}
 	public static HapiTokenAssociate tokenAssociate(String account, String... tokens) {
+		return new HapiTokenAssociate(account, tokens);
+	}
+	public static HapiTokenAssociate tokenAssociate(String account, List<String> tokens) {
 		return new HapiTokenAssociate(account, tokens);
 	}
 	public static HapiTokenCreate tokenCreate(String token) {

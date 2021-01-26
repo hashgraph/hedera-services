@@ -39,8 +39,6 @@ import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static java.util.Collections.EMPTY_LIST;
 import static org.junit.jupiter.api.Assertions.*;
@@ -55,7 +53,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.factories.keys.NodeFactory.*;
 
-@RunWith(JUnitPlatform.class)
 public class PrecheckVerifierTest {
 	private static List<JKey> reqKeys;
 	private static final TransactionBody txnBody = TransactionBody.newBuilder()

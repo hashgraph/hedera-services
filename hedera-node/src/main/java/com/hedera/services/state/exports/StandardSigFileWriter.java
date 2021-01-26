@@ -24,6 +24,7 @@ import com.google.common.primitives.Ints;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import static com.hedera.services.legacy.stream.RecordStream.TYPE_FILE_HASH;
 import static com.hedera.services.legacy.stream.RecordStream.TYPE_SIGNATURE;
@@ -39,7 +40,7 @@ public class StandardSigFileWriter implements SigFileWriter {
 			fout.write(Ints.toByteArray(sig.length));
 			fout.write(sig);
 		} catch (IOException e) {
-			throw new IllegalArgumentException(String.format("I/O error writing sig of '%s'!", signedFile), e);
+			throw new UncheckedIOException(String.format("I/O error writing sig of '%s'!", signedFile), e);
 		}
 		return sigFile;
 	}

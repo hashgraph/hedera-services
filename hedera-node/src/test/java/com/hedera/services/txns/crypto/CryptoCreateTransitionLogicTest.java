@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -39,8 +40,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
@@ -53,7 +52,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.ledger.properties.AccountProperty.*;
 
-@RunWith(JUnitPlatform.class)
 public class CryptoCreateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private long customAutoRenewPeriod = 100_001L;
@@ -94,6 +92,14 @@ public class CryptoCreateTransitionLogicTest {
 		// expect:
 		assertTrue(subject.applicability().test(cryptoCreateTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
+
+	@Test
+	public void returnsKeyRequiredOnEmptyKey() {
+		givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+
+		// expect:
+		assertEquals(KEY_REQUIRED, subject.syntaxCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -279,6 +285,10 @@ public class CryptoCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
+		givenValidTxnCtx(key);
+	}
+
+	private void givenValidTxnCtx(Key toUse) {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
@@ -289,7 +299,7 @@ public class CryptoCreateTransitionLogicTest {
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod))
 								.setReceiveRecordThreshold(customReceiveThreshold)
 								.setSendRecordThreshold(customSendThreshold)
-								.setKey(key)
+								.setKey(toUse)
 								.build()
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);

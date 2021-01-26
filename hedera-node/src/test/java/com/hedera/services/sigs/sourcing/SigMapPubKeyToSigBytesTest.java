@@ -33,8 +33,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.swirlds.common.crypto.SignatureType;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,7 +43,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(JUnitPlatform.class)
 public class SigMapPubKeyToSigBytesTest {
 	private final byte[] EMPTY_SIG = {};
 	private final KeyTree payerKt =

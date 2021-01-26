@@ -31,8 +31,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
@@ -45,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 
-@RunWith(JUnitPlatform.class)
 class MerkleEntityIdUtilsTest {
 	@Test
 	public void correctLiteral() {

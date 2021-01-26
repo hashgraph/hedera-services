@@ -27,9 +27,7 @@ import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +36,6 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.test.factories.keys.NodeFactory.*;
 
-@RunWith(JUnitPlatform.class)
 public class HederaKeyTraversalTest {
 	static KeyTree kt;
 

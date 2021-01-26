@@ -21,14 +21,11 @@ package com.hedera.services.records;
  */
 
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 
-@RunWith(JUnitPlatform.class)
 class NoopRecordsHistorianTest {
 	@Test
 	public void nothingMuchHappens() {

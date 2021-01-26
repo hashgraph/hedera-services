@@ -33,16 +33,13 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.test.utils.IdUtils.*;
 
-@RunWith(JUnitPlatform.class)
 public class SigStatusOrderResultFactoryTest {
 	private SigStatusOrderResultFactory subject;
 	private boolean inHandleTxnDynamicContext = true;

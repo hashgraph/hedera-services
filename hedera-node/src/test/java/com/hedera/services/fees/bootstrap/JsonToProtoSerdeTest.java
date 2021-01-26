@@ -24,8 +24,6 @@ import com.google.common.io.Files;
 import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.OutputStream;
 import java.nio.file.Paths;
@@ -34,7 +32,6 @@ import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.loadFeeSchedul
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(JUnitPlatform.class)
 public class JsonToProtoSerdeTest {
 	public final static String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
 

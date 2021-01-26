@@ -22,14 +22,11 @@ package com.hedera.services.context;
 
 import com.hedera.services.context.ContextPlatformStatus;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.swirlds.common.PlatformStatus.MAINTENANCE;
 import static com.swirlds.common.PlatformStatus.STARTING_UP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(JUnitPlatform.class)
 class ContextPlatformStatusTest {
 	ContextPlatformStatus subject = new ContextPlatformStatus();
 

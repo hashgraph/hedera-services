@@ -45,6 +45,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Comparator;
@@ -243,23 +244,25 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private byte[] asSerializedConfig(String resource, String propsLoc) throws IOException {
-		var jutilProps = new Properties();
-		jutilProps.load(Files.newInputStream(Paths.get(propsLoc)));
-		var config = ServicesConfigurationList.newBuilder();
-		var sb = new StringBuilder(String.format("Bootstrapping network %s from '%s':", resource, propsLoc));
-		jutilProps.entrySet()
-				.stream()
-				.sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
-				.peek(entry -> sb.append(String.format(
-						"\n  %s=%s",
-						String.valueOf(entry.getKey()),
-						String.valueOf(entry.getValue()))))
-				.forEach(entry ->
-						config.addNameValue(Setting.newBuilder()
-								.setName(String.valueOf(entry.getKey()))
-								.setValue(String.valueOf(entry.getValue()))));
-		log.info(sb.toString());
-		return config.build().toByteArray();
+		try (InputStream fin = Files.newInputStream(Paths.get(propsLoc))) {
+			var jutilProps = new Properties();
+			jutilProps.load(fin);
+			var config = ServicesConfigurationList.newBuilder();
+			var sb = new StringBuilder(String.format("Bootstrapping network %s from '%s':", resource, propsLoc));
+			jutilProps.entrySet()
+					.stream()
+					.sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
+					.peek(entry -> sb.append(String.format(
+							"\n  %s=%s",
+							String.valueOf(entry.getKey()),
+							String.valueOf(entry.getValue()))))
+					.forEach(entry ->
+							config.addNameValue(Setting.newBuilder()
+									.setName(String.valueOf(entry.getKey()))
+									.setValue(String.valueOf(entry.getValue()))));
+			log.info(sb.toString());
+			return config.build().toByteArray();
+		}
 	}
 
 	private JFileInfo systemFileInfo() {

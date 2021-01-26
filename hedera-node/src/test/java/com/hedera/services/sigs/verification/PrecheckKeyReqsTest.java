@@ -32,8 +32,6 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static java.util.stream.Collectors.toList;
 import static org.mockito.BDDMockito.*;
 import java.util.List;
@@ -43,7 +41,6 @@ import java.util.stream.Stream;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY;
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(JUnitPlatform.class)
 public class PrecheckKeyReqsTest {
 	private List<JKey> keys;
 	private PrecheckKeyReqs subject;

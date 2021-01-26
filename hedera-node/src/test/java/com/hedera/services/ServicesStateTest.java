@@ -79,8 +79,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.time.Instant;
@@ -113,7 +111,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class ServicesStateTest {
 	Function<String, byte[]> mockHashReader;
 	Consumer<MerkleNode> mockDigest;
@@ -294,7 +291,9 @@ class ServicesStateTest {
 
 		Throwable throwable = assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(RELEASE_0110_VERSION + 1));
-		assertTrue(throwable.getMessage().contains("unknown version"));
+		assertEquals(
+				String.format(ServicesState.UNSUPPORTED_VERSION_MSG_TPL, RELEASE_0110_VERSION + 1),
+				throwable.getMessage());
 	}
 
 	@Test

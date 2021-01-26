@@ -22,8 +22,6 @@ package com.hedera.services.usage.schedule.entities;
 
 import com.google.protobuf.ByteString;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION;
@@ -33,7 +31,6 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(JUnitPlatform.class)
 public class ScheduleEntitySizesTest {
 
 	ScheduleEntitySizes subject = ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;

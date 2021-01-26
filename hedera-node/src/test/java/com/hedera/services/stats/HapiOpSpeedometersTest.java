@@ -28,8 +28,6 @@ import com.swirlds.platform.StatsSpeedometer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.function.Function;
 
@@ -44,7 +42,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class HapiOpSpeedometersTest {
 	double halfLife = 10.0;
 

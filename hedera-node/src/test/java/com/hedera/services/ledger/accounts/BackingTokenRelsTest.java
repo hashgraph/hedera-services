@@ -27,8 +27,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Collections;
 
@@ -48,7 +46,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class BackingTokenRelsTest {
 	long aBalance = 100, bBalance = 200, cBalance = 300;
 	boolean aFrozen = true, bFrozen = false, cFrozen = true;

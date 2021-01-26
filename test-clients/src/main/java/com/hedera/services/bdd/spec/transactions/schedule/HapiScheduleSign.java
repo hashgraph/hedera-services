@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.schedule;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
@@ -49,6 +50,9 @@ import static java.util.stream.Collectors.toList;
 
 public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	private static final Logger log = LogManager.getLogger(HapiScheduleSign.class);
+
+	private static final int defaultScheduleTxnExpiry = HapiSpecSetup.getDefaultNodeProps()
+			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
 	private final String schedule;
 	private List<String> signatories = Collections.emptyList();
@@ -104,7 +108,9 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return ScheduleSignUsage.newEstimate(txn, suFrom(svo)).get();
+		return ScheduleSignUsage.newEstimate(txn, suFrom(svo))
+				.givenScheduledTxExpirationTimeSecs(defaultScheduleTxnExpiry)
+				.get();
 	}
 
 	@Override

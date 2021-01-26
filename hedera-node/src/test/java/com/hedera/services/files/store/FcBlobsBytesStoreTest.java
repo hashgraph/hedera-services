@@ -25,8 +25,6 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.util.AbstractMap;
@@ -48,7 +46,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class FcBlobsBytesStoreTest {
 	byte[] aData = "BlobA".getBytes(), bData = "BlobB".getBytes();
 	MerkleBlobMeta pathA = new MerkleBlobMeta("pathA"), pathB = new MerkleBlobMeta("pathB");

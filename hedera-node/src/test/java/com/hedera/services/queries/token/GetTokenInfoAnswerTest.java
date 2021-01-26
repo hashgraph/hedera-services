@@ -35,8 +35,6 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,7 +59,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
-@RunWith(JUnitPlatform.class)
 class GetTokenInfoAnswerTest {
 	private Transaction paymentTxn;
 	private String node = "0.0.3";

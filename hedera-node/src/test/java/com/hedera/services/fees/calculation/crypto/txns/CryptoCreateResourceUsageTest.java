@@ -28,13 +28,10 @@ import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 
-@RunWith(JUnitPlatform.class)
 class CryptoCreateResourceUsageTest {
 	private SigValueObj sigUsage;
 	private CryptoFeeBuilder usageEstimator;

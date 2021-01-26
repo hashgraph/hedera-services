@@ -34,8 +34,6 @@ import org.ethereum.vm.DataWord;
 import org.ethereum.vm.LogInfo;
 import org.ethereum.vm.program.ProgramResult;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -56,7 +54,6 @@ import javax.swing.text.html.parser.Entity;
 
 import static com.hedera.services.contracts.execution.DomainUtils.*;
 
-@RunWith(JUnitPlatform.class)
 class DomainUtilsTest {
 	long gas = 1_234_567L;
 	String error = "I don't like any of this!";
