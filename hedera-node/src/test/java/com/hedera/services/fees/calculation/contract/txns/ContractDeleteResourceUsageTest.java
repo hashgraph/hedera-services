@@ -27,11 +27,8 @@ import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class ContractDeleteResourceUsageTest {
 	private SigValueObj sigUsage;
 	private SmartContractFeeBuilder usageEstimator;

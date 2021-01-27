@@ -21,8 +21,6 @@ package com.hedera.services.queries;
  */
 
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Collections;
 
@@ -33,7 +31,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class AnswerServiceTest {
 	@Test
 	public void delegatesToNonQueryCtxAsExpected() {

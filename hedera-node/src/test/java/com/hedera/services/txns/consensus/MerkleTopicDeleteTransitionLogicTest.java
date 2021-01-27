@@ -33,8 +33,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.time.Instant;
@@ -56,7 +54,6 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class MerkleTopicDeleteTransitionLogicTest {
 	final private String TOPIC_ID = "8.6.75309";
 	final private MerkleEntityId topicFcKey = fromTopicId(asTopic(TOPIC_ID));

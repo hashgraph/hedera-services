@@ -23,8 +23,6 @@ package com.hedera.services.files;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -37,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.services.files.DataMapFactory.*;
 
-@RunWith(JUnitPlatform.class)
 class DataMapFactoryTest {
 	@Test
 	public void toFidConversionWorks() {

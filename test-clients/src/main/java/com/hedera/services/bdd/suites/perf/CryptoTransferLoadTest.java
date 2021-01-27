@@ -20,16 +20,16 @@ package com.hedera.services.bdd.suites.perf;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.LoadTest;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -37,13 +37,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
 public class CryptoTransferLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(CryptoTransferLoadTest.class);
-
+	private Random r = new Random();
+	private final static long TEST_ACCOUNT_STARTS_FROM = 1001L;
 	public static void main(String... args) {
 		parseArgs(args);
 
@@ -54,7 +58,9 @@ public class CryptoTransferLoadTest extends LoadTest {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(runCryptoTransfers());
+		return	List.of(
+				runCryptoTransfers()
+		);
 	}
 
 	@Override
@@ -65,13 +71,30 @@ public class CryptoTransferLoadTest extends LoadTest {
 	protected HapiApiSpec runCryptoTransfers() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
-		Supplier<HapiSpecOperation[]> transferBurst = () -> new HapiSpecOperation[] {
-				cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1L))
-						.noLogging()
-						.payingWith("sender")
-						.suppressStats(true)
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-						.deferStatusResolution()
+		Supplier<HapiSpecOperation[]> transferBurst = () -> {
+			String sender = "sender";
+			String receiver = "receiver";
+			if(settings.getTotalAccounts() > 2) {
+				int s =  r.nextInt(settings.getTotalAccounts());
+				int re = 0;
+				do {
+					re =  r.nextInt(settings.getTotalAccounts());
+				} while (re == s);
+				sender = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + s);
+				receiver = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + re);
+			}
+
+			return new HapiSpecOperation[] { cryptoTransfer(
+					tinyBarsFromTo(sender, receiver , 1L))
+					.noLogging()
+					.payingWith(sender)
+					.signedBy(GENESIS)
+					.suppressStats(true)
+					.fee(100_000_000L)
+					.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
+							INVALID_SIGNATURE,PAYER_ACCOUNT_NOT_FOUND)
+					.deferStatusResolution()
+			};
 		};
 
 		return defaultHapiSpec("RunCryptoTransfers")
@@ -85,10 +108,12 @@ public class CryptoTransferLoadTest extends LoadTest {
 						cryptoCreate("sender")
 								.balance(initialBalance.getAsLong())
 								.withRecharging()
+								.key(GENESIS)
 								.rechargeWindow(3)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						cryptoCreate("receiver")
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						        .key(GENESIS)
 				).then(
 						defaultLoadTest(transferBurst, settings)
 				);

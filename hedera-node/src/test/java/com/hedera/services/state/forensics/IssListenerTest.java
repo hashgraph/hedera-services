@@ -37,8 +37,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.File;
@@ -54,7 +52,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class IssListenerTest {
 	long selfId = 1, otherId = 2, round = 1_234_567, numConsEvents = 111;
 	NodeId self = new NodeId(false, selfId);

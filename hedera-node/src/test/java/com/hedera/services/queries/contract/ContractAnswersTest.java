@@ -23,11 +23,8 @@ package com.hedera.services.queries.contract;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class ContractAnswersTest {
 	GetBytecodeAnswer getBytecodeAnswer = mock(GetBytecodeAnswer.class);
 	GetContractInfoAnswer getContractInfoAnswer = mock(GetContractInfoAnswer.class);

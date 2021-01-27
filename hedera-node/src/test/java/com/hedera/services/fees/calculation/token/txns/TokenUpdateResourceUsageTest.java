@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -49,7 +47,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class TokenUpdateResourceUsageTest {
 	private TokenUpdateResourceUsage subject;
 

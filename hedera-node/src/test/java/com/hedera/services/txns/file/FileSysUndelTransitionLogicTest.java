@@ -38,8 +38,6 @@ import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.time.Instant;
@@ -52,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class FileSysUndelTransitionLogicTest {
 	enum TargetType { VALID, MISSING, DELETED }
 	enum OldExpiryType { NONE, FUTURE, PAST }

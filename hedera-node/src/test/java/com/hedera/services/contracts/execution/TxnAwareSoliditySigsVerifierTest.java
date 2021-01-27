@@ -34,15 +34,12 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.Set;
 
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class TxnAwareSoliditySigsVerifierTest {
 	AccountID payer = IdUtils.asAccount("0.0.2");
 	AccountID sigRequired = IdUtils.asAccount("0.0.555");

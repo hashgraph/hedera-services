@@ -97,8 +97,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
@@ -113,7 +111,6 @@ import static org.mockito.Mockito.mock;
  */
 
 @Disabled
-@RunWith(JUnitPlatform.class)
 public class SmartContractRequestHandlerMiscTest {
 
   public static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";

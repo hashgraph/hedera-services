@@ -35,11 +35,8 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class ContractUpdateResourceUsageTest {
 	MerkleEntityId accountKey = new MerkleEntityId(0, 0, 1234);
 	ContractID target = asContract("0.0.1234");

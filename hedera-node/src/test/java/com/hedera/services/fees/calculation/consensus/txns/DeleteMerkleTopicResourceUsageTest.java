@@ -24,14 +24,11 @@ import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(JUnitPlatform.class)
 class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 
     DeleteTopicResourceUsage subject;

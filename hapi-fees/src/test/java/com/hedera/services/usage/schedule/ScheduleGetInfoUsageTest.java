@@ -30,8 +30,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Optional;
 
@@ -39,7 +37,6 @@ import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SC
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(JUnitPlatform.class)
 public class ScheduleGetInfoUsageTest {
 
 	Optional<Key> adminKey = Optional.of(KeyUtils.A_COMPLEX_KEY);

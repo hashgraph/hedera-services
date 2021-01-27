@@ -21,15 +21,12 @@ package com.hedera.services.sigs.order;
  */
 
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
 
 import static java.util.Collections.EMPTY_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(JUnitPlatform.class)
 public class SigningOrderResultTest {
 	@Test
 	public void representsErrorsAccurately() {

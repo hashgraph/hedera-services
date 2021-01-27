@@ -22,14 +22,11 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option;
 
-@RunWith(JUnitPlatform.class)
 public class MerkleAccountCustomizerTest {
 	HederaAccountCustomizer subject = new HederaAccountCustomizer();
 

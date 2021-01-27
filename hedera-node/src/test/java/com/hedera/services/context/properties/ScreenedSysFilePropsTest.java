@@ -26,8 +26,6 @@ import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +39,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class ScreenedSysFilePropsTest {
 	Logger log;
 

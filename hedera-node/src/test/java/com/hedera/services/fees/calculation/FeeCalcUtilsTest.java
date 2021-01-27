@@ -36,8 +36,6 @@ import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.text.MessageFormat;
 import java.util.MissingResourceException;
@@ -46,7 +44,6 @@ import java.util.Optional;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.*;
 
-@RunWith(JUnitPlatform.class)
 public class FeeCalcUtilsTest {
 	public static String ARTIFACTS_PREFIX_FILE_CONTENT = "f";
 	/**

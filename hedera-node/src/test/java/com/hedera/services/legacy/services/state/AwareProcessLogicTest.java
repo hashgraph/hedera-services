@@ -66,8 +66,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -79,7 +77,6 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class AwareProcessLogicTest {
 	Logger mockLog;
 	Transaction platformTxn;
