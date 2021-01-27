@@ -922,11 +922,11 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "28 22 * * *"
+          cron: "35 4 * * *"
           filters:
             branches:
               only:
-                - 977-M-simplify-circleCI-config
+                - master
     jobs:
       - build-platform-and-services
       - run-update-node-tests:
@@ -1091,7 +1091,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1111,7 +1111,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1131,7 +1131,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1151,7 +1151,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - Disable-master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
