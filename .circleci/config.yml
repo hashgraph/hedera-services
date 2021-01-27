@@ -922,11 +922,11 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "35 4 * * *"
+          cron: "9 22 * * *"
           filters:
             branches:
               only:
-                - master
+                - 977-M-simplify-circleCI-config
     jobs:
       - build-platform-and-services
       - run-update-node-tests:
@@ -1750,7 +1750,7 @@ jobs:
       workflow-name: << parameters.workflow-name >>
     steps:
       - run-jrs-experiment:
-          experiment-name: << parameters.workflow-name >> + .json
+          experiment-name: << parameters.workflow-name >> + ".json"
 
       - run:
           name: Sync results of update node tests to AWS
