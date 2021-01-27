@@ -574,6 +574,38 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void dissociatingExpiredTokenWithNonZeroBalanceMovesBalanceToTreasury() {
+		// setup:
+		var expiredToken = mock(MerkleToken.class);
+		var tokens = mock(MerkleAccountTokens.class);
+		var sponsorEntityId = mock(EntityId.class);
+		var key = asTokenRel(sponsor, misc);
+		long initialBalance = hederaLedger.getBalance(sponsor);
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		given(subject.get(misc)).willReturn(expiredToken);
+
+		// and:
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
+		given(expiredToken.isExpired()).willReturn(true);
+		given(expiredToken.treasury()).willReturn(sponsorEntityId);
+		given(sponsorEntityId.toGrpcAccountId()).willReturn(sponsor);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(OK, status);
+		// TODO :
+		assertEquals(initialBalance+1L , hederaLedger.getBalance(sponsor));
+		// and:
+		verify(tokens).dissociateAll(Set.of(misc));
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger).destroy(key);
+
+	}
+
+	@Test
 	public void grantingKycRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 

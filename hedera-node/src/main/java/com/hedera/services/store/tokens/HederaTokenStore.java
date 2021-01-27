@@ -195,9 +195,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					return ACCOUNT_FROZEN_FOR_TOKEN;
 				}
 				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-				if(!token.isDeleted()){
-					if (balance > 0) {
+				if (balance > 0) {
+					if (!token.isDeleted() && !token.isExpired()) {
 						return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+					}
+					if(token.isExpired() && !token.isDeleted()) {
+						var treasuryAccount = token.treasury().toGrpcAccountId();
+						hederaLedger.adjustBalance(treasuryAccount, balance);
 					}
 				}
 			}

@@ -22,10 +22,12 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -155,6 +158,27 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec dissociateExpiredToken() {
+
+		return defaultHapiSpec("DissociateExpiredToken")
+				.given(
+						cryptoCreate("accountA"),
+						cryptoCreate("accountB"),
+						tokenCreate("expiredToken")
+								.treasury("accountA")
+								.initialSupply(1000L)
+				)
+				.when(
+						tokenAssociate("accountB", "expiredToken"),
+						// TODO: transfer some balance
+						tokenUpdate("expiredToken")
+								.expiry(Instant.now().getEpochSecond())
+				)
+				.then(
+						tokenDissociate("accountB", "expiredToken")
+						// TODO: validate expiredToken balance with its treasury accountA to be 1000
+				);
+	}
 	public HapiApiSpec dissociateHasExpectedSemantics() {
 		return defaultHapiSpec("DissociateHasExpectedSemantics")
 				.given(flattened(
