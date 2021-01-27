@@ -201,7 +201,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 					if(token.isExpired() && !token.isDeleted()) {
 						var treasuryAccount = token.treasury().toGrpcAccountId();
-						hederaLedger.adjustBalance(treasuryAccount, balance);
+						adjustBalance(treasuryAccount, tId, balance);
 					}
 				}
 			}
