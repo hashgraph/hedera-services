@@ -960,57 +960,14 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Crypto-Update-5N-1C"
 
-  AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C:
-    triggers:
-      - schedule:
-          cron: "0 5 * * 6,0"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - weekly-run-crypto-transfer-start-from-saved-state-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C"
-          test-name: "AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C.json"
-
-  AWS-Weekly-Services-HCS-Restart-Performance-15N-15C:
-    triggers:
-      - schedule:
-          cron: "0 10 * * 6,0"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - weekly-run-HCS-start-from-saved-state-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Weekly-Services-HCS-Restart-Performance-15N-15C"
-          test-name: "AWS-Daily-Services-Comp-Basic-4N-1C.json"
-
-
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 12 * * *"
+          cron: "5 5 * * 6,0"
           filters:
             branches:
               only:
-                - 00984-D-enable-15-node-weekly-perf-regression
+                - test-15-node
     jobs:
       - build-platform-and-services
       - weekly-run-crypto-transfer-start-from-saved-state-regression:
@@ -1026,11 +983,11 @@ workflows:
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "6 5 * * *"
+          cron: "5 10 * * 6,0"
           filters:
             branches:
               only:
-                - 00984-D-enable-15-node-weekly-perf-regression
+                - test-15-node
     jobs:
       - build-platform-and-services
       - weekly-run-HCS-start-from-saved-state-regression:
@@ -1043,16 +1000,14 @@ workflows:
                 at: /
           workflow-name: "GCP-Weekly-Services-HCS-Restart-Performance-15N-15C"
 
-
-
   GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "10 2 * * *"
+          cron: "5 15 * * 6,0"
           filters:
             branches:
               only:
-                - 00984-D-enable-15-node-weekly-perf-regression
+                - test-15-node
     jobs:
       - build-platform-and-services
       - weekly-run-HTS-start-from-saved-state-regression:
@@ -1064,7 +1019,6 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Weekly-Services-HTS-Restart-Performance-15N-15C"
-
 
   AWS-Daily-Services-Comp-NetError-4N-1C:
     triggers:
@@ -2268,9 +2222,8 @@ jobs:
       workflow-name: << parameters.workflow-name >>
     steps:
       - run:
-          name: Modify Payer account for Public testnet start from saved state test
+          name: Don't modify payer account as the state is generated in local
           command: |
-            echo -n "$KEY_DevTestNetTreasury";    echo -n /repo/test-clients/src/main/resource/StartUpAccount.txt;
 #            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - run:
           name: Run start from saved state regression tests
@@ -2303,9 +2256,8 @@ jobs:
       workflow-name: << parameters.workflow-name >>
     steps:
       - run:
-          name: Modify Payer account for Public testnet start from saved state test
+          name: Don't modify payer account as the state is generated in local
           command: |
-            echo -n "$KEY_DevTestNetTreasury";    echo -n /repo/test-clients/src/main/resource/StartUpAccount.txt;
 #            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - run:
           name: Run start from saved state regression tests
@@ -2338,10 +2290,9 @@ jobs:
       workflow-name: << parameters.workflow-name >>
     steps:
       - run:
-          name: Modify Payer account for Public testnet start from saved state test
+          name: Don't modify payer account as the state is generated in local
           command: |
-            echo -n "$KEY_DevTestNetTreasury";    echo -n /repo/test-clients/src/main/resource/StartUpAccount.txt;
-      #            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+#            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - run:
           name: Run start from saved state regression tests
           no_output_timeout: 180m
@@ -2390,7 +2341,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 00984-D-enable-15-node-weekly-perf-regression;
+            cd regression; git checkout test-15-node;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
