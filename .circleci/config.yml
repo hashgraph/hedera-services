@@ -121,6 +121,7 @@ commands:
       - run:
           name: Import the Google Cloud Service  Account
           command: |
+            set -x
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc
             echo "${<< parameters.keyfile_variable >>}" > "/tmp/gcloud_account_key.json"
             set -x
@@ -1495,7 +1496,7 @@ workflows:
           context: Slack
 #          runtime: build-executor
           regression_path: /swirlds-platform/regression
-          result_path: regression/results/4N_1C/NetError
+          result_path: results/4N_1C/NetError
           automated_run: true
           slack_results_channel: "hedera-regression-test"
           slack_summary_channel: "hedera-regression-test"
@@ -2806,7 +2807,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 00995-D-regression-history
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
