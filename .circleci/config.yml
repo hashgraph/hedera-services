@@ -919,27 +919,6 @@ executors:
     working_directory: /repo
 
 workflows:
-  AWS-Daily-Services-Crypto-Update-5N-1C:
-    triggers:
-      - schedule:
-          cron: "30 4 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - run-update-node-tests:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Crypto-Update-5N-1C"
-          test-name: "AWS-Daily-Services-Crypto-Update-5N-1C.json"
-
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
@@ -959,27 +938,6 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Crypto-Update-5N-1C"
-
-  AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C:
-    triggers:
-      - schedule:
-          cron: "0 5 * * 6,0"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - weekly-run-crypto-transfer-start-from-saved-state-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C"
-          test-name: "AWS-Weekly-Services-Crypto-Restart-Performance-15N-15C.json"
 
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
@@ -1001,27 +959,6 @@ workflows:
                 at: /
           workflow-name: "GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C"
 
-  AWS-Weekly-Services-HCS-Restart-Performance-15N-15C:
-    triggers:
-      - schedule:
-          cron: "0 10 * * 6,0"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - weekly-run-HCS-start-from-saved-state-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Weekly-Services-HCS-Restart-Performance-15N-15C"
-          test-name: "AWS-Daily-Services-Comp-Basic-4N-1C.json"
-
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
@@ -1041,27 +978,6 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Weekly-Services-HCS-Restart-Performance-15N-15C"
-
-  AWS-Daily-Services-Comp-NetError-4N-1C:
-    triggers:
-      - schedule:
-          cron: "15 5 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - run-network-error-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-NetError-4N-1C"
-          test-name: "AWS-Daily-Services-Comp-NetError-4N-1C.json"
 
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
@@ -1083,27 +999,6 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
 
-# This workflow will be running normally in master branch on a daily basis
-  AWS-Daily-Services-Crypto-Migration-5N-1C:
-    triggers:
-          - schedule:
-              cron: "30 5 * * *"
-              filters:
-                branches:
-                  only:
-                    - Disable-master
-    jobs:
-      - build-platform-and-services
-      - run-testnet-migration-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Crypto-Migration-5N-1C"
-          test-name: "AWS-Daily-Services-Crypto-Migration-5N-1C.json"
   # This workflow will be running normally in master branch on a daily basis
 
   GCP-Daily-Services-Crypto-Migration-5N-1C:
@@ -1149,27 +1044,6 @@ workflows:
                 at: /
           workflow-name: "nightly-mainnet-migration-regression"
 
-  AWS-Daily-Services-Crypto-Restart-4N-1C:
-    triggers:
-      - schedule:
-          cron: "0 6 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - run-software-update-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Crypto-Restart-4N-1C"
-          test-name: "AWS-Daily-Services-Crypto-Restart-4N-1C.json"
-
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
@@ -1190,27 +1064,6 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Crypto-Restart-4N-1C"
 
-  AWS-Daily-Services-Recovery-4N-1C:
-    triggers:
-      - schedule:
-          cron: "30 6 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - run-state-recover-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Recovery-4N-1C"
-          test-name: "AWS-Daily-Services-Recovery-4N-1C.json"
-
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
@@ -1230,27 +1083,6 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Recovery-4N-1C"
-
-  AWS-Daily-Services-Comp-Restart-Performance-Random-4N-4C:
-    triggers:
-      - schedule:
-          cron: "6 17 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - run-performance-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
-          test-name: "AWS-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
 
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C:
     triggers:
@@ -1294,28 +1126,6 @@ workflows:
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
           test-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
 
-  AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C:
-    triggers:
-      - schedule:
-          cron: "30 4 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-
-    jobs:
-      - build-platform-and-services
-      - run-performance-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C"
-          test-name: "AWS-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C.json"
-
   GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C:
     triggers:
       - schedule:
@@ -1358,27 +1168,6 @@ workflows:
           workflow-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C"
           test-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C"
 
-  AWS-Daily-Services-Comp-Restart-Performance-6N-6C:
-    triggers:
-      - schedule:
-          cron: "30 6 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - run-start-from-saved-state-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Restart-Performance-6N-6C"
-          test-name: "AWS-Daily-Services-Comp-Restart-Performance-6N-6C.json"
-
   GCP-Daily-Services-Comp-Restart-Performance-6N-6C:
     triggers:
       - schedule:
@@ -1398,27 +1187,6 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
-
-  AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
-    triggers:
-      - schedule:
-          cron: "30 4 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - run-start-from-saved-state-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
-          test-name: "AWS-Daily-Services-Comp-Restart-HTS-Performance-6N-6C.json"
 
   GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
     triggers:
@@ -1441,27 +1209,6 @@ workflows:
                 at: /
           workflow-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           test-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C.json"
-
-  AWS-Daily-Services-Comp-Reconnect-4N-1C:
-    triggers:
-      - schedule:
-          cron: "0 7 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - run-reconnect-regression:
-          context: Slack
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-          workflow-name: "AWS-Daily-Services-Comp-Reconnect-4N-1C"
-          test-name: "AWS-Daily-Services-Comp-Reconnect-4N-1C.json"
 
   GCP-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
