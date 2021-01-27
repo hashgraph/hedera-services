@@ -963,7 +963,7 @@ workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "45 17 * * *"
+          cron: "5 18 * * *"
           filters:
             branches:
               only:
@@ -983,7 +983,7 @@ workflows:
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 18 * * *"
+          cron: "35 18 * * *"
           filters:
             branches:
               only:
@@ -1003,7 +1003,7 @@ workflows:
   GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "35 18 * * *"
+          cron: "5 19 * * *"
           filters:
             branches:
               only:
