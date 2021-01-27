@@ -26,13 +26,13 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
-import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.under;
-import static com.hedera.services.bdd.spec.persistence.PemKey.submitKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.under;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.submitKeyFor;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 
 public class Topic {
-	private PemKey adminKey = UNUSED_KEY;
-	private PemKey submitKey = UNUSED_KEY;
+	private SpecKey adminKey = UNUSED_KEY;
+	private SpecKey submitKey = UNUSED_KEY;
 
 	public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
 		if (adminKey != UNUSED_KEY) {
@@ -60,19 +60,19 @@ public class Topic {
 		return op;
 	}
 
-	public PemKey getAdminKey() {
+	public SpecKey getAdminKey() {
 		return adminKey;
 	}
 
-	public void setAdminKey(PemKey adminKey) {
+	public void setAdminKey(SpecKey adminKey) {
 		this.adminKey = adminKey;
 	}
 
-	public PemKey getSubmitKey() {
+	public SpecKey getSubmitKey() {
 		return submitKey;
 	}
 
-	public void setSubmitKey(PemKey submitKey) {
+	public void setSubmitKey(SpecKey submitKey) {
 		this.submitKey = submitKey;
 	}
 }

@@ -10,6 +10,8 @@ import picocli.CommandLine.ParentCommand;
 import java.util.SplittableRandom;
 import java.util.concurrent.Callable;
 
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+
 @Command(
 		name = "balance",
 		subcommands = { HelpCommand.class },
@@ -21,18 +23,14 @@ public class BalanceCommand implements Callable<Integer> {
 	@Parameters(
 			arity = "1..*",
 			paramLabel = "<accounts>",
-			description = "names of well-known accounts and/or Hedera account ids")
+			description = "account names or numbers")
 	String[] accounts;
 
 	@Override
 	public Integer call() throws Exception {
-		var configManager = ConfigManager.from(yahcli);
-		configManager.assertNoMissingDefaults();
-
-		System.out.println(String.format(
-				"Running against %s, paying with %s...",
-				configManager.getTargetName(),
-				configManager.getDefaultPayer()));
+		var config = ConfigManager.from(yahcli);
+		config.assertNoMissingDefaults();
+		COMMON_MESSAGES.printGlobalInfo(config.getTargetName(), config.getDefaultPayer());
 
 		var r = new SplittableRandom();
 		for (String account : accounts) {

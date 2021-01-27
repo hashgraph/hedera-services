@@ -31,7 +31,7 @@ public class Yahcli implements Callable<Integer> {
 	String payer;
 
 	@Option(names = { "-c", "--config" },
-			paramLabel = "yahcli YAML",
+			paramLabel = "yahcli config YAML",
 			defaultValue = "config.yml")
 	String configLoc;
 

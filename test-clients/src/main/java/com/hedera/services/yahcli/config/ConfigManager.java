@@ -54,12 +54,17 @@ public class ConfigManager {
 	}
 
 	private void assertTargetNetIsKnown() {
-		if (yahcli.getNet() == null && global.getDefaultNetwork() == null) {
+		if (yahcli.getNet() == null
+				&& global.getDefaultNetwork() == null
+				&& global.getNetworks().size() != 1) {
 			fail(String.format(
-					"No target network was specified, and no default is available in %s",
+					"No target network was specified, and no default from %d networks is given in %s",
+					global.getNetworks().size(),
 					yahcli.getConfigLoc()));
 		}
-		targetName = Optional.ofNullable(yahcli.getNet()).orElse(global.getDefaultNetwork());
+		targetName = Optional.ofNullable(yahcli.getNet())
+				.orElse(Optional.ofNullable(global.getDefaultNetwork())
+						.orElse(global.getNetworks().keySet().iterator().next()));
 		if (!global.getNetworks().containsKey(targetName)) {
 			fail(String.format(
 					"Target network '%s' not configured in %s, only %s are known",

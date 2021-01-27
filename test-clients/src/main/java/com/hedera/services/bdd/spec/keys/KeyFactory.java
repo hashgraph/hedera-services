@@ -21,7 +21,7 @@ package com.hedera.services.bdd.spec.keys;
  */
 
 import com.google.common.io.Files;
-import com.hedera.services.bdd.spec.persistence.PemKey;
+import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
@@ -262,7 +262,7 @@ public class KeyFactory implements Serializable {
 
 	public static KeyPairObj firstStartupKp(HapiSpecSetup setup) throws Exception {
 		if (StringUtils.isNotEmpty(setup.defaultPayerPemKeyLoc())) {
-			var keyPair = PemKey.readFirstKp(
+			var keyPair = SpecKey.readFirstKp(
 					new File(setup.defaultPayerPemKeyLoc()),
 					setup.defaultPayerPemKeyPassphrase());
 			return SpecUtils.asLegacyKp(keyPair);

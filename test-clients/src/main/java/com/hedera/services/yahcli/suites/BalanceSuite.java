@@ -1,4 +1,4 @@
-package com.hedera.services.yahcli.config.domain;
+package com.hedera.services.yahcli.suites;
 
 /*-
  * ‌
@@ -20,41 +20,28 @@ package com.hedera.services.yahcli.config.domain;
  * ‍
  */
 
-public class NodeConfig {
-	private int id;
-	private long account;
-	private String ipv4Addr;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-	public long getAccount() {
-		return account;
-	}
+import java.util.List;
 
-	public void setAccount(long account) {
-		this.account = account;
-	}
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 
-	public String getIpv4Addr() {
-		return ipv4Addr;
-	}
+public class BalanceSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(BalanceSuite.class);
 
-	public void setIpv4Addr(String ipv4Addr) {
-		this.ipv4Addr = ipv4Addr;
-	}
 
-	public int getId() {
-		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
+	@Override
+	protected List<HapiApiSpec> getSpecsInSuite() {
+		return List.of(new HapiApiSpec[] {
+		});
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s:0.0.%d#%d", ipv4Addr, account, id);
-	}
-
-	public String asNodesItem() {
-		return String.format("%s:0.0.%d", ipv4Addr, account);
+	protected Logger getResultsLogger() {
+		return log;
 	}
 }

@@ -23,7 +23,7 @@ package com.hedera.services.bdd.suites.validation;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.persistence.Account;
 import com.hedera.services.bdd.spec.persistence.Entity;
-import com.hedera.services.bdd.spec.persistence.PemKey;
+import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.persistence.Token;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -158,7 +158,7 @@ public class TokenPuvSuite extends HapiApiSuite {
 	private Entity catToken() {
 		var token = new Token();
 		token.setName("PostUpdateValidation Cat Token");
-		token.setAdminKey(PemKey.prefixedAt(Names.CAT_TOKEN_ADMIN));
+		token.setAdminKey(SpecKey.prefixedAt(Names.CAT_TOKEN_ADMIN));
 		token.setSymbol("CAT");
 		token.setTreasury(Names.TREASURY);
 		return Entity.from(Names.CAT_TOKEN, token);
@@ -166,11 +166,11 @@ public class TokenPuvSuite extends HapiApiSuite {
 
 	private Entity tacoToken() {
 		var token = new Token();
-		token.setKycKey(PemKey.prefixedAt(Names.TACO_TOKEN_KYC));
-		token.setWipeKey(PemKey.prefixedAt(Names.TACO_TOKEN_WIPE));
-		token.setAdminKey(PemKey.prefixedAt(Names.TACO_TOKEN_ADMIN));
-		token.setSupplyKey(PemKey.prefixedAt(Names.TACO_TOKEN_SUPPLY));
-		token.setFreezeKey(PemKey.prefixedAt(Names.TACO_TOKEN_FREEZE));
+		token.setKycKey(SpecKey.prefixedAt(Names.TACO_TOKEN_KYC));
+		token.setWipeKey(SpecKey.prefixedAt(Names.TACO_TOKEN_WIPE));
+		token.setAdminKey(SpecKey.prefixedAt(Names.TACO_TOKEN_ADMIN));
+		token.setSupplyKey(SpecKey.prefixedAt(Names.TACO_TOKEN_SUPPLY));
+		token.setFreezeKey(SpecKey.prefixedAt(Names.TACO_TOKEN_FREEZE));
 		token.setName("PostUpdateValidation Taco Token");
 		token.setSymbol("TACO");
 		token.setTreasury(Names.TREASURY);
@@ -179,19 +179,19 @@ public class TokenPuvSuite extends HapiApiSuite {
 
 	private Entity treasury() {
 		var treasury = new Account();
-		treasury.setKey(PemKey.prefixedAt(Names.TREASURY));
+		treasury.setKey(SpecKey.prefixedAt(Names.TREASURY));
 		return Entity.from(Names.TREASURY, treasury);
 	}
 
 	private Entity catBeneficiary() {
 		var bene = new Account();
-		bene.setKey(PemKey.prefixedAt(Names.CAT_BENEFICIARY));
+		bene.setKey(SpecKey.prefixedAt(Names.CAT_BENEFICIARY));
 		return Entity.from(Names.CAT_BENEFICIARY, bene);
 	}
 
 	private Entity tacoBeneficiary() {
 		var bene = new Account();
-		bene.setKey(PemKey.prefixedAt(Names.TACO_BENEFICIARY));
+		bene.setKey(SpecKey.prefixedAt(Names.TACO_BENEFICIARY));
 		return Entity.from(Names.TACO_BENEFICIARY, bene);
 	}
 

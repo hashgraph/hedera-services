@@ -37,7 +37,7 @@ public class Entity implements Comparable<Entity> {
 	private static final Account UNSPECIFIED_ACCOUNT = null;
 	private static final EntityId UNCREATED_ENTITY_ID = null;
 
-	public static final PemKey UNUSED_KEY = null;
+	public static final SpecKey UNUSED_KEY = null;
 	public static final HapiSpecOperation UNNEEDED_CREATE_OP = null;
 
 	private String name;

@@ -22,12 +22,11 @@ package com.hedera.services.bdd.spec.persistence;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
-import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.under;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.under;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 
 public class Account {
@@ -36,7 +35,7 @@ public class Account {
 	private static final Integer UNSPECIFIED_RECHARGE_WINDOW = null;
 
 	private Long balance = UNSPECIFIED_BALANCE;
-	private PemKey key = UNUSED_KEY;
+	private SpecKey key = UNUSED_KEY;
 	private Integer rechargeWindow = UNSPECIFIED_RECHARGE_WINDOW;
 	private boolean recharging = false;
 
@@ -67,11 +66,11 @@ public class Account {
 		return op;
 	}
 
-	public PemKey getKey() {
+	public SpecKey getKey() {
 		return key;
 	}
 
-	public void setKey(PemKey key) {
+	public void setKey(SpecKey key) {
 		this.key = key;
 	}
 

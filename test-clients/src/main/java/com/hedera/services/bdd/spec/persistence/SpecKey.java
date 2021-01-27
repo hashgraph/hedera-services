@@ -38,22 +38,32 @@ import java.util.function.BiConsumer;
 
 import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
-public class PemKey {
-	static final Logger log = LogManager.getLogger(PemKey.class);
+public class SpecKey {
+	static final Logger log = LogManager.getLogger(SpecKey.class);
 
 	private static final String DEFAULT_PASSPHRASE = "swirlds";
+	private static final String MISSING_MNEMONIC_LOC = null;
 	private static final boolean GENERATE_IF_MISSING = true;
+	private static final boolean GENERATE_AS_MNEMONIC = false;
 
 	String pemLoc = "";
 	String passphrase = DEFAULT_PASSPHRASE;
+	String mnemonicLoc = MISSING_MNEMONIC_LOC;
 	boolean generateIfMissing = GENERATE_IF_MISSING;
+	boolean generateAsMnemonic = GENERATE_IF_MISSING;
 
-	public PemKey() {
+	public SpecKey() {
 	}
 
-	public static PemKey prefixedAt(String pemLoc) {
-		var key = new PemKey();
+	public static SpecKey prefixedAt(String pemLoc) {
+		var key = new SpecKey();
 		key.setPemLoc(pemLoc + ".pem");
+		return key;
+	}
+
+	public static SpecKey prefixedMnemonicAt(String mnemonicLoc) {
+		var key = new SpecKey();
+		key.setPemLoc(mnemonicLoc + ".words");
 		return key;
 	}
 
