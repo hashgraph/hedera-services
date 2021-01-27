@@ -963,7 +963,7 @@ workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 18 * * *"
+          cron: "15 18 * * *"
           filters:
             branches:
               only:
@@ -2266,6 +2266,7 @@ jobs:
       - run:
           name: Don't modify payer account as the state is generated in local
           command: |
+            echo -n "$KEY_DevTestNetTreasury";    echo -n /repo/test-clients/src/main/resource/StartUpAccount.txt;
 #            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - run:
           name: Run start from saved state regression tests
@@ -2300,6 +2301,7 @@ jobs:
       - run:
           name: Don't modify payer account as the state is generated in local
           command: |
+            echo -n "$KEY_DevTestNetTreasury";    echo -n /repo/test-clients/src/main/resource/StartUpAccount.txt;
 #            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - run:
           name: Run start from saved state regression tests
@@ -2334,6 +2336,7 @@ jobs:
       - run:
           name: Don't modify payer account as the state is generated in local
           command: |
+            echo -n "$KEY_DevTestNetTreasury";    echo -n /repo/test-clients/src/main/resource/StartUpAccount.txt;
 #            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - run:
           name: Run start from saved state regression tests
