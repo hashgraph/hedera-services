@@ -43,9 +43,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue
 	private boolean frozen;
 	private boolean kycGranted;
 
-	@Deprecated
-	public static final MerkleTokenRelStatus.Provider LEGACY_PROVIDER = new MerkleTokenRelStatus.Provider();
-
 	public MerkleTokenRelStatus() {
 	}
 
@@ -53,14 +50,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue
 		this.balance = balance;
 		this.frozen = frozen;
 		this.kycGranted = kycGranted;
-	}
-
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream in) throws IOException {
-			throw new UnsupportedOperationException();
-		}
 	}
 
 	/* --- MerkleLeaf --- */

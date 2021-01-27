@@ -86,21 +86,6 @@ class MerkleBlobMetaTest {
 	}
 
 	@Test
-	public void legacyProviderWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-
-		given(in.readLong()).willReturn(0l).willReturn(1l);
-		given(in.readNormalisedString(MerkleBlobMeta.MAX_PATH_LEN)).willReturn(path);
-
-		// when:
-		var deSubject = (MerkleBlobMeta)(new MerkleBlobMeta.Provider().deserialize(in));
-
-		// then:
-		assertEquals(deSubject, subject);
-	}
-
-	@Test
 	public void objectContractMet() {
 		// given:
 		var one = new MerkleBlobMeta();

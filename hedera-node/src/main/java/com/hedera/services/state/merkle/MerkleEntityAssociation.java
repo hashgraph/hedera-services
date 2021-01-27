@@ -43,9 +43,6 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKe
 	private long fromShard, fromRealm, fromNum;
 	private long toShard, toRealm, toNum;
 
-	@Deprecated
-	public static final MerkleEntityAssociation.Provider LEGACY_PROVIDER = new MerkleEntityAssociation.Provider();
-
 	public MerkleEntityAssociation() {
 	}
 
@@ -83,14 +80,6 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKe
 						.setRealmNum(toRealm)
 						.setTokenNum(toNum)
 						.build());
-	}
-
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream in) throws IOException {
-			throw new UnsupportedOperationException();
-		}
 	}
 
 	/* --- MerkleLeaf --- */
