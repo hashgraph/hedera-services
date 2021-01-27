@@ -967,7 +967,7 @@ workflows:
           filters:
             branches:
               only:
-                - test-15-node
+                - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
       - weekly-run-crypto-transfer-start-from-saved-state-regression:
@@ -987,7 +987,7 @@ workflows:
           filters:
             branches:
               only:
-                - test-15-node
+                - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
       - weekly-run-HCS-start-from-saved-state-regression:
@@ -1007,7 +1007,7 @@ workflows:
           filters:
             branches:
               only:
-                - test-15-node
+                - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
       - weekly-run-HTS-start-from-saved-state-regression:
