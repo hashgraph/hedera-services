@@ -354,7 +354,7 @@ commands:
             if [[ ! -d "${REGRESSION_PATH}" ]]; then exit 15; fi
 
             if [[ -z "${CIRCLE_USERNAME}" ]]; then
-              JRS_USER="hedera-service-automation"
+              JRS_USER="hedera-services-automation"
             else
               JRS_USER="${CIRCLE_USERNAME}"
             fi
