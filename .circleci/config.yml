@@ -922,7 +922,7 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "9 22 * * *"
+          cron: "28 22 * * *"
           filters:
             branches:
               only:
@@ -1750,7 +1750,7 @@ jobs:
       workflow-name: << parameters.workflow-name >>
     steps:
       - run-jrs-experiment:
-          experiment-name: << parameters.workflow-name >> + ".json"
+          experiment-name: << parameters.workflow-name >>.json
 
       - run:
           name: Sync results of update node tests to AWS
@@ -1772,7 +1772,7 @@ jobs:
       workflow-name:  << parameters.workflow-name >>
     steps:
       - run-jrs-experiment:
-          experiment-name: << parameters.workflow-name >> + .json
+          experiment-name: << parameters.workflow-name >>.json
 
       - run:
           name: Sync results of performance regression to AWS
@@ -1794,7 +1794,7 @@ jobs:
       workflow-name:  << parameters.workflow-name >>
     steps:
       - run-jrs-experiment:
-          experiment-name: << parameters.workflow-name >> + .json
+          experiment-name: << parameters.workflow-name >>.json
 
       - run:
           name: Sync results of network error regression to AWS
@@ -1826,7 +1826,7 @@ jobs:
             cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
             cd /swirlds-platform/regression;
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.workflow-name >> + .json /repo
+            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.workflow-name >>.json /repo
 
       - run:
           name: Sync results of public testnet migration test to AWS
@@ -1880,7 +1880,7 @@ jobs:
       workflow-name:  << parameters.workflow-name >>
     steps:
       - run-jrs-experiment:
-          experiment-name: << parameters.workflow-name >> + .json
+          experiment-name: << parameters.workflow-name >>.json
 
       - run:
           name: Sync results of software update regression to AWS
@@ -1951,7 +1951,7 @@ jobs:
       workflow-name: << parameters.workflow-name >>
     steps:
       - run-jrs-experiment:
-          experiment-name: << parameters.workflow-name >> + .json
+          experiment-name: << parameters.workflow-name >>.json
 
       - run:
           name: Sync results of reconnect regression to AWS
@@ -2008,7 +2008,7 @@ jobs:
           command: |
             cd /swirlds-platform/regression;
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/weekly/<< parameters.workflow-name >> + .json /repo
+            ./regression_services_circleci.sh configs/services/suites/weekly/<< parameters.workflow-name >>.json /repo
 
       - run:
           name: Sync results of software update regression to AWS
@@ -2040,7 +2040,7 @@ jobs:
           command: |
             cd /swirlds-platform/regression;
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/weekly/<< parameters.workflow-name >> + .json /repo
+            ./regression_services_circleci.sh configs/services/suites/weekly/<< parameters.workflow-name >>.json /repo
 
       - run:
           name: Sync results of software update regression to AWS
