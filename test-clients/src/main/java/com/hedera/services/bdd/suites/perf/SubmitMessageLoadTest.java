@@ -189,7 +189,6 @@ public class SubmitMessageLoadTest extends LoadTest {
 				.noLogging()
 				.payingWith(senderId)
 				.signedBy(senderKey, submitKey)
-				//.signedBy(GENESIS, GENESIS)
 				.fee(100_000_000)
 				.suppressStats(true)
 				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
