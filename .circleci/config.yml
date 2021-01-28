@@ -1496,7 +1496,6 @@ workflows:
                 ignore:
                   - /.*-PERF/
             workflow-name: "Continuous integration GCP"
-
         - run-continuous-integration-gcp:
             context: Slack
             requires:
