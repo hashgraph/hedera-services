@@ -1242,7 +1242,7 @@ workflows:
           requires:
             - fast-build-artifact
           workflow-name: "nightly-simulate-network-outage"
-          infra-branch: services-with-platform070
+          infra-branch: hashgraph-hedera-services
       - run-accessory-tests:
           context: Slack
           requires:
@@ -1310,7 +1310,7 @@ workflows:
           requires:
             - fast-build-artifact
           workflow-name: "feature-update-regression"
-          infra-branch: services-with-platform070
+          infra-branch: hashgraph-hedera-services
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
@@ -1379,7 +1379,7 @@ workflows:
           requires:
             - fast-build-artifact
           workflow-name: freeze restart
-          infra-branch: services-with-platform070
+          infra-branch: hashgraph-hedera-services
       - run-umbrella-freeze-restart-test:
           context: Slack
           name: freeze-restart-first-round
@@ -1526,7 +1526,7 @@ workflows:
           requires:
             - build-artifact
           workflow-name: "Continuous integration"
-          infra-branch: services-with-platform070
+          infra-branch: hashgraph-hedera-services
       - run-token-scenarios:
           context: Slack
           requires:
