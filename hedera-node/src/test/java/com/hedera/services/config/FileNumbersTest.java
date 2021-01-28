@@ -24,15 +24,12 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class FileNumbersTest {
 	PropertySource properties;
 	HederaNumbers hederaNumbers;

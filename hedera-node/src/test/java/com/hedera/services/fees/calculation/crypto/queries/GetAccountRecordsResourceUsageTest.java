@@ -39,8 +39,6 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 
@@ -53,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.*;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 
-@RunWith(JUnitPlatform.class)
 class GetAccountRecordsResourceUsageTest {
 	StateView view;
 	CryptoFeeBuilder usageEstimator;

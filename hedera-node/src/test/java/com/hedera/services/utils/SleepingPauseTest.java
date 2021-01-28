@@ -21,13 +21,10 @@ package com.hedera.services.utils;
  */
 
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@RunWith(JUnitPlatform.class)
 public class SleepingPauseTest {
 	final Pause subject = SleepingPause.SLEEPING_PAUSE;
 

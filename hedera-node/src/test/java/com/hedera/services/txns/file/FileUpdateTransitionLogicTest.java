@@ -45,8 +45,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
@@ -69,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class FileUpdateTransitionLogicTest {
 	enum UpdateTarget { KEY, EXPIRY, CONTENTS }
 

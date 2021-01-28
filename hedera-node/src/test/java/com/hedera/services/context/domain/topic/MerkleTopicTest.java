@@ -40,15 +40,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(JUnitPlatform.class)
 public class MerkleTopicTest {
 	@Test
 	public void defaultConstructorTestingAccessors() {

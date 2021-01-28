@@ -30,14 +30,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class AwareHbarCentExchangeTest {
 	long validStartTime = 1_234_567L;
 	Timestamp validStart = Timestamp.newBuilder()

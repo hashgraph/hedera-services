@@ -27,8 +27,6 @@ import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -39,7 +37,6 @@ import static org.mockito.BDDMockito.doThrow;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
 	@BeforeEach
 	private void setup() {

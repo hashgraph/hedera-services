@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.BDDMockito.*;
@@ -41,7 +40,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.function.Function;
@@ -53,7 +51,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class PlatformTxnAccessorTest {
 	private static final byte[] NONSENSE = "Jabberwocky".getBytes();
 	TransactionBody someTxn = TransactionBody.newBuilder()

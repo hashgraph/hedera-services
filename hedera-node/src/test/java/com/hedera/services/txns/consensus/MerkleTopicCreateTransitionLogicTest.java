@@ -41,8 +41,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 
@@ -68,7 +66,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 class MerkleTopicCreateTransitionLogicTest {
 	private static final long VALID_AUTORENEW_PERIOD_SECONDS = 30 * 86400L;
 	private static final long INVALID_AUTORENEW_PERIOD_SECONDS = -1L;

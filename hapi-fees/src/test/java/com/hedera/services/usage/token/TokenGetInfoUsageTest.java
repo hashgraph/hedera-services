@@ -31,15 +31,12 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Optional;
 
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
-@RunWith(JUnitPlatform.class)
 public class TokenGetInfoUsageTest {
 	Optional<Key> aKey = Optional.of(KeyUtils.A_COMPLEX_KEY);
 	String name = "WhyWhyWhyWHY";

@@ -22,8 +22,6 @@ package com.hedera.services.files.store;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(JUnitPlatform.class)
 class BytesStoreAdapterTest {
 	private final Pattern DIGITS_PATTERN = Pattern.compile("\\d+");
 	private final String TPL = "%s-%d";

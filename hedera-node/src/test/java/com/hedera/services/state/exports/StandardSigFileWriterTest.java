@@ -23,8 +23,6 @@ package com.hedera.services.state.exports;
 import com.google.common.primitives.Ints;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -38,7 +36,6 @@ import static com.hedera.services.legacy.stream.RecordStream.TYPE_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(JUnitPlatform.class)
 class StandardSigFileWriterTest {
 	String toSign = "src/test/resources/bootstrap/standard.properties";
 	String cannotSign = "src/test/resources/oops/bootstrap/not-so-standard.properties";

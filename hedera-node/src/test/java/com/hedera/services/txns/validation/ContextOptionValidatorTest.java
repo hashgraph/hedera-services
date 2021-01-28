@@ -52,8 +52,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.util.List;
@@ -84,7 +82,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-@RunWith(JUnitPlatform.class)
 public class ContextOptionValidatorTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private Instant now = Instant.now();

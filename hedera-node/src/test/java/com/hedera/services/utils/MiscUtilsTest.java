@@ -114,8 +114,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hedera.test.utils.TxnUtils.*;
@@ -148,7 +146,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class MiscUtilsTest {
 	@Test
 	public void retrievesExpectedStatNames() {

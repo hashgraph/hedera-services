@@ -68,6 +68,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationValidatesSymbol(),
 						treasuryHasCorrectBalance(),
 						creationRequiresAppropriateSigs(),
+						creationRequiresAppropriateSigsHappyPath(),
 						initialSupplyMustBeSane(),
 						numAccountsAllowedIsDynamic(),
 						creationYieldsExpectedToken(),
@@ -364,6 +365,22 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.adminKey("adminKey")
 								.signedBy("payer", "adminKey")
 								.hasKnownStatus(INVALID_SIGNATURE)
+				);
+	}
+
+	public HapiApiSpec creationRequiresAppropriateSigsHappyPath() {
+		return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath")
+				.given(
+						cryptoCreate("payer"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						newKeyNamed("adminKey")
+				).when().then(
+						tokenCreate("shouldWork")
+								.treasury(TOKEN_TREASURY)
+								.payingWith("payer")
+								.adminKey("adminKey")
+								.signedBy(TOKEN_TREASURY, "payer", "adminKey")
+								.hasKnownStatus(SUCCESS)
 				);
 	}
 

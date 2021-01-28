@@ -25,8 +25,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.DataInputStream;
@@ -39,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class MerkleEntityIdTest {
 	long shard = 13;
 	long realm = 25;

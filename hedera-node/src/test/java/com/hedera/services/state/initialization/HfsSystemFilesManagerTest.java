@@ -48,8 +48,6 @@ import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -62,7 +60,6 @@ import java.util.function.Consumer;
 
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class HfsSystemFilesManagerTest {
 	String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
 	String bootstrapJutilPropsLoc = "src/test/resources/bootstrap.properties";

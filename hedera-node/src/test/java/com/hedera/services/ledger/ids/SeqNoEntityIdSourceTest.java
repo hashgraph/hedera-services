@@ -26,13 +26,10 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 
-@RunWith(JUnitPlatform.class)
 class SeqNoEntityIdSourceTest {
 	final AccountID sponsor = asAccount("1.2.3");
 	SequenceNumber seqNo;

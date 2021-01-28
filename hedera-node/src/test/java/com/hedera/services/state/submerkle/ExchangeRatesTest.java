@@ -28,8 +28,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.DataInputStream;
@@ -43,7 +41,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class ExchangeRatesTest {
 	private int expCurrentHbarEquiv = 25;
 	private int expCurrentCentEquiv = 1;

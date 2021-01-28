@@ -63,8 +63,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.PrintStream;
@@ -86,7 +84,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
 
-@RunWith(JUnitPlatform.class)
 public class ServicesMainTest {
 	final long NODE_ID = 1L;
 	final String PATH = "/this/was/mr/bleaneys/room";

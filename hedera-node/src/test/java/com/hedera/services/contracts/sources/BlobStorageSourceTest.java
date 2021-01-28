@@ -23,8 +23,6 @@ package com.hedera.services.contracts.sources;
 import com.hedera.services.utils.EntityIdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -32,7 +30,6 @@ import java.util.Map;
 import static org.mockito.BDDMockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(JUnitPlatform.class)
 class BlobStorageSourceTest {
 	Map<byte[], byte[]> blobDelegate;
 

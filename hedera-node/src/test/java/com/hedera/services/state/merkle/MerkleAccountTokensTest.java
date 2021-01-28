@@ -27,8 +27,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -49,7 +47,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 class MerkleAccountTokensTest {
 	TokenID a = IdUtils.asToken("0.0.2");
 	TokenID b = IdUtils.asToken("0.1.2");

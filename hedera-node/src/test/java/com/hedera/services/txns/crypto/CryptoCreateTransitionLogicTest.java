@@ -40,8 +40,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
@@ -54,7 +52,6 @@ import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.ledger.properties.AccountProperty.*;
 
-@RunWith(JUnitPlatform.class)
 public class CryptoCreateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private long customAutoRenewPeriod = 100_001L;

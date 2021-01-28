@@ -60,8 +60,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 
 /**
@@ -70,7 +68,6 @@ import org.junit.runners.MethodSorters;
  * @author Hua Li
  * Created on 2019-06-05
  */
-@RunWith(JUnitPlatform.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @DisplayName("TransferListSizeTest Suite")

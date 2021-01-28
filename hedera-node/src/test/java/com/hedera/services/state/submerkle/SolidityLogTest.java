@@ -27,8 +27,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.io.DataInputStream;
@@ -47,7 +45,6 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willAnswer;
 
-@RunWith(JUnitPlatform.class)
 class SolidityLogTest {
 	byte[] data = "hgfedcba".getBytes();
 	byte[] otherData = "abcdefgh".getBytes();

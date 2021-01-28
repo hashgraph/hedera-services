@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Optional;
@@ -53,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class GetTokenInfoResourceUsageTest {
 	public static final FeeData MOCK_TOKEN_GET_INFO_USAGE = UsageEstimatorUtils.defaultPartitioning(
 			FeeComponents.newBuilder()

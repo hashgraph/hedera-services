@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.11.0-alpha.3</version>
+    <version>0.11.1-SNAPSHOT</version>
   </parent>
 
   <properties>

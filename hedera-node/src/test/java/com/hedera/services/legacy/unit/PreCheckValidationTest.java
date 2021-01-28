@@ -82,8 +82,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -104,7 +102,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-@RunWith(JUnitPlatform.class)
 @TestInstance(Lifecycle.PER_CLASS)
 class PreCheckValidationTest {
 

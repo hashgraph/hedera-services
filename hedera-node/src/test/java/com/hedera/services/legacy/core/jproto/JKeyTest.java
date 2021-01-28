@@ -37,10 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
-
-@RunWith(JUnitPlatform.class)
 public class JKeyTest {
 	@Test
 	public void positiveConvertKeyTest() throws Exception {

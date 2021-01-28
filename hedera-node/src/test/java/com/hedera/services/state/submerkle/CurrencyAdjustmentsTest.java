@@ -29,8 +29,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.io.DataInputStream;
@@ -42,7 +40,6 @@ import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class CurrencyAdjustmentsTest {
 	AccountID a = IdUtils.asAccount("0.0.13257");
 	EntityId aEntity = EntityId.ofNullableAccountId(a);

@@ -45,8 +45,6 @@ import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -55,7 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.mockito.BDDMockito.*;
 
-@RunWith(JUnitPlatform.class)
 class TxnHandlerSubmissionFlowTest {
 	private static final byte[] NONSENSE = "Jabberwocky".getBytes();
 
