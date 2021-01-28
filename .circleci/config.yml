@@ -1518,8 +1518,9 @@ workflows:
           context: SonarCloud
           filters:
             branches:
-              only:
-                - Disable-master
+              ignore:
+                - /.*-PERF/
+                - /.*-REGRESSION/
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
