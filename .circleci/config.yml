@@ -1489,8 +1489,17 @@ workflows:
 
   continuous-integration-gcp:
       jobs:
+        - build-artifact:
+            context: SonarCloud
+            filters:
+              branches:
+                ignore:
+                  - /.*-PERF/
+            workflow-name: "Continuous integration"
         - build-platform-and-services:
             context: SonarCloud
+            requires:
+              - build-artifact
             filters:
               branches:
                 ignore:
