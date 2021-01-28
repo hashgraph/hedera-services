@@ -30,7 +30,6 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
 
@@ -45,6 +44,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
+import static com.hedera.services.store.schedule.CompositeKey.UNUSED_KEY;
 import static com.hedera.services.store.schedule.CompositeKey.fromMerkleSchedule;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
@@ -220,8 +220,12 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public Optional<ScheduleID> lookupScheduleId(ScheduleCreateTransactionBody op) {
-		var keyToCheckFor = new CompositeKey(Arrays.hashCode(bodyBytes), scheduledTxPayer);
+	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Optional<JKey> adminKey, String memo) {
+		var keyToCheckFor = new CompositeKey(
+				Arrays.hashCode(bodyBytes),
+				EntityId.ofNullableAccountId(scheduledTxPayer),
+				adminKey.orElse(UNUSED_KEY),
+				memo);
 
 		if (isCreationPending()) {
 			var pendingKey = fromMerkleSchedule(pendingCreation);

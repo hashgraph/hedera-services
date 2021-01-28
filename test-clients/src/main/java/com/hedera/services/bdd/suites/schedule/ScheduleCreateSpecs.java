@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 public class ScheduleCreateSpecs extends HapiApiSuite {
@@ -72,20 +73,22 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				bodyOnlyCreation(),
-				onlyBodyAndAdminCreation(),
-				onlyBodyAndMemoCreation(),
-				bodyAndPayerCreation(),
-				allowsScheduledTransactionsWithDuplicatingBody(),
-				allowsScheduledTransactionsWithDuplicatingBodyAndAdmin(),
-				allowsScheduledTransactionsWithDuplicatingBodyAndPayer(),
-				rejectsUnparseableTxn(),
-				rejectsUnresolvableReqSigners(),
-				triggersImmediatelyWithBothReqSimpleSigs(),
-				onlySchedulesWithMissingReqSimpleSigs(),
-				preservesRevocationServiceSemanticsForFileDelete(),
-				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				retestsActivationOnCreateWithEmptySigMap(),
+//				bodyOnlyCreation(),
+//				onlyBodyAndAdminCreation(),
+//				onlyBodyAndMemoCreation(),
+//				bodyAndPayerCreation(),
+//				allowsScheduledTransactionsWithDuplicatingBody(),
+//				allowsScheduledTransactionsWithDuplicatingBodyAndAdmin(),
+//				allowsScheduledTransactionsWithDuplicatingBodyAndPayer(),
+//				allowsScheduledTransactionsWithDuplicatingBodyPayerAndAdmin(),
+				idempotentCreationWhenAllPropsAreTheSame(),
+//				rejectsUnparseableTxn(),
+//				rejectsUnresolvableReqSigners(),
+//				triggersImmediatelyWithBothReqSimpleSigs(),
+//				onlySchedulesWithMissingReqSimpleSigs(),
+//				preservesRevocationServiceSemanticsForFileDelete(),
+//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+//				retestsActivationOnCreateWithEmptySigMap(),
 		});
 	}
 
@@ -257,6 +260,80 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						getScheduleInfo("second")
 								.hasAdminKey("admin2")
 								.hasPayerAccountID("payer")
+				);
+	}
+
+	private HapiApiSpec allowsScheduledTransactionsWithDuplicatingBodyPayerAndAdmin() {
+		var txnBody = cryptoCreate("primaryCrypto");
+		return defaultHapiSpec("AllowsScheduledTransactionsWithDuplicatingBodyPayerAndAdmin")
+				.given(
+						cryptoCreate("payer"),
+						newKeyNamed("admin"),
+						scheduleCreate("first", txnBody)
+								.adminKey("admin")
+								.payer("payer")
+								.withEntityMemo("memo here")
+								.via("first")
+				).when(
+						scheduleCreate("second", txnBody)
+								.adminKey("admin")
+								.payer("payer")
+								.withEntityMemo("different memo here")
+								.via("second")
+				).then(
+						withOpContext((spec, opLog) -> {
+							var firstTx = getTxnRecord("first");
+							var secondTx = getTxnRecord("second");
+							allRunFor(spec, firstTx, secondTx);
+							assertNotEquals(
+									firstTx.getResponseRecord().getReceipt().getScheduleID(),
+									secondTx.getResponseRecord().getReceipt().getScheduleID());
+						}),
+						getScheduleInfo("first")
+								.hasAdminKey("admin")
+								.hasPayerAccountID("payer")
+								.hasEntityMemo("memo here"),
+						getScheduleInfo("second")
+								.hasAdminKey("admin")
+								.hasPayerAccountID("payer")
+								.hasEntityMemo("different memo here")
+				);
+	}
+
+	private HapiApiSpec idempotentCreationWhenAllPropsAreTheSame() {
+		var txnBody = cryptoCreate("primaryCrypto");
+		return defaultHapiSpec("AllowsScheduledTransactionsWithDuplicatingBodyPayerAndAdmin")
+				.given(
+						cryptoCreate("payer"),
+						newKeyNamed("admin"),
+						scheduleCreate("first", txnBody)
+								.adminKey("admin")
+								.payer("payer")
+								.withEntityMemo("memo here")
+								.via("first")
+				).when(
+						scheduleCreate("second", txnBody)
+								.adminKey("admin")
+								.payer("payer")
+								.withEntityMemo("memo here")
+								.via("second")
+				).then(
+						withOpContext((spec, opLog) -> {
+							var firstTx = getTxnRecord("first");
+							var secondTx = getTxnRecord("second");
+							allRunFor(spec, firstTx, secondTx);
+							assertEquals(
+									firstTx.getResponseRecord().getReceipt().getScheduleID(),
+									secondTx.getResponseRecord().getReceipt().getScheduleID());
+						}),
+						getScheduleInfo("first")
+								.hasAdminKey("admin")
+								.hasPayerAccountID("payer")
+								.hasEntityMemo("memo here"),
+						getScheduleInfo("second")
+								.hasAdminKey("admin")
+								.hasPayerAccountID("payer")
+								.hasEntityMemo("memo here")
 				);
 	}
 

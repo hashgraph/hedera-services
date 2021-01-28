@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -71,7 +72,7 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer) {
+	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Optional<JKey> adminKey, String entityMemo) {
 		throw new UnsupportedOperationException();
 	}
 

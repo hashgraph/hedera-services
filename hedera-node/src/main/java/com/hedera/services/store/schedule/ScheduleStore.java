@@ -47,7 +47,7 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey, Optional<String> entityMemo);
 	ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> keys);
 
-	Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer);
+	Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Optional<JKey> adminKey, String entityMemo);
 	ResponseCodeEnum markAsExecuted(ScheduleID id);
 
 	default ScheduleID resolve(ScheduleID id) {

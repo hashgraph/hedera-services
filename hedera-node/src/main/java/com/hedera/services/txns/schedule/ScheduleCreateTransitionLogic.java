@@ -83,18 +83,20 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 
 	private void transitionFor(ScheduleCreateTransactionBody op) throws InvalidProtocolBufferException {
 		var scheduleId = NOT_YET_RESOLVED;
+		byte[] txBytes = op.getTransactionBody().toByteArray();
 		var scheduledPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
+		var adminKey = adminKeyFor(op);
 
-		var extantId = store.lookupScheduleId(op.getTransactionBody().toByteArray(), scheduledPayer);
+		var extantId = store.lookupScheduleId(txBytes, scheduledPayer, adminKey, op.getMemo());
 		if (extantId.isPresent()) {
 			scheduleId = extantId.get();
 		} else {
 			var result = store.createProvisionally(
-					op.getTransactionBody().toByteArray(),
+					txBytes,
 					scheduledPayer,
 					txnCtx.activePayer(),
 					fromJava(txnCtx.consensusTime()),
-					adminKeyFor(op),
+					adminKey,
 					Optional.of(op.getMemo()));
 			if (result.getCreated().isEmpty()) {
 				abortWith(result.getStatus());

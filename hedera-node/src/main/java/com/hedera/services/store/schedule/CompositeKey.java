@@ -20,24 +20,29 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
+import com.hedera.services.state.submerkle.EntityId;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
+
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 
 /**
  * Set of properties used to describe unique instance of Scheduled Transaction
  */
 public class CompositeKey {
-    private final int txBytesHashCode;
-    private final AccountID payer;
-    private final Optional<Key> adminKey;
-    private final Optional<String> entityMemo;
 
-    public CompositeKey(int txBytesHashCode, AccountID payer, Optional<Key> adminKey, Optional<String> entityMemo) {
+    public static final JKey UNUSED_KEY = null;
+    private static final String EMPTY_MEMO = null;
+
+    private final int txBytesHashCode;
+    private final EntityId payer;
+    private final JKey adminKey;
+    private final String entityMemo;
+
+    public CompositeKey(int txBytesHashCode, EntityId payer, JKey adminKey, String entityMemo) {
         this.txBytesHashCode = txBytesHashCode;
         this.payer = payer;
         this.adminKey = adminKey;
@@ -52,12 +57,10 @@ public class CompositeKey {
             return false;
         CompositeKey other = (CompositeKey)o;
 
-        boolean hashEquals = this.txBytesHashCode == other.txBytesHashCode;
-        boolean payerEquals = Objects.equals(this.payer, other.payer);
-        boolean adminKeyEquals = Objects.equals(this.adminKey, other.adminKey);
-        boolean memoEquals = Objects.equals(this.entityMemo, other.entityMemo);
-
-        return hashEquals && payerEquals && adminKeyEquals && memoEquals;
+        return this.txBytesHashCode == other.txBytesHashCode &&
+                Objects.equals(this.entityMemo, other.entityMemo) &&
+                Objects.equals(this.payer, other.payer) &&
+                equalUpToDecodability(this.adminKey, other.adminKey);
     }
 
     @Override
@@ -66,12 +69,23 @@ public class CompositeKey {
         if (payer != null) {
             result = 31 * result + payer.hashCode();
         }
+        if (adminKey != null) {
+            result = 31 * result + adminKey.hashCode();
+        }
+        if (entityMemo != null) {
+            result = 31 * result + entityMemo.hashCode();
+        }
         return result;
     }
 
     public static CompositeKey fromMerkleSchedule(MerkleSchedule schedule) {
+        var adminKey = schedule.adminKey().isPresent() ? schedule.adminKey().get() : UNUSED_KEY;
+        var memo = schedule.memo().isPresent() ? schedule.memo().get() : EMPTY_MEMO;
         return new CompositeKey(
                 Arrays.hashCode(schedule.transactionBody()),
-                schedule.payer().toGrpcAccountId(), Optional.empty(), schedule.memo()); // TODO admin
+                schedule.payer(),
+                adminKey,
+                memo
+        );
     }
 }

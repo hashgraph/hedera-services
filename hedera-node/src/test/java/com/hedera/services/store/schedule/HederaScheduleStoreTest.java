@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
+import org.checkerframework.checker.nullness.Opt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -126,6 +127,7 @@ public class HederaScheduleStoreTest {
         given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
         given(schedule.signers()).willReturn(signers);
         given(schedule.payer()).willReturn(EntityId.ofNullableAccountId(payerId));
+        given(schedule.memo()).willReturn(Optional.of(entityMemo));
 
         given(anotherSchedule.payer()).willReturn(EntityId.ofNullableAccountId(anotherPayerId));
 
@@ -455,11 +457,16 @@ public class HederaScheduleStoreTest {
     @Test
     public void getsScheduleID() {
         // given:
-        subject.txToEntityId.put(new CompositeKey(transactionBodyHashCode, payerId), fromScheduleId(created));
+        CompositeKey txKey = new CompositeKey(
+                transactionBodyHashCode,
+                EntityId.ofNullableAccountId(payerId),
+                adminJKey,
+                entityMemo);
+        subject.txToEntityId.put(txKey, fromScheduleId(created));
         given(subject.get(created)).willReturn(schedule);
 
         // when:
-        var scheduleId = subject.lookupScheduleId(transactionBody, payerId);
+        var scheduleId = subject.lookupScheduleId(transactionBody, payerId, Optional.of(adminJKey), entityMemo);
 
         assertEquals(Optional.of(created), scheduleId);
     }
@@ -471,7 +478,7 @@ public class HederaScheduleStoreTest {
         subject.pendingId = created;
 
         // when:
-        var scheduleId = subject.lookupScheduleId(transactionBody, payerId);
+        var scheduleId = subject.lookupScheduleId(transactionBody, payerId, Optional.of(adminJKey), entityMemo);
 
         assertEquals(Optional.of(created), scheduleId);
     }
@@ -479,7 +486,7 @@ public class HederaScheduleStoreTest {
     @Test
     public void failsToGetScheduleID() {
         // when:
-        var scheduleId = subject.lookupScheduleId(transactionBody, payerId);
+        var scheduleId = subject.lookupScheduleId(transactionBody, payerId, Optional.of(adminJKey), entityMemo);
 
         assertTrue(scheduleId.isEmpty());
     }
@@ -523,7 +530,7 @@ public class HederaScheduleStoreTest {
     @Test
     public void validCompositeKey() {
         // given:
-        var key = new CompositeKey(transactionBodyHashCode, payerId);
+        var key = new CompositeKey(transactionBodyHashCode, EntityId.ofNullableAccountId(payerId), adminJKey, entityMemo);
 
         assertEquals(key, key);
     }
@@ -531,7 +538,7 @@ public class HederaScheduleStoreTest {
     @Test
     public void validDifferentInstanceKey() {
         // given:
-        var key = new CompositeKey(transactionBodyHashCode, payerId);
+        var key = new CompositeKey(transactionBodyHashCode, EntityId.ofNullableAccountId(payerId), adminJKey, entityMemo);
 
         assertNotEquals(key, new Object());
     }
