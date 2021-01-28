@@ -20,6 +20,9 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
@@ -31,6 +34,8 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.AllAccountBalances;
+import com.hederahashgraph.api.proto.java.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -40,7 +45,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -51,6 +59,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
@@ -98,6 +107,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());
 		} else {
 			if (now.isAfter(periodEnd)) {
+				log.info("balancesExportPeriodSecs: {} ", dynamicProperties.balancesExportPeriodSecs());
 				periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());
 				return true;
 			}
@@ -123,6 +133,18 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, when);
 		if (exportSucceeded) {
 			tryToSign(csvLoc);
+		}
+	}
+
+	@Override
+	public void toProtoFile(ServicesState signedState, Instant when) {
+		if (!ensureExportDir(signedState.getNodeAccountId())) {
+			return;
+		}
+		var protoLoc = lastUsedExportDir + when.toString().replace(":", "_") + "_Balances.proto";
+		boolean exportSucceeded = exportBalancesProtoFile(signedState, protoLoc, when);
+		if (exportSucceeded) {
+			tryToSign(protoLoc);
 		}
 	}
 
@@ -163,6 +185,82 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			return false;
 		}
 		return true;
+	}
+
+	private boolean exportBalancesProtoFile(ServicesState signedState, String protoLoc, Instant when) {
+		long nodeBalanceWarnThreshold = dynamicProperties.nodeBalanceWarningThreshold();
+		BigInteger totalFloat = BigInteger.valueOf(0L);
+
+		var nodeIds = MiscUtils.getNodeAccounts(signedState.addressBook());
+		var tokens = signedState.tokens();
+		var accounts = signedState.accounts();
+		var tokenAssociations = signedState.tokenAssociations();
+
+		AllAccountBalances.Builder allAccountBalancesBuilder = AllAccountBalances.newBuilder();
+
+		log.info("Export to balance proto file {} ", protoLoc);
+
+		for (MerkleEntityId id : accounts.keySet()) {
+			var account = accounts.get(id);
+			if (!account.isDeleted()) {
+				var accountId = id.toAccountId();
+				var balance = account.getBalance();
+				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
+					log.warn(String.format(
+							LOW_NODE_BALANCE_WARN_MSG_TPL,
+							readableId(accountId),
+							balance));
+				}
+				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
+
+				SingleAccountBalances.Builder singleAccountBuilder =SingleAccountBalances.newBuilder();
+				singleAccountBuilder.setAccountID(accountId)
+						.setHbarBalance(balance);
+
+				if (dynamicProperties.shouldExportTokenBalances()) {
+					//addTokenBalances(accountId, account, balancesEntry, tokens, tokenAssociations);
+					var accountTokens = account.tokens();
+					if (accountTokens.numAssociations() > 0) {
+						for (TokenID tokenId : accountTokens.asIds()) {
+							var token = tokens.get(fromTokenId(tokenId));
+							if (token != null && !token.isDeleted()) {
+								var relationship = tokenAssociations.get(fromAccountTokenRel(accountId, tokenId));
+								singleAccountBuilder.addTokenBalances(tb(tokenId, relationship.getBalance()));
+							}
+						}
+					}
+				}
+				Instant instant = when;
+				Timestamp.Builder timeStamp = Timestamp.newBuilder();
+				timeStamp.setSeconds(instant.getEpochSecond());
+				timeStamp.setNanos(instant.getNano());
+				Timestamp consensusTimeStamp = timeStamp.build();
+				allAccountBalancesBuilder.setConsensusTimestamp(consensusTimeStamp);
+				allAccountBalancesBuilder.addAllAccounts(singleAccountBuilder.build());
+			}
+		}
+
+		try (FileOutputStream fout = new FileOutputStream(protoLoc)) {
+			allAccountBalancesBuilder.build().writeTo(fout);
+
+		} catch (IOException e) {
+			log.error(String.format(BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL, protoLoc), e);
+			return false;
+		}
+		return true;
+	}
+
+	public Optional<AllAccountBalances> importBalanceProtoFile(String protoLoc) {
+		try {
+			FileInputStream fin = new FileInputStream(protoLoc);
+			AllAccountBalances allAccountBalances = AllAccountBalances.parseFrom(fin);
+			return Optional.ofNullable(allAccountBalances);
+		} catch (InvalidProtocolBufferException e) {
+			log.error("protobuf file is corrupted: {}", protoLoc);
+		} catch (IOException e) {
+			log.error("Can't read protobuf file {}", protoLoc);
+		}
+		return Optional.empty();
 	}
 
 	private void addLegacyHeader(Writer writer, Instant at) throws IOException {

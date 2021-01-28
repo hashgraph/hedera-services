@@ -33,13 +33,19 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.AllAccountBalances;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.AllAccountBalances;
+import com.hederahashgraph.api.proto.java.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
+
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.Logger;
+import org.fusesource.leveldbjni.All;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -304,17 +310,79 @@ class SignedStateBalancesExporterTest {
 		new File(expectedExportLoc()).delete();
 	}
 
+	@Test
+	public void testExportingTokenBalancesProto() throws IOException {
+		// setup:
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		Pattern CSV_NAME_PATTERN = Pattern.compile(
+				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.proto");
+		// and:
+		var loc = expectedExportLoc(true);
+
+		given(hashReader.readHash(loc)).willReturn(fileHash);
+		given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// and:
+		java.util.Optional<AllAccountBalances> fileContent = subject.importBalanceProtoFile(loc);
+
+		AllAccountBalances allAccountBalances = fileContent.get() ;
+
+		// then:
+		//System.out.println("consensusTimestamp = " + allAccountBalances.getConsensusTimestamp());
+		//System.out.println("account # =" + allAccountBalances.getAllAccountsList().size());
+
+		List<SingleAccountBalances> accounts = allAccountBalances.getAllAccountsList();
+
+		assertEquals(accounts.size(), 4);
+
+		for(SingleAccountBalances account : accounts) {
+			if(account.getAccountID().getAccountNum() == 1001) {
+				assertEquals(account.getHbarBalance(), 250);
+			}
+			else if(account.getAccountID().getAccountNum() == 1002) {
+				assertEquals(account.getHbarBalance(), 250);
+				assertEquals(account.getTokenBalances(0).getTokenId().getTokenNum(), 1004);
+				assertEquals(account.getTokenBalances(0).getBalance(), 100);
+			}
+		}
+
+		// and:
+		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
+		// and:
+		verify(mockLog).debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig"));
+		// and:
+//		assertTrue(CSV_NAME_PATTERN.matcher(captor.getValue()).matches());
+
+		// cleanup:
+		new File(loc).delete();
+	}
+
+
 	private String expectedExportLoc() {
+		return expectedExportLoc(false);
+	}
+
+	private String expectedExportLoc(boolean isProto) {
 		return dynamicProperties.pathToBalancesExportDir()
 				+ File.separator
 				+ "balance0.0.3"
 				+ File.separator
-				+ expectedBalancesName();
+				+ expectedBalancesName(isProto);
+	}
+
+
+	private String expectedBalancesName(Boolean isProto ) {
+		return isProto ? now.toString().replace(":", "_") + "_Balances.proto"
+				: now.toString().replace(":", "_") + "_Balances.csv";
 	}
 
 	private String expectedBalancesName() {
-		return now.toString().replace(":", "_") + "_Balances.csv";
+		return  expectedBalancesName(false) ; // now.toString().replace(":", "_") + "_Balances.csv";
 	}
+
 
 	@Test
 	public void summarizesAsExpected() {

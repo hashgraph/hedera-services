@@ -28,6 +28,7 @@ option java_multiple_files = true;
 import "BasicTypes.proto";
 import "QueryHeader.proto";
 import "ResponseHeader.proto";
+import "Timestamp.proto";
 
 /* Get the balance of a cryptocurrency account. This returns only the balance, so it is a smaller
 reply than CryptoGetInfo, which returns the balance plus additional information. */
@@ -62,4 +63,14 @@ message CryptoGetAccountBalanceResponse {
     repeated TokenBalance tokenBalances = 4; // The token balances possessed by the target account.
 }
 
+message SingleAccountBalances {
+    AccountID accountID = 1;
+    uint64 hbarBalance = 2;
+    repeated TokenBalance tokenBalances = 3;
+}
+
+message AllAccountBalances {
+    Timestamp consensusTimestamp = 1;
+    repeated SingleAccountBalances allAccounts = 2;
+}
 
