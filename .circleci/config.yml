@@ -1644,6 +1644,47 @@ workflows:
                 at: /
           workflow-name: "nightly-mainnet-migration-regression"
 
+
+  New-AWS-Daily-Services-Crypto-Restart-4N-1C:
+    triggers:
+      - schedule:
+          cron: "0 6 * * *"
+          filters:
+            branches:
+              only:
+                - Disable-master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression-restart:
+          cloud: "AWS"
+          workflow-name: "AWS-Daily-Services-Crypto-Restart-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  New-GCP-Daily-Services-Crypto-Restart-4N-1C:
+    triggers:
+      - schedule:
+          cron: "0 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression-restart:
+          cloud: "GCP"
+          workflow-name: "GCP-Daily-Services-Crypto-Restart-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   AWS-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
@@ -3540,3 +3581,54 @@ jobs:
           result_path: << parameters.result_path >>
       - store_artifacts:
           path: /results.tar.gz
+
+
+  jrs-regression-recover:
+    parameters:
+      cloud:
+        type: string
+        default: "GCP"
+      runtime:
+        type: string
+        default: ci-test-executor
+    executor:
+      name: << parameters.runtime >>
+      workflow-name: << parameters.workflow-name >>
+    steps:
+      - jrs-regression-cmd:
+          name: "<< parameters.cloud >>-Daily-Services-Recovery-4N-1C"
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/Recovery
+          automated_run: true
+          slack_results_channel: "hedera-regression-test"
+          slack_summary_channel: "hedera-regression-test"
+          config_file: "configs/services/suites/daily/<< parameters.cloud >>-Daily-Services-Recovery-4N-1C.json"
+          workflow-name: "<< parameters.cloud >>-Daily-Services-Recovery-4N-1C"
+
+  jrs-regression-restart:
+    parameters:
+      cloud:
+        type: string
+        default: "GCP"
+      runtime:
+        type: string
+        default: ci-test-executor
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: << parameters.runtime >>
+      workflow-name: << parameters.workflow-name >>
+
+    steps:
+      - jrs-regression-cmd:
+          name: "<< parameters.cloud >>-Daily-Services-Recovery-4N-1C"
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/Restart
+          automated_run: true
+          slack_results_channel: "hedera-regression-test"
+          slack_summary_channel: "hedera-regression-test"
+          config_file: "configs/services/suites/daily/<< parameters.cloud >>-Daily-Services-Recovery-4N-1C.json"
+          workflow-name: "<< parameters.cloud >>-Daily-Services-Recovery-4N-1C"
