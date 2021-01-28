@@ -66,7 +66,7 @@ public class PlatformSigsCreationResult {
 	 * Represent this result as a {@link SignatureStatus}.
 	 *
 	 * @param inHandleDynamicContext a flag giving whether this result occurred in the dynamic context of
-	 * {@link ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, Address)}
+	 * {@code ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, Address)}
 	 * @param txnId the id of the related gRPC txn.
 	 * @return the desired representation.
 	 */
