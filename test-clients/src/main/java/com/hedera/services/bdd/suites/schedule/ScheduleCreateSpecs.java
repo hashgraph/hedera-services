@@ -301,20 +301,21 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec idempotentCreationWhenAllPropsAreTheSame() {
-		var txnBody = cryptoCreate("primaryCrypto");
-		return defaultHapiSpec("AllowsScheduledTransactionsWithDuplicatingBodyPayerAndAdmin")
+		var txnBody = cryptoTransfer(tinyBarsFromTo("payer", "receiver", 1));
+		return defaultHapiSpec("IdempotentCreationWhenAllPropsAreTheSame")
 				.given(
 						cryptoCreate("payer"),
+						cryptoCreate("receiver"),
 						newKeyNamed("admin"),
 						scheduleCreate("first", txnBody)
-								.adminKey("admin")
 								.payer("payer")
+								.adminKey("admin")
 								.withEntityMemo("memo here")
 								.via("first")
 				).when(
 						scheduleCreate("second", txnBody)
-								.adminKey("admin")
 								.payer("payer")
+								.adminKey("admin")
 								.withEntityMemo("memo here")
 								.via("second")
 				).then(
@@ -327,12 +328,12 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 									secondTx.getResponseRecord().getReceipt().getScheduleID());
 						}),
 						getScheduleInfo("first")
-								.hasAdminKey("admin")
 								.hasPayerAccountID("payer")
+								.hasAdminKey("admin")
 								.hasEntityMemo("memo here"),
 						getScheduleInfo("second")
-								.hasAdminKey("admin")
 								.hasPayerAccountID("payer")
+								.hasAdminKey("admin")
 								.hasEntityMemo("memo here")
 				);
 	}

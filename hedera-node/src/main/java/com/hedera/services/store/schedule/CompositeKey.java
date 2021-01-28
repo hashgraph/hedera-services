@@ -65,17 +65,12 @@ public class CompositeKey {
 
     @Override
     public final int hashCode() {
-        int result = txBytesHashCode;
-        if (payer != null) {
-            result = 31 * result + payer.hashCode();
-        }
-        if (adminKey != null) {
-            result = 31 * result + adminKey.hashCode();
-        }
-        if (entityMemo != null) {
-            result = 31 * result + entityMemo.hashCode();
-        }
-        return result;
+        return Objects.hash(
+                txBytesHashCode,
+                payer,
+                adminKey,
+                entityMemo
+        );
     }
 
     public static CompositeKey fromMerkleSchedule(MerkleSchedule schedule) {
