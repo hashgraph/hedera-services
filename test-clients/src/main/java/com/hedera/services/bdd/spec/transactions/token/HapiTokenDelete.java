@@ -40,7 +40,9 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 	static final Logger log = LogManager.getLogger(HapiTokenDelete.class);
@@ -97,6 +99,29 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) {
+		if (actualStatus != SUCCESS) {
+			return;
+		}
+		var registry = spec.registry();
+		registry.forgetName(token);
+		registry.forgetSymbol(token);
+		registry.forgetTokenId(token);
+		registry.forgetTreasury(token);
+		if (registry.hasKycKey(token)) {
+			registry.forgetKycKey(token);
+		}
+		if (registry.hasWipeKey(token)) {
+			registry.forgetWipeKey(token);
+		}
+		if (registry.hasSupplyKey(token)) {
+			registry.forgetSupplyKey(token);
+		}
+		if (registry.hasAdminKey(token)) {
+			registry.forgetAdminKey(token);
+		}
+		if (registry.hasFreezeKey(token)) {
+			registry.forgetFreezeKey(token);
+		}
 	}
 
 	@Override

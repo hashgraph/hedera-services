@@ -91,8 +91,8 @@ public class RandomToken implements OpProvider {
 	}
 
 	private void randomlyConfigureStrings(HapiTokenCreate op) {
-		op.name(randomUppercase(BASE_RANDOM.nextInt(DEFAULT_MAX_STRING_LEN)));
-		op.symbol(randomUppercase(BASE_RANDOM.nextInt(DEFAULT_MAX_STRING_LEN)));
+		op.name(randomUppercase(1 + BASE_RANDOM.nextInt(DEFAULT_MAX_STRING_LEN)));
+		op.symbol(randomUppercase(1 + BASE_RANDOM.nextInt(DEFAULT_MAX_STRING_LEN)));
 	}
 
 	private void randomlyConfigureSupply(HapiTokenCreate op) {

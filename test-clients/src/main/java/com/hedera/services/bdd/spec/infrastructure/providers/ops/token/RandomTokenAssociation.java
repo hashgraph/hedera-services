@@ -23,7 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 public class RandomTokenAssociation implements OpProvider {
 	static final Logger log = LogManager.getLogger(RandomTokenAssociation.class);
 
-	public static final int MAX_TOKENS_PER_OP = 5;
+	public static final int MAX_TOKENS_PER_OP = 2;
 	public static final int DEFAULT_CEILING_NUM = 10_000;
 
 	private int ceilingNum = DEFAULT_CEILING_NUM;
