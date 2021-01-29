@@ -146,7 +146,7 @@ public class ScheduleCreateTransitionLogicTest {
 		verify(store).lookupScheduleId(
 				eq(transactionBody),
 				eq(payer),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				eq(key),
 				argThat((String memo) -> Objects.equals(memo, entityMemo)));
 
 		// and:
@@ -176,7 +176,7 @@ public class ScheduleCreateTransitionLogicTest {
 		given(store.lookupScheduleId(
 				eq(transactionBody),
 				eq(payer),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				eq(key),
 				argThat((String m) -> m.equals(entityMemo))))
 				.willReturn(Optional.of(schedule));
 		given(store.get(schedule)).willReturn(created);
@@ -189,7 +189,7 @@ public class ScheduleCreateTransitionLogicTest {
 		verify(store).lookupScheduleId(
 				eq(transactionBody),
 				eq(payer),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				eq(key),
 				argThat((String memo) -> Objects.equals(memo, entityMemo)));
 
 		// and:
@@ -219,7 +219,7 @@ public class ScheduleCreateTransitionLogicTest {
 		verify(store).lookupScheduleId(
 				eq(transactionBody),
 				eq(payer),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				eq(key),
 				argThat((String memo) -> Objects.equals(memo, entityMemo)));
 
 		// and:
@@ -244,7 +244,7 @@ public class ScheduleCreateTransitionLogicTest {
 		given(store.lookupScheduleId(
 				eq(transactionBody),
 				eq(payer),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				eq(key),
 				argThat((String m) -> m.equals(entityMemo)))).willReturn(EMPTY_SCHEDULE);
 		given(store.createProvisionally(
 				eq(transactionBody),
@@ -261,7 +261,7 @@ public class ScheduleCreateTransitionLogicTest {
 		verify(store).lookupScheduleId(
 				eq(transactionBody),
 				eq(payer),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				eq(key),
 				argThat((String memo) -> Objects.equals(memo, entityMemo)));
 
 		// and:
@@ -283,7 +283,7 @@ public class ScheduleCreateTransitionLogicTest {
 		given(store.lookupScheduleId(
 				eq(transactionBody),
 				eq(payer),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				eq(key),
 				argThat((String m) -> m.equals(entityMemo))))
 				.willThrow(IllegalArgumentException.class);
 
@@ -294,7 +294,7 @@ public class ScheduleCreateTransitionLogicTest {
 		verify(store).lookupScheduleId(
 				eq(transactionBody),
 				eq(payer),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
+				eq(key),
 				argThat((String memo) -> Objects.equals(memo, entityMemo)));
 		// and:
 		verify(txnCtx).setStatus(FAIL_INVALID);
@@ -381,7 +381,7 @@ public class ScheduleCreateTransitionLogicTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(store.isCreationPending()).willReturn(true);
-		given(store.lookupScheduleId(transactionBody, payer, jAdminKey, entityMemo)).willReturn(EMPTY_SCHEDULE);
+		given(store.lookupScheduleId(transactionBody, payer, key, entityMemo)).willReturn(EMPTY_SCHEDULE);
 		given(store.createProvisionally(
 				eq(transactionBody),
 				eq(payer),

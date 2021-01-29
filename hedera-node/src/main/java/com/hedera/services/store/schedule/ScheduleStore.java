@@ -26,6 +26,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
@@ -47,7 +48,7 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey, Optional<String> entityMemo);
 	ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> keys);
 
-	Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Optional<JKey> adminKey, String entityMemo);
+	Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Key adminKey, String entityMemo);
 	ResponseCodeEnum markAsExecuted(ScheduleID id);
 
 	default ScheduleID resolve(ScheduleID id) {

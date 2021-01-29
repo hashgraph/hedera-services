@@ -460,13 +460,12 @@ public class HederaScheduleStoreTest {
         CompositeKey txKey = new CompositeKey(
                 transactionBodyHashCode,
                 EntityId.ofNullableAccountId(payerId),
-                adminJKey,
+                adminKey,
                 entityMemo);
         subject.txToEntityId.put(txKey, fromScheduleId(created));
-        given(subject.get(created)).willReturn(schedule);
 
         // when:
-        var scheduleId = subject.lookupScheduleId(transactionBody, payerId, Optional.of(adminJKey), entityMemo);
+        var scheduleId = subject.lookupScheduleId(transactionBody, payerId, adminKey, entityMemo);
 
         assertEquals(Optional.of(created), scheduleId);
     }
@@ -478,7 +477,7 @@ public class HederaScheduleStoreTest {
         subject.pendingId = created;
 
         // when:
-        var scheduleId = subject.lookupScheduleId(transactionBody, payerId, Optional.of(adminJKey), entityMemo);
+        var scheduleId = subject.lookupScheduleId(transactionBody, payerId, adminKey, entityMemo);
 
         assertEquals(Optional.of(created), scheduleId);
     }
@@ -486,7 +485,7 @@ public class HederaScheduleStoreTest {
     @Test
     public void failsToGetScheduleID() {
         // when:
-        var scheduleId = subject.lookupScheduleId(transactionBody, payerId, Optional.of(adminJKey), entityMemo);
+        var scheduleId = subject.lookupScheduleId(transactionBody, payerId, adminKey, entityMemo);
 
         assertTrue(scheduleId.isEmpty());
     }
@@ -525,22 +524,6 @@ public class HederaScheduleStoreTest {
 
         // then:
         assertEquals(INVALID_SCHEDULE_ID, outcome);
-    }
-
-    @Test
-    public void validCompositeKey() {
-        // given:
-        var key = new CompositeKey(transactionBodyHashCode, EntityId.ofNullableAccountId(payerId), adminJKey, entityMemo);
-
-        assertEquals(key, key);
-    }
-
-    @Test
-    public void validDifferentInstanceKey() {
-        // given:
-        var key = new CompositeKey(transactionBodyHashCode, EntityId.ofNullableAccountId(payerId), adminJKey, entityMemo);
-
-        assertNotEquals(key, new Object());
     }
 
     @Test

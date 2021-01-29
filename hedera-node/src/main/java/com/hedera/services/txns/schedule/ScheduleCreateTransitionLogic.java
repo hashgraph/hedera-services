@@ -85,9 +85,8 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 		var scheduleId = NOT_YET_RESOLVED;
 		byte[] txBytes = op.getTransactionBody().toByteArray();
 		var scheduledPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
-		var adminKey = adminKeyFor(op);
 
-		var extantId = store.lookupScheduleId(txBytes, scheduledPayer, adminKey, op.getMemo());
+		var extantId = store.lookupScheduleId(txBytes, scheduledPayer, op.getAdminKey(), op.getMemo());
 		if (extantId.isPresent()) {
 			scheduleId = extantId.get();
 		} else {
@@ -96,7 +95,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 					scheduledPayer,
 					txnCtx.activePayer(),
 					fromJava(txnCtx.consensusTime()),
-					adminKey,
+					adminKeyFor(op),
 					Optional.of(op.getMemo()));
 			if (result.getCreated().isEmpty()) {
 				abortWith(result.getStatus());
