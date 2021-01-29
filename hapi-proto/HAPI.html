@@ -8254,7 +8254,7 @@ by HAPI.</p></td>
               <tr>
                 <td>TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED</td>
                 <td>166</td>
-                <td><p>Maximum number of token relations for a given account is exceeded</p></td>
+                <td><p>An involved account already has more than &lt;tt&gt;tokens.maxPerAccount&lt;/tt&gt; associations with non-deleted tokens.</p></td>
               </tr>
             
               <tr>
@@ -10063,14 +10063,14 @@ by HAPI.</p></td>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The new Symbol of the Token. Must be UTF-8 capitalized alphabetical string identifying the token. </p></td>
+                  <td><p>The new publicly visible Token symbol, limited to a UTF-8 encoding of length &lt;tt&gt;tokens.maxTokenNameUtf8Bytes&lt;/tt&gt;. </p></td>
                 </tr>
               
                 <tr>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The new Name of the Token. Must be a string of ASCII characters. </p></td>
+                  <td><p>The new publicly visible name of the Token, limited to a UTF-8 encoding of length &lt;tt&gt;tokens.maxSymbolUtf8Bytes&lt;/tt&gt;. </p></td>
                 </tr>
               
                 <tr>
