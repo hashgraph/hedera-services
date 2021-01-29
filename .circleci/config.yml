@@ -1483,7 +1483,7 @@ workflows:
                 - 00995-D-regression-history
     jobs:
       - build-platform-and-services
-      - update-start-up-key
+      - update-start-up-key:
           requires:
             - build-platform-and-services
       - jrs-regression:
