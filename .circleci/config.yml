@@ -1701,8 +1701,8 @@ workflows:
 
     jobs:
       - build-platform-and-services
-          - update-start-up-key
-          - jrs-regression:
+      - update-start-up-key
+      - jrs-regression:
           name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           context: Slack
           regression_path: /swirlds-platform/regression
