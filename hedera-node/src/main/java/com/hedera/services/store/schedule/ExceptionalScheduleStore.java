@@ -29,9 +29,11 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -71,7 +73,7 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer) {
+	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Key adminKey, String entityMemo) {
 		throw new UnsupportedOperationException();
 	}
 
