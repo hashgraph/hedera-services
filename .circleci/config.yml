@@ -966,7 +966,7 @@ workflows:
           cron: "15 18 * * *"
           filters:
             branches:
-              only:
+              ignore:
                 - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
@@ -986,7 +986,7 @@ workflows:
           cron: "35 18 * * *"
           filters:
             branches:
-              only:
+              ignore:
                 - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
@@ -1006,7 +1006,7 @@ workflows:
           cron: "5 19 * * *"
           filters:
             branches:
-              only:
+              ignore:
                 - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
