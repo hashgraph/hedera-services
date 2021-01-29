@@ -30,10 +30,7 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.AllAccountBalances;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AllAccountBalances;
 import com.hederahashgraph.api.proto.java.SingleAccountBalances;
@@ -45,7 +42,6 @@ import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.Logger;
-import org.fusesource.leveldbjni.All;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -331,9 +327,6 @@ class SignedStateBalancesExporterTest {
 		AllAccountBalances allAccountBalances = fileContent.get() ;
 
 		// then:
-		//System.out.println("consensusTimestamp = " + allAccountBalances.getConsensusTimestamp());
-		//System.out.println("account # =" + allAccountBalances.getAllAccountsList().size());
-
 		List<SingleAccountBalances> accounts = allAccountBalances.getAllAccountsList();
 
 		assertEquals(accounts.size(), 4);

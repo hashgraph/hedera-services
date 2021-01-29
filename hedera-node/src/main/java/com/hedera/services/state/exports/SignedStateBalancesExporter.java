@@ -21,7 +21,6 @@ package com.hedera.services.state.exports;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -31,7 +30,6 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AllAccountBalances;
@@ -48,7 +46,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.Writer;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -141,8 +138,21 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		if (!ensureExportDir(signedState.getNodeAccountId())) {
 			return;
 		}
+
+		AllAccountBalances.Builder allAccountBalancesBuilder = AllAccountBalances.newBuilder();
+
+		var expected = BigInteger.valueOf(expectedFloat);
+		var total = calcTotalAndBuildProtoMessage(signedState, when, allAccountBalancesBuilder);
+
+		if (!expected.equals(total)) {
+			throw new IllegalStateException(String.format(
+					"Signed state @ %s had total balance %d not %d!",
+					when,total,	expectedFloat));
+		}
+
 		var protoLoc = lastUsedExportDir + when.toString().replace(":", "_") + "_Balances.proto";
-		boolean exportSucceeded = exportBalancesProtoFile(signedState, protoLoc, when);
+		boolean exportSucceeded = exportBalancesProtoFile(allAccountBalancesBuilder, protoLoc);
+
 		if (exportSucceeded) {
 			tryToSign(protoLoc);
 		}
@@ -187,7 +197,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		return true;
 	}
 
-	private boolean exportBalancesProtoFile(ServicesState signedState, String protoLoc, Instant when) {
+	private BigInteger calcTotalAndBuildProtoMessage(ServicesState signedState, Instant when,
+			AllAccountBalances.Builder allAccountBalancesBuilder) {
+
 		long nodeBalanceWarnThreshold = dynamicProperties.nodeBalanceWarningThreshold();
 		BigInteger totalFloat = BigInteger.valueOf(0L);
 
@@ -195,10 +207,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		var tokens = signedState.tokens();
 		var accounts = signedState.accounts();
 		var tokenAssociations = signedState.tokenAssociations();
-
-		AllAccountBalances.Builder allAccountBalancesBuilder = AllAccountBalances.newBuilder();
-
-		log.info("Export to balance proto file {} ", protoLoc);
 
 		for (MerkleEntityId id : accounts.keySet()) {
 			var account = accounts.get(id);
@@ -218,7 +226,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 						.setHbarBalance(balance);
 
 				if (dynamicProperties.shouldExportTokenBalances()) {
-					//addTokenBalances(accountId, account, balancesEntry, tokens, tokenAssociations);
 					var accountTokens = account.tokens();
 					if (accountTokens.numAssociations() > 0) {
 						for (TokenID tokenId : accountTokens.asIds()) {
@@ -230,19 +237,22 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 						}
 					}
 				}
-				Instant instant = when;
-				Timestamp.Builder timeStamp = Timestamp.newBuilder();
-				timeStamp.setSeconds(instant.getEpochSecond());
-				timeStamp.setNanos(instant.getNano());
-				Timestamp consensusTimeStamp = timeStamp.build();
-				allAccountBalancesBuilder.setConsensusTimestamp(consensusTimeStamp);
+				Timestamp.Builder consensusTimeStamp = Timestamp.newBuilder();
+				consensusTimeStamp.setSeconds(when.getEpochSecond()).setNanos(when.getNano());
+				allAccountBalancesBuilder.setConsensusTimestamp(consensusTimeStamp.build());
 				allAccountBalancesBuilder.addAllAccounts(singleAccountBuilder.build());
 			}
 		}
+		return totalFloat;
+	}
+
+	private boolean exportBalancesProtoFile(AllAccountBalances.Builder allAccountsBuilder, String protoLoc) {
+		if(log.isDebugEnabled()) {
+			log.debug("Export all accounts to protobuf file {} ", protoLoc);
+		}
 
 		try (FileOutputStream fout = new FileOutputStream(protoLoc)) {
-			allAccountBalancesBuilder.build().writeTo(fout);
-
+			allAccountsBuilder.build().writeTo(fout);
 		} catch (IOException e) {
 			log.error(String.format(BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL, protoLoc), e);
 			return false;
@@ -256,9 +266,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			AllAccountBalances allAccountBalances = AllAccountBalances.parseFrom(fin);
 			return Optional.ofNullable(allAccountBalances);
 		} catch (InvalidProtocolBufferException e) {
-			log.error("protobuf file is corrupted: {}", protoLoc);
+			log.error("protobuf message file is corrupted: {}", protoLoc);
 		} catch (IOException e) {
-			log.error("Can't read protobuf file {}", protoLoc);
+			log.error("Can't read protobuf message file {}", protoLoc);
 		}
 		return Optional.empty();
 	}
