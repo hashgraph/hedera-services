@@ -298,6 +298,7 @@ public class HapiApiSpec implements Runnable {
 				status = FAILED;
 			}
 		}
+		finalizingFuture.join();
 		tearDown();
 		log.info(logPrefix() + "final status: " + status + "!");
 
@@ -355,7 +356,6 @@ public class HapiApiSpec implements Runnable {
 		if (!hapiSetup.statusDeferredResolvesDoAsync()) {
 			startFinalizingOps();
 		}
-		finalizingFuture.join();
 	}
 
 	public void offerFinisher(HapiSpecOpFinisher finisher) {
