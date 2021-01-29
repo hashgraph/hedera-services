@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractRecords;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -62,7 +63,7 @@ public class ExpectedTokenRel {
 					String errMsg = String.format("Account '%s' should have had no relationship with token '%s'!",
 							account,unexpectedToken);
 					log.error(errMsg);
-					throw new Exception(errMsg);
+					throw new HapiQueryCheckStateException(errMsg);
 				}
 			}
 		}
@@ -89,7 +90,7 @@ public class ExpectedTokenRel {
 				String errMsg = String.format("Account '%s' had no relationship with token '%s'!",
 						account,rel.getToken());
 				log.error(errMsg);
-				throw new Exception(errMsg);
+				throw new HapiQueryCheckStateException(errMsg);
 			}
 		}
 	}

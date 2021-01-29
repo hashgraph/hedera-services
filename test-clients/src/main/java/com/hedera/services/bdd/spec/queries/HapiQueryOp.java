@@ -103,8 +103,9 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			}
 		} else {
 			if(expectedCostAnswerPrecheck() != actualPrecheck) {
-				log.error("Bad costAnswerPrecheck! expected {}, actual {}", expectedCostAnswerPrecheck(), actualPrecheck);
-				throw new HapiQueryCheckStateException(String.format("Bad costAnswerPrecheck! expected %s, actial %s", expectedAnswerOnlyPrecheck(), actualPrecheck));
+				String errMsg = String.format("Bad costAnswerPrecheck! expected {}, actual {}", expectedCostAnswerPrecheck(), actualPrecheck);
+				log.error(errMsg);
+				throw new HapiQueryCheckStateException(errMsg);
 			}
 		}
 		return reflectForCost(response);

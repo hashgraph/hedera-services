@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.queries.contract;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.io.*;
+import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -212,7 +213,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 			else {
 				log.error("Something amiss with the expected records {}", records);
 			}
-			throw new Exception("Impossible to meet expectations (on records)!");
+			throw new HapiQueryCheckStateException("Impossible to meet expectations (on records)!");
 		}
 	}
 }
