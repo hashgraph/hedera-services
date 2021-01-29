@@ -1380,11 +1380,11 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "20 5 * * *"
+          cron: "18 17 * * *"
           filters:
             branches:
               only:
-                 - master
+                 - 00995-D-regression-history
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2049,7 +2049,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 00995-D-regression-history
             workflow-name: "Continuous integration GCP"
         - run-continuous-integration-gcp:
             context: Slack
@@ -2075,7 +2074,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00995-D-regression-history
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
