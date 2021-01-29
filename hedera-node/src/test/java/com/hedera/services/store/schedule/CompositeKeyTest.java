@@ -57,6 +57,15 @@ public class CompositeKeyTest {
 	}
 
 	@Test
+	public void sameValuesEquals() {
+		// given:
+		var key = new CompositeKey(transactionBodyHashCode, EntityId.ofNullableAccountId(payerId), adminKey, entityMemo);
+		var key2 = new CompositeKey(transactionBodyHashCode, EntityId.ofNullableAccountId(payerId), adminKey, entityMemo);
+
+		assertEquals(key, key2);
+	}
+
+	@Test
 	public void defaultKeyInstanceWorks() {
 		// given:
 		var key1 = new CompositeKey(transactionBodyHashCode, EntityId.ofNullableAccountId(payerId), adminKey, entityMemo);
