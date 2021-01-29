@@ -57,12 +57,13 @@ public class CompositeKeyTest {
 	}
 
 	@Test
-	public void sameValuesEquals() {
+	public void equalsAndHashCodeAreSymmetric() {
 		// given:
 		var key = new CompositeKey(transactionBodyHashCode, EntityId.ofNullableAccountId(payerId), adminKey, entityMemo);
 		var key2 = new CompositeKey(transactionBodyHashCode, EntityId.ofNullableAccountId(payerId), adminKey, entityMemo);
 
 		assertEquals(key, key2);
+		assertEquals(key.hashCode(), key2.hashCode());
 	}
 
 	@Test
