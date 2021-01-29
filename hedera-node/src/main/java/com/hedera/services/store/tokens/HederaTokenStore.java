@@ -42,6 +42,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -100,6 +102,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
  * @author Michael Tinker
  */
 public class HederaTokenStore extends HederaStore implements TokenStore {
+	private static final Logger log = LogManager.getLogger(HederaTokenStore.class);
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
 	static Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
@@ -201,7 +204,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 					if(token.isExpired() && !token.isDeleted()) {
 						var treasuryAccount = token.treasury().toGrpcAccountId();
-						adjustBalance(treasuryAccount, tId, balance);
+						ResponseCodeEnum status = adjustBalance(treasuryAccount, tId, balance);
+						log.info("Balance remaining on the expired token sent back to treasury account : {}",
+								status);
 					}
 				}
 			}
