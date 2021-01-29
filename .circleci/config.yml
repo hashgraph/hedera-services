@@ -3312,7 +3312,6 @@ jobs:
 
     steps:
       - jrs-regression-cmd:
-          context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_1C/Restart
           automated_run: true
