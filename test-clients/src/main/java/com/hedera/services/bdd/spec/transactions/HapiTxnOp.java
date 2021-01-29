@@ -21,7 +21,8 @@ package com.hedera.services.bdd.spec.transactions;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.legacy.regression.Utilities;
+import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
+import com.hedera.services.bdd.spec.exceptions.HapiTxnPrecheckStateException;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -155,7 +156,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				}
 				else {
 					log.error("{} Status resolution failed due to unrecoverable runtime exception, possibly network connection lost." ,txn);
-					throw new Exception("Unable to resolve txn status!");
+					throw new HapiTxnCheckStateException("Unable to resolve txn status!");
 				}
 			}
 
@@ -188,12 +189,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 							"{} {} Wrong actual precheck status {}, not one of {}!",spec.logPrefix(), this,
 							actualPrecheck,
 							permissiblePrechecks.get());
-					throw new Exception(String.format("Wrong actual precheck status %s, expected %s", actualStatus ,permissibleStatuses.get()));
+					throw new HapiTxnPrecheckStateException(String.format("Wrong actual precheck status %s, expected %s", actualStatus ,permissibleStatuses.get()));
 				}
 			} else {
 				if(getExpectedPrecheck() != actualPrecheck) {
 					log.error( "{} {} Wrong actual precheck status {}, expecting {}", spec.logPrefix(), this, actualPrecheck, getExpectedPrecheck());
-					throw new Exception(String.format("Wrong precheck status! expected %s, actual %s", getExpectedPrecheck(), actualPrecheck));
+					throw new HapiTxnPrecheckStateException(String.format("Wrong precheck status! expected %s, actual %s", getExpectedPrecheck(), actualPrecheck));
 				}
 			}
 		}
@@ -243,12 +244,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 						"{} {} Wrong actual status {}, not one of {}!", spec.logPrefix(), this,
 								actualStatus,
 								permissibleStatuses.get());
-				throw new Exception(String.format("Wrong actual status %s, expected %s", actualStatus ,permissibleStatuses.get()));
+				throw new HapiTxnCheckStateException(String.format("Wrong actual status %s, expected %s", actualStatus ,permissibleStatuses.get()));
 			}
 		} else {
 			if(getExpectedStatus() != actualStatus) {
 				log.error("{} {} Wrong actual status {}, expected {}", spec.logPrefix(), this,actualStatus, getExpectedStatus());
-				throw new Exception(String.format("Wrong actual status %s, expected %s", actualStatus, getExpectedStatus()));
+				throw new HapiTxnCheckStateException(String.format("Wrong actual status %s, expected %s", actualStatus, getExpectedStatus()));
 			}
 		}
 		if (!deferStatusResolution) {
@@ -317,7 +318,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		if(!memo.get().equals(recordOfSubmission.getMemo())) {
 			log.error("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}."
 					,spec.logPrefix(), this, memo.get(), recordOfSubmission.getMemo());
-			throw new Exception(String.format("%s Memo didn't come from submitted transaction! actual memo %s, recorded %s."
+			throw new HapiTxnCheckStateException(String.format("%s Memo didn't come from submitted transaction! actual memo %s, recorded %s."
 					,this, memo.get(), recordOfSubmission.getMemo()));
 		}
 	}
@@ -334,7 +335,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	@Override
 	protected void lookupSubmissionRecord(HapiApiSpec spec) throws Throwable {
 		if (actualStatus == UNKNOWN) {
-			throw new Exception(this + " tried to lookup the submission record before status was known!");
+			throw new HapiTxnCheckStateException(this + " tried to lookup the submission record before status was known!");
 		}
 		super.lookupSubmissionRecord(spec);
 	}
