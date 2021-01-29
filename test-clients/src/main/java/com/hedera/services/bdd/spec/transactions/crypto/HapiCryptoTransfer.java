@@ -40,6 +40,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,9 +63,13 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
+	static final Logger log = LogManager.getLogger(HapiCryptoTransfer.class);
+
 	private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = null;
 	private static final Function<HapiApiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
 	private static final int DEFAULT_TOKEN_TRANSFER_USAGE_MULTIPLIER = 60;
+
+	private boolean logResolvedStatus = false;
 
 	private Function<HapiApiSpec, TransferList> hbarOnlyProvider = MISSING_HBAR_ONLY_PROVIDER;
 	private List<TokenMovement> tokenAwareProviders = MISSING_TOKEN_AWARE_PROVIDERS;
@@ -71,6 +77,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoTransfer;
+	}
+
+	public HapiCryptoTransfer showingResolvedStatus() {
+		logResolvedStatus = true;
+		return this;
 	}
 
 	private static Collector<TransferList, ?, TransferList> transferCollector(
@@ -250,5 +261,12 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 						.addAllTransfers(entry.getValue())
 						.build())
 				.collect(toList());
+	}
+
+	@Override
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (logResolvedStatus) {
+			log.info("Resolved to {}", actualStatus);
+		}
 	}
 }

@@ -1,10 +1,31 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Optional;
 
@@ -35,13 +56,18 @@ public class RandomTokenDissociation implements OpProvider {
 			return Optional.empty();
 		}
 
-		var rel = relToDissociate.get();
-		var divider = rel.indexOf("|");
-		var account = rel.substring(0, divider);
-		var token = rel.substring(divider + 1);
-		var op = tokenDissociate(account, token)
+		var implicitRel = relToDissociate.get();
+		var rel = explicit(implicitRel);
+		var op = tokenDissociate(rel.getLeft(), rel.getRight())
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 				.hasKnownStatusFrom(permissibleOutcomes);
 		return Optional.of(op);
+	}
+
+	static Pair<String, String> explicit(String implicitRel) {
+		var divider = implicitRel.indexOf("|");
+		var account = implicitRel.substring(0, divider);
+		var token = implicitRel.substring(divider + 1);
+		return Pair.of(account, token);
 	}
 }

@@ -5,11 +5,14 @@ networks:
     ensureScenarioPayerHbars: 25
     nodes:
     - {account: 3, ipv4Addr: 34.74.82.254}
-    scenarioPayer: 1732
+    scenarioPayer: 1021
     scenarios:
       sysFilesDown:
         evalMode: snapshot
         numsToFetch: [121]
+      sysFilesUp:
+        updates:
+        - {num: 121, payer: 2}
   integration:
     bootstrap: 2
     defaultNode: 3

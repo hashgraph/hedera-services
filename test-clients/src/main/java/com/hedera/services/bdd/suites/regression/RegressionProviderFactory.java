@@ -56,6 +56,7 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTok
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenTransfer;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -205,7 +206,7 @@ public class RegressionProviderFactory {
 					.withOp(
 							new RandomTokenAssociation(tokens, allAccounts, tokenRels)
 									.ceiling(intPropOrElse(
-											"randomTokenAssociation.ceilingNUm",
+											"randomTokenAssociation.ceilingNum",
 											RandomTokenAssociation.DEFAULT_CEILING_NUM,
 											props)),
 							props.getInteger("randomTokenAssociation.bias"))
@@ -215,6 +216,9 @@ public class RegressionProviderFactory {
 					.withOp(
 							new RandomTokenDeletion(tokens),
 							props.getInteger("randomTokenDeletion.bias"))
+					.withOp(
+							new RandomTokenTransfer(tokenRels),
+							props.getInteger("randomTokenTransfer.bias"))
 					/* ---- CONTRACT ---- */
 					.withOp(
 							new RandomCall(calls),
