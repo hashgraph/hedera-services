@@ -1392,8 +1392,8 @@ workflows:
           context: Slack
           result_path: results/5N_1C/Update
           automated_run: true
-          slack_results_channel: "hedera-regression"
-          slack_summary_channel: "hedera-regression-summary"
+          slack_results_channel: "hedera-regression-test"
+          slack_summary_channel: "hedera-regression-test"
           config_file: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Update-5N-1C.json"
           workflow-name: "GCP-Daily-Services-Crypto-Update-5N-1C"
           requires:
