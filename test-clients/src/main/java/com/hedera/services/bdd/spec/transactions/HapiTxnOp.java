@@ -21,6 +21,8 @@ package com.hedera.services.bdd.spec.transactions;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
+import com.hedera.services.bdd.spec.exceptions.HapiTxnPrecheckStateException;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -71,7 +73,6 @@ import com.hedera.services.bdd.spec.stats.TxnObs;
 import io.grpc.StatusRuntimeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
@@ -153,8 +154,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				}
-				log.error("Status resolution failed with unrecognized exception", e);
-				Assert.fail("Unable to resolve op status!");
+				else {
+					log.error("{} Status resolution failed due to unrecoverable runtime exception, possibly network connection lost." ,txn);
+					throw new HapiTxnCheckStateException("Unable to resolve txn status!");
+				}
 			}
 
 			/* Used by superclass to perform standard housekeeping. */
@@ -182,14 +185,17 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				if (permissiblePrechecks.get().contains(actualPrecheck)) {
 					expectedPrecheck = Optional.of(actualPrecheck);
 				} else {
-					Assert.fail(
-							String.format(
-									"Precheck was %s, not one of %s!",
-									actualPrecheck,
-									permissiblePrechecks.get()));
+					log.error(
+							"{} {} Wrong actual precheck status {}, not one of {}!",spec.logPrefix(), this,
+							actualPrecheck,
+							permissiblePrechecks.get());
+					throw new HapiTxnPrecheckStateException(String.format("Wrong actual precheck status %s, expected %s", actualStatus ,permissibleStatuses.get()));
 				}
 			} else {
-				Assert.assertEquals("Wrong precheck status!", getExpectedPrecheck(), actualPrecheck);
+				if(getExpectedPrecheck() != actualPrecheck) {
+					log.error( "{} {} Wrong actual precheck status {}, expecting {}", spec.logPrefix(), this, actualPrecheck, getExpectedPrecheck());
+					throw new HapiTxnPrecheckStateException(String.format("Wrong precheck status! expected %s, actual %s", getExpectedPrecheck(), actualPrecheck));
+				}
 			}
 		}
 		if (actualPrecheck != OK) {
@@ -234,14 +240,17 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			if (permissibleStatuses.get().contains(actualStatus)) {
 				expectedStatus = Optional.of(actualStatus);
 			} else {
-				Assert.fail(
-						String.format(
-								"Status was %s, not one of %s!",
+				log.error(
+						"{} {} Wrong actual status {}, not one of {}!", spec.logPrefix(), this,
 								actualStatus,
-								permissibleStatuses.get()));
+								permissibleStatuses.get());
+				throw new HapiTxnCheckStateException(String.format("Wrong actual status %s, expected %s", actualStatus ,permissibleStatuses.get()));
 			}
 		} else {
-			Assert.assertEquals("Wrong status!", getExpectedStatus(), actualStatus);
+			if(getExpectedStatus() != actualStatus) {
+				log.error("{} {} Wrong actual status {}, expected {}", spec.logPrefix(), this,actualStatus, getExpectedStatus());
+				throw new HapiTxnCheckStateException(String.format("Wrong actual status %s, expected %s", actualStatus, getExpectedStatus()));
+			}
 		}
 		if (!deferStatusResolution) {
 			if (spec.setup().costSnapshotMode() != HapiApiSpec.CostSnapshotMode.OFF) {
@@ -306,10 +315,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		if (recordOfSubmission == null) {
 			lookupSubmissionRecord(spec);
 		}
-		Assert.assertEquals(
-				"Memo didn't come from submitted transaction!",
-				memo.get(),
-				recordOfSubmission.getMemo());
+		if(!memo.get().equals(recordOfSubmission.getMemo())) {
+			log.error("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}."
+					,spec.logPrefix(), this, memo.get(), recordOfSubmission.getMemo());
+			throw new HapiTxnCheckStateException(String.format("%s Memo didn't come from submitted transaction! actual memo %s, recorded %s."
+					,this, memo.get(), recordOfSubmission.getMemo()));
+		}
 	}
 
 	@Override
@@ -324,7 +335,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	@Override
 	protected void lookupSubmissionRecord(HapiApiSpec spec) throws Throwable {
 		if (actualStatus == UNKNOWN) {
-			throw new Exception(this + " tried to lookup the submission record before status was known!");
+			throw new HapiTxnCheckStateException(this + " tried to lookup the submission record before status was known!");
 		}
 		super.lookupSubmissionRecord(spec);
 	}
@@ -402,7 +413,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				}
-				log.warn("Status resolution failed with unrecognized exception", e);
 				allowedUnrecognizedExceptions--;
 				if (allowedUnrecognizedExceptions == 0) {
 					response = Response.newBuilder()
@@ -412,6 +422,13 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 							.build();
 				}
 			}
+		}
+		if(response.getTransactionGetReceipt().getReceipt().getStatus() == UNKNOWN) {
+			log.error(" [ accountID {} validStart({}, {}) ], status resolution failed with unrecognized exception, not getting txn response back",
+					receiptQuery.getTransactionGetReceipt().getTransactionID().getAccountID().getAccountNum(),
+					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getSeconds(),
+					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getNanos()
+					);
 		}
 		long after = System.currentTimeMillis();
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
