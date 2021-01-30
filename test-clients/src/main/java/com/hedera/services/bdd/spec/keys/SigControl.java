@@ -82,12 +82,12 @@ public class SigControl implements Serializable {
 	}
 
 	public static SigControl listSigs(SigControl... childControls) {
-		Assert.assertTrue("A list much have at least one child key!", childControls.length > 0);
+		Assert.assertTrue("A list must have at least one child key!", childControls.length > 0);
 		return new SigControl(childControls);
 	}
 
 	public static SigControl threshSigs(int M, SigControl... childControls) {
-		Assert.assertTrue("A threshold much have at least one child key!", childControls.length > 0);
+		Assert.assertTrue("A threshold must have at least one child key!", childControls.length > 0);
 		return new SigControl(M, childControls);
 	}
 
