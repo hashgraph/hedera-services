@@ -24,11 +24,9 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import java.util.List;
 
@@ -41,7 +39,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -57,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
@@ -86,6 +84,8 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				preservesRevocationServiceSemanticsForFileDelete(),
 				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
 				retestsActivationOnCreateWithEmptySigMap(),
+				doesntTriggerUntilPayerSigns(),
+				requiresExtantPayer(),
 		});
 	}
 
@@ -143,7 +143,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				).when(
 						scheduleCreate("onlyBodyAndPayer",
 								cryptoCreate("secondary")
-						).payer("payer")
+						).designatingPayer("payer")
 				).then(
 						getScheduleInfo("onlyBodyAndPayer")
 								.hasScheduleId("onlyBodyAndPayer")
@@ -163,13 +163,13 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						newKeyNamed("admin2"),
 						scheduleCreate("first", txnBody)
 								.adminKey("admin")
-								.payer("payer")
+								.designatingPayer("payer")
 								.via("first")
 				)
 				.when(
 						scheduleCreate("secondary", txnBody)
 								.adminKey("admin2")
-								.payer("payer2")
+								.designatingPayer("payer2")
 								.via("second")
 				)
 				.then(
@@ -201,12 +201,12 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						newKeyNamed("admin"),
 						scheduleCreate("first", txnBody)
 								.adminKey("admin")
-								.payer("payer")
+								.designatingPayer("payer")
 								.via("first")
 				).when(
 						scheduleCreate("second", txnBody)
 								.adminKey("admin")
-								.payer("payer2")
+								.designatingPayer("payer2")
 								.via("second")
 				).then(
 						withOpContext((spec, opLog) -> {
@@ -235,12 +235,12 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						newKeyNamed("admin2"),
 						scheduleCreate("first", txnBody)
 								.adminKey("admin")
-								.payer("payer")
+								.designatingPayer("payer")
 								.via("first")
 				).when(
 						scheduleCreate("second", txnBody)
 								.adminKey("admin2")
-								.payer("payer")
+								.designatingPayer("payer")
 								.via("second")
 				).then(
 						withOpContext((spec, opLog) -> {
@@ -340,6 +340,48 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						).inheritingScheduledSigs()
 				).then(
 						getAccountBalance("sender").hasTinyBars(1L)
+				);
+	}
+
+	public HapiApiSpec requiresExtantPayer() {
+		return defaultHapiSpec("RequiresExtantPayer")
+				.given( ).when( ).then(
+						scheduleCreate(
+								"neverToBe",
+								cryptoCreate("nope")
+										.key(GENESIS)
+										.receiverSigRequired(true)
+										.signedBy()
+						).designatingPayer("1.2.3")
+								.inheritingScheduledSigs()
+								.hasKnownStatus(INVALID_ACCOUNT_ID)
+				);
+	}
+
+	public HapiApiSpec doesntTriggerUntilPayerSigns() {
+		return defaultHapiSpec("DoesntTriggerUntilPayerSigns")
+				.given(
+						cryptoCreate("payer").balance(ONE_HBAR * 2),
+						cryptoCreate("sender").balance(1L),
+						cryptoCreate("receiver").receiverSigRequired(true).balance(0L)
+				).when(
+						scheduleCreate(
+								"basicXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1L)
+								).signedBy("sender", "receiver").fee(ONE_HBAR)
+						).designatingPayer("payer").inheritingScheduledSigs()
+				).then(
+						getAccountBalance("sender").hasTinyBars(1L),
+						getAccountBalance("receiver").hasTinyBars(0L),
+						scheduleCreate(
+								"basicXferWithPayerNow",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1L)
+								).signedBy("payer").fee(ONE_HBAR)
+						).designatingPayer("payer").inheritingScheduledSigs(),
+						getAccountBalance("sender").hasTinyBars(0L),
+						getAccountBalance("receiver").hasTinyBars(1L)
 				);
 	}
 

@@ -75,7 +75,6 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                             .missingAdmin()
                             .creating(newSignedCryptoTransfer()
                                     .skipPayerSig()
-                                    .nonPayerKts(MISC_ACCOUNT_KT, RECEIVER_SIG_KT)
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
                                     .get())
                             .get()
@@ -101,7 +100,33 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                     newSignedScheduleCreate()
                             .creating(newSignedCryptoTransfer()
                                     .skipPayerSig()
-                                    .nonPayerKts(MISC_ACCOUNT_KT, RECEIVER_SIG_KT)
+                                    .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+                                    .get())
+                            .get()
+            ));
+        }
+    },
+    SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleCreate()
+							.designatingPayer(DILIGENT_SIGNING_PAYER)
+                            .creating(newSignedCryptoTransfer()
+                                    .skipPayerSig()
+                                    .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+                                    .get())
+                            .get()
+            ));
+        }
+    },
+    SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return new PlatformTxnAccessor(from(
+                    newSignedScheduleCreate()
+                            .missingAdmin()
+                            .designatingPayer(MISSING_ACCOUNT)
+                            .creating(newSignedCryptoTransfer()
+                                    .skipPayerSig()
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
                                     .get())
                             .get()

@@ -97,7 +97,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
-	public HapiScheduleCreate<T> payer(String s) {
+	public HapiScheduleCreate<T> designatingPayer(String s) {
 		payerAccountID = Optional.of(s);
 		return this;
 	}

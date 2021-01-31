@@ -68,6 +68,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
@@ -590,7 +591,9 @@ public class HederaSigningOrder {
 			KeyOrderingFailure type,
 			SigningOrderResultFactory<T> factory
 	) {
-		if (type == MISSING_ACCOUNT) {
+		if (type == INVALID_ACCOUNT) {
+			return factory.forInvalidAccount(id, txnId);
+		} else if (type == MISSING_ACCOUNT) {
 			return factory.forMissingAccount(id, txnId);
 		} else if (type == MISSING_AUTORENEW_ACCOUNT) {
 			return factory.forMissingAutoRenewAccount(id, txnId);
@@ -842,6 +845,23 @@ public class HederaSigningOrder {
 				ScheduleCreateTransactionBody::hasAdminKey,
 				ScheduleCreateTransactionBody::getAdminKey,
 				required);
+
+		int before = required.size();
+		var couldAddPayer = addAccount(
+				op,
+				ScheduleCreateTransactionBody::hasPayerAccountID,
+				ScheduleCreateTransactionBody::getPayerAccountID,
+				required);
+		if (!couldAddPayer) {
+			return accountFailure(op.getPayerAccountID(), txnId, INVALID_ACCOUNT, factory);
+		}
+		int after = required.size();
+		if (after > before) {
+			var dupKey = required.get(after - 1).duplicate();
+			dupKey.setForScheduledTxn(true);
+			required.set(after - 1, dupKey);
+		}
+
 		var mergeError = mergeScheduledKeys(op.getTransactionBody().toByteArray(), required, txnId, factory);
 		return mergeError.orElseGet(() -> factory.forValidOrder(required));
 	}
@@ -856,6 +876,17 @@ public class HederaSigningOrder {
 		var result = sigMetaLookup.scheduleSigningMetaFor(id);
 		if (!result.succeeded()) {
 			return factory.forMissingSchedule(id, txnId);
+		}
+		var optionalPayer = result.metadata().overridePayer();
+		if (optionalPayer.isPresent()) {
+			var payerResult = sigMetaLookup.accountSigningMetaFor(optionalPayer.get());
+			if (!payerResult.succeeded()) {
+				return accountFailure(optionalPayer.get(), txnId, INVALID_ACCOUNT, factory);
+			} else {
+				var dupKey = payerResult.metadata().getKey().duplicate();
+				dupKey.setForScheduledTxn(true);
+				required.add(dupKey);
+			}
 		}
 		var mergeError = mergeScheduledKeys(result.metadata().txnBytes(), required, txnId, factory);
 		return mergeError.orElseGet(() -> factory.forValidOrder(required));
