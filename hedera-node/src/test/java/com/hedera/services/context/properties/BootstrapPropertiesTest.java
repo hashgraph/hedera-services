@@ -121,6 +121,7 @@ class BootstrapPropertiesTest {
 			entry("fees.tokenTransferUsageMultiplier", 380),
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
+			entry("scheduling.whitelist", "CryptoCreate,CryptoTransfer"),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0)

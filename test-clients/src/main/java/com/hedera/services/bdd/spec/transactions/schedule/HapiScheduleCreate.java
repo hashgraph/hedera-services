@@ -61,6 +61,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
 	private boolean scheduleNonsense = false;
+	private boolean scheduleNoFunction = false;
 	private boolean inheritScheduledSigs = false;
 	private ByteString bytesSigned = ByteString.EMPTY;
 	private List<String> signatories = Collections.emptyList();
@@ -84,6 +85,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
 	public HapiScheduleCreate<T> garbled() {
 		scheduleNonsense = true;
+		return this;
+	}
+
+	public HapiScheduleCreate<T> functionless() {
+		scheduleNoFunction = true;
 		return this;
 	}
 
@@ -144,6 +150,9 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 						ScheduleCreateTransactionBody.class, b -> {
 							if (scheduleNonsense) {
 								b.setTransactionBody(ByteString.copyFromUtf8("NONSENSE"));
+							} else if (scheduleNoFunction) {
+								b.setTransactionBody(ByteString.copyFrom(
+										TransactionBody.getDefaultInstance().toByteArray()));
 							} else {
 								b.setTransactionBody(subOp.getBodyBytes());
 							}

@@ -22,9 +22,12 @@ package com.hedera.services.sigs.order;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.EntityNumbers;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -100,6 +103,7 @@ public class HederaSigningOrder {
 
 	final EntityNumbers entityNums;
 	final SigMetadataLookup sigMetaLookup;
+	final GlobalDynamicProperties properties;
 	final Predicate<TransactionBody> updateAccountSigns;
 	final BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns;
 
@@ -107,9 +111,11 @@ public class HederaSigningOrder {
 			EntityNumbers entityNums,
 			SigMetadataLookup sigMetaLookup,
 			Predicate<TransactionBody> updateAccountSigns,
-			BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns
+			BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns,
+			GlobalDynamicProperties properties
 	) {
 		this.entityNums = entityNums;
+		this.properties = properties;
 		this.sigMetaLookup = sigMetaLookup;
 		this.targetWaclSigns = targetWaclSigns;
 		this.updateAccountSigns = updateAccountSigns;
@@ -900,7 +906,8 @@ public class HederaSigningOrder {
 	) {
 		try {
 			var scheduled = TransactionBody.parseFrom(txnBytes);
-			if (scheduled.hasScheduleCreate() || scheduled.hasScheduleSign()) {
+			var scheduledFunction = MiscUtils.functionOf(scheduled);
+			if (!properties.schedulingWhitelist().contains(scheduledFunction)) {
 				return Optional.of(factory.forUnschedulableTxn(txnId));
 			}
 			var scheduledOrderResult = keysForOtherParties(scheduled, factory);
@@ -917,7 +924,7 @@ public class HederaSigningOrder {
 					required.add(dup);
 				}
 			}
-		} catch (InvalidProtocolBufferException e) {
+		} catch (InvalidProtocolBufferException | UnknownHederaFunctionality e) {
 			return Optional.of(factory.forUnparseableScheduledTxn(txnId));
 		}
 		return Optional.empty();

@@ -42,26 +42,32 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateFunctionless;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateNonsense;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static org.junit.Assert.assertNotEquals;
 
 public class ScheduleCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
+
+	private static final String defaultWhitelist = HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
 
 	public static void main(String... args) {
 		new ScheduleCreateSpecs().runSuiteSync();
@@ -81,11 +87,13 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				rejectsUnresolvableReqSigners(),
 				triggersImmediatelyWithBothReqSimpleSigs(),
 				onlySchedulesWithMissingReqSimpleSigs(),
-				preservesRevocationServiceSemanticsForFileDelete(),
 				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
 				retestsActivationOnCreateWithEmptySigMap(),
 				doesntTriggerUntilPayerSigns(),
 				requiresExtantPayer(),
+				preservesRevocationServiceSemanticsForFileDelete(),
+				rejectsFunctionlessTxn(),
+				whitelistWorks(),
 		});
 	}
 
@@ -272,7 +280,10 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("PreservesRevocationServiceSemanticsForFileDelete")
 				.given(
 						fileCreate(shouldBeInstaDeleted).waclShape(waclShape),
-						fileCreate(shouldBeDeletedEventually).waclShape(waclShape)
+						fileCreate(shouldBeDeletedEventually).waclShape(waclShape),
+						overriding(
+								"scheduling.whitelist",
+								"FileDelete")
 				).when(
 						scheduleCreate(
 								"validRevocation",
@@ -295,7 +306,8 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 										.signedBy(shouldBeDeletedEventually)
 										.sigControl(forKey(shouldBeDeletedEventually, compensatorySigs))
 						).inheritingScheduledSigs(),
-						getFileInfo(shouldBeDeletedEventually).hasDeleted(true)
+						getFileInfo(shouldBeDeletedEventually).hasDeleted(true),
+						overriding("scheduling.whitelist", defaultWhitelist)
 				);
 	}
 
@@ -424,6 +436,29 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given().when().then(
 						scheduleCreateNonsense("absurd")
 								.hasKnownStatus(UNPARSEABLE_SCHEDULED_TRANSACTION)
+				);
+	}
+
+	public HapiApiSpec rejectsFunctionlessTxn() {
+		return defaultHapiSpec("RejectsFunctionlessTxn")
+				.given().when().then(
+						scheduleCreateFunctionless("unknown")
+								.hasKnownStatus(UNPARSEABLE_SCHEDULED_TRANSACTION)
+				);
+	}
+
+	public HapiApiSpec whitelistWorks() {
+		return defaultHapiSpec("whitelistWorks")
+				.given(
+						scheduleCreate(
+								"nope",
+								createTopic("neverToBe").signedBy()
+						).hasKnownStatus(UNSCHEDULABLE_TRANSACTION)
+				).when(
+						overriding("scheduling.whitelist", "ConsensusCreateTopic"),
+						scheduleCreate("ok", createTopic("neverToBe"))
+				).then(
+						overriding("scheduling.whitelist", defaultWhitelist)
 				);
 	}
 

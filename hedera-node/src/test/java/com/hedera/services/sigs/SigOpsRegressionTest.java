@@ -21,6 +21,7 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.KeyActivationCharacteristics;
@@ -366,7 +367,8 @@ public class SigOpsRegressionTest {
 				new MockEntityNumbers(),
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
-				targetWaclSigns);
+				targetWaclSigns,
+				new MockGlobalDynamicProps());
 
 		return payerSigIsActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
 	}
@@ -378,7 +380,8 @@ public class SigOpsRegressionTest {
 				new MockEntityNumbers(),
 				defaultLookupsFor(hfs, () -> accounts, null, ref -> null, ref -> null),
 				updateAccountSigns,
-				targetWaclSigns);
+				targetWaclSigns,
+				new MockGlobalDynamicProps());
 
 		return otherPartySigsAreActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
 	}
@@ -393,7 +396,8 @@ public class SigOpsRegressionTest {
 				new MockEntityNumbers(),
 				sigMetaLookups,
 				updateAccountSigns,
-				targetWaclSigns);
+				targetWaclSigns,
+				new MockGlobalDynamicProps());
 
 		return expandIn(platformTxn, keyOrder, DefaultSigBytesProvider.DEFAULT_SIG_BYTES, BodySigningSigFactory::new);
 	}
@@ -405,7 +409,8 @@ public class SigOpsRegressionTest {
 				new MockEntityNumbers(),
 				sigMetaLookups,
 				updateAccountSigns,
-				targetWaclSigns);
+				targetWaclSigns,
+				new MockGlobalDynamicProps());
 
 		return rationalizeIn(
 				platformTxn,
@@ -428,7 +433,8 @@ public class SigOpsRegressionTest {
 				new MockEntityNumbers(),
 				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
-				targetWaclSigns);
+				targetWaclSigns,
+				new MockGlobalDynamicProps());
 		SigningOrderResult<SignatureStatus> payerKeys =
 				signingOrder.keysForPayer(platformTxn.getTxn(), PRE_HANDLE_SUMMARY_FACTORY);
 		expectedSigs = new ArrayList<>();

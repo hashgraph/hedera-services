@@ -21,6 +21,7 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
@@ -1948,7 +1949,8 @@ public class HederaSigningOrderTest {
 								SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
 								SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
 				updateAccountSigns,
-				waclSigns);
+				waclSigns,
+				new MockGlobalDynamicProps());
 	}
 
 	private void aMockSummaryFactory() {
