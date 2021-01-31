@@ -90,7 +90,10 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 	private HapiApiSpec runTokenTransfers() {
 		return HapiApiSpec.defaultHapiSpec("RunTokenTransfers")
 				.given(
-						stdMgmtOf(duration, unit, maxOpsPerSec)
+						stdMgmtOf(duration, unit, maxOpsPerSec),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("balances.exportPeriodSecs", "60" ))
 				).when().then(
 						runWithProvider(tokenTransfersFactory())
 								.lasting(duration::get, unit::get)
