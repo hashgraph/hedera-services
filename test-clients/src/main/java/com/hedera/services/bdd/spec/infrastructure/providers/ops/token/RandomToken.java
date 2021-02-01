@@ -103,7 +103,9 @@ public class RandomToken implements OpProvider {
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 				.hasKnownStatusFrom(permissibleOutcomes);
 
-		randomlyConfigureKeys(op);
+		var prefix = randomlyConfigureKeys(op);
+		op.setTokenPrefix(prefix);
+
 		randomlyConfigureSupply(op);
 		randomlyConfigureAutoRenew(op);
 		randomlyConfigureStrings(op);
@@ -138,6 +140,22 @@ public class RandomToken implements OpProvider {
 		return token.charAt(freezeFlagIndex) == 'Y';
 	}
 
+	static boolean wasCreatedWithWipe(String token) {
+		return token.charAt(wipeFlagIndex) == 'Y';
+	}
+
+	static boolean wasCreatedWithAdmin(String token) {
+		return token.charAt(adminFlagIndex) == 'Y';
+	}
+
+	static boolean wasCreatedWithSupply(String token) {
+		return token.charAt(supplyFlagIndex) == 'Y';
+	}
+
+	static boolean wasCreatedWithKyc(String token) {
+		return token.charAt(kycFlagIndex) == 'Y';
+	}
+
 	private String randomlyConfigureKeys(HapiTokenCreate op) {
 		double[] probs = new double[] { kycKeyProb, wipeKeyProb, adminKeyProb, supplyKeyProb, freezeKeyProb };
 
@@ -154,6 +172,8 @@ public class RandomToken implements OpProvider {
 				} else {
 					sb.append("N");
 				}
+			} else {
+				sb.append("N");
 			}
 		}
 		return sb.append("]").toString();

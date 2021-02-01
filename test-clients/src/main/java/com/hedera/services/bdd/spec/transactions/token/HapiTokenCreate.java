@@ -84,6 +84,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		this.token = token;
 	}
 
+	public void setTokenPrefix(String prefix) {
+		token = prefix + token;
+	}
+
 	public HapiTokenCreate advertisingCreation() {
 		advertiseCreation = true;
 		return this;

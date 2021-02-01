@@ -56,7 +56,11 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTok
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenFreeze;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenKycGrant;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenKycRevoke;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenTransfer;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUnfreeze;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -219,6 +223,18 @@ public class RegressionProviderFactory {
 					.withOp(
 							new RandomTokenTransfer(tokenRels),
 							props.getInteger("randomTokenTransfer.bias"))
+					.withOp(
+							new RandomTokenFreeze(tokenRels),
+							props.getInteger("randomTokenFreeze.bias"))
+					.withOp(
+							new RandomTokenUnfreeze(tokenRels),
+							props.getInteger("randomTokenUnfreeze.bias"))
+					.withOp(
+							new RandomTokenKycGrant(tokenRels),
+							props.getInteger("randomTokenKycGrant.bias"))
+					.withOp(
+							new RandomTokenKycRevoke(tokenRels),
+							props.getInteger("randomTokenKycRevoke.bias"))
 					/* ---- CONTRACT ---- */
 					.withOp(
 							new RandomCall(calls),

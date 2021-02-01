@@ -25,51 +25,38 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Optional;
 
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation.explicit;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
-public class RandomTokenDissociation implements OpProvider {
+public class RandomTokenUnfreeze implements OpProvider {
 	private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
-	public RandomTokenDissociation(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+			TOKEN_HAS_NO_FREEZE_KEY,
+			TOKEN_NOT_ASSOCIATED_TO_ACCOUNT
+	);
+
+	public RandomTokenUnfreeze(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
 		this.tokenRels = tokenRels;
 	}
 
-	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
-			TOKEN_WAS_DELETED,
-			ACCOUNT_IS_TREASURY,
-			ACCOUNT_FROZEN_FOR_TOKEN,
-			TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
-			TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES
-	);
-
 	@Override
 	public Optional<HapiSpecOperation> get() {
-		var relToDissociate = tokenRels.getQualifying();
-		if (relToDissociate.isEmpty()) {
+		var relToUnfreeze = tokenRels.getQualifying();
+		if (relToUnfreeze.isEmpty()) {
 			return Optional.empty();
 		}
 
-		var implicitRel = relToDissociate.get();
+		var implicitRel = relToUnfreeze.get();
 		var rel = explicit(implicitRel);
-		var op = tokenDissociate(rel.getLeft(), rel.getRight())
+		var op = tokenUnfreeze(rel.getRight(), rel.getLeft())
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 				.hasKnownStatusFrom(permissibleOutcomes);
 		return Optional.of(op);
-	}
-
-	static Pair<String, String> explicit(String implicitRel) {
-		var divider = implicitRel.indexOf("|");
-		var account = implicitRel.substring(0, divider);
-		var token = implicitRel.substring(divider + 1);
-		return Pair.of(account, token);
 	}
 }
