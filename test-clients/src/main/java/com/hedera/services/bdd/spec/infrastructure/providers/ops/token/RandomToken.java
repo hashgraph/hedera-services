@@ -128,9 +128,20 @@ public class RandomToken implements OpProvider {
 		}
 	}
 
-	private void randomlyConfigureKeys(HapiTokenCreate op) {
+	private static final int kycFlagIndex = 1;
+	private static final int wipeFlagIndex = 2;
+	private static final int adminFlagIndex = 3;
+	private static final int supplyFlagIndex = 4;
+	private static final int freezeFlagIndex = 5;
+
+	static boolean wasCreatedWithFreeze(String token) {
+		return token.charAt(freezeFlagIndex) == 'Y';
+	}
+
+	private String randomlyConfigureKeys(HapiTokenCreate op) {
 		double[] probs = new double[] { kycKeyProb, wipeKeyProb, adminKeyProb, supplyKeyProb, freezeKeyProb };
 
+		var sb = new StringBuilder("[");
 		for (int i = 0; i < probs.length; i++) {
 			if (BASE_RANDOM.nextDouble() < probs[i]) {
 				var key = keys.getQualifying();
@@ -139,9 +150,13 @@ public class RandomToken implements OpProvider {
 						op.freezeDefault(BASE_RANDOM.nextBoolean());
 					}
 					KEY_SETTERS.get(i).accept(op, key.get());
+					sb.append("Y");
+				} else {
+					sb.append("N");
 				}
 			}
 		}
+		return sb.append("]").toString();
 	}
 
 	private String my(String opName) {
