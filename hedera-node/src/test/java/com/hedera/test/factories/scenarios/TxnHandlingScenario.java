@@ -28,7 +28,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -47,7 +46,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
 
 import java.time.Instant;
@@ -164,7 +162,8 @@ public interface TxnHandlingScenario {
 
 	default FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
 		@SuppressWarnings("unchecked")
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = (FCMap<MerkleBlobMeta, MerkleOptionalBlob>)mock(FCMap.class);
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = (FCMap<MerkleBlobMeta, MerkleOptionalBlob>) mock(
+				FCMap.class);
 
 		return storage;
 	}
@@ -213,7 +212,7 @@ public interface TxnHandlingScenario {
 
 		var kycToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
-				"KycToken","KYCTOKENNAME", false, true,
+				"KycToken", "KYCTOKENNAME", false, true,
 				new EntityId(1, 2, 4));
 		kycToken.setAdminKey(adminKey);
 		kycToken.setKycKey(optionalKycKey);
@@ -257,11 +256,14 @@ public interface TxnHandlingScenario {
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_IMMUTABLE))
 				.willReturn(KNOWN_SCHEDULE_IMMUTABLE);
 		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE))
-				.willAnswer(inv ->
-					new MerkleSchedule(
+				.willAnswer(inv -> {
+					var entity = new MerkleSchedule(
 							extantScheduleTxnBytes(),
 							EntityId.ofNullableAccountId(MISC_ACCOUNT),
-							RichInstant.fromJava(Instant.now())));
+							RichInstant.fromJava(Instant.now()));
+					entity.setPayer(EntityId.ofNullableAccountId(MISC_ACCOUNT));
+					return entity;
+				});
 
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_ADMIN))
 				.willReturn(KNOWN_SCHEDULE_WITH_ADMIN);
@@ -272,7 +274,32 @@ public interface TxnHandlingScenario {
 							extantScheduleTxnBytes(),
 							EntityId.ofNullableAccountId(MISC_ACCOUNT),
 							RichInstant.fromJava(Instant.now()));
+					entity.setPayer(EntityId.ofNullableAccountId(MISC_ACCOUNT));
 					entity.setAdminKey(adminKey);
+					return entity;
+				});
+
+		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER))
+				.willReturn(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER);
+		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER))
+				.willAnswer(inv -> {
+					var entity = new MerkleSchedule(
+							extantScheduleTxnBytes(),
+							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							RichInstant.fromJava(Instant.now()));
+					entity.setPayer(EntityId.ofNullableAccountId(DILIGENT_SIGNING_PAYER));
+					return entity;
+				});
+
+		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER))
+				.willReturn(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER);
+		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER))
+				.willAnswer(inv -> {
+					var entity = new MerkleSchedule(
+							extantScheduleTxnBytes(),
+							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							RichInstant.fromJava(Instant.now()));
+					entity.setPayer(EntityId.ofNullableAccountId(MISSING_ACCOUNT));
 					return entity;
 				});
 
@@ -315,7 +342,7 @@ public interface TxnHandlingScenario {
 					ed25519(),
 					list(
 							threshold(2,
-									ed25519(), ed25519(),  ed25519()))));
+									ed25519(), ed25519(), ed25519()))));
 
 	String FROM_OVERLAP_PAYER_ID = "0.0.1343";
 	AccountID FROM_OVERLAP_PAYER = asAccount(FROM_OVERLAP_PAYER_ID);
@@ -416,6 +443,12 @@ public interface TxnHandlingScenario {
 
 	String KNOWN_SCHEDULE_WITH_ADMIN_ID = "0.0.456";
 	ScheduleID KNOWN_SCHEDULE_WITH_ADMIN = asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID);
+
+	String KNOWN_SCHEDULE_WITH_PAYER_ID = "0.0.456456";
+	ScheduleID KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER = asSchedule(KNOWN_SCHEDULE_WITH_PAYER_ID);
+
+	String KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER_ID = "0.0.654654";
+	ScheduleID KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER = asSchedule(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER_ID);
 
 	String UNKNOWN_SCHEDULE_ID = "0.0.123";
 	ScheduleID UNKNOWN_SCHEDULE = asSchedule(UNKNOWN_SCHEDULE_ID);

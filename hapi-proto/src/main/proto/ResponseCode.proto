@@ -218,4 +218,5 @@ enum ResponseCodeEnum {
   UNPARSEABLE_SCHEDULED_TRANSACTION = 207; // The bytes allegedly representing a transaction to be scheduled could not be parsed
   UNSCHEDULABLE_TRANSACTION = 208; // ScheduleCreate and ScheduleSign transactions cannot be scheduled
   SOME_SIGNATURES_WERE_INVALID = 209; // At least one of the signatures in the provided sig map did not represent a valid signature for any required signer
+  TRANSACTION_ID_FIELD_NOT_ALLOWED = 210; // The <tt>scheduled</tt> and <tt>nonce</tt> fields in the <tt>TransactionID</tt> may not be set in a top-level transaction
 }

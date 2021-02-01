@@ -21,31 +21,30 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
 public class ScheduleRecordSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
 	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
-	private static final HapiFileUpdate updateScheduleExpiryTimeSecs = fileUpdate(APP_PROPERTIES)
-			.payingWith(ADDRESS_BOOK_CONTROL)
-			.overridingProps(
-					Map.of("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS));
+	private static final HapiSpecOperation updateScheduleExpiryTimeSecs =
+			overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS);
 
 	public static void main(String... args) {
 		new ScheduleRecordSpecs().runSuiteSync();
@@ -55,8 +54,24 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						allRecordsAreQueryable(),
+						schedulingTxnIdFieldsNotAllowed(),
 				}
 		);
+	}
+
+	public HapiApiSpec schedulingTxnIdFieldsNotAllowed() {
+		return defaultHapiSpec("SchedulingTxnIdFieldsNotAllowed")
+				.given(
+						usableTxnIdNamed("withNonce").usingNonceInappropriately(),
+						usableTxnIdNamed("withScheduled").settingScheduledInappropriately()
+				).when().then(
+						cryptoCreate("nope")
+								.txnId("withNonce")
+								.hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED),
+						cryptoCreate("nope")
+								.txnId("withScheduled")
+								.hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED)
+				);
 	}
 
 	public HapiApiSpec allRecordsAreQueryable() {
