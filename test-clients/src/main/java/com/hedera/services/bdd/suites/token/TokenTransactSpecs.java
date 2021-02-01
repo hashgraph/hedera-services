@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;

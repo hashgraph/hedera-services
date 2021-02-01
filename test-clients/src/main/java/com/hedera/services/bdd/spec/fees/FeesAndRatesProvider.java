@@ -85,6 +85,9 @@ public class FeesAndRatesProvider {
 	}
 
 	public void init() throws Throwable {
+		if (setup.useFixedFee()) {
+			return;
+		}
 		if (setup.clientExchangeRatesFromDisk()) {
 			readRateSet();
 		} else {

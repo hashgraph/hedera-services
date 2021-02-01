@@ -48,7 +48,7 @@ public class Bip0032 {
 		return ((KeyParameter)gen.generateDerivedParameters(KEY_SIZE)).getKey();
 	}
 
-	public static byte[] ed25519PrivateKeyFrom(
+	public static byte[] privateKeyFrom(
 			byte[] seed
 	) throws NoSuchAlgorithmException, InvalidKeyException, ShortBufferException {
 		final byte[] buf = new byte[64];

@@ -44,7 +44,7 @@ public class NetConfig {
 		return CommonMessages.COMMON_MESSAGES.fq(defaultNodeAccount);
 	}
 
-	public Map<String, String> toCustomProperties() {
+	public Map<String, String> toSpecProperties() {
 		Map<String, String> customProps = new HashMap<>();
 		customProps.put("nodes", nodes.stream().map(NodeConfig::asNodesItem).collect(joining(",")));
 		addBootstrapPayerConfig(customProps);
@@ -55,7 +55,6 @@ public class NetConfig {
 		/* TODO: accommodate mnemonic-based keys (blocked by SpecKey, HapiSpecRegistry not supporting mnemonics) */
 
 	}
-
 
 	@Override
 	public String toString() {

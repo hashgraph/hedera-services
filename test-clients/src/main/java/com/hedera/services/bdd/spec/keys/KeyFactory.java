@@ -261,7 +261,9 @@ public class KeyFactory implements Serializable {
 	}
 
 	public static KeyPairObj firstStartupKp(HapiSpecSetup setup) throws Exception {
-		if (StringUtils.isNotEmpty(setup.defaultPayerPemKeyLoc())) {
+		if (StringUtils.isNotEmpty(setup.defaultPayerMnemonic())) {
+			return SpecUtils.asLegacyKp(SpecKey.asEd25519Key(setup.defaultPayerMnemonic()));
+		} else if (StringUtils.isNotEmpty(setup.defaultPayerPemKeyLoc())) {
 			var keyPair = SpecKey.readFirstKp(
 					new File(setup.defaultPayerPemKeyLoc()),
 					setup.defaultPayerPemKeyPassphrase());

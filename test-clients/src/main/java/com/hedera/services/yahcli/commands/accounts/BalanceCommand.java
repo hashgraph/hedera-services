@@ -1,6 +1,5 @@
-package com.hedera.services.yahcli.commands;
+package com.hedera.services.yahcli.commands.accounts;
 
-import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.config.ConfigManager;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -18,7 +17,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 		description = "Retrieve the balance of account(s) on the target network")
 public class BalanceCommand implements Callable<Integer> {
 	@ParentCommand
-	Yahcli yahcli;
+	AccountsCommand accountsCommand;
 
 	@Parameters(
 			arity = "1..*",
@@ -28,9 +27,9 @@ public class BalanceCommand implements Callable<Integer> {
 
 	@Override
 	public Integer call() throws Exception {
-		var config = ConfigManager.from(yahcli);
+		var config = ConfigManager.from(accountsCommand.getYahcli());
 		config.assertNoMissingDefaults();
-		COMMON_MESSAGES.printGlobalInfo(config.getTargetName(), config.getDefaultPayer());
+		COMMON_MESSAGES.printGlobalInfo(config);
 
 		var r = new SplittableRandom();
 		for (String account : accounts) {

@@ -1,6 +1,7 @@
 package com.hedera.services.yahcli;
 
-import com.hedera.services.yahcli.commands.BalanceCommand;
+import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
+import com.hedera.services.yahcli.commands.accounts.BalanceCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -15,12 +16,19 @@ import java.util.concurrent.Callable;
 		name = "yahcli",
 		subcommands = {
 				HelpCommand.class,
-				BalanceCommand.class
+				AccountsCommand.class
 		},
-		description = "Perform operations against well-known entities on a Hedera Services network ")
+		description = "Perform operations against well-known entities on a Hedera Services network")
 public class Yahcli implements Callable<Integer> {
+	public static final long NO_FIXED_FEE = Long.MIN_VALUE;
+
 	@Spec
 	CommandSpec spec;
+
+	@Option(names = { "-f", "--fixed-fee" },
+			paramLabel = "fee to offer",
+			defaultValue = "" + NO_FIXED_FEE)
+	Long fixedFee;
 
 	@Option(names = { "-n", "--network" },
 			paramLabel = "target network")
@@ -59,5 +67,9 @@ public class Yahcli implements Callable<Integer> {
 
 	public CommandSpec getSpec() {
 		return spec;
+	}
+
+	public Long getFixedFee() {
+		return fixedFee;
 	}
 }

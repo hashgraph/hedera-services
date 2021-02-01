@@ -11,9 +11,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
+import static com.hedera.services.yahcli.config.ConfigUtils.asId;
+import static com.hedera.services.yahcli.config.ConfigUtils.isLiteral;
 import static java.util.stream.Collectors.toList;
 
 public class ConfigManager {
@@ -36,6 +38,59 @@ public class ConfigManager {
 			GlobalConfig globalConfig = yamlIn.load(fin);
 			return new ConfigManager(yahcli, globalConfig);
 		}
+	}
+
+	public Map<String, String> asSpecConfig() {
+		assertNoMissingDefaults();
+		var specConfig = targetNet.toSpecProperties();
+		if (useFixedFee()) {
+			specConfig.put("fees.useFixedOffer", "true");
+			specConfig.put("fees.fixedOffer", String.valueOf(useFixedFee()));
+		}
+		var payerId = asId(defaultPayer);
+		if (isLiteral(payerId)) {
+			var optKeyFile = ConfigUtils.keyFileFor(keysLoc(), "account" + defaultPayer);
+			if (optKeyFile.isEmpty()) {
+				fail(String.format("No key available for account %s!", payerId));
+			}
+			var keyFile = optKeyFile.get();
+			if (keyFile.getAbsolutePath().endsWith("pem")) {
+				var optPassFile = ConfigUtils.passFileFor(keyFile);
+				if (optPassFile.isEmpty()) {
+					fail(String.format("No password file available for PEM %s!", keyFile.getName()));
+				}
+				try {
+					var pass = Files.readString(optPassFile.get().toPath());
+					specConfig.put("default.payer.pemKeyLoc", keyFile.getPath());
+					specConfig.put("default.payer.pemKeyPassphrase", pass);
+				} catch (IOException e) {
+					fail(String.format(
+							"Password file inaccessible for PEM %s ('%s')!",
+							keyFile.getName(),
+							e.getMessage()));
+				}
+			} else {
+				try {
+					var mnemonic = Files.readString(keyFile.toPath());
+					specConfig.put("default.payer.mnemonic", mnemonic);
+				} catch (IOException e) {
+					fail(String.format("Mnemonic file %s is inaccessible!", keyFile.getPath()));
+				}
+			}
+		}
+		return specConfig;
+	}
+
+	private String keysLoc() {
+		return targetName + "/keys";
+	}
+
+	public boolean useFixedFee() {
+		return yahcli.getFixedFee()	!= Yahcli.NO_FIXED_FEE;
+	}
+
+	public long fixedFee() {
+		return yahcli.getFixedFee();
 	}
 
 	public void assertNoMissingDefaults() {

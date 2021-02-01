@@ -20,6 +20,7 @@ package com.hedera.services.records;
  * ‍
  */
 
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
@@ -88,6 +89,11 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 				lastCreatedRecord,
 				now,
 				submittingMember);
+		if (SingletonContextsManager.CONTEXTS.lookup(0L).txnCtx() == txnCtx) {
+			System.out.println("Record " + payerRecord + " corresponds to record with "
+					+ lastCreatedRecord.toByteArray().length + " bytes (txn was "
+					+ txnCtx.accessor().getSignedTxn().toByteArray().length + " bytes)");
+		}
 		recordCache.setPostConsensus(
 				accessor.getTxnId(),
 				lastCreatedRecord.getReceipt().getStatus(),
