@@ -22,25 +22,24 @@ package com.hedera.services.usage.schedule.entities;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum ScheduleEntitySizes {
 	SCHEDULE_ENTITY_SIZES;
 
-	/* { deleted } */
-	static int NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
+	/* { expiry } */
+	static int NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
 	/* { payer, schedulingAccount } */
 	static int NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 2;
 	/* { schedulingTXValidStart } */
 	static int NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
 
 	public int fixedBytesInScheduleRepr() {
-		return NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE
+		return NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
 				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
 	}

@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -45,6 +46,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -92,6 +95,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private TxnAccessor accessor;
 	private Consumer<TransactionRecord.Builder> recordConfig = noopRecordConfig;
 	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
+	private List<ExpiringEntity> expiringEntities;
 
 	boolean hasComputedRecordSoFar;
 	TransactionRecord.Builder recordSoFar = TransactionRecord.newBuilder();
@@ -106,6 +110,7 @@ public class AwareTransactionContext implements TransactionContext {
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
 		this.triggeredTxn = null;
+		this.expiringEntities = new ArrayList<>();
 
 		otherNonThresholdFees = 0L;
 		hash = accessor.getHash();
@@ -310,14 +315,24 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public void trigger(TxnAccessor scopedAccessor) {
-		if (this.accessor().isTriggeredTxn()) {
+		if (accessor().isTriggeredTxn()) {
 			throw new IllegalStateException("Unable to trigger txns in triggered txns");
 		}
-		this.triggeredTxn = scopedAccessor;
+		triggeredTxn = scopedAccessor;
 	}
 
 	@Override
 	public TxnAccessor triggeredTxn() {
 		return triggeredTxn;
+	}
+
+	@Override
+	public void addExpiringEntities(Collection<ExpiringEntity> entities) {
+		expiringEntities.addAll(entities);
+	}
+
+	@Override
+	public List<ExpiringEntity> expiringEntities() {
+		return expiringEntities;
 	}
 }

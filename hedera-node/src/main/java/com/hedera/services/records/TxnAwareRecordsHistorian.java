@@ -20,17 +20,15 @@ package com.hedera.services.records;
  * ‍
  */
 
-import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
+import javafx.util.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -112,5 +110,15 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public void reviewExistingRecords() {
 		expiries.restartTrackingFrom(accounts.get());
+	}
+
+	@Override
+	public void addNewEntities() {
+		var expiringEntities = txnCtx.expiringEntities();
+		if (expiringEntities.size() != 0) {
+			for (var expiringEntity : expiringEntities) {
+				expiries.trackEntity(new Pair<>(expiringEntity.id().num(), expiringEntity.consumer()), expiringEntity.expiry());
+			}
+		}
 	}
 }

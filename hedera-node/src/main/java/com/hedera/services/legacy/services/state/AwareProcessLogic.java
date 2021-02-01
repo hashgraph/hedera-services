@@ -214,6 +214,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		updateMidnightRatesIfAppropriateAt(consensusTime);
 		ctx.updateConsensusTimeOfLastHandledTxn(consensusTime);
 		ctx.recordsHistorian().purgeExpiredRecords();
+		ctx.expiries().purgeExpiredEntitiesAt(consensusTime.getEpochSecond());
 
 		updateIssEventInfo(consensusTime);
 

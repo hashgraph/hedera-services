@@ -283,6 +283,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		 * history. This history has two main uses: Purging expired records, and
 		 * classifying duplicate transactions. */
 		ctx.recordsHistorian().reviewExistingRecords();
+		/*
+		 * Use any entities stored in state to rebuild the history for expired entities.
+		 * This has one main use: purge expired entities.
+		 */
+		ctx.expiries().restartEntitiesTrackingFrom();
 		if (!blobStoreSupplier.get().isInitializing()) {
 			ctx.systemFilesManager().loadAllSystemFiles();
 		}

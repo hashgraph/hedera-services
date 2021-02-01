@@ -21,6 +21,7 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -34,6 +35,8 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Defines a type that manages transaction-specific context for a node. (That is,
@@ -232,7 +235,7 @@ public interface TransactionContext {
 
 	/**
 	 * Sets a triggered TxnAccessor for execution
-	 * @param accessor
+	 * @param accessor the accessor which will be triggered
 	 */
 	void trigger(TxnAccessor accessor);
 
@@ -240,4 +243,17 @@ public interface TransactionContext {
 	 * Returns a triggered TxnAccessor
 	 */
 	TxnAccessor triggeredTxn();
+
+	/**
+	 * Adds a collection of {@link ExpiringEntity} to be later tracked for purging when expired
+	 * @param expiringEntities the information about entities which will be tracked for future purge
+	 */
+	void addExpiringEntities(Collection<ExpiringEntity> expiringEntities);
+
+	/**
+	 * Gets all expiring entities to the defined type {@link ExpiringEntity}
+	 * currently being processed.
+	 * @return {@code List<ExpiringEntity>} for the current expiring entities.
+	 */
+	List<ExpiringEntity> expiringEntities();
 }

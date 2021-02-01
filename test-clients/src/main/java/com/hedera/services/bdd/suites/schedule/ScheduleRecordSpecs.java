@@ -21,27 +21,31 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 public class ScheduleRecordSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
+	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
+	private static final HapiFileUpdate updateScheduleExpiryTimeSecs = fileUpdate(APP_PROPERTIES)
+			.payingWith(ADDRESS_BOOK_CONTROL)
+			.overridingProps(
+					Map.of("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS));
 
 	public static void main(String... args) {
 		new ScheduleRecordSpecs().runSuiteSync();
@@ -58,6 +62,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	public HapiApiSpec allRecordsAreQueryable() {
 		return defaultHapiSpec("AllRecordsAreQueryable")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payer"),
 						cryptoCreate("receiver").receiverSigRequired(true).balance(0L)
 				).when(

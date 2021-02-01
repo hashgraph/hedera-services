@@ -33,6 +33,7 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -126,6 +127,7 @@ class ServicesStateTest {
 	PropertySources propertySources;
 	ServicesContext ctx;
 	AccountRecordsHistorian historian;
+	ExpiryManager expiryManager;
 	FCMap<MerkleEntityId, MerkleTopic> topics;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
@@ -197,6 +199,7 @@ class ServicesStateTest {
 		systemFilesManager = mock(SystemFilesManager.class);
 		historian = mock(AccountRecordsHistorian.class);
 		txnHistories = mock(Map.class);
+		expiryManager = mock(ExpiryManager.class);
 		recordStreamManager = mock(RecordStreamManager.class);
 
 		topics = mock(FCMap.class);
@@ -248,6 +251,7 @@ class ServicesStateTest {
 		given(ctx.platform()).willReturn(platform);
 		given(ctx.recordsHistorian()).willReturn(historian);
 		given(ctx.txnHistories()).willReturn(txnHistories);
+		given(ctx.expiries()).willReturn(expiryManager);
 		given(ctx.propertySources()).willReturn(propertySources);
 		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
 		given(ctx.recordStreamManager()).willReturn(recordStreamManager);

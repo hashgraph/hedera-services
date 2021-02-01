@@ -21,38 +21,45 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 public class ScheduleSignSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
+	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
+	private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
+	private static final HapiFileUpdate updateScheduleExpiryTimeSecs = fileUpdate(APP_PROPERTIES)
+			.payingWith(ADDRESS_BOOK_CONTROL)
+			.overridingProps(
+					Map.of("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS));
+
 
 	public static void main(String... args) {
 		new ScheduleSignSpecs().runSuiteSync();
@@ -61,6 +68,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+						expiredBeforeSigning(),
 						triggersUponAdditionalNeededSig(),
 						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
 						scheduleSigIrrelevantToSchedulingTxn(),
@@ -73,6 +81,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	public HapiApiSpec triggersUponAdditionalNeededSig() {
 		return defaultHapiSpec("TriggersUponAdditionalNeededSig")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						cryptoCreate("sender").balance(1L),
 						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
 				).when(
@@ -92,6 +101,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	public HapiApiSpec requiresSharedKeyToSignBothSchedulingAndScheduledTxns() {
 		return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxns")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						newKeyNamed("sharedKey"),
 						cryptoCreate("payerWithSharedKey").key("sharedKey")
 				).when(
@@ -111,7 +121,8 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								.hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)
 				).then(
 						scheduleSign("deferredCreation")
-								.withSignatories("sharedKey"),
+								.withSignatories("sharedKey")
+								.via("deferredCreation"),
 						getTxnRecord("creation").scheduled().logged()
 				);
 	}
@@ -119,6 +130,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	public HapiApiSpec scheduleSigIrrelevantToSchedulingTxn() {
 		return defaultHapiSpec("ScheduleSigIrrelevantToSchedulingTxn")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						newKeyNamed("origKey"),
 						newKeyNamed("sharedKey"),
 						cryptoCreate("payerToHaveSharedKey").key("origKey")
@@ -145,6 +157,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("OverlappingKeysTreatedAsExpected")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						newKeyNamed("aKey").generator(keyGen),
 						newKeyNamed("bKey").generator(keyGen),
 						newKeyNamed("cKey"),
@@ -177,9 +190,11 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	public HapiApiSpec retestsActivationOnSignWithEmptySigMap() {
 		return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						newKeyNamed("a"),
 						newKeyNamed("b"),
-						newKeyListNamed("ab", List.of("a", "b"))
+						newKeyListNamed("ab", List.of("a", "b")),
+						newKeyNamed("admin")
 				).when(
 						cryptoCreate("sender").key("ab").balance(667L),
 						scheduleCreate(
@@ -193,6 +208,33 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				).then(
 						scheduleSign("deferredFall").withSignatories(),
 						getAccountBalance("sender").hasTinyBars(666L)
+				);
+	}
+
+	public HapiApiSpec expiredBeforeSigning() {
+		final int FAST_EXPIRATION = 0;
+		return defaultHapiSpec("SignFailsDueToDeletedExpiration")
+				.given(
+						sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any other scheduled expiring entity to expire
+						cryptoCreate("sender").balance(1L),
+						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
+				).when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(
+										Map.of("ledger.schedule.txExpiryTimeSecs", "" + FAST_EXPIRATION)),
+						scheduleCreate(
+								"twoSigXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								)
+										.signedBy("sender")
+						).inheritingScheduledSigs(),
+						updateScheduleExpiryTimeSecs,
+						getAccountBalance("receiver").hasTinyBars(0L)
+				).then(
+						scheduleSign("twoSigXfer").withSignatories("receiver")
+								.hasKnownStatus(INVALID_SCHEDULE_ID)
 				);
 	}
 

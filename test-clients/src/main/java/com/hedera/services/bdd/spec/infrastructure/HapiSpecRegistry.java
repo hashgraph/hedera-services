@@ -317,7 +317,7 @@ public class HapiSpecRegistry {
 		return get(name + "Kyc", Key.class);
 	}
 
-	public Long getTokenExpiry(String name) { return get(name + "Expiry", Long.class); }
+	public Long getExpiry(String name) { return get(name + "Expiry", Long.class); }
 
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);
