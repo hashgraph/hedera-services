@@ -60,16 +60,18 @@ public class SignatoryUtils {
 	 *     <li>{@code N}, how many of the {@code VALID} signatures represent new signatories for the schedule.</li>
 	 * </ol>
 	 *
-	 * If {@code A == 0}, responds with {@code Pair.of(OK, false)}.
+	 * If {@code A == 0}, rechecks whether the scheduled transaction is ready to execute, and responds with
+	 * {@code Pair.of(OK, false)} or {@code Pair.of(OK, true)} as appropriate.
 	 *
-	 * If {@code V &lt; A} and {@code I &gt; 0}, responds with {@code Pair.of(SOME_SIGNATURES_WERE_INVALID, false)} .
+	 * If {@code V &lt; A} (and hence {@code I &gt; 0}), responds with {@code Pair.of(SOME_SIGNATURES_WERE_INVALID, false)} .
 	 *
 	 * If {@code V == A}, ignores any {@code INVALID} signatures, since it is always
 	 * possible that a prefix collision between required signing keys will result in
 	 * expanding multiple signatures for a given {@code SignaturePair} entry.
 	 *
-	 * However, if {@code N == 0} then returns {@code Pair.of(NO_NEW_VALID_SIGNATURES, false)}
-	 * because all the valid signatures represented Ed25519 signatories already present on the schedule.
+	 * If {@code N == 0} returns {@code Pair.of(OK, true)} if the scheduled transaction is ready to execute,
+	 * and {@code Pair.of(NO_NEW_VALID_SIGNATURES, false)} otherwise (this corresponds to all valid signatures
+	 * representing Ed25519 signatories already present on the scheduled txn).
 	 *
 	 * Otherwise returns {@code Pair.of(OK, true)} if the new signatories activated the
 	 * schedule, and {@code Pair.of(OK, false)} if they did not.

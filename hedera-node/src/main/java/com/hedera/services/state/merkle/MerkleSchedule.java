@@ -273,9 +273,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     public void setPayer(EntityId payer) { this.payer = payer; }
 
-    public EntityId payer() { return this.payer; }
+    public EntityId payer() {
+        return this.payer;
+    }
 
-    public boolean hasPayer() { return payer != UNUSED_PAYER; }
+    public boolean hasPayer() {
+        return payer != UNUSED_PAYER;
+    }
 
     public EntityId schedulingAccount() { return this.schedulingAccount; }
 

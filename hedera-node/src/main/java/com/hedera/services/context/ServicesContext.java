@@ -1007,11 +1007,13 @@ public class ServicesContext {
 
 	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
 		var policies = systemOpPolicies();
+		var properties = globalDynamicProperties();
 		return new HederaSigningOrder(
 				entityNums(),
 				lookups,
 				txn -> policies.check(txn, CryptoUpdate) != AUTHORIZED,
-				(txn, function) -> policies.check(txn, function) != AUTHORIZED);
+				(txn, function) -> policies.check(txn, function) != AUTHORIZED,
+				properties);
 	}
 
 	public StoragePersistence storagePersistence() {

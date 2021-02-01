@@ -244,7 +244,8 @@ public class TxnHandlerVerifySigRegressionTest {
 				new MockEntityNumbers(),
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
-				targetWaclSigns);
+				targetWaclSigns,
+				new MockGlobalDynamicProps());
 		retryingKeyOrder =
 				new HederaSigningOrder(
 						new MockEntityNumbers(),
@@ -252,7 +253,8 @@ public class TxnHandlerVerifySigRegressionTest {
 								null, () -> accounts, () -> null, ref -> null, ref -> null,
 								MN, MN, runningAvgs, speedometers),
 						updateAccountSigns,
-						targetWaclSigns);
+						targetWaclSigns,
+						new MockGlobalDynamicProps());
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);

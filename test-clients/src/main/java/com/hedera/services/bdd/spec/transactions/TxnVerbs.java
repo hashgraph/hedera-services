@@ -176,6 +176,10 @@ public class TxnVerbs {
 		return new HapiScheduleCreate<>(scheduled, cryptoCreate("doomed")).garbled();
 	}
 
+	public static HapiScheduleCreate<HapiCryptoCreate> scheduleCreateFunctionless(String scheduled) {
+		return new HapiScheduleCreate<>(scheduled, cryptoCreate("doomed")).functionless();
+	}
+
 	public static HapiScheduleDelete scheduleDelete(String schedule) {
 		return new HapiScheduleDelete(schedule);
 	}

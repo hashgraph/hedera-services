@@ -234,6 +234,12 @@ public class UtilVerbs {
 		return new ProviderRun(provider);
 	}
 
+	public static HapiSpecOperation overriding(String property, String value) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Map.of(property, "" + value));
+	}
+
 	/* Stream validation. */
 	public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
 		return new RecordStreamVerification(baseDir);

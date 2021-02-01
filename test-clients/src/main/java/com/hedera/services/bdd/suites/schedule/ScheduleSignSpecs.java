@@ -66,8 +66,29 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleSigIrrelevantToSchedulingTxn(),
 						overlappingKeysTreatedAsExpected(),
 						retestsActivationOnSignWithEmptySigMap(),
+						triggersUponFinishingPayerSig(),
 				}
 		);
+	}
+
+	public HapiApiSpec triggersUponFinishingPayerSig() {
+		return defaultHapiSpec("TriggersUponFinishingPayerSig")
+				.given(
+						cryptoCreate("payer").balance(ONE_HBAR),
+						cryptoCreate("sender").balance(1L),
+						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
+				).when(
+						scheduleCreate(
+								"threeSigXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", 1)
+								).fee(ONE_HBAR).signedBy("sender", "receiver")
+						).designatingPayer("payer").inheritingScheduledSigs(),
+						getAccountBalance("receiver").hasTinyBars(0L),
+						scheduleSign("threeSigXfer").withSignatories("payer")
+				).then(
+						getAccountBalance("receiver").hasTinyBars(1L)
+				);
 	}
 
 	public HapiApiSpec triggersUponAdditionalNeededSig() {

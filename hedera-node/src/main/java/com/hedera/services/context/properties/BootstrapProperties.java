@@ -209,6 +209,7 @@ public class BootstrapProperties implements PropertySource {
 			"ledger.tokenTransfers.maxLen",
 			"ledger.schedule.txExpiryTimeSecs",
 			"rates.intradayChangeLimitPercent",
+			"scheduling.whitelist",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolUtf8Bytes",
 			"tokens.maxTokenNameUtf8Bytes"
@@ -303,6 +304,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("contracts.defaultLifetime", AS_LONG),
 			entry("contracts.maxGas", AS_INT),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
+			entry("scheduling.whitelist", AS_FUNCTIONS),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", AS_LONG),
 			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE)
