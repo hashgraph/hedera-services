@@ -153,8 +153,8 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
 
 	public MerkleTopic(final MerkleTopic other) {
 		this.memo = other.memo;
-		this.adminKey = other.hasAdminKey() ? other.getAdminKey().clone() : null;
-		this.submitKey = other.hasSubmitKey() ? other.getSubmitKey().clone() : null;
+		this.adminKey = other.hasAdminKey() ? other.getAdminKey() : null;
+		this.submitKey = other.hasSubmitKey() ? other.getSubmitKey() : null;
 		this.autoRenewDurationSeconds = other.autoRenewDurationSeconds;
 		this.autoRenewAccountId = other.hasAutoRenewAccountId() ? other.autoRenewAccountId : null;
 		this.expirationTimestamp = other.hasExpirationTimestamp() ? other.expirationTimestamp : null;
