@@ -1380,7 +1380,7 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "53 20 * * *"
+          cron: "47 17 * * *"
           filters:
             branches:
               only:
@@ -1388,7 +1388,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Crypto-Update-5N-1C"
           context: Slack
           result_path: results/5N_1C/Update
           config_file: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Update-5N-1C.json"
