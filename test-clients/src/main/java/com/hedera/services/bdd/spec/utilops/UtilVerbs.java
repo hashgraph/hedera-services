@@ -110,6 +110,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.Assert.assertEquals;
 
 public class UtilVerbs {
 	public static HapiFreeze freeze() {
@@ -303,7 +304,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic,
-			AtomicLong count) {
+											   AtomicLong count) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 			String overriddenFile = new String(filePath);
@@ -716,5 +717,16 @@ public class UtilVerbs {
 	public static boolean isNotThrottleProp(Setting setting) {
 		var name = setting.getName();
 		return !name.startsWith("hapi.throttling");
+	}
+
+	public static HapiSpecOperation ensureIdempotentlyCreated(String txId, String otherTxId) {
+		return withOpContext((spec, opLog) -> {
+			var firstTx = getTxnRecord(txId);
+			var secondTx = getTxnRecord(otherTxId);
+			allRunFor(spec, firstTx, secondTx);
+			assertEquals(
+					firstTx.getResponseRecord().getReceipt().getScheduleID(),
+					secondTx.getResponseRecord().getReceipt().getScheduleID());
+		});
 	}
 }
