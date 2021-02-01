@@ -61,7 +61,8 @@ public class BalanceSnapshot extends UtilOp {
 		payer.ifPresent(delegate::payingWith);
 		Optional<Throwable> error = delegate.execFor(spec);
 		if (error.isPresent()) {
-			Assert.fail("Failed to take balance snapshot for '" + account + "'!");
+			log.error("Failed to take balance snapshot for '{}'!", account);
+			return false;
 		}
 		long balance = delegate.getResponse().getCryptogetAccountBalance().getBalance();
 

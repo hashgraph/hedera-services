@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -83,14 +83,15 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 
 	private void transitionFor(ScheduleCreateTransactionBody op) throws InvalidProtocolBufferException {
 		var scheduleId = NOT_YET_RESOLVED;
+		byte[] txBytes = op.getTransactionBody().toByteArray();
 		var scheduledPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
 
-		var extantId = store.lookupScheduleId(op.getTransactionBody().toByteArray(), scheduledPayer);
+		var extantId = store.lookupScheduleId(txBytes, scheduledPayer, op.getAdminKey(), op.getMemo());
 		if (extantId.isPresent()) {
 			scheduleId = extantId.get();
 		} else {
 			var result = store.createProvisionally(
-					op.getTransactionBody().toByteArray(),
+					txBytes,
 					scheduledPayer,
 					txnCtx.activePayer(),
 					fromJava(txnCtx.consensusTime()),

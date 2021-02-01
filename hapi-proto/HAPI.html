@@ -2228,7 +2228,7 @@
         
       
         <h3 id="proto.ScheduleID">ScheduleID</h3>
-        <p>Unique identifier for a schedule entity</p>
+        <p>Unique identifier for a Schedule</p>
 
         
           <table class="field-table">
@@ -8254,7 +8254,7 @@ by HAPI.</p></td>
               <tr>
                 <td>TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED</td>
                 <td>166</td>
-                <td><p>Maximum number of token relations for a given account is exceeded</p></td>
+                <td><p>An involved account already has more than &lt;tt&gt;tokens.maxPerAccount&lt;/tt&gt; associations with non-deleted tokens.</p></td>
               </tr>
             
               <tr>
@@ -8464,7 +8464,31 @@ by HAPI.</p></td>
               <tr>
                 <td>INVALID_SCHEDULE_ID</td>
                 <td>201</td>
-                <td><p>The scheduled transaction entity is invalid or does not exist</p></td>
+                <td><p>The Scheduled entity does not exist</p></td>
+              </tr>
+            
+              <tr>
+                <td>SCHEDULE_IS_IMMUTABLE</td>
+                <td>202</td>
+                <td><p>The Scheduled entity cannot be modified. Admin key not set</p></td>
+              </tr>
+            
+              <tr>
+                <td>SCHEDULE_WAS_DELETED</td>
+                <td>203</td>
+                <td><p>The Scheduled entity was already deleted</p></td>
+              </tr>
+            
+              <tr>
+                <td>INVALID_SCHEDULE_PAYER_ID</td>
+                <td>204</td>
+                <td><p>The provided Scheduled Payer does not exist</p></td>
+              </tr>
+            
+              <tr>
+                <td>INVALID_SCHEDULE_ACCOUNT_ID</td>
+                <td>205</td>
+                <td><p>The Schedule Create Transaction TransactionID account does not exist</p></td>
               </tr>
             
           </tbody>
@@ -9266,14 +9290,14 @@ by HAPI.</p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The publicly visible name of the token, specified as a string of only ASCII characters </p></td>
+                  <td><p>The publicly visible name of the token, limited to a UTF-8 encoding of length &lt;tt&gt;tokens.maxSymbolUtf8Bytes&lt;/tt&gt;. </p></td>
                 </tr>
               
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The publicly visible token symbol. It is UTF-8 capitalized alphabetical string identifying the token </p></td>
+                  <td><p>The publicly visible token symbol, limited to a UTF-8 encoding of length &lt;tt&gt;tokens.maxTokenNameUtf8Bytes&lt;/tt&gt;. </p></td>
                 </tr>
               
                 <tr>
@@ -10039,14 +10063,14 @@ by HAPI.</p></td>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The new Symbol of the Token. Must be UTF-8 capitalized alphabetical string identifying the token. </p></td>
+                  <td><p>The new publicly visible Token symbol, limited to a UTF-8 encoding of length &lt;tt&gt;tokens.maxTokenNameUtf8Bytes&lt;/tt&gt;. </p></td>
                 </tr>
               
                 <tr>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The new Name of the Token. Must be a string of ASCII characters. </p></td>
+                  <td><p>The new publicly visible name of the Token, limited to a UTF-8 encoding of length &lt;tt&gt;tokens.maxSymbolUtf8Bytes&lt;/tt&gt;. </p></td>
                 </tr>
               
                 <tr>
