@@ -1686,7 +1686,7 @@ workflows:
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_4C/Restart
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
+          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-6N-6C.json"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
           requires:
             - update-start-up-key
@@ -1702,7 +1702,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 00995-D-regression-history
 
     jobs:
       - build-platform-and-services
@@ -1714,7 +1714,7 @@ workflows:
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/6N_6C/Restart
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
+          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C.json"
           workflow-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           requires:
             - update-start-up-key
