@@ -280,13 +280,13 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						newKeyNamed("admin"),
 						scheduleCreate("first", txnBody)
 								.adminKey("admin")
-								.payer("payer")
+								.designatingPayer("payer")
 								.withEntityMemo("memo here")
 								.via("first")
 				).when(
 						scheduleCreate("second", txnBody)
 								.adminKey("admin")
-								.payer("payer")
+								.designatingPayer("payer")
 								.withEntityMemo("different memo here")
 								.via("second")
 				).then(
@@ -329,11 +329,11 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given(
 						cryptoCreate("payer"),
 						scheduleCreate("first", txnBody)
-								.payer("payer")
+								.designatingPayer("payer")
 								.via("first")
 				).when(
 						scheduleCreate("second", txnBody)
-								.payer("payer")
+								.designatingPayer("payer")
 								.via("second")
 				).then(
 						ensureIdempotentlyCreated("first", "second")
@@ -380,13 +380,13 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						newKeyNamed("admin"),
 						cryptoCreate("payer"),
 						scheduleCreate("first", txnBody)
-								.payer("payer")
+								.designatingPayer("payer")
 								.adminKey("admin")
 								.withEntityMemo("memo here")
 								.via("first")
 				).when(
 						scheduleCreate("second", txnBody)
-								.payer("payer")
+								.designatingPayer("payer")
 								.adminKey("admin")
 								.withEntityMemo("memo here")
 								.via("second")
