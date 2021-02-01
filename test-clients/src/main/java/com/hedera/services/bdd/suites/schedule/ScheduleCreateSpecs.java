@@ -99,14 +99,11 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec bodyOnlyCreation() {
 		return defaultHapiSpec("BodyOnlyCreation")
-				.given(
-				)
-				.when(
+				.given( ).when(
 						scheduleCreate( "onlyBody",
 								cryptoCreate("primary")
 						).logged()
-				)
-				.then(
+				).then(
 						getScheduleInfo("onlyBody")
 								.hasScheduleId("onlyBody")
 								.hasValidTxBytes()

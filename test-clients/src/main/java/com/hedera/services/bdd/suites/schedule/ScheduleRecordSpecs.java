@@ -21,7 +21,9 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,6 +41,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
 public class ScheduleRecordSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
@@ -51,8 +55,24 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						allRecordsAreQueryable(),
+						schedulingTxnIdFieldsNotAllowed(),
 				}
 		);
+	}
+
+	public HapiApiSpec schedulingTxnIdFieldsNotAllowed() {
+		return defaultHapiSpec("SchedulingTxnIdFieldsNotAllowed")
+				.given(
+						usableTxnIdNamed("withNonce").usingNonceInappropriately(),
+						usableTxnIdNamed("withScheduled").settingScheduledInappropriately()
+				).when().then(
+						cryptoCreate("nope")
+								.txnId("withNonce")
+								.hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED),
+						cryptoCreate("nope")
+								.txnId("withScheduled")
+								.hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED)
+				);
 	}
 
 	public HapiApiSpec allRecordsAreQueryable() {
