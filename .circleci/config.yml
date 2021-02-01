@@ -1610,7 +1610,7 @@ workflows:
           name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/Restart
+          result_path: results/4N_4C/Restart
           config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
           requires:
@@ -1685,7 +1685,7 @@ workflows:
           name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_4C/Restart
+          result_path: results/6N_6C/Performance
           config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-6N-6C.json"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
           requires:
@@ -1713,7 +1713,7 @@ workflows:
           name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Restart
+          result_path: results/6N_6C/Performance
           config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C.json"
           workflow-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           requires:
