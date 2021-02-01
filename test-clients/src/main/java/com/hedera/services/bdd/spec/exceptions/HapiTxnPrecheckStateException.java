@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.spec.utilops;
+package com.hedera.services.bdd.spec.exceptions;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.utilops;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,23 +20,8 @@ package com.hedera.services.bdd.spec.utilops;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-
-import java.util.function.Supplier;
-
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-
-public class SourcedOp extends UtilOp {
-	private final Supplier<HapiSpecOperation> source;
-
-	public SourcedOp(Supplier<HapiSpecOperation> source) {
-		this.source = source;
-	}
-
-	@Override
-	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		allRunFor(spec, source.get());
-		return false;
+public class HapiTxnPrecheckStateException extends IllegalStateException {
+	public HapiTxnPrecheckStateException(String msg) {
+		super(msg);
 	}
 }

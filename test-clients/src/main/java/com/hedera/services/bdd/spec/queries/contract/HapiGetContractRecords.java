@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.queries.contract;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.io.*;
+import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -191,7 +192,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 		return prefix.map(d -> d + "/" + spec.getName()).get();
 	}
 
-	private void checkExpectations(HapiApiSpec spec, List<TransactionRecord> records) {
+	private void checkExpectations(HapiApiSpec spec, List<TransactionRecord> records) throws Throwable {
 		String specExpectationsDir = specScopedDir(spec, expectationsDirPath);
 		try {
 			String expectationsDir = specExpectationsDir + "/" + contract;
@@ -206,8 +207,13 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 				Assert.assertEquals("Wrong record #" + i, expected, records.get(i));
 			}
 		} catch (Exception e) {
-			log.error("Something amiss with the expected records...", e);
-			Assert.fail("Impossible to meet expectations (on records)!");
+			if(log.isDebugEnabled()) {
+				log.error("Something amiss with the expected records...", e);
+			}
+			else {
+				log.error("Something amiss with the expected records {}", records);
+			}
+			throw new HapiQueryCheckStateException("Impossible to meet expectations (on records)!");
 		}
 	}
 }
