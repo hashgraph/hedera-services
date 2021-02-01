@@ -127,8 +127,8 @@ public class MerkleTopicTest {
 		assertEquals(0L, topic.getSequenceNumber());
 		assertTrue(topic.hasRunningHash());
 		assertArrayEquals(from.getRunningHash(), topic.getRunningHash());
-		assertNotSame(from.getAdminKey(), topic.getAdminKey());
-		assertNotSame(from.getSubmitKey(), topic.getSubmitKey());
+		assertSame(from.getAdminKey(), topic.getAdminKey());
+		assertSame(from.getSubmitKey(), topic.getSubmitKey());
 		assertSame(from.getAutoRenewAccountId(), topic.getAutoRenewAccountId());
 		assertSame(from.getExpirationTimestamp(), topic.getExpirationTimestamp());
 		assertNotSame(from.getRunningHash(), topic.getRunningHash());

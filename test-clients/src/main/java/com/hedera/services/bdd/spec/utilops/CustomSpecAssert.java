@@ -37,7 +37,8 @@ public class CustomSpecAssert extends UtilOp {
 		for (HapiSpecOperation op : ops) {
 			Optional<Throwable>	error = op.execFor(spec);
 			if (error.isPresent()) {
-				Assert.fail("Operation '" + op.toString() + "' :: " + error.get().getMessage());
+				log.error("Operation '" + op.toString() + "' :: " + error.get().getMessage());
+				break;
 			}
 		}
 	}

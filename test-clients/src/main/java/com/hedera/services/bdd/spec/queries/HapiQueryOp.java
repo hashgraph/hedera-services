@@ -21,6 +21,8 @@ package com.hedera.services.bdd.spec.queries;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
+import com.hedera.services.bdd.spec.exceptions.HapiQueryPrecheckStateException;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -93,14 +95,18 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (permissibleCostAnswerPrechecks.get().contains(actualPrecheck)) {
 				costAnswerPrecheck = Optional.of(actualPrecheck);
 			} else {
-				Assert.fail(
-						String.format(
-								"Cost-answer precheck was %s, not one of %s!",
-								actualPrecheck,
-								permissibleCostAnswerPrechecks.get()));
+				String errMsg = String.format("Cost-answer precheck was %s, not one of %s!",
+						actualPrecheck,	permissibleCostAnswerPrechecks.get());
+				log.error(errMsg);
+
+				throw new HapiQueryCheckStateException(errMsg);
 			}
 		} else {
-			Assert.assertEquals("Bad costAnswerPrecheck!", expectedCostAnswerPrecheck(), actualPrecheck);
+			if(expectedCostAnswerPrecheck() != actualPrecheck) {
+				String errMsg = String.format("Bad costAnswerPrecheck! expected {}, actual {}", expectedCostAnswerPrecheck(), actualPrecheck);
+				log.error(errMsg);
+				throw new HapiQueryCheckStateException(errMsg);
+			}
 		}
 		return reflectForCost(response);
 	}
@@ -134,14 +140,17 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (permissibleAnswerOnlyPrechecks.get().contains(actualPrecheck)) {
 				answerOnlyPrecheck = Optional.of(actualPrecheck);
 			} else {
-				Assert.fail(
-						String.format(
-								"Answer-only precheck was %s, not one of %s!",
-								actualPrecheck,
-								permissibleAnswerOnlyPrechecks.get()));
+				String errMsg = String.format("Answer-only precheck was %s, not one of %s!",
+						actualPrecheck,	permissibleAnswerOnlyPrechecks.get());
+				log.error(errMsg);
+				throw new HapiQueryPrecheckStateException(errMsg);
 			}
 		} else {
-			Assert.assertEquals("Bad answerOnlyPrecheck!", expectedAnswerOnlyPrecheck(), actualPrecheck);
+			if(expectedAnswerOnlyPrecheck() != actualPrecheck) {
+				String errMsg = String.format("Bad answerOnlyPrecheck! expected %s, actual %s", expectedAnswerOnlyPrecheck(), actualPrecheck);
+				log.error(errMsg);
+				throw new HapiQueryPrecheckStateException(errMsg);
+			}
 		}
 		if (expectedCostAnswerPrecheck() != OK || expectedAnswerOnlyPrecheck() != OK) { return false; }
 		txnSubmitted = payment;
@@ -208,9 +217,16 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (expectStrictCostAnswer) {
 				Transaction insufficientPayment = finalizedTxn(spec, opDef(spec, realNodePayment - 1));
 				submitWith(spec, insufficientPayment);
-				Assert.assertEquals("Strict cost of answer!", INSUFFICIENT_TX_FEE, reflectForPrecheck(response));
-				log.info("Query with node payment of {} tinyBars got INSUFFICIENT_TX_FEE as expected!",
-						realNodePayment - 1);
+				if(INSUFFICIENT_TX_FEE != reflectForPrecheck(response)) {
+					String errMsg = String.format("Strict cost of answer! suppose to be {}, but get {}",
+							INSUFFICIENT_TX_FEE, reflectForPrecheck(response));
+					log.error(errMsg);
+					throw new HapiQueryPrecheckStateException(errMsg);
+				}
+				else {
+					log.info("Query with node payment of {} tinyBars got INSUFFICIENT_TX_FEE as expected!",
+							realNodePayment - 1);
+				}
 			}
 			return finalizedTxn(spec, opDef(spec, realNodePayment));
 		}

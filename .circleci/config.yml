@@ -1091,7 +1091,7 @@ workflows:
           filters:
             branches:
               only:
-                - Disable-master
+                - master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1151,7 +1151,7 @@ workflows:
           filters:
             branches:
               only:
-                - Disable-master
+                - master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1500,10 +1500,6 @@ workflows:
             context: SonarCloud
             requires:
               - build-artifact
-            filters:
-              branches:
-                ignore:
-                  - /.*-PERF/
             workflow-name: "Continuous integration GCP"
         - run-continuous-integration-gcp:
             context: Slack
@@ -1514,11 +1510,6 @@ workflows:
               - attach_workspace:
                   at: /
             workflow-name: "Continuous Integration GCP"
-            filters:
-              branches:
-                ignore:
-                  - /.*-PERF/
-                  - /.*-REGRESSION/
 
   continuous-integration:
     jobs:
@@ -1529,6 +1520,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
