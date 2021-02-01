@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
@@ -51,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -166,17 +168,25 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						cryptoCreate("accountB"),
 						tokenCreate("expiredToken")
 								.treasury("accountA")
-								.initialSupply(1000L)
+								.initialSupply(1_000L)
 				)
 				.when(
 						tokenAssociate("accountB", "expiredToken"),
-						// TODO: transfer some balance
+						cryptoTransfer(
+								moving(100L, "expiredToken")
+										.between("accountA", "accountB")
+						).hasKnownStatus(OK),
 						tokenUpdate("expiredToken")
 								.expiry(Instant.now().getEpochSecond())
 				)
 				.then(
-						tokenDissociate("accountB", "expiredToken")
-						// TODO: validate expiredToken balance with its treasury accountA to be 1000
+						getAccountBalance("accountA")
+								.logged()
+								.hasTokenBalance("expiredToken", 900L),
+						tokenDissociate("accountB", "expiredToken"),
+						getAccountBalance("accountA")
+								.logged()
+								.hasTokenBalance("expiredToken", 1_000L)
 				);
 	}
 	public HapiApiSpec dissociateHasExpectedSemantics() {

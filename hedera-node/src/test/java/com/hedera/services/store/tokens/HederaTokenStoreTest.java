@@ -576,32 +576,36 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingExpiredTokenWithNonZeroBalanceMovesBalanceToTreasury() {
 		// setup:
+		AccountID accountID = mock(AccountID.class);
 		var expiredToken = mock(MerkleToken.class);
 		var tokens = mock(MerkleAccountTokens.class);
 		var sponsorEntityId = mock(EntityId.class);
-		var key = asTokenRel(sponsor, misc);
-		long initialBalance = hederaLedger.getBalance(sponsor);
+		var sponsorRel = asTokenRel(sponsor, misc);
+		var accountRel = asTokenRel(accountID,misc);
+
 		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		given(hederaLedger.getAssociatedTokens(accountID)).willReturn(tokens);
 		given(subject.get(misc)).willReturn(expiredToken);
 
 		// and:
-		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
+		given(tokenRelsLedger.get(accountRel, TOKEN_BALANCE)).willReturn(1L);
+		given(tokenRelsLedger.get(sponsorRel, TOKEN_BALANCE)).willReturn(1L);
 		given(expiredToken.isExpired()).willReturn(true);
 		given(expiredToken.treasury()).willReturn(sponsorEntityId);
 		given(sponsorEntityId.toGrpcAccountId()).willReturn(sponsor);
 
 		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
+		var status = subject.dissociate(accountID, List.of(misc));
 
 		// expect:
 		assertEquals(OK, status);
-		// TODO :
-		assertEquals(initialBalance+1L , hederaLedger.getBalance(sponsor));
 		// and:
 		verify(tokens).dissociateAll(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
-		verify(tokenRelsLedger).destroy(key);
+		verify(tokenRelsLedger).destroy(accountRel);
+		verify(tokenRelsLedger).set(sponsorRel, TOKEN_BALANCE, 2L);
+		verify(hederaLedger).updateTokenXfers(misc, sponsor, 1L);
 
 	}
 
