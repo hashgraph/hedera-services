@@ -1677,7 +1677,9 @@ workflows:
                 - master
     jobs:
       - build-platform-and-services
-      - update-start-up-key
+      - update-start-up-key:
+          requires:
+            - build-platform-and-services
       - jrs-regression:
           name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
           context: Slack
@@ -1686,7 +1688,7 @@ workflows:
           config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
           requires:
-            - build-platform-and-services
+            - update-start-up-key
           pre-steps:
             - install-tools
             - attach_workspace:
@@ -1703,7 +1705,9 @@ workflows:
 
     jobs:
       - build-platform-and-services
-      - update-start-up-key
+      - update-start-up-key:
+          requires:
+            - build-platform-and-services
       - jrs-regression:
           name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           context: Slack
@@ -1712,7 +1716,7 @@ workflows:
           config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           workflow-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           requires:
-            - build-platform-and-services
+            - update-start-up-key
           pre-steps:
             - install-tools
             - attach_workspace:
