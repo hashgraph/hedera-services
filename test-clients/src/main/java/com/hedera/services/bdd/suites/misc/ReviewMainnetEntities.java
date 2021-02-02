@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.misc;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,9 +64,9 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 //						reviewObjects(),
 //						checkTls(),
-						xfer(),
 //						doSomething(),
 //						oneOfEveryTokenTxn(),
+						customPayerOp(),
 				}
 		);
 	}
@@ -135,21 +136,28 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec xfer() {
+	private HapiApiSpec customPayerOp() {
 		final String MAINNET_NODES = "35.237.200.180:0.0.3";
+		final String payer = "0.0.107630";
+		final String payerWords = "<secret>";
+
 		final long ONE_HBAR = 100_000_000L;
+
 		return customHapiSpec("xfer")
 				.withProperties(Map.of(
 						"nodes", MAINNET_NODES,
-						"default.payer", "0.0.950",
-						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
-//						"startupAccounts.path", "src/main/resource/StableTestnetAccount50StartupAccount.txt"
+						"fees.fixedOffer", "" + ONE_HBAR,
+						"fees.useFixedOffer", "false",
+						"default.payer", payer,
+						"default.payer.mnemonic", payerWords
 				)).given(
+						getAccountBalance(payer).logged()
 				).when(
-//						cryptoTransfer(tinyBarsFromTo(GENESIS, FEE_SCHEDULE_CONTROL, 100 * ONE_HBAR))
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "0.0.950", 1))
+								.signedBy(DEFAULT_PAYER)
+								.logged()
 				).then(
-						getAccountBalance("0.0.950").logged(),
-						getAccountBalance("0.0.45385").logged()
+						getAccountBalance(payer).logged()
 				);
 	}
 
