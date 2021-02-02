@@ -423,13 +423,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				}
 			}
 		}
-		if(response.getTransactionGetReceipt().getReceipt().getStatus() == UNKNOWN) {
-			log.error(" [ accountID {} validStart({}, {}) ], status resolution failed with unrecognized exception, not getting txn response back",
-					receiptQuery.getTransactionGetReceipt().getTransactionID().getAccountID().getAccountNum(),
-					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getSeconds(),
-					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getNanos()
-					);
-		}
 		long after = System.currentTimeMillis();
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
 		return response;
