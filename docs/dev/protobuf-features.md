@@ -16,11 +16,7 @@ set up development for the feature:
  4. Make sure you have Sonatype OSS credentials in your _settings.xml_ as described [here](../release-automation.md). Then in 
     the [Hedera protobufs Java API](https://github.com/hashgraph/hedera-protobuf) repository, run `mvn -Prelease deploy`. 
     If this succeeds, you should see output like,
-    ```
-...
-Uploading to ossrh: https://oss.sonatype.org/content/repositories/snapshots/com/hedera/hashgraph/hedera-protobuf-java-api/0.12.0-issue.123-SNAPSHOT/hedera-protobuf-java-api-0.12.0-issue.123-20210202.205133-4.jar
-...
-    ```
+    ``` ...  Uploading to ossrh: https://oss.sonatype.org/content/repositories/snapshots/com/hedera/hashgraph/hedera-protobuf-java-api/0.12.0-issue.123-SNAPSHOT/hedera-protobuf-java-api-0.12.0-issue.123-20210202.205133-4.jar ... ```
  5. Finally, in your `0123-M-DoThings` branch in the main [Hedera Services](https://github.com/hashgraph/hedera-services) 
     repository (that is, _this_ repository), update the `hapi-proto.version` property to `0.12.0-issue.123-SNAPSHOT`.
 
