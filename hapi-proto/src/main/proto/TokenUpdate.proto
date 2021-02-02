@@ -40,8 +40,8 @@ If no value is given for a field, that field is left unchanged. For an immutable
 4. If a new treasury is set, the new treasury account's key must sign the transaction. */
 message TokenUpdateTransactionBody {
     TokenID token = 1; // The Token to be updated
-    string symbol = 2; // The new Symbol of the Token. Must be UTF-8 capitalized alphabetical string identifying the token.
-    string name = 3; // The new Name of the Token. Must be a string of ASCII characters.
+    string symbol = 2; // The new publicly visible Token symbol, limited to a UTF-8 encoding of length <tt>tokens.maxTokenNameUtf8Bytes</tt>.
+    string name = 3; // The new publicly visible name of the Token, limited to a UTF-8 encoding of length <tt>tokens.maxSymbolUtf8Bytes</tt>.
     AccountID treasury = 4; // The new Treasury account of the Token. If the provided treasury account is not existing or deleted, the response will be INVALID_TREASURY_ACCOUNT_FOR_TOKEN. If successful, the Token balance held in the previous Treasury Account is transferred to the new one.
     Key adminKey = 5; // The new admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE.
     Key kycKey = 6; // The new KYC key of the Token. If Token does not have currently a KYC key, transaction will resolve to TOKEN_HAS_NO_KYC_KEY.
