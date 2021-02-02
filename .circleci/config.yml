@@ -237,7 +237,7 @@ commands:
   #   The final path used to the store the result files in the GCP bucket is as follows:
   #       - gs://${BUCKET_NAME}/${JRS_USER}/${JRS_BRANCH}
   #
-  #   The ${JRS_USER} variable will default to a value of `swirlds-automation` if not otherwise provided by CircleCI.
+  #   The ${JRS_USER} variable will default to a value of `hedera-services-automation` if not otherwise provided by CircleCI.
   #   This will be the case with all nightly or other jobs run via the CircleCI cron scheduler. All nightly automated
   #   regression runs should have results stored under this default username.
   #
