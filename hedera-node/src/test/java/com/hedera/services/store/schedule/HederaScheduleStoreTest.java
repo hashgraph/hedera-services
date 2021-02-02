@@ -69,6 +69,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class HederaScheduleStoreTest {
@@ -473,6 +474,9 @@ public class HederaScheduleStoreTest {
         var outcome = subject.delete(created);
 
         // then:
+        verify(schedules, times(3)).containsKey(fromScheduleId(created));
+        verify(schedules).remove(fromScheduleId(created));
+        // and:
         assertEquals(OK, outcome);
     }
 
@@ -485,6 +489,8 @@ public class HederaScheduleStoreTest {
         var outcome = subject.delete(created);
 
         // then:
+        verify(schedules, never()).remove(fromScheduleId(created));
+        // and:
         assertEquals(SCHEDULE_IS_IMMUTABLE, outcome);
     }
 
@@ -497,6 +503,8 @@ public class HederaScheduleStoreTest {
         var outcome = subject.delete(created);
 
         // then:
+        verify(schedules, never()).remove(fromScheduleId(created));
+        // and:
         assertEquals(INVALID_SCHEDULE_ID, outcome);
     }
 
@@ -509,6 +517,8 @@ public class HederaScheduleStoreTest {
         var outcome = subject.markAsExecuted(created);
 
         // then:
+        verify(schedules, never()).remove(fromScheduleId(created));
+        // and:
         assertEquals(INVALID_SCHEDULE_ID, outcome);
     }
 
@@ -521,6 +531,19 @@ public class HederaScheduleStoreTest {
         var outcome = subject.markAsExecuted(created);
 
         // then:
+        verify(schedules, times(3)).containsKey(fromScheduleId(created));
+        verify(schedules).remove(fromScheduleId(created));
+        // and:
         assertEquals(OK, outcome);
+    }
+
+    @Test
+    public void expiresAsExpected() {
+        // when:
+        subject.expire(EntityId.ofNullableScheduleId(created));
+
+        // then:
+        verify(schedules, times(3)).containsKey(fromScheduleId(created));
+        verify(schedules).remove(fromScheduleId(created));
     }
 }

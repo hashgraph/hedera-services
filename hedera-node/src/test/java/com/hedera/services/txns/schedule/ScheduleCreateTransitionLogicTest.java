@@ -26,6 +26,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -92,6 +93,7 @@ public class ScheduleCreateTransitionLogicTest {
 	private ScheduleReadyForExecution.ExecutionProcessor executor;
 
 	private AccountID payer = IdUtils.asAccount("1.2.3");
+	private AccountID schedulingAccount = IdUtils.asAccount("7.12.5");
 	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
 	private String entityMemo = "some cool memo?";
 
@@ -121,6 +123,32 @@ public class ScheduleCreateTransitionLogicTest {
 		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper, validator);
 		subject.signingsWitness = signingsWitness;
 		subject.executor = executor;
+	}
+
+	@Test
+	public void validProcessExecution() throws InvalidProtocolBufferException {
+		// setup:
+		givenValidTxnCtx();
+		// and:
+		MerkleSchedule created = mock(MerkleSchedule.class);
+		given(created.transactionBody()).willReturn(scheduleCreateTxn.toByteArray());
+		given(created.expiry()).willReturn(now.getEpochSecond());
+		given(created.schedulingTXValidStart()).willReturn(RichInstant.fromJava(now));
+		given(created.schedulingAccount()).willReturn(EntityId.ofNullableAccountId(schedulingAccount));
+		given(created.payer()).willReturn(EntityId.ofNullableAccountId(payer));
+		given(store.get(schedule)).willReturn(created);
+		// and:
+		given(store.markAsExecuted(schedule)).willReturn(OK);
+
+		// when:
+		var result = subject.processExecution(schedule);
+
+		// then:
+		verify(store).get(schedule);
+		verify(txnCtx).trigger(any());
+		verify(store).markAsExecuted(schedule);
+		// and:
+		assertEquals(OK, result);
 	}
 
 	@Test

@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -75,6 +76,7 @@ public class SignedTxnAccessorTest {
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash().toByteArray());
 		assertEquals(expectedMap, accessor.getSigMap());
+		assertEquals(ScheduleID.getDefaultInstance(), accessor.getScheduleRef());
 	}
 
 	@Test
@@ -109,5 +111,6 @@ public class SignedTxnAccessorTest {
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()),
 				accessor.getHash().toByteArray());
 		assertEquals(expectedMap, accessor.getSigMap());
+		assertEquals(ScheduleID.getDefaultInstance(), accessor.getScheduleRef());
 	}
 }
