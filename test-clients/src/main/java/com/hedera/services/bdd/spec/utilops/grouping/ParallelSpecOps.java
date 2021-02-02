@@ -25,7 +25,9 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import org.junit.Assert;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +37,8 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.joining;
 
 public class ParallelSpecOps extends UtilOp {
+	private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
+
 	private final HapiSpecOperation[] subs;
 
 	public ParallelSpecOps(HapiSpecOperation... subs) {
@@ -61,7 +65,7 @@ public class ParallelSpecOps extends UtilOp {
 					.map(e -> e.getKey() + " :: " + e.getValue().getMessage())
 					.collect(joining(", "));
 			if (errMessages.length() > 0) {
-				Assert.fail("Problem(s) with sub-operation(s): " + errMessages);
+				log.error("Problem(s) with sub-operation(s): {}", errMessages);
 			}
 		}
 
