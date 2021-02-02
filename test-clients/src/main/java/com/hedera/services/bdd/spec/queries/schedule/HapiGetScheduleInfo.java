@@ -28,12 +28,12 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -56,6 +56,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     Optional<String> expectedPayerAccountID = Optional.empty();
     Optional<String> expectedAdminKey = Optional.empty();
     Optional<String> expectedEntityMemo = Optional.empty();
+    Optional<Boolean> expectedExpiry = Optional.empty();
 
     public HapiGetScheduleInfo hasScheduleId(String s) {
         expectedScheduleId = Optional.of(s);
@@ -87,8 +88,13 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
         return this;
     }
 
+    public HapiGetScheduleInfo hasValidExpirationTime() {
+        expectedExpiry = Optional.of(true);
+        return this;
+    }
+
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiApiSpec spec) {
         var actualInfo = response.getScheduleGetInfo().getScheduleInfo();
 
         expectedCreatorAccountID.ifPresent(s -> Assert.assertEquals(
@@ -105,6 +111,14 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
                 "Wrong memo!",
                 s,
                 actualInfo.getMemo()));
+
+        assertFor(
+                actualInfo.getExpirationTime(),
+                expectedExpiry,
+                (n, r) -> Timestamp.newBuilder().setSeconds(r.getExpiry(schedule)).build(),
+                "Wrong schedule expiry!",
+                spec.registry());
+
 
         // TODO compare signatories once added
 

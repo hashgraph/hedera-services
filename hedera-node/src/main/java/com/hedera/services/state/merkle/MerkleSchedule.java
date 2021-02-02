@@ -26,7 +26,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -39,13 +38,11 @@ import org.bouncycastle.util.Arrays;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -72,8 +69,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     private EntityId payer = UNUSED_PAYER;
     private EntityId schedulingAccount;
     private RichInstant schedulingTXValidStart;
-    private Set<JKey> signers = new LinkedHashSet<>();
-    private boolean deleted;
+    private long expiry;
 
     private Set<ByteString> notary = ConcurrentHashMap.newKeySet();
     private List<byte[]> signatories = new ArrayList<>();
@@ -128,13 +124,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         }
 
         var that = (MerkleSchedule) o;
-        return this.deleted == that.deleted &&
+        return this.expiry == that.expiry &&
                 Arrays.areEqual(this.transactionBody, that.transactionBody) &&
                 Objects.equals(this.memo, that.memo) &&
                 Objects.equals(this.payer, that.payer) &&
                 Objects.equals(this.schedulingAccount, that.schedulingAccount) &&
                 Objects.equals(this.schedulingTXValidStart, that.schedulingTXValidStart) &&
-                signersMatch(this.signers, that.signers) &&
                 equalUpToDecodability(this.adminKey, that.adminKey) &&
                 signatoriesAreSame(this.signatories, that.signatories);
     }
@@ -155,26 +150,24 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     @Override
     public int hashCode() {
         return Objects.hash(
-                deleted,
+                expiry,
                 transactionBody,
                 memo,
                 payer,
                 schedulingAccount,
                 schedulingTXValidStart,
-                signers,
                 adminKey);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(MerkleSchedule.class)
-                .add("deleted", deleted)
+                .add("expiry", expiry)
                 .add("transactionBody", hex(transactionBody))
                 .add("memo", memo)
                 .add("payer", readablePayer())
                 .add("schedulingAccount", schedulingAccount)
                 .add("schedulingTXValidStart", schedulingTXValidStart)
-                .add("signers", readableSigners())
                 .add("signatories", signatories.stream().map(Hex::encodeHexString).collect(toList()))
                 .add("adminKey", describe(adminKey))
                 .toString();
@@ -186,13 +179,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     @Override
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        deleted = in.readBoolean();
+        expiry = in.readLong();
         int txBodyLength = in.readInt();
         transactionBody = in.readByteArray(txBodyLength);
         payer = serdes.readNullableSerializable(in);
         schedulingAccount = in.readSerializable();
         schedulingTXValidStart = RichInstant.from(in);
-        deserializeSigners(in);
         adminKey = serdes.readNullable(in, serdes::deserializeKey);
         int numSignatories = in.readInt();
         while (numSignatories-- > 0) {
@@ -203,13 +195,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
-        out.writeBoolean(deleted);
+        out.writeLong(expiry);
         out.writeInt(transactionBody.length);
         out.writeByteArray(transactionBody);
         serdes.writeNullableSerializable(payer, out);
         out.writeSerializable(schedulingAccount, true);
         schedulingTXValidStart.serialize(out);
-        serializeSigners(out);
         serdes.writeNullable(adminKey, out, serdes::serializeKey);
         out.writeInt(signatories.size());
         for (byte[] key : signatories) {
@@ -230,7 +221,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     @Override
     public MerkleSchedule copy() {
-        var signersCopy = new LinkedHashSet<>(signers);
 
         var fc = new MerkleSchedule(
                 transactionBody,
@@ -238,8 +228,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
                 schedulingTXValidStart);
 
         fc.setMemo(memo);
-        fc.setDeleted(deleted);
-        fc.setSigners(signersCopy);
+        fc.setExpiry(expiry);
         if (payer != UNUSED_PAYER) {
             fc.setPayer(payer);
         }
@@ -285,53 +274,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     public RichInstant schedulingTXValidStart() { return this.schedulingTXValidStart; }
 
-    public Set<JKey> signers() { return signers; }
+    public void setExpiry(long expiry) { this.expiry = expiry; }
 
-    public void setSigners(Set<JKey> signers) { this.signers = signers; }
-
-    public void addSigners(Set<JKey> signer) {
-        this.signers.addAll(signer);
-    }
-
-    public boolean isDeleted() {
-        return deleted;
-    }
-
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
-    }
-
-    private String readableSigners() {
-        var sb = new StringBuilder("[");
-        sb.append(
-                signers
-                        .stream()
-                        .map(MiscUtils::describe)
-                        .collect(Collectors.joining(", "))
-        );
-        return sb.append("]").toString();
-    }
-
-    private void deserializeSigners(SerializableDataInputStream in) throws IOException {
-        int signersSize = in.readInt();
-        signers = new LinkedHashSet<>();
-        for (int i = 0; i < signersSize; i++) {
-            signers.add(serdes.deserializeKey(in));
-        }
-    }
-
-    private void serializeSigners(SerializableDataOutputStream out) throws IOException {
-        out.writeInt(signers.size());
-        for (var entry : signers) {
-            serdes.serializeKey(entry, out);
-        }
-    }
-
-
-    private boolean signersMatch(Set<JKey> a, Set<JKey> b) {
-        if (a.size() != b.size()) {
-            return false;
-        }
-        return a.containsAll(b);
-    }
+    public long expiry() { return expiry; }
 }

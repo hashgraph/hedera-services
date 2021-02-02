@@ -26,6 +26,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,7 +36,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 
 public enum ExceptionalScheduleStore implements ScheduleStore {
@@ -63,12 +63,7 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey, Optional<String> entityMemo) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> key) {
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, RichInstant consensusTime, Optional<JKey> adminKey, Optional<String> entityMemo) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -79,6 +74,9 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 
 	@Override
 	public ResponseCodeEnum markAsExecuted(ScheduleID id) { throw new UnsupportedOperationException(); }
+
+	@Override
+	public void expire(EntityId id) { throw new UnsupportedOperationException(); }
 
 	@Override
 	public ResponseCodeEnum delete(ScheduleID id) { throw new UnsupportedOperationException(); }

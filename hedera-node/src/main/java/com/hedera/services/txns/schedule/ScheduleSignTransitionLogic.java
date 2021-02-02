@@ -91,9 +91,8 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
-        /* TODO - reject deleted schedules? */
         ScheduleSignTransactionBody op = txnBody.getScheduleSign();
 
-        return (op.hasScheduleID() && store.exists(op.getScheduleID())) ? OK : INVALID_SCHEDULE_ID;
+        return (op.hasScheduleID()) ? OK : INVALID_SCHEDULE_ID;
     }
 }

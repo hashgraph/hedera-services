@@ -23,14 +23,21 @@ package com.hedera.services.context.primitives;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -40,17 +47,10 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
@@ -59,7 +59,6 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.hederahashgraph.api.proto.java.ScheduleInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +68,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
@@ -80,7 +80,6 @@ import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static java.util.Collections.unmodifiableMap;
 
@@ -286,15 +285,14 @@ public class StateView {
 				return Optional.empty();
 			}
 			var schedule = scheduleStore.get(id);
-			var signers = schedule.signers();
 			KeyList signersList = KeyList.newBuilder().build();
-			signers.forEach(a -> signersList.getKeysList().add(Key.newBuilder().setEd25519(ByteString.copyFrom(a.getEd25519())).build()));
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
 					.setTransactionBody(ByteString.copyFrom(schedule.transactionBody()))
 					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
 					.setPayerAccountID(schedule.payer().toGrpcAccountId())
-					.setSigners(signersList);
+					.setSigners(signersList)
+					.setExpirationTime(Timestamp.newBuilder().setSeconds(schedule.expiry()));
 			schedule.memo().ifPresent(info::setMemo);
 
 			// TODO add signatories once we remove signers completely

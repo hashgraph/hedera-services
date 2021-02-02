@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -38,14 +39,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
-import static com.hedera.services.store.schedule.CompositeKey.UNUSED_KEY;
 import static com.hedera.services.store.schedule.CompositeKey.fromMerkleSchedule;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
@@ -53,7 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
 
 /**
  * Provides a managing store for Scheduled Entities.
@@ -66,14 +64,17 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
 	Map<CompositeKey, MerkleEntityId> txToEntityId = new HashMap<>();
 
+	private final GlobalDynamicProperties properties;
 	ScheduleID pendingId = NO_PENDING_ID;
 	MerkleSchedule pendingCreation;
 
 	public HederaScheduleStore(
+			GlobalDynamicProperties properties,
 			EntityIdSource ids,
 			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
 		super(ids);
+		this.properties = properties;
 		this.schedules = schedules;
 		buildTxToEntityIdMap(this.schedules);
 	}
@@ -128,6 +129,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			AccountID payer,
 			AccountID schedulingAccount,
 			RichInstant schedulingTXValidStart,
+			RichInstant consensusTime,
 			Optional<JKey> adminKey,
 			Optional<String> entityMemo
 	) {
@@ -148,25 +150,9 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		entityMemo.ifPresent(pendingCreation::setMemo);
 		pendingCreation.setPayer(EntityId.ofNullableAccountId(payer));
+		pendingCreation.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
 
 		return success(pendingId);
-	}
-
-	@Override
-	public ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> signers) {
-		var id = resolve(sID);
-		if (id == MISSING_SCHEDULE) {
-			return INVALID_SCHEDULE_ID;
-		}
-
-		var schedule = get(id);
-		if (schedule.isDeleted()) {
-			return SCHEDULE_WAS_DELETED;
-		}
-
-		schedule.addSigners(signers);
-
-		return OK;
 	}
 
 	@Override
@@ -179,9 +165,6 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var schedule = get(id);
 		if (schedule.adminKey().isEmpty()) {
 			return SCHEDULE_IS_IMMUTABLE;
-		}
-		if (schedule.isDeleted()) {
-			return SCHEDULE_WAS_DELETED;
 		}
 
 		delete(id, schedule);
@@ -259,16 +242,30 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		var schedule = get(id);
-		if (schedule.isDeleted()) {
-			return SCHEDULE_WAS_DELETED;
-		}
 
 		delete(id, schedule);
 		return OK;
 	}
 
+	@Override
+	public void expire(EntityId entityId) {
+		var id = entityId.toGrpcScheduleId();
+		markAsExecuted(id);
+	}
+
 	private void delete(ScheduleID id, MerkleSchedule schedule) {
-		apply(id, DELETION);
+		remove(id);
 		txToEntityId.remove(fromMerkleSchedule(schedule));
+	}
+
+	private void remove(ScheduleID id) {
+		throwIfMissing(id);
+
+		if (id.equals(pendingId)) {
+			return;
+		}
+
+		var key = fromScheduleId(id);
+		schedules.get().remove(key);
 	}
 }

@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -36,14 +37,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
-import org.checkerframework.checker.nullness.Opt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -59,10 +58,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -80,6 +77,7 @@ public class HederaScheduleStoreTest {
     FCMap<MerkleEntityId, MerkleSchedule> schedules;
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     HederaLedger hederaLedger;
+    GlobalDynamicProperties globalDynamicProperties;
 
     MerkleSchedule schedule;
     MerkleSchedule anotherSchedule;
@@ -89,6 +87,7 @@ public class HederaScheduleStoreTest {
     String entityMemo;
     int transactionBodyHashCode;
     RichInstant schedulingTXValidStart;
+    RichInstant consensusTime;
     Key adminKey;
     JKey adminJKey;
     JKey signer1, signer2;
@@ -102,6 +101,8 @@ public class HederaScheduleStoreTest {
     EntityId entityPayer = EntityId.ofNullableAccountId(payerId);
     EntityId entitySchedulingAccount = EntityId.ofNullableAccountId(schedulingAccount);
 
+    long expectedExpiry = 1_234_567L;
+
     HederaScheduleStore subject;
 
     @BeforeEach
@@ -110,6 +111,7 @@ public class HederaScheduleStoreTest {
         entityMemo = "Some memo here";
         transactionBodyHashCode = Arrays.hashCode(transactionBody);
         schedulingTXValidStart = new RichInstant(123, 456);
+        consensusTime = new RichInstant(expectedExpiry, 0);
         adminKey = SCHEDULE_ADMIN_KT.asKey();
         adminJKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
 
@@ -125,7 +127,6 @@ public class HederaScheduleStoreTest {
         given(schedule.transactionBody()).willReturn(transactionBody);
         given(schedule.hasAdminKey()).willReturn(true);
         given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
-        given(schedule.signers()).willReturn(signers);
         given(schedule.payer()).willReturn(EntityId.ofNullableAccountId(payerId));
         given(schedule.memo()).willReturn(Optional.of(entityMemo));
 
@@ -138,6 +139,8 @@ public class HederaScheduleStoreTest {
 
         hederaLedger = mock(HederaLedger.class);
 
+        globalDynamicProperties = mock(GlobalDynamicProperties.class);
+
         accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
         given(accountsLedger.exists(payerId)).willReturn(true);
         given(accountsLedger.exists(schedulingAccount)).willReturn(true);
@@ -148,45 +151,9 @@ public class HederaScheduleStoreTest {
         given(schedules.get(fromScheduleId(created))).willReturn(schedule);
         given(schedules.containsKey(fromScheduleId(created))).willReturn(true);
 
-        subject = new HederaScheduleStore(ids, () -> schedules);
+        subject = new HederaScheduleStore(globalDynamicProperties, ids, () -> schedules);
         subject.setAccountsLedger(accountsLedger);
         subject.setHederaLedger(hederaLedger);
-    }
-
-    @Test
-    public void successfulAddSigner() {
-        // when:
-        var signers = new HashSet<JKey>();
-        signers.add(signer1);
-        var outcome = subject.addSigners(created, signers);
-
-        // expect:
-        assertEquals(OK, outcome);
-    }
-
-
-    @Test
-    public void failAddSignerNotExistingSchedule() {
-        // given:
-        given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
-
-        // when:
-        var outcome = subject.addSigners(created, signers);
-
-        // expect:
-        assertEquals(INVALID_SCHEDULE_ID, outcome);
-    }
-
-    @Test
-    public void failAddSignerDeletedSchedule() {
-        // given:
-        given(schedule.isDeleted()).willReturn(true);
-
-        // when:
-        var outcome = subject.addSigners(created, signers);
-
-        // expect:
-        assertEquals(SCHEDULE_WAS_DELETED, outcome);
     }
 
     @Test
@@ -316,6 +283,7 @@ public class HederaScheduleStoreTest {
         expected.setAdminKey(adminJKey);
         expected.setPayer(entityPayer);
         expected.setMemo(entityMemo);
+        expected.setExpiry(expectedExpiry);
 
         // when:
         var outcome = subject
@@ -324,6 +292,7 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
+                        consensusTime,
                         Optional.of(adminJKey),
                         Optional.of(entityMemo));
 
@@ -344,6 +313,7 @@ public class HederaScheduleStoreTest {
                         null,
                         schedulingAccount,
                         schedulingTXValidStart,
+                        consensusTime,
                         Optional.of(adminJKey),
                         Optional.of(entityMemo));
 
@@ -374,6 +344,7 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
+                        consensusTime,
                         Optional.of(adminJKey),
                         Optional.of(entityMemo));
 
@@ -397,6 +368,7 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
+                        consensusTime,
                         Optional.of(adminJKey),
                         Optional.of(entityMemo));
 
@@ -420,6 +392,7 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
+                        consensusTime,
                         Optional.of(adminJKey),
                         Optional.of(entityMemo));
 
@@ -443,6 +416,7 @@ public class HederaScheduleStoreTest {
                         payerId,
                         schedulingAccount,
                         schedulingTXValidStart,
+                        consensusTime,
                         Optional.of(adminJKey),
                         Optional.of(entityMemo));
 
@@ -548,29 +522,5 @@ public class HederaScheduleStoreTest {
 
         // then:
         assertEquals(OK, outcome);
-    }
-
-    @Test
-    public void rejectsDeletionScheduleAlreadyDeleted() {
-        // given:
-        given(schedule.isDeleted()).willReturn(true);
-
-        // when:
-        var outcome = subject.delete(created);
-
-        // expect:
-        assertEquals(SCHEDULE_WAS_DELETED, outcome);
-    }
-
-    @Test
-    public void rejectsExecutionAlreadyDeleted() {
-        // given:
-        given(schedule.isDeleted()).willReturn(true);
-
-        // when:
-        var outcome = subject.markAsExecuted(created);
-
-        // expect:
-        assertEquals(SCHEDULE_WAS_DELETED, outcome);
     }
 }

@@ -21,19 +21,24 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.swirlds.fcmap.FCMap;
+import javafx.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -42,6 +47,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -65,27 +71,42 @@ class ExpiryManagerTest {
 
 	long expiry = 1_234_567L;
 	AccountID payer = IdUtils.asAccount("0.0.13257");
+	ScheduleID schedule = IdUtils.asSchedule("0.0.12345");
+	EntityId entityId = EntityId.ofNullableScheduleId(schedule);
+	Consumer<EntityId> entityIdConsumer;
+	Pair<Long, Consumer<EntityId>> expiringEntity;
 
 	RecordCache recordCache;
 	HederaLedger ledger;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
+	FCMap<MerkleEntityId, MerkleSchedule> schedules;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
+
+	ScheduleStore scheduleStore;
 
 	ExpiryManager subject;
 
 	@BeforeEach
 	public void setup() {
 		accounts = new FCMap<>();
+		schedules = new FCMap<>();
 		txnHistories = new HashMap<>();
 		recordCache = mock(RecordCache.class);
 
+		scheduleStore = mock(ScheduleStore.class);
+
 		ledger = mock(HederaLedger.class);
 
-		subject = new ExpiryManager(recordCache, txnHistories);
+		entityIdConsumer = mock(Consumer.class);
+		expiringEntity = mock(Pair.class);
+		given(expiringEntity.getKey()).willReturn(schedule.getScheduleNum());
+		given(expiringEntity.getValue()).willReturn(entityIdConsumer);
+
+		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, schedules);
 	}
 
 	@Test
-	public void purgesAsExpected() {
+	public void purgesRecordsAsExpected() {
 		// setup:
 		InOrder inOrder = inOrder(ledger);
 
@@ -106,6 +127,22 @@ class ExpiryManagerTest {
 		verify(recordCache).forgetAnyOtherExpiredHistory(33);
 	}
 
+	@Test
+	public void purgesEntitiesAsExpected() {
+		// given:
+		givenSchedule(schedule.getScheduleNum());
+		// and:
+		subject.restartEntitiesTrackingFrom();
+
+		// when:
+		subject.purgeExpiredEntitiesAt(expiry);
+
+		// then:
+		verify(scheduleStore).expire(entityId);
+		// and:
+		assertTrue(subject.entityExpiries.allExpiries.isEmpty());
+	}
+
 	private AccountID asAccount(long num) {
 		return IdUtils.asAccount(String.format("0.0.%d", num));
 	}
@@ -118,7 +155,7 @@ class ExpiryManagerTest {
 		txnHistories = mock(Map.class);
 
 		// given:
-		subject = new ExpiryManager(recordCache, txnHistories);
+		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, schedules);
 		// and:
 		subject.trackRecord(payer, oldExpiry);
 		// and:
@@ -166,6 +203,21 @@ class ExpiryManagerTest {
 		assertTrue(txnHistories.values().stream().noneMatch(TxnIdRecentHistory::isStagePending));
 	}
 
+	@Test
+	public void restartsEntitiesTrackingAsExpected() {
+		givenSchedule(schedule.getScheduleNum());
+
+		// when:
+		subject.restartEntitiesTrackingFrom();
+
+		// then:
+		var e = subject.entityExpiries.allExpiries.poll();
+		assertEquals(schedule.getScheduleNum(), e.getId().getKey());
+		assertEquals(expiry, e.getExpiry());
+		// and:
+		assertTrue(subject.entityExpiries.allExpiries.isEmpty());
+	}
+
 	private void givenAccount(long num, long[] payerExpiries) {
 		var account = new MerkleAccount();
 		for (long t : payerExpiries) {
@@ -173,6 +225,13 @@ class ExpiryManagerTest {
 		}
 		var id = new MerkleEntityId(0, 0, num);
 		accounts.put(id, account);
+	}
+
+	private void givenSchedule(long num) {
+		var schedule = new MerkleSchedule();
+		schedule.setExpiry(expiry);
+		var id = new MerkleEntityId(0, 0, num);
+		schedules.put(id, schedule);
 	}
 
 	@Test
@@ -299,5 +358,17 @@ class ExpiryManagerTest {
 
 		// then:
 		verify(subject.payerExpiries).track(Long.valueOf(13257), expiry);
+	}
+
+	@Test
+	public void addsExpectedExpiringEntity() {
+		// setup:
+		subject.entityExpiries = (MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>>) mock(MonotonicFullQueueExpiries.class);
+
+		// when:
+		subject.trackEntity(expiringEntity, expiry);
+
+		// then:
+		verify(subject.entityExpiries).track(expiringEntity, expiry);
 	}
 }
