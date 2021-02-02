@@ -576,33 +576,40 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingExpiredTokenWithNonZeroBalanceMovesBalanceToTreasury() {
 		// setup:
-		AccountID accountID = mock(AccountID.class);
+		AccountID userAccount = IdUtils.asAccount("1.2.956");
 		var expiredToken = mock(MerkleToken.class);
 		var tokens = mock(MerkleAccountTokens.class);
 		var sponsorEntityId = mock(EntityId.class);
 		var sponsorRel = asTokenRel(sponsor, misc);
-		var accountRel = asTokenRel(accountID,misc);
+		var accountRel = asTokenRel(userAccount,misc);
 
 		given(tokens.includes(misc)).willReturn(true);
+		given(accountsLedger.exists(userAccount)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		given(hederaLedger.getAssociatedTokens(accountID)).willReturn(tokens);
+		given(hederaLedger.getAssociatedTokens(userAccount)).willReturn(tokens);
 		given(subject.get(misc)).willReturn(expiredToken);
 
 		// and:
+		given(tokenRelsLedger.get(accountRel, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(accountRel, TOKEN_BALANCE)).willReturn(1L);
 		given(tokenRelsLedger.get(sponsorRel, TOKEN_BALANCE)).willReturn(1L);
 		given(expiredToken.isExpired()).willReturn(true);
 		given(expiredToken.treasury()).willReturn(sponsorEntityId);
 		given(sponsorEntityId.toGrpcAccountId()).willReturn(sponsor);
 
+		ResponseCodeEnum status = null;
 		// when:
-		var status = subject.dissociate(accountID, List.of(misc));
+		try {
+			status = subject.dissociate(userAccount, List.of(misc));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		// expect:
 		assertEquals(OK, status);
 		// and:
 		verify(tokens).dissociateAll(Set.of(misc));
-		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(hederaLedger).setAssociatedTokens(userAccount, tokens);
 		verify(tokenRelsLedger).destroy(accountRel);
 		verify(tokenRelsLedger).set(sponsorRel, TOKEN_BALANCE, 2L);
 		verify(hederaLedger).updateTokenXfers(misc, sponsor, 1L);
