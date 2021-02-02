@@ -133,6 +133,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		}
 	}
 
+	// TODO: add the log info to tell how long it take to export and sign the proto account balances file
+	//       as some validation info
+	//       Do the same to csv file.
 	@Override
 	public void toProtoFile(ServicesState signedState, Instant when) {
 		if (!ensureExportDir(signedState.getNodeAccountId())) {
