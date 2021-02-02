@@ -18,6 +18,7 @@ set up development for the feature:
     If this succeeds, you should see output like,
     ``` ...  Uploading to ossrh: https://oss.sonatype.org/content/repositories/snapshots/com/hedera/hashgraph/hedera-protobuf-java-api/0.12.0-issue.123-SNAPSHOT/hedera-protobuf-java-api-0.12.0-issue.123-20210202.205133-4.jar ... ```
  5. Finally, in your `0123-M-DoThings` branch in the main [Hedera Services](https://github.com/hashgraph/hedera-services) 
-    repository (that is, _this_ repository), update the `hapi-proto.version` property to `0.12.0-issue.123-SNAPSHOT`.
+    repository (that is, _this_ repository), :exclamation: **make certain** you have merged the `0883-M-UseProtoArtifact` branch :exclamation:, and then 
+    update the `hapi-proto.version` property to `0.12.0-issue.123-SNAPSHOT`.
 
 At this point you should be able to commit your changes and push to GitHub, and CircleCI flows should run successfully.
