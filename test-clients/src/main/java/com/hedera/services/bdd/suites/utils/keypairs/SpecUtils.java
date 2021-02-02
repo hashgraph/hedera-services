@@ -97,7 +97,7 @@ public class SpecUtils {
 
 	public static KeyPairObj asLegacyKp(EdDSAPrivateKey privateKey) {
 		var hexPublicKey = Hex.encodeHexString(privateKey.getAbyte());
-		var hexPrivateKey = Hex.encodeHexString(privateKey.getSeed());
+		var hexPrivateKey = Hex.encodeHexString(privateKey.getEncoded());
 		return new KeyPairObj(hexPublicKey, hexPrivateKey);
 	}
 

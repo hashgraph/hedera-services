@@ -108,8 +108,6 @@ public class KeyPairObj implements Serializable {
 		return privKey;
 	}
 
-
-
 	public PrivateKey getPrivateKey_128() {
 		byte[] privArray = null;
 		try {

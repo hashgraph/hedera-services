@@ -6,7 +6,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
-import picocli.CommandLine;
 
 public class Ed25519Factory {
 	public static EdDSAPrivateKey ed25519From(byte[] privateKey) {

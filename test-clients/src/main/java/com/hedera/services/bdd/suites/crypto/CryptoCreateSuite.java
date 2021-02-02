@@ -34,7 +34,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -43,6 +45,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -50,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromMnemonic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -66,25 +70,47 @@ public class CryptoCreateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				negativeTests()
+		return List.of(new HapiApiSpec[] {
+//						createAnAccountEmptyThresholdKey(),
+//						createAnAccountEmptyKeyList(),
+//						createAnAccountEmptyNestedKey(),
+//						createAnAccountInvalidKeyList(),
+//						createAnAccountInvalidNestedKeyList(),
+//						createAnAccountInvalidThresholdKey(),
+//						createAnAccountInvalidNestedThresholdKey(),
+//						createAnAccountThresholdKeyWithInvalidThreshold(),
+//						createAnAccountInvalidED25519(),
+//						invalidDurationGetsMeaningfulResponse(),
+//						xferRequiresCrypto(),
+//						createFromMnemonic(),
+						payWithMnemonic(),
+				}
 		);
 	}
 
-	private List<HapiApiSpec> negativeTests() {
-		return List.of(
-				createAnAccountEmptyThresholdKey(),
-				createAnAccountEmptyKeyList(),
-				createAnAccountEmptyNestedKey(),
-				createAnAccountInvalidKeyList(),
-				createAnAccountInvalidNestedKeyList(),
-				createAnAccountInvalidThresholdKey(),
-				createAnAccountInvalidNestedThresholdKey(),
-				createAnAccountThresholdKeyWithInvalidThreshold(),
-				createAnAccountInvalidED25519(),
-				invalidDurationGetsMeaningfulResponse(),
-				xferRequiresCrypto()
-		);
+	private HapiApiSpec payWithMnemonic() {
+		String words = "borrow awful also talk jacket muffin frequent fever stay mercy " +
+				"chaos equip bird speed east cricket start predict essay near broom insane curtain exhaust";
+		String created = "0.0.1001";
+
+		return customHapiSpec("PayWithMnemonic")
+				.withProperties(Map.of(
+						"default.payer", created,
+						"default.payer.mnemonic", words
+				)).given().when().then(
+						getAccountInfo("0.0.1001")
+				);
+	}
+
+	private HapiApiSpec createFromMnemonic() {
+		String words = "borrow awful also talk jacket muffin frequent fever stay mercy " +
+				"chaos equip bird speed east cricket start predict essay near broom insane curtain exhaust";
+		return defaultHapiSpec("CreateFromMnemonic")
+				.given(
+						keyFromMnemonic("futurePayerKey", words)
+				).when().then(
+						cryptoCreate("futurePayer").key("futurePayerKey")
+				);
 	}
 
 	private HapiApiSpec xferRequiresCrypto() {
