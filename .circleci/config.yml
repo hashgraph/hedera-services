@@ -1403,11 +1403,11 @@ workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 5 * * 6,0"
+          cron: "45 0 * * *"
           filters:
             branches:
               only:
-                - Disable-master
+                - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1427,11 +1427,11 @@ workflows:
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 10 * * 6,0"
+          cron: "45 5 * * *"
           filters:
             branches:
               only:
-                - Disable-master
+                - 00984-D-enable-15-node-weekly-perf-regression
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1441,6 +1441,30 @@ workflows:
           result_path: results/15N_15C/
           config_file: "configs/services/suites/weekly/GCP-Weekly-Services-HCS-Restart-Performance-15N-15C.json"
           workflow-name: "GCP-Weekly-Services-HCS-Restart-Performance-15N-15C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
+    triggers:
+      - schedule:
+          cron: "45 10 * * *"
+          filters:
+            branches:
+              only:
+                - 00984-D-enable-15-node-weekly-perf-regression
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          name: "GCP-Weekly-Services-HTS-Restart-Performance-15N-15C"
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/15N_15C/
+          config_file: "configs/services/suites/weekly/GCP-Weekly-Services-HTS-Restart-Performance-15N-15C.json"
+          workflow-name: "GCP-Weekly-Services-HTS-Restart-Performance-15N-15C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -2368,7 +2392,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout fix-15-node-tests;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
