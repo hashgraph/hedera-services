@@ -2218,6 +2218,10 @@ jobs:
       workflow-name:  << parameters.workflow-name >>
     steps:
       - run-eet-suites:
+          dsl-args: "ScheduleDeleteSpecs"
+      - run-eet-suites:
+          dsl-args: "ScheduleExecutionSpecs"
+      - run-eet-suites:
           dsl-args: "ScheduleCreateSpecs"
       - run-eet-suites:
           dsl-args: "ScheduleSignSpecs"

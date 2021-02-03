@@ -101,7 +101,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 
     public HapiApiSpec expiredBeforeDeletion() {
         final int FAST_EXPIRATION = 0;
-        return defaultHapiSpec("DeleteFailsDueToDeletionExpiration")
+        return defaultHapiSpec("ExpiredBeforeDeletion")
                 .given(
                         sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any scheduled expiring entity to expire
                         newKeyNamed("admin"),
