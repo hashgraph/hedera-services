@@ -78,6 +78,7 @@ class GetAccountInfoAnswerTest {
 
 	private String node = "0.0.3";
 	private String payer = "0.0.12345";
+	private String memo = "NeverTellMeTheOdds!";
 	private AccountID payerId = IdUtils.asAccount(payer);
 	private MerkleAccount payerAccount;
 	private String target = payer;
@@ -141,6 +142,7 @@ class GetAccountInfoAnswerTest {
 				.balance(555L)
 				.autoRenewPeriod(1_000_000L)
 				.expirationTime(9_999_999L)
+				.memo(memo)
 				.get();
 		payerAccount.setTokens(tokens);
 
@@ -216,6 +218,7 @@ class GetAccountInfoAnswerTest {
 		assertEquals(JKey.mapJKey(payerAccount.getKey()), info.getKey());
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
+		assertEquals(memo, info.getMemo());
 		// and:
 		assertEquals(
 				List.of(

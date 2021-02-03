@@ -87,7 +87,8 @@ public class GetAccountInfoAnswer implements AnswerService {
 						.setAccountID(op.getAccountID())
 						.setBalance(account.getBalance())
 						.setContractAccountID(solidityAddress)
-						.setReceiverSigRequired(account.isReceiverSigRequired());
+						.setReceiverSigRequired(account.isReceiverSigRequired())
+						.setMemo(account.getMemo());
 				List<TokenRelationship> relationships = StateView.tokenRels(view, id);
 				if (!relationships.isEmpty()) {
 					info.addAllTokenRelationships(relationships);

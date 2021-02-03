@@ -149,6 +149,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		if (op.getReceiveRecordThreshold() < 0L) {
 			return INVALID_RECEIVE_RECORD_THRESHOLD;
 		}
+		if (!validator.isValidEntityMemo(op.getMemo())) {
+			return MEMO_TOO_LONG;
+		}
 
 		return OK;
 	}

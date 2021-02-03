@@ -42,6 +42,7 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 	private KeyTree accountKt = DEFAULT_ACCOUNT_KT;
 	private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
 	private OptionalLong balance = OptionalLong.empty();
+	private String memo = "HelpMe,OBW";
 
 	private CryptoCreateFactory() {}
 	public static CryptoCreateFactory newSignedCryptoCreate() {
@@ -65,7 +66,8 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 				.setAutoRenewPeriod(autoRenewPeriod)
 				.setReceiverSigRequired(receiverSigRequired)
 				.setSendRecordThreshold(sendThresholdTinybars)
-				.setReceiveRecordThreshold(receiveThresholdTinybars);
+				.setReceiveRecordThreshold(receiveThresholdTinybars)
+				.setMemo(memo);
 		balance.ifPresent(op::setInitialBalance);
 		txn.setCryptoCreateAccount(op);
 	}

@@ -122,7 +122,8 @@ public class RequestBuilder {
         .setSendRecordThreshold(sendRecordThreshold).setReceiverSigRequired(receiverSign)
         .setRealmID(RealmID.newBuilder().setRealmNum(realmID).build())
         .setShardID(ShardID.newBuilder().setShardNum(shardID))
-        .setAutoRenewPeriod(autoRenew).build();
+        .setAutoRenewPeriod(autoRenew)
+        .setMemo(memo).build();
 
     TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
         nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, startTime, transactionDuration,
@@ -878,7 +879,8 @@ public class RequestBuilder {
         .setInitialBalance(initBal).setProxyAccountID(getAccountIdBuild(0L, 0L, 0L))
         .setReceiveRecordThreshold(receiveRecordThreshold)
         .setSendRecordThreshold(sendRecordThreshold).setReceiverSigRequired(receiverSign)
-        .setAutoRenewPeriod(autoRenew).build();
+        .setAutoRenewPeriod(autoRenew)
+        .setMemo(memo).build();
 
     TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
         nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, startTime,

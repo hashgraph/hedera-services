@@ -223,6 +223,16 @@ public class CryptoCreateTransitionLogicTest {
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
+	@Test
+	public void rejectsInvalidMemoInSyntaxCheck() {
+		givenValidTxnCtx();
+		// and:
+		given(validator.isValidEntityMemo(any())).willReturn(false);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(cryptoCreateTxn));
+	}
+
 	private Key unmappableKey() {
 		return Key.getDefaultInstance();
 	}
@@ -317,5 +327,6 @@ public class CryptoCreateTransitionLogicTest {
 	private void withRubberstampingValidator() {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
+		given(validator.isValidEntityMemo(any())).willReturn(true);
 	}
 }
