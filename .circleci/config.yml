@@ -2392,7 +2392,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout fix-15-node-tests;
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
