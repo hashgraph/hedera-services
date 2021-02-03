@@ -26,15 +26,6 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.IntStream;
-
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -44,6 +35,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.IntStream;
+
+import static com.hedera.services.state.submerkle.EntityId.ofNullableScheduleId;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -54,12 +54,14 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
+	static final EntityId NO_SCHEDULE_REF = null;
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
 
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
-	static final int MERKLE_VERSION = RELEASE_080_VERSION;
+	static final int RELEASE_0120_VERSION = 3;
+	static final int MERKLE_VERSION = RELEASE_0120_VERSION;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
@@ -91,6 +93,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	private SolidityFnResult contractCreateResult;
 	private List<EntityId> tokens = NO_TOKENS;
 	private List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
+	private EntityId scheduleRef = NO_SCHEDULE_REF;
 
 	@Override
 	public void release() {
@@ -167,7 +170,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				contractCallResult,
 				createResult,
 				NO_TOKENS,
-				NO_TOKEN_ADJUSTMENTS);
+				NO_TOKEN_ADJUSTMENTS,
+				NO_SCHEDULE_REF);
 	}
 
 	public ExpirableTxnRecord(
@@ -181,7 +185,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 			SolidityFnResult contractCallResult,
 			SolidityFnResult createResult,
 			List<EntityId> tokens,
-			List<CurrencyAdjustments> tokenTransferLists
+			List<CurrencyAdjustments> tokenTransferLists,
+			EntityId scheduleRef
 	) {
 		this.receipt = receipt;
 		this.txnHash = txnHash;
@@ -194,6 +199,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		this.contractCreateResult = createResult;
 		this.tokens = tokens;
 		this.tokenAdjustments = tokenTransferLists;
+		this.scheduleRef = scheduleRef;
 	}
 
 	/* --- Object --- */
@@ -229,6 +235,9 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 					.collect(joining(", "));
 			helper.add("tokenAdjustments", readable);
 		}
+		if (scheduleRef != NO_SCHEDULE_REF) {
+			helper.add("scheduleRef", scheduleRef);
+		}
 		return helper.toString();
 	}
 
@@ -253,7 +262,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				Objects.equals(this.contractCreateResult, that.contractCreateResult) &&
 				Objects.equals(this.hbarAdjustments, that.hbarAdjustments) &&
 				Objects.equals(this.tokens, that.tokens) &&
-				Objects.equals(this.tokenAdjustments, that.tokenAdjustments);
+				Objects.equals(this.tokenAdjustments, that.tokenAdjustments) &&
+				Objects.equals(this.scheduleRef, that.scheduleRef);
 	}
 
 	@Override
@@ -270,7 +280,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				expiry,
 				submittingMember,
 				tokens,
-				tokenAdjustments);
+				tokenAdjustments,
+				scheduleRef);
 		return result * 31 + Arrays.hashCode(txnHash);
 	}
 
@@ -306,6 +317,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 
 		out.writeSerializableList(tokens, true, true);
 		out.writeSerializableList(tokenAdjustments, true, true);
+
+		serdes.writeNullableSerializable(scheduleRef, out);
 	}
 
 	@Override
@@ -325,6 +338,9 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 			tokens = in.readSerializableList(MAX_INVOLVED_TOKENS);
 			tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
 		}
+		if (version > RELEASE_080_VERSION) {
+			scheduleRef = serdes.readNullableSerializable(in);
+		}
 	}
 
 	@Override
@@ -338,6 +354,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	}
 
 	/* --- Object --- */
+
+	public EntityId getScheduleRef() { return scheduleRef; }
 
 	public List<EntityId> getTokens() {
 		return tokens;
@@ -437,7 +455,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				record.hasContractCallResult() ? SolidityFnResult.fromGrpc(record.getContractCallResult()) : null,
 				record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(record.getContractCreateResult()) : null,
 				tokens,
-				tokenAdjustments);
+				tokenAdjustments,
+				record.hasScheduleRef() ? ofNullableScheduleId(record.getScheduleRef()) : null);
 	}
 
 	public static List<TransactionRecord> allToGrpc(List<ExpirableTxnRecord> records) {
@@ -481,6 +500,10 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 						.setToken(tokens.get(i).toGrpcTokenId())
 						.addAllTransfers(tokenAdjustments.get(i).toGrpc().getAccountAmountsList()));
 			}
+		}
+
+		if (scheduleRef != NO_SCHEDULE_REF) {
+			grpc.setScheduleRef(scheduleRef.toGrpcScheduleId());
 		}
 
 		return grpc.build();
