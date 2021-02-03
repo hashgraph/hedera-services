@@ -108,8 +108,8 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
-	public HapiScheduleCreate<T> signatories(List<String> s) {
-		signatories = s;
+	public HapiScheduleCreate<T> signatories(String... s) {
+		signatories = List.of(s);
 		return this;
 	}
 
@@ -216,6 +216,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		var registry = spec.registry();
 		registry.saveScheduleId(entity, lastReceipt.getScheduleID());
 		registry.saveBytes(registryBytesTag(entity), bytesSigned);
+		registry.saveExpiry(entity, (long)defaultScheduleTxnExpiry);
 		adminKey.ifPresent(k -> registry.saveAdminKey(entity, spec.registry().getKey(k)));
 	}
 

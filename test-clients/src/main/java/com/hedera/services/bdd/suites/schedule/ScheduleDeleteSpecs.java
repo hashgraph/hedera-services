@@ -30,6 +30,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
@@ -39,6 +40,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleDeleteSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
@@ -61,8 +65,38 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     @Override
     protected List<HapiApiSpec> getSpecsInSuite() {
         return List.of(new HapiApiSpec[] {
-                expiredBeforeDeletion()
-        });
+                    followsHappyPath(),
+                    deleteWithNoAdminKeyFails(),
+                    unauthorizedDeletionFails(),
+                    deletingADeletedTxnFails(),
+                    deletingNonExistingFails(),
+                    deletingExecutedFails(),
+                    expiredBeforeDeletion()
+                }
+        );
+    }
+
+    private HapiApiSpec followsHappyPath() {
+        return defaultHapiSpec("FollowsHappyPath")
+                .given(
+                        updateScheduleExpiryTimeSecs,
+                        cryptoCreate("sender"),
+                        cryptoCreate("receiver"),
+                        newKeyNamed("admin"),
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
+                        scheduleCreate("validScheduledTxn",
+                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
+                                .adminKey("admin")
+                )
+                .when(
+                        scheduleDelete("validScheduledTxn")
+                                .signedBy(DEFAULT_PAYER, "admin")
+                                .hasKnownStatus(SUCCESS)
+                )
+                .then(
+                        getScheduleInfo("validScheduledTxn")
+                                .hasCostAnswerPrecheck(INVALID_SCHEDULE_ID)
+                );
     }
 
     public HapiApiSpec expiredBeforeDeletion() {
@@ -71,6 +105,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                 .given(
                         sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any scheduled expiring entity to expire
                         newKeyNamed("admin"),
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
                         cryptoCreate("sender").balance(1L),
                         cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
                 ).when(
@@ -82,11 +117,104 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 ).signedBy("sender")
                         )
                                 .adminKey("admin")
+                                .signedBy(DEFAULT_PAYER, "admin")
                                 .inheritingScheduledSigs(),
                         updateScheduleExpiryTimeSecs,
                         getAccountBalance("receiver").hasTinyBars(0L)
                 ).then(
                         scheduleDelete("twoSigXfer")
+                                .hasKnownStatus(INVALID_SCHEDULE_ID)
+                );
+    }
+
+    private HapiApiSpec deleteWithNoAdminKeyFails() {
+        return defaultHapiSpec("DeleteWithNoAdminKeyFails")
+                .given(
+                        updateScheduleExpiryTimeSecs,
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
+                        cryptoCreate("sender"),
+                        cryptoCreate("receiver"),
+                        scheduleCreate("validScheduledTxn",
+                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
+                )
+                .when(
+                )
+                .then(
+                        scheduleDelete("validScheduledTxn")
+                                .hasKnownStatus(SCHEDULE_IS_IMMUTABLE)
+                );
+    }
+
+    private HapiApiSpec unauthorizedDeletionFails() {
+        return defaultHapiSpec("UnauthorizedDeletionFails")
+                .given(
+                        updateScheduleExpiryTimeSecs,
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
+                        newKeyNamed("admin"),
+                        newKeyNamed("non-admin-key"),
+                        cryptoCreate("sender"),
+                        cryptoCreate("receiver"),
+                        scheduleCreate("validScheduledTxn",
+                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
+                                .adminKey("admin")
+                )
+                .when(
+                )
+                .then(
+                        scheduleDelete("validScheduledTxn")
+                                .signedBy(DEFAULT_PAYER, "non-admin-key")
+                                .hasKnownStatus(INVALID_SIGNATURE)
+                );
+    }
+
+    private HapiApiSpec deletingADeletedTxnFails() {
+        return defaultHapiSpec("DeletingADeletedTxnFails")
+                .given(
+                        updateScheduleExpiryTimeSecs,
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
+                        cryptoCreate("sender"),
+                        cryptoCreate("receiver"),
+                        newKeyNamed("admin"),
+                        scheduleCreate("validScheduledTxn",
+                                    cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
+                                .adminKey("admin"),
+                        scheduleDelete("validScheduledTxn")
+                                .signedBy("admin", DEFAULT_PAYER))
+                .when(
+                )
+                .then(
+                        scheduleDelete("validScheduledTxn")
+                                .signedBy("admin", DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_SCHEDULE_ID)
+                );
+    }
+
+    private HapiApiSpec deletingNonExistingFails() {
+        return defaultHapiSpec("DeletingNonExistingFails")
+                .given(
+                        updateScheduleExpiryTimeSecs
+                )
+                .when()
+                .then(
+                        scheduleDelete("0.0.534")
+                                .hasKnownStatus(INVALID_SCHEDULE_ID)
+                );
+    }
+
+    private HapiApiSpec deletingExecutedFails() {
+        return defaultHapiSpec("DeletingExpiredFails")
+                .given(
+                        updateScheduleExpiryTimeSecs,
+                        overriding("scheduling.whitelist", "CryptoCreate"),
+                        newKeyNamed("admin"),
+                        scheduleCreate("validScheduledTxn",
+                                cryptoCreate("newImmediate"))
+                                .adminKey("admin")
+                )
+                .when()
+                .then(
+                        scheduleDelete("validScheduledTxn")
+                                .signedBy("admin", DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_SCHEDULE_ID)
                 );
     }

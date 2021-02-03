@@ -56,7 +56,7 @@ public class ScheduleGetInfoUsageTest {
 	public void assessesRequiredBytes() {
 		// given:
 		subject.givenCurrentAdminKey(adminKey)
-				.givenSigners(signers)
+				.givenSignatories(signers)
 				.givenTransaction(transactionBody)
 				.givenMemo(memo);
 

@@ -22,7 +22,9 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -78,9 +80,16 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		var bytesToSign = spec.registry().getBytes(HapiScheduleCreate.registryBytesTag(schedule));
+		var registry = spec.registry();
+		byte[] bytesToSign;
 
-		var signingKeys = signatories.stream().map(k -> spec.registry().getKey(k)).collect(toList());
+		try {
+			bytesToSign = registry.getBytes(HapiScheduleCreate.registryBytesTag(schedule));
+		} catch (RegistryNotFound rnf) {
+			bytesToSign = new byte[] {};
+		}
+
+		var signingKeys = signatories.stream().map(k -> registry.getKey(k)).collect(toList());
 		var authors = spec.keys().authorsFor(signingKeys, Collections.emptyMap());
 
 		var ceremony = spec.keys().new Ed25519Signing(bytesToSign, authors);
