@@ -40,11 +40,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
-public class SubmitMessagesBeforeReconnect extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SubmitMessagesBeforeReconnect.class);
+public class SubmitMessagesForReconnect extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(SubmitMessagesForReconnect.class);
 
 	public static void main(String... args) {
-		new SubmitMessagesBeforeReconnect().runSuiteSync();
+		new SubmitMessagesForReconnect().runSuiteSync();
 	}
 
 	@Override
