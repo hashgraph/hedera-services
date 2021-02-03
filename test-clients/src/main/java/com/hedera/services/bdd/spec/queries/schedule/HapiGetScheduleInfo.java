@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
@@ -34,6 +35,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -56,6 +58,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     Optional<String> expectedPayerAccountID = Optional.empty();
     Optional<String> expectedAdminKey = Optional.empty();
     Optional<String> expectedEntityMemo = Optional.empty();
+    Optional<List<String>> expectedSignatories = Optional.empty();
     Optional<Boolean> expectedExpiry = Optional.empty();
 
     public HapiGetScheduleInfo hasScheduleId(String s) {
@@ -85,6 +88,11 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
     public HapiGetScheduleInfo hasEntityMemo(String s) {
         expectedEntityMemo = Optional.of(s);
+        return this;
+    }
+
+    public HapiGetScheduleInfo hasSignatories(String... s) {
+        expectedSignatories = Optional.of(List.of(s));
         return this;
     }
 
@@ -120,9 +128,19 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
                 spec.registry());
 
 
-        // TODO compare signatories once added
-
         var registry = spec.registry();
+
+        expectedSignatories.ifPresent(s -> {
+            var expect = KeyList.newBuilder();
+            for (String signatory : s) {
+                var key = registry.getKey(signatory);
+                expect.addKeys(key);
+            }
+            Assert.assertArrayEquals("Wrong signatories!",
+                    expect.build().getKeysList().toArray(),
+                    actualInfo.getSignatories().getKeysList().toArray());
+        });
+
         if (expectValidTxBytes) {
             Assert.assertArrayEquals(
                     "Wrong transaction bytes!",

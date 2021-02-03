@@ -37,7 +37,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.MerkleSchedule.UPPER_BOUND_MEMO_UTF8_BYTES;
@@ -70,6 +75,8 @@ public class MerkleScheduleTest {
 	EntityId schedulingAccount, otherSchedulingAccount;
 	RichInstant schedulingTXValidStart, otherSchedulingTXValidStart;
 	JKey adminKey, otherKey;
+	JKey signatory1, signatory2, signatory3;
+	List<byte[]> signatories;
 
 	long expiry = 1_234_567L, otherExpiry = 1_567_234L;
 
@@ -95,6 +102,9 @@ public class MerkleScheduleTest {
 
 		adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
 		otherKey = new JEd25519Key("not-a-real-other-key".getBytes());
+
+		signatories = new ArrayList<>();
+		signatories.addAll(List.of(fpk, spk, tpk));
 
 		subject = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
 		this.setOptionalElements(subject);
@@ -140,6 +150,11 @@ public class MerkleScheduleTest {
 
 	@Test
 	public void validGetters() {
+		// given:
+		subject.witnessValidEd25519Signature(fpk);
+		subject.witnessValidEd25519Signature(spk);
+		subject.witnessValidEd25519Signature(tpk);
+
 		// expect:
 		assertEquals(transactionBody, subject.transactionBody());
 		assertEquals(entityMemo, subject.memo().get());
@@ -149,6 +164,7 @@ public class MerkleScheduleTest {
 		assertEquals(schedulingTXValidStart, subject.schedulingTXValidStart());
 		assertTrue(subject.hasAdminKey());
 		assertTrue(equalUpToDecodability(adminKey, subject.adminKey().get()));
+		assertTrue(subject.signatories().containsAll(signatories));
 		assertTrue(subject.hasPayer());
 	}
 
@@ -200,12 +216,16 @@ public class MerkleScheduleTest {
 		given(fin.readInt())
 				.willReturn(transactionBody.length)
 				.willReturn(schedulingTXValidStart.getNanos())
+				.willReturn(signatories.size())
 				.willReturn(2);
 		given(fin.readByteArray(transactionBody.length))
 				.willReturn(transactionBody);
 		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
 				.willReturn(fpk)
 				.willReturn(spk);
+		given(serdes.deserializeKey(fin))
+				.willReturn(signatory1)
+				.willReturn(signatory2);
 		given(serdes.readNullableSerializable(any()))
 				.willReturn(payer);
 		given(fin.readSerializable())
@@ -322,8 +342,8 @@ public class MerkleScheduleTest {
 		// given:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
-		// and:
-		var expSigsEntry = "signatories=[" + Hex.encodeHexString(fpk) + ", " + Hex.encodeHexString(spk) + "], ";
+		subject.witnessValidEd25519Signature(tpk);
+
 		// and:
 		var expected = "MerkleSchedule{"
 				+ "expiry=" + expiry + ", "
@@ -331,8 +351,8 @@ public class MerkleScheduleTest {
 				+ "memo=" + entityMemo + ", "
 				+ "payer=" + payer.toAbbrevString() + ", "
 				+ "schedulingAccount=" + schedulingAccount + ", "
-				+ "schedulingTXValidStart=" + schedulingTXValidStart +", "
-				+ expSigsEntry
+				+ "schedulingTXValidStart=" + schedulingTXValidStart
+				+ ", " + "signatories=[" + signatoriesToString() + "], "
 				+ "adminKey=" + describe(adminKey) + "}";
 
 		// expect:
@@ -406,5 +426,9 @@ public class MerkleScheduleTest {
 		schedule.setPayer(payer);
 		schedule.setExpiry(expiry);
 		schedule.setAdminKey(adminKey);
+	}
+
+	private String signatoriesToString() {
+		return signatories.stream().map(Hex::encodeHexString).collect(Collectors.joining(", "));
 	}
 }

@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.fee.FeeBuilder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
@@ -59,8 +60,8 @@ public class ScheduleGetInfoUsage extends QueryUsage {
 		return this;
 	}
 
-	public ScheduleGetInfoUsage givenSigners(Optional<KeyList> keyList) {
-		keyList.map(kl -> kl.toByteArray().length).ifPresent(this::updateRb);
+	public ScheduleGetInfoUsage givenSignatories(Optional<KeyList> signatories) {
+		signatories.map(kl -> kl.toByteArray().length).ifPresent(this::updateRb);
 		return this;
 	}
 

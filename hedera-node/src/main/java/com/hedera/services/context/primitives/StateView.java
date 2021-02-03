@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
@@ -285,17 +286,18 @@ public class StateView {
 				return Optional.empty();
 			}
 			var schedule = scheduleStore.get(id);
-			KeyList signersList = KeyList.newBuilder().build();
+			var signatories = schedule.signatories();
+			var signatoriesList = KeyList.newBuilder();
+			signatories.forEach(a -> signatoriesList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
 					.setTransactionBody(ByteString.copyFrom(schedule.transactionBody()))
 					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
 					.setPayerAccountID(schedule.payer().toGrpcAccountId())
-					.setSigners(signersList)
+					.setSignatories(signatoriesList)
 					.setExpirationTime(Timestamp.newBuilder().setSeconds(schedule.expiry()));
 			schedule.memo().ifPresent(info::setMemo);
-
-			// TODO add signatories once we remove signers completely
 
 			var adminCandidate = schedule.adminKey();
 			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));

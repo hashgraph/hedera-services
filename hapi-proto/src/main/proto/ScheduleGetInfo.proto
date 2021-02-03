@@ -41,7 +41,7 @@ message ScheduleInfo {
   AccountID creatorAccountID = 2; // The Account ID which created the Scheduled TX
   AccountID payerAccountID = 3; // The account which is going to pay for the execution of the Scheduled TX
   bytes transactionBody = 4; // The transaction serialized into bytes that must be signed
-  KeyList signers = 5; // The keys that have provided signatures so far for the Scheduled TX
+  KeyList signatories = 5; // The signatories that have provided signatures so far for the Scheduled TX
   Key adminKey = 6; // The Key which is able to delete the Scheduled Transaction if set
   string memo = 7; // Publicly visible information about the Scheduled entity, up to 100 bytes. No guarantee of uniqueness.
   Timestamp expirationTime = 8; // The epoch second at which the schedule will expire

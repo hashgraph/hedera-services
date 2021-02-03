@@ -729,4 +729,32 @@ public class UtilVerbs {
 					secondTx.getResponseRecord().getReceipt().getScheduleID());
 		});
 	}
+
+	public static HapiSpecOperation ensureDifferentScheduledTXCreated(String txId, String otherTxId) {
+		return withOpContext((spec, opLog) -> {
+			var txRecord = getTxnRecord(txId);
+			var otherTxRecord = getTxnRecord(otherTxId);
+
+			allRunFor(spec, txRecord, otherTxRecord);
+
+			Assert.assertNotEquals(
+					"Schedule Ids should not be the same!",
+					txRecord.getResponseRecord().getReceipt().getScheduleID(),
+					otherTxRecord.getResponseRecord().getReceipt().getScheduleID());
+		});
+	}
+
+	public static HapiSpecOperation saveExpirations(String txId, String otherTxId, long afterConsensusTime) {
+		return withOpContext((spec, opLog) -> {
+			var txRecord = getTxnRecord(txId);
+			var otherTxRecord = getTxnRecord(otherTxId);
+
+			allRunFor(spec, txRecord, otherTxRecord);
+
+			var timestampFirst = txRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
+			var timestampSecond = otherTxRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
+			spec.registry().saveExpiry("first", timestampFirst + afterConsensusTime);
+			spec.registry().saveExpiry("second", timestampSecond + afterConsensusTime);
+		});
+	}
 }

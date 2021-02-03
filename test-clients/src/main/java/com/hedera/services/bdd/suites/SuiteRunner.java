@@ -110,6 +110,8 @@ import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
@@ -265,6 +267,8 @@ public class SuiteRunner {
 		put("ScheduleCreateSpecs", aof(new ScheduleCreateSpecs()));
 		put("ScheduleSignSpecs", aof(new ScheduleSignSpecs()));
 		put("ScheduleRecordSpecs", aof(new ScheduleRecordSpecs()));
+		put("ScheduleDeleteSpecs", aof(new ScheduleDeleteSpecs()));
+		put("ScheduleExecutionSpecs", aof(new ScheduleExecutionSpecs()));
 		/* Functional tests - TOKEN */
 		put("TokenCreateSpecs", aof(new TokenCreateSpecs()));
 		put("TokenUpdateSpecs", aof(new TokenUpdateSpecs()));
