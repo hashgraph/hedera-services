@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -54,7 +55,7 @@ public class SubmitMessagesBeforeReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec runSubmitMessages() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings(120, 3, 1);
+		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
 		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
 				submitMessageTo("0.0.30000")
@@ -66,6 +67,7 @@ public class SubmitMessagesBeforeReconnect extends HapiApiSuite {
 
 		return defaultHapiSpec("RunSubmitMessages")
 				.given(
+						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when()
 				.then(
