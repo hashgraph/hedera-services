@@ -57,7 +57,7 @@ public class SubmitMessagesBeforeReconnect extends HapiApiSuite {
 	private HapiApiSpec runSubmitMessages() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
-		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
+		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
 				submitMessageTo("0.0.30000")
 						.message(randomUtf8Bytes(100))
 						.noLogging()
@@ -71,7 +71,7 @@ public class SubmitMessagesBeforeReconnect extends HapiApiSuite {
 						logIt(ignore -> settings.toString())
 				).when()
 				.then(
-						defaultLoadTest(createBurst, settings)
+						defaultLoadTest(submitBurst, settings)
 				);
 	}
 
