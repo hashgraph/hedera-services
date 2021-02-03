@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRE
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -65,8 +66,6 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	}
 
 	private HapiApiSpec createAccount() {
-		long initialBalance = 100_000_000_000_000L;
-
 		return customHapiSpec("CreatePayerAccountForEachClient")
 				.withProperties(Map.of(
 						"nodes", nodes,
@@ -77,7 +76,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 									while (!createdAuditablePayer) {
 										try {
 											var cryptoCreateOp = cryptoCreate("payerAccount")
-													.balance(initialBalance)
+													.balance(initialBalance.getAsLong())
 													.withRecharging()
 													.rechargeWindow(3)
 													.key(GENESIS)
