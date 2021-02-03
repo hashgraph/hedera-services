@@ -20,7 +20,7 @@
   <dependencies>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
-      <artifactId>hedera-protobuf-java-api</artifactId>
+      <artifactId>hapi-utils</artifactId>
       <version>0.11.1-SNAPSHOT</version>
     </dependency>
     <!-- Test dependencies -->
