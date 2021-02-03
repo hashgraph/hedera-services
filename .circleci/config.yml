@@ -1431,7 +1431,7 @@ workflows:
           filters:
             branches:
               only:
-                - 00984-D-enable-15-node-weekly-perf-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1455,7 +1455,7 @@ workflows:
           filters:
             branches:
               only:
-                - 00984-D-enable-15-node-weekly-perf-regression
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
