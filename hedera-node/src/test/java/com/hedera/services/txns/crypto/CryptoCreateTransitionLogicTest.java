@@ -58,6 +58,7 @@ public class CryptoCreateTransitionLogicTest {
 	final private long customSendThreshold = 49_000L;
 	final private long customReceiveThreshold = 51_001L;
 	final private Long balance = 1_234L;
+	final private String memo = "Power! Unlimited power!";
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID created = AccountID.newBuilder().setAccountNum(9_999L).build();
@@ -187,12 +188,13 @@ public class CryptoCreateTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
-		assertEquals(5, changes.size());
+		assertEquals(6, changes.size());
 		assertEquals(customAutoRenewPeriod, (long)changes.get(AUTO_RENEW_PERIOD));
 		assertEquals(expiry, (long)changes.get(EXPIRY));
 		assertEquals(key, JKey.mapJKey((JKey)changes.get(KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
 		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(PROXY));
+		assertEquals(memo, changes.get(MEMO));
 	}
 
 	@Test
@@ -310,6 +312,7 @@ public class CryptoCreateTransitionLogicTest {
 								.setReceiveRecordThreshold(customReceiveThreshold)
 								.setSendRecordThreshold(customSendThreshold)
 								.setKey(toUse)
+								.setMemo(memo)
 								.build()
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
