@@ -73,7 +73,7 @@ public class CreateFilesBeforeReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec runCreateFiles() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings(10, 2, 1);
+		PerfTestLoadSettings settings = new PerfTestLoadSettings(6, 3, 1);
 
 		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
 				generateFileCreateOperation()
