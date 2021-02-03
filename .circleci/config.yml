@@ -417,83 +417,6 @@ commands:
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
-
-  jrs-regression-cmd:
-    parameters:
-      runtime:
-        type: string
-        default: ci-test-executor
-      config_file:
-        type: string
-      regression_path:
-        type: string
-        default: "regression"
-      result_path:
-        type: string
-        default: "regression/results"
-      result_bucket:
-        type: string
-        default: "hedera-services-jrs-test-results"
-      summary_path:
-        type: string
-        default: "summaryHistory"
-      summary_bucket:
-        type: string
-        default: "hedera-services-jrs-summary-history/summaryHistory"
-      automated_run:
-        type: boolean
-        default: false
-      slack_results_channel:
-        type: string
-        default: ""
-      slack_summary_channel:
-        type: string
-        default: ""
-      workflow-name:
-        type: string
-        default: ""
-      hedera_services_path:
-        type: string
-        default: "/repo"
-    steps:
-      - gcp_import_credentials:
-          username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
-          keyfile_variable: GCLOUD_SERVICE_KEY
-          project_variable: GOOGLE_PROJECT_ID
-      - add_ssh_keys:
-          fingerprints:
-            - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
-            - "14:21:e9:81:1f:ae:df:ec:11:60:4a:49:e0:b9:bb:58"
-            - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
-      - when:
-          condition: << parameters.automated_run >>
-          steps:
-            - run:
-                name: setup env
-                command: |
-                  source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            - jrs_history_retrieve:
-                bucket_name: << parameters.summary_bucket >>
-                summary_path: << parameters.summary_path >>
-      - jrs_regression_execute:
-          config_file: << parameters.config_file >>
-          regression_path: << parameters.regression_path >>
-          slack_results_channel: << parameters.slack_results_channel >>
-          slack_summary_channel: << parameters.slack_summary_channel >>
-          hedera_services_path: << parameters.hedera_services_path >>
-      - when:
-          condition: << parameters.automated_run >>
-          steps:
-            - jrs_history_store:
-                bucket_name: << parameters.summary_bucket >>
-                summary_path: << parameters.summary_path >>
-      - jrs_results_store:
-          bucket_name: << parameters.result_bucket >>
-          result_path: << parameters.result_path >>
-      - store_artifacts:
-          path: /results.tar.gz
-
-
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
     steps:
@@ -1388,10 +1311,9 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Crypto-Update-5N-1C"
           context: Slack
           result_path: results/5N_1C/Update
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Update-5N-1C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Update-5N-1C"
           requires:
             - build-platform-and-services
@@ -1411,11 +1333,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
-          config_file: "configs/services/suites/weekly/GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C.json"
+          config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C"
           requires:
             - build-platform-and-services
@@ -1435,11 +1356,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Weekly-Services-HCS-Restart-Performance-15N-15C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
-          config_file: "configs/services/suites/weekly/GCP-Weekly-Services-HCS-Restart-Performance-15N-15C.json"
+          config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-HCS-Restart-Performance-15N-15C"
           requires:
             - build-platform-and-services
@@ -1459,11 +1379,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Weekly-Services-HTS-Restart-Performance-15N-15C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
-          config_file: "configs/services/suites/weekly/GCP-Weekly-Services-HTS-Restart-Performance-15N-15C.json"
+          config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-HTS-Restart-Performance-15N-15C"
           requires:
             - build-platform-and-services
@@ -1483,11 +1402,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Comp-NetError-4N-1C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_1C/NetError
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
           requires:
             - build-platform-and-services
@@ -1512,11 +1430,10 @@ workflows:
           requires:
             - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Crypto-Migration-5N-1C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/5N_1C/Migration
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Migration-5N-1C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Migration-5N-1C"
           requires:
             - update-start-up-key
@@ -1559,11 +1476,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Crypto-Restart-4N-1C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_1C/Restart
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Restart-4N-1C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Restart-4N-1C"
           requires:
             - build-platform-and-services
@@ -1583,11 +1499,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Recovery-4N-1C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_1C/Recovery
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Recovery-4N-1C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Recovery-4N-1C"
           requires:
             - build-platform-and-services
@@ -1607,11 +1522,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_4C/Restart
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C"
           requires:
             - build-platform-and-services
@@ -1631,11 +1545,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_4C/Restart
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
           requires:
             - build-platform-and-services
@@ -1655,11 +1568,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_4C/Restart
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C"
           requires:
             - build-platform-and-services
@@ -1679,11 +1591,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_4C/Restart
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C"
           requires:
             - build-platform-and-services
@@ -1706,11 +1617,10 @@ workflows:
           requires:
             - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/6N_6C/Performance
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-6N-6C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
           requires:
             - update-start-up-key
@@ -1734,11 +1644,10 @@ workflows:
           requires:
             - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/6N_6C/Performance
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
           requires:
             - update-start-up-key
@@ -1758,11 +1667,10 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          name: "GCP-Daily-Services-Comp-Reconnect-4N-1C"
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/4N_1C/Reconnect
-          config_file: "configs/services/suites/daily/GCP-Daily-Services-Comp-Reconnect-4N-1C.json"
+          config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Reconnect-4N-1C"
           requires:
             - build-platform-and-services
@@ -2955,8 +2863,11 @@ jobs:
       runtime:
         type: string
         default: ci-test-executor
+      config_type:
+        type: string
       config_file:
         type: string
+        default: ""
       regression_path:
         type: string
         default: "regression"
@@ -3011,7 +2922,7 @@ jobs:
                 bucket_name: << parameters.summary_bucket >>
                 summary_path: << parameters.summary_path >>
       - jrs_regression_execute:
-          config_file: << parameters.config_file >>
+          config_file: configs/services/suites/<< parameters.config_type >>/<<parameters.workflow-name>>.json
           regression_path: << parameters.regression_path >>
           slack_results_channel: << parameters.slack_results_channel >>
           slack_summary_channel: << parameters.slack_summary_channel >>
