@@ -179,6 +179,14 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
+	public AccountInfoAsserts memo(String memo) {
+		registerProvider((spec, o) -> {
+			Assert.assertEquals("Bad memo!",
+					memo, ((AccountInfo)o).getMemo());
+		});
+		return this;
+	}
+
 	public AccountInfoAsserts totalAssociatedTokens(int n) {
 		registerProvider((spec, o) -> {
 			Assert.assertEquals("Bad num associated tokens!",

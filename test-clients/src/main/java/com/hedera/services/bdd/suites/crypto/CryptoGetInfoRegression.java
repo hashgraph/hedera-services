@@ -77,6 +77,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 		long sendThresh = 1_111L;
 		long receiveThresh = 2_222L;
 		long expiry = Instant.now().getEpochSecond() + autoRenew;
+		String memo = "Power! Unlimited power!";
 		KeyShape misc = listOf(SIMPLE, listOf(2));
 
 		return defaultHapiSpec("SucceedsNormally")
@@ -91,6 +92,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 								.receiveThreshold(receiveThresh)
 								.receiverSigRequired(true)
 								.autoRenewSecs(autoRenew)
+								.memo(memo)
 				).then(
 						getAccountInfo("target")
 								.has(accountWith()
@@ -103,6 +105,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 										.receiveThreshold(receiveThresh)
 										.expiry(expiry, 5L)
 										.autoRenew(autoRenew)
+										.memo(memo)
 								).logged()
 				);
 	}

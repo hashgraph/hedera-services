@@ -56,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 
 public class CryptoCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
@@ -82,6 +83,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountInvalidNestedThresholdKey(),
 				createAnAccountThresholdKeyWithInvalidThreshold(),
 				createAnAccountInvalidED25519(),
+				createAnAccountInvalidMemo(),
 				invalidDurationGetsMeaningfulResponse(),
 				xferRequiresCrypto()
 		);
@@ -331,6 +333,19 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.signedBy(GENESIS)
 								.logged()
 								.hasPrecheck(BAD_ENCODING)
+				);
+	}
+
+	private HapiApiSpec createAnAccountInvalidMemo() {
+		StringBuilder longMemo = new StringBuilder();
+		for(int i=0; i<4; i++) {
+			longMemo.append("This is 30 characters long !!!");
+		}
+		return defaultHapiSpec("createAnAccountInvalidMemo")
+				.given().when().then(
+						cryptoCreate("invalidMemo")
+								.memo(longMemo.toString())
+								.hasPrecheck(MEMO_TOO_LONG)
 				);
 	}
 
