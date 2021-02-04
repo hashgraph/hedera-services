@@ -385,13 +385,6 @@ public class MerkleScheduleTest {
     }
 
     @Test
-    public void throwsLegacyProvider() {
-        // expect:
-        assertThrows(UnsupportedOperationException.class,
-                () -> MerkleSchedule.LEGACY_PROVIDER.deserialize(null));
-    }
-
-    @Test
     public void validCopy() {
         // given:
         var copySubject = subject.copy();

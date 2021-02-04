@@ -22,15 +22,12 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.swirlds.common.FCMValue;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 
 public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue {
@@ -43,9 +40,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue
 	private boolean frozen;
 	private boolean kycGranted;
 
-	@Deprecated
-	public static final MerkleTokenRelStatus.Provider LEGACY_PROVIDER = new MerkleTokenRelStatus.Provider();
-
 	public MerkleTokenRelStatus() {
 	}
 
@@ -53,14 +47,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue
 		this.balance = balance;
 		this.frozen = frozen;
 		this.kycGranted = kycGranted;
-	}
-
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream in) throws IOException {
-			throw new UnsupportedOperationException();
-		}
 	}
 
 	/* --- MerkleLeaf --- */
