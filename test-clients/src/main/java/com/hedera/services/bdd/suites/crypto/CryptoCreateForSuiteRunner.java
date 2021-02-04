@@ -48,6 +48,8 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateForSuiteRunner.class);
 	private String nodes;
 	private String defaultNode;
+
+	//Use more initialBalance for this account as it is used as payer for the performance tests
 	private static OptionalLong initialBalance = OptionalLong.of(ONE_HBAR * 50000);
 
 	public CryptoCreateForSuiteRunner(String nodes, String defaultNode) {
