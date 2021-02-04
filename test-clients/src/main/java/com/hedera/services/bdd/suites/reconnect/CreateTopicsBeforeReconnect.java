@@ -36,6 +36,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_MINS_FOR_RECONNECT_TESTS;
+import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_THREADS_FOR_RECONNECT_TESTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -44,6 +46,7 @@ public class CreateTopicsBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateTopicsBeforeReconnect.class);
 
 	private static final int TOPIC_CREATION_LIMIT = 20_000;
+	private static final int TOPIC_CREATION_RECONNECT_TPS = 120;
 
 	public static void main(String... args) {
 		new CreateTopicsBeforeReconnect().runSuiteSync();
@@ -72,7 +75,10 @@ public class CreateTopicsBeforeReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec runCreateTopics() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings(120, 3, 1);
+		PerfTestLoadSettings settings = new PerfTestLoadSettings(
+				TOPIC_CREATION_RECONNECT_TPS,
+				DEFAULT_MINS_FOR_RECONNECT_TESTS,
+				DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 
 		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
 				generateTopicCreateOperation()
