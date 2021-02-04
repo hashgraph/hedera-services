@@ -25,13 +25,10 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.FCMValue;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
@@ -50,9 +47,6 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public static final int UPPER_BOUND_SYMBOL_UTF8_BYTES = 1024;
 	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 1024;
 
-	@Deprecated
-	public static final MerkleToken.Provider LEGACY_PROVIDER = new MerkleToken.Provider();
-
 	private int decimals;
 	private long expiry;
 	private long totalSupply;
@@ -69,14 +63,6 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	private boolean accountsKycGrantedByDefault;
 	private EntityId treasury;
 	private EntityId autoRenewAccount = UNUSED_AUTO_RENEW_ACCOUNT;
-
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream _in) throws IOException {
-			throw new UnsupportedOperationException();
-		}
-	}
 
 	public MerkleToken() {
 	}
