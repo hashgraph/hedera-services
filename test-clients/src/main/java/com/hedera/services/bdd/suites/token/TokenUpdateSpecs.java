@@ -48,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
@@ -75,6 +76,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				validatesMissingAdminKey(),
 				tooLongNameCheckHolds(),
 				tooLongSymbolCheckHolds(),
+				tooLongMemoCheckHolds(),
 				nameChanges(),
 				keysChange(),
 				memoChange(),
@@ -370,6 +372,25 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.memo(newMemo)
 				).then(
 						getTokenInfo("tbu").hasMemo(newMemo)
+				);
+	}
+
+	public HapiApiSpec tooLongMemoCheckHolds() {
+		var tooLongMemo = "ORIGINAL" + TxnUtils.randomUppercase(MAX_MEMO_LENGTH + 1);
+
+		return defaultHapiSpec("TooLongMemoCheckHolds")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.memo("simpleMemo")
+								.treasury(TOKEN_TREASURY)
+				).then(
+						tokenUpdate("tbu")
+								.name(tooLongMemo)
+								.hasPrecheck(MEMO_TOO_LONG)
 				);
 	}
 
