@@ -163,6 +163,7 @@ class StateViewTest {
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setDeleted(true);
+		token.setMemo("Stay cold...");
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
 		given(tokenStore.get(tokenId)).willReturn(token);
@@ -254,6 +255,7 @@ class StateViewTest {
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
+		assertEquals(token.memo(), info.getMemo());
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
 		assertEquals(token.totalSupply(), info.getTotalSupply());
 		assertEquals(token.decimals(), info.getDecimals());
@@ -272,6 +274,7 @@ class StateViewTest {
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
+		assertEquals(token.memo(), info.getMemo());
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
 		assertEquals(token.totalSupply(), info.getTotalSupply());
 		assertEquals(token.decimals(), info.getDecimals());

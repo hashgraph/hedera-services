@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -76,6 +77,7 @@ class TokenUpdateTransitionLogicTest {
 	private AccountID newTreasury = IdUtils.asAccount("1.2.5");
 	private String symbol = "SYMBOL";
 	private String name = "Name";
+	private String memo = "Memo";
 	private JKey adminKey = new JEd25519Key("w/e".getBytes());
 	private TransactionBody tokenUpdateTxn;
 	private MerkleToken token;
@@ -407,6 +409,16 @@ class TokenUpdateTransitionLogicTest {
 		assertEquals(INVALID_FREEZE_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
 	}
 
+	@Test
+	public void rejectsInvalidMemo() {
+		// given:
+		givenValidTxnCtx();
+		given(validator.isValidEntityMemo(any())).willReturn(false);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(false);
 	}
@@ -425,6 +437,7 @@ class TokenUpdateTransitionLogicTest {
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setSymbol(symbol)
 						.setName(name)
+						.setMemo(memo)
 						.setToken(target));
 		if (withNewTreasury) {
 			builder.getTokenUpdateBuilder()
@@ -489,5 +502,6 @@ class TokenUpdateTransitionLogicTest {
 	private void withAlwaysValidValidator() {
 		given(validator.tokenNameCheck(any())).willReturn(OK);
 		given(validator.tokenSymbolCheck(any())).willReturn(OK);
+		given(validator.isValidEntityMemo(any())).willReturn(true);
 	}
 }

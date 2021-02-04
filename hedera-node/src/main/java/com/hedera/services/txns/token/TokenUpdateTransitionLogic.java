@@ -43,6 +43,7 @@ import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -202,6 +203,13 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				op.hasFreezeKey(), op.getFreezeKey());
 		if (validity != OK) {
 			return validity;
+		}
+
+		var hasNewMemo = op.getMemo().length() > 0;
+		if(hasNewMemo) {
+			if(!validator.isValidEntityMemo(op.getMemo())) {
+				validity = MEMO_TOO_LONG;
+			}
 		}
 
 		return validity;

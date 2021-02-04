@@ -185,7 +185,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				}
 				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
 						.givenCurrentName(info.getName())
-						.givenCurrentSymbol(info.getSymbol());
+						.givenCurrentSymbol(info.getSymbol())
+						.givenCurrentMemo(info.getMemo());
 				if (info.hasAutoRenewAccount()) {
 					estimate.givenCurrentlyUsingAutoRenewAccount();
 				}

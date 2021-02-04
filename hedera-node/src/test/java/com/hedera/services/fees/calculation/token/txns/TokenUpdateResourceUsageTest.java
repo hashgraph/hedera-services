@@ -103,6 +103,7 @@ class TokenUpdateResourceUsageTest {
 		given(usage.givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey()))).willReturn(usage);
 		given(usage.givenCurrentSymbol(symbol)).willReturn(usage);
 		given(usage.givenCurrentName(name)).willReturn(usage);
+		given(usage.givenCurrentMemo(memo)).willReturn(usage);
 		given(usage.givenCurrentExpiry(expiry)).willReturn(usage);
 		given(usage.givenCurrentlyUsingAutoRenewAccount()).willReturn(usage);
 		given(usage.get()).willReturn(MOCK_TOKEN_UPDATE_USAGE);

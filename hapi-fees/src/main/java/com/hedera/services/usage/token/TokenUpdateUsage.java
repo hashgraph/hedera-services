@@ -37,6 +37,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 	private int currentNameLen;
 	private int currentSymbolLen;
+	private int currentMemoLen;
 	private long currentExpiry;
 	private long currentMutableRb = 0;
 	private boolean currentlyUsingAutoRenew = false;
@@ -91,6 +92,12 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 		return this;
 	}
 
+	public TokenUpdateUsage givenCurrentMemo(String memo) {
+		currentMemoLen = memo.length();
+		updateCurrentRb(currentMemoLen);
+		return this;
+	}
+
 	public TokenUpdateUsage givenCurrentlyUsingAutoRenewAccount() {
 		currentlyUsingAutoRenew = true;
 		updateCurrentRb(BASIC_ENTITY_ID_SIZE);
@@ -121,6 +128,7 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 		}
 		newMutableRb += (op.getName().length() > 0) ? op.getName().length() : currentNameLen;
 		newMutableRb += (op.getSymbol().length() > 0) ? op.getSymbol().length() : currentSymbolLen;
+		newMutableRb += (op.getMemo().length() > 0) ? op.getMemo().length() : currentMemoLen;
 		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
 				this.op,
 				Math.max(op.getExpiry().getSeconds(), currentExpiry));

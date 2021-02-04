@@ -65,6 +65,8 @@ public class TokenUpdateUsageTest {
 	String symbol = "ABCDEFGH";
 	String oldName = "WhyWhy";
 	String name = "WhyWhyWhy";
+	String oldMemo = "Game";
+	String memo = "GameOfGames";
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	AccountID treasury = IdUtils.asAccount("1.2.3");
@@ -199,6 +201,7 @@ public class TokenUpdateUsageTest {
 				.givenCurrentExpiry(oldExpiry)
 				.givenCurrentName(oldName)
 				.givenCurrentSymbol(oldSymbol)
+				.givenCurrentMemo(oldMemo)
 				.givenCurrentAdminKey(Optional.of(oldKey))
 				.givenCurrentKycKey(Optional.of(oldKey))
 				.givenCurrentSupplyKey(Optional.of(oldKey))
@@ -207,12 +210,12 @@ public class TokenUpdateUsageTest {
 	}
 
 	private long curSize(Key oldKey) {
-		return oldSymbol.length() + oldName.length()
+		return oldSymbol.length() + oldName.length() + oldMemo.length()
 				+ 5 * FeeBuilder.getAccountKeyStorageSize(oldKey);
 	}
 
 	private long newRb() {
-		return symbol.length() + name.length()
+		return symbol.length() + name.length() + memo.length()
 		+ FeeBuilder.getAccountKeyStorageSize(adminKey)
 				+ FeeBuilder.getAccountKeyStorageSize(kycKey)
 				+ FeeBuilder.getAccountKeyStorageSize(wipeKey)
@@ -228,6 +231,7 @@ public class TokenUpdateUsageTest {
 				.setAutoRenewAccount(autoRenewAccount)
 				.setSymbol(symbol)
 				.setName(name)
+				.setMemo(memo)
 				.setKycKey(kycKey)
 				.setAdminKey(adminKey)
 				.setFreezeKey(freezeKey)
