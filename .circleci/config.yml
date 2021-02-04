@@ -1511,7 +1511,7 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C:
+  GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
           cron: "35 6 * * *"
@@ -1524,9 +1524,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_4C/Restart
+          result_path: results/6N_6C/Performance
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-4N-4C"
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1534,123 +1534,24 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C:
+  GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
     triggers:
       - schedule:
           cron: "30 4 * * *"
           filters:
             branches:
               only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_4C/Restart
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-4N-4C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-
-  GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C:
-    triggers:
-      - schedule:
-          cron: "30 4 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_4C/Restart
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Random-4N-4C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-
-  GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C:
-    triggers:
-      - schedule:
-          cron: "30 10 * * *"
-          filters:
-            branches:
-              only:
                 - master
     jobs:
       - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_4C/Restart
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-HCS-Performance-Hotspot-4N-4C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-
-  GCP-Daily-Services-Comp-Restart-Performance-6N-6C:
-    triggers:
-      - schedule:
-          cron: "35 6 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - update-start-up-key:
-          requires:
-            - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/6N_6C/Performance
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-6N-6C"
-          requires:
-            - update-start-up-key
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-
-  GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C:
-    triggers:
-      - schedule:
-          cron: "39 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-
-    jobs:
-      - build-platform-and-services
-      - update-start-up-key:
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C"
           requires:
             - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Performance
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-HTS-Performance-6N-6C"
-          requires:
-            - update-start-up-key
           pre-steps:
             - install-tools
             - attach_workspace:
