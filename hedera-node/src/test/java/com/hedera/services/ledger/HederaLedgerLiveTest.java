@@ -48,6 +48,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -200,10 +201,10 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
 		// and:
-		var rA = tokenStore.createProvisionally(stdWith("MINE", "MINE", a), a, thisSecond);
+		var rA = tokenStore.createProvisionally(stdWith("MINE", "MINE", a), a, thisSecond, Optional.of("a"));
 		tA = rA.getCreated().get();
 		tokenStore.commitCreation();
-		var rB = tokenStore.createProvisionally(stdWith("YOURS", "YOURS", b), b, thisSecond);
+		var rB = tokenStore.createProvisionally(stdWith("YOURS", "YOURS", b), b, thisSecond, Optional.of("b"));
 		tB = rB.getCreated().get();
 		tokenStore.commitCreation();
 		// and:

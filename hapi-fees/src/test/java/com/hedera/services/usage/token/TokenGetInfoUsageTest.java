@@ -41,6 +41,7 @@ public class TokenGetInfoUsageTest {
 	Optional<Key> aKey = Optional.of(KeyUtils.A_COMPLEX_KEY);
 	String name = "WhyWhyWhyWHY";
 	String symbol = "OKITSFINE";
+	String memo = "YouWereMyBrother,Anakin.ILovedYou.";
 	TokenID id = IdUtils.asToken("0.0.75231");
 
 	TokenGetInfoUsage subject;
@@ -60,10 +61,12 @@ public class TokenGetInfoUsageTest {
 				.givenCurrentSupplyKey(aKey)
 				.givenCurrentlyUsingAutoRenewAccount()
 				.givenCurrentName(name)
-				.givenCurrentSymbol(symbol);
+				.givenCurrentSymbol(symbol)
+				.givenCurrentMemo(memo);
 		// and:
 		var expectedKeyBytes = 5 * FeeBuilder.getAccountKeyStorageSize(aKey.get());
-		var expectedBytes = expectedKeyBytes + TOKEN_ENTITY_SIZES.totalBytesInfTokenReprGiven(symbol, name) + BASIC_ENTITY_ID_SIZE;
+		var expectedBytes = expectedKeyBytes + TOKEN_ENTITY_SIZES.totalBytesInfTokenReprGiven(symbol, name)
+				+ BASIC_ENTITY_ID_SIZE + memo.length();
 
 		// when:
 		var usage = subject.get();

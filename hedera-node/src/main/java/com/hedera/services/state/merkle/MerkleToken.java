@@ -49,6 +49,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public static final EntityId UNUSED_AUTO_RENEW_ACCOUNT = null;
 	public static final int UPPER_BOUND_SYMBOL_UTF8_BYTES = 1024;
 	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 1024;
+	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 
 	@Deprecated
 	public static final MerkleToken.Provider LEGACY_PROVIDER = new MerkleToken.Provider();
@@ -64,6 +65,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	private JKey freezeKey = UNUSED_KEY;
 	private String symbol;
 	private String name;
+	private String memo;
 	private boolean deleted;
 	private boolean accountsFrozenByDefault;
 	private boolean accountsKycGrantedByDefault;
@@ -121,6 +123,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
 				Objects.equals(this.symbol, that.symbol) &&
 				Objects.equals(this.name, that.name) &&
+				Objects.equals(this.memo, that.memo) &&
 				Objects.equals(this.treasury, that.treasury) &&
 				Objects.equals(this.autoRenewAccount, that.autoRenewAccount) &&
 				equalUpToDecodability(this.wipeKey, that.wipeKey) &&
@@ -144,6 +147,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				supplyKey,
 				symbol,
 				name,
+				memo,
 				accountsFrozenByDefault,
 				accountsKycGrantedByDefault,
 				treasury,
@@ -159,6 +163,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				.add("expiry", expiry)
 				.add("symbol", symbol)
 				.add("name", name)
+				.add("memo", memo)
 				.add("treasury", treasury.toAbbrevString())
 				.add("totalSupply", totalSupply)
 				.add("decimals", decimals)
@@ -207,6 +212,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		kycKey = serdes.readNullable(in, serdes::deserializeKey);
 		supplyKey = serdes.readNullable(in, serdes::deserializeKey);
 		wipeKey = serdes.readNullable(in, serdes::deserializeKey);
+		memo = serdes.readNullableString(in, UPPER_BOUND_MEMO_UTF8_BYTES);
 	}
 
 	@Override
@@ -227,6 +233,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		serdes.writeNullable(kycKey, out, serdes::serializeKey);
 		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
 		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
+		serdes.writeNullableString(memo, out);
 	}
 
 	/* --- FastCopyable --- */
@@ -241,6 +248,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				accountsFrozenByDefault,
 				accountsKycGrantedByDefault,
 				treasury);
+		fc.setMemo(memo);
 		fc.setDeleted(deleted);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
@@ -289,6 +297,14 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 
 	public Optional<JKey> kycKey() {
 		return Optional.ofNullable(kycKey);
+	}
+
+	public String memo() {
+		return this.memo;
+	}
+
+	public void setMemo(String memo) {
+		this.memo = memo;
 	}
 
 	public boolean hasKycKey() {

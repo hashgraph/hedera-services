@@ -32,6 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -41,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -83,7 +85,8 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	}
 
 	private void transitionFor(TokenCreateTransactionBody op) {
-		var result = store.createProvisionally(op, txnCtx.activePayer(), txnCtx.consensusTime().getEpochSecond());
+		var result = store.createProvisionally(op, txnCtx.activePayer(), txnCtx.consensusTime().getEpochSecond(),
+				Optional.of(op.getMemo()));
 		if (result.getStatus() != OK) {
 			abortWith(result.getStatus());
 			return;
@@ -178,6 +181,10 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			if (op.getExpiry().getSeconds() <= txnCtx.consensusTime().getEpochSecond()) {
 				return INVALID_EXPIRATION_TIME;
 			}
+		}
+
+		if (!validator.isValidEntityMemo(op.getMemo())) {
+			return MEMO_TOO_LONG;
 		}
 
 		return OK;

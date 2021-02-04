@@ -55,6 +55,7 @@ public class TokenCreateUsageTest {
 	long now = expiry - autoRenewPeriod;
 	String symbol = "ABCDEFGH";
 	String name = "WhyWhyWHy";
+	String memo = "YouWereMyBrother,Anakin.ILovedYou.";
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
@@ -75,6 +76,27 @@ public class TokenCreateUsageTest {
 		given(factory.get(any(), any(), any())).willReturn(base);
 
 		TxnUsage.estimatorFactory = factory;
+	}
+
+
+	@Test
+	public void createsExpectedDeltaForMemo() {
+		// setup:
+		var expectedBytes = baseSize()+memo.length();
+
+		givenMemoOp();
+		// and:
+		subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, actual);
+		// and:
+		verify(base).addBpt(expectedBytes);
+		verify(base).addRbs(expectedBytes * autoRenewPeriod);
+		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	@Test
@@ -132,6 +154,21 @@ public class TokenCreateUsageTest {
 	private void givenExpiryBasedOp() {
 		op = TokenCreateTransactionBody.newBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
+				.setSymbol(symbol)
+				.setName(name)
+				.setKycKey(kycKey)
+				.setAdminKey(adminKey)
+				.setFreezeKey(freezeKey)
+				.setSupplyKey(supplyKey)
+				.setWipeKey(wipeKey)
+				.build();
+		setTxn();
+	}
+
+	private void givenMemoOp() {
+		op = TokenCreateTransactionBody.newBuilder()
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
+				.setMemo(memo)
 				.setSymbol(symbol)
 				.setName(name)
 				.setKycKey(kycKey)

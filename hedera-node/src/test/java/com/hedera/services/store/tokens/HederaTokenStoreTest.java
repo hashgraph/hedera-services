@@ -134,6 +134,7 @@ class HederaTokenStoreTest {
 	String newSymbol = "REALLYSOM";
 	String name = "TOKENNAME";
 	String newName = "NEWNAME";
+	String entityMemo;
 	long expiry = thisSecond + 1_234_567;
 	long newExpiry = thisSecond + 1_432_765;
 	long totalSupply = 1_000_000;
@@ -168,6 +169,7 @@ class HederaTokenStoreTest {
 		freezeKey = TOKEN_FREEZE_KT.asKey();
 		wipeKey = MISC_ACCOUNT_KT.asKey();
 		supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
+		entityMemo = "ImOneWithTheForce.TheForceIsWithMe";
 
 		token = mock(MerkleToken.class);
 		modifiableToken = mock(MerkleToken.class);
@@ -178,6 +180,7 @@ class HederaTokenStoreTest {
 		given(token.name()).willReturn(name);
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		given(token.memo()).willReturn(entityMemo);
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
@@ -1519,6 +1522,7 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setMemo(entityMemo);
 
 		// given:
 		var req = fullyValidAttempt()
@@ -1528,7 +1532,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, thisSecond, Optional.of(entityMemo));
 
 		// then:
 		assertEquals(OK, result.getStatus());
@@ -1555,12 +1559,13 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setMemo(entityMemo);
 
 		// given:
 		var req = fullyValidAttempt().build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, thisSecond, Optional.of(entityMemo));
 
 		// then:
 		assertEquals(OK, result.getStatus());
@@ -1581,7 +1586,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, thisSecond, Optional.of(entityMemo));
 
 		// then:
 		assertEquals(INVALID_AUTORENEW_ACCOUNT, result.getStatus());
@@ -1595,7 +1600,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, thisSecond, Optional.of(entityMemo));
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
@@ -1610,7 +1615,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, thisSecond, Optional.of(entityMemo));
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
@@ -1625,7 +1630,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, thisSecond, Optional.of(entityMemo));
 
 		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
@@ -1640,7 +1645,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, thisSecond, Optional.of(entityMemo));
 
 		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
@@ -1654,7 +1659,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, thisSecond, Optional.of(entityMemo));
 
 		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
@@ -1674,7 +1679,8 @@ class HederaTokenStoreTest {
 				.setInitialSupply(totalSupply)
 				.setTreasury(treasury)
 				.setDecimals(decimals)
-				.setFreezeDefault(freezeDefault);
+				.setFreezeDefault(freezeDefault)
+				.setMemo(entityMemo);
 	}
 
 	private Duration enduring(long secs) {

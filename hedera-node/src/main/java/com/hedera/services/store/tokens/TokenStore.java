@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -59,7 +60,8 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
-	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
+	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor,
+			long now, Optional<String> entityMemo);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

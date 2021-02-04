@@ -33,7 +33,7 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.freeze(null, null));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.unfreeze(null, null));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.adjustBalance(null, null, 0));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.createProvisionally(null, null, 0));
+		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.createProvisionally(null, null, 0, null));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.exists(null));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.get(null));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.update(null, 0));

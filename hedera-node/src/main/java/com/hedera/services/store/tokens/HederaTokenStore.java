@@ -354,7 +354,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
+	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now,
+			Optional<String> entityMemo) {
 		var validity = accountCheck(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		if (validity != OK) {
 			return failure(validity);
@@ -388,6 +389,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);
 		supplyKey.ifPresent(pendingCreation::setSupplyKey);
+		entityMemo.ifPresent(pendingCreation::setMemo);
 		if (request.hasAutoRenewAccount()) {
 			pendingCreation.setAutoRenewAccount(ofNullableAccountId(request.getAutoRenewAccount()));
 			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod().getSeconds());

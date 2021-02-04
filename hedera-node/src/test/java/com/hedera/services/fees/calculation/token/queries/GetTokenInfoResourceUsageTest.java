@@ -69,6 +69,7 @@ class GetTokenInfoResourceUsageTest {
 
 	String symbol = "HEYMAOK";
 	String name = "IsItReallyOk";
+	String memo = "IamNoJedi";
 	TokenID target = IdUtils.asToken("0.0.123");
 
 	TokenGetInfoUsage estimator;
@@ -83,6 +84,7 @@ class GetTokenInfoResourceUsageTest {
 			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
 			.setSymbol(symbol)
 			.setName(name)
+			.setMemo(memo)
 			.setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
 			.build();
 
@@ -106,6 +108,7 @@ class GetTokenInfoResourceUsageTest {
 		given(estimator.givenCurrentFreezeKey(any())).willReturn(estimator);
 		given(estimator.givenCurrentSymbol(any())).willReturn(estimator);
 		given(estimator.givenCurrentName(any())).willReturn(estimator);
+		given(estimator.givenCurrentMemo(any())).willReturn(estimator);
 		given(estimator.givenCurrentlyUsingAutoRenewAccount()).willReturn(estimator);
 		given(estimator.get()).willReturn(MOCK_TOKEN_GET_INFO_USAGE);
 

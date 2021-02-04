@@ -80,4 +80,9 @@ public class TokenGetInfoUsage extends QueryUsage {
 		updateRb(BASIC_ENTITY_ID_SIZE);
 		return this;
 	}
+
+	public TokenGetInfoUsage givenCurrentMemo(String memo) {
+		updateRb(memo.length());
+		return this;
+	}
 }

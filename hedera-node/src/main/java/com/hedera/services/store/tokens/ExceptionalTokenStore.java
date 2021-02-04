@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public enum ExceptionalTokenStore implements TokenStore {
@@ -94,7 +95,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
+	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now, Optional<String> entityMemo) {
 		throw new UnsupportedOperationException();
 	}
 

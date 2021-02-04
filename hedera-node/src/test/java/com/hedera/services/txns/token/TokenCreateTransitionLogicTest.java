@@ -36,11 +36,13 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -54,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -80,6 +83,7 @@ class TokenCreateTransitionLogicTest {
 	private AccountID treasury = IdUtils.asAccount("1.2.4");
 	private AccountID renewAccount = IdUtils.asAccount("1.2.5");
 	private TokenID created = IdUtils.asToken("1.2.666");
+	private String entityMemo = "No.IAmYourFather";
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	private TransactionBody tokenCreateTxn;
 
@@ -110,7 +114,7 @@ class TokenCreateTransitionLogicTest {
 	public void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond, Optional.of(entityMemo)))
 				.willThrow(IllegalStateException.class);
 
 		// when:
@@ -129,7 +133,7 @@ class TokenCreateTransitionLogicTest {
 	public void abortsIfCreationFails() {
 		givenValidTxnCtx();
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond, Optional.of(entityMemo)))
 				.willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
 
 		// when:
@@ -148,7 +152,7 @@ class TokenCreateTransitionLogicTest {
 	public void abortsIfAdjustmentFailsDueToTokenLimitPerAccountExceeded() {
 		givenValidTxnCtx();
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond, Optional.of(entityMemo)))
 				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
@@ -171,7 +175,7 @@ class TokenCreateTransitionLogicTest {
 	public void abortsIfAssociationFails() {
 		givenValidTxnCtx(false, true);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond, Optional.of(entityMemo)))
 				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
@@ -191,7 +195,7 @@ class TokenCreateTransitionLogicTest {
 	public void abortsIfUnfreezeFails() {
 		givenValidTxnCtx(false, true);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond, Optional.of(entityMemo)))
 				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
@@ -212,7 +216,7 @@ class TokenCreateTransitionLogicTest {
 	public void followsHappyPathWithAllKeys() {
 		givenValidTxnCtx(true, true);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond, Optional.of(entityMemo)))
 				.willReturn(CreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
@@ -238,7 +242,7 @@ class TokenCreateTransitionLogicTest {
 	public void doesntUnfreezeIfNoKeyIsPresent() {
 		givenValidTxnCtx(true, false);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond, Optional.of(entityMemo)))
 				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(OK);
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
@@ -262,7 +266,7 @@ class TokenCreateTransitionLogicTest {
 	public void doesntGrantKycIfNoKeyIsPresent() {
 		givenValidTxnCtx(false, true);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond, Optional.of(entityMemo)))
 				.willReturn(CreationResult.success(created));
 		given(store.associate(any(), anyList())).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
@@ -448,6 +452,17 @@ class TokenCreateTransitionLogicTest {
 		assertEquals(INVALID_EXPIRATION_TIME, subject.syntaxCheck().apply(tokenCreateTxn));
 	}
 
+	// TODO : fixThis
+//	@Test
+//	public void rejectsInvalidMemo() {
+//		// given:
+//		givenValidTxnCtx();
+//		given(validator.isValidEntityMemo(entityMemo)).willReturn(false);
+//
+//		// expect:
+//		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(tokenCreateTxn));
+//	}
+
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(false, false);
 	}
@@ -460,7 +475,8 @@ class TokenCreateTransitionLogicTest {
 						.setTreasury(treasury)
 						.setAdminKey(key)
 						.setAutoRenewAccount(renewAccount)
-						.setExpiry(Timestamp.newBuilder().setSeconds(thisSecond + thisSecond)));
+						.setExpiry(Timestamp.newBuilder().setSeconds(thisSecond + thisSecond))
+						.setMemo(entityMemo));
 		if (withFreeze) {
 			builder.getTokenCreationBuilder().setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
 		}
@@ -571,6 +587,7 @@ class TokenCreateTransitionLogicTest {
 						.setInitialSupply(initialSupply)
 						.setDecimals(decimals)
 						.setTreasury(treasury)
+						.setMemo(entityMemo)
 						.setExpiry(Timestamp.newBuilder().setSeconds(-1)))
 				.build();
 	}
@@ -582,7 +599,8 @@ class TokenCreateTransitionLogicTest {
 						.setDecimals(decimals)
 						.setTreasury(treasury)
 						.setAdminKey(key)
-						.setExpiry(Timestamp.newBuilder().setSeconds(thisSecond + Instant.now().getEpochSecond())))
+						.setExpiry(Timestamp.newBuilder().setSeconds(thisSecond + Instant.now().getEpochSecond()))
+						.setMemo(entityMemo))
 				.build();
 	}
 
@@ -590,5 +608,6 @@ class TokenCreateTransitionLogicTest {
 		given(validator.tokenNameCheck(any())).willReturn(OK);
 		given(validator.tokenSymbolCheck(any())).willReturn(OK);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(validator.isValidEntityMemo(any())).willReturn(true);
 	}
 }

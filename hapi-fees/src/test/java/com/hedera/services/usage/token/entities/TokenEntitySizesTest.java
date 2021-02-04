@@ -51,14 +51,15 @@ public class TokenEntitySizesTest {
 		// setup:
 		var symbol = "ABCDEFGH";
 		var name = "WhyWouldINameItThis";
+		var memo = "MemoForToday";
 		long expected = NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 4
 				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
 				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ symbol.getBytes().length + name.getBytes().length;
+				+ symbol.getBytes().length + name.getBytes().length + memo.getBytes().length;
 
 		// given:
-		long actual = subject.totalBytesInfTokenReprGiven(symbol, name);
+		long actual = subject.totalBytesInfTokenReprGiven(symbol, name) + memo.getBytes().length;
 
 		// expect:
 		assertEquals(expected, actual);

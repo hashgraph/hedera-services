@@ -81,7 +81,8 @@ public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
 					.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
 					.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
 					.givenCurrentName(info.getName())
-					.givenCurrentSymbol(info.getSymbol());
+					.givenCurrentSymbol(info.getSymbol())
+					.givenCurrentMemo(info.getMemo());
 			if (info.hasAutoRenewAccount()) {
 				estimate.givenCurrentlyUsingAutoRenewAccount();
 			}

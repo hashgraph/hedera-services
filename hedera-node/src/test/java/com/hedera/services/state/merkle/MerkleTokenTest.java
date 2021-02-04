@@ -36,6 +36,7 @@ import org.mockito.InOrder;
 import java.io.IOException;
 import java.time.Instant;
 
+import static com.hedera.services.state.merkle.MerkleToken.UPPER_BOUND_MEMO_UTF8_BYTES;
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -46,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -60,6 +62,8 @@ class MerkleTokenTest {
 	JKey kycKey, otherKycKey;
 	String symbol = "NotAnHbar", otherSymbol = "NotAnHbarEither";
 	String name = "NotAnHbarName", otherName = "NotAnHbarNameEither";
+	String entityMemo;
+	String otherEntityMemo;
 	int decimals = 2, otherDecimals = 3;
 	long expiry = Instant.now().getEpochSecond() + 1_234_567, otherExpiry = expiry + 2_345_678;
 	long autoRenewPeriod = 1_234_567, otherAutoRenewPeriod = 2_345_678;
@@ -87,6 +91,9 @@ class MerkleTokenTest {
 		supplyKey = new JEd25519Key("not-a-real-supply-key".getBytes());
 		otherWipeKey = new JEd25519Key("not-a-real-wipe-key-either".getBytes());
 		otherSupplyKey = new JEd25519Key("not-a-real-supply-key-either".getBytes());
+
+		entityMemo = "Chewie,weAreHome";
+		otherEntityMemo = "Hope";
 
 		subject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -144,6 +151,7 @@ class MerkleTokenTest {
 				argThat(supplyKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(serdes).writeNullable(
 				argThat(wipeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(serdes).writeNullableString(entityMemo, out);
 	}
 
 	@Test
@@ -181,6 +189,8 @@ class MerkleTokenTest {
 				.willReturn(isDeleted)
 				.willReturn(subject.accountsAreFrozenByDefault());
 		given(fin.readSerializable()).willReturn(subject.treasury());
+		given(serdes.readNullableString(any(), eq(UPPER_BOUND_MEMO_UTF8_BYTES)))
+				.willReturn(entityMemo);
 		// and:
 		var read = new MerkleToken();
 
@@ -189,6 +199,20 @@ class MerkleTokenTest {
 
 		// then:
 		assertEquals(subject, read);
+	}
+
+	@Test
+	public void failDifferentMemo() {
+		// given:
+		other = new MerkleToken(
+				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+		setOptionalElements(other);
+		other.setMemo(otherEntityMemo);
+
+		// expect
+		assertNotEquals(subject, other);
+		// and
+		assertNotEquals(subject.hashCode(), other.hashCode());
 	}
 
 	@Test
@@ -429,6 +453,7 @@ class MerkleTokenTest {
 		token.setWipeKey(wipeKey);
 		token.setSupplyKey(supplyKey);
 		token.setKycKey(kycKey);
+		token.setMemo(entityMemo);
 		token.setAutoRenewAccount(autoRenewAccount);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 	}
@@ -470,6 +495,7 @@ class MerkleTokenTest {
 						"expiry=" + expiry + ", " +
 						"symbol=" + symbol + ", " +
 						"name=" + name + ", " +
+						"memo=" + entityMemo + ", " +
 						"treasury=" + treasury.toAbbrevString() + ", " +
 						"totalSupply=" + totalSupply + ", " +
 						"decimals=" + decimals + ", " +
