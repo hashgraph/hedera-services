@@ -45,8 +45,8 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt threadNumber = OptionalInt.empty();
 	public static OptionalInt hcsSubmitMessage = OptionalInt.empty();
 	public static OptionalInt hcsSubmitMessageSizeVar = OptionalInt.empty();
-	/** initial balance of payer account used for paying for performance test transactions */
-	public static OptionalLong initialBalance = OptionalLong.of(ONE_HBAR * 9000);
+	/** initial balance of this account used as sender account for performance test transactions */
+	protected static OptionalLong initialBalance = OptionalLong.of(ONE_HBAR * 9000);
 	public static OptionalInt totalTestAccounts = OptionalInt.empty();
 	public static OptionalInt totalTestTopics = OptionalInt.empty();
 	public static OptionalInt totalTestTokens = OptionalInt.empty();
