@@ -83,8 +83,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
 	static TopicSerde topicSerde = new TopicSerde();
 	static DomainSerdes serdes = new DomainSerdes();
 	static EntityId.Provider legacyIdProvider = EntityId.LEGACY_PROVIDER;
-//
-//	public static final MerkleTopic.Provider LEGACY_PROVIDER = new Provider();
 
 	private String memo;
 	private JKey adminKey;
@@ -161,46 +159,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
 				? Arrays.copyOf(other.runningHash, other.runningHash.length)
 				: null;
 	}
-
-//	@Deprecated
-//	public static class Provider implements SerializedObjectProvider {
-//		@Override
-//		@SuppressWarnings("unchecked")
-//		public FastCopyable deserialize(DataInputStream din) throws IOException {
-//			var in = (SerializableDataInputStream) din;
-//
-//			in.readShort();
-//			in.readShort();
-//
-//			var topic = new MerkleTopic();
-//			if (in.readBoolean()) {
-//				var bytes = in.readByteArray(MAX_MEMO_BYTES);
-//				if (null != bytes) {
-//					topic.setMemo(StringUtils.newStringUtf8(bytes));
-//				}
-//			}
-//
-//			if (in.readBoolean()) {
-//				topic.setAdminKey(serdes.deserializeKey(in));
-//			}
-//			if (in.readBoolean()) {
-//				topic.setSubmitKey(serdes.deserializeKey(in));
-//			}
-//			topic.setAutoRenewDurationSeconds(in.readLong());
-//			if (in.readBoolean()) {
-//				topic.setAutoRenewAccountId(legacyIdProvider.deserialize(in));
-//			}
-//			if (in.readBoolean()) {
-//				topic.setExpirationTimestamp(serdes.deserializeLegacyTimestamp(in));
-//			}
-//			topic.setDeleted(in.readBoolean());
-//			topic.setSequenceNumber(in.readLong());
-//			if (in.readBoolean()) {
-//				topic.setRunningHash(in.readByteArray(RUNNING_HASH_BYTE_ARRAY_SIZE));
-//			}
-//			return topic;
-//		}
-//	}
 
 	/* --- MerkleLeaf --- */
 	@Override

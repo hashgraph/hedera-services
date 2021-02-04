@@ -61,8 +61,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     private Set<JKey> signers = new LinkedHashSet<>();
     private boolean deleted;
 
-//    @Deprecated
-//    public static final MerkleSchedule.Provider LEGACY_PROVIDER = new MerkleSchedule.Provider();
 
     public MerkleSchedule() { }
 
@@ -75,14 +73,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         this.schedulingAccount = schedulingAccount;
         this.schedulingTXValidStart = schedulingTXValidStart;
     }
-
-//    @Deprecated
-//    public static class Provider implements SerializedObjectProvider {
-//        @Override
-//        public FastCopyable deserialize(DataInputStream in) throws IOException {
-//            throw new UnsupportedOperationException();
-//        }
-//    }
 
     /* Object */
     @Override

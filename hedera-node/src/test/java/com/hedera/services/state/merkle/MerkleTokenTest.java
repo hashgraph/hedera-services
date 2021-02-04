@@ -493,13 +493,6 @@ class MerkleTokenTest {
 		assertTrue(subject.isLeaf());
 	}
 
-//	@Test
-//	public void tmpProviderThrowsAlways() {
-//		// expect:
-//		assertThrows(UnsupportedOperationException.class,
-//				() -> MerkleToken.LEGACY_PROVIDER.deserialize(null));
-//	}
-
 	@Test
 	public void adjustsTotalSupplyWhenValid() {
 		// when:

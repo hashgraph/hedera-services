@@ -47,21 +47,6 @@ public class MerkleBlobMeta extends AbstractMerkleLeaf implements FCMKey {
 		this.path = path;
 	}
 
-//	@Deprecated
-//	public static class Provider implements SerializedObjectProvider {
-//		@Override
-//		public FastCopyable deserialize(DataInputStream _in) throws IOException {
-//			var path = new MerkleBlobMeta();
-//			var in = (SerializableDataInputStream) _in;
-//
-//			in.readLong();
-//			in.readLong();
-//
-//			path.setPath(in.readNormalisedString(MAX_PATH_LEN));
-//			return path;
-//		}
-//	}
-
 	/* --- MerkleLeaf --- */
 	@Override
 	public long getClassId() {
