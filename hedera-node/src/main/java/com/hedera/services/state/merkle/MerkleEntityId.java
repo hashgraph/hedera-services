@@ -27,15 +27,12 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.FCMKey;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 
 public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
@@ -74,22 +71,22 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getScheduleNum());
 	}
 
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream in) throws IOException {
-			var id = new MerkleEntityId();
-
-			in.readLong();
-			in.readLong();
-
-			id.realm = in.readLong();
-			id.shard = in.readLong();
-			id.num = in.readLong();
-
-			return id;
-		}
-	}
+//	@Deprecated
+//	public static class Provider implements SerializedObjectProvider {
+//		@Override
+//		public FastCopyable deserialize(DataInputStream in) throws IOException {
+//			var id = new MerkleEntityId();
+//
+//			in.readLong();
+//			in.readLong();
+//
+//			id.realm = in.readLong();
+//			id.shard = in.readLong();
+//			id.num = in.readLong();
+//
+//			return id;
+//		}
+//	}
 
 	/* --- MerkleLeaf --- */
 	@Override

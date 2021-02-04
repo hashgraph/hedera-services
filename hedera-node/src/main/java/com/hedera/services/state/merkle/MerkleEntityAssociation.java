@@ -24,16 +24,13 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.FCMKey;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 
 public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKey {
@@ -43,8 +40,8 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKe
 	private long fromShard, fromRealm, fromNum;
 	private long toShard, toRealm, toNum;
 
-	@Deprecated
-	public static final MerkleEntityAssociation.Provider LEGACY_PROVIDER = new MerkleEntityAssociation.Provider();
+//	@Deprecated
+//	public static final MerkleEntityAssociation.Provider LEGACY_PROVIDER = new MerkleEntityAssociation.Provider();
 
 	public MerkleEntityAssociation() {
 	}
@@ -85,13 +82,13 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKe
 						.build());
 	}
 
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream in) throws IOException {
-			throw new UnsupportedOperationException();
-		}
-	}
+//	@Deprecated
+//	public static class Provider implements SerializedObjectProvider {
+//		@Override
+//		public FastCopyable deserialize(DataInputStream in) throws IOException {
+//			throw new UnsupportedOperationException();
+//		}
+//	}
 
 	/* --- MerkleLeaf --- */
 	@Override

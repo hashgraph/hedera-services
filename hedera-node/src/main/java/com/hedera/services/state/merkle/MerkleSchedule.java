@@ -27,16 +27,12 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.FCMValue;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.bouncycastle.util.Arrays;
 
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -65,8 +61,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
     private Set<JKey> signers = new LinkedHashSet<>();
     private boolean deleted;
 
-    @Deprecated
-    public static final MerkleSchedule.Provider LEGACY_PROVIDER = new MerkleSchedule.Provider();
+//    @Deprecated
+//    public static final MerkleSchedule.Provider LEGACY_PROVIDER = new MerkleSchedule.Provider();
 
     public MerkleSchedule() { }
 
@@ -80,13 +76,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
         this.schedulingTXValidStart = schedulingTXValidStart;
     }
 
-    @Deprecated
-    public static class Provider implements SerializedObjectProvider {
-        @Override
-        public FastCopyable deserialize(DataInputStream in) throws IOException {
-            throw new UnsupportedOperationException();
-        }
-    }
+//    @Deprecated
+//    public static class Provider implements SerializedObjectProvider {
+//        @Override
+//        public FastCopyable deserialize(DataInputStream in) throws IOException {
+//            throw new UnsupportedOperationException();
+//        }
+//    }
 
     /* Object */
     @Override
