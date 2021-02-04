@@ -1419,7 +1419,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
-          cron: "50 22 * * *"
+          cron: "55 22 * * *"
           filters:
             branches:
               only:
