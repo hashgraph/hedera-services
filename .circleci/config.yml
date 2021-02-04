@@ -1557,33 +1557,6 @@ workflows:
             - attach_workspace:
                 at: /
 
-#Use this workflow if there are any tests that will be added to use public testnet state
-  GCP-Daily-Services-Comp-Restart-Performance-Testnet-6N-6C:
-    triggers:
-      - schedule:
-          cron: "35 6 * * *"
-          filters:
-            branches:
-              only:
-                - Disable-master
-    jobs:
-      - build-platform-and-services
-      - update-start-up-key:
-          requires:
-            - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Performance
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Testnet-6N-6C"
-          requires:
-            - update-start-up-key
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-
   GCP-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
       - schedule:
