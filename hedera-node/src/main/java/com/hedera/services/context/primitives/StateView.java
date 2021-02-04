@@ -232,7 +232,8 @@ public class StateView {
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setTotalSupply(token.totalSupply())
 					.setDecimals(token.decimals())
-					.setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
+					.setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()))
+					.setMemo(token.memo());
 
 			var adminCandidate = token.adminKey();
 			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));

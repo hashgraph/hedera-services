@@ -147,6 +147,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedWipeKey = Optional.of(name);
 		return this;
 	}
+	public HapiGetTokenInfo hasMemo(String name) {
+		memo = Optional.of(name);
+		return this;
+	}
 	public HapiGetTokenInfo isDeleted() {
 		expectedDeletion = Optional.of(Boolean.TRUE);
 		return this;

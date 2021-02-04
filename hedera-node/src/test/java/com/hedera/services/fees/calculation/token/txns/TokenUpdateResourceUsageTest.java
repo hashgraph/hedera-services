@@ -64,6 +64,7 @@ class TokenUpdateResourceUsageTest {
 	long expiry = 1_234_567L;
 	String symbol = "HEYMAOK";
 	String name = "IsItReallyOk";
+	String memo = "IsIt";
 	TokenID target = IdUtils.asToken("0.0.123");
 	TokenInfo info = TokenInfo.newBuilder()
 			.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
@@ -73,6 +74,7 @@ class TokenUpdateResourceUsageTest {
 			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
 			.setSymbol(symbol)
 			.setName(name)
+			.setMemo(memo)
 			.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 			.build();
 

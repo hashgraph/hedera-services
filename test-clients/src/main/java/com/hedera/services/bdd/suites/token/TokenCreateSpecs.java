@@ -63,25 +63,24 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						creationValidatesName(),
-						creationValidatesSymbol(),
-						treasuryHasCorrectBalance(),
-						creationRequiresAppropriateSigs(),
-						creationRequiresAppropriateSigsHappyPath(),
-						initialSupplyMustBeSane(),
-						numAccountsAllowedIsDynamic(),
-						creationYieldsExpectedToken(),
-						creationSetsExpectedName(),
-						creationValidatesTreasuryAccount(),
-						autoRenewValidationWorks(),
-						creationWithoutKYCSetsCorrectStatus(),
-						creationValidatesExpiry(),
-						creationValidatesFreezeDefaultWithNoFreezeKey(),
-						creationSetsCorrectExpiry(),
-						creationHappyPath(),
-				}
-		);
+		return List.of(
+				creationValidatesName(),
+				creationValidatesSymbol(),
+				treasuryHasCorrectBalance(),
+				creationRequiresAppropriateSigs(),
+				creationRequiresAppropriateSigsHappyPath(),
+				initialSupplyMustBeSane(),
+				numAccountsAllowedIsDynamic(),
+				creationYieldsExpectedToken(),
+				creationSetsExpectedName(),
+				creationValidatesTreasuryAccount(),
+				autoRenewValidationWorks(),
+				creationWithoutKYCSetsCorrectStatus(),
+				creationValidatesExpiry(),
+				creationValidatesFreezeDefaultWithNoFreezeKey(),
+				creationSetsCorrectExpiry(),
+				createTokenWithInvalidMemo(),
+				creationHappyPath());
 	}
 
 	public HapiApiSpec autoRenewValidationWorks() {
@@ -168,8 +167,20 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec createTokenWithInvalidMemo() {
+		StringBuilder longMemo = new StringBuilder();
+		longMemo.append("This is 30 characters long !!!".repeat(4));
+		return defaultHapiSpec("createTokenInvalidMemo")
+				.given().when().then(
+						tokenCreate("invalidMemo")
+								.memo(longMemo.toString())
+								.hasPrecheck(MEMO_TOO_LONG)
+				);
+	}
+
 	public HapiApiSpec creationHappyPath() {
 		String saltedName = salted("primary");
+		String memo = "whyThisMemo";
 		return defaultHapiSpec("CreationHappyPath")
 				.given(
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -192,6 +203,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.kycKey("kycKey")
 								.supplyKey("supplyKey")
 								.wipeKey("wipeKey")
+								.memo(memo)
 								.via("createTxn")
 				).then(
 						UtilVerbs.withOpContext((spec, opLog) -> {
@@ -213,6 +225,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasKycKey("kycKey")
 								.hasSupplyKey("supplyKey")
 								.hasWipeKey("wipeKey")
+								.hasMemo(memo)
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("autoRenewAccount"),
 						getAccountInfo(TOKEN_TREASURY)

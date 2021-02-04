@@ -338,9 +338,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 
 	private HapiApiSpec createAnAccountInvalidMemo() {
 		StringBuilder longMemo = new StringBuilder();
-		for(int i=0; i<4; i++) {
-			longMemo.append("This is 30 characters long !!!");
-		}
+		longMemo.append("This is 30 characters long !!!".repeat(4));
 		return defaultHapiSpec("createAnAccountInvalidMemo")
 				.given().when().then(
 						cryptoCreate("invalidMemo")

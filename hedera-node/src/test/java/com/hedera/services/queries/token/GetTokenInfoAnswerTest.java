@@ -63,6 +63,7 @@ class GetTokenInfoAnswerTest {
 	private Transaction paymentTxn;
 	private String node = "0.0.3";
 	private String payer = "0.0.12345";
+	private String memo = "isThisIt";
 	private TokenID tokenId = asToken("1.2.3");
 	private long fee = 1_234L;
 
@@ -78,6 +79,7 @@ class GetTokenInfoAnswerTest {
 		info = TokenInfo.newBuilder()
 				.setTokenId(tokenId)
 				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
+				.setMemo(memo)
 				.build();
 
 		view = mock(StateView.class);
