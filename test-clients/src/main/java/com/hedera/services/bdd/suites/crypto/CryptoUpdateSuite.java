@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -29,6 +30,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -48,6 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 
 public class CryptoUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoUpdateSuite.class);
+	private static final int MAX_MEMO_LENGTH = 100;
 
 	public static void main(String... args) {
 		new CryptoUpdateSuite().runSuiteAsync();
@@ -76,7 +80,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-//				positiveTests(),
+				positiveTests(),
 				negativeTests()
 		);
 	}
@@ -85,7 +89,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 		return Arrays.asList(
 				updateWithUniqueSigs(),
 				updateWithOverlappingSigs(),
-				updateWithOneEffectiveSig()
+				updateWithOneEffectiveSig(),
+				updateMemoWorks()
 		);
 	}
 
@@ -94,8 +99,41 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 //				updateFailsWithInsufficientSigs(),
 //				updateFailsIfMissingSigs()
 //				cannotSetThresholdNegative()
-				updateWithEmptyKey()
+				updateWithEmptyKey(),
+				updateWithTooLongKey()
 		);
+	}
+
+	private HapiApiSpec updateWithTooLongKey() {
+		var tooLongMemo = "ORIGINAL" + TxnUtils.randomUppercase(MAX_MEMO_LENGTH + 1);
+
+		return defaultHapiSpec("UpdateWithTooLongMemo")
+				.given(
+						cryptoCreate("NormalAccount")
+								.memo("defaultMemo")
+				).when().then(
+						cryptoUpdate("NormalAccount")
+						.memo(tooLongMemo)
+						.hasPrecheck(MEMO_TOO_LONG)
+				);
+	}
+
+	private HapiApiSpec updateMemoWorks() {
+		var oldMemo = "defaultMemo";
+		var newMemo = "newerMemo";
+		return defaultHapiSpec("UpdateMemoWorks")
+				.given(
+						cryptoCreate("NormalAccount")
+								.memo(oldMemo)
+				).when(
+						getAccountInfo("NormalAccount")
+						.has(AccountInfoAsserts.accountWith().memo(oldMemo)),
+						cryptoUpdate("NormalAccount")
+								.memo(newMemo)
+				).then(
+						getAccountInfo("NormalAccount")
+								.has(AccountInfoAsserts.accountWith().memo(newMemo))
+				);
 	}
 
 	private HapiApiSpec updateWithUniqueSigs() {

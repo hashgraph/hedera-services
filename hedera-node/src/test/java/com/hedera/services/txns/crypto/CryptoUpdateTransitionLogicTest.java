@@ -69,6 +69,7 @@ public class CryptoUpdateTransitionLogicTest {
 
 	private long expiry;
 	private boolean useLegacyFields;
+	private String memo;
 	private Instant consensusTime;
 	private HederaLedger ledger;
 	private OptionValidator validator;
@@ -82,6 +83,7 @@ public class CryptoUpdateTransitionLogicTest {
 		consensusTime = Instant.now();
 		expiry = consensusTime.getEpochSecond() + 100_000L;
 		useLegacyFields = false;
+		memo = "ThisMemoIsHappening";
 
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
@@ -293,6 +295,17 @@ public class CryptoUpdateTransitionLogicTest {
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
+	// TODO: FixThis
+//	@Test
+//	public void rejectsInvalidMemo() {
+//		// given:
+//		givenValidTxnCtx();
+//		given(validator.isValidEntityMemo(any())).willReturn(false);
+//
+//		// then:
+//		verify(txnCtx).setStatus(MEMO_TOO_LONG);
+//	}
+
 	private Key unmappableKey() {
 		return Key.getDefaultInstance();
 	}
@@ -347,6 +360,7 @@ public class CryptoUpdateTransitionLogicTest {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
 		}
 		op.setAccountIDToUpdate(target);
+		op.setMemo(memo);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -364,5 +378,6 @@ public class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
+		given(validator.isValidEntityMemo(any())).willReturn(true);
 	}
 }

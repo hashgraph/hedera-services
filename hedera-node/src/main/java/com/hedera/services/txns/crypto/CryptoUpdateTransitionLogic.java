@@ -146,6 +146,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
 			return INVALID_EXPIRATION_TIME;
 		}
+		if (!validator.isValidEntityMemo(op.getMemo())) {
+			return MEMO_TOO_LONG;
+		}
 
 		return OK;
 	}

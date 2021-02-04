@@ -56,7 +56,8 @@ public class CryptoUpdateFactory extends SignedTxnFactory<CryptoUpdateFactory> {
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		CryptoUpdateTransactionBody.Builder op = CryptoUpdateTransactionBody.newBuilder()
-				.setAccountIDToUpdate(asAccount(account));
+				.setAccountIDToUpdate(asAccount(account))
+				.setMemo(txn.getMemo());
 		newAccountKt.ifPresent(kt -> op.setKey(kt.asKey(keyFactory)));
 		txn.setCryptoUpdateAccount(op);
 	}

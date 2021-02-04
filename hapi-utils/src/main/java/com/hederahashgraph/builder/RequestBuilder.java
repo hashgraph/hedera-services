@@ -141,7 +141,8 @@ public class RequestBuilder {
 
     CryptoUpdateTransactionBody cryptoUpdate = CryptoUpdateTransactionBody.newBuilder()
         .setAccountIDToUpdate(accountID)
-        .setAutoRenewPeriod(autoRenew).build();
+        .setAutoRenewPeriod(autoRenew)
+        .setMemo(memo).build();
     return getAccountUpdateRequest(accountID, payerAccountNum, payerRealmNum, payerShardNum,
             nodeAccountNum, nodeRealmNum, nodeShardNum,
             transactionFee, startTime, transactionDuration, generateRecord, memo, cryptoUpdate);
