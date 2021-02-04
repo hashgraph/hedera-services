@@ -1524,7 +1524,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_4C/Restart
+          result_path: results/6N_6C/Performance
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C"
           requires:
@@ -1547,7 +1547,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/4N_4C/Restart
+          result_path: results/6N_6C/Performance
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C"
           requires:
