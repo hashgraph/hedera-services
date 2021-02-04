@@ -57,6 +57,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
 	private static final int MAX_NAME_LENGTH = 100;
 	private static final int MAX_SYMBOL_LENGTH = 100;
+	private static final int MAX_MEMO_LENGTH = 100;
 	private static final long A_HUNDRED_SECONDS = 100;
 
 	private static String TOKEN_TREASURY = "treasury";
@@ -67,27 +68,26 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						symbolChanges(),
-						standardImmutabilitySemanticsHold(),
-						validAutoRenewWorks(),
-						validatesMissingAdminKey(),
-						tooLongNameCheckHolds(),
-						tooLongSymbolCheckHolds(),
-						nameChanges(),
-						keysChange(),
-						validatesAlreadyDeletedToken(),
-						validatesMissingRef(),
-						treasuryEvolves(),
-						deletedAutoRenewAccountCheckHolds(),
-						renewalPeriodCheckHolds(),
-						invalidTreasuryCheckHolds(),
-						updateHappyPath(),
-						newTreasuryMustSign(),
-						newTreasuryMustBeAssociated(),
-						tokensCanBeMadeImmutableWithEmptyKeyList(),
-				}
-		);
+		return List.of(
+				symbolChanges(),
+				standardImmutabilitySemanticsHold(),
+				validAutoRenewWorks(),
+				validatesMissingAdminKey(),
+				tooLongNameCheckHolds(),
+				tooLongSymbolCheckHolds(),
+				nameChanges(),
+				keysChange(),
+				memoChange(),
+				validatesAlreadyDeletedToken(),
+				validatesMissingRef(),
+				treasuryEvolves(),
+				deletedAutoRenewAccountCheckHolds(),
+				renewalPeriodCheckHolds(),
+				invalidTreasuryCheckHolds(),
+				updateHappyPath(),
+				newTreasuryMustSign(),
+				newTreasuryMustBeAssociated(),
+				tokensCanBeMadeImmutableWithEmptyKeyList());
 	}
 
 	private HapiApiSpec validatesAlreadyDeletedToken() {
@@ -349,6 +349,27 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.name(hopefullyUnique)
 				).then(
 						getTokenInfo("tbu").hasName(hopefullyUnique)
+				);
+	}
+
+	public HapiApiSpec memoChange() {
+		var oldMemo = "GoodMorning!";
+		var newMemo = "GoodEvening";
+
+		return defaultHapiSpec("MemoChange")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.memo(oldMemo)
+								.treasury(TOKEN_TREASURY),
+						getTokenInfo("tbu").hasMemo(oldMemo),
+						tokenUpdate("tbu")
+								.memo(newMemo)
+				).then(
+						getTokenInfo("tbu").hasMemo(newMemo)
 				);
 	}
 
