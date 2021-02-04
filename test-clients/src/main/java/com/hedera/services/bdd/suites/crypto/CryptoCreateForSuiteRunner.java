@@ -29,6 +29,7 @@ import org.junit.Assert;
 
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -37,7 +38,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRE
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -48,6 +48,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateForSuiteRunner.class);
 	private String nodes;
 	private String defaultNode;
+	private static OptionalLong initialBalance = OptionalLong.of(ONE_HBAR * 50000);
 
 	public CryptoCreateForSuiteRunner(String nodes, String defaultNode) {
 		this.nodes = nodes;
