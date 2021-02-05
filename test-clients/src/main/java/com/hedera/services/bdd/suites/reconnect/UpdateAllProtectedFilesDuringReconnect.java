@@ -115,7 +115,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 											spec.registry().saveBytes("newRates", newRates);
 											return newRates;
 										}
-								).signedBy(SYSTEM_ADMIN),
+								).signedBy(DEFAULT_PAYER, SYSTEM_ADMIN),
 
 						makeFree(CryptoGetInfo),
 
@@ -137,12 +137,12 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.3")
-								.signedBy(SYSTEM_ADMIN)
+								.signedBy(DEFAULT_PAYER, SYSTEM_ADMIN)
 								.saveToRegistry(fileInfoRegistry),
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.6")
-								.signedBy(SYSTEM_ADMIN)
+								.signedBy(DEFAULT_PAYER, SYSTEM_ADMIN)
 								.hasContents(fileInfoRegistry),
 
 						fileUpdate(nonUpdatableFile)
