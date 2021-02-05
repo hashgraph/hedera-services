@@ -132,6 +132,7 @@ class HederaTokenStoreTest {
 	Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
 	String symbol = "NOTHBAR";
 	String newSymbol = "REALLYSOM";
+	String memo = "TOKENMEMO";
 	String name = "TOKENNAME";
 	String newName = "NEWNAME";
 	long expiry = thisSecond + 1_234_567;
@@ -1519,6 +1520,7 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setMemo(memo);
 
 		// given:
 		var req = fullyValidAttempt()
@@ -1555,6 +1557,7 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setMemo(memo);
 
 		// given:
 		var req = fullyValidAttempt().build();
@@ -1664,6 +1667,7 @@ class HederaTokenStoreTest {
 	TokenCreateTransactionBody.Builder fullyValidAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
+				.setMemo(memo)
 				.setAdminKey(adminKey)
 				.setKycKey(kycKey)
 				.setFreezeKey(freezeKey)
