@@ -418,7 +418,7 @@ public class UtilVerbs {
 			perturbedSchedules.getNextFeeScheduleBuilder()
 					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
-			allRunFor(spec, updateLargeFile(SYSTEM_ADMIN, FEE_SCHEDULE, rawPerturbedSchedules));
+			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
 	}
 
