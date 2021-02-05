@@ -927,7 +927,7 @@ public class ServicesContext {
 				/* Schedule */
 				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(globalDynamicProperties()))),
 				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage())),
-				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(globalDynamicProperties()))),
+				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
