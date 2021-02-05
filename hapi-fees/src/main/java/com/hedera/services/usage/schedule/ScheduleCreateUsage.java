@@ -30,6 +30,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
+	private int expirationTimeSecs;
 
 	private ScheduleCreateUsage(TransactionBody scheduleCreationOp, TxnUsageEstimator usageEstimator) {
 		super(scheduleCreationOp, usageEstimator);
@@ -37,6 +38,11 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 
 	public static ScheduleCreateUsage newEstimate(TransactionBody scheduleCreationOp, SigUsage sigUsage) {
 		return new ScheduleCreateUsage(scheduleCreationOp, estimatorFactory.get(sigUsage, scheduleCreationOp, ESTIMATOR_UTILS));
+	}
+
+	public ScheduleCreateUsage givenScheduledTxExpirationTimeSecs(int scheduledTxExpirationTimeSecs) {
+		this.expirationTimeSecs = scheduledTxExpirationTimeSecs;
+		return self();
 	}
 
 	@Override
