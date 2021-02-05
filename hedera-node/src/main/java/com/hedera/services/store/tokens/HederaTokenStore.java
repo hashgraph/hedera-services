@@ -201,10 +201,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 				if (balance > 0) {
 					Timestamp expiry = Timestamp.newBuilder().setSeconds(token.expiry()).build();
-					if (!token.isDeleted() && !validator.isValidExpiry(expiry)) {
+					var isTokenExpired = !validator.isValidExpiry(expiry);
+					if (!token.isDeleted() && !isTokenExpired) {
 						return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 					}
-					if(validator.isValidExpiry(expiry) && !token.isDeleted()) {
+					if(isTokenExpired && !token.isDeleted()) {
 						var treasuryAccount = token.treasury().toGrpcAccountId();
 						ResponseCodeEnum status = adjustBalance(treasuryAccount, tId, balance);
 						log.info("Balance remaining on the expired token sent back to treasury account : {}",
