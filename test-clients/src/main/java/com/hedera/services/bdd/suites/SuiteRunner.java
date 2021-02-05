@@ -93,7 +93,7 @@ import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
 import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.MixedValidationsAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.SubmitMessagesBeforeReconnect;
+import com.hedera.services.bdd.suites.reconnect.SubmitMessagesForReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
@@ -235,7 +235,7 @@ public class SuiteRunner {
 		/* Functional tests - RECONNECT */
 		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
-		put("SubmitMessagesBeforeReconnect", aof(new SubmitMessagesBeforeReconnect()));
+		put("SubmitMessagesForReconnect", aof(new SubmitMessagesForReconnect()));
 		put("CreateFilesBeforeReconnect", aof(new CreateFilesBeforeReconnect()));
 		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
 		put("MixedValidationsAfterReconnect", aof(new MixedValidationsAfterReconnect()));

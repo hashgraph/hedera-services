@@ -39,9 +39,7 @@ import org.mockito.InOrder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -54,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -402,13 +399,6 @@ public class MerkleScheduleTest {
 	public void validIsLeaf() {
 		// expect:
 		assertTrue(subject.isLeaf());
-	}
-
-	@Test
-	public void throwsLegacyProvider() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class,
-				() -> MerkleSchedule.LEGACY_PROVIDER.deserialize(null));
 	}
 
 	@Test

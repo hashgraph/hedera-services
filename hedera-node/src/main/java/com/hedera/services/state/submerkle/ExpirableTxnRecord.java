@@ -29,13 +29,11 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.fcqueue.FCQueueElement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,9 +66,6 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	static final int MAX_INVOLVED_TOKENS = 10;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
-	@Deprecated
-	public static final Provider LEGACY_PROVIDER = new Provider();
-
 	static DomainSerdes serdes = new DomainSerdes();
 	static TxnId.Provider legacyTxnIdProvider = TxnId.LEGACY_PROVIDER;
 	static TxnReceipt.Provider legacyReceiptProvider = TxnReceipt.LEGACY_PROVIDER;
@@ -98,51 +93,6 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	@Override
 	public void release() {
 		/* No-op */
-	}
-
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider<ExpirableTxnRecord> {
-		@Override
-		public ExpirableTxnRecord deserialize(DataInputStream in) throws IOException {
-			var record = new ExpirableTxnRecord();
-
-			in.readLong();
-			in.readLong();
-
-			if (in.readBoolean()) {
-				record.receipt = legacyReceiptProvider.deserialize(in);
-			}
-			int numHashBytes = in.readInt();
-			if (numHashBytes > 0) {
-				record.txnHash = new byte[numHashBytes];
-				in.readFully(record.txnHash);
-			}
-			if (in.readBoolean()) {
-				record.txnId = legacyTxnIdProvider.deserialize(in);
-			}
-			if (in.readBoolean()) {
-				record.consensusTimestamp = legacyInstantProvider.deserialize(in);
-			}
-			int numMemoBytes = in.readInt();
-			if (numMemoBytes > 0) {
-				byte[] memoBytes = new byte[numMemoBytes];
-				in.readFully(memoBytes);
-				record.memo = new String(memoBytes);
-			}
-			record.fee = in.readLong();
-			if (in.readBoolean()) {
-				record.hbarAdjustments = legacyAdjustmentsProvider.deserialize(in);
-			}
-			if (in.readBoolean()) {
-				record.contractCallResult = legacyFnResultProvider.deserialize(in);
-			}
-			if (in.readBoolean()) {
-				record.contractCreateResult = legacyFnResultProvider.deserialize(in);
-			}
-			record.expiry = in.readLong();
-
-			return record;
-		}
 	}
 
 	public ExpirableTxnRecord() {

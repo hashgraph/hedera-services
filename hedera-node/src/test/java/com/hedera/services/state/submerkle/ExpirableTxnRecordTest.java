@@ -362,55 +362,6 @@ class ExpirableTxnRecordTest {
 				subject.toString());
 	}
 
-	@Test
-	public void legacyProviderWorks() throws IOException {
-		// setup:
-		var readFullyOccurrence = new AtomicInteger(0);
-		subject = subjectRecord();
-
-		given(din.readLong())
-				.willReturn(-2L)
-				.willReturn(-1L)
-				.willReturn(subject.getFee())
-				.willReturn(subject.getExpiry());
-		given(din.readBoolean()).willReturn(true);
-		// and:
-		given(legacyReceiptProvider.deserialize(din)).willReturn(subject.getReceipt());
-		// and:
-		given(legacyFnResultProvider.deserialize(din))
-				.willReturn(subject.getContractCallResult())
-				.willReturn(subject.getContractCreateResult());
-		// and:
-		given(legacyTxnIdProvider.deserialize(din)).willReturn(subject.getTxnId());
-		// and:
-		given(legacyInstantProvider.deserialize(din)).willReturn(subject.getConsensusTimestamp());
-		// and:
-		given(legacyAdjustmentsProvider.deserialize(din)).willReturn(subject.getHbarAdjustments());
-		// and:
-		given(din.readInt())
-				.willReturn(pretendHash.length)
-				.willReturn(subject.getMemo().getBytes().length);
-		// and:
-		willAnswer(invocation -> {
-			var buffer = (byte[]) invocation.getArgument(0);
-			if (readFullyOccurrence.getAndIncrement() == 0) {
-				System.arraycopy(pretendHash, 0, buffer, 0, pretendHash.length);
-			} else {
-				System.arraycopy(
-						subject.getMemo().getBytes(), 0,
-						buffer, 0, subject.getMemo().getBytes().length);
-			}
-			return null;
-		}).given(din).readFully(any());
-
-		// when:
-		var fromLegacy = ExpirableTxnRecord.LEGACY_PROVIDER.deserialize(din);
-
-		// then:
-		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
-		assertEquals(subject, fromLegacy);
-	}
-
 	@AfterEach
 	public void cleanup() {
 		ExpirableTxnRecord.legacyTxnIdProvider = TxnId.LEGACY_PROVIDER;
