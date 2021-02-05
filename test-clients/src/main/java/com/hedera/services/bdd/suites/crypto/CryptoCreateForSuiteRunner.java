@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.SuiteRunner;
 import org.apache.logging.log4j.LogManager;
@@ -50,7 +51,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	private String defaultNode;
 
 	//Use more initialBalance for this account as it is used as payer for the performance tests
-	private static OptionalLong initialBalance = OptionalLong.of(ONE_HBAR * 50000);
+	private static double initialBalance = 5.0 * (LoadTest.initialBalance.getAsLong());
 
 	public CryptoCreateForSuiteRunner(String nodes, String defaultNode) {
 		this.nodes = nodes;
@@ -79,7 +80,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 									while (!createdAuditablePayer) {
 										try {
 											var cryptoCreateOp = cryptoCreate("payerAccount")
-													.balance(initialBalance.getAsLong())
+													.balance((long) initialBalance)
 													.withRecharging()
 													.rechargeWindow(3)
 													.key(GENESIS)
