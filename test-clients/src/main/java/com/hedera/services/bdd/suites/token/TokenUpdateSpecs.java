@@ -81,10 +81,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						deletedAutoRenewAccountCheckHolds(),
 						renewalPeriodCheckHolds(),
 						invalidTreasuryCheckHolds(),
-						updateHappyPath(),
 						newTreasuryMustSign(),
 						newTreasuryMustBeAssociated(),
 						tokensCanBeMadeImmutableWithEmptyKeyList(),
+						updateHappyPath(),
 				}
 		);
 	}
@@ -523,10 +523,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasRegisteredId("primary")
 								.hasName(newSaltedName)
 								.hasTreasury("newTokenTreasury")
-								.hasFreezeKey("newFreezeKey")
-								.hasKycKey("newKycKey")
-								.hasSupplyKey("newSupplyKey")
-								.hasWipeKey("newWipeKey")
+								.hasFreezeKey("primary")
+								.hasKycKey("primary")
+								.hasSupplyKey("primary")
+								.hasWipeKey("primary")
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("newAutoRenewAccount")
 								.hasAutoRenewPeriod(101L)
