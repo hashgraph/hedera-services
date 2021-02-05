@@ -21,30 +21,31 @@ package com.hedera.services.bdd.spec.transactions.schedule;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.schedule.ScheduleCreateUsage;
+import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.withNature;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asScheduleId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
@@ -52,9 +53,6 @@ import static java.util.stream.Collectors.toList;
 
 public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	private static final Logger log = LogManager.getLogger(HapiScheduleSign.class);
-
-	private static final int defaultScheduleTxnExpiry = HapiSpecSetup.getDefaultNodeProps()
-			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
 	private final String schedule;
 	private List<String> signatories = Collections.emptyList();
@@ -112,14 +110,31 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.ScheduleSign, this::usageEstimate, txn, numPayerKeys);
+		try {
+			final ScheduleInfo info = lookupInfo(spec);
+			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) ->
+					ScheduleSignUsage.newEstimate(_txn, suFrom(svo))
+							.givenExpiry(info.getExpirationTime().getSeconds()).get();
+			return spec.fees().forActivityBasedOp(
+					HederaFunctionality.ScheduleSign, metricsCalc, txn, numPayerKeys);
+		} catch (Throwable ignore) {
+			return 100_000_000L;
+		}
 	}
 
-	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return ScheduleSignUsage.newEstimate(txn, suFrom(svo))
-				.givenScheduledTxExpirationTimeSecs(defaultScheduleTxnExpiry)
-				.get();
+	private ScheduleInfo lookupInfo(HapiApiSpec spec) throws Throwable {
+		HapiGetScheduleInfo subOp = getScheduleInfo(schedule).noLogging();
+		Optional<Throwable> error = subOp.execFor(spec);
+		if (error.isPresent()) {
+			if (!loggingOff) {
+				log.warn(
+						"Unable to look up current info for "
+								+ HapiPropertySource.asScheduleString(spec.registry().getScheduleId(schedule)),
+						error.get());
+			}
+			throw error.get();
+		}
+		return subOp.getResponse().getScheduleGetInfo().getScheduleInfo();
 	}
 
 	@Override

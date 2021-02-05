@@ -541,7 +541,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given(
 						updateScheduleExpiryTimeSecs,
 						newKeyNamed("signer"),
-						scheduleCreate("inner", cryptoCreate("someAccount"))
+						scheduleCreate("inner", cryptoTransferTx)
 				)
 				.when(
 						scheduleCreate("outer",
