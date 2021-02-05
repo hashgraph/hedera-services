@@ -51,7 +51,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	private String defaultNode;
 
 	// Use more initialBalance for this account as it is used as payer for the performance tests
-	private static long initialBalance = (long) (5.0 * LoadTest.initialBalance.getAsLong());
+	private static long initialBalance = 5L * LoadTest.initialBalance.getAsLong();
 
 	public CryptoCreateForSuiteRunner(String nodes, String defaultNode) {
 		this.nodes = nodes;
