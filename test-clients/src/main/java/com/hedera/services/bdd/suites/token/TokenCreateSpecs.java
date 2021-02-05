@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -169,6 +168,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec creationHappyPath() {
+		String memo = "JUMP";
 		String saltedName = salted("primary");
 		return defaultHapiSpec("CreationHappyPath")
 				.given(
@@ -181,6 +181,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("wipeKey")
 				).when(
 						tokenCreate("primary")
+								.memo(memo)
 								.name(saltedName)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount("autoRenewAccount")
@@ -203,16 +204,17 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						getTokenInfo("primary")
 								.logged()
 								.hasRegisteredId("primary")
+								.hasRegisteredMemo()
 								.hasName(saltedName)
 								.hasTreasury(TOKEN_TREASURY)
 								.hasAutoRenewPeriod(A_HUNDRED_SECONDS)
 								.hasValidExpiry()
 								.hasDecimals(1)
-								.hasAdminKey("adminKey")
-								.hasFreezeKey("freezeKey")
-								.hasKycKey("kycKey")
-								.hasSupplyKey("supplyKey")
-								.hasWipeKey("wipeKey")
+								.hasAdminKey("primary")
+								.hasFreezeKey("primary")
+								.hasKycKey("primary")
+								.hasSupplyKey("primary")
+								.hasWipeKey("primary")
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("autoRenewAccount"),
 						getAccountInfo(TOKEN_TREASURY)

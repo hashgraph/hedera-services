@@ -577,6 +577,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				token.setTreasury(treasuryId);
 				addKnownTreasury(changes.getTreasury(), tId);
 			}
+			if (changes.hasMemo()) {
+				token.setMemo(changes.getMemo().getValue());
+			}
 			var expiry = changes.getExpiry().getSeconds();
 			if (expiry != 0) {
 				token.setExpiry(expiry);
