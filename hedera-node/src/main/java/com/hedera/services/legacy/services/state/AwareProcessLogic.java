@@ -9,9 +9,9 @@ package com.hedera.services.legacy.services.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -128,20 +128,17 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private boolean txnSanityChecks(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
-		/* TODO - reactivate this sanity check after SDK guarantees appropriate gap between consensus timestamps. */
-		if (false) {
-			var lastHandled = ctx.consensusTimeOfLastHandledTxn();
-			if (lastHandled != null && !consensusTime.isAfter(lastHandled)) {
-				var msg = String.format("Catastrophic invariant failure! " +
-								"Non-increasing consensus time %d.%d versus last-handled %d.%d for: %s",
-						consensusTime.getEpochSecond(),
-						consensusTime.getNano(),
-						lastHandled.getEpochSecond(),
-						lastHandled.getNano(),
-						accessor.getSignedTxn4Log());
-				log.error(msg);
-				return false;
-			}
+		var lastHandled = ctx.consensusTimeOfLastHandledTxn();
+		if (lastHandled != null && !consensusTime.isAfter(lastHandled)) {
+			var msg = String.format("Catastrophic invariant failure! " +
+							"Non-increasing consensus time %d.%d versus last-handled %d.%d for: %s",
+					consensusTime.getEpochSecond(),
+					consensusTime.getNano(),
+					lastHandled.getEpochSecond(),
+					lastHandled.getNano(),
+					accessor.getSignedTxn4Log());
+			log.error(msg);
+			return false;
 		}
 		if (ctx.addressBook().getAddress(submittingMember).getStake() == 0L) {
 			var msg = String.format("Ignoring a transaction submitted by zero-stake node %d: %s",
@@ -178,7 +175,8 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void addRecordToStream() {
 		var finalRecord = ctx.recordsHistorian().lastCreatedRecord().get();
-		addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
+		addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(), finalRecord,
+				ctx.txnCtx().consensusTime());
 	}
 
 	private void doTriggeredProcess(TxnAccessor accessor, Instant consensusTime) {
@@ -357,6 +355,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.midnightRates().replaceWith(ctx.exchange().activeRates());
 		}
 	}
+
 	private boolean shouldUpdateMidnightRatesAt(Instant dataDrivenNow) {
 		return ctx.consensusTimeOfLastHandledTxn() != null &&
 				!inSameUtcDay(ctx.consensusTimeOfLastHandledTxn(), dataDrivenNow);
@@ -367,9 +366,11 @@ public class AwareProcessLogic implements ProcessLogic {
 			TransactionRecord transactionRecord,
 			Instant consensusTimeStamp
 	) {
-		final RecordStreamObject recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp);
+		final RecordStreamObject recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction,
+				consensusTimeStamp);
 		// update runningHash instance in the leaf of ServicesState
-		// the Hash in the runningHash instance will be calculated and set by the runningHashCalculator in the RecordStreamManager
+		// the Hash in the runningHash instance will be calculated and set by the runningHashCalculator in the
+		// RecordStreamManager
 		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
 		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
 	}
