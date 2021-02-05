@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -199,10 +200,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				}
 				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 				if (balance > 0) {
-					if (!token.isDeleted() && !token.isExpired()) {
+					Timestamp expiry = Timestamp.newBuilder().setSeconds(token.expiry()).build();
+					if (!token.isDeleted() && !validator.isValidExpiry(expiry)) {
 						return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 					}
-					if(token.isExpired() && !token.isDeleted()) {
+					if(validator.isValidExpiry(expiry) && !token.isDeleted()) {
 						var treasuryAccount = token.treasury().toGrpcAccountId();
 						ResponseCodeEnum status = adjustBalance(treasuryAccount, tId, balance);
 						log.info("Balance remaining on the expired token sent back to treasury account : {}",
