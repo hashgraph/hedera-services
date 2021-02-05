@@ -396,7 +396,7 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation makeFree(HederaFunctionality function) {
 		return withOpContext((spec, opLog) -> {
-			var query = getFileContents(FEE_SCHEDULE).payingWith(SYSTEM_ADMIN);
+			var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
