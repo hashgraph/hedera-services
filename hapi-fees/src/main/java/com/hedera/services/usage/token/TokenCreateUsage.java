@@ -52,6 +52,7 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
 		baseSize += keySizeIfPresent(op, TokenCreateTransactionBody::hasAdminKey, TokenCreateTransactionBody::getAdminKey);
 		baseSize += keySizeIfPresent(op, TokenCreateTransactionBody::hasSupplyKey, TokenCreateTransactionBody::getSupplyKey);
 		baseSize += keySizeIfPresent(op, TokenCreateTransactionBody::hasFreezeKey, TokenCreateTransactionBody::getFreezeKey);
+		baseSize += op.getMemoBytes().size();
 		if (op.hasAutoRenewAccount()) {
 			baseSize += BASIC_ENTITY_ID_SIZE;
 		}

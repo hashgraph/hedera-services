@@ -55,6 +55,7 @@ public class TokenCreateUsageTest {
 	long now = expiry - autoRenewPeriod;
 	String symbol = "ABCDEFGH";
 	String name = "WhyWhyWHy";
+	String memo = "Cellar door";
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
@@ -126,13 +127,15 @@ public class TokenCreateUsageTest {
 				+ FeeBuilder.getAccountKeyStorageSize(adminKey)
 				+ FeeBuilder.getAccountKeyStorageSize(wipeKey)
 				+ FeeBuilder.getAccountKeyStorageSize(freezeKey)
-				+ FeeBuilder.getAccountKeyStorageSize(supplyKey);
+				+ FeeBuilder.getAccountKeyStorageSize(supplyKey)
+				+ memo.length();
 	}
 
 	private void givenExpiryBasedOp() {
 		op = TokenCreateTransactionBody.newBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setSymbol(symbol)
+				.setMemo(memo)
 				.setName(name)
 				.setKycKey(kycKey)
 				.setAdminKey(adminKey)
@@ -146,6 +149,7 @@ public class TokenCreateUsageTest {
 	private void givenAutoRenewBasedOp() {
 		op = TokenCreateTransactionBody.newBuilder()
 				.setAutoRenewAccount(autoRenewAccount)
+				.setMemo(memo)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
 				.setSymbol(symbol)
 				.setName(name)
