@@ -27,7 +27,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
+import com.hedera.services.files.HFileMeta;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;

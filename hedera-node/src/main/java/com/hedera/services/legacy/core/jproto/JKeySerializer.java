@@ -168,10 +168,10 @@ public class JKeySerializer {
     }
   }
 
-  static byte[] byteStream(StreamConsumer<DataOutputStream> consumer) throws IOException {
+  public static byte[] byteStream(StreamConsumer<DataOutputStream> consumer) throws IOException {
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
       try (DataOutputStream dos = new DataOutputStream(bos)) {
-        consumer.apply(dos);
+        consumer.accept(dos);
 
         dos.flush();
         bos.flush();
@@ -184,6 +184,6 @@ public class JKeySerializer {
 	@FunctionalInterface
 	public interface StreamConsumer<T> {
 
-	  void apply(T stream) throws IOException;
+	  void accept(T stream) throws IOException;
 	}
 }

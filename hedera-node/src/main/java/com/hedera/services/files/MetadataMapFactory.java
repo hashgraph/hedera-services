@@ -21,7 +21,6 @@ package com.hedera.services.files;
  */
 
 import com.hedera.services.files.store.BytesStoreAdapter;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hederahashgraph.api.proto.java.FileID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,7 +72,7 @@ public class MetadataMapFactory {
 		try {
 			return (bytes == null) ? null : HFileMeta.deserialize(bytes);
 		} catch (Exception internal) {
-			log.warn("Argument 'bytes={}' was not a serialized JFileInfo!", encodeHexString(bytes));
+			log.warn("Argument 'bytes={}' was not a serialized HFileMeta!", encodeHexString(bytes));
 			throw new IllegalArgumentException(internal);
 		}
 	}

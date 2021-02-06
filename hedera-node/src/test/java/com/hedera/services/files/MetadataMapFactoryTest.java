@@ -23,9 +23,9 @@ package com.hedera.services.files;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.services.files.MetadataMapFactory.*;
+import static org.mockito.BDDMockito.*;
 
 class MetadataMapFactoryTest {
 	private long expiry = 1_234_567L;
@@ -55,10 +56,13 @@ class MetadataMapFactoryTest {
 	}
 
 	@Test
-	public void toValueThrowsIaeOnError() {
+	public void toValueThrowsIaeOnError() throws IOException {
+		HFileMeta suspect = mock(HFileMeta.class);
+
+		given(suspect.serialize()).willThrow(IllegalStateException.class);
+
 		// expect:
-		assertThrows(IllegalArgumentException.class, () ->
-				toValueBytes(new HFileMeta(false, null, 1_234_567L)));
+		assertThrows(IllegalArgumentException.class, () -> toValueBytes(suspect));
 	}
 
 	@Test

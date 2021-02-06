@@ -22,7 +22,6 @@ package com.hedera.services.files;
 
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
 
 import java.util.OptionalInt;
 import java.util.Map.Entry;

@@ -47,7 +47,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.unit.InvalidFileIDException;
 import com.hedera.services.legacy.unit.InvalidFileWACLException;

@@ -22,7 +22,7 @@ package com.hedera.services.files.interceptors;
 
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
+import com.hedera.services.files.HFileMeta;
 import com.hederahashgraph.api.proto.java.FileID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;

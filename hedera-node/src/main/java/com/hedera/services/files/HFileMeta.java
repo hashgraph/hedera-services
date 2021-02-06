@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.core.jproto;
+package com.hedera.services.files;
 
 /*-
  * ‌
@@ -20,18 +20,32 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.utils.MiscUtils;
+
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+
 public class HFileMeta {
 	private JKey wacl;
 	private long expiry;
+	private String memo = DEFAULT_MEMO;
 	private boolean deleted;
 
 	public HFileMeta(boolean deleted, JKey wacl, long expiry) {
 		this.deleted = deleted;
 		this.wacl = wacl;
+		this.expiry = expiry;
+	}
+
+	public HFileMeta(boolean deleted, JKey wacl, long expiry, String memo) {
+		this.wacl = wacl;
+		this.memo = memo;
+		this.deleted = deleted;
 		this.expiry = expiry;
 	}
 
@@ -69,8 +83,21 @@ public class HFileMeta {
 		this.expiry = expiry;
 	}
 
+	public String getMemo() {
+		return memo;
+	}
+
+	public void setMemo(String memo) {
+		this.memo = memo;
+	}
+
 	@Override
 	public String toString() {
-		return "<JFileInfo: deleted=" + deleted + ", expirationTimeSeconds=" + expiry + ", wacl=" + wacl + ">";
+		return MoreObjects.toStringHelper(this)
+				.add("memo", memo)
+				.add("wacl", MiscUtils.describe(wacl))
+				.add("expiry", expiry)
+				.add("deleted", deleted)
+				.toString();
 	}
 }

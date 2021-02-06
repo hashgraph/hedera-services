@@ -22,7 +22,7 @@ package com.hedera.services.keys;
 
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;

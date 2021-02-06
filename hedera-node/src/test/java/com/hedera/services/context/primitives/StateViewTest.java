@@ -22,7 +22,7 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;

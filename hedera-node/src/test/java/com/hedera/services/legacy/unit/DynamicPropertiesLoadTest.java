@@ -23,7 +23,7 @@ package com.hedera.services.legacy.unit;
 import com.google.protobuf.ByteString;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.legacy.TestHelper;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;

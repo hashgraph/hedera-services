@@ -23,7 +23,6 @@ package com.hedera.services.files;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
