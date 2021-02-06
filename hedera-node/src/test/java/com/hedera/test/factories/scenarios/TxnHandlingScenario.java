@@ -20,6 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
+import com.hedera.services.legacy.unit.serialization.HFileMetaSerdeTest;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -45,7 +46,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.swirlds.fcmap.FCMap;
 
 import java.time.Instant;
@@ -153,10 +153,10 @@ public interface TxnHandlingScenario {
 		HederaFs hfs = mock(HederaFs.class);
 		given(hfs.exists(MISC_FILE)).willReturn(true);
 		given(hfs.exists(SYS_FILE)).willReturn(true);
-		given(hfs.getattr(MISC_FILE)).willReturn(JFileInfo.convert(MISC_FILE_INFO));
-		given(hfs.getattr(SYS_FILE)).willReturn(JFileInfo.convert(SYS_FILE_INFO));
+		given(hfs.getattr(MISC_FILE)).willReturn(HFileMetaSerdeTest.convert(MISC_FILE_INFO));
+		given(hfs.getattr(SYS_FILE)).willReturn(HFileMetaSerdeTest.convert(SYS_FILE_INFO));
 		given(hfs.exists(IMMUTABLE_FILE)).willReturn(true);
-		given(hfs.getattr(IMMUTABLE_FILE)).willReturn(JFileInfo.convert(IMMUTABLE_FILE_INFO));
+		given(hfs.getattr(IMMUTABLE_FILE)).willReturn(HFileMetaSerdeTest.convert(IMMUTABLE_FILE_INFO));
 		return hfs;
 	}
 

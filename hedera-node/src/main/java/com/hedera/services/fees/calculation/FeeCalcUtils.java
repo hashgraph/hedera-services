@@ -63,7 +63,7 @@ public class FeeCalcUtils {
 
 	public static Timestamp lookupFileExpiry(FileID fid, StateView view) {
 		return view.attrOf(fid)
-				.map(info -> asTimestamp(info.getExpirationTimeSeconds()))
+				.map(info -> asTimestamp(info.getExpiry()))
 				.orElse(ZERO_EXPIRY);
 	}
 

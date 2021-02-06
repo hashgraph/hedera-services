@@ -26,7 +26,6 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -108,7 +107,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 			if (!op.getContents().isEmpty()) {
 				replaceResult = Optional.of(hfs.overwrite(target, op.getContents().toByteArray()));
 			}
-			attr.setExpirationTimeSeconds(max(op.getExpirationTime().getSeconds(), attr.getExpirationTimeSeconds()));
+			attr.setExpiry(max(op.getExpirationTime().getSeconds(), attr.getExpiry()));
 
 			Optional<HederaFs.UpdateResult> changeResult = Optional.empty();
 			if (replaceResult.map(HederaFs.UpdateResult::fileReplaced).orElse(TRUE)) {

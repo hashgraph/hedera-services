@@ -23,7 +23,7 @@ package com.hedera.services.files;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -58,14 +58,14 @@ class MetadataMapFactoryTest {
 	public void toValueThrowsIaeOnError() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () ->
-				toValueBytes(new JFileInfo(false, null, 1_234_567L)));
+				toValueBytes(new HFileMeta(false, null, 1_234_567L)));
 	}
 
 	@Test
 	public void toValueConversionWorks() throws Throwable {
 		// given:
 		var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		var attr = new JFileInfo(false, validKey, expiry);
+		var attr = new HFileMeta(false, validKey, expiry);
 		// and:
 		var expected = attr.serialize();
 
@@ -80,7 +80,7 @@ class MetadataMapFactoryTest {
 	public void toAttrConversionWorks() throws Throwable {
 		// given:
 		var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		var expected = new JFileInfo(false, validKey, expiry);
+		var expected = new HFileMeta(false, validKey, expiry);
 		// and:
 		var bytes = expected.serialize();
 
@@ -124,10 +124,10 @@ class MetadataMapFactoryTest {
 		// setup:
 		Map<String, byte[]> delegate = new HashMap<>();
 		var wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		var attr0 = new JFileInfo(true, wacl, 1_234_567L);
-		var attr1 = new JFileInfo(true, wacl, 7_654_321L);
-		var attr2 = new JFileInfo(false, wacl, 7_654_321L);
-		var attr3 = new JFileInfo(false, wacl, 1_234_567L);
+		var attr0 = new HFileMeta(true, wacl, 1_234_567L);
+		var attr1 = new HFileMeta(true, wacl, 7_654_321L);
+		var attr2 = new HFileMeta(false, wacl, 7_654_321L);
+		var attr3 = new HFileMeta(false, wacl, 1_234_567L);
 		delegate.put(asLegacyPath("0.2.7"), attr0.serialize());
 		// and:
 		var fid1 = IdUtils.asFile("0.2.3");

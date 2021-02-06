@@ -9,9 +9,9 @@ package com.hedera.services.legacy.core.jproto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ import org.apache.commons.lang3.SerializationUtils;
 
 /**
  * Custom Serializer for JKey structure.
- * 
+ *
  * @author Nathan Klick
  */
 public class JKeySerializer {
@@ -133,8 +133,7 @@ public class JKeySerializer {
       byte[] key = new byte[(int) length];
       stream.readFully(key);
 
-      return (JObjectType.JEd25519Key.equals(type)) ? (T) new JEd25519Key(key)
-          : (T) new JECDSA_384Key(key);
+      return (JObjectType.JEd25519Key.equals(type)) ? (T) new JEd25519Key(key) : (T) new JECDSA_384Key(key);
     } else if (JObjectType.JThresholdKey.equals(type)) {
       int threshold = stream.readInt();
       JKeyList keyList = deserialize(stream);
@@ -169,7 +168,7 @@ public class JKeySerializer {
     }
   }
 
-  protected static byte[] byteStream(StreamConsumer<DataOutputStream> consumer) throws IOException {
+  static byte[] byteStream(StreamConsumer<DataOutputStream> consumer) throws IOException {
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
       try (DataOutputStream dos = new DataOutputStream(bos)) {
         consumer.apply(dos);

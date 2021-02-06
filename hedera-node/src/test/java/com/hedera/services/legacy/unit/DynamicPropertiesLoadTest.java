@@ -23,10 +23,8 @@ package com.hedera.services.legacy.unit;
 import com.google.protobuf.ByteString;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.legacy.TestHelper;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.InvalidFileWACLException;
-import com.hedera.services.legacy.exception.SerializationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;
 import com.hedera.services.legacy.unit.handler.FileServiceHandler;
@@ -94,7 +92,7 @@ public class DynamicPropertiesLoadTest {
 	}
 
 	@Test
-	public void testInitialiseAndChangeProperties() throws SerializationException, InvalidFileWACLException {
+	public void testInitialiseAndChangeProperties() throws Exception {
 		// setup:
 		ServicesConfigurationList serviceConfigList = getAppPropertiesProto("180");
 		FileID fileId = FileID.newBuilder().setFileNum(121).setRealmNum(0).setShardNum(0).build();
@@ -163,17 +161,16 @@ public class DynamicPropertiesLoadTest {
 		return serviceConfigListBuilder.build();
 	}
 
-	private void createFile(FileID fid, byte[] fileData)
-			throws SerializationException, InvalidFileWACLException {
+	private void createFile(FileID fid, byte[] fileData) throws Exception {
 		long startTime = CURRENT_TIME;
 		long expiryTime = EXPIRY_TIME;
 		// get the System Startup Account
 		List<Key> keyList = genWacl();
 		Key key = keyList.get(0);
-		JKey jkey = JFileInfo.convertWacl(KeyList.newBuilder().addKeys(key).build());
+		JKey jkey = FileServiceHandler.convertWacl(KeyList.newBuilder().addKeys(key).build());
 		String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
 		storageWrapper.fileCreate(fileDataPath, fileData, startTime, 0, expiryTime, null);
-		JFileInfo jFileInfo = new JFileInfo(false, jkey, expiryTime);
+		HFileMeta jFileInfo = new HFileMeta(false, jkey, expiryTime);
 		byte[] bytes = jFileInfo.serialize();
 		String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
 		storageWrapper.fileCreate(fileMetaDataPath, bytes, startTime, 0, expiryTime, null);

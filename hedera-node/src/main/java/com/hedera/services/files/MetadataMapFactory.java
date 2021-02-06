@@ -21,7 +21,7 @@ package com.hedera.services.files;
  */
 
 import com.hedera.services.files.store.BytesStoreAdapter;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hederahashgraph.api.proto.java.FileID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,7 +43,7 @@ public class MetadataMapFactory {
 		throw new IllegalStateException();
 	}
 
-	public static Map<FileID, JFileInfo> metaMapFrom(Map<String, byte[]> store) {
+	public static Map<FileID, HFileMeta> metaMapFrom(Map<String, byte[]> store) {
 		return new BytesStoreAdapter<>(
 				FileID.class,
 				MetadataMapFactory::toAttr,
@@ -69,16 +69,16 @@ public class MetadataMapFactory {
 		return String.format(LEGACY_PATH_TEMPLATE, fid.getRealmNum(), fid.getFileNum());
 	}
 
-	static JFileInfo toAttr(byte[] bytes) {
+	static HFileMeta toAttr(byte[] bytes) {
 		try {
-			return (bytes == null) ? null : JFileInfo.deserialize(bytes);
+			return (bytes == null) ? null : HFileMeta.deserialize(bytes);
 		} catch (Exception internal) {
 			log.warn("Argument 'bytes={}' was not a serialized JFileInfo!", encodeHexString(bytes));
 			throw new IllegalArgumentException(internal);
 		}
 	}
 
-	static byte[] toValueBytes(JFileInfo attr) {
+	static byte[] toValueBytes(HFileMeta attr) {
 		try {
 			return attr.serialize();
 		} catch (Exception internal) {

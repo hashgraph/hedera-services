@@ -26,7 +26,7 @@ import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -120,7 +120,7 @@ public class StateView {
 	Map<byte[], byte[]> contractStorage;
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
-	Map<FileID, JFileInfo> fileAttrs;
+	Map<FileID, HFileMeta> fileAttrs;
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final Supplier<MerkleDiskFs> diskFs;
@@ -201,7 +201,7 @@ public class StateView {
 		return relationships;
 	}
 
-	public Optional<JFileInfo> attrOf(FileID id) {
+	public Optional<HFileMeta> attrOf(FileID id) {
 		return Optional.ofNullable(fileAttrs.get(id));
 	}
 
@@ -361,7 +361,7 @@ public class StateView {
 		var info = FileGetInfoResponse.FileInfo.newBuilder()
 				.setFileID(id)
 				.setDeleted(attr.isDeleted())
-				.setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpirationTimeSeconds()))
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpiry()))
 				.setSize(Optional.ofNullable(fileContents.get(id)).orElse(EMPTY_BYTES).length);
 		if (!attr.getWacl().isEmpty()) {
 			info.setKeys(mapJKey(attr.getWacl()).getKeyList());

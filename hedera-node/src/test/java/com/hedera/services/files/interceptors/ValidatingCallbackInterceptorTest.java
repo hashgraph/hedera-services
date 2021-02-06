@@ -23,7 +23,7 @@ package com.hedera.services.files.interceptors;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
 class ValidatingCallbackInterceptorTest {
-	private JFileInfo attr;
+	private HFileMeta attr;
 	private byte[] BYTES = "SOMETHING".getBytes();
 
 	int applicablePriority = 123;
@@ -54,7 +54,7 @@ class ValidatingCallbackInterceptorTest {
 
 	@BeforeEach
 	private void setup() {
-		attr = new JFileInfo(
+		attr = new HFileMeta(
 				false,
 				new JContractIDKey(1, 2, 3),
 				Instant.now().getEpochSecond());

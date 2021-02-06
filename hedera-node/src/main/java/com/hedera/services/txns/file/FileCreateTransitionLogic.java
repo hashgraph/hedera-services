@@ -25,14 +25,12 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 public class FileCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FileCreateTransitionLogic.class);
@@ -112,7 +109,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	private JFileInfo asAttr(FileCreateTransactionBody op) {
+	private HFileMeta asAttr(FileCreateTransactionBody op) {
 		JKey wacl;
 		if (op.hasKeys()) {
 			/* Note that {@code assessedValidity} above will guarantee this conversion succeeds. */
@@ -121,7 +118,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 			wacl = StateView.EMPTY_WACL;
 		}
 
-		return new JFileInfo(false, wacl, op.getExpirationTime().getSeconds());
+		return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds());
 	}
 
 	private ResponseCodeEnum validate(TransactionBody fileCreateTxn) {

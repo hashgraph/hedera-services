@@ -22,7 +22,7 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -89,8 +89,8 @@ class StateViewTest {
 	byte[] data = "SOMETHING".getBytes();
 	byte[] expectedBytecode = "A Supermarket in California".getBytes();
 	byte[] expectedStorage = "The Ecstasy".getBytes();
-	JFileInfo metadata;
-	JFileInfo immutableMetadata;
+	HFileMeta metadata;
+	HFileMeta immutableMetadata;
 	FileID target = asFile("0.0.123");
 	TokenID tokenId = asToken("2.4.5");
 	TokenID missingTokenId = asToken("3.4.5");
@@ -110,7 +110,7 @@ class StateViewTest {
 	Map<byte[], byte[]> storage;
 	Map<byte[], byte[]> bytecode;
 	Map<FileID, byte[]> contents;
-	Map<FileID, JFileInfo> attrs;
+	Map<FileID, HFileMeta> attrs;
 	BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
 
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
@@ -129,11 +129,11 @@ class StateViewTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		metadata = new JFileInfo(
+		metadata = new HFileMeta(
 				false,
 				TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(),
 				expiry);
-		immutableMetadata = new JFileInfo(
+		immutableMetadata = new HFileMeta(
 				false,
 				StateView.EMPTY_WACL,
 				expiry);

@@ -40,7 +40,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,7 +82,7 @@ class FileUpdateTransitionLogicTest {
 	FileID sysFileTarget = IdUtils.asFile("0.1.121");
 	Key newWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
 	JKey oldWacl, actionableNewWacl;
-	JFileInfo oldAttr, newAttr, deletedAttr, immutableAttr;
+	HFileMeta oldAttr, newAttr, deletedAttr, immutableAttr;
 	byte[] newContents = "STUFF".getBytes();
 	AccountID sysAdmin = IdUtils.asAccount("0.0.50");
 	AccountID nonSysAdmin = IdUtils.asAccount("0.0.13257");
@@ -101,12 +101,12 @@ class FileUpdateTransitionLogicTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		oldWacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
-		oldAttr = new JFileInfo(false, oldWacl, oldExpiry);
-		deletedAttr = new JFileInfo(true, oldWacl, oldExpiry);
-		immutableAttr = new JFileInfo(false, StateView.EMPTY_WACL, oldExpiry);
+		oldAttr = new HFileMeta(false, oldWacl, oldExpiry);
+		deletedAttr = new HFileMeta(true, oldWacl, oldExpiry);
+		immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, oldExpiry);
 
 		actionableNewWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		newAttr = new JFileInfo(false, actionableNewWacl, newExpiry);
+		newAttr = new HFileMeta(false, actionableNewWacl, newExpiry);
 
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
@@ -126,12 +126,12 @@ class FileUpdateTransitionLogicTest {
 	public void doesntUpdateWaclIfNoNew() {
 		// setup:
 		HederaFs.UpdateResult res = mock(HederaFs.UpdateResult.class);
-		ArgumentCaptor<JFileInfo> captor = ArgumentCaptor.forClass(JFileInfo.class);
+		ArgumentCaptor<HFileMeta> captor = ArgumentCaptor.forClass(HFileMeta.class);
 
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		given(hfs.getattr(nonSysFileTarget)).willReturn(
-				new JFileInfo(false, oldWacl, oldExpiry));
+				new HFileMeta(false, oldWacl, oldExpiry));
 		given(hfs.setattr(any(), any())).willReturn(res);
 
 		// when:
@@ -266,7 +266,7 @@ class FileUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		assertEquals(oldExpiry, oldAttr.getExpirationTimeSeconds());
+		assertEquals(oldExpiry, oldAttr.getExpiry());
 	}
 
 	@Test

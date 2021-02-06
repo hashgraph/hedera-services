@@ -12,8 +12,7 @@ networks:
         numsToFetch: [121]
       sysFilesUp:
         updates:
-          - num: 121
-            payer: 2
+        - {num: 121, payer: 2}
   perfnet:
     bootstrap: 2
     defaultNode: 3
@@ -116,17 +115,6 @@ networks:
     ensureScenarioPayerHbars: 100000
     nodes:
     - {account: 3, ipv4Addr: '127.0.0.1:50211'}
-    scenarioPayer: 1001
-    scenarios:
-      consensus: {persistent: 1007}
-      contract:
-        persistent: {bytecode: 1005, luckyNo: 42, num: 1006, source: Multipurpose.sol}
-      crypto: {receiver: 1003, sender: 1002}
-      file:
-        persistent: {contents: MrBleaney.txt, num: 1004}
-      sysFilesDown:
-        evalMode: snapshot
-        numsToFetch: [111]
   staging:
     bootstrap: 2
     defaultNode: 3

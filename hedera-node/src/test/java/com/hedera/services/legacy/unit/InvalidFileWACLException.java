@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.legacy.unit;
 
 /*-
  * ‌
@@ -20,10 +20,10 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-public class DeserializationException extends Exception {
+public class InvalidFileWACLException extends Exception {
 	private static final long serialVersionUID = 1L;
 
-	public DeserializationException(String message, Throwable cause) {
+	public InvalidFileWACLException(String message, Throwable cause) {
 		super(message, cause);
 	}
 }

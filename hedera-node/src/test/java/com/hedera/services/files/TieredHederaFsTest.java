@@ -23,11 +23,9 @@ package com.hedera.services.files;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -66,9 +64,9 @@ class TieredHederaFsTest {
 	byte[] origContents = "Where, like a pillow on a bed /".getBytes();
 	byte[] newContents = "Where, like a pillow on a bed / A pregnant bank swelled up to rest /".getBytes();
 	byte[] moreContents = "The violet's reclining head".getBytes();
-	JFileInfo deadAttr;
-	JFileInfo livingAttr;
-	JFileInfo deletedAttr;
+	HFileMeta deadAttr;
+	HFileMeta livingAttr;
+	HFileMeta deletedAttr;
 	FileID fid = IdUtils.asFile("0.0.7575");
 	FileID missing = IdUtils.asFile("0.0.666");
 	AccountID sponsor = IdUtils.asAccount("0.0.2");
@@ -81,16 +79,16 @@ class TieredHederaFsTest {
 	GlobalDynamicProperties properties;
 	Supplier<Instant> clock;
 	Map<FileID, byte[]> data;
-	Map<FileID, JFileInfo> metadata;
+	Map<FileID, HFileMeta> metadata;
 	MerkleDiskFs diskFs;
 	TieredHederaFs subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
 		validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		deadAttr = new JFileInfo(false, validKey, now.getEpochSecond() - 1);
-		livingAttr = new JFileInfo(false, validKey, now.getEpochSecond() + lifetimeSecs);
-		deletedAttr = new JFileInfo(true, validKey, now.getEpochSecond() + lifetimeSecs);
+		deadAttr = new HFileMeta(false, validKey, now.getEpochSecond() - 1);
+		livingAttr = new HFileMeta(false, validKey, now.getEpochSecond() + lifetimeSecs);
+		deletedAttr = new HFileMeta(true, validKey, now.getEpochSecond() + lifetimeSecs);
 
 		noInterceptor = mock(FileUpdateInterceptor.class);
 		given(noInterceptor.priorityForCandidate(any())).willReturn(OptionalInt.empty());
@@ -451,7 +449,7 @@ class TieredHederaFsTest {
 		// then:
 		verify(metadata).put(argThat(fid::equals), argThat(attr ->
 			attr.isDeleted() &&
-					attr.getExpirationTimeSeconds()	== livingAttr.getExpirationTimeSeconds() &&
+					attr.getExpiry()	== livingAttr.getExpiry() &&
 					attr.getWacl().equals(livingAttr.getWacl())));
 		verify(data).remove(fid);
 		// and:

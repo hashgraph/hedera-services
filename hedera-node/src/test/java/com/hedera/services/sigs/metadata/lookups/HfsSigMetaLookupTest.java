@@ -25,7 +25,7 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,15 +40,15 @@ class HfsSigMetaLookupTest {
 
 	FileID target = IdUtils.asFile("0.0.12345");
 	JKey wacl;
-	JFileInfo info;
-	JFileInfo immutableInfo;
+	HFileMeta info;
+	HFileMeta immutableInfo;
 	HfsSigMetaLookup subject;
 
 	@BeforeEach
 	private void setup() throws Exception {
 		wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		info = new JFileInfo(false, wacl, 1_234_567L);
-		immutableInfo = new JFileInfo(false, StateView.EMPTY_WACL, 1_234_567L);
+		info = new HFileMeta(false, wacl, 1_234_567L);
+		immutableInfo = new HFileMeta(false, StateView.EMPTY_WACL, 1_234_567L);
 
 		hfs = mock(HederaFs.class);
 

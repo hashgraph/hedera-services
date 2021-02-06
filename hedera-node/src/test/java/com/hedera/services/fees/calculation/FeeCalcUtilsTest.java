@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
@@ -125,7 +125,7 @@ public class FeeCalcUtilsTest {
 		FileID fid = IdUtils.asFile("1.2.3");
 		// and:
 		JKey wacl = JKey.mapKey(Key.newBuilder().setEd25519(ByteString.copyFrom("YUUP".getBytes())).build());
-		JFileInfo jInfo = new JFileInfo(false, wacl, Long.MAX_VALUE);
+		HFileMeta jInfo = new HFileMeta(false, wacl, Long.MAX_VALUE);
 
 		given(view.attrOf(fid)).willReturn(Optional.of(jInfo));
 

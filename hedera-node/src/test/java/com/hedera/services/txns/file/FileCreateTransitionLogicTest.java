@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +76,7 @@ class FileCreateTransitionLogicTest {
 	KeyTree waclSkeleton = TxnHandlingScenario.MISC_FILE_WACL_KT;
 	Key wacl = waclSkeleton.asKey();
 	JKey hederaWacl;
-	JFileInfo attr;
+	HFileMeta attr;
 	byte[] contents = "STUFF".getBytes();
 
 	TransactionID txnId;
@@ -92,7 +92,7 @@ class FileCreateTransitionLogicTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		hederaWacl = waclSkeleton.asJKey();
-		attr = new JFileInfo(false, hederaWacl, expiry);
+		attr = new HFileMeta(false, hederaWacl, expiry);
 
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
@@ -132,7 +132,7 @@ class FileCreateTransitionLogicTest {
 				argThat(bytes -> Arrays.equals(contents, bytes)),
 				argThat(info ->
 						info.getWacl().toString().equals(hederaWacl.toString()) &&
-						info.getExpirationTimeSeconds() == expiry),
+						info.getExpiry() == expiry),
 				argThat(genesis::equals));
 		inOrder.verify(txnCtx).setCreated(created);
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
@@ -176,7 +176,7 @@ class FileCreateTransitionLogicTest {
 				argThat(bytes -> Arrays.equals(contents, bytes)),
 				argThat(info ->
 						info.getWacl().toString().equals(StateView.EMPTY_WACL.toString()) &&
-								info.getExpirationTimeSeconds() == expiry),
+								info.getExpiry() == expiry),
 				argThat(genesis::equals));
 		verify(txnCtx).setStatus(SUCCESS);
 	}
