@@ -53,6 +53,13 @@ public class FileOpsUsage {
 	public FeeData fileUpdateUsage(TransactionBody fileUpdate, SigUsage sigUsage, FileUpdateContext ctx) {
 		var op = fileUpdate.getFileUpdate();
 
+		long keyBytesUsed = op.hasKeys() ? getAccountKeyStorageSize(asKey(op.getKeys())) : 0;
+		long bytesUsedForNewCustom = op.getContents().size()
+				+ op.getMemo().getValueBytes().size()
+				+ keyBytesUsed;
+		var estimate = estimateFactory.get(sigUsage, fileUpdate, ESTIMATOR_UTILS);
+		estimate.addBpt(bytesUsedForNewCustom + BASIC_ENTITY_ID_SIZE);
+
 		long newCustomBytes = 0;
 		newCustomBytes += op.getContents().isEmpty()
 				? ctx.currentSize()
@@ -62,11 +69,7 @@ public class FileOpsUsage {
 				: op.getMemo().getValueBytes().size();
 		newCustomBytes += !op.hasKeys()
 				? getAccountKeyStorageSize(asKey(ctx.currentWacl()))
-				: getAccountKeyStorageSize(asKey(op.getKeys()));
-
-		var estimate = estimateFactory.get(sigUsage, fileUpdate, ESTIMATOR_UTILS);
-		estimate.addBpt(newCustomBytes + BASIC_ENTITY_ID_SIZE);
-
+				: keyBytesUsed;
 		long oldCustomBytes = ctx.currentNonBaseSb();
 		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(fileUpdate, ctx.currentExpiry());
 		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(fileUpdate, op.getExpirationTime().getSeconds());
