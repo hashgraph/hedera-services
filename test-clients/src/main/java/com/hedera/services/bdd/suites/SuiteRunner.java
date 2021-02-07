@@ -56,6 +56,7 @@ import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
 import com.hedera.services.bdd.suites.file.FileAppendSuite;
+import com.hedera.services.bdd.suites.file.FileCreateSuite;
 import com.hedera.services.bdd.suites.file.FileDeleteSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
@@ -256,6 +257,7 @@ public class SuiteRunner {
 		put("ConsensusThrottlesSpecs", aof(new ConsensusThrottlesSuite()));
 		put("ConsensusQueriesStressTests", aof(new ConsensusQueriesStressTests()));
 		/* Functional tests - FILE */
+		put("FileCreateSuite", aof(new FileCreateSuite()));
 		put("FileAppendSuite", aof(new FileAppendSuite()));
 		put("FileUpdateSuite", aof(new FileUpdateSuite()));
 		put("FileDeleteSuite", aof(new FileDeleteSuite()));
