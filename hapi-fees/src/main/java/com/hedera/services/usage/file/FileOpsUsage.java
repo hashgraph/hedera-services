@@ -43,7 +43,8 @@ public class FileOpsUsage {
 		var lifetime = ESTIMATOR_UTILS.relativeLifetime(fileCreation, op.getExpirationTime().getSeconds());
 
 		var estimate = estimateFactory.get(sigUsage, fileCreation, ESTIMATOR_UTILS);
-		estimate.addBpt(customBytes);
+		/* Variable bytes plus a long for expiration time */
+		estimate.addBpt(customBytes + LONG_SIZE);
 		estimate.addSbs((bytesInBaseRepr() + customBytes) * lifetime);
 		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
@@ -54,11 +55,13 @@ public class FileOpsUsage {
 		var op = fileUpdate.getFileUpdate();
 
 		long keyBytesUsed = op.hasKeys() ? getAccountKeyStorageSize(asKey(op.getKeys())) : 0;
-		long bytesUsedForNewCustom = op.getContents().size()
+		long msgBytesUsed = BASIC_ENTITY_ID_SIZE
+				+ op.getContents().size()
 				+ op.getMemo().getValueBytes().size()
-				+ keyBytesUsed;
+				+ keyBytesUsed
+				+ (op.hasExpirationTime() ? LONG_SIZE : 0);
 		var estimate = estimateFactory.get(sigUsage, fileUpdate, ESTIMATOR_UTILS);
-		estimate.addBpt(bytesUsedForNewCustom + BASIC_ENTITY_ID_SIZE);
+		estimate.addBpt(msgBytesUsed);
 
 		long newCustomBytes = 0;
 		newCustomBytes += op.getContents().isEmpty()

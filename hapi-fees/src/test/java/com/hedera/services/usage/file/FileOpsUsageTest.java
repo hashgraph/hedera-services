@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,7 +69,7 @@ class FileOpsUsageTest {
 		givenCreationOp();
 		// and given:
 		long sb = reprSize();
-		long bytesUsed = reprSize() - FileOpsUsage.bytesInBaseRepr();
+		long bytesUsed = reprSize() - FileOpsUsage.bytesInBaseRepr() + LONG_SIZE;
 
 		// when:
 		var estimate = subject.fileCreateUsage(txn, sigUsage);
@@ -113,7 +114,7 @@ class FileOpsUsageTest {
 		// then:
 		assertEquals(A_USAGES_MATRIX, estimate);
 		// and:
-		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE);
+		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE + LONG_SIZE);
 		verify(base).addSbs(newSbs - oldSbs);
 	}
 
