@@ -103,7 +103,7 @@ class FileCreateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(true);
 		given(validator.hasGoodEncoding(wacl)).willReturn(true);
-		given(validator.isValidEntityMemo(memo)).willReturn(true);
+		given(validator.isValidEntityMemo(any())).willReturn(true);
 
 		subject = new FileCreateTransitionLogic(hfs, validator, txnCtx);
 	}

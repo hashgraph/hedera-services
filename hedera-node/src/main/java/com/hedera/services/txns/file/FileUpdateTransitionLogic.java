@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
@@ -114,6 +115,9 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 				if (op.hasKeys()) {
 					attr.setWacl(asFcKeyUnchecked(wrapped(op.getKeys())));
 				}
+				if (op.hasMemo()) {
+					attr.setMemo(op.getMemo().getValue());
+				}
 				changeResult = Optional.of(hfs.setattr(target, attr));
 			}
 
@@ -172,6 +176,10 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum validate(TransactionBody fileUpdateTxn) {
 		var op = fileUpdateTxn.getFileUpdate();
+
+		if (op.hasMemo() && !validator.isValidEntityMemo(op.getMemo().getValue())) {
+			return MEMO_TOO_LONG;
+		}
 
 		if (op.hasExpirationTime()) {
 			var effectiveDuration = Duration.newBuilder()

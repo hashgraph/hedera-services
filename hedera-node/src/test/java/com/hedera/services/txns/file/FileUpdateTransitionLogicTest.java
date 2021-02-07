@@ -21,6 +21,7 @@ package com.hedera.services.txns.file;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.TransactionContext;
@@ -60,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static junit.framework.TestCase.assertTrue;
@@ -68,7 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 
 class FileUpdateTransitionLogicTest {
-	enum UpdateTarget { KEY, EXPIRY, CONTENTS }
+	enum UpdateTarget { KEY, EXPIRY, CONTENTS, MEMO }
 
 	long lifetime = 1_234_567L;
 	long txnValidDuration = 180;
@@ -83,6 +85,8 @@ class FileUpdateTransitionLogicTest {
 	Key newWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
 	JKey oldWacl, actionableNewWacl;
 	HFileMeta oldAttr, newAttr, deletedAttr, immutableAttr;
+	String oldMemo = "Past";
+	String newMemo = "Future";
 	byte[] newContents = "STUFF".getBytes();
 	AccountID sysAdmin = IdUtils.asAccount("0.0.50");
 	AccountID nonSysAdmin = IdUtils.asAccount("0.0.13257");
@@ -101,12 +105,12 @@ class FileUpdateTransitionLogicTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		oldWacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
-		oldAttr = new HFileMeta(false, oldWacl, oldExpiry);
+		oldAttr = new HFileMeta(false, oldWacl, oldExpiry, oldMemo);
 		deletedAttr = new HFileMeta(true, oldWacl, oldExpiry);
 		immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, oldExpiry);
 
 		actionableNewWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		newAttr = new HFileMeta(false, actionableNewWacl, newExpiry);
+		newAttr = new HFileMeta(false, actionableNewWacl, newExpiry, newMemo);
 
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
@@ -118,6 +122,7 @@ class FileUpdateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
 		given(validator.hasGoodEncoding(newWacl)).willReturn(true);
+		given(validator.isValidEntityMemo(newMemo)).willReturn(true);
 
 		subject = new FileUpdateTransitionLogic(hfs, number, validator, txnCtx);
 	}
@@ -427,6 +432,20 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void syntaxCheckTestsMemo() {
+		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.MEMO));
+		given(validator.isValidEntityMemo(newMemo)).willReturn(false);
+
+		// when:
+		var syntaxCheck = subject.syntaxCheck();
+		var status = syntaxCheck.apply(fileUpdateTxn);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, status);
+		verify(validator).isValidEntityMemo(newMemo);
+	}
+
+	@Test
 	public void syntaxCheckTestsExpiryAsAutoRenewPeriod() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
@@ -465,6 +484,9 @@ class FileUpdateTransitionLogicTest {
 		}
 		if (targets.contains(UpdateTarget.EXPIRY)) {
 			op.setExpirationTime(MiscUtils.asTimestamp(Instant.ofEpochSecond(newExpiry)));
+		}
+		if (targets.contains(UpdateTarget.MEMO)) {
+			op.setMemo(StringValue.newBuilder().setValue(newMemo).build());
 		}
 
 		txnId = TransactionID.newBuilder()

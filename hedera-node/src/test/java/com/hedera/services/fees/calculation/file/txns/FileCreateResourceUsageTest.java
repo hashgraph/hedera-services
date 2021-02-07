@@ -22,6 +22,8 @@ package com.hedera.services.fees.calculation.file.txns;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
@@ -30,8 +32,9 @@ import org.junit.jupiter.api.Test;
 import static org.mockito.BDDMockito.*;
 
 class FileCreateResourceUsageTest {
-	private SigValueObj sigUsage;
-	private FileFeeBuilder usageEstimator;
+	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+	SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+	private FileOpsUsage fileOpsUsage;
 	private FileCreateResourceUsage subject;
 
 	private TransactionBody nonFileCreateTxn;
@@ -45,10 +48,9 @@ class FileCreateResourceUsageTest {
 		nonFileCreateTxn = mock(TransactionBody.class);
 		given(nonFileCreateTxn.hasFileCreate()).willReturn(false);
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(FileFeeBuilder.class);
+		fileOpsUsage = mock(FileOpsUsage.class);
 
-		subject = new FileCreateResourceUsage(usageEstimator);
+		subject = new FileCreateResourceUsage(fileOpsUsage);
 	}
 
 	@Test
@@ -60,10 +62,12 @@ class FileCreateResourceUsageTest {
 
 	@Test
 	public void delegatesToCorrectEstimate() throws Exception {
+		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
 		// when:
-		subject.usageGiven(fileCreateTxn, sigUsage, null);
+		subject.usageGiven(fileCreateTxn, svo, null);
 
 		// then:
-		verify(usageEstimator).getFileCreateTxFeeMatrices(fileCreateTxn, sigUsage);
+		verify(fileOpsUsage).fileCreateUsage(fileCreateTxn, sigUsage);
 	}
 }

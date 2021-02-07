@@ -276,6 +276,7 @@ import com.hedera.services.txns.token.TokenWipeTransitionLogic;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
@@ -849,6 +850,7 @@ public class ServicesContext {
 
 	public FeeCalculator fees() {
 		if (fees == null) {
+			FileOpsUsage fileOpsUsage = new FileOpsUsage();
 			FileFeeBuilder fileFees = new FileFeeBuilder();
 			CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
 			SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
@@ -879,13 +881,14 @@ public class ServicesContext {
 							/* Schedule */
 							new GetScheduleInfoResourceUsage()
 					),
-					txnUsageEstimators(fileFees, cryptoFees, contractFees)
+					txnUsageEstimators(fileOpsUsage, fileFees, cryptoFees, contractFees)
 			);
 		}
 		return fees;
 	}
 
 	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators(
+			FileOpsUsage fileOpsUsage,
 			FileFeeBuilder fileFees,
 			CryptoFeeBuilder cryptoFees,
 			SmartContractFeeBuilder contractFees
@@ -902,7 +905,7 @@ public class ServicesContext {
 				entry(ContractDelete, List.of(new ContractDeleteResourceUsage(contractFees))),
 				entry(ContractUpdate, List.of(new ContractUpdateResourceUsage(contractFees))),
 				/* File */
-				entry(FileCreate, List.of(new FileCreateResourceUsage(fileFees))),
+				entry(FileCreate, List.of(new FileCreateResourceUsage(fileOpsUsage))),
 				entry(FileDelete, List.of(new FileDeleteResourceUsage(fileFees))),
 				entry(FileUpdate, List.of(new FileUpdateResourceUsage())),
 				entry(FileAppend, List.of(new FileAppendResourceUsage(fileFees))),

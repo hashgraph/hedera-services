@@ -54,6 +54,7 @@ import com.hedera.services.fees.calculation.file.txns.SystemUndeleteFileResource
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.FileFeeBuilder;
@@ -95,6 +96,7 @@ public enum TestFeesFactory {
 	}
 
 	public FeeCalculator getWithExchange(HbarCentExchange exchange) {
+		FileOpsUsage fileOpsUsage = new FileOpsUsage();
 		FileFeeBuilder fileFees = new FileFeeBuilder();
 		CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
 		SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
@@ -118,11 +120,12 @@ public enum TestFeesFactory {
 						/* Consensus */
 						new GetTopicInfoResourceUsage()
 				),
-				txnUsageFn(fileFees, cryptoFees, contractFees)
+				txnUsageFn(fileOpsUsage, fileFees, cryptoFees, contractFees)
 		);
 	}
 
 	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageFn(
+			FileOpsUsage fileOpsUsage,
 			FileFeeBuilder fileFees,
 			CryptoFeeBuilder cryptoFees,
 			SmartContractFeeBuilder contractFees
@@ -139,7 +142,7 @@ public enum TestFeesFactory {
 				entry(ContractDelete, List.<TxnResourceUsageEstimator>of(new ContractDeleteResourceUsage(contractFees))),
 				entry(ContractUpdate, List.<TxnResourceUsageEstimator>of(new ContractUpdateResourceUsage(contractFees))),
 				/* File */
-				entry(FileCreate, List.<TxnResourceUsageEstimator>of(new FileCreateResourceUsage(fileFees))),
+				entry(FileCreate, List.<TxnResourceUsageEstimator>of(new FileCreateResourceUsage(fileOpsUsage))),
 				entry(FileDelete, List.<TxnResourceUsageEstimator>of(new FileDeleteResourceUsage(fileFees))),
 				entry(FileUpdate, List.<TxnResourceUsageEstimator>of(new FileUpdateResourceUsage())),
 				entry(FileAppend, List.<TxnResourceUsageEstimator>of(new FileAppendResourceUsage(fileFees))),

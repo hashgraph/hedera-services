@@ -44,7 +44,7 @@ public abstract class TxnUsage {
 		this.usageEstimator = usageEstimator;
 	}
 
-	protected <T> long keySizeIfPresent(T op, Predicate<T> check, Function<T, Key> getter) {
+	public static <T> long keySizeIfPresent(T op, Predicate<T> check, Function<T, Key> getter) {
 		return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
 	}
 

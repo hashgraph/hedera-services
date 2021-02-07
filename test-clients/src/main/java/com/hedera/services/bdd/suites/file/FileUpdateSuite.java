@@ -62,7 +62,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//    	        vanillaUpdateSucceeds(),
+    	        vanillaUpdateSucceeds(),
 				updateFeesCompatibleWithCreates(),
 				apiPermissionsChangeDynamically(),
 		});

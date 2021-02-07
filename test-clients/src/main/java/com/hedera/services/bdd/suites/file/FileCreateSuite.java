@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.file;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -35,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -65,6 +67,7 @@ public class FileCreateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
+				createWithMemoWorks()
 		);
 	}
 
@@ -73,6 +76,17 @@ public class FileCreateSuite extends HapiApiSuite {
 				createFailsWithMissingSigs(),
 				createFailsWithPayerAccountNotFound()
 		);
+	}
+
+	private HapiApiSpec createWithMemoWorks() {
+		String memo = "Really quite something!";
+
+		return defaultHapiSpec("createWithMemoWorks")
+				.given(
+						fileCreate("memorable").memo(memo)
+				).when().then(
+						getFileInfo("memorable").hasMemo(memo)
+				);
 	}
 
 	private HapiApiSpec createFailsWithMissingSigs() {
