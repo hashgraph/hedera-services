@@ -230,7 +230,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasTimestamp(String label) {
-		return hasVia(this::getTimestamp, label);
+		return registry.containsKey(full(label, Timestamp.class));
 	}
 
 	public Timestamp getTimestamp(String label) {
@@ -714,7 +714,6 @@ public class HapiSpecRegistry {
 	private synchronized <T> T get(String name, Class<T> type) {
 		Object v = registry.get(full(name, type));
 		if (v == null) {
-			log.error("No such {} named '{}'!", type.getSimpleName(), name);
 			throw new RegistryNotFound("Missing " + type.getSimpleName() + " '" + name + "'!");
 		}
 		return type.cast(v);

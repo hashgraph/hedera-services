@@ -144,7 +144,7 @@ public enum TestFeesFactory {
 				/* File */
 				entry(FileCreate, List.<TxnResourceUsageEstimator>of(new FileCreateResourceUsage(fileOpsUsage))),
 				entry(FileDelete, List.<TxnResourceUsageEstimator>of(new FileDeleteResourceUsage(fileFees))),
-				entry(FileUpdate, List.<TxnResourceUsageEstimator>of(new FileUpdateResourceUsage())),
+				entry(FileUpdate, List.<TxnResourceUsageEstimator>of(new FileUpdateResourceUsage(fileOpsUsage))),
 				entry(FileAppend, List.<TxnResourceUsageEstimator>of(new FileAppendResourceUsage(fileFees))),
 				/* Consensus */
 				entry(ConsensusCreateTopic, List.<TxnResourceUsageEstimator>of(new CreateTopicResourceUsage())),

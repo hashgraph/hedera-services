@@ -22,12 +22,8 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenDissociateUsage;
-import com.hedera.services.usage.token.TokenCreateUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;

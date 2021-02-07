@@ -907,7 +907,7 @@ public class ServicesContext {
 				/* File */
 				entry(FileCreate, List.of(new FileCreateResourceUsage(fileOpsUsage))),
 				entry(FileDelete, List.of(new FileDeleteResourceUsage(fileFees))),
-				entry(FileUpdate, List.of(new FileUpdateResourceUsage())),
+				entry(FileUpdate, List.of(new FileUpdateResourceUsage(fileOpsUsage))),
 				entry(FileAppend, List.of(new FileAppendResourceUsage(fileFees))),
 				/* Consensus */
 				entry(ConsensusCreateTopic, List.of(new CreateTopicResourceUsage())),

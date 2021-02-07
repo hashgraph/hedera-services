@@ -34,6 +34,7 @@ import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -127,7 +128,6 @@ public class FileUpdateSuite extends HapiApiSuite {
 							var extensionOp = getTxnRecord("extend");
 							var specialOp = getTxnRecord("special");
 							allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
-//							allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp);
 							var createFee = createOp.getResponseRecord().getTransactionFee();
 							opLog.info("Creation : " + createFee);
 							opLog.info("New 4k   : " + to4kOp.getResponseRecord().getTransactionFee()
@@ -144,14 +144,21 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec vanillaUpdateSucceeds() {
 		final byte[] old4K = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+		String firstMemo = "Originally";
+		String secondMemo = "Subsequently";
 
 		return defaultHapiSpec("VanillaUpdateSucceeds")
 				.given(
-						fileCreate("test").contents(old4K)
+						fileCreate("test")
+								.memo(firstMemo)
+								.contents(old4K)
 				).when(
-						fileUpdate("test").contents(new4k)
+						fileUpdate("test")
+								.memo(secondMemo)
+								.contents(new4k)
 				).then(
-						getFileContents("test").hasContents(ignore -> new4k)
+						getFileContents("test").hasContents(ignore -> new4k),
+						getFileInfo("test").hasMemo(secondMemo)
 				);
 	}
 

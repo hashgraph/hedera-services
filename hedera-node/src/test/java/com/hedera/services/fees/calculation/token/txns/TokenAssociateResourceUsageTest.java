@@ -21,14 +21,12 @@ package com.hedera.services.fees.calculation.token.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenAssociateUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -68,9 +66,12 @@ class TokenAssociateResourceUsageTest {
 	long expiry = 1_234_567L;
 	TokenID firstToken = IdUtils.asToken("0.0.123");
 	TokenID secondToken = IdUtils.asToken("0.0.124");
+	FeeData expected;
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		expected = mock(FeeData.class);
+
 		account = mock(MerkleAccount.class);
 		given(account.getExpiry()).willReturn(expiry);
 		accounts = mock(FCMap.class);
@@ -95,7 +96,7 @@ class TokenAssociateResourceUsageTest {
 
 		usage = mock(TokenAssociateUsage.class);
 		given(usage.givenCurrentExpiry(expiry)).willReturn(usage);
-		given(usage.get()).willReturn(MOCK_TOKEN_ASSOCIATE_USAGE);
+		given(usage.get()).willReturn(expected);
 
 		TokenAssociateResourceUsage.factory = factory;
 		given(factory.apply(tokenAssociateTxn, sigUsage)).willReturn(usage);
@@ -114,7 +115,7 @@ class TokenAssociateResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
-				MOCK_TOKEN_ASSOCIATE_USAGE,
+				expected,
 				subject.usageGiven(tokenAssociateTxn, obj, view));
 		// and:
 		verify(usage).givenCurrentExpiry(expiry);
@@ -129,20 +130,4 @@ class TokenAssociateResourceUsageTest {
 				FeeData.getDefaultInstance(),
 				subject.usageGiven(tokenAssociateTxn, obj, view));
 	}
-
-	public static final FeeData MOCK_TOKEN_ASSOCIATE_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(3)
-					.setBpt(3)
-					.setVpt(3)
-					.setRbh(3)
-					.setSbh(3)
-					.setGas(3)
-					.setTv(3)
-					.setBpr(3)
-					.setSbpr(3)
-					.build(), 3);
-
 }

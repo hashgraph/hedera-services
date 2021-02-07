@@ -22,18 +22,15 @@ package com.hedera.services.fees.calculation.schedule.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
 import com.hedera.services.usage.schedule.ScheduleGetInfoUsage;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -47,7 +44,6 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -71,6 +67,7 @@ public class GetScheduleInfoResourceUsageTest {
     GetScheduleInfoResourceUsage subject;
     ScheduleGetInfoUsage estimator;
     Function<Query, ScheduleGetInfoUsage> factory;
+    FeeData expected;
 
     @BeforeEach
     private void setup() throws Throwable {
@@ -80,12 +77,13 @@ public class GetScheduleInfoResourceUsageTest {
         given(factory.apply(any())).willReturn(estimator);
         given(view.infoForSchedule(target)).willReturn(Optional.of(info));
 
+        expected = mock(FeeData.class);
 
         given(estimator.givenTransaction(info.getTransactionBody().toByteArray())).willReturn(estimator);
         given(estimator.givenMemo(info.getMemoBytes())).willReturn(estimator);
         given(estimator.givenCurrentAdminKey(any())).willReturn(estimator);
         given(estimator.givenSignatories(any())).willReturn(estimator);
-        given(estimator.get()).willReturn(MOCK_SCHEDULE_GET_INFO_USAGE);
+        given(estimator.get()).willReturn(expected);
 
         GetScheduleInfoResourceUsage.factory = factory;
         subject = new GetScheduleInfoResourceUsage();
@@ -112,7 +110,7 @@ public class GetScheduleInfoResourceUsageTest {
         verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
         verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
-        assertSame(MOCK_SCHEDULE_GET_INFO_USAGE, usage);
+        assertSame(expected, usage);
     }
 
     @Test
@@ -140,7 +138,7 @@ public class GetScheduleInfoResourceUsageTest {
         verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
         verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
-        assertSame(MOCK_SCHEDULE_GET_INFO_USAGE, usage);
+        assertSame(expected, usage);
     }
 
     @Test
@@ -153,7 +151,7 @@ public class GetScheduleInfoResourceUsageTest {
 
         // then
         assertSame(info, queryCtx.get(GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY));
-        assertSame(MOCK_SCHEDULE_GET_INFO_USAGE, usage);
+        assertSame(expected, usage);
         verify(view).infoForSchedule(target);
         verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
@@ -182,28 +180,4 @@ public class GetScheduleInfoResourceUsageTest {
                         .setScheduleID(id))
                 .build();
     }
-
-    private Query scheduleInfoQueryWithType(ScheduleID id, ResponseType type) {
-        ScheduleGetInfoQuery.Builder op = ScheduleGetInfoQuery.newBuilder()
-                .setScheduleID(id)
-                .setHeader(QueryHeader.newBuilder().setResponseType(type));
-        return Query.newBuilder()
-                .setScheduleGetInfo(op)
-                .build();
-    }
-
-    private static final FeeData MOCK_SCHEDULE_GET_INFO_USAGE = UsageEstimatorUtils.defaultPartitioning(
-            FeeComponents.newBuilder()
-                    .setMin(1)
-                    .setMax(1_000_000)
-                    .setConstant(1)
-                    .setBpt(1)
-                    .setVpt(1)
-                    .setRbh(1)
-                    .setSbh(1)
-                    .setGas(1)
-                    .setTv(1)
-                    .setBpr(1)
-                    .setSbpr(1)
-                    .build(), 1);
 }

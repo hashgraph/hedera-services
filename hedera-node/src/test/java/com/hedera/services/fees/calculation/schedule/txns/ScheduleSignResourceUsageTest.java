@@ -21,11 +21,9 @@ package com.hedera.services.fees.calculation.schedule.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
@@ -60,6 +58,7 @@ public class ScheduleSignResourceUsageTest {
     ScheduleID target = IdUtils.asSchedule("0.0.123");
     SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+    FeeData expected;
 
     ScheduleInfo info = ScheduleInfo.newBuilder()
             .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
@@ -67,6 +66,7 @@ public class ScheduleSignResourceUsageTest {
 
     @BeforeEach
     private void setup() {
+        expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleSignTxn = mock(TransactionBody.class);
         given(scheduleSignTxn.hasScheduleSign()).willReturn(true);
@@ -80,7 +80,7 @@ public class ScheduleSignResourceUsageTest {
 
         usage = mock(ScheduleSignUsage.class);
         given(usage.givenExpiry(anyLong())).willReturn(usage);
-        given(usage.get()).willReturn(MOCK_SCHEDULE_SIGN_USAGE);
+        given(usage.get()).willReturn(expected);
 
         factory = (BiFunction<TransactionBody, SigUsage, ScheduleSignUsage>)mock(BiFunction.class);
         given(factory.apply(scheduleSignTxn, sigUsage)).willReturn(usage);
@@ -101,7 +101,7 @@ public class ScheduleSignResourceUsageTest {
     @Test
     public void delegatesToCorrectEstimate() throws Exception {
         // expect:
-        assertEquals(MOCK_SCHEDULE_SIGN_USAGE, subject.usageGiven(scheduleSignTxn, obj, view));
+        assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
     }
 
     @Test
@@ -117,18 +117,4 @@ public class ScheduleSignResourceUsageTest {
         verify(scheduleSignTxn).getScheduleSign();
         verify(view).infoForSchedule(target);
     }
-
-    private static final FeeData MOCK_SCHEDULE_SIGN_USAGE = UsageEstimatorUtils.defaultPartitioning(
-            FeeComponents.newBuilder()
-                    .setMin(1)
-                    .setMax(1_000_000)
-                    .setConstant(1)
-                    .setBpt(1)
-                    .setVpt(1)
-                    .setRbh(1)
-                    .setGas(1)
-                    .setTv(1)
-                    .setBpr(1)
-                    .setSbpr(1)
-                    .build(), 1);
 }
