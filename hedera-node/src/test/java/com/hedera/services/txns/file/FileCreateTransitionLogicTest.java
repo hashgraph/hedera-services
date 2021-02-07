@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,8 +63,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 
 class FileCreateTransitionLogicTest {
-	enum ValidProperty { KEY, EXPIRY, CONTENTS }
+	enum ValidProperty { KEY, EXPIRY, CONTENTS, MEMO }
 
+	String memo = "Originally I thought";
 	long lifetime = 1_234_567L;
 	long txnValidDuration = 180;
 	long now = Instant.now().getEpochSecond();
@@ -101,6 +103,7 @@ class FileCreateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(true);
 		given(validator.hasGoodEncoding(wacl)).willReturn(true);
+		given(validator.isValidEntityMemo(memo)).willReturn(true);
 
 		subject = new FileCreateTransitionLogic(hfs, validator, txnCtx);
 	}
@@ -132,10 +135,24 @@ class FileCreateTransitionLogicTest {
 				argThat(bytes -> Arrays.equals(contents, bytes)),
 				argThat(info ->
 						info.getWacl().toString().equals(hederaWacl.toString()) &&
-						info.getExpiry() == expiry),
+						info.getExpiry() == expiry &&
+						memo.equals(info.getMemo())),
 				argThat(genesis::equals));
 		inOrder.verify(txnCtx).setCreated(created);
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	public void syntaxCheckTestsMemo() {
+		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
+		given(validator.isValidEntityMemo(memo)).willReturn(false);
+
+		// when:
+		var syntaxCheck = subject.syntaxCheck();
+		var status = syntaxCheck.apply(fileCreateTxn);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, status);
 	}
 
 	@Test
@@ -229,6 +246,9 @@ class FileCreateTransitionLogicTest {
 		}
 		if (validProps.contains(ValidProperty.EXPIRY)) {
 			op.setExpirationTime(MiscUtils.asTimestamp(Instant.ofEpochSecond(expiry)));
+		}
+		if (validProps.contains(ValidProperty.MEMO)) {
+			op.setMemo(memo);
 		}
 
 		txnId = TransactionID.newBuilder()

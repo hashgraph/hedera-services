@@ -21,6 +21,7 @@ package com.hedera.services.queries.meta;
  */
 
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
@@ -86,14 +87,14 @@ class GetTxnRecordAnswerTest {
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private GetTxnRecordAnswer subject;
-	private PropertySource propertySource;
+	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
 	private void setup() {
 		recordCache = mock(RecordCache.class);
 		accounts = mock(FCMap.class);
-		propertySource = mock(PropertySource.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null);
+		nodeProps = mock(NodeLocalProperties.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
 		optionValidator = mock(OptionValidator.class);
 		answerFunctions = mock(AnswerFunctions.class);
 

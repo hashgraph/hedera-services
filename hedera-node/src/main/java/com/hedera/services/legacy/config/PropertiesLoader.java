@@ -114,8 +114,4 @@ public class PropertiesLoader {
 	public static String getNettyMode() {
 		return AsyncPropertiesObject.getNettyMode();
 	}
-
-	public static int getBinaryObjectQueryRetryTimes() {
-		return AsyncPropertiesObject.getBinaryObjectQueryRetryTimes();
-	}
 }

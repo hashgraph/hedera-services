@@ -35,6 +35,7 @@ public class NodeLocalProperties {
 	private long recordLogPeriod;
 	private boolean recordStreamEnabled;
 	private int recordStreamQueueCapacity;
+	private int queryBlobLookupRetries;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -55,6 +56,7 @@ public class NodeLocalProperties {
 		recordLogPeriod = properties.getLongProperty("hedera.recordStream.logPeriod");
 		recordStreamEnabled = properties.getBooleanProperty("hedera.recordStream.isEnabled");
 		recordStreamQueueCapacity = properties.getIntProperty("hedera.recordStream.queueCapacity");
+		queryBlobLookupRetries = properties.getIntProperty("queries.blob.lookupRetries");
 	}
 
 	public int port() {
@@ -103,5 +105,9 @@ public class NodeLocalProperties {
 
 	public int recordStreamQueueCapacity() {
 		return recordStreamQueueCapacity;
+	}
+
+	public int queryBlobLookupRetries() {
+		return queryBlobLookupRetries;
 	}
 }

@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -110,19 +111,17 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	}
 
 	private HFileMeta asAttr(FileCreateTransactionBody op) {
-		JKey wacl;
-		if (op.hasKeys()) {
-			/* Note that {@code assessedValidity} above will guarantee this conversion succeeds. */
-			wacl = asFcKeyUnchecked(wrapped(op.getKeys()));
-		} else {
-			wacl = StateView.EMPTY_WACL;
-		}
+		JKey wacl = op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : StateView.EMPTY_WACL;
 
-		return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds());
+		return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
 	}
 
 	private ResponseCodeEnum validate(TransactionBody fileCreateTxn) {
 		var op = fileCreateTxn.getFileCreate();
+
+		if (!validator.isValidEntityMemo(op.getMemo())) {
+			return MEMO_TOO_LONG;
+		}
 
 		if (!op.hasExpirationTime()) {
 			return INVALID_EXPIRATION_TIME;

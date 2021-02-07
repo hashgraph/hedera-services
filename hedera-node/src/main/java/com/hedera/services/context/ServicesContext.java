@@ -657,7 +657,7 @@ public class ServicesContext {
 					() -> queryableStorage().get(),
 					() -> queryableTokenAssociations().get(),
 					this::diskFs,
-					properties());
+					nodeLocalProperties());
 		}
 		return stateViews;
 	}
@@ -672,7 +672,7 @@ public class ServicesContext {
 					this::storage,
 					this::tokenAssociations,
 					this::diskFs,
-					properties());
+					nodeLocalProperties());
 		}
 		return currentView;
 	}

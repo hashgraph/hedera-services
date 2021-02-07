@@ -21,7 +21,7 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -103,6 +103,7 @@ class StateViewTest {
 	AccountID autoRenew = asAccount("2.4.6");
 	AccountID creatorAccountID = asAccount("3.5.7");
 	long autoRenewPeriod = 1_234_567;
+	String fileMemo = "Originally she thought";
 
 	FileGetInfoResponse.FileInfo expected;
 	FileGetInfoResponse.FileInfo expectedImmutable;
@@ -122,7 +123,7 @@ class StateViewTest {
 	MerkleSchedule schedule;
 	MerkleAccount contract;
 	MerkleAccount notContract;
-	PropertySource propertySource;
+	NodeLocalProperties nodeProps;
 	MerkleDiskFs diskFs;
 
 	StateView subject;
@@ -132,7 +133,8 @@ class StateViewTest {
 		metadata = new HFileMeta(
 				false,
 				TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(),
-				expiry);
+				expiry,
+				fileMemo);
 		immutableMetadata = new HFileMeta(
 				false,
 				StateView.EMPTY_WACL,
@@ -146,6 +148,7 @@ class StateViewTest {
 				.build();
 		expected = expectedImmutable.toBuilder()
 				.setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
+				.setMemo(fileMemo)
 				.build();
 
 		notContract = MerkleAccountFactory.newAccount()
@@ -208,7 +211,7 @@ class StateViewTest {
 		bytecode = mock(Map.class);
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
-		propertySource = mock(PropertySource.class);
+		nodeProps = mock(NodeLocalProperties.class);
 		diskFs = mock(MerkleDiskFs.class);
 
 		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
@@ -221,7 +224,7 @@ class StateViewTest {
 				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> contracts,
-				propertySource,
+				nodeProps,
 				() -> diskFs);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
@@ -506,7 +509,7 @@ class StateViewTest {
 	public void returnEmptyFileInfoForBinaryObjectNotFoundException() {
 		// setup:
 		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
-		given(propertySource.getIntProperty("binary.object.query.retry.times")).willReturn(3);
+		given(nodeProps.queryBlobLookupRetries()).willReturn(1);
 
 		// when:
 		var info = subject.infoForFile(target);
@@ -537,17 +540,6 @@ class StateViewTest {
 	public void returnsEmptyForMissingAttr() {
 		// when:
 		var info = subject.attrOf(target);
-
-		// then:
-		assertTrue(info.isEmpty());
-	}
-
-	@Test
-	public void returnsEmptyForTrouble() {
-		given(attrs.get(any())).willThrow(IllegalArgumentException.class);
-
-		// when:
-		var info = subject.infoForFile(target);
 
 		// then:
 		assertTrue(info.isEmpty());

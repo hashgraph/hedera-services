@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -87,7 +88,7 @@ class GetAccountInfoResourceUsageTest {
 	CryptoGetInfoUsage estimator;
 	Function<Query, CryptoGetInfoUsage> factory;
 
-	PropertySource propertySource;
+	NodeLocalProperties nodeProps;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -98,8 +99,8 @@ class GetAccountInfoResourceUsageTest {
 				.memo(memo)
 				.get();
 		accounts = mock(FCMap.class);
-		propertySource = mock(PropertySource.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null);
+		nodeProps = mock(NodeLocalProperties.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
 
 		estimator = mock(CryptoGetInfoUsage.class);
 		factory = mock(Function.class);

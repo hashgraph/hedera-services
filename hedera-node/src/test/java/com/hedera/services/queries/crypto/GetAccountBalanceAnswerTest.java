@@ -26,9 +26,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAc
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -85,7 +85,7 @@ public class GetAccountBalanceAnswerTest {
 	private MerkleAccount contractV = MerkleAccountFactory.newContract().balance(balance).get();
 
 	private GetAccountBalanceAnswer subject;
-	private PropertySource propertySource;
+	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
 	private void setup() {
@@ -103,7 +103,7 @@ public class GetAccountBalanceAnswerTest {
 				new MerkleTokenRelStatus(bBalance, false, false));
 
 		accounts = mock(FCMap.class);
-		propertySource = mock(PropertySource.class);
+		nodeProps = mock(NodeLocalProperties.class);
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);
 
@@ -126,7 +126,7 @@ public class GetAccountBalanceAnswerTest {
 				StateView.EMPTY_STORAGE_SUPPLIER,
 				() -> tokenRels,
 				null,
-				propertySource);
+				nodeProps);
 
 		optionValidator = mock(OptionValidator.class);
 		subject = new GetAccountBalanceAnswer(optionValidator);

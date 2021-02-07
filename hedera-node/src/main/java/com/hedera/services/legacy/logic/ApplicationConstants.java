@@ -37,11 +37,6 @@ public class ApplicationConstants {
 	public static char N = 'n';
 	public static char A = 'a';
 
-	//Default Values for Configuration Properties
-	public static int RECORD_LOG_PERIOD = 2;
-	public static int RECORD_STREAM_QU_CAP = 500;
-
-	// Estimates for calculating fees for Smart Contract local calls
 	public static String DEFAULT_LISTENING_NODE_ACCT = "0.0.3";
 
 	public static long KEEP_ALIVE_TIME = 20;
@@ -51,6 +46,4 @@ public class ApplicationConstants {
 	public static long MAX_CONNECTION_IDLE = 10;
 	public static int MAX_CONCURRENT_CALLS = 100;
 	public static int NETTY_FLOW_CONTROL_WINDOW = 65535;
-
-	public static int BINARY_OBJECT_QUERY_RETRY_TIMES = 0;
 }

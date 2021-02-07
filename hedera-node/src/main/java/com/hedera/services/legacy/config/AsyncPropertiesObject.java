@@ -53,9 +53,6 @@ public class AsyncPropertiesObject {
 	private static int nettyFlowControlWindow = ApplicationConstants.NETTY_FLOW_CONTROL_WINDOW;
 	private static Map<String, PermissionedAccountsRange> apiPermission = new HashMap<>();
 
-	// Re-try times for querying binary object store (for file services)
-	private static int binaryObjectQueryRetryTimes = ApplicationConstants.BINARY_OBJECT_QUERY_RETRY_TIMES;
-
 	public static void loadAsynchProperties(CustomProperties appConfig) {
 		// Server properties
 		defaultListeningNodeAccount = appConfig.getString("defaultListeningNodeAccount",ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT);
@@ -72,9 +69,6 @@ public class AsyncPropertiesObject {
 		
 		saveAccounts = appConfig.getString("saveAccounts", ApplicationConstants.NO);
 		exportedAccountPath = appConfig.getString("exportedAccountPath", ApplicationConstants.EXPORTED_ACCOUNT_PATH);
-
-		// Re-try times for querying binary object store (for file services)
-		binaryObjectQueryRetryTimes = appConfig.getInt("binary.object.query.retry.times", 3);
 	}
 
 	public static void loadApiProperties(CustomProperties apiPermissionProp) {
@@ -134,9 +128,5 @@ public class AsyncPropertiesObject {
 	
 	 static String getNettyMode() {
 		return nettyMode;
-	}
-	 
-	static int getBinaryObjectQueryRetryTimes() {
-		return binaryObjectQueryRetryTimes;
 	}
 }

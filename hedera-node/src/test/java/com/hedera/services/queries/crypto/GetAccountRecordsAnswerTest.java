@@ -20,6 +20,7 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
@@ -66,7 +67,7 @@ class GetAccountRecordsAnswerTest {
 
 	GetAccountRecordsAnswer subject;
 
-	PropertySource propertySource;
+	NodeLocalProperties nodeProps;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -86,8 +87,8 @@ class GetAccountRecordsAnswerTest {
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
-		propertySource = mock(PropertySource.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null);
+		nodeProps = mock(NodeLocalProperties.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
 
 		optionValidator = mock(OptionValidator.class);
 

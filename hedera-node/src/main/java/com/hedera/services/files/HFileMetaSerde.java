@@ -20,7 +20,6 @@ package com.hedera.services.files;
  * ‍
  */
 
-import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JKeySerializer.StreamConsumer;
