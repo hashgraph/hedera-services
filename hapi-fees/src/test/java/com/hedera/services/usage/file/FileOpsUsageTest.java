@@ -67,7 +67,7 @@ class FileOpsUsageTest {
 	void estimatesCreationAsExpected() {
 		givenCreationOp();
 		// and given:
-		long rb = reprSize();
+		long sb = reprSize();
 		long bytesUsed = reprSize() - FileOpsUsage.bytesInBaseRepr();
 
 		// when:
@@ -77,7 +77,7 @@ class FileOpsUsageTest {
 		assertEquals(A_USAGES_MATRIX, estimate);
 		// and:
 		verify(base).addBpt(bytesUsed);
-		verify(base).addRbs(rb * period);
+		verify(base).addSbs(sb * period);
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -91,12 +91,12 @@ class FileOpsUsageTest {
 		// and:
 		long bytesUsed = reprSize() - FileOpsUsage.bytesInBaseRepr();
 		// and:
-		long oldRbs = (oldExpiry - now) *
+		long oldSbs = (oldExpiry - now) *
 				(oldContents.length
 						+ oldMemo.length()
 						+ getAccountKeyStorageSize(Key.newBuilder().setKeyList(oldWacl).build()));
 		// and:
-		long newRbs = (expiry - now) * bytesUsed;
+		long newSbs = (expiry - now) * bytesUsed;
 
 		givenUpdateOp();
 		// and:
@@ -114,7 +114,7 @@ class FileOpsUsageTest {
 		assertEquals(A_USAGES_MATRIX, estimate);
 		// and:
 		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE);
-		verify(base).addRbs(newRbs - oldRbs);
+		verify(base).addSbs(newSbs - oldSbs);
 	}
 
 	@Test

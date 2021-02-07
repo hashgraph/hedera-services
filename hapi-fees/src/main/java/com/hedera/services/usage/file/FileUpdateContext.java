@@ -21,7 +21,7 @@ public class FileUpdateContext {
 		currentWacl = builder.currentWacl;
 	}
 
-	public long currentNonBaseRb() {
+	public long currentNonBaseSb() {
 		return currentSize
 				+ currentMemo.getBytes(StandardCharsets.UTF_8).length
 				+ getAccountKeyStorageSize(asKey(currentWacl));

@@ -1,7 +1,6 @@
 package com.hedera.services.usage.file;
 
 import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.EstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -45,7 +44,7 @@ public class FileOpsUsage {
 
 		var estimate = estimateFactory.get(sigUsage, fileCreation, ESTIMATOR_UTILS);
 		estimate.addBpt(customBytes);
-		estimate.addRbs((bytesInBaseRepr() + customBytes) * lifetime);
+		estimate.addSbs((bytesInBaseRepr() + customBytes) * lifetime);
 		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
 		return estimate.get();
@@ -68,12 +67,12 @@ public class FileOpsUsage {
 		var estimate = estimateFactory.get(sigUsage, fileUpdate, ESTIMATOR_UTILS);
 		estimate.addBpt(newCustomBytes + BASIC_ENTITY_ID_SIZE);
 
-		long oldCustomBytes = ctx.currentNonBaseRb();
+		long oldCustomBytes = ctx.currentNonBaseSb();
 		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(fileUpdate, ctx.currentExpiry());
 		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(fileUpdate, op.getExpirationTime().getSeconds());
-		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(oldCustomBytes, oldLifetime, newCustomBytes, newLifetime);
-		if (rbsDelta > 0) {
-			estimate.addRbs(rbsDelta);
+		long sbsDelta = ESTIMATOR_UTILS.changeInBsUsage(oldCustomBytes, oldLifetime, newCustomBytes, newLifetime);
+		if (sbsDelta > 0) {
+			estimate.addSbs(sbsDelta);
 		}
 
 		return estimate.get();
