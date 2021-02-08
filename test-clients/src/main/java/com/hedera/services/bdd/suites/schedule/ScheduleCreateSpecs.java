@@ -21,11 +21,9 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,14 +70,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_
 public class ScheduleCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
 	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
-	private static final HapiSpecOperation updateScheduleExpiryTimeSecs =
-			overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS);
 
-	private static final String defaultWhitelist = HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
-
-	private static final HapiCryptoTransfer cryptoTransferTx =
-			cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1));
-
+	private static final String defaultWhitelist =
+			HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
+	private static final String defaultTxExpiry =
+			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
 
 	public static void main(String... args) {
 		new ScheduleCreateSpecs().runSuiteSync();
@@ -88,6 +83,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+				suiteSetup(),
 				bodyOnlyCreation(),
 				onlyBodyAndAdminCreation(),
 				onlyBodyAndMemoCreation(),
@@ -119,19 +115,30 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				rejectsFunctionlessTxn(),
 				whitelistWorks(),
 				allowsDoublingScheduledCreates(),
-				scheduledTXCreatedAfterPreviousIdenticalIsExecuted()
+				scheduledTXCreatedAfterPreviousIdenticalIsExecuted(),
+				suiteCleanup(),
 		});
+	}
+
+	private HapiApiSpec suiteSetup() {
+		return defaultHapiSpec("suiteSetup")
+				.given( ).when( ).then(
+						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+				);
+	}
+
+	private HapiApiSpec suiteCleanup() {
+		return defaultHapiSpec("suiteCleanup")
+				.given( ).when( ).then(
+						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
+				);
 	}
 
 	private HapiApiSpec bodyOnlyCreation() {
 		return defaultHapiSpec("BodyOnlyCreation")
-				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoTransfer")
-				)
-				.when(
+				.given( ).when(
 						scheduleCreate( "onlyBody",
-								cryptoTransferTx
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).logged()
 				).then(
 						getScheduleInfo("onlyBody")
@@ -143,12 +150,10 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec onlyBodyAndAdminCreation() {
 		return defaultHapiSpec("OnlyBodyAndAdminCreation")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						newKeyNamed("admin"),
-						overriding("scheduling.whitelist", "CryptoTransfer")
+						newKeyNamed("admin")
 				).when(
 						scheduleCreate("onlyBodyAndAdminKey",
-								cryptoTransferTx
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).adminKey("admin")
 				).then(
 						getScheduleInfo("onlyBodyAndAdminKey")
@@ -160,12 +165,9 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec onlyBodyAndMemoCreation() {
 		return defaultHapiSpec("OnlyBodyAndMemoCreation")
-				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoTransfer")
-				).when(
+				.given( ).when(
 						scheduleCreate("onlyBodyAndMemo",
-								cryptoTransferTx
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).withEntityMemo("sample memo")
 				).then(
 						getScheduleInfo("onlyBodyAndMemo")
@@ -178,12 +180,10 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec bodyAndPayerCreation() {
 		return defaultHapiSpec("BodyAndPayerCreation")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						cryptoCreate("payer"),
-						overriding("scheduling.whitelist", "CryptoTransfer, CryptoCreate")
+						cryptoCreate("payer")
 				).when(
 						scheduleCreate("onlyBodyAndPayer",
-								cryptoTransferTx
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).designatingPayer("payer")
 				).then(
 						getScheduleInfo("onlyBodyAndPayer")
@@ -198,7 +198,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("BodyAndSignatoriesCreation")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payingAccount"),
 						newKeyNamed("adminKey"),
 						cryptoCreate("sender"),
@@ -218,10 +217,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec failsWithNonExistingPayerAccountId() {
 		return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
-				.given(
-						updateScheduleExpiryTimeSecs
-				)
-				.when(
+				.given( ).when(
 						scheduleCreate("invalidPayer", cryptoCreate("secondary"))
 								.designatingPayer("0.0.9999")
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
@@ -231,10 +227,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec failsWithTooLongMemo() {
 		return defaultHapiSpec("FailsWithTooLongMemo")
-				.given(
-						updateScheduleExpiryTimeSecs
-				)
-				.when(
+				.given( ).when(
 						scheduleCreate("invalidMemo", cryptoCreate("secondary"))
 								.withEntityMemo(nAscii(101))
 								.hasPrecheck(MEMO_TOO_LONG)
@@ -251,7 +244,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("AllowsDoublingScheduledCreates")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payingAccount"),
 						cryptoCreate("sender"),
 						cryptoCreate("receiver").receiverSigRequired(true),
@@ -285,7 +277,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("ScheduledTXCreatedAfterPreviousIdenticalIsExecuted")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payingAccount"),
 						cryptoCreate("sender1"),
 						cryptoCreate("receiver1"),
@@ -305,32 +296,29 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec scheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated() {
 		return defaultHapiSpec("ScheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoCreate, CryptoTransfer"),
 						cryptoCreate("payer"),
 						cryptoCreate("payer2"),
 						newKeyNamed("admin"),
 						newKeyNamed("admin2"),
-						scheduleCreate("first", cryptoTransferTx)
-								.adminKey("admin")
+						scheduleCreate("first",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin")
 								.designatingPayer("payer")
 								.via("first")
-				)
-				.when(
-						scheduleCreate("second", cryptoTransferTx)
-								.adminKey("admin2")
+				).when(
+						scheduleCreate("second",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin2")
 								.designatingPayer("payer2")
 								.via("second")
-				)
-				.then(
+				).then(
 						saveExpirations("first", "second", SCHEDULE_EXPIRY_TIME_SECS),
 						ensureDifferentScheduledTXCreated("first", "second"),
 						getScheduleInfo("first")
 								.hasAdminKey("admin")
 								.hasPayerAccountID("payer")
 								.hasValidTxBytes()
-								.hasValidExpirationTime()
-						,
+								.hasValidExpirationTime(),
 						getScheduleInfo("second")
 								.hasAdminKey("admin2")
 								.hasPayerAccountID("payer2")
@@ -342,18 +330,18 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec scheduledTXWithDifferentPayerAreNotIdempotentlyCreated() {
 		return defaultHapiSpec("ScheduledTXWithDifferentPayerAreNotIdempotentlyCreated")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoCreate, CryptoTransfer"),
 						cryptoCreate("payer"),
 						cryptoCreate("payer2"),
 						newKeyNamed("admin"),
-						scheduleCreate("first", cryptoTransferTx)
-								.adminKey("admin")
+						scheduleCreate("first",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin")
 								.designatingPayer("payer")
 								.via("first")
 				).when(
-						scheduleCreate("second", cryptoTransferTx)
-								.adminKey("admin")
+						scheduleCreate("second",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin")
 								.designatingPayer("payer2")
 								.via("second")
 				).then(
@@ -370,18 +358,18 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec scheduledTXWithDifferentAdminAreNotIdempotentlyCreated() {
 		return defaultHapiSpec("ScheduledTXWithDifferentAdminAreNotIdempotentlyCreated")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoCreate, CryptoTransfer"),
 						cryptoCreate("payer"),
 						newKeyNamed("admin"),
 						newKeyNamed("admin2"),
-						scheduleCreate("first", cryptoTransferTx)
-								.adminKey("admin")
+						scheduleCreate("first",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin")
 								.designatingPayer("payer")
 								.via("first")
 				).when(
-						scheduleCreate("second", cryptoTransferTx)
-								.adminKey("admin2")
+						scheduleCreate("second",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin2")
 								.designatingPayer("payer")
 								.via("second")
 				).then(
@@ -398,18 +386,18 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec scheduledTXWithDifferentMemoAreNotIdempotentlyCreated() {
 		return defaultHapiSpec("ScheduledTXWithDifferentMemoAreNotIdempotentlyCreated")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoCreate, CryptoTransfer"),
 						cryptoCreate("payer"),
 						newKeyNamed("admin"),
-						scheduleCreate("first", cryptoTransferTx)
-								.adminKey("admin")
+						scheduleCreate("first",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin")
 								.designatingPayer("payer")
 								.withEntityMemo("memo here")
 								.via("first")
 				).when(
-						scheduleCreate("second", cryptoTransferTx)
-								.adminKey("admin")
+						scheduleCreate("second",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin")
 								.designatingPayer("payer")
 								.withEntityMemo("different memo here")
 								.via("second")
@@ -429,13 +417,13 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec idempotentCreationWithBodyOnly() {
 		return defaultHapiSpec("IdempotentCreationWithBodyOnly")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoTransfer"),
-						scheduleCreate("first", cryptoTransferTx)
-								.via("first")
+						scheduleCreate("first",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).via("first")
 				).when(
-						scheduleCreate("second", cryptoTransferTx)
-								.via("second")
+						scheduleCreate("second",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).via("second")
 				).then(
 						ensureIdempotentlyCreated("first", "second")
 				);
@@ -444,15 +432,15 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec idempotentCreationWithBodyAndPayer() {
 		return defaultHapiSpec("IdempotentCreationWithBodyAndPayer")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payer"),
-						overriding("scheduling.whitelist", "CryptoTransfer"),
-						scheduleCreate("first", cryptoTransferTx)
-								.designatingPayer("payer")
+						scheduleCreate("first",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).designatingPayer("payer")
 								.via("first")
 				).when(
-						scheduleCreate("second", cryptoTransferTx)
-								.designatingPayer("payer")
+						scheduleCreate("second",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).designatingPayer("payer")
 								.via("second")
 				).then(
 						ensureIdempotentlyCreated("first", "second")
@@ -462,15 +450,15 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec idempotentCreationWithBodyAndAdmin() {
 		return defaultHapiSpec("IdempotentCreationWithBodyAndAdmin")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						newKeyNamed("admin"),
-						overriding("scheduling.whitelist", "CryptoTransfer"),
-						scheduleCreate("first", cryptoTransferTx)
-								.adminKey("admin")
+						scheduleCreate("first",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin")
 								.via("first")
 				).when(
-						scheduleCreate("second", cryptoTransferTx)
-								.adminKey("admin")
+						scheduleCreate("second",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).adminKey("admin")
 								.via("second")
 				).then(
 						ensureIdempotentlyCreated("first", "second")
@@ -480,14 +468,14 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec idempotentCreationWithBodyAndMemo() {
 		return defaultHapiSpec("IdempotentCreationWithBodyAndMemo")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoTransfer"),
-						scheduleCreate("first", cryptoTransferTx)
-								.memo("memo here")
+						scheduleCreate("first",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).memo("memo here")
 								.via("first")
 				).when(
-						scheduleCreate("second", cryptoTransferTx)
-								.memo("memo here")
+						scheduleCreate("second",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).memo("memo here")
 								.via("second")
 				).then(
 						ensureIdempotentlyCreated("first", "second")
@@ -497,18 +485,18 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec idempotentCreationWhenAllPropsAreTheSame() {
 		return defaultHapiSpec("IdempotentCreationWhenAllPropsAreTheSame")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoTransfer"),
 						newKeyNamed("admin"),
 						cryptoCreate("payer"),
-						scheduleCreate("first", cryptoTransferTx)
-								.designatingPayer("payer")
+						scheduleCreate("first",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).designatingPayer("payer")
 								.adminKey("admin")
 								.withEntityMemo("memo here")
 								.via("first")
 				).when(
-						scheduleCreate("second", cryptoTransferTx)
-								.designatingPayer("payer")
+						scheduleCreate("second",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+						).designatingPayer("payer")
 								.adminKey("admin")
 								.withEntityMemo("memo here")
 								.via("second")
@@ -539,9 +527,9 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec nestedScheduleSignFails() {
 		return defaultHapiSpec("NestedScheduleSignFails")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						newKeyNamed("signer"),
-						scheduleCreate("inner", cryptoTransferTx)
+						scheduleCreate("inner",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1)))
 				)
 				.when(
 						scheduleCreate("outer",
@@ -562,10 +550,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("PreservesRevocationServiceSemanticsForFileDelete")
 				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding(
-								"scheduling.whitelist",
-								"FileDelete"),
+						overriding( "scheduling.whitelist", "FileDelete"),
 						fileCreate(shouldBeInstaDeleted).waclShape(waclShape),
 						fileCreate(shouldBeDeletedEventually).waclShape(waclShape)
 				).when(
@@ -601,7 +586,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("DetectsKeysChangedBetweenExpandSigsAndHandleTxn")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						newKeyNamed("a").shape(firstShape),
 						newKeyNamed("b").shape(secondShape)
 				).when(
@@ -626,7 +610,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec onlySchedulesWithMissingReqSimpleSigs() {
 		return defaultHapiSpec("onlySchedulesWithMissingReqSimpleSigs")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						cryptoCreate("sender").balance(1L),
 						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
 				).when(
@@ -643,9 +626,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec requiresExtantPayer() {
 		return defaultHapiSpec("RequiresExtantPayer")
-				.given(
-						updateScheduleExpiryTimeSecs
-				).when( ).then(
+				.given( ).when( ).then(
 						scheduleCreate(
 								"neverToBe",
 								cryptoCreate("nope")
@@ -661,7 +642,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec doesntTriggerUntilPayerSigns() {
 		return defaultHapiSpec("DoesntTriggerUntilPayerSigns")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payer").balance(ONE_HBAR * 2),
 						cryptoCreate("sender").balance(1L),
 						cryptoCreate("receiver").receiverSigRequired(true).balance(0L)
@@ -692,7 +672,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("TriggersImmediatelyWithBothReqSimpleSigs")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						cryptoCreate("sender"),
 						cryptoCreate("receiver").receiverSigRequired(true)
 				).when(
@@ -710,10 +689,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec rejectsUnresolvableReqSigners() {
 		return defaultHapiSpec("RejectsUnresolvableReqSigners")
-				.given(
-						updateScheduleExpiryTimeSecs,
-						overriding("scheduling.whitelist", "CryptoTransfer")
-				).when().then(
+				.given( ).when().then(
 						scheduleCreate(
 								"xferWithImaginaryAccount",
 								cryptoTransfer(
@@ -726,9 +702,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec rejectsUnparseableTxn() {
 		return defaultHapiSpec("RejectsUnparseableTxn")
-				.given(
-						updateScheduleExpiryTimeSecs
-				).when().then(
+				.given( ).when().then(
 						scheduleCreateNonsense("absurd")
 								.hasKnownStatus(UNPARSEABLE_SCHEDULED_TRANSACTION)
 				);
@@ -745,7 +719,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec whitelistWorks() {
 		return defaultHapiSpec("whitelistWorks")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						scheduleCreate(
 								"nope",
 								createTopic("neverToBe").signedBy()
@@ -761,7 +734,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec retestsActivationOnCreateWithEmptySigMap() {
 		return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						newKeyNamed("a"),
 						newKeyNamed("b"),
 						newKeyListNamed("ab", List.of("a", "b"))
