@@ -46,7 +46,7 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
 	public FeeData get() {
 		var op = this.op.getTokenCreation();
 
-		var baseSize = tokenEntitySizes.totalBytesInfTokenReprGiven(op.getSymbol(), op.getName());
+		var baseSize = tokenEntitySizes.totalBytesInTokenReprGiven(op.getSymbol(), op.getName());
 		baseSize += keySizeIfPresent(op, TokenCreateTransactionBody::hasKycKey, TokenCreateTransactionBody::getKycKey);
 		baseSize += keySizeIfPresent(op, TokenCreateTransactionBody::hasWipeKey, TokenCreateTransactionBody::getWipeKey);
 		baseSize += keySizeIfPresent(op, TokenCreateTransactionBody::hasAdminKey, TokenCreateTransactionBody::getAdminKey);

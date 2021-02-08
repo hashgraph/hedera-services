@@ -122,7 +122,7 @@ public class TokenCreateUsageTest {
 	}
 
 	private long baseSize() {
-		return TOKEN_ENTITY_SIZES.totalBytesInfTokenReprGiven(symbol, name)
+		return TOKEN_ENTITY_SIZES.totalBytesInTokenReprGiven(symbol, name)
 				+ FeeBuilder.getAccountKeyStorageSize(kycKey)
 				+ FeeBuilder.getAccountKeyStorageSize(adminKey)
 				+ FeeBuilder.getAccountKeyStorageSize(wipeKey)

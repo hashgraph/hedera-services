@@ -45,7 +45,7 @@ public enum TokenEntitySizes {
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
 	}
 
-	public int totalBytesInfTokenReprGiven(String symbol, String name) {
+	public int totalBytesInTokenReprGiven(String symbol, String name) {
 		return fixedBytesInTokenRepr() + symbol.length() + name.length();
 	}
 
