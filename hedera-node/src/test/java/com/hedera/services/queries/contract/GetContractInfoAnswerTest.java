@@ -255,7 +255,7 @@ class GetContractInfoAnswerTest {
 		Query query = validQuery(COST_ANSWER, fee, target);
 
 		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
 	}
 
 	private Query validQuery(ResponseType type, long payment, String idLit) throws Throwable {

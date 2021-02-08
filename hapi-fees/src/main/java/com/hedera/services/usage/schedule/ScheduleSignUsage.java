@@ -29,6 +29,7 @@ import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
+	private long expiry;
 
 	private ScheduleSignUsage(TransactionBody scheduleSignOp, TxnUsageEstimator usageEstimator) {
 		super(scheduleSignOp, usageEstimator);
@@ -36,6 +37,11 @@ public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 
 	public static ScheduleSignUsage newEstimate(TransactionBody scheduleSignOp, SigUsage sigUsage) {
 		return new ScheduleSignUsage(scheduleSignOp, estimatorFactory.get(sigUsage, scheduleSignOp, ESTIMATOR_UTILS));
+	}
+
+	public ScheduleSignUsage givenExpiry(long expiry) {
+		this.expiry = expiry;
+		return self();
 	}
 
 	@Override
@@ -54,8 +60,9 @@ public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 			ramBytes += scheduleEntitySizes.sigBytesInScheduleReprGiven(op.getSigMap());
 			scheduledTxSigs += op.getSigMap().getSigPairCount();
 		}
+		long lifetime = ESTIMATOR_UTILS.relativeLifetime(this.op, this.expiry);
 		usageEstimator.addBpt(txnBytes);
-		usageEstimator.addRbs(ramBytes * this.expirationTimeSecs); // TODO: Here we are assuming the worst case for rb/s. It must be the delta if we want to absolutely precise
+		usageEstimator.addRbs(ramBytes * lifetime);
 		usageEstimator.addVpt(scheduledTxSigs);
 
 		return usageEstimator.get();

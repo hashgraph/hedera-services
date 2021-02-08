@@ -20,7 +20,9 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -30,10 +32,11 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Defines a type that manages transaction-specific context for a node. (That is,
@@ -51,7 +54,7 @@ public interface TransactionContext {
 	 * @param accessor the consensus platform txn to manage context of.
 	 * @param consensusTime when the txn reached consensus.
 	 */
-	void resetFor(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember);
+	void resetFor(TxnAccessor accessor, Instant consensusTime, long submittingMember);
 
 	/**
 	 * Checks if the payer is known to have an active signature (that is, whether
@@ -130,12 +133,12 @@ public interface TransactionContext {
 	TransactionRecord updatedRecordGiven(TransferList listWithNewFees);
 
 	/**
-	 * Gets an accessor to the consensus {@link com.swirlds.common.Transaction}
+	 * Gets an accessor to the defined type {@link TxnAccessor}
 	 * currently being processed.
 	 *
 	 * @return accessor for the current txn.
 	 */
-	PlatformTxnAccessor accessor();
+	TxnAccessor accessor();
 
 	/**
 	 * Set a new status for the current txn's processing.
@@ -229,4 +232,28 @@ public interface TransactionContext {
 	 * @param newTotalTokenSupply
 	 */
 	void setNewTotalSupply(long newTotalTokenSupply);
+
+	/**
+	 * Sets a triggered TxnAccessor for execution
+	 * @param accessor the accessor which will be triggered
+	 */
+	void trigger(TxnAccessor accessor);
+
+	/**
+	 * Returns a triggered TxnAccessor
+	 */
+	TxnAccessor triggeredTxn();
+
+	/**
+	 * Adds a collection of {@link ExpiringEntity} to be later tracked for purging when expired
+	 * @param expiringEntities the information about entities which will be tracked for future purge
+	 */
+	void addExpiringEntities(Collection<ExpiringEntity> expiringEntities);
+
+	/**
+	 * Gets all expiring entities to the defined type {@link ExpiringEntity}
+	 * currently being processed.
+	 * @return {@code List<ExpiringEntity>} for the current expiring entities.
+	 */
+	List<ExpiringEntity> expiringEntities();
 }

@@ -23,6 +23,9 @@ package com.hedera.services.config;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+
+import java.util.Set;
 
 public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public MockGlobalDynamicProps() {
@@ -155,5 +158,10 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public int scheduledTxExpiryTimeSecs() {
 		return 1800;
+	}
+
+	@Override
+	public Set<HederaFunctionality> schedulingWhitelist() {
+		return Set.of(HederaFunctionality.CryptoCreate, HederaFunctionality.CryptoTransfer);
 	}
 }

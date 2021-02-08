@@ -29,16 +29,10 @@ import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SC
 
 public abstract class ScheduleTxnUsage<T extends ScheduleTxnUsage<T>> extends TxnUsage {
 	static ScheduleEntitySizes scheduleEntitySizes = SCHEDULE_ENTITY_SIZES;
-	protected int expirationTimeSecs = 0;
 
 	abstract T self();
 
 	protected ScheduleTxnUsage(TransactionBody scheduleOp, TxnUsageEstimator usageEstimator) {
 		super(scheduleOp, usageEstimator);
-	}
-
-	public T givenScheduledTxExpirationTimeSecs(int scheduledTxExpirationTimeSecs) {
-		this.expirationTimeSecs = scheduledTxExpirationTimeSecs;
-		return self();
 	}
 }

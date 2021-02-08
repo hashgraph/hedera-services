@@ -21,6 +21,7 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
@@ -57,6 +58,10 @@ import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.*;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static java.util.stream.Collectors.toList;
 import java.util.List;
 import java.util.Optional;
@@ -70,11 +75,10 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.test.utils.IdUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.*;
@@ -1668,20 +1672,61 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
-	public void getsScheduleCreateAdminKeyOnly() throws Throwable {
+	public void getsNestedScheduleSign() throws Throwable {
 		// given:
-		setupFor(SCHEDULE_CREATE_MISSING_ADMIN);
+		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_SIGN);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
 		// then:
-		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
 	}
 
 	@Test
-	public void getsScheduleCreateNoAdmin() throws Throwable {
+	public void getsNestedScheduleCreates() throws Throwable {
 		// given:
-		setupFor(SCHEDULE_CREATE_WITH_ADMIN);
+		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_CREATE);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
+	}
+
+	@Test
+	public void getsScheduleCreateNonsense() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_NONSENSE);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNPARSEABLE_SCHEDULED_TRANSACTION, summary.getErrorReport().getResponseCode());
+	}
+
+	@Test
+	public void getsScheduleCreateInvalidXfer() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_INVALID_XFER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(UNRESOLVABLE_REQUIRED_SIGNERS, summary.getErrorReport().getResponseCode());
+	}
+
+	@Test
+	public void getsScheduleCreateXferNoAdmin() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_XFER_NO_ADMIN);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1689,7 +1734,100 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(SCHEDULE_ADMIN_KT.asKey()));
+				contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
+	}
+
+	@Test
+	public void getsScheduleCreateWithAdmin() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(
+						SCHEDULE_ADMIN_KT.asKey(),
+						MISC_ACCOUNT_KT.asKey(),
+						RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(2).isForScheduledTxn());
+	}
+
+	@Test
+	public void getsScheduleCreateWithMissingDesignatedPayer() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport().getResponseCode());
+	}
+
+	@Test
+	public void getsScheduleCreateWithAdminAndDesignatedPayer() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(
+						SCHEDULE_ADMIN_KT.asKey(),
+						DILIGENT_SIGNING_PAYER_KT.asKey(),
+						MISC_ACCOUNT_KT.asKey(),
+						RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertFalse(summary.getOrderedKeys().get(0).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(2).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(3).isForScheduledTxn());
+	}
+
+	@Test
+	public void getsScheduleSignKnownScheduleWithPayer() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(
+						DILIGENT_SIGNING_PAYER_KT.asKey(),
+						MISC_ACCOUNT_KT.asKey(),
+						RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(2).isForScheduledTxn());
+	}
+
+	@Test
+	public void getsScheduleSignKnownScheduleWithNowInvalidPayer() throws Throwable {
+		// given:
+		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(SignatureStatusCode.INVALID_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
 	}
 
 	@Test
@@ -1699,8 +1837,14 @@ public class HederaSigningOrderTest {
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
 		// then:
-		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+		// and:
+		assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
+		assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
 	}
 
 	@Test
@@ -1805,7 +1949,8 @@ public class HederaSigningOrderTest {
 								SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
 								SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
 				updateAccountSigns,
-				waclSigns);
+				waclSigns,
+				new MockGlobalDynamicProps());
 	}
 
 	private void aMockSummaryFactory() {

@@ -49,7 +49,7 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
 	}
 
 	@Override
-	protected HapiUncheckedSubmit self() {
+	protected HapiUncheckedSubmit<T> self() {
 		return this;
 	}
 

@@ -21,8 +21,15 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -32,10 +39,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
-import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -46,11 +49,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNull;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final Logger log = LogManager.getLogger(HapiGetTxnRecord.class);
@@ -58,6 +60,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
 
 	String txn;
+	boolean scheduled = false;
 	boolean assertNothing = false;
 	boolean assertNothingAboutHashes = false;
 	boolean useDefaultTxnId = false;
@@ -69,6 +72,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	Optional<String> saveTxnRecordToRegistry = Optional.empty();
 	Optional<String> registryEntry = Optional.empty();
 	Optional<String> topicToValidate = Optional.empty();
+	Optional<byte[]> nonce = Optional.empty();
 	Optional<byte[]> lastMessagedSubmitted = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 
@@ -86,6 +90,16 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	@Override
 	protected HapiGetTxnRecord self() {
+		return this;
+	}
+
+	public HapiGetTxnRecord scheduled() {
+		scheduled = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord withNonce(byte[] nonce) {
+		this.nonce = Optional.of(nonce);
 		return this;
 	}
 
@@ -217,6 +231,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (assertNothing) {
 			return;
 		}
+		if (scheduled) {
+			return;
+		}
 		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
 		assertPriority(spec, actualRecord);
 		assertDuplicates(spec);
@@ -268,6 +285,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		TransactionID txnId = useDefaultTxnId
 				? defaultTxnId
 				: explicitTxnId.orElseGet(() -> spec.registry().getTxnId(txn));
+		if (scheduled) {
+			var subOp = QueryVerbs.getTxnRecord(txn);
+			CustomSpecAssert.allRunFor(spec, subOp);
+			var record = subOp.getResponseRecord();
+			txnId = txnId.toBuilder()
+					.setScheduled(true)
+					.setTransactionValidStart(record.getTransactionID().getTransactionValidStart())
+					.build();
+		}
+		if (nonce.isPresent()) {
+			txnId = txnId.toBuilder().setNonce(ByteString.copyFrom(nonce.get())).build();
+		}
 		TransactionGetRecordQuery getRecordQuery = TransactionGetRecordQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 				.setTransactionID(txnId)

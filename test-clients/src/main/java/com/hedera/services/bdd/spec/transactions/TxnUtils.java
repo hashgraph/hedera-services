@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -72,6 +73,7 @@ import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSchedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
@@ -175,6 +177,10 @@ public class TxnUtils {
 
 	public static TokenID asTokenId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);
+	}
+
+	public static ScheduleID asScheduleId(String s, HapiApiSpec lookupSpec) {
+		return isIdLiteral(s) ? asSchedule(s) : lookupSpec.registry().getScheduleId(s);
 	}
 
 	public static TopicID asTopicId(String s, HapiApiSpec lookupSpec) {

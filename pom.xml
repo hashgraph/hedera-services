@@ -145,7 +145,7 @@
     <grpc.version>1.33.0</grpc.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-    <hapi-proto.version>0.12.0-pre-schedule-merge-SNAPSHOT</hapi-proto.version>
+    <hapi-proto.version>0.12.0-SNAPSHOT</hapi-proto.version>
     <log4j.version>2.13.2</log4j.version>
     <netty.version>4.1.51.Final</netty.version>
     <!-- Test dependency properties -->

@@ -20,10 +20,13 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -35,8 +38,19 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SignedTxnAccessorTest {
+	SignatureMap expectedMap = SignatureMap.newBuilder()
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("f"))
+					.setEd25519(ByteString.copyFromUtf8("irst")))
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("s"))
+					.setEd25519(ByteString.copyFromUtf8("econd")))
+			.build();
+
 	@Test
-	public void parseCorrectly() throws Exception {
+	public void parsesLegacyCorrectly() throws Exception {
+		// setup:
+		// given:
 		Transaction transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
 				3l, 0l, 0l,
 				100_000_000l,
@@ -46,18 +60,23 @@ public class SignedTxnAccessorTest {
 				"test memo",
 				5678l, -70000l,
 				5679l, 70000l);
+		transaction = transaction.toBuilder()
+				.setSigMap(expectedMap)
+				.build();
 		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(transaction);
 
-		assertEquals(transaction, accessor.getSignedTxn());
+		assertEquals(transaction, accessor.getBackwardCompatibleSignedTxn());
 		assertEquals(transaction, accessor.getSignedTxn4Log());
-		assertArrayEquals(transaction.toByteArray(), accessor.getSignedTxnBytes());
+		assertArrayEquals(transaction.toByteArray(), accessor.getBackwardCompatibleSignedTxnBytes());
 		assertEquals(body, accessor.getTxn());
 		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
 		assertEquals(body.getTransactionID(), accessor.getTxnId());
 		assertEquals(1234l, accessor.getPayer().getAccountNum());
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash().toByteArray());
+		assertEquals(expectedMap, accessor.getSigMap());
+		assertEquals(ScheduleID.getDefaultInstance(), accessor.getScheduleRef());
 	}
 
 	@Test
@@ -74,21 +93,24 @@ public class SignedTxnAccessorTest {
 		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
 		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
 				.setBodyBytes(body.toByteString())
-				.setSigMap(SignatureMap.getDefaultInstance())
+				.setSigMap(expectedMap)
 				.build();
 		Transaction newTransaction = Transaction.newBuilder()
 				.setSignedTransactionBytes(signedTransaction.toByteString())
 				.build();
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
 
-		assertEquals(newTransaction, accessor.getSignedTxn());
+		assertEquals(newTransaction, accessor.getBackwardCompatibleSignedTxn());
 		assertEquals(newTransaction, accessor.getSignedTxn4Log());
-		assertArrayEquals(newTransaction.toByteArray(), accessor.getSignedTxnBytes());
+		assertArrayEquals(newTransaction.toByteArray(), accessor.getBackwardCompatibleSignedTxnBytes());
 		assertEquals(body, accessor.getTxn());
 		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
 		assertEquals(body.getTransactionID(), accessor.getTxnId());
 		assertEquals(1234l, accessor.getPayer().getAccountNum());
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
-		assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()), accessor.getHash().toByteArray());
+		assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()),
+				accessor.getHash().toByteArray());
+		assertEquals(expectedMap, accessor.getSigMap());
+		assertEquals(ScheduleID.getDefaultInstance(), accessor.getScheduleRef());
 	}
 }

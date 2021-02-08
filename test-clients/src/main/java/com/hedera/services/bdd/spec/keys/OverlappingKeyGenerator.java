@@ -46,6 +46,10 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 		return new OverlappingKeyGenerator(5, 1);
 	}
 
+	public static OverlappingKeyGenerator withAtLeastOneOverlappingByte(int keys) {
+		return new OverlappingKeyGenerator(keys, 1);
+	}
+
 	private OverlappingKeyGenerator(int n, int minOverlapLen) {
 		Set<ByteString> usedPrefixes = new HashSet<>();
 		Map<ByteString, Key> byPrefix = new HashMap<>();

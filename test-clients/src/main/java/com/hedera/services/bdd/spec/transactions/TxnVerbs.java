@@ -25,6 +25,9 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicDelete;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
@@ -40,6 +43,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hederahashgraph.api.proto.java.ScheduleSign;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -157,6 +161,27 @@ public class TxnVerbs {
 	}
 	public static HapiTokenBurn burnToken(String token, long amount) {
 		return new HapiTokenBurn(token, amount);
+	}
+
+	/* SCHEDULE */
+	public static <T extends HapiTxnOp<T>> HapiScheduleCreate<T> scheduleCreate(String scheduled, HapiTxnOp<T> txn) {
+		return new HapiScheduleCreate<>(scheduled, txn);
+	}
+
+	public static HapiScheduleSign scheduleSign(String schedule) {
+		return new HapiScheduleSign(schedule);
+	}
+
+	public static HapiScheduleCreate<HapiCryptoCreate> scheduleCreateNonsense(String scheduled) {
+		return new HapiScheduleCreate<>(scheduled, cryptoCreate("doomed")).garbled();
+	}
+
+	public static HapiScheduleCreate<HapiCryptoCreate> scheduleCreateFunctionless(String scheduled) {
+		return new HapiScheduleCreate<>(scheduled, cryptoCreate("doomed")).functionless();
+	}
+
+	public static HapiScheduleDelete scheduleDelete(String schedule) {
+		return new HapiScheduleDelete(schedule);
 	}
 
 	/* SYSTEM */

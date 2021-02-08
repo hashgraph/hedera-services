@@ -28,6 +28,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
+import javafx.util.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -38,6 +41,8 @@ import java.util.function.Supplier;
  * @author Michael Tinker
  */
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
+	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
+
 	private HederaLedger ledger;
 	private TransactionRecord lastCreatedRecord;
 
@@ -92,6 +97,9 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 				accessor.getTxnId(),
 				lastCreatedRecord.getReceipt().getStatus(),
 				payerRecord);
+//		if (SingletonContextsManager.CONTEXTS.lookup(0L).txnCtx() == txnCtx) {
+//			log.info("Created ({}) -> {}", accessor.getTxnId(), payerRecord);
+//		}
 	}
 
 	@Override
@@ -102,5 +110,15 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public void reviewExistingRecords() {
 		expiries.restartTrackingFrom(accounts.get());
+	}
+
+	@Override
+	public void addNewEntities() {
+		var expiringEntities = txnCtx.expiringEntities();
+		if (expiringEntities.size() != 0) {
+			for (var expiringEntity : expiringEntities) {
+				expiries.trackEntity(new Pair<>(expiringEntity.id().num(), expiringEntity.consumer()), expiringEntity.expiry());
+			}
+		}
 	}
 }
