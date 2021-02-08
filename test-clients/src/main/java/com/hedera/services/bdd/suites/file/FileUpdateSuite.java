@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -150,11 +149,11 @@ public class FileUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("VanillaUpdateSucceeds")
 				.given(
 						fileCreate("test")
-								.memo(firstMemo)
+								.entityMemo(firstMemo)
 								.contents(old4K)
 				).when(
 						fileUpdate("test")
-								.memo(secondMemo)
+								.entityMemo(secondMemo)
 								.contents(new4k)
 				).then(
 						getFileContents("test").hasContents(ignore -> new4k),

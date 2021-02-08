@@ -49,7 +49,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 

@@ -108,7 +108,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		return this;
 	}
 
-	public HapiFileCreate memo(String s) {
+	public HapiFileCreate entityMemo(String s) {
 		memo = Optional.of(s);
 		return this;
 	}

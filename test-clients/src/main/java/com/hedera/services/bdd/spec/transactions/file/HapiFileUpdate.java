@@ -126,7 +126,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		return this;
 	}
 
-	public HapiFileUpdate memo(String explicit) {
+	public HapiFileUpdate entityMemo(String explicit) {
 		newMemo = Optional.of(explicit);
 		return this;
 	}

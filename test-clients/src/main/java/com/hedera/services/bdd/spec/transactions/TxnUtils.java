@@ -495,7 +495,6 @@ public class TxnUtils {
 
 	public static Transaction replaceTxnNodeAccount(Transaction txn, AccountID newNodeAccount) {
 		log.info(String.format("Old Txn attr: %s", TxnUtils.txnToString(txn) ));
-		Transaction newTxn = Transaction.getDefaultInstance();
 		try {
 
 			TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());

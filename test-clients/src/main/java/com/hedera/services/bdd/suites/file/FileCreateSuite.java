@@ -23,11 +23,8 @@ package com.hedera.services.bdd.suites.file;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
@@ -37,8 +34,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -83,7 +78,7 @@ public class FileCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("createWithMemoWorks")
 				.given(
-						fileCreate("memorable").memo(memo)
+						fileCreate("memorable").entityMemo(memo)
 				).when().then(
 						getFileInfo("memorable").hasMemo(memo)
 				);
@@ -116,10 +111,9 @@ public class FileCreateSuite extends HapiApiSuite {
 		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 
 		return defaultHapiSpec("CreateFailsWithPayerAccountNotFound")
-				.given(
-				).when(
-				).then(
+				.given( ).when( ).then(
 						fileCreate("test")
+								.withLegacyProtoStructure()
 								.waclShape(shape)
 								.sigControl(forKey("test", validSig))
 								.scrambleTxnBody(FileCreateSuite::replaceTxnNodeAccount)
