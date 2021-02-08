@@ -104,7 +104,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				rejectsUnresolvableReqSigners(),
 				triggersImmediatelyWithBothReqSimpleSigs(),
 				onlySchedulesWithMissingReqSimpleSigs(),
-				preservesRevocationServiceSemanticsForFileDelete(),
 				failsWithNonExistingPayerAccountId(),
 				failsWithTooLongMemo(),
 				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
