@@ -30,7 +30,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -364,10 +363,6 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 
 	public void setExpiry(long expiry) {
 		this.expiry = expiry;
-	}
-
-	public boolean isExpired(){
-		return expiry > Instant.now().getEpochSecond();
 	}
 
 	public long autoRenewPeriod() {
