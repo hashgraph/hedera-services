@@ -195,21 +195,20 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					return ACCOUNT_IS_TREASURY;
 				}
 				var relationship = asTokenRel(aId, tId);
-				if ((boolean)tokenRelsLedger.get(relationship, IS_FROZEN)) {
+				if ((boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
 					return ACCOUNT_FROZEN_FOR_TOKEN;
 				}
-				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+				long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 				if (balance > 0) {
 					Timestamp expiry = Timestamp.newBuilder().setSeconds(token.expiry()).build();
 					var isTokenExpired = !validator.isValidExpiry(expiry);
-					if (!token.isDeleted() && !isTokenExpired) {
+					var isTokenDeleted = !token.isDeleted();
+					if (!isTokenDeleted && !isTokenExpired) {
 						return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 					}
-					if(isTokenExpired && !token.isDeleted()) {
-						var treasuryAccount = token.treasury().toGrpcAccountId();
-						ResponseCodeEnum status = adjustBalance(treasuryAccount, tId, balance);
-						log.info("Balance remaining on the expired token sent back to treasury account : {}",
-								status);
+					if (!isTokenDeleted) {
+						/* Must be expired; return balance to treasury account. */
+						throw new AssertionError("Not implemented!");
 					}
 				}
 			}
@@ -316,7 +315,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			var relationship = asTokenRel(aId, tId);
-			long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+			long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 			if (amount > balance) {
 				return INVALID_WIPING_AMOUNT;
 			}
@@ -368,7 +367,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
+	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor,
+			long now) {
 		var validity = accountCheck(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		if (validity != OK) {
 			return failure(validity);
@@ -433,13 +433,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
 		var relationship = asTokenRel(aId, tId);
-		if ((boolean)tokenRelsLedger.get(relationship, IS_FROZEN)) {
+		if ((boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
 			return ACCOUNT_FROZEN_FOR_TOKEN;
 		}
-		if (!(boolean)tokenRelsLedger.get(relationship, IS_KYC_GRANTED)) {
+		if (!(boolean) tokenRelsLedger.get(relationship, IS_KYC_GRANTED)) {
 			return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 		}
-		long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+		long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 		long newBalance = balance + adjustment;
 		if (newBalance < 0) {
 			return INSUFFICIENT_TOKEN_BALANCE;

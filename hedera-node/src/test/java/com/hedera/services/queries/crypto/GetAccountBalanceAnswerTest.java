@@ -71,6 +71,7 @@ public class GetAccountBalanceAnswerTest {
 	private long aBalance = 345;
 	private long bBalance = 456;
 	private long cBalance = 567;
+	private long dBalance = 678;
 	private TokenID aToken = IdUtils.asToken("0.0.3");
 	private TokenID bToken = IdUtils.asToken("0.0.4");
 	private TokenID cToken = IdUtils.asToken("0.0.5");
@@ -105,6 +106,9 @@ public class GetAccountBalanceAnswerTest {
 		tokenRels.put(
 				fromAccountTokenRel(target, cToken),
 				new MerkleTokenRelStatus(cBalance, false, false));
+		tokenRels.put(
+				fromAccountTokenRel(target, dToken),
+				new MerkleTokenRelStatus(dBalance, false, false));
 
 		accounts = mock(FCMap.class);
 		propertySource = mock(PropertySource.class);
@@ -271,7 +275,9 @@ public class GetAccountBalanceAnswerTest {
 		assertEquals(
 				List.of(tokenBalanceWith(aToken, aBalance),
 						tokenBalanceWith(bToken, bBalance),
-						tokenBalanceWith(cToken, cBalance)),
+						tokenBalanceWith(cToken, cBalance),
+						tokenBalanceWith(dToken, dBalance)
+				),
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);
 		assertEquals(balance, answer);
