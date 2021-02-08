@@ -60,8 +60,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static java.util.Map.entry;
@@ -94,10 +96,14 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("balances.exportPeriodSecs", "60" ))
-				).when().then(
-						runWithProvider(tokenTransfersFactory())
-								.lasting(duration::get, unit::get)
-								.maxOpsPerSec(maxOpsPerSec::get)
+				).when(	runWithProvider(tokenTransfersFactory())
+						.lasting(duration::get, unit::get)
+						.maxOpsPerSec(maxOpsPerSec::get)
+				).then(
+						freeze().payingWith(GENESIS)
+								.startingIn(10).seconds()
+								.andLasting(10).minutes(),
+						sleepFor(75_000)
 				);
 	}
 
