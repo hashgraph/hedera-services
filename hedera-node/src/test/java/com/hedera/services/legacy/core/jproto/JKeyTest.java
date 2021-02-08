@@ -25,6 +25,7 @@ import com.hedera.services.legacy.util.ComplexKeyManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -66,6 +67,14 @@ public class JKeyTest {
 
 			@Override
 			public boolean isValid() {
+				return false;
+			}
+
+			@Override
+			public void setForScheduledTxn(boolean flag) { }
+
+			@Override
+			public boolean isForScheduledTxn() {
 				return false;
 			}
 		}));

@@ -81,6 +81,12 @@ import static com.hedera.services.bdd.spec.fees.Payment.Reason.*;
 public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiTxnOp.class);
 
+	private static final Response UNKNOWN_RESPONSE = Response.newBuilder()
+					.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
+							.setReceipt(TransactionReceipt.newBuilder()
+									.setStatus(UNKNOWN)))
+					.build();
+
 	private long submitTime = 0L;
 	private TxnObs stats;
 	private boolean deferStatusResolution = false;
@@ -126,6 +132,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	}
 
 	public Transaction signedTxnFor(HapiApiSpec spec) throws Throwable {
+		return finalizedTxn(spec, opBodyDef(spec));
+	}
+
+	public Transaction signedTxnFor(HapiApiSpec spec, byte[] nonce) throws Throwable {
+		this.nonce = nonce;
 		return finalizedTxn(spec, opBodyDef(spec));
 	}
 
@@ -372,7 +383,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		stats.setConsensusLatency(consensusTime - submitTime);
 	}
 
-	protected ResponseCodeEnum resolvedStatusOfSubmission(HapiApiSpec spec) throws Throwable {
+	private ResponseCodeEnum resolvedStatusOfSubmission(HapiApiSpec spec) throws Throwable {
 		long delayMS = spec.setup().statusPreResolvePauseMs();
 		long elapsedMS = System.currentTimeMillis() - submitTime;
 		if (elapsedMS <= delayMS) {
@@ -404,22 +415,23 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		int allowedUnrecognizedExceptions = 10;
 		while (response == null) {
 			try {
-				response = spec.clients()
-						.getCryptoSvcStub(targetNodeFor(spec), useTls)
-						.getTransactionReceipts(receiptQuery);
+				var cryptoSvcStub = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls);
+				if (cryptoSvcStub == null) {
+					response = UNKNOWN_RESPONSE;
+				} else {
+					response = cryptoSvcStub.getTransactionReceipts(receiptQuery);
+				}
 			} catch (Exception e) {
 				var msg = e.toString();
 				if (isRecognizedRecoverable(msg)) {
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				}
+				log.warn("({}) Status resolution failed with unrecognized exception",
+						Thread.currentThread().getName(), e);
 				allowedUnrecognizedExceptions--;
 				if (allowedUnrecognizedExceptions == 0) {
-					response = Response.newBuilder()
-							.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
-									.setReceipt(TransactionReceipt.newBuilder()
-											.setStatus(UNKNOWN)))
-							.build();
+					response = UNKNOWN_RESPONSE;
 				}
 			}
 		}
@@ -640,6 +652,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T asTxnWithOnlySigMap() {
 		asTxnWithOnlySigMap = true;
+		return self();
+	}
+
+	public T sansTxnId() {
+		omitTxnId = true;
+		return self();
+	}
+
+	public T withLegacyProtoStructure() {
+		alwaysWithLegacyProtoStructure = true;
 		return self();
 	}
 

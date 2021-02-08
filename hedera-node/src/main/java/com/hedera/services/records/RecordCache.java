@@ -25,7 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -81,18 +81,21 @@ public class RecordCache {
 
 	public void setFailInvalid(
 			AccountID effectivePayer,
-			PlatformTxnAccessor accessor,
+			TxnAccessor accessor,
 			Instant consensusTimestamp,
 			long submittingMember
 	) {
 		var txnId = accessor.getTxnId();
-		var grpc = TransactionRecord.newBuilder()
+		var transactionRecord = TransactionRecord.newBuilder()
 				.setTransactionID(txnId)
 				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
 				.setMemo(accessor.getTxn().getMemo())
 				.setTransactionHash(accessor.getHash())
-				.setConsensusTimestamp(asTimestamp(consensusTimestamp))
-				.build();
+				.setConsensusTimestamp(asTimestamp(consensusTimestamp));
+		if (accessor.isTriggeredTxn()) {
+			transactionRecord.setScheduleRef(accessor.getScheduleRef());
+		}
+		var grpc = transactionRecord.build();
 		var record = ctx.creator().createExpiringRecord(
 				effectivePayer,
 				grpc,

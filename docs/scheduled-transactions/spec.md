@@ -29,7 +29,7 @@ Additional [`ScheduleCreateTransactionBody`](https://github.com/hashgraph/hedera
 message ScheduleCreateTransactionBody {  
   bytes transactionBody // The transaction serialized into bytes that must be signed
   Key adminKey // (optional) The Key which is able to delete the Scheduled Transaction (if tx is not already executed)
-  AccountID payer // (optional) The account which is going to pay for the execution of the Scheduled TX. If not populated, the scheduling account is charged for the execution of the scheduled TX
+  AccountID payerAccountID // (optional) The account which is going to pay for the execution of the Scheduled TX. If not populated, the scheduling account is charged for the execution of the scheduled TX
   SignatureMap sigMap // (optional) Signatures that could be provided (similarly to how signatures are provided in ScheduleSign operation) on Scheduled Transaction creation
   bytes memo // (optional) // Short publicly visible memo about the scheduled transaction. Max length 100 bytes. No guarantee of uniqueness.
 }  
@@ -38,7 +38,7 @@ message ScheduleCreateTransactionBody {
 **Optional properties**  
   
 - `adminKey` is an optional field. If set, the specified `adminKey` is able to execute `ScheduleDelete` operation.  
-- `payer` is an optional field. If set, the specified payer will be charged for the execution of the scheduled transaction. If ommited, the payer of the scheduled transaction will be the account which created the scheduled transaction in the first place.
+- `payerAccountID` is an optional field. If set, the specified payer will be charged for the execution of the scheduled transaction. If ommited, the payer of the scheduled transaction will be the account which created the scheduled transaction in the first place.
 - `sigMap` is an optional field that may or may not contain signatures from some of the parties required to sign the transaction
 - `memo` is an optional field that may or may not contain bytes stored along with the Scheduled Entity 
   
@@ -49,9 +49,10 @@ Using this structure, users are able to create the Scheduled Transaction without
 Creating Scheduled transactions is an idempotent operation in the sense that if multiple parties perform `ScheduleCreate` operation specifying "identical" transactions, only the first one will create the transaction and the other operations will append the provided signatures.  
 
 Criteria for "identical" transactions - If there is a previously created Scheduled Transaction, that hasn't yet executed and the following properties are the same:
--  `transactionBody`
-- `payer` 
-- `adminKey` (if set)
+- `transactionBody`
+- `adminKey`
+- `payerAccountID`
+- `memo`
   
 If the transaction is deemed "identical", the second `scheduleCreate` tx will not be considered as a new scheduled transaction and the signatures provided in the signature map will be appended to the original transaction.  
   
@@ -98,6 +99,7 @@ message ScheduleGetInfoResponse {
   KeyList signers // The keys that have provided signatures so far for the Scheduled TX  
   Key adminKey // The Key which is able to delete the Scheduled Transaction if set
   bytes memo // The publicly visible memo about the scheduled transaction
+  Timestamp expiryTime // The time at which the Scheduled Transaction will expire 
 }  
 ```  
   
@@ -150,12 +152,12 @@ New FCMap is added (`Map<MerkleEntityId, MerkleSchedule>`).
 `MerkleSchedule` stores information related to scheduled transactions:  
   
 - `byte[] transactionBody` → the body of the TX  
-- `JKey adminKey` → the key that can perform `ScheduleDelete`  
+- `JKey adminKey` → the key that can perform `ScheduleDelete`
+- `Timestamp transactionValidStart` -> transactionValidStart property of the ScheduleCreate operaton 
 - `AccountID schedulingAccount` → the account which scheduled the TX  
 - `AccountID payer` → the account which is going to be paying for the execution  
-- `HashSet<JKey> signers` → the keys that provided signatures for the scheduled tx so far.
+- `List<byte[]> signatories` → the keys that provided signatures for the scheduled tx so far.
 - `bytes memo` -> the memo about the scheduled transaction. The maximum length is 100 bytes.  
-- `boolean deleted` → standard property that indicates whether the entity can be considered "deleted"  
   
 #### ScheduleStore  
   

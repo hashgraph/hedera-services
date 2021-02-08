@@ -21,7 +21,6 @@ package com.hedera.services.fees.calculation.schedule.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
@@ -35,11 +34,6 @@ import java.util.function.BiFunction;
 public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
 
     static BiFunction<TransactionBody, SigUsage, ScheduleSignUsage> factory = ScheduleSignUsage::newEstimate;
-    private final GlobalDynamicProperties dynamicProperties;
-
-    public ScheduleSignResourceUsage(GlobalDynamicProperties dynamicProperties) {
-        this.dynamicProperties = dynamicProperties;
-    }
 
     @Override
     public boolean applicableTo(TransactionBody txn) {
@@ -48,8 +42,17 @@ public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
 
     @Override
     public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
+        var op = txn.getScheduleSign();
         var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         var estimate = factory.apply(txn, sigUsage);
-        return estimate.givenScheduledTxExpirationTimeSecs(dynamicProperties.scheduledTxExpiryTimeSecs()).get();
+
+        var optionalInfo = view.infoForSchedule(op.getScheduleID());
+        if (optionalInfo.isPresent()) {
+            var info = optionalInfo.get();
+
+            return estimate.givenExpiry(info.getExpirationTime().getSeconds()).get();
+        }
+
+        return FeeData.getDefaultInstance();
     }
 }

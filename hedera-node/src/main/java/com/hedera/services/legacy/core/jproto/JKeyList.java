@@ -84,4 +84,25 @@ public class JKeyList extends JKey {
 	public JKeyList getKeyList() {
 		return this;
 	}
+
+	@Override
+	public void setForScheduledTxn(boolean flag) {
+		if (keys != null) {
+			for (JKey key : keys) {
+				key.setForScheduledTxn(flag);
+			}
+		}
+	}
+
+	@Override
+	public boolean isForScheduledTxn() {
+		if (keys != null) {
+			for (JKey key : keys) {
+				if (key.isForScheduledTxn()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 }

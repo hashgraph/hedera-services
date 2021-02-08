@@ -41,6 +41,7 @@ public class NewSpecKey extends UtilOp {
 	private Optional<KeyType> type = Optional.empty();
 	private Optional<SigControl> shape = Optional.empty();
 	private Optional<KeyLabel> labels = Optional.empty();
+	private Optional<KeyGenerator> generator = Optional.empty();
 
 	public NewSpecKey(String name) {
 		this.name = name;
@@ -58,10 +59,14 @@ public class NewSpecKey extends UtilOp {
 		labels = Optional.of(kl);
 		return this;
 	}
+	public NewSpecKey generator(KeyGenerator gen) {
+		generator = Optional.of(gen);
+		return this;
+	}
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		KeyGenerator keyGen = KeyExpansion::genSingleEd25519KeyByteEncodePubKey;
+		KeyGenerator keyGen = generator.orElse(KeyExpansion::genSingleEd25519KeyByteEncodePubKey);
 		Key key;
 		if (shape.isPresent()) {
 			if (labels.isPresent()) {

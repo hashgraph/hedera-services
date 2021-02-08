@@ -163,7 +163,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void addsRecordsBeforeCommitting() {
+	public void addsRecordsAndEntitiesBeforeCommitting() {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
@@ -171,6 +171,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 
 		// then:
 		verify(historian).addNewRecords();
+		verify(historian).addNewEntities();
 	}
 
 	@Test

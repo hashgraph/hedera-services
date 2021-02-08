@@ -21,30 +21,20 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import static com.hedera.services.sigs.PlatformSigOps.*;
-import static com.hedera.services.sigs.utils.StatusUtils.successFor;
-import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 
 /**
  * Provides two operations that act in-place on the {@link Signature} list of a
@@ -76,14 +66,8 @@ import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
  * @see JKey
  */
 public class HederaToPlatformSigOps {
-	private static final Logger log = LogManager.getLogger(HederaToPlatformSigOps.class);
-
 	public final static SigStatusOrderResultFactory PRE_HANDLE_SUMMARY_FACTORY =
 			new SigStatusOrderResultFactory(false);
-
-	private HederaToPlatformSigOps(){
-		throw new IllegalStateException("Utility Class");
-	}
 
 	/**
 	 * Try to set the {@link Signature} list on the accessible platform txn to exactly
@@ -109,11 +93,12 @@ public class HederaToPlatformSigOps {
 	public static SignatureStatus expandIn(
 			PlatformTxnAccessor txnAccessor,
 			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytesProvider sigsProvider
+			PubKeyToSigBytesProvider sigsProvider,
+			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 	) {
 		txnAccessor.getPlatformTxn().clear();
 
-		return new Expansion(txnAccessor, keyOrderer, sigsProvider).execute();
+		return new Expansion(txnAccessor, keyOrderer, sigsProvider, sigFactoryCreator).execute();
 	}
 
 	/**
@@ -141,72 +126,19 @@ public class HederaToPlatformSigOps {
 	 * @return a representation of the outcome.
 	 */
 	public static SignatureStatus rationalizeIn(
-			PlatformTxnAccessor txnAccessor,
+			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytesProvider sigsProvider
+			PubKeyToSigBytesProvider sigsProvider,
+			Function<TxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 	) {
-		return new Rationalization(txnAccessor, syncVerifier, keyOrderer, sigsProvider).execute();
+		return new Rationalization(
+				txnAccessor,
+				syncVerifier,
+				keyOrderer,
+				sigsProvider,
+				sigFactoryCreator
+		).execute();
 	}
 
-	private static class Expansion {
-		private final PlatformTxnAccessor txnAccessor;
-		private final HederaSigningOrder keyOrderer;
-		private final PubKeyToSigBytesProvider sigsProvider;
-		private final TxnScopedPlatformSigFactory sigFactory;
-
-		public Expansion(
-				PlatformTxnAccessor txnAccessor,
-				HederaSigningOrder keyOrderer,
-				PubKeyToSigBytesProvider sigsProvider
-		) {
-			this.txnAccessor = txnAccessor;
-			this.keyOrderer = keyOrderer;
-			this.sigsProvider = sigsProvider;
-
-			sigFactory = new BodySigningSigFactory(txnAccessor.getTxnBytes());
-		}
-
-		public SignatureStatus execute() {
-			log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
-			var payerStatus = expand(sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
-			if ( SUCCESS != payerStatus.getStatusCode() ) {
-				if (log.isDebugEnabled()) {
-					log.debug(
-							"Failed expanding Hedera payer sigs for txn {}: {}",
-							txnAccessor.getTxnId(),
-							payerStatus);
-				}
-				return payerStatus;
-			}
-			var otherStatus = expand(sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
-			if ( SUCCESS != otherStatus.getStatusCode() ) {
-				if (log.isDebugEnabled()) {
-					log.debug(
-							"Failed expanding other Hedera sigs for txn {}: {}",
-							txnAccessor.getTxnId(),
-							otherStatus);
-				}
-			}
-			return otherStatus;
-		}
-
-		private SignatureStatus expand(
-				Function<Transaction, PubKeyToSigBytes> sigsFn,
-				BiFunction<TransactionBody, SigStatusOrderResultFactory, SigningOrderResult<SignatureStatus>> keysFn
-		) {
-			var orderResult = keysFn.apply(txnAccessor.getTxn(), PRE_HANDLE_SUMMARY_FACTORY);
-			if (orderResult.hasErrorReport()) {
-				return orderResult.getErrorReport();
-			}
-
-			var creationResult = createEd25519PlatformSigsFrom(
-					orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getSignedTxn()), sigFactory);
-			if (!creationResult.hasFailed()) {
-				txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
-			}
-			/* Ignore sig creation failures. */
-			return successFor(false, txnAccessor);
-		}
-	}
 }

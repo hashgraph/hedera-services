@@ -120,6 +120,7 @@ public class HederaLedger {
 			.comparingLong(FileID::getFileNum)
 			.thenComparingLong(FileID::getShardNum)
 			.thenComparingLong(FileID::getRealmNum);
+
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
@@ -179,6 +180,7 @@ public class HederaLedger {
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
 		historian.addNewRecords();
+		historian.addNewEntities();
 		accountsLedger.commit();
 		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();

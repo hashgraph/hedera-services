@@ -55,7 +55,6 @@ public class TxnReceiptTest {
   ExchangeRates mockRates;
   TxnReceipt subject;
 
-
   private TopicID getTopicId(long shard, long realm, long num) {
     return TopicID.newBuilder().setShardNum(shard).setRealmNum(realm).setTopicNum(num).build();
   }
@@ -86,7 +85,7 @@ public class TxnReceiptTest {
     final var topicId = getTopicJAccountId(1L, 22L, 333L);
     final var sequenceNumber = 0L;
     final var cut = new TxnReceipt(
-            null, null, null, null, null, null,
+            null, null, null, null, null, null, null,
             topicId, sequenceNumber, null);
 
     assertAll(() -> assertEquals(topicId, cut.getTopicId()),
@@ -99,7 +98,7 @@ public class TxnReceiptTest {
   public void constructorPostConsensusSubmitMessage() {
     final var sequenceNumber = 55555L;
     final var cut = new TxnReceipt(
-            null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null,
             sequenceNumber, getSha384Hash());
 
     assertAll(() -> assertNull(cut.getTopicId()),
@@ -261,7 +260,7 @@ public class TxnReceiptTest {
     final var sequenceNumber = 2L;
     final var runningHash = new byte[3];
     final var cut = new TxnReceipt(
-            "SUCCESS", null, null, null, null, null,
+            "SUCCESS", null, null, null, null, null, null,
             topicId, sequenceNumber, runningHash);
 
     assertEquals(topicId, cut.getTopicId());
@@ -276,7 +275,7 @@ public class TxnReceiptTest {
     final var tokenId = EntityId.ofNullableTokenId(
             TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
     final var cut = new TxnReceipt(
-            "SUCCESS", null, null, null, tokenId, null,
+            "SUCCESS", null, null, null, tokenId, null, null,
             null, 0L, null);
 
     assertEquals(tokenId, cut.getTokenId());
@@ -290,7 +289,7 @@ public class TxnReceiptTest {
     final var tokenId = EntityId.ofNullableTokenId(
             TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
     final var cut = new TxnReceipt(
-            "SUCCESS", null, null, null, tokenId, null,
+            "SUCCESS", null, null, null, tokenId, null, null,
             null, 0L, null, TxnReceipt.MISSING_RUNNING_HASH_VERSION, 1000L);
 
     assertEquals(1000L, cut.getNewTotalSupply());
@@ -307,7 +306,7 @@ public class TxnReceiptTest {
     // and:
     InOrder inOrder = Mockito.inOrder(serdes, fout);
 
-    subject = new TxnReceipt("SUCCESS", null, null,
+    subject = new TxnReceipt("SUCCESS", null, null, null,
             null,null,mockRates,
             null, -1, null, -1, 100);
     // when:
@@ -316,7 +315,7 @@ public class TxnReceiptTest {
     // then:
     inOrder.verify(fout).writeNormalisedString(subject.getStatus());
     inOrder.verify(fout).writeSerializable(mockRates, true);
-    inOrder.verify(serdes, times(5)).writeNullableSerializable(subject.getAccountId(), fout);
+    inOrder.verify(serdes, times(6)).writeNullableSerializable(null, fout);
     inOrder.verify(fout).writeBoolean(false);
     inOrder.verify(fout).writeLong(subject.getNewTotalSupply());
   }
@@ -326,7 +325,7 @@ public class TxnReceiptTest {
     final var tokenId = EntityId.ofNullableTokenId(
             TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
     SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-    subject = new TxnReceipt("SUCCESS", null, null,
+    subject = new TxnReceipt("SUCCESS", null, null, null,
             null,tokenId, mockRates,
             null, -1, null, -1, 100);
 

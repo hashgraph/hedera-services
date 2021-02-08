@@ -22,13 +22,18 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Defines a source of arbitrary properties keyed by strings. Provides
@@ -45,6 +50,9 @@ public interface PropertySource {
 	Function<String, Object> AS_STRING = s -> s;
 	Function<String, Object> AS_PROFILE = v -> Profile.valueOf(v.toUpperCase());
 	Function<String, Object> AS_BOOLEAN = Boolean::valueOf;
+	Function<String, Object> AS_FUNCTIONS = s -> Arrays.stream(s.split(","))
+			.map(HederaFunctionality::valueOf)
+			.collect(toSet());
 
 	boolean containsProperty(String name);
 	Object getProperty(String name);
@@ -58,6 +66,10 @@ public interface PropertySource {
 	}
 	default boolean getBooleanProperty(String name) {
 		return getTypedProperty(Boolean.class, name);
+	}
+	@SuppressWarnings("unchecked")
+	default Set<HederaFunctionality> getFunctionsProperty(String name) {
+		return (Set<HederaFunctionality>)getTypedProperty(Set.class, name);
 	}
 	default int getIntProperty(String name) {
 		return getTypedProperty(Integer.class, name);

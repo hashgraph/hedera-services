@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
 public class BasicPrecheck {
 	private final OptionValidator validator;
@@ -51,6 +52,10 @@ public class BasicPrecheck {
 	public ResponseCodeEnum validate(TransactionBody txn) {
 		if (!txn.hasTransactionID()) {
 			return INVALID_TRANSACTION_ID;
+		}
+		var txnId = txn.getTransactionID();
+		if (txnId.getScheduled() || !txnId.getNonce().isEmpty()) {
+			return TRANSACTION_ID_FIELD_NOT_ALLOWED;
 		}
 		if (!validator.isPlausibleTxnFee(txn.getTransactionFee())) {
 			return INSUFFICIENT_TX_FEE;

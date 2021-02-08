@@ -20,14 +20,15 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION;
+import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.Assert.assertEquals;
 
 public class ScheduleEntitySizesTest {
@@ -37,7 +38,7 @@ public class ScheduleEntitySizesTest {
 	@Test
 	public void fixedSizesAsExpected() {
 		// setup:
-		long expected = NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE
+		long expected = NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
 				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
 
@@ -49,16 +50,18 @@ public class ScheduleEntitySizesTest {
 	}
 
 	@Test
-	public void sizeWithTransactionBodyAsExpected() {
+	public void bytesInBaseReprGivenAsExpected() {
 		// setup:
 		var transactionBody = new byte[]{0x00, 0x01, 0x02, 0x03};
-		long expected = NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE
+		var memo = "memo";
+		long expected = NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
 				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE
-				+ transactionBody.length;
+				+ transactionBody.length
+				+ memo.length();
 
 		// given:
-		long actual = subject.bytesInBaseReprGiven(transactionBody);
+		long actual = subject.bytesInBaseReprGiven(transactionBody, ByteString.copyFromUtf8(memo));
 
 		// expect:
 		assertEquals(expected, actual);
