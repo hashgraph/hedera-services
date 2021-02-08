@@ -50,9 +50,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         return List.of(new HapiApiSpec[] {
                 suiteSetup(),
                 executionWithDefaultPayerWorks(),
-                executionWithCustomPayerWorks(),
-                executionWithDefaultPayerButNoFundsFails(),
-                executionWithCustomPayerButNoFundsFails(),
+//                executionWithCustomPayerWorks(),
+//                executionWithDefaultPayerButNoFundsFails(),
+//                executionWithCustomPayerButNoFundsFails(),
                 suiteCleanup(),
         });
     }
@@ -82,12 +82,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 "basicXfer",
                                 cryptoTransfer(
                                         tinyBarsFromTo("sender", "receiver", transferAmount)
-                                )
-                        )
-                                .payingWith("payingAccount")
-                                .via("createTx")
+                                ).signedBy()
+                        ).inheritingScheduledSigs().payingWith("payingAccount").via("createTx").logged()
                 ).when(
-                        scheduleSign("basicXfer").withSignatories("sender").via("signTx").hasKnownStatus(SUCCESS)
+                        scheduleSign("basicXfer")
+                                .withSignatories("sender")
+                                .via("signTx")
                 ).then(
                         withOpContext((spec, opLog) -> {
                             var createTx = getTxnRecord("createTx");
