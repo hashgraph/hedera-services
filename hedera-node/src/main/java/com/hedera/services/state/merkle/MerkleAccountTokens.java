@@ -202,34 +202,6 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		someTokenIds[num(i)] = id.getTokenNum();
 	}
 
-	public int purge(Predicate<TokenID> isGone, Predicate<TokenID> isDeleted) {
-		int effectiveAssociations = 0, meaningfulAssociations = 0, n = numAssociations();
-		for (int i = 0; i < n; i++) {
-			var id = idAt(i);
-			if (isGone.test(id)) {
-				continue;
-			}
-			meaningfulAssociations++;
-			if (isDeleted.test(id)) {
-				continue;
-			}
-			effectiveAssociations++;
-		}
-
-		if (meaningfulAssociations != n) {
-			long[] newTokenIds = new long[meaningfulAssociations * NUM_ID_PARTS];
-			for (int i = 0, j = 0; i < n; i++) {
-				var id = idAt(i);
-				if (isGone.test(id)) {
-					continue;
-				}
-				set(newTokenIds, j++, id);
-			}
-			this.tokenIds = newTokenIds;
-		}
-		return effectiveAssociations;
-	}
-
 	private TokenID idAt(int i) {
 		return TokenID.newBuilder()
 				.setShardNum(tokenIds[shard(i)])

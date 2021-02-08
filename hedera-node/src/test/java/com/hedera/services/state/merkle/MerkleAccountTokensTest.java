@@ -65,24 +65,6 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void purgeWorks() {
-		// setup:
-		subject = new MerkleAccountTokens();
-		subject.associateAll(Set.of(a, b, c, d, e));
-		// and:
-		Predicate<TokenID> isGone = id -> b.equals(id);
-		Predicate<TokenID> isDeleted = id -> a.equals(id) || e.equals(id);
-
-		// when:
-		int effectiveAssociations = subject.purge(isGone, isDeleted);
-
-		// then:
-		assertEquals("[0.0.1, 0.0.2, 1.1.2, 0.0.3]", subject.readableTokenIds());
-		// and:
-		assertEquals(2, effectiveAssociations);
-	}
-
-	@Test
 	void rejectsIndivisibleParts() {
 		// expect:
 		Assertions.assertThrows(

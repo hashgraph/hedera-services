@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.hedera.services.context.primitives.StateView.GONE_TOKEN;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
@@ -91,7 +92,7 @@ class GetAccountInfoAnswerTest {
 			thirdToken = tokenWith(777),
 			fourthToken = tokenWith(888),
 			missingToken = tokenWith(999);
-	long firstBalance = 123, secondBalance = 234, thirdBalance = 345;
+	long firstBalance = 123, secondBalance = 234, thirdBalance = 345, fourthBalance = 456, missingBalance = 567;
 
 	private long fee = 1_234L;
 	private Transaction paymentTxn;
@@ -112,6 +113,12 @@ class GetAccountInfoAnswerTest {
 		tokenRels.put(
 				fromAccountTokenRel(payerId, thirdToken),
 				new MerkleTokenRelStatus(thirdBalance, true, true));
+		tokenRels.put(
+				fromAccountTokenRel(payerId, fourthToken),
+				new MerkleTokenRelStatus(fourthBalance, false, false));
+		tokenRels.put(
+				fromAccountTokenRel(payerId, missingToken),
+				new MerkleTokenRelStatus(missingBalance, false, false));
 
 		token = mock(MerkleToken.class);
 		given(token.kycKey()).willReturn(Optional.of(new JEd25519Key("kyc".getBytes())));
@@ -132,6 +139,7 @@ class GetAccountInfoAnswerTest {
 		given(tokenStore.get(thirdToken)).willReturn(token);
 		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
 		given(token.symbol()).willReturn("HEYMA");
+		given(deletedToken.symbol()).willReturn("THEWAY");
 
 		scheduleStore = mock(ScheduleStore.class);
 
@@ -233,7 +241,14 @@ class GetAccountInfoAnswerTest {
 								secondToken.getTokenNum(), false, false).asGrpcFor(token),
 						new RawTokenRelationship(
 								thirdBalance, 0, 0,
-								thirdToken.getTokenNum(), true, true).asGrpcFor(token)),
+								thirdToken.getTokenNum(), true, true).asGrpcFor(token),
+						new RawTokenRelationship(
+								fourthBalance, 0, 0,
+								fourthToken.getTokenNum(), false, false).asGrpcFor(deletedToken),
+						new RawTokenRelationship(
+								missingBalance, 0, 0,
+								missingToken.getTokenNum(), false, false).asGrpcFor(GONE_TOKEN)),
+
 				info.getTokenRelationshipsList());
 	}
 
