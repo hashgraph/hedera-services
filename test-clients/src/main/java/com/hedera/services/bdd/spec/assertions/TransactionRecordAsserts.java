@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.assertions;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -100,6 +101,11 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
 	public TransactionRecordAsserts transfers(TransferListAsserts provider) {
 		registerTypedProvider("transferList", provider);
+		return this;
+	}
+
+	public TransactionRecordAsserts tokenTransfers(BaseErroringAssertsProvider<List<TokenTransferList>> provider) {
+		registerTypedProvider("tokenTransferListsList", provider);
 		return this;
 	}
 

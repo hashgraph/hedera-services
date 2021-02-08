@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -77,9 +78,12 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.adminKey("tokenAdmin")
 								.treasury(TOKEN_TREASURY),
 						cryptoDelete(TOKEN_TREASURY)
+								.hasKnownStatus(ACCOUNT_IS_TREASURY),
+						tokenDissociate(TOKEN_TREASURY, "firstTbd")
 								.hasKnownStatus(ACCOUNT_IS_TREASURY)
 				).when(
 						tokenDelete("firstTbd"),
+						tokenDissociate(TOKEN_TREASURY, "firstTbd"),
 						cryptoDelete(TOKEN_TREASURY)
 								.hasKnownStatus(ACCOUNT_IS_TREASURY),
 						tokenDelete("secondTbd")
