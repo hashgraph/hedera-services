@@ -160,16 +160,24 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (permissibleAnswerOnlyPrechecks.get().contains(actualPrecheck)) {
 				answerOnlyPrecheck = Optional.of(actualPrecheck);
 			} else {
-				String errMsg = String.format("Answer-only precheck was %s, not one of %s!",
-						actualPrecheck, permissibleAnswerOnlyPrechecks.get());
-				log.error(errMsg);
+				String errMsg = String.format(
+						"Answer-only precheck was %s, not one of %s!",
+						actualPrecheck,
+						permissibleAnswerOnlyPrechecks.get());
+				if (!loggingOff) {
+					log.error(errMsg);
+				}
 				throw new HapiQueryPrecheckStateException(errMsg);
 			}
 		} else {
 			if (expectedAnswerOnlyPrecheck() != actualPrecheck) {
-				String errMsg = String.format("Bad answerOnlyPrecheck! expected %s, actual %s",
-						expectedAnswerOnlyPrecheck(), actualPrecheck);
-				log.error(errMsg);
+				String errMsg = String.format(
+						"Bad answerOnlyPrecheck! expected %s, actual %s",
+						expectedAnswerOnlyPrecheck(),
+						actualPrecheck);
+				if (!loggingOff) {
+					log.error(errMsg);
+				}
 				throw new HapiQueryPrecheckStateException(errMsg);
 			}
 		}
