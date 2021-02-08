@@ -35,7 +35,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -530,6 +529,28 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void dissociatingWorksEvenIfTokenDoesntExistAnymore() {
+		// setup:
+		var accountTokens = mock(MerkleAccountTokens.class);
+		var key = asTokenRel(sponsor, misc);
+
+		given(accountTokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(accountTokens);
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(0L);
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(accountTokens).dissociateAll(Set.of(misc));
+		verify(hederaLedger).setAssociatedTokens(sponsor, accountTokens);
+		verify(tokenRelsLedger).destroy(key);
+	}
+
+	@Test
 	public void dissociatingHappyPathWorks() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
@@ -573,46 +594,75 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingExpiredTokenWithNonZeroBalanceMovesBalanceToTreasury() {
+	public void dissociatingPermitsFrozenRelIfDeleted() {
 		// setup:
-		AccountID userAccount = IdUtils.asAccount("1.2.956");
-		var expiredToken = mock(MerkleToken.class);
 		var tokens = mock(MerkleAccountTokens.class);
-		var sponsorEntityId = mock(EntityId.class);
-		var sponsorRel = asTokenRel(sponsor, misc);
-		var accountRel = asTokenRel(userAccount,misc);
+		var key = asTokenRel(sponsor, misc);
 
 		given(tokens.includes(misc)).willReturn(true);
-		given(accountsLedger.exists(userAccount)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		given(hederaLedger.getAssociatedTokens(userAccount)).willReturn(tokens);
-		given(subject.get(misc)).willReturn(expiredToken);
-
 		// and:
-		given(tokenRelsLedger.get(accountRel, IS_FROZEN)).willReturn(false);
-		given(tokenRelsLedger.get(accountRel, TOKEN_BALANCE)).willReturn(1L);
-		given(tokenRelsLedger.get(sponsorRel, TOKEN_BALANCE)).willReturn(1L);
-		given(TEST_VALIDATOR.isValidExpiry(any())).willReturn(false);
-		given(expiredToken.treasury()).willReturn(sponsorEntityId);
-		given(sponsorEntityId.toGrpcAccountId()).willReturn(sponsor);
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
+		given(token.isDeleted()).willReturn(true);
+		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(true);
 
-		ResponseCodeEnum status = null;
 		// when:
-		try {
-			status = subject.dissociate(userAccount, List.of(misc));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		var status = subject.dissociate(sponsor, List.of(misc));
 
 		// expect:
 		assertEquals(OK, status);
 		// and:
 		verify(tokens).dissociateAll(Set.of(misc));
-		verify(hederaLedger).setAssociatedTokens(userAccount, tokens);
-		verify(tokenRelsLedger).destroy(accountRel);
-		verify(tokenRelsLedger).set(sponsorRel, TOKEN_BALANCE, 2L);
-		verify(hederaLedger).updateTokenXfers(misc, sponsor, 1L);
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger).destroy(key);
+	}
 
+	@Test
+	public void dissociatingPermitsNonzeroTokenBalanceIfDeleted() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		var key = asTokenRel(sponsor, misc);
+
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		// and:
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(tokens).dissociateAll(Set.of(misc));
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger).destroy(key);
+	}
+
+	@Test
+	public void dissociatingPermitsNonzeroTokenBalanceIfExpired() {
+		// setup:
+		long balance = 123L;
+		var tokens = mock(MerkleAccountTokens.class);
+		var key = asTokenRel(sponsor, misc);
+
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		// and:
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(balance);
+		given(token.expiry()).willReturn(CONSENSUS_NOW - 1);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(tokens).dissociateAll(Set.of(misc));
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger).destroy(key);
+		verify(hederaLedger).doTokenTransfer(misc, sponsor, treasury, balance);
 	}
 
 	@Test

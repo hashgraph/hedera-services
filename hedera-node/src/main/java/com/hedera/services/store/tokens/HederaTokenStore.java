@@ -47,6 +47,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -151,7 +152,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens) {
-		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
+		return fullySanityChecked(true, aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
 			for (TokenID id : tokenIds) {
 				if (accountTokens.includes(id)) {
@@ -183,32 +184,39 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens) {
-		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
+	public ResponseCodeEnum dissociate(AccountID aId, List<TokenID> targetTokens) {
+		return fullySanityChecked(false, aId, targetTokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
 			for (TokenID tId : tokenIds) {
-				var token = get(tId);
 				if (!accountTokens.includes(tId)) {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 				}
+				if (!tokens.get().containsKey(fromTokenId(tId))) {
+					/* Expired tokens that have been removed from state (either because they
+					were also deleted, or their grace period ended) should be dissociated
+					with no additional checks. */
+					continue;
+				}
+				var token = get(tId);
+				var isTokenDeleted = token.isDeleted();
+				/* Once a token is deleted, this always returns false. */
 				if (isTreasuryForToken(aId, tId)) {
 					return ACCOUNT_IS_TREASURY;
 				}
 				var relationship = asTokenRel(aId, tId);
-				if ((boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
+				if (!isTokenDeleted && (boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
 					return ACCOUNT_FROZEN_FOR_TOKEN;
 				}
 				long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 				if (balance > 0) {
-					Timestamp expiry = Timestamp.newBuilder().setSeconds(token.expiry()).build();
+					var expiry = Timestamp.newBuilder().setSeconds(token.expiry()).build();
 					var isTokenExpired = !validator.isValidExpiry(expiry);
-					var isTokenDeleted = !token.isDeleted();
 					if (!isTokenDeleted && !isTokenExpired) {
 						return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 					}
 					if (!isTokenDeleted) {
 						/* Must be expired; return balance to treasury account. */
-						throw new AssertionError("Not implemented!");
+						hederaLedger.doTokenTransfer(tId, aId, token.treasury().toGrpcAccountId(), balance);
 					}
 				}
 			}
@@ -612,6 +620,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum fullySanityChecked(
+			boolean strictTokenCheck,
 			AccountID aId,
 			List<TokenID> tokens,
 			BiFunction<AccountID, List<TokenID>, ResponseCodeEnum> action
@@ -620,19 +629,19 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (validity != OK) {
 			return validity;
 		}
-		List<TokenID> tokenIds = new ArrayList<>();
-		for (TokenID tID : tokens) {
-			var id = resolve(tID);
-			if (id == MISSING_TOKEN) {
-				return INVALID_TOKEN_ID;
+		if (strictTokenCheck) {
+			for (TokenID tID : tokens) {
+				var id = resolve(tID);
+				if (id == MISSING_TOKEN) {
+					return INVALID_TOKEN_ID;
+				}
+				var token = get(id);
+				if (token.isDeleted()) {
+					return TOKEN_WAS_DELETED;
+				}
 			}
-			var token = get(id);
-			if (token.isDeleted()) {
-				return TOKEN_WAS_DELETED;
-			}
-			tokenIds.add(id);
 		}
-		return action.apply(aId, tokenIds);
+		return action.apply(aId, tokens);
 	}
 
 	private void resetPendingCreation() {

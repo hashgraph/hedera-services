@@ -54,8 +54,8 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				checkTokenTotalSupplyAfterMintAndBurn(),
-				totalSupplyAfterWipe()
+						checkTokenTotalSupplyAfterMintAndBurn(),
+						totalSupplyAfterWipe()
 				}
 		);
 	}
@@ -76,7 +76,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
 								.decimals(1)
 								.supplyKey("supplyKey")
 								.via("createTxn")
-						).then(
+				).then(
 						getTxnRecord("createTxn").logged(),
 						mintToken(tokenName, 1000).via("mintToken"),
 						getTxnRecord("mintToken").logged(),
@@ -131,7 +131,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
 						getTokenInfo(tokenToWipe)
 								.hasTotalSupply(600)
 								.hasName(tokenToWipe)
-						.logged(),
+								.logged(),
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(tokenToWipe, 300)
 				);
