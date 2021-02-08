@@ -593,7 +593,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(accountRel, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(accountRel, TOKEN_BALANCE)).willReturn(1L);
 		given(tokenRelsLedger.get(sponsorRel, TOKEN_BALANCE)).willReturn(1L);
-		given(expiredToken.isExpired()).willReturn(true);
+		given(TEST_VALIDATOR.isValidExpiry(any())).willReturn(false);
 		given(expiredToken.treasury()).willReturn(sponsorEntityId);
 		given(sponsorEntityId.toGrpcAccountId()).willReturn(sponsor);
 
