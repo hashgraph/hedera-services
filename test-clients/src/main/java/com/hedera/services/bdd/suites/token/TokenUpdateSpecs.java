@@ -83,11 +83,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newTreasuryMustSign(),
 						newTreasuryMustBeAssociated(),
 						tokensCanBeMadeImmutableWithEmptyKeyList(),
-<<<<<<< HEAD
 						updateHappyPath(),
-=======
 						validatesMissingAdminKey(),
->>>>>>> master
 				}
 		);
 	}

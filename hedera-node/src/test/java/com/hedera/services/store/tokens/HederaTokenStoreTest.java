@@ -1149,7 +1149,7 @@ class HederaTokenStoreTest {
 				true);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(OK, outcome);
