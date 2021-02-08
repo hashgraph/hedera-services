@@ -44,7 +44,6 @@ import static java.util.stream.Collectors.toList;
  */
 public class SigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	private final SignatureMap sigMap;
-	private static final byte[] EMPTY_SIG = {};
 
 	SigMapPubKeyToSigBytes(SignatureMap sigMap) {
 		this.sigMap = sigMap;

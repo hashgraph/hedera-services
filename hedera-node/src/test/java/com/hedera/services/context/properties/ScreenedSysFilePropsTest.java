@@ -21,6 +21,7 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.Logger;
@@ -145,6 +146,41 @@ class ScreenedSysFilePropsTest {
 				ScreenedSysFileProps.DEPRECATED_PROP_TPL,
 				"defaultFeeCollectionAccount",
 				"ledger.fundingAccount"));
+	}
+
+	@Test
+	public void warnsOfUnparseableWhitelist() {
+		// given:
+		var unparseableValue = "CryptoCreate,CryptoTransfer,Oops";
+
+		// when:
+		subject.screenNew(withJust("scheduling.whitelist", unparseableValue));
+
+		// then:
+		assertTrue(subject.from121.isEmpty());
+		// and:
+		verify(log).warn(String.format(
+				ScreenedSysFileProps.UNPARSEABLE_PROP_TPL,
+				unparseableValue,
+				"scheduling.whitelist",
+				"IllegalArgumentException"));
+	}
+
+	@Test
+	public void warnsOfUnusableWhitelist() {
+		// given:
+		var unusableValue = "CryptoCreate,CryptoTransfer,CryptoGetAccountBalance";
+
+		// when:
+		subject.screenNew(withJust("scheduling.whitelist", unusableValue));
+
+		// then:
+		assertTrue(subject.from121.isEmpty());
+		// and:
+		verify(log).warn(String.format(
+				ScreenedSysFileProps.UNUSABLE_PROP_TPL,
+				unusableValue,
+				"scheduling.whitelist"));
 	}
 
 	@Test

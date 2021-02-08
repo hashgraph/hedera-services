@@ -21,11 +21,14 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -45,8 +48,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
@@ -54,24 +55,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.context.AwareTransactionContext.EMPTY_KEY;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountString;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 public class AwareTransactionContextTest {
 	private long fee = 123L;
@@ -114,6 +118,7 @@ public class AwareTransactionContextTest {
 	private Transaction signedTxn;
 	private TransactionBody txn;
 	private TransactionRecord record;
+	private ExpiringEntity expiringEntity;
 	private String memo = "Hi!";
 	private ByteString hash = ByteString.copyFrom("fake hash".getBytes());
 	private TransactionID txnId = TransactionID.newBuilder()
@@ -163,9 +168,11 @@ public class AwareTransactionContextTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
-		given(accessor.getSignedTxn()).willReturn(signedTxn);
+		given(accessor.getBackwardCompatibleSignedTxn()).willReturn(signedTxn);
 		given(accessor.getPayer()).willReturn(payer);
 		given(accessor.getHash()).willReturn(hash);
+
+		expiringEntity = mock(ExpiringEntity.class);
 
 		subject = new AwareTransactionContext(ctx);
 		subject.resetFor(accessor, now, memberId);
@@ -527,5 +534,47 @@ public class AwareTransactionContextTest {
 
 		// expect:
 		assertTrue(subject.isPayerSigKnownActive());
+	}
+
+	@Test
+	public void triggersTxn() {
+		// when:
+		subject.trigger(accessor);
+		// then:
+		assertEquals(subject.triggeredTxn(), accessor);
+	}
+
+	@Test
+	public void getsExpectedRecordForTriggeredTxn() {
+		// given:
+		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
+		given(accessor.isTriggeredTxn()).willReturn(true);
+
+		// when:
+		record = subject.recordSoFar();
+
+		// then:
+		assertEquals(scheduleCreated, record.getScheduleRef());
+	}
+
+	@Test
+	public void addsExpiringEntities() {
+		// given:
+		var expected = Collections.singletonList(expiringEntity);
+		// when:
+		subject.addExpiringEntities(expected);
+
+		// then:
+		assertEquals(subject.expiringEntities(), expected);
+	}
+
+	@Test
+	public void throwsIfAccessorIsAlreadyTriggered() {
+		// given:
+		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
+		given(accessor.isTriggeredTxn()).willReturn(true);
+
+		// when:
+		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
 	}
 }

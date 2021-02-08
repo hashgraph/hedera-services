@@ -150,6 +150,6 @@ class AbstractAnswerTest {
 		given(paymentExtractor.apply(query)).willReturn(payment);
 
 		// expect:
-		assertEquals(payment, subject.extractPaymentFrom(query).get().getSignedTxn());
+		assertEquals(payment, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
 	}
 }

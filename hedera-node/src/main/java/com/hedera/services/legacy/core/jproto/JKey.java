@@ -50,6 +50,8 @@ public abstract class JKey implements Serializable {
 	private static final Logger log = LogManager.getLogger(JKey.class);
 	private static boolean USE_HEX_ENCODED_KEY = KeyExpansion.USE_HEX_ENCODED_KEY;
 
+	private boolean forScheduledTxn = false;
+
 	/**
 	 * Maps a proto Key to Jkey.
 	 *
@@ -240,9 +242,18 @@ public abstract class JKey implements Serializable {
 	}
 
 	public abstract boolean isEmpty();
-
-	//Key is not empty and has valid format
+	/**
+	 * Expected to return {@code false} if the key is empty.
+	 */
 	public abstract boolean isValid();
+
+	public void setForScheduledTxn(boolean flag) {
+		forScheduledTxn = flag;
+	}
+
+	public boolean isForScheduledTxn() {
+		return forScheduledTxn;
+	}
 
 	public boolean hasEd25519Key() {
 		return false;

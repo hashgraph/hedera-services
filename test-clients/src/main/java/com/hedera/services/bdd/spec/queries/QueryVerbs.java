@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.queries;
 
 import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetVersionInfo;
+import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -119,5 +120,9 @@ public class QueryVerbs {
 
 	public static HapiGetTokenInfo getTokenInfo(String token) {
 		return new HapiGetTokenInfo(token);
+	}
+
+	public static HapiGetScheduleInfo getScheduleInfo(String schedule) {
+		return new HapiGetScheduleInfo(schedule);
 	}
 }

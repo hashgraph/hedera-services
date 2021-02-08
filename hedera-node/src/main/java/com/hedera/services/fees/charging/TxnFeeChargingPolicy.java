@@ -25,9 +25,15 @@ import com.hederahashgraph.fee.FeeObject;
 
 import java.util.function.Consumer;
 
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.fees.TxnFeeType.*;
+import static com.hedera.services.fees.TxnFeeType.NETWORK;
+import static com.hedera.services.fees.TxnFeeType.NODE;
+import static com.hedera.services.fees.TxnFeeType.SERVICE;
+import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
+import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
+import static com.hedera.services.fees.charging.ItemizableFeeCharging.NODE_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the transaction fee-charging policy for the processing

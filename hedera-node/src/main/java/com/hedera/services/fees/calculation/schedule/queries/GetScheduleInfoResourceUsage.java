@@ -74,7 +74,8 @@ public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator
 			queryCtx.ifPresent(ctx -> ctx.put(SCHEDULE_INFO_CTX_KEY, info));
 			var estimate = factory.apply(query)
 					.givenTransaction(info.getTransactionBody().toByteArray())
-					.givenSigners(ifPresent(info, ScheduleInfo::hasSigners, ScheduleInfo::getSigners))
+					.givenMemo(info.getMemoBytes())
+					.givenSignatories(ifPresent(info, ScheduleInfo::hasSignatories, ScheduleInfo::getSignatories))
 					.givenCurrentAdminKey(ifPresent(info, ScheduleInfo::hasAdminKey, ScheduleInfo::getAdminKey));
 			return estimate.get();
 		} else {

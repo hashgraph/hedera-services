@@ -20,15 +20,33 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hederahashgraph.api.proto.java.Key;
 
+import java.util.Arrays;
+import java.util.Objects;
+
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+
+/**
+ * Set of properties used to describe unique instance of Scheduled Transaction
+ */
 public class CompositeKey {
-    private final int hash;
-    private final AccountID id;
 
-    public CompositeKey(int hash, AccountID id) {
-        this.hash = hash;
-        this.id = id;
+    public static final Key UNUSED_KEY = Key.getDefaultInstance();
+    private static final String EMPTY_MEMO = null;
+
+    private final int txBytesHashCode;
+    private final EntityId payer;
+    private final Key adminKey;
+    private final String entityMemo;
+
+    public CompositeKey(int txBytesHashCode, EntityId payer, Key adminKey, String entityMemo) {
+        this.txBytesHashCode = txBytesHashCode;
+        this.payer = payer;
+        this.adminKey = adminKey;
+        this.entityMemo = entityMemo;
     }
 
     @Override
@@ -39,18 +57,30 @@ public class CompositeKey {
             return false;
         CompositeKey other = (CompositeKey)o;
 
-        boolean hashEquals = this.hash == other.hash;
-        boolean idEquals = this.id.equals(other.id);
-
-        return hashEquals && idEquals;
+        return this.txBytesHashCode == other.txBytesHashCode &&
+                Objects.equals(this.entityMemo, other.entityMemo) &&
+                Objects.equals(this.payer, other.payer) &&
+                Objects.equals(this.adminKey, other.adminKey);
     }
 
     @Override
     public final int hashCode() {
-        int result = hash;
-        if (id != null) {
-            result = 31 * result + id.hashCode();
-        }
-        return result;
+        return Objects.hash(
+                txBytesHashCode,
+                payer,
+                adminKey,
+                entityMemo
+        );
+    }
+
+    public static CompositeKey fromMerkleSchedule(MerkleSchedule schedule) {
+        var adminKey = schedule.adminKey().isPresent() ? asKeyUnchecked(schedule.adminKey().get()) : UNUSED_KEY;
+        var memo = schedule.memo().isPresent() ? schedule.memo().get() : EMPTY_MEMO;
+        return new CompositeKey(
+                Arrays.hashCode(schedule.transactionBody()),
+                schedule.payer(),
+                adminKey,
+                memo
+        );
     }
 }

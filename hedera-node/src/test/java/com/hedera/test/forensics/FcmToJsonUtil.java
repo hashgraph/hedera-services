@@ -20,7 +20,7 @@ package com.hedera.test.forensics;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.TxnId;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;
@@ -29,7 +29,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.SolidityFnResult;
-import com.hedera.test.forensics.domain.PojoFs;
 import com.hedera.test.forensics.domain.PojoLedger;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;

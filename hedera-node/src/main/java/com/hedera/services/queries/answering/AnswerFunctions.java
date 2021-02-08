@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.TxnId;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

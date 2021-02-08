@@ -20,10 +20,14 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.EntityNumbers;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -67,6 +71,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
@@ -98,6 +103,7 @@ public class HederaSigningOrder {
 
 	final EntityNumbers entityNums;
 	final SigMetadataLookup sigMetaLookup;
+	final GlobalDynamicProperties properties;
 	final Predicate<TransactionBody> updateAccountSigns;
 	final BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns;
 
@@ -105,9 +111,11 @@ public class HederaSigningOrder {
 			EntityNumbers entityNums,
 			SigMetadataLookup sigMetaLookup,
 			Predicate<TransactionBody> updateAccountSigns,
-			BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns
+			BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns,
+			GlobalDynamicProperties properties
 	) {
 		this.entityNums = entityNums;
+		this.properties = properties;
 		this.sigMetaLookup = sigMetaLookup;
 		this.targetWaclSigns = targetWaclSigns;
 		this.updateAccountSigns = updateAccountSigns;
@@ -234,13 +242,15 @@ public class HederaSigningOrder {
 
 	private <T> Optional<SigningOrderResult<T>> forSchedule(
 			TransactionBody txn,
-			SigningOrderResultFactory<T> factory) {
+			SigningOrderResultFactory<T> factory
+	) {
 		if (txn.hasScheduleCreate()) {
-			return Optional.of(scheduleCreate(txn.getScheduleCreate(), factory));
+			return Optional.of(scheduleCreate(txn.getTransactionID(), txn.getScheduleCreate(), factory));
 		} else if (txn.hasScheduleSign()) {
 			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
 		} else if (txn.hasScheduleDelete()) {
-			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(), factory));
+			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(),
+					factory));
 		} else {
 			return Optional.empty();
 		}
@@ -587,7 +597,9 @@ public class HederaSigningOrder {
 			KeyOrderingFailure type,
 			SigningOrderResultFactory<T> factory
 	) {
-		if (type == MISSING_ACCOUNT) {
+		if (type == INVALID_ACCOUNT) {
+			return factory.forInvalidAccount(id, txnId);
+		} else if (type == MISSING_ACCOUNT) {
 			return factory.forMissingAccount(id, txnId);
 		} else if (type == MISSING_AUTORENEW_ACCOUNT) {
 			return factory.forMissingAutoRenewAccount(id, txnId);
@@ -828,6 +840,7 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> scheduleCreate(
+			TransactionID txnId,
 			ScheduleCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
@@ -839,7 +852,24 @@ public class HederaSigningOrder {
 				ScheduleCreateTransactionBody::getAdminKey,
 				required);
 
-		return factory.forValidOrder(required);
+		int before = required.size();
+		var couldAddPayer = addAccount(
+				op,
+				ScheduleCreateTransactionBody::hasPayerAccountID,
+				ScheduleCreateTransactionBody::getPayerAccountID,
+				required);
+		if (!couldAddPayer) {
+			return accountFailure(op.getPayerAccountID(), txnId, INVALID_ACCOUNT, factory);
+		}
+		int after = required.size();
+		if (after > before) {
+			var dupKey = required.get(after - 1).duplicate();
+			dupKey.setForScheduledTxn(true);
+			required.set(after - 1, dupKey);
+		}
+
+		var mergeError = mergeScheduledKeys(op.getTransactionBody().toByteArray(), required, txnId, factory);
+		return mergeError.orElseGet(() -> factory.forValidOrder(required));
 	}
 
 	private <T> SigningOrderResult<T> scheduleSign(
@@ -853,8 +883,51 @@ public class HederaSigningOrder {
 		if (!result.succeeded()) {
 			return factory.forMissingSchedule(id, txnId);
 		}
+		var optionalPayer = result.metadata().overridePayer();
+		if (optionalPayer.isPresent()) {
+			var payerResult = sigMetaLookup.accountSigningMetaFor(optionalPayer.get());
+			if (!payerResult.succeeded()) {
+				return accountFailure(optionalPayer.get(), txnId, INVALID_ACCOUNT, factory);
+			} else {
+				var dupKey = payerResult.metadata().getKey().duplicate();
+				dupKey.setForScheduledTxn(true);
+				required.add(dupKey);
+			}
+		}
+		var mergeError = mergeScheduledKeys(result.metadata().txnBytes(), required, txnId, factory);
+		return mergeError.orElseGet(() -> factory.forValidOrder(required));
+	}
 
-		return factory.forValidOrder(required);
+	private <T> Optional<SigningOrderResult<T>> mergeScheduledKeys(
+			byte[] txnBytes,
+			List<JKey> required,
+			TransactionID txnId,
+			SigningOrderResultFactory<T> factory
+	) {
+		try {
+			var scheduled = TransactionBody.parseFrom(txnBytes);
+			var scheduledFunction = MiscUtils.functionOf(scheduled);
+			if (!properties.schedulingWhitelist().contains(scheduledFunction)) {
+				return Optional.of(factory.forUnschedulableTxn(txnId));
+			}
+			var scheduledOrderResult = keysForOtherParties(scheduled, factory);
+			if (scheduledOrderResult.hasErrorReport()) {
+				return Optional.of(factory.forUnresolvableRequiredSigners(
+						scheduled,
+						txnId,
+						scheduledOrderResult.getErrorReport()));
+			} else {
+				var scheduledKeys = scheduledOrderResult.getOrderedKeys();
+				for (JKey key : scheduledKeys) {
+					var dup = key.duplicate();
+					dup.setForScheduledTxn(true);
+					required.add(dup);
+				}
+			}
+		} catch (InvalidProtocolBufferException | UnknownHederaFunctionality e) {
+			return Optional.of(factory.forUnparseableScheduledTxn(txnId));
+		}
+		return Optional.empty();
 	}
 
 	private <T> SigningOrderResult<T> scheduleDelete(

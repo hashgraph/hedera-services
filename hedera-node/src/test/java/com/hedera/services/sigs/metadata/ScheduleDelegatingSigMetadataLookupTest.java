@@ -55,6 +55,7 @@ public class ScheduleDelegatingSigMetadataLookupTest {
     @BeforeEach
     public void setup() {
         schedule = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
+        schedule.setPayer(new EntityId(0, 0, 2));
 
         scheduleStore = mock(ScheduleStore.class);
 
