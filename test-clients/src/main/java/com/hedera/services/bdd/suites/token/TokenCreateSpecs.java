@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
@@ -69,7 +70,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationRequiresAppropriateSigs(),
 						creationRequiresAppropriateSigsHappyPath(),
 						initialSupplyMustBeSane(),
-						numAccountsAllowedIsDynamic(),
 						creationYieldsExpectedToken(),
 						creationSetsExpectedName(),
 						creationValidatesTreasuryAccount(),
@@ -79,6 +79,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationValidatesFreezeDefaultWithNoFreezeKey(),
 						creationSetsCorrectExpiry(),
 						creationHappyPath(),
+						numAccountsAllowedIsDynamic(),
 				}
 		);
 	}
@@ -299,14 +300,21 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("NumAccountsAllowedIsDynamic")
 				.given(
+						newKeyNamed("admin"),
 						cryptoCreate(TOKEN_TREASURY).balance(0L)
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK)),
-						tokenCreate(salted("primary"))
+						tokenCreate("primary")
+								.adminKey("admin")
 								.treasury(TOKEN_TREASURY),
-						tokenCreate(salted("secondary"))
+						tokenCreate("secondaryFails")
+								.treasury(TOKEN_TREASURY)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
+						tokenDelete("primary"),
+						/* Deleted tokens still count against your max allowed associations. */
+						tokenCreate("secondaryFailsAgain")
 								.treasury(TOKEN_TREASURY)
 								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
 				).then(
@@ -315,7 +323,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.overridingProps(Map.of(
 										"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
 								)),
-						tokenCreate(salted("secondary")).treasury(TOKEN_TREASURY)
+						tokenCreate("secondary").treasury(TOKEN_TREASURY)
 				);
 	}
 

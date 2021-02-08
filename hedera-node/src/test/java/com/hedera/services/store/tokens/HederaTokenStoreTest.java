@@ -73,6 +73,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMI
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
+import static com.hedera.test.mocks.TestContextValidator.CONSENSUS_NOW;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -115,8 +116,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.spy;
 
 class HederaTokenStoreTest {
-	long thisSecond = 1_234_567L;
-
 	EntityIdSource ids;
 	GlobalDynamicProperties properties;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
@@ -137,8 +136,8 @@ class HederaTokenStoreTest {
 	String memo = "TOKENMEMO";
 	String name = "TOKENNAME";
 	String newName = "NEWNAME";
-	long expiry = thisSecond + 1_234_567;
-	long newExpiry = thisSecond + 1_432_765;
+	long expiry = CONSENSUS_NOW + 1_234_567;
+	long newExpiry = CONSENSUS_NOW + 1_432_765;
 	long totalSupply = 1_000_000;
 	long adjustment = 1;
 	int decimals = 10;
@@ -489,11 +488,11 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void associatingRejectsIfCappedAssociationsEvenAfterPurging() {
+	public void associatingRejectsIfCappedAssociationsLimit() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(false);
-		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(tokens.numAssociations()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
 		// when:
@@ -513,7 +512,6 @@ class HederaTokenStoreTest {
 		var key = asTokenRel(sponsor, misc);
 
 		given(tokens.includes(misc)).willReturn(false);
-		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		// and:
 		given(token.hasKycKey()).willReturn(true);
@@ -531,6 +529,28 @@ class HederaTokenStoreTest {
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
+	}
+
+	@Test
+	public void dissociatingWorksEvenIfTokenDoesntExistAnymore() {
+		// setup:
+		var accountTokens = mock(MerkleAccountTokens.class);
+		var key = asTokenRel(sponsor, misc);
+
+		given(accountTokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(accountTokens);
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(0L);
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(accountTokens).dissociateAll(Set.of(misc));
+		verify(hederaLedger).setAssociatedTokens(sponsor, accountTokens);
+		verify(tokenRelsLedger).destroy(key);
 	}
 
 	@Test
@@ -574,6 +594,78 @@ class HederaTokenStoreTest {
 		verify(tokens, never()).dissociateAll(Set.of(misc));
 		verify(hederaLedger, never()).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger, never()).destroy(key);
+	}
+
+	@Test
+	public void dissociatingPermitsFrozenRelIfDeleted() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		var key = asTokenRel(sponsor, misc);
+
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		// and:
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
+		given(token.isDeleted()).willReturn(true);
+		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(true);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(tokens).dissociateAll(Set.of(misc));
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger).destroy(key);
+	}
+
+	@Test
+	public void dissociatingPermitsNonzeroTokenBalanceIfDeleted() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		var key = asTokenRel(sponsor, misc);
+
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		// and:
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(tokens).dissociateAll(Set.of(misc));
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger).destroy(key);
+	}
+
+	@Test
+	public void dissociatingPermitsNonzeroTokenBalanceIfExpired() {
+		// setup:
+		long balance = 123L;
+		var tokens = mock(MerkleAccountTokens.class);
+		var key = asTokenRel(sponsor, misc);
+
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		// and:
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(balance);
+		given(token.expiry()).willReturn(CONSENSUS_NOW - 1);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(tokens).dissociateAll(Set.of(misc));
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger).destroy(key);
+		verify(hederaLedger).doTokenTransfer(misc, sponsor, treasury, balance);
 	}
 
 	@Test
@@ -743,7 +835,7 @@ class HederaTokenStoreTest {
 		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1)).build();
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(INVALID_EXPIRATION_TIME, outcome);
@@ -757,7 +849,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(NO_KEYS, true, true, false);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
@@ -772,7 +864,7 @@ class HederaTokenStoreTest {
 		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(OK, outcome);
@@ -785,7 +877,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(NO_KEYS, true, true, false, true, false);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(INVALID_AUTORENEW_ACCOUNT, outcome);
@@ -799,7 +891,7 @@ class HederaTokenStoreTest {
 		op = op.toBuilder().setAutoRenewPeriod(enduring(-1L)).build();
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(INVALID_RENEWAL_PERIOD, outcome);
@@ -814,7 +906,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(ALL_KEYS, true, true, true);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(INVALID_TOKEN_ID, outcome);
@@ -830,7 +922,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(EnumSet.of(KeyType.KYC), false, false, false);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(TOKEN_HAS_NO_KYC_KEY, outcome);
@@ -845,7 +937,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(EnumSet.of(KeyType.FREEZE), false, false, false);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(TOKEN_HAS_NO_FREEZE_KEY, outcome);
@@ -860,7 +952,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(EnumSet.of(KeyType.WIPE), false, false, false);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(TOKEN_HAS_NO_WIPE_KEY, outcome);
@@ -875,7 +967,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(EnumSet.of(KeyType.SUPPLY), false, false, false);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, outcome);
@@ -974,7 +1066,7 @@ class HederaTokenStoreTest {
 		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(0)).build();
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(OK, outcome);
@@ -999,7 +1091,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), false, false, false);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 		// then:
 		assertEquals(OK, outcome);
 		verify(token).setAdminKey(MerkleToken.UNUSED_KEY);
@@ -1021,7 +1113,7 @@ class HederaTokenStoreTest {
 		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(newExpiry)).build();
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 		// then:
 		assertEquals(OK, outcome);
 		verify(token).setSymbol(newSymbol);
@@ -1076,7 +1168,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(ALL_KEYS, true, true, true, true, true);
 
 		// when:
-		var outcome = subject.update(op, thisSecond);
+		var outcome = subject.update(op, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(OK, outcome);
@@ -1545,7 +1637,7 @@ class HederaTokenStoreTest {
 	public void happyPathWorksWithAutoRenew() {
 		// setup:
 		var expected = new MerkleToken(
-				thisSecond + autoRenewPeriod,
+				CONSENSUS_NOW + autoRenewPeriod,
 				totalSupply,
 				decimals,
 				symbol,
@@ -1570,7 +1662,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(OK, result.getStatus());
@@ -1603,7 +1695,7 @@ class HederaTokenStoreTest {
 		var req = fullyValidAttempt().build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(OK, result.getStatus());
@@ -1624,7 +1716,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(INVALID_AUTORENEW_ACCOUNT, result.getStatus());
@@ -1638,7 +1730,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
@@ -1653,7 +1745,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
@@ -1668,7 +1760,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
@@ -1683,7 +1775,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
@@ -1697,7 +1789,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
 		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());

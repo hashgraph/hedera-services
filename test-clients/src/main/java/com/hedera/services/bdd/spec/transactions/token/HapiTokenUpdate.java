@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -198,10 +199,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				}
 				return estimate.get();
 			};
-			return spec.fees().forActivityBasedOp(
-					HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
+			return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
 		} catch (Throwable ignore) {
-			return 100_000_000L;
+			return HapiApiSuite.ONE_HBAR;
 		}
 	}
 

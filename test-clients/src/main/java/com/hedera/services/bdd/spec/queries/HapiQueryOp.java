@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -71,8 +71,14 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	private Optional<Function<HapiApiSpec, Long>> nodePaymentFn = Optional.empty();
 	private Optional<EnumSet<ResponseCodeEnum>> permissibleAnswerOnlyPrechecks = Optional.empty();
 	private Optional<EnumSet<ResponseCodeEnum>> permissibleCostAnswerPrechecks = Optional.empty();
-	private ResponseCodeEnum expectedCostAnswerPrecheck() { return costAnswerPrecheck.orElse(OK); }
-	private ResponseCodeEnum expectedAnswerOnlyPrecheck() { return answerOnlyPrecheck.orElse(OK); }
+
+	private ResponseCodeEnum expectedCostAnswerPrecheck() {
+		return costAnswerPrecheck.orElse(OK);
+	}
+
+	private ResponseCodeEnum expectedAnswerOnlyPrecheck() {
+		return answerOnlyPrecheck.orElse(OK);
+	}
 
 	protected Optional<Long> nodePayment = Optional.empty();
 	protected Optional<ResponseCodeEnum> costAnswerPrecheck = Optional.empty();
@@ -80,10 +86,16 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
 	/* WARNING: Must set `response` as a side effect! */
 	protected abstract void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable;
+
 	protected abstract boolean needsPayment();
 
-	protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable { return 0L; }
-	protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable { return 0L; };
+	protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+		return 0L;
+	}
+
+	protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable {
+		return 0L;
+	}
 
 	public Response getResponse() {
 		return response;
@@ -96,14 +108,15 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 				costAnswerPrecheck = Optional.of(actualPrecheck);
 			} else {
 				String errMsg = String.format("Cost-answer precheck was %s, not one of %s!",
-						actualPrecheck,	permissibleCostAnswerPrechecks.get());
+						actualPrecheck, permissibleCostAnswerPrechecks.get());
 				log.error(errMsg);
 
 				throw new HapiQueryCheckStateException(errMsg);
 			}
 		} else {
-			if(expectedCostAnswerPrecheck() != actualPrecheck) {
-				String errMsg = String.format("Bad costAnswerPrecheck! expected %s, actual %s", expectedCostAnswerPrecheck(), actualPrecheck);
+			if (expectedCostAnswerPrecheck() != actualPrecheck) {
+				String errMsg = String.format("Bad costAnswerPrecheck! expected %s, actual %s",
+						expectedCostAnswerPrecheck(), actualPrecheck);
 				log.error(errMsg);
 				throw new HapiQueryCheckStateException(errMsg);
 			}
@@ -140,22 +153,34 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (permissibleAnswerOnlyPrechecks.get().contains(actualPrecheck)) {
 				answerOnlyPrecheck = Optional.of(actualPrecheck);
 			} else {
-				String errMsg = String.format("Answer-only precheck was %s, not one of %s!",
-						actualPrecheck,	permissibleAnswerOnlyPrechecks.get());
-				log.error(errMsg);
+				String errMsg = String.format(
+						"Answer-only precheck was %s, not one of %s!",
+						actualPrecheck,
+						permissibleAnswerOnlyPrechecks.get());
+				if (!loggingOff) {
+					log.error(errMsg);
+				}
 				throw new HapiQueryPrecheckStateException(errMsg);
 			}
 		} else {
-			if(expectedAnswerOnlyPrecheck() != actualPrecheck) {
-				String errMsg = String.format("Bad answerOnlyPrecheck! expected %s, actual %s", expectedAnswerOnlyPrecheck(), actualPrecheck);
-				log.error(errMsg);
+			if (expectedAnswerOnlyPrecheck() != actualPrecheck) {
+				String errMsg = String.format(
+						"Bad answerOnlyPrecheck! expected %s, actual %s",
+						expectedAnswerOnlyPrecheck(),
+						actualPrecheck);
+				if (!loggingOff) {
+					log.error(errMsg);
+				}
 				throw new HapiQueryPrecheckStateException(errMsg);
 			}
 		}
-		if (expectedCostAnswerPrecheck() != OK || expectedAnswerOnlyPrecheck() != OK) { return false; }
+		if (expectedCostAnswerPrecheck() != OK || expectedAnswerOnlyPrecheck() != OK) {
+			return false;
+		}
 		txnSubmitted = payment;
 		return true;
 	}
+
 	private void timedSubmitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		if (suppressStats) {
 			submitWith(spec, payment);
@@ -196,7 +221,9 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (recordsNodePayment) {
 				spec.registry().saveAmount(nodePaymentName, realNodePayment);
 			}
-			if (!suppressStats) { spec.incrementNumLedgerOps(); }
+			if (!suppressStats) {
+				spec.incrementNumLedgerOps();
+			}
 			if (expectedCostAnswerPrecheck() != OK) {
 				return null;
 			}
@@ -217,13 +244,12 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (expectStrictCostAnswer) {
 				Transaction insufficientPayment = finalizedTxn(spec, opDef(spec, realNodePayment - 1));
 				submitWith(spec, insufficientPayment);
-				if(INSUFFICIENT_TX_FEE != reflectForPrecheck(response)) {
+				if (INSUFFICIENT_TX_FEE != reflectForPrecheck(response)) {
 					String errMsg = String.format("Strict cost of answer! suppose to be {}, but get {}",
 							INSUFFICIENT_TX_FEE, reflectForPrecheck(response));
 					log.error(errMsg);
 					throw new HapiQueryPrecheckStateException(errMsg);
-				}
-				else {
+				} else {
 					log.info("Query with node payment of {} tinyBars got INSUFFICIENT_TX_FEE as expected!",
 							realNodePayment - 1);
 				}
@@ -232,7 +258,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		}
 	}
 
-	private long timedCostLookupWith(HapiApiSpec spec, Transaction payment)	throws Throwable {
+	private long timedCostLookupWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		if (suppressStats) {
 			return lookupCostWith(spec, payment);
 		} else {
@@ -266,53 +292,65 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		costAnswerPrecheck = Optional.of(precheck);
 		return self();
 	}
+
 	public T hasCostAnswerPrecheckFrom(ResponseCodeEnum... prechecks) {
 		permissibleCostAnswerPrechecks = Optional.of(EnumSet.copyOf(List.of(prechecks)));
 		return self();
 	}
+
 	public T hasAnswerOnlyPrecheck(ResponseCodeEnum precheck) {
 		answerOnlyPrecheck = Optional.of(precheck);
 		return self();
 	}
+
 	public T hasAnswerOnlyPrecheckFrom(ResponseCodeEnum... prechecks) {
 		permissibleAnswerOnlyPrechecks = Optional.of(EnumSet.copyOf(List.of(prechecks)));
 		return self();
 	}
+
 	public T nodePayment(Function<HapiApiSpec, Long> fn) {
 		nodePaymentFn = Optional.of(fn);
 		return self();
 	}
+
 	public T nodePayment(long amount) {
 		nodePayment = Optional.of(amount);
 		return self();
 	}
+
 	public T stoppingAfterCostAnswer() {
 		stopAfterCostAnswer = true;
 		return self();
 	}
+
 	public T expectStrictCostAnswer() {
 		expectStrictCostAnswer = true;
 		return self();
 	}
+
 	public T via(String name) {
 		txnName = name;
 		shouldRegisterTxn = true;
 		return self();
 	}
+
 	public T fee(long amount) {
 		if (amount >= 0) {
 			fee = Optional.of(amount);
 		}
 		return self();
 	}
+
 	public T logged() {
 		verboseLoggingOn = true;
 		return self();
 	}
+
 	public T payingWith(String name) {
 		payer = Optional.of(name);
 		return self();
 	}
+
 	public T signedBy(String... keys) {
 		signers = Optional.of(
 				Stream.of(keys)
@@ -320,67 +358,83 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 						.collect(toList()));
 		return self();
 	}
+
 	public T record(Boolean isGenerated) {
 		genRecord = Optional.of(isGenerated);
 		return self();
 	}
+
 	public T sigMapPrefixes(SigMapGenerator.Nature nature) {
 		sigMapGen = Optional.of(nature);
 		return self();
 	}
+
 	public T sigControl(ControlForKey... overrides) {
 		controlOverrides = Optional.of(overrides);
 		return self();
 	}
+
 	public T numPayerSigs(int hardcoded) {
 		this.hardcodedNumPayerKeys = Optional.of(hardcoded);
 		return self();
 	}
+
 	public T delayBy(long pauseMs) {
 		submitDelay = Optional.of(pauseMs);
 		return self();
 	}
+
 	public T suppressStats(boolean flag) {
 		suppressStats = flag;
 		return self();
 	}
+
 	public T noLogging() {
 		loggingOff = true;
 		return self();
 	}
+
 	public T logging() {
 		loggingOff = false;
 		return self();
 	}
+
 	public T recordNodePaymentAs(String s) {
 		recordsNodePayment = true;
 		nodePaymentName = s;
 		return self();
 	}
+
 	public T useEmptyTxnAsCostPayment() {
 		useDefaultTxnAsCostAnswerPayment = true;
 		return self();
 	}
+
 	public T useEmptyTxnAsAnswerPayment() {
 		useDefaultTxnAsAnswerOnlyPayment = true;
 		return self();
 	}
+
 	public T randomNode() {
 		useRandomNode = true;
 		return self();
 	}
+
 	public T unavailableNode() {
 		unavailableNode = true;
 		return noLogging();
 	}
+
 	public T setNode(String account) {
 		node = Optional.of(HapiPropertySource.asAccount(account));
 		return self();
 	}
+
 	public T setNodeFrom(Supplier<String> accountSupplier) {
 		nodeSupplier = Optional.of(() -> HapiPropertySource.asAccount(accountSupplier.get()));
 		return self();
 	}
+
 	public T withPayment(HapiCryptoTransfer txn) {
 		explicitPayment = Optional.of(txn);
 		return self();

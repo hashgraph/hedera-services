@@ -70,7 +70,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						symbolChanges(),
 						standardImmutabilitySemanticsHold(),
 						validAutoRenewWorks(),
-						validatesMissingAdminKey(),
 						tooLongNameCheckHolds(),
 						tooLongSymbolCheckHolds(),
 						nameChanges(),
@@ -84,7 +83,11 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newTreasuryMustSign(),
 						newTreasuryMustBeAssociated(),
 						tokensCanBeMadeImmutableWithEmptyKeyList(),
+<<<<<<< HEAD
 						updateHappyPath(),
+=======
+						validatesMissingAdminKey(),
+>>>>>>> master
 				}
 		);
 	}
@@ -160,9 +163,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				.given(
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						cryptoCreate("payer"),
-						tokenCreate("tbd")
-								.freezeDefault(false)
-								.treasury(TOKEN_TREASURY)
+						tokenCreate("tbd").treasury(TOKEN_TREASURY)
 				).when().then(
 						tokenUpdate("tbd")
 								.autoRenewAccount(GENESIS)
