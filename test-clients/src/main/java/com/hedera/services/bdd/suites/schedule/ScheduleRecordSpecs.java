@@ -21,7 +21,7 @@ package com.hedera.services.bdd.suites.schedule;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,8 +43,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID
 public class ScheduleRecordSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
 	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
-	private static final HapiSpecOperation updateScheduleExpiryTimeSecs =
-			overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS);
+
+	private static final String defaultTxExpiry =
+			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
 
 	public static void main(String... args) {
 		new ScheduleRecordSpecs().runSuiteSync();
@@ -53,10 +54,26 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+						suiteSetup(),
 						allRecordsAreQueryable(),
 						schedulingTxnIdFieldsNotAllowed(),
+						suiteCleanup(),
 				}
 		);
+	}
+
+	private HapiApiSpec suiteCleanup() {
+		return defaultHapiSpec("suiteCleanup")
+				.given().when().then(
+						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
+				);
+	}
+
+	private HapiApiSpec suiteSetup() {
+		return defaultHapiSpec("suiteSetup")
+				.given().when().then(
+						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+				);
 	}
 
 	public HapiApiSpec schedulingTxnIdFieldsNotAllowed() {
@@ -77,7 +94,6 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	public HapiApiSpec allRecordsAreQueryable() {
 		return defaultHapiSpec("AllRecordsAreQueryable")
 				.given(
-						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payer"),
 						cryptoCreate("receiver").receiverSigRequired(true).balance(0L)
 				).when(
