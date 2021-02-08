@@ -48,6 +48,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -86,6 +88,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						contractInfoQueriesAsExpected(),
 						associateHasExpectedSemantics(),
 						associatedContractsMustHaveAdminKeys(),
+						dissociateExpiredToken(),
 				}
 		);
 	}
@@ -179,16 +182,21 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						tokenUpdate("expiredToken")
 								.expiry(Instant.now().getEpochSecond())
 				)
-				.then(
+				.then(flattened(
 						getAccountBalance("accountA")
 								.logged()
 								.hasTokenBalance("expiredToken", 900L),
-						tokenDissociate("accountB", "expiredToken"),
+						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER, "accountA"),
+						tokenDissociate("accountB", "expiredToken").via("dissociateTxn"),
+						validateTransferListForBalances("dissociateTxn",
+								List.of(FUNDING, NODE, DEFAULT_PAYER, "accountA")),
 						getAccountBalance("accountA")
 								.logged()
 								.hasTokenBalance("expiredToken", 1_000L)
+						)
 				);
 	}
+
 	public HapiApiSpec dissociateHasExpectedSemantics() {
 		return defaultHapiSpec("DissociateHasExpectedSemantics")
 				.given(flattened(
