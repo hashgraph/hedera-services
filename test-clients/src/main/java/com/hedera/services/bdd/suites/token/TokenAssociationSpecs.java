@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -55,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -82,12 +84,12 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						treasuryAssociationIsAutomatic(),
-						dissociateHasExpectedSemantics(),
-						accountInfoQueriesAsExpected(),
-						contractInfoQueriesAsExpected(),
-						associateHasExpectedSemantics(),
-						associatedContractsMustHaveAdminKeys(),
+//						treasuryAssociationIsAutomatic(),
+//						dissociateHasExpectedSemantics(),
+//						accountInfoQueriesAsExpected(),
+//						contractInfoQueriesAsExpected(),
+//						associateHasExpectedSemantics(),
+//						associatedContractsMustHaveAdminKeys(),
 						dissociateExpiredToken(),
 				}
 		);
@@ -165,6 +167,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 
 	public HapiApiSpec dissociateExpiredToken() {
 
+		long expiryBase = Instant.now().getEpochSecond();
+
 		return defaultHapiSpec("DissociateExpiredToken")
 				.given(
 						cryptoCreate("accountA"),
@@ -172,15 +176,17 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						tokenCreate("expiredToken")
 								.treasury("accountA")
 								.initialSupply(1_000L)
+								.expiry(expiryBase+60)
 				)
 				.when(
 						tokenAssociate("accountB", "expiredToken"),
 						cryptoTransfer(
 								moving(100L, "expiredToken")
 										.between("accountA", "accountB")
-						).hasKnownStatus(OK),
+						).hasKnownStatus(SUCCESS),
 						tokenUpdate("expiredToken")
-								.expiry(Instant.now().getEpochSecond())
+								.expiry(expiryBase+65),
+						sleepFor(70_000)
 				)
 				.then(flattened(
 						getAccountBalance("accountA")
