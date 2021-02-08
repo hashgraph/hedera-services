@@ -22,7 +22,7 @@ package com.hedera.services.bdd.suites.schedule;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -52,8 +52,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ScheduleExecutionSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
     private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
-    private static final HapiSpecOperation updateScheduleExpiryTimeSecs =
-            overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS);
+
+    private static final String defaultTxExpiry =
+            HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
 
     public static void main(String... args) {
         new ScheduleExecutionSpecs().runSuiteSync();
@@ -67,18 +68,33 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     @Override
     protected List<HapiApiSpec> getSpecsInSuite() {
         return List.of(new HapiApiSpec[] {
+                suiteSetup(),
                 executionWithDefaultPayerWorks(),
                 executionWithCustomPayerWorks(),
                 executionWithDefaultPayerButNoFundsFails(),
-                executionWithCustomPayerButNoFundsFails()
+                executionWithCustomPayerButNoFundsFails(),
+                suiteCleanup(),
         });
+    }
+
+    private HapiApiSpec suiteCleanup() {
+        return defaultHapiSpec("suiteCleanup")
+                .given().when().then(
+                        overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
+                );
+    }
+
+    private HapiApiSpec suiteSetup() {
+        return defaultHapiSpec("suiteSetup")
+                .given().when().then(
+                        overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+                );
     }
 
     public HapiApiSpec executionWithDefaultPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithDefaultPayerWorks")
                 .given(
-                        updateScheduleExpiryTimeSecs,
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
                         cryptoCreate("payingAccount"),
@@ -132,7 +148,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         long transferAmount = 1L;
         return defaultHapiSpec("ExecutionWithDefaultPayerButNoFundsFails")
                 .given(
-                        updateScheduleExpiryTimeSecs,
                         cryptoCreate("payingAccount").balance(balance),
                         cryptoCreate("luckyReceiver"),
                         cryptoCreate("sender").balance(transferAmount),
@@ -177,7 +192,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerButNoFundsFails")
                 .given(
-                        updateScheduleExpiryTimeSecs,
                         cryptoCreate("payingAccount").balance(balance),
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
@@ -207,7 +221,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorks")
                 .given(
-                        updateScheduleExpiryTimeSecs,
                         cryptoCreate("payingAccount"),
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
