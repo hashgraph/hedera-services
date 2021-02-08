@@ -80,6 +80,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				MerkleAccount account = view.accounts().get(fromAccountId(id));
 				String solidityAddress = asSolidityAddressHex(id);
 				CryptoGetInfoResponse.AccountInfo.Builder info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+						.setMemo(account.getMemo())
 						.setKey(asKeyUnchecked(account.getKey()))
 						.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
