@@ -131,7 +131,7 @@ class ContractCallLocalAnswerTest {
 
 		// then:
 		assertEquals(HederaFunctionality.ContractCallLocal, subject.canonicalFunction());
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
 		assertTrue(subject.needsAnswerOnlyCost(query));
 		assertFalse(subject.requiresNodePayment(query));
 		assertEquals(INSUFFICIENT_TX_FEE, subject.extractValidityFrom(response));

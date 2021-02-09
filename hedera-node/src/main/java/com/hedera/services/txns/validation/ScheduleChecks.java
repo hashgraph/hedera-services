@@ -23,6 +23,7 @@ package com.hedera.services.txns.validation;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.PureValidation.checkKey;
@@ -32,9 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ScheduleChecks {
     static Predicate<Key> ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
 
-    public static ResponseCodeEnum checkAdminKey(
-            boolean hasAdminKey, Key adminKey
-    ) {
+    public static ResponseCodeEnum checkAdminKey(boolean hasAdminKey, Key adminKey) {
         ResponseCodeEnum validity = OK;
 
         if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {

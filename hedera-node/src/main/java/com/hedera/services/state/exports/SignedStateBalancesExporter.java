@@ -102,9 +102,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	public boolean isTimeToExport(Instant now) {
 		if (periodEnd == NEVER) {
 			periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());
-			// initial export
-			log.info("Initial export after restart");
-			return true;
+			return false;
 		} else {
 			if (now.isAfter(periodEnd)) {
 				periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());

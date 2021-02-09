@@ -93,7 +93,7 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 	}
 
 	private TxnValidityAndFeeReq metaValidityOf(SignedTxnAccessor accessor) {
-		return legacyTxnHandler.validateTransactionPreConsensus(accessor.getSignedTxn(), false);
+		return legacyTxnHandler.validateTransactionPreConsensus(accessor.getBackwardCompatibleSignedTxn(), false);
 	}
 
 	private TransactionResponse responseWith(ResponseCodeEnum validity) {

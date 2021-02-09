@@ -21,7 +21,7 @@ package com.hedera.services.security.ops;
  */
 
 import com.hedera.services.config.EntityNumbers;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -73,7 +73,7 @@ public class SystemOpPolicies {
 		functionPolicies.put(UncheckedSubmit, this::checkUncheckedSubmit);
 	}
 
-	public SystemOpAuthorization check(SignedTxnAccessor accessor) {
+	public SystemOpAuthorization check(TxnAccessor accessor) {
 		return check(accessor.getTxn(), accessor.getFunction());
 	}
 

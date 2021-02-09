@@ -20,11 +20,11 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -37,26 +37,25 @@ import java.util.function.Predicate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-public class ScheduleSignTransitionLogic implements TransitionLogic {
+public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(ScheduleSignTransitionLogic.class);
 
     private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-    OptionValidator validator;
-    ScheduleStore store;
-    HederaLedger ledger;
-    TransactionContext txnCtx;
+    private final InHandleActivationHelper activationHelper;
+
+    SignatoryUtils.SigningsWitness signingsWitness = SignatoryUtils::witnessInScope;
+    ExecutionProcessor executor = this::processExecution;
 
     public ScheduleSignTransitionLogic(
-            OptionValidator validator,
             ScheduleStore store,
-            HederaLedger ledger,
-            TransactionContext txnCtx) {
-        this.validator = validator;
-        this.store = store;
-        this.ledger = ledger;
-        this.txnCtx = txnCtx;
+            TransactionContext txnCtx,
+            InHandleActivationHelper activationHelper
+    ) {
+        super(store, txnCtx);
+        this.activationHelper = activationHelper;
     }
 
     @Override
@@ -65,16 +64,20 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
             transitionFor(txnCtx.accessor().getTxn().getScheduleSign());
         } catch (Exception e) {
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
-            abortWith(FAIL_INVALID);
+            txnCtx.setStatus(FAIL_INVALID);
         }
     }
 
-    private void transitionFor(ScheduleSignTransactionBody op) {
-        throw new UnsupportedOperationException();
-    }
+    private void transitionFor(ScheduleSignTransactionBody op) throws InvalidProtocolBufferException {
+        int numSigs = op.getSigMap().getSigPairCount();
+        var scheduleId = op.getScheduleID();
+        var signingOutcome = signingsWitness.observeInScope(numSigs, scheduleId, store, activationHelper);
 
-    private void abortWith(ResponseCodeEnum cause) {
-        throw new UnsupportedOperationException();
+        var outcome = signingOutcome.getLeft();
+        if (outcome == OK && signingOutcome.getRight()) {
+            outcome = executor.doProcess(scheduleId);
+        }
+		txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
     }
 
     @Override
@@ -90,9 +93,6 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         ScheduleSignTransactionBody op = txnBody.getScheduleSign();
 
-        if (!op.hasScheduleID()) {
-            return INVALID_SCHEDULE_ID;
-        }
-        return OK;
+        return (op.hasScheduleID()) ? OK : INVALID_SCHEDULE_ID;
     }
 }

@@ -53,7 +53,7 @@ public class PlatformSubmissionManager {
 	public ResponseCodeEnum trySubmission(SignedTxnAccessor accessor) {
 		accessor = effective(accessor);
 
-		var success = (accessor != null) && platform.createTransaction(new Transaction(accessor.getSignedTxnBytes()));
+		var success = (accessor != null) && platform.createTransaction(new Transaction(accessor.getBackwardCompatibleSignedTxnBytes()));
 		if (success) {
 			recordCache.addPreConsensus(accessor.getTxnId());
 			return OK;

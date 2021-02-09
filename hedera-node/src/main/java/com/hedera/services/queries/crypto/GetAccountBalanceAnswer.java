@@ -86,19 +86,12 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
 			for (TokenID tId : account.tokens().asIds()) {
-				var optionalToken = view.tokenWith(tId);
-				if (optionalToken.isPresent()) {
-					var token = optionalToken.get();
-					if (!token.isDeleted()) {
-						var relKey = fromAccountTokenRel(id, tId);
-						var relationship = view.tokenAssociations().get().get(relKey);
-						opAnswer.addTokenBalances(TokenBalance.newBuilder()
-								.setTokenId(tId)
-								.setBalance(relationship.getBalance())
-								.build());
-					}
-				}
-
+				var relKey = fromAccountTokenRel(id, tId);
+				var relationship = view.tokenAssociations().get().get(relKey);
+				opAnswer.addTokenBalances(TokenBalance.newBuilder()
+						.setTokenId(tId)
+						.setBalance(relationship.getBalance())
+						.build());
 			}
 		}
 

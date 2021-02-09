@@ -20,7 +20,7 @@ package com.hedera.test.forensics;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.TxnId;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;

@@ -21,13 +21,11 @@ package com.hedera.services.sigs.factories;
  */
 
 
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.commons.codec.binary.Hex;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 

@@ -77,6 +77,27 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
+	public void usesScheduledOpsWhenApropos() throws Throwable {
+		// setup:
+		for (JKey key : pubKeys) {
+			key.setForScheduledTxn(true);
+		}
+
+		given(sigBytes.sigBytesForScheduled(any())).willReturn(MOCK_SIG, MORE_EMPTY_SIGS);
+
+		// when:
+		createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
+
+		// then:
+		verify(sigBytes, never()).sigBytesFor(any());
+		verify(sigFactory, never()).create(any(), any());
+		// and:
+		verify(sigFactory).createForScheduled(
+				ByteString.copyFrom(pubKeys.get(0).getEd25519()),
+				ByteString.copyFrom(MOCK_SIG));
+	}
+
+	@Test
 	public void createsOnlyNonDegenerateSigs() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG, MORE_EMPTY_SIGS);
 

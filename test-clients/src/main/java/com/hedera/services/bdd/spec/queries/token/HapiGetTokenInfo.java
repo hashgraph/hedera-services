@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -222,7 +221,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		assertFor(
 				actualInfo.getExpiry(),
 				expectedExpiry,
-				(n, r) -> Timestamp.newBuilder().setSeconds(r.getTokenExpiry(token)).build(),
+				(n, r) -> Timestamp.newBuilder().setSeconds(r.getExpiry(token)).build(),
 				"Wrong token expiry!",
 				registry);
 

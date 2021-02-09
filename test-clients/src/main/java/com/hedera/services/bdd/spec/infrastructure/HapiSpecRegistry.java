@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -60,6 +61,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.firstStartupKp;
 import static java.util.stream.Collectors.*;
@@ -315,7 +317,7 @@ public class HapiSpecRegistry {
 		return get(name + "Kyc", Key.class);
 	}
 
-	public Long getTokenExpiry(String name) { return get(name + "Expiry", Long.class); }
+	public Long getExpiry(String name) { return get(name + "Expiry", Long.class); }
 
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);
@@ -453,6 +455,15 @@ public class HapiSpecRegistry {
 		put(asAccountString(id), name);
 	}
 
+	public void saveScheduleId(String name, ScheduleID id) {
+		put(name, id);
+		put(asScheduleString(id), name);
+	}
+
+	public ScheduleID getScheduleId(String name) {
+		return get(name, ScheduleID.class);
+	}
+
 	public void saveTokenId(String name, TokenID id) {
 		put(name, id);
 		put(asTokenString(id), name);
@@ -577,7 +588,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasContractId(String name) {
-		return hasVia(this::getContractId, name);
+		return registry.containsKey(full(name, ContractID.class));
 	}
 
 	public void removeContractId(String name) {

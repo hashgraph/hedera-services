@@ -72,7 +72,7 @@ public class ScreenedNodeFileProps implements PropertySource {
 	public ScreenedNodeFileProps() {
 		loadFrom(LEGACY_NODE_PROPS_LOC, false);
 		loadFrom(NODE_PROPS_LOC, true);
-		var msg = "Node-local properties overridden on disk are:\n " + NODE_PROPS.stream()
+		var msg = "Node-local properties overridden on disk are:\n  " + NODE_PROPS.stream()
 				.filter(fromFile::containsKey)
 				.sorted()
 				.map(name -> String.format("%s=%s", name, fromFile.get(name)))

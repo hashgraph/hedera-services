@@ -242,7 +242,7 @@ class GetTokenInfoAnswerTest {
 		Query query = validQuery(COST_ANSWER, fee, tokenId);
 
 		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
 	}
 
 	private Query validQuery(ResponseType type, long payment, TokenID id) throws Throwable {

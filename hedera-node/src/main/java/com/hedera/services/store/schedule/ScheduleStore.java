@@ -27,19 +27,12 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCode;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
 
 /**
  * Defines a type able to manage Scheduled entities.
@@ -48,14 +41,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_D
  */
 public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
-	Consumer<MerkleSchedule> DELETION = schedule -> schedule.setDeleted(true);
 
 	void apply(ScheduleID id, Consumer<MerkleSchedule> change);
+	ResponseCodeEnum delete(ScheduleID id);
 
-	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey);
-	ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> keys);
+	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, RichInstant consensusTime, Optional<JKey> adminKey, Optional<String> entityMemo);
 
-	Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer);
+	Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Key adminKey, String entityMemo);
+	ResponseCodeEnum markAsExecuted(ScheduleID id);
+	void expire(EntityId id);
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;

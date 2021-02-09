@@ -56,6 +56,7 @@ public class ScheduleCreateUsageTest {
 	long now = 1_000L;
 	int scheduledTXExpiry = 1000;
 	AccountID payer = IdUtils.asAccount("0.0.2");
+	String memo = "Just some memo!";
 
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
@@ -162,6 +163,29 @@ public class ScheduleCreateUsageTest {
 	}
 
 	@Test
+	public void createsExpectedDeltaForMemo() {
+		// setup:
+		var expectedTxBytes = transactionBody.length + memo.length();
+		var expectedRamBytes = baseRamBytesWithMemo();
+		givenOpWithMemo();
+
+		// and:
+		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
+				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
+
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, actual);
+		// and:
+		verify(base).addBpt(expectedTxBytes);
+		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
+		verify(base).addVpt(0);
+		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
 	public void createsExpectedDeltaForSigMap() {
 		// setup:
 		var expectedTxBytes = transactionBody.length + SCHEDULE_ENTITY_SIZES.bptScheduleReprGiven(sigMap);
@@ -185,7 +209,11 @@ public class ScheduleCreateUsageTest {
 	}
 
 	private long baseRamBytes() {
-		return SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody);
+		return SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, ByteString.EMPTY);
+	}
+
+	private long baseRamBytesWithMemo() {
+		return SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, ByteString.copyFromUtf8(memo));
 	}
 
 	private void givenBaseOp() {
@@ -215,6 +243,14 @@ public class ScheduleCreateUsageTest {
 		op = ScheduleCreateTransactionBody.newBuilder()
 				.setTransactionBody(ByteString.copyFrom(transactionBody))
 				.setSigMap(sigMap)
+				.build();
+		setTxn();
+	}
+
+	private void givenOpWithMemo() {
+		op = ScheduleCreateTransactionBody.newBuilder()
+				.setTransactionBody(ByteString.copyFrom(transactionBody))
+				.setMemo(memo)
 				.build();
 		setTxn();
 	}
