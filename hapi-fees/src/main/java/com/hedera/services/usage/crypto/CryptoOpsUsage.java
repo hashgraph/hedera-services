@@ -21,18 +21,23 @@ package com.hedera.services.usage.crypto;
  */
 
 import com.hedera.services.usage.EstimatorFactory;
+import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
+import static com.hederahashgraph.fee.FeeBuilder.BASE_FILEINFO_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
@@ -40,6 +45,23 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class CryptoOpsUsage {
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
+	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+
+	public FeeData cryptoInfoUsage(Query cryptoInfoReq, ExtantCryptoContext ctx) {
+		var op = cryptoInfoReq.getCryptoGetInfo();
+
+		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
+		estimate.updateTb(BASIC_ENTITY_ID_SIZE);
+		long extraRb = 0;
+		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
+		extraRb += getAccountKeyStorageSize(ctx.currentKey());
+		if (ctx.currentlyHasProxy()) {
+			extraRb += BASIC_ENTITY_ID_SIZE;
+		}
+		estimate.updateRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
+
+		return estimate.get();
+	}
 
 	public FeeData cryptoUpdateUsage(TransactionBody cryptoUpdate, SigUsage sigUsage, ExtantCryptoContext ctx) {
 		var op = cryptoUpdate.getCryptoUpdateAccount();

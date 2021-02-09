@@ -24,14 +24,22 @@ import com.google.protobuf.StringValue;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.EstimatorFactory;
+import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.file.ExtantFileContext;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoGetInfo;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -40,14 +48,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.function.Function;
+
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
+import static com.hederahashgraph.fee.FeeBuilder.BASE_FILEINFO_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -65,28 +78,64 @@ class CryptoOpsUsageTest {
 
 	EstimatorFactory factory;
 	TxnUsageEstimator base;
+	Function<ResponseType, QueryUsage> queryEstimatorFactory;
+	QueryUsage queryBase;
 
 	CryptoCreateTransactionBody creationOp;
 	CryptoUpdateTransactionBody updateOp;
 	TransactionBody txn;
+	Query query;
 
 	CryptoOpsUsage subject = new CryptoOpsUsage();
 
 	@BeforeEach
 	@SuppressWarnings("unchecked")
-	void setUp() throws Exception {
+	void setUp() {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
+		queryBase = mock(QueryUsage.class);
+		given(queryBase.get()).willReturn(A_USAGES_MATRIX);
 
 		factory = mock(EstimatorFactory.class);
 		given(factory.get(any(), any(), any())).willReturn(base);
+		queryEstimatorFactory = mock(Function.class);
+		given(queryEstimatorFactory.apply(ANSWER_STATE_PROOF)).willReturn(queryBase);
 
 		CryptoOpsUsage.txnEstimateFactory = factory;
+		CryptoOpsUsage.queryEstimateFactory = queryEstimatorFactory;
 	}
 
 	@AfterEach
 	void cleanup() {
 		CryptoOpsUsage.txnEstimateFactory = TxnUsageEstimator::new;
+		CryptoOpsUsage.queryEstimateFactory = QueryUsage::new;
+	}
+
+	@Test
+	void estimatesInfoAsExpected() {
+		givenInfoOp();
+		// and:
+		var ctx = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(expiry)
+				.setCurrentMemo(memo)
+				.setCurrentKey(key)
+				.setCurrentlyHasProxy(true)
+				.build();
+		// and:
+		given(queryBase.get()).willReturn(A_USAGES_MATRIX);
+
+		// when:
+		var estimate = subject.cryptoInfoUsage(query, ctx);
+
+		// then:
+		assertSame(A_USAGES_MATRIX, estimate);
+		// and:
+		verify(queryBase).updateTb(BASIC_ENTITY_ID_SIZE);
+		verify(queryBase).updateRb(
+				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+						+ BASIC_ENTITY_ID_SIZE
+						+ memo.length()
+						+ getAccountKeyStorageSize(key));
 	}
 
 	@Test
@@ -186,5 +235,13 @@ class CryptoOpsUsageTest {
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
 				.setCryptoCreateAccount(creationOp) .build();
+	}
+
+	private void givenInfoOp() {
+		query = Query.newBuilder()
+				.setCryptoGetInfo(CryptoGetInfoQuery.newBuilder()
+						.setHeader(QueryHeader.newBuilder()
+								.setResponseType(ANSWER_STATE_PROOF)))
+				.build();
 	}
 }
