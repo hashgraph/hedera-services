@@ -28,8 +28,8 @@ public enum CryptoEntitySizes {
 
 	/* { deleted, smartContract, receiverSigRequired } */
 	static int NUM_FLAGS_IN_BASE_ACCOUNT_REPRESENTATION = 3;
-	/* { expiry, hbarBalance, autoRenewSecs } */
-	static int NUM_LONG_FIELDS_IN_BASE_ACCOUNT_REPRESENTATION = 3;
+	/* { expiry, hbarBalance, autoRenewSecs } + (LEGACY) { sendThreshold, receiveThreshold } */
+	static int NUM_LONG_FIELDS_IN_BASE_ACCOUNT_REPRESENTATION = 5;
 
 	public int bytesInTokenAssocRepr() {
 		return LONG_SIZE + 2 * BOOL_SIZE;

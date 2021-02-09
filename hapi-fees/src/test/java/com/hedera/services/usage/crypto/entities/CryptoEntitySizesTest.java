@@ -22,7 +22,6 @@ package com.hedera.services.usage.crypto.entities;
 
 import org.junit.jupiter.api.Test;
 
-
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,7 +33,7 @@ class CryptoEntitySizesTest {
 	@Test
 	public void knowsExpectedFixedBytes() {
 		// expect:
-		assertEquals(3 * BOOL_SIZE + 3 * LONG_SIZE, subject.fixedBytesInAccountRepr());
+		assertEquals(3 * BOOL_SIZE + 5 * LONG_SIZE, subject.fixedBytesInAccountRepr());
 	}
 
 	@Test

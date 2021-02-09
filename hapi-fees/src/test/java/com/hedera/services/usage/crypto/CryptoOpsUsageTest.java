@@ -40,6 +40,7 @@ import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -85,7 +86,8 @@ class CryptoOpsUsageTest {
 		givenCreationOp();
 		// and given:
 		long rb = reprSize();
-		long bytesUsed = reprSize() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + LONG_SIZE;
+		long bytesUsed = reprSize() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+				+ 2 * LONG_SIZE + BOOL_SIZE;
 
 		// when:
 		var estimate = subject.cryptoCreateUsage(txn, sigUsage);

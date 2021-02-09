@@ -32,6 +32,7 @@ import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIE
 import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public class CryptoOpsUsage {
@@ -40,19 +41,20 @@ public class CryptoOpsUsage {
 	public FeeData cryptoCreateUsage(TransactionBody cryptoCreation, SigUsage sigUsage) {
 		var op = cryptoCreation.getCryptoCreateAccount();
 
-		int customBytes = 0;
-		customBytes += op.getMemoBytes().size();
-		customBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
+		int variableBytes = 0;
+		variableBytes += op.getMemoBytes().size();
+		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
 		if (op.hasProxyAccountID()) {
-			customBytes += BASIC_ENTITY_ID_SIZE;
+			variableBytes += BASIC_ENTITY_ID_SIZE;
 		}
 
 		var lifetime = op.getAutoRenewPeriod().getSeconds();
 
 		var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
-		/* Variable bytes plus a long for auto-renew period */
-		estimate.addBpt(customBytes + LONG_SIZE);
-		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + customBytes) * lifetime);
+		/* Variable bytes plus two additional longs for balance and auto-renew period;
+		   plus a boolean for receiver sig required. */
+		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
+		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
 		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
 		return estimate.get();
