@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
 class GetTokenInfoResourceUsageTest {
+	String memo = "22 a million";
 	String symbol = "HEYMAOK";
 	String name = "IsItReallyOk";
 	TokenID target = IdUtils.asToken("0.0.123");
@@ -66,6 +67,7 @@ class GetTokenInfoResourceUsageTest {
 			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
 			.setSymbol(symbol)
 			.setName(name)
+			.setMemo(memo)
 			.setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
 			.build();
 
@@ -90,6 +92,7 @@ class GetTokenInfoResourceUsageTest {
 		given(estimator.givenCurrentFreezeKey(any())).willReturn(estimator);
 		given(estimator.givenCurrentSymbol(any())).willReturn(estimator);
 		given(estimator.givenCurrentName(any())).willReturn(estimator);
+		given(estimator.givenCurrentMemo(any())).willReturn(estimator);
 		given(estimator.givenCurrentlyUsingAutoRenewAccount()).willReturn(estimator);
 		given(estimator.get()).willReturn(expected);
 
@@ -129,6 +132,7 @@ class GetTokenInfoResourceUsageTest {
 		verify(estimator).givenCurrentSymbol(symbol);
 		verify(estimator).givenCurrentName(name);
 		verify(estimator).givenCurrentlyUsingAutoRenewAccount();
+		verify(estimator).givenCurrentMemo(memo);
 	}
 
 	@Test

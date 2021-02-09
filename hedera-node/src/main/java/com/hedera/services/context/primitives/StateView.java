@@ -240,6 +240,7 @@ public class StateView {
 					.setDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
 					.setName(token.name())
+					.setMemo(token.memo())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setTotalSupply(token.totalSupply())
 					.setDecimals(token.decimals())

@@ -285,6 +285,14 @@ public class HapiSpecRegistry {
 		put(token + "Name", name, String.class);
 	}
 
+	public void saveMemo(String entity, String memo) {
+		put(entity + "Memo", memo, String.class);
+	}
+
+	public String getMemo(String entity) {
+		return get(entity + "Memo", String.class);
+	}
+
 	public String getSymbol(String token) {
 		return get(token + "Symbol", String.class);
 	}

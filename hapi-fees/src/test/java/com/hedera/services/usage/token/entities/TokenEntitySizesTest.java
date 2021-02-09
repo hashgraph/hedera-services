@@ -58,7 +58,7 @@ public class TokenEntitySizesTest {
 				+ symbol.getBytes().length + name.getBytes().length;
 
 		// given:
-		long actual = subject.totalBytesInfTokenReprGiven(symbol, name);
+		long actual = subject.totalBytesInTokenReprGiven(symbol, name);
 
 		// expect:
 		assertEquals(expected, actual);

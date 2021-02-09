@@ -46,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -81,10 +80,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						deletedAutoRenewAccountCheckHolds(),
 						renewalPeriodCheckHolds(),
 						invalidTreasuryCheckHolds(),
-						updateHappyPath(),
 						newTreasuryMustSign(),
 						newTreasuryMustBeAssociated(),
 						tokensCanBeMadeImmutableWithEmptyKeyList(),
+						updateHappyPath(),
 						validatesMissingAdminKey(),
 				}
 		);
@@ -455,6 +454,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec updateHappyPath() {
+		String originalMemo = "First things first";
+		String updatedMemo = "Nothing left to do";
 		String saltedName = salted("primary");
 		String newSaltedName = salted("primary");
 		return defaultHapiSpec("UpdateHappyPath")
@@ -474,6 +475,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newKeyNamed("newWipeKey"),
 						tokenCreate("primary")
 								.name(saltedName)
+								.memo(originalMemo)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount("autoRenewAccount")
 								.autoRenewPeriod(A_HUNDRED_SECONDS)
@@ -488,6 +490,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenAssociate("newTokenTreasury", "primary"),
 						tokenUpdate("primary")
 								.name(newSaltedName)
+								.memo(updatedMemo)
 								.treasury("newTokenTreasury")
 								.autoRenewAccount("newAutoRenewAccount")
 								.autoRenewPeriod(101)
@@ -514,13 +517,14 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								),
 						getTokenInfo("primary")
 								.logged()
+								.hasRegisteredMemo()
 								.hasRegisteredId("primary")
 								.hasName(newSaltedName)
 								.hasTreasury("newTokenTreasury")
-								.hasFreezeKey("newFreezeKey")
-								.hasKycKey("newKycKey")
-								.hasSupplyKey("newSupplyKey")
-								.hasWipeKey("newWipeKey")
+								.hasFreezeKey("primary")
+								.hasKycKey("primary")
+								.hasSupplyKey("primary")
+								.hasWipeKey("primary")
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("newAutoRenewAccount")
 								.hasAutoRenewPeriod(101L)

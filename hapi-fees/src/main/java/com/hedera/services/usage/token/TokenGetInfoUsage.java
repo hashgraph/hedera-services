@@ -66,6 +66,11 @@ public class TokenGetInfoUsage extends QueryUsage {
 		return this;
 	}
 
+	public TokenGetInfoUsage givenCurrentMemo(String memo) {
+		updateRb(memo.length());
+		return this;
+	}
+
 	public TokenGetInfoUsage givenCurrentName(String name) {
 		updateRb(name.length());
 		return this;

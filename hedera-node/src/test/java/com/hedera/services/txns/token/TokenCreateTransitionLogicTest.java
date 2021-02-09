@@ -54,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -76,6 +77,7 @@ class TokenCreateTransitionLogicTest {
 	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private int decimals = 2;
 	private long initialSupply = 1_000_000L;
+	private String memo = "...descending into thin air, where no arms / outstretch to catch her";
 	private AccountID payer = IdUtils.asAccount("1.2.3");
 	private AccountID treasury = IdUtils.asAccount("1.2.4");
 	private AccountID renewAccount = IdUtils.asAccount("1.2.5");
@@ -433,6 +435,15 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
+	public void rejectsInvalidMemo() {
+		givenValidTxnCtx();
+		given(validator.isValidEntityMemo(any())).willReturn(false);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
 	public void rejectsInvalidAutoRenewPeriod() {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
@@ -455,6 +466,7 @@ class TokenCreateTransitionLogicTest {
 	private void givenValidTxnCtx(boolean withKyc, boolean withFreeze) {
 		var builder = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setMemo(memo)
 						.setInitialSupply(initialSupply)
 						.setDecimals(decimals)
 						.setTreasury(treasury)
@@ -587,6 +599,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	private void withAlwaysValidValidator() {
+		given(validator.isValidEntityMemo(any())).willReturn(true);
 		given(validator.tokenNameCheck(any())).willReturn(OK);
 		given(validator.tokenSymbolCheck(any())).willReturn(OK);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
