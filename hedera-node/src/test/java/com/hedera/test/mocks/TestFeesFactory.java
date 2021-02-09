@@ -54,6 +54,7 @@ import com.hedera.services.fees.calculation.file.txns.SystemUndeleteFileResource
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
@@ -96,6 +97,7 @@ public enum TestFeesFactory {
 	}
 
 	public FeeCalculator getWithExchange(HbarCentExchange exchange) {
+		CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
 		FileOpsUsage fileOpsUsage = new FileOpsUsage();
 		FileFeeBuilder fileFees = new FileFeeBuilder();
 		CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
@@ -120,11 +122,12 @@ public enum TestFeesFactory {
 						/* Consensus */
 						new GetTopicInfoResourceUsage()
 				),
-				txnUsageFn(fileOpsUsage, fileFees, cryptoFees, contractFees)
+				txnUsageFn(cryptoOpsUsage, fileOpsUsage, fileFees, cryptoFees, contractFees)
 		);
 	}
 
 	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageFn(
+			CryptoOpsUsage cryptoOpsUsage,
 			FileOpsUsage fileOpsUsage,
 			FileFeeBuilder fileFees,
 			CryptoFeeBuilder cryptoFees,
@@ -132,7 +135,7 @@ public enum TestFeesFactory {
 	) {
 		return Map.ofEntries(
 				/* Crypto */
-				entry(CryptoCreate, List.<TxnResourceUsageEstimator>of(new CryptoCreateResourceUsage(cryptoFees))),
+				entry(CryptoCreate, List.<TxnResourceUsageEstimator>of(new CryptoCreateResourceUsage(cryptoOpsUsage))),
 				entry(CryptoDelete, List.<TxnResourceUsageEstimator>of(new CryptoDeleteResourceUsage(cryptoFees))),
 				entry(CryptoUpdate, List.<TxnResourceUsageEstimator>of(new CryptoUpdateResourceUsage(cryptoFees))),
 				entry(CryptoTransfer, List.<TxnResourceUsageEstimator>of(new CryptoTransferResourceUsage(new MockGlobalDynamicProps()))),
