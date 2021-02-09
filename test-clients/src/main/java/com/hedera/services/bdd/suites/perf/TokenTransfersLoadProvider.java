@@ -95,15 +95,20 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						stdMgmtOf(duration, unit, maxOpsPerSec),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("balances.exportPeriodSecs", "60" ))
+								.overridingProps(Map.of("balances.exportPeriodSecs", "300",
+										"balances.exportDir.path", "data/accountBalances/")
+								)
 				).when(	runWithProvider(tokenTransfersFactory())
 						.lasting(duration::get, unit::get)
 						.maxOpsPerSec(maxOpsPerSec::get)
 				).then(
+						// The freeze and long wait after freeze means to keep the server in MAINTAENANCE state till test
+						// end to prevent it from making new export files that may cause account balances validator to
+						// be inconsistent. The freeze shouldn't cause normal perf test any issue.
 						freeze().payingWith(GENESIS)
 								.startingIn(10).seconds()
 								.andLasting(10).minutes(),
-						sleepFor(75_000)
+						sleepFor(60_000)
 				);
 	}
 

@@ -102,9 +102,11 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	public boolean isTimeToExport(Instant now) {
 		if (periodEnd == NEVER) {
 			periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());
+			// initial export
+			log.info("Initial export after restart");
+			return true;
 		} else {
 			if (now.isAfter(periodEnd)) {
-				log.info("balancesExportPeriodSecs: {} ", dynamicProperties.balancesExportPeriodSecs());
 				periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());
 				return true;
 			}
@@ -117,6 +119,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		if (!ensureExportDir(signedState.getNodeAccountId())) {
 			return;
 		}
+		long startTime = System.nanoTime();
 		var summary = summarized(signedState);
 		var expected = BigInteger.valueOf(expectedFloat);
 		if (!expected.equals(summary.getTotalFloat())) {
@@ -131,6 +134,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		if (exportSucceeded) {
 			tryToSign(csvLoc);
 		}
+		log.info("It took total {} Millisecond to export and sign the csv account files", (System.nanoTime() - startTime) / 1_000_000);
 	}
 
 	// TODO: add the log info to tell how long it take to export and sign the proto account balances file
@@ -142,6 +146,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			return;
 		}
 
+		long startTime = System.nanoTime();
 		AllAccountBalances.Builder allAccountBalancesBuilder = AllAccountBalances.newBuilder();
 
 		var expected = BigInteger.valueOf(expectedFloat);
@@ -159,6 +164,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		if (exportSucceeded) {
 			tryToSign(protoLoc);
 		}
+		log.info("It took total {} Millisecond to export and sign the proto account files", (System.nanoTime() - startTime) / 1_000_000);
 	}
 
 	private void tryToSign(String csvLoc) {
