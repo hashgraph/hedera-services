@@ -68,7 +68,7 @@ public class ContractGetInfoSuite extends HapiApiSuite {
 				.given(
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate")
-								.bytecode("parentDelegateBytecode").memo("This is a test.").autoRenewSecs(555L)
+								.bytecode("parentDelegateBytecode").entityMemo("This is a test.").autoRenewSecs(555L)
 				).when().then(
 						QueryVerbs.getContractInfo("parentDelegate").hasExpectedInfo());
 	}

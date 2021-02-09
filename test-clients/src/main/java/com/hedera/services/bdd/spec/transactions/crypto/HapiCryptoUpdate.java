@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt64Value;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -58,6 +59,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
 	private Optional<Long> lifetimeSecs = Optional.empty();
+	private Optional<String> entityMemo = Optional.empty();
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
 
@@ -71,6 +73,10 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	}
 	public HapiCryptoUpdate lifetime(long secs) {
 		lifetimeSecs = Optional.of(secs);
+		return this;
+	}
+	public HapiCryptoUpdate entityMemo(String memo) {
+		entityMemo = Optional.of(memo);
 		return this;
 	}
 	public HapiCryptoUpdate key(String name) {
@@ -108,6 +114,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 							builder.setAccountIDToUpdate(id);
 							updSigRequired.ifPresent(u -> builder.setReceiverSigRequiredWrapper(BoolValue.of(u)));
 							updKey.ifPresent(k -> builder.setKey(k));
+							entityMemo.ifPresent(m -> builder.setMemo(StringValue.newBuilder().setValue(m).build()));
 							sendThreshold.ifPresent(v ->
 									builder.setSendRecordThresholdWrapper(
 											UInt64Value.newBuilder().setValue(v).build()));

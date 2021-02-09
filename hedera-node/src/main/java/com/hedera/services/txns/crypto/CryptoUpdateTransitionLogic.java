@@ -111,6 +111,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasAutoRenewPeriod()) {
 			customizer.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
 		}
+		if (op.hasMemo()) {
+			customizer.memo(op.getMemo().getValue());
+		}
 
 		return customizer;
 	}
@@ -127,6 +130,10 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {
 		CryptoUpdateTransactionBody op = cryptoUpdateTxn.getCryptoUpdateAccount();
+
+		if (op.hasMemo() && !validator.isValidEntityMemo(op.getMemo().getValue())) {
+			return MEMO_TOO_LONG;
+		}
 
 		if (op.hasKey()) {
 			try {

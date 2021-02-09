@@ -21,12 +21,16 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -46,7 +50,31 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		return List.of(new HapiApiSpec[]{
 				updateWithPendingNewKeySucceeds(),
 				canSetImmutableWithEmptyKeyList(),
+				updateWithBothMemoSettersWorks(),
 		});
+	}
+
+	private HapiApiSpec updateWithBothMemoSettersWorks() {
+		String firstMemo = "First";
+		String secondMemo = "Second";
+		String thirdMemo = "Third";
+		return defaultHapiSpec("UpdateWithBothMemoSettersWorks")
+				.given(
+						newKeyNamed("newKey"),
+						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
+						contractCreate("target")
+								.entityMemo(firstMemo)
+								.bytecode("bytecode")
+				).when(
+						contractUpdate("target")
+								.newMemo(secondMemo),
+						getContractInfo("target").has(contractWith().memo(secondMemo))
+				).then(
+						contractUpdate("target")
+								.useDeprecatedMemoField()
+								.newMemo(thirdMemo),
+						getContractInfo("target").has(contractWith().memo(thirdMemo))
+				);
 	}
 
 	private HapiApiSpec updateWithPendingNewKeySucceeds() {

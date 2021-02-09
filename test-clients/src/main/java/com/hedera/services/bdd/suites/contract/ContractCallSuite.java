@@ -135,7 +135,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCreate("contract")
 								.payingWith("payer")
 								.adminKey("initialAdminKey")
-								.memo(INITIAL_MEMO)
+								.entityMemo(INITIAL_MEMO)
 								.bytecode("bytecode"),
 						getContractInfo("contract")
 								.payingWith("payer")
