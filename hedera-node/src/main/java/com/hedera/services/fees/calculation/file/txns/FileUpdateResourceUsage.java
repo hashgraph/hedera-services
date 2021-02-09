@@ -23,8 +23,8 @@ package com.hedera.services.fees.calculation.file.txns;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.file.ExtantFileContext;
 import com.hedera.services.usage.file.FileOpsUsage;
-import com.hedera.services.usage.file.FileUpdateContext;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -55,7 +55,7 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
 		var info = view.infoForFile(op.getFileID());
 		if (info.isPresent()) {
 			var details = info.get();
-			var ctx = FileUpdateContext.newBuilder()
+			var ctx = ExtantFileContext.newBuilder()
 					.setCurrentSize(details.getSize())
 					.setCurrentWacl(details.getKeys())
 					.setCurrentMemo(details.getMemo())
@@ -68,8 +68,8 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
 		}
 	}
 
-	static FileUpdateContext missingCtx(long now) {
-		return FileUpdateContext.newBuilder()
+	static ExtantFileContext missingCtx(long now) {
+		return ExtantFileContext.newBuilder()
 				.setCurrentExpiry(now)
 				.setCurrentMemo(DEFAULT_MEMO)
 				.setCurrentWacl(KeyList.getDefaultInstance())

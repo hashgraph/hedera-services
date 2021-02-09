@@ -286,12 +286,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				? defaultTxnId
 				: explicitTxnId.orElseGet(() -> spec.registry().getTxnId(txn));
 		if (scheduled) {
-			var subOp = QueryVerbs.getTxnRecord(txn);
-			CustomSpecAssert.allRunFor(spec, subOp);
-			var record = subOp.getResponseRecord();
 			txnId = txnId.toBuilder()
 					.setScheduled(true)
-					.setTransactionValidStart(record.getTransactionID().getTransactionValidStart())
 					.build();
 		}
 		if (nonce.isPresent()) {

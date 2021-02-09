@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class FileUpdateContextTest {
+class ExtantFileContextTest {
 	String memo = "Currently unavailable";
 	long expiry = 1_234_567L;
 	KeyList wacl = KeyUtils.A_KEY_LIST.getKeyList();
@@ -15,7 +15,7 @@ class FileUpdateContextTest {
 	@Test
 	void buildsAsExpected() {
 		// given:
-		var subject = FileUpdateContext.newBuilder()
+		var subject = ExtantFileContext.newBuilder()
 				.setCurrentExpiry(expiry)
 				.setCurrentMemo(memo)
 				.setCurrentWacl(wacl)
@@ -32,7 +32,7 @@ class FileUpdateContextTest {
 	@Test
 	void rejectsIncompleteContext() {
 		// given:
-		var builder = FileUpdateContext.newBuilder()
+		var builder = ExtantFileContext.newBuilder()
 				.setCurrentExpiry(expiry)
 				.setCurrentMemo(memo)
 				.setCurrentWacl(wacl);

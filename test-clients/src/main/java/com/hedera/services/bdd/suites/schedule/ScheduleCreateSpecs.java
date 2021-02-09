@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.saveExpirations;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
@@ -104,14 +105,12 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				rejectsUnresolvableReqSigners(),
 				triggersImmediatelyWithBothReqSimpleSigs(),
 				onlySchedulesWithMissingReqSimpleSigs(),
-				preservesRevocationServiceSemanticsForFileDelete(),
 				failsWithNonExistingPayerAccountId(),
 				failsWithTooLongMemo(),
 				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
 				retestsActivationOnCreateWithEmptySigMap(),
 				doesntTriggerUntilPayerSigns(),
 				requiresExtantPayer(),
-				preservesRevocationServiceSemanticsForFileDelete(),
 				rejectsFunctionlessTxn(),
 				whitelistWorks(),
 				allowsDoublingScheduledCreates(),
@@ -560,6 +559,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 										.signedBy(shouldBeInstaDeleted)
 										.sigControl(forKey(shouldBeInstaDeleted, adequateSigs))
 						).inheritingScheduledSigs(),
+						sleepFor(1_000L),
 						getFileInfo(shouldBeInstaDeleted).hasDeleted(true)
 				).then(
 						scheduleCreate(
@@ -575,6 +575,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 										.signedBy(shouldBeDeletedEventually)
 										.sigControl(forKey(shouldBeDeletedEventually, compensatorySigs))
 						).inheritingScheduledSigs(),
+						sleepFor(1_000L),
 						getFileInfo(shouldBeDeletedEventually).hasDeleted(true),
 						overriding("scheduling.whitelist", defaultWhitelist)
 				);

@@ -22,6 +22,7 @@ package com.hedera.services.usage.token;
 
 import com.hederahashgraph.api.proto.java.Query;
 
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static org.junit.Assert.*;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
@@ -63,7 +64,9 @@ public class TokenGetInfoUsageTest {
 				.givenCurrentSymbol(symbol);
 		// and:
 		var expectedKeyBytes = 5 * FeeBuilder.getAccountKeyStorageSize(aKey.get());
-		var expectedBytes = expectedKeyBytes + TOKEN_ENTITY_SIZES.totalBytesInfTokenReprGiven(symbol, name) + BASIC_ENTITY_ID_SIZE;
+		var expectedBytes = BASIC_QUERY_RES_HEADER
+				+ expectedKeyBytes
+				+ TOKEN_ENTITY_SIZES.totalBytesInfTokenReprGiven(symbol, name) + BASIC_ENTITY_ID_SIZE;
 
 		// when:
 		var usage = subject.get();

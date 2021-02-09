@@ -22,8 +22,8 @@ package com.hedera.services.fees.calculation.file.txns;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.file.ExtantFileContext;
 import com.hedera.services.usage.file.FileOpsUsage;
-import com.hedera.services.usage.file.FileUpdateContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -59,11 +59,8 @@ class FileUpdateResourceUsageTest {
 	long expiry = 1_234_567L;
 	long size = 1L;
 
-	KeyList newWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList();
-	String newMemo = "Certainly!";
 	long newExpiry = 2_345_678L;
 	byte[] newContents = "Consider this".getBytes();
-	long newSize = newContents.length;
 
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
 	SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigsSize);
@@ -80,7 +77,6 @@ class FileUpdateResourceUsageTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
-
 		fileOpsUsage = mock(FileOpsUsage.class);
 
 		view = mock(StateView.class);
@@ -121,7 +117,7 @@ class FileUpdateResourceUsageTest {
 		// setup:
 		expected = mock(FeeData.class);
 		// and:
-		ArgumentCaptor<FileUpdateContext> captor = ArgumentCaptor.forClass(FileUpdateContext.class);
+		ArgumentCaptor<ExtantFileContext> captor = ArgumentCaptor.forClass(ExtantFileContext.class);
 
 		given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
 		given(view.infoForFile(fid)).willReturn(Optional.empty());
@@ -149,7 +145,7 @@ class FileUpdateResourceUsageTest {
 				.setSize(size)
 				.build();
 		// and:
-		ArgumentCaptor<FileUpdateContext> captor = ArgumentCaptor.forClass(FileUpdateContext.class);
+		ArgumentCaptor<ExtantFileContext> captor = ArgumentCaptor.forClass(ExtantFileContext.class);
 
 		given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
 		given(view.infoForFile(fid)).willReturn(Optional.of(info));
