@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.utilops.inventory;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ public class NewSpecKey extends UtilOp {
 	private Optional<KeyType> type = Optional.empty();
 	private Optional<SigControl> shape = Optional.empty();
 	private Optional<KeyLabel> labels = Optional.empty();
+	private Optional<KeyGenerator> generator = Optional.empty();
 
 	public NewSpecKey(String name) {
 		this.name = name;
@@ -58,10 +59,14 @@ public class NewSpecKey extends UtilOp {
 		labels = Optional.of(kl);
 		return this;
 	}
+	public NewSpecKey generator(KeyGenerator gen) {
+		generator = Optional.of(gen);
+		return this;
+	}
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		KeyGenerator keyGen = KeyExpansion::genSingleEd25519KeyByteEncodePubKey;
+		KeyGenerator keyGen = generator.orElse(KeyExpansion::genSingleEd25519KeyByteEncodePubKey);
 		Key key;
 		if (shape.isPresent()) {
 			if (labels.isPresent()) {

@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,11 +117,9 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			Objects.requireNonNull(usagePrices);
 			return usagePrices;
 		} catch (Exception e) {
-			log.warn(
+			log.debug(
 					"Default usage price will be used, no specific usage prices available for function {} @ {}!",
-					function,
-					Instant.ofEpochSecond(at.getSeconds(), at.getNanos())
-					);
+					function, Instant.ofEpochSecond(at.getSeconds(), at.getNanos()));
 		}
 		return DEFAULT_USAGE_PRICES;
 	}

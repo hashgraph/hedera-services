@@ -4,7 +4,7 @@ package com.hedera.services;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.exceptions.ContextNotFoundException;
 import com.hedera.services.legacy.stream.RecordStream;
+import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -50,7 +51,6 @@ import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -68,9 +68,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static com.hedera.services.legacy.stream.RecordStream.readPrevFileHash;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -285,6 +283,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		 * history. This history has two main uses: Purging expired records, and
 		 * classifying duplicate transactions. */
 		ctx.recordsHistorian().reviewExistingRecords();
+		/*
+		 * Use any entities stored in state to rebuild the history for expired entities.
+		 * This has one main use: purge expired entities.
+		 */
+		ctx.expiries().restartEntitiesTrackingFrom();
 		if (!blobStoreSupplier.get().isInitializing()) {
 			ctx.systemFilesManager().loadAllSystemFiles();
 		}
@@ -312,7 +315,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void expandSignatures(Transaction platformTxn) {
 		try {
 			var accessor = new PlatformTxnAccessor(platformTxn);
-			expandIn(accessor, ctx.lookupRetryingKeyOrder(), DEFAULT_SIG_BYTES);
+			expandIn(
+					accessor,
+					ctx.lookupRetryingKeyOrder(),
+					new ScopedSigBytesProvider(accessor),
+					ctx.sigFactoryCreator()::createScopedFactory);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("expandSignatures called with non-gRPC txn!", e);
 		} catch (Exception race) {

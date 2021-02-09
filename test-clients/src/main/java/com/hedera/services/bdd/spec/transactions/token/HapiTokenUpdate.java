@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions.token;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,14 @@ package com.hedera.services.bdd.spec.transactions.token;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -48,7 +50,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -59,6 +60,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong autoRenewPeriod = OptionalLong.empty();
+	private Optional<String> newMemo = Optional.empty();
 	private Optional<String> newAdminKey = Optional.empty();
 	private Optional<String> newKycKey = Optional.empty();
 	private Optional<String> newWipeKey = Optional.empty();
@@ -99,6 +101,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate supplyKey(String name) {
 		newSupplyKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenUpdate memo(String memo) {
+		this.newMemo = Optional.of(memo);
 		return this;
 	}
 
@@ -184,6 +191,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 					estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
 				}
 				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
+						.givenCurrentMemo(info.getMemo())
 						.givenCurrentName(info.getName())
 						.givenCurrentSymbol(info.getSymbol());
 				if (info.hasAutoRenewAccount()) {
@@ -191,10 +199,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				}
 				return estimate.get();
 			};
-			return spec.fees().forActivityBasedOp(
-					HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
+			return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
 		} catch (Throwable ignore) {
-			return 100_000_000L;
+			return HapiApiSuite.ONE_HBAR;
 		}
 	}
 
@@ -229,6 +236,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							b.setToken(id);
 							newSymbol.ifPresent(b::setSymbol);
 							newName.ifPresent(b::setName);
+							newMemo.ifPresent(s -> b.setMemo(StringValue.newBuilder().setValue(s).build()));
 							if (useImproperEmptyKey) {
 								b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
 							} else if (useEmptyAdminKeyList) {
@@ -283,6 +291,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		if (useEmptyAdminKeyList) {
 			registry.forgetAdminKey(token);
 		}
+		newMemo.ifPresent(m -> registry.saveMemo(token, m));
 		newAdminKey.ifPresent(n -> registry.saveAdminKey(token, registry.getKey(n)));
 		newSymbol.ifPresent(s -> registry.saveSymbol(token, s));
 		newName.ifPresent(s -> registry.saveName(token, s));

@@ -4,7 +4,7 @@ package com.hedera.services.usage.schedule;
  * ‌
  * Hedera Services API Fees
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
+	private int expirationTimeSecs;
 
 	private ScheduleCreateUsage(TransactionBody scheduleCreationOp, TxnUsageEstimator usageEstimator) {
 		super(scheduleCreationOp, usageEstimator);
@@ -37,6 +38,11 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 
 	public static ScheduleCreateUsage newEstimate(TransactionBody scheduleCreationOp, SigUsage sigUsage) {
 		return new ScheduleCreateUsage(scheduleCreationOp, estimatorFactory.get(sigUsage, scheduleCreationOp, ESTIMATOR_UTILS));
+	}
+
+	public ScheduleCreateUsage givenScheduledTxExpirationTimeSecs(int scheduledTxExpirationTimeSecs) {
+		this.expirationTimeSecs = scheduledTxExpirationTimeSecs;
+		return self();
 	}
 
 	@Override
@@ -47,8 +53,8 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 	public FeeData get() {
 		var op = this.op.getScheduleCreate();
 
-		var txBytes = op.getTransactionBody().toByteArray().length;
-		var ramBytes = scheduleEntitySizes.bytesInBaseReprGiven(op.getTransactionBody().toByteArray());
+		var txBytes = op.getTransactionBody().toByteArray().length + op.getMemoBytes().size();
+		var ramBytes = scheduleEntitySizes.bytesInBaseReprGiven(op.getTransactionBody().toByteArray(), op.getMemoBytes());
 		if (op.hasAdminKey()) {
 			long keySize = getAccountKeyStorageSize(op.getAdminKey());
 			txBytes += keySize;

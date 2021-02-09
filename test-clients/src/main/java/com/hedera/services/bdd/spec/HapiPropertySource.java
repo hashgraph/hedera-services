@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -105,8 +106,8 @@ public interface HapiPropertySource {
 	default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
 		return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
 	}
-	default HapiSpecSetup.TxnConfig getTxnConfig(String property) {
-		return HapiSpecSetup.TxnConfig.valueOf(get(property).toUpperCase());
+	default HapiSpecSetup.TxnProtoStructure getTxnConfig(String property) {
+		return HapiSpecSetup.TxnProtoStructure.valueOf(get(property).toUpperCase());
 	}
 	default HapiSpecSetup.NodeSelection getNodeSelector(String property) {
 		return HapiSpecSetup.NodeSelection.valueOf(get(property).toUpperCase());
@@ -146,8 +147,8 @@ public interface HapiPropertySource {
 				.setTokenNum(nativeParts[2])
 				.build();
 	}
-	static String asTokenString(TokenID account) {
-		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getTokenNum());
+	static String asTokenString(TokenID token) {
+		return String.format("%d.%d.%d", token.getShardNum(), token.getRealmNum(), token.getTokenNum());
 	}
 
 	static AccountID asAccount(String v) {
@@ -170,6 +171,7 @@ public interface HapiPropertySource {
 				.setTopicNum(nativeParts[2])
 				.build();
 	}
+
 	static String asTopicString(TopicID topic) {
 		return String.format("%d.%d.%d", topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
 	}
@@ -184,6 +186,19 @@ public interface HapiPropertySource {
 	}
 	static String asContractString(ContractID contract) {
 		return String.format("%d.%d.%d", contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
+	}
+
+	static ScheduleID asSchedule(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return ScheduleID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setScheduleNum(nativeParts[2])
+				.build();
+	}
+
+	static String asScheduleString(ScheduleID schedule) {
+		return String.format("%d.%d.%d", schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
 	}
 
 	static SemanticVersion asSemVer(String v) {

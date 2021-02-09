@@ -4,7 +4,7 @@ package com.hedera.services.usage.schedule.entities;
  * ‌
  * Hedera Services API Fees
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,47 +20,39 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum ScheduleEntitySizes {
 	SCHEDULE_ENTITY_SIZES;
 
-	/* { deleted } */
-	static int NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
+	/* { expiry } */
+	static int NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
 	/* { payer, schedulingAccount } */
 	static int NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 2;
 	/* { schedulingTXValidStart } */
 	static int NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
 
 	public int fixedBytesInScheduleRepr() {
-		return NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE
+		return NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
 				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
 	}
 
-	public int bytesInBaseReprGiven(byte[] transactionBody) {
-		return fixedBytesInScheduleRepr() + transactionBody.length;
+	public int bytesInBaseReprGiven(byte[] transactionBody, ByteString memo) {
+		return fixedBytesInScheduleRepr() + transactionBody.length + memo.size();
 	}
 
 	/**
 	 * Signature map is not stored in state, we only need it for bpt
 	 */
 	public int bptScheduleReprGiven(SignatureMap sigMap) {
-		var bytes = 0;
-		for (SignaturePair signaturePair : sigMap.getSigPairList()) {
-			bytes += signaturePair.getPubKeyPrefix().size() +
-					signaturePair.getEd25519().size() +
-					signaturePair.getContract().size() +
-					signaturePair.getRSA3072().size() +
-					signaturePair.getECDSA384().size();
-		}
-		return bytes;
+		return sigMap.toByteArray().length;
 	}
 
 	/**

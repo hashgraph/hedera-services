@@ -61,9 +61,10 @@ public class GetScheduleInfoResourceUsageTest {
     Key randomKey = new KeyFactory().newEd25519();
     ScheduleInfo info = ScheduleInfo.newBuilder()
             .setTransactionBody(ByteString.copyFrom(new byte[]{0x01, 0x02, 0x03, 0x04}))
+            .setMemo("some memo here")
             .setAdminKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
             .setPayerAccountID(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT)
-            .setSigners(KeyList.newBuilder().addKeys(randomKey))
+            .setSignatories(KeyList.newBuilder().addKeys(randomKey))
             .build();
 
     StateView view;
@@ -81,8 +82,9 @@ public class GetScheduleInfoResourceUsageTest {
 
 
         given(estimator.givenTransaction(info.getTransactionBody().toByteArray())).willReturn(estimator);
+        given(estimator.givenMemo(info.getMemoBytes())).willReturn(estimator);
         given(estimator.givenCurrentAdminKey(any())).willReturn(estimator);
-        given(estimator.givenSigners(any())).willReturn(estimator);
+        given(estimator.givenSignatories(any())).willReturn(estimator);
         given(estimator.get()).willReturn(MOCK_SCHEDULE_GET_INFO_USAGE);
 
         GetScheduleInfoResourceUsage.factory = factory;
@@ -109,7 +111,7 @@ public class GetScheduleInfoResourceUsageTest {
         verify(view).infoForSchedule(target);
         verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-        verify(estimator).givenSigners(Optional.of(info.getSigners()));
+        verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
         assertSame(MOCK_SCHEDULE_GET_INFO_USAGE, usage);
     }
 
@@ -124,7 +126,7 @@ public class GetScheduleInfoResourceUsageTest {
         verify(view).infoForSchedule(target);
         verify(estimator, never()).givenTransaction(any());
         verify(estimator, never()).givenCurrentAdminKey(any());
-        verify(estimator, never()).givenSigners(any());
+        verify(estimator, never()).givenSignatories(any());
         assertSame(FeeData.getDefaultInstance(), usage);
     }
 
@@ -137,7 +139,7 @@ public class GetScheduleInfoResourceUsageTest {
         verify(view).infoForSchedule(target);
         verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-        verify(estimator).givenSigners(Optional.of(info.getSigners()));
+        verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
         assertSame(MOCK_SCHEDULE_GET_INFO_USAGE, usage);
     }
 
@@ -155,7 +157,7 @@ public class GetScheduleInfoResourceUsageTest {
         verify(view).infoForSchedule(target);
         verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-        verify(estimator).givenSigners(Optional.of(info.getSigners()));
+        verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
     }
 
     @Test

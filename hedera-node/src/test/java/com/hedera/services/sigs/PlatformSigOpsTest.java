@@ -4,7 +4,7 @@ package com.hedera.services.sigs;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,27 @@ public class PlatformSigOpsTest {
 		for (KeyTree kt : kts) {
 			pubKeys.add(kt.asJKey());
 		}
+	}
+
+	@Test
+	public void usesScheduledOpsWhenApropos() throws Throwable {
+		// setup:
+		for (JKey key : pubKeys) {
+			key.setForScheduledTxn(true);
+		}
+
+		given(sigBytes.sigBytesForScheduled(any())).willReturn(MOCK_SIG, MORE_EMPTY_SIGS);
+
+		// when:
+		createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
+
+		// then:
+		verify(sigBytes, never()).sigBytesFor(any());
+		verify(sigFactory, never()).create(any(), any());
+		// and:
+		verify(sigFactory).createForScheduled(
+				ByteString.copyFrom(pubKeys.get(0).getEd25519()),
+				ByteString.copyFrom(MOCK_SIG));
 	}
 
 	@Test

@@ -4,7 +4,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,5 +101,54 @@ public class JThresholdKeyTest {
     assertFalse(jThresholdKey2.isValid());
 
     assertFalse(jThresholdKey(invalidKeyList3, 1).isValid());
+  }
+
+  @Test
+  public void delegatesScheduledScope() {
+    // setup:
+    var ed25519Key = new JEd25519Key("ed25519".getBytes());
+    var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
+    var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
+    var contractKey = new JContractIDKey(0, 0, 75231);
+    // and:
+    List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey);
+    var delegate = new JKeyList(keys);
+
+    // given:
+    var subject = new JThresholdKey(delegate, 1);
+    // and:
+    assertFalse(subject.isForScheduledTxn());
+
+    // expect:
+    for (JKey key : keys) {
+      key.setForScheduledTxn(true);
+      assertTrue(subject.isForScheduledTxn());
+      key.setForScheduledTxn(false);
+    }
+  }
+
+  @Test
+  public void propagatesSettingScheduledScope() {
+    // setup:
+    var ed25519Key = new JEd25519Key("ed25519".getBytes());
+    var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
+    var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
+    var contractKey = new JContractIDKey(0, 0, 75231);
+    // and:
+    List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey);
+
+    // given:
+    var subject = new JThresholdKey(new JKeyList(keys), 1);
+
+    // when:
+    subject.setForScheduledTxn(true);
+    // then:
+    for (JKey key : keys) {
+      assertTrue(key.isForScheduledTxn());
+    }
+    // and when:
+    subject.setForScheduledTxn(false);
+    // then:
+    assertFalse(subject.isForScheduledTxn());
   }
 }

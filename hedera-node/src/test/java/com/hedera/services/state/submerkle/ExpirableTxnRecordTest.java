@@ -4,7 +4,7 @@ package com.hedera.services.state.submerkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.common.crypto.Hash;
@@ -49,10 +49,8 @@ import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUB
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -89,12 +87,13 @@ class ExpirableTxnRecordTest {
 			.addAllTransfers(
 					withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L).getAccountAmountsList())
 			.build();
+	ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
 
 	ExpirableTxnRecord subject;
 
 	@BeforeEach
 	public void setup() {
-		subject = subjectRecordWithTokenTransfers();
+		subject = subjectRecordWithTokenTransfersAndScheduleRef();
 
 		din = mock(DataInputStream.class);
 
@@ -130,6 +129,19 @@ class ExpirableTxnRecordTest {
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
+						.build());
+		s.setExpiry(expiry);
+		s.setSubmittingMember(submittingMember);
+		return s;
+	}
+
+	private ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRef() {
+		var s = ExpirableTxnRecord.fromGprc(
+				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+						.setTransactionHash(ByteString.copyFrom(pretendHash))
+						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
+						.setScheduleRef(scheduleID)
 						.build());
 		s.setExpiry(expiry);
 		s.setSubmittingMember(submittingMember);
@@ -190,6 +202,7 @@ class ExpirableTxnRecordTest {
 	@Test
 	public void v080DeserializeWorks() throws IOException {
 		// setup:
+		subject = subjectRecordWithTokenTransfers();
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
 		given(serdes.readNullableSerializable(fin))
@@ -219,6 +232,44 @@ class ExpirableTxnRecordTest {
 
 		// when:
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_080_VERSION);
+
+		// then:
+		assertEquals(subject, deserializedRecord);
+	}
+
+	@Test
+	public void v0120DeserializeWorks() throws IOException {
+		// setup:
+		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+
+		given(serdes.readNullableSerializable(fin))
+				.willReturn(subject.getReceipt())
+				.willReturn(subject.getTxnId())
+				.willReturn(subject.getHbarAdjustments())
+				.willReturn(subject.getContractCallResult())
+				.willReturn(subject.getContractCreateResult())
+				.willReturn(subject.getScheduleRef());
+		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
+				.willReturn(List.of(
+						(SelfSerializable) subject.getTokens().get(0),
+						(SelfSerializable) subject.getTokens().get(1)))
+				.willReturn(List.of(
+						(SelfSerializable) subject.getTokenAdjustments().get(0),
+						(SelfSerializable) subject.getTokenAdjustments().get(1)));
+		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
+				.willReturn(subject.getTxnHash());
+		given(serdes.readNullableInstant(fin))
+				.willReturn(subject.getConsensusTimestamp());
+		given(fin.readLong()).willReturn(subject.getFee())
+				.willReturn(subject.getExpiry())
+				.willReturn(subject.getSubmittingMember());
+		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
+				.willReturn(subject.getMemo());
+		// and:
+		var deserializedRecord = new ExpirableTxnRecord();
+
+		// when:
+		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0120_VERSION);
 
 		// then:
 		assertEquals(subject, deserializedRecord);
@@ -273,7 +324,7 @@ class ExpirableTxnRecordTest {
 		// given:
 		var one = subject;
 		var two = DomainSerdesTest.recordOne();
-		var three = subjectRecordWithTokenTransfers();
+		var three = subjectRecordWithTokenTransfersAndScheduleRef();
 
 		// when:
 		assertEquals(one, one);
@@ -296,7 +347,7 @@ class ExpirableTxnRecordTest {
 						"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, " +
 						"txnHash=6e6f742d7265616c6c792d612d68617368, " +
 						"txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
-						"validStart=RichInstant{seconds=9999999999, nanos=0}}, " +
+						"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false}, " +
 						"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, " +
 						"expiry=1234567, submittingMember=1, memo=Alpha bravo charlie, " +
 						"contractCreation=SolidityFnResult{gasUsed=55, bloom=, " +
@@ -306,57 +357,9 @@ class ExpirableTxnRecordTest {
 						" " +
 						"tokenAdjustments=" +
 						"1.2.3(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
-						"1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]})}",
+						"1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
+						"scheduleRef=EntityId{shard=5, realm=6, num=7}}",
 				subject.toString());
-	}
-
-	@Test
-	public void legacyProviderWorks() throws IOException {
-		// setup:
-		var readFullyOccurrence = new AtomicInteger(0);
-		subject = subjectRecord();
-
-		given(din.readLong())
-				.willReturn(-2L)
-				.willReturn(-1L)
-				.willReturn(subject.getFee())
-				.willReturn(subject.getExpiry());
-		given(din.readBoolean()).willReturn(true);
-		// and:
-		given(legacyReceiptProvider.deserialize(din)).willReturn(subject.getReceipt());
-		// and:
-		given(legacyFnResultProvider.deserialize(din))
-				.willReturn(subject.getContractCallResult())
-				.willReturn(subject.getContractCreateResult());
-		// and:
-		given(legacyTxnIdProvider.deserialize(din)).willReturn(subject.getTxnId());
-		// and:
-		given(legacyInstantProvider.deserialize(din)).willReturn(subject.getConsensusTimestamp());
-		// and:
-		given(legacyAdjustmentsProvider.deserialize(din)).willReturn(subject.getHbarAdjustments());
-		// and:
-		given(din.readInt())
-				.willReturn(pretendHash.length)
-				.willReturn(subject.getMemo().getBytes().length);
-		// and:
-		willAnswer(invocation -> {
-			var buffer = (byte[]) invocation.getArgument(0);
-			if (readFullyOccurrence.getAndIncrement() == 0) {
-				System.arraycopy(pretendHash, 0, buffer, 0, pretendHash.length);
-			} else {
-				System.arraycopy(
-						subject.getMemo().getBytes(), 0,
-						buffer, 0, subject.getMemo().getBytes().length);
-			}
-			return null;
-		}).given(din).readFully(any());
-
-		// when:
-		var fromLegacy = ExpirableTxnRecord.LEGACY_PROVIDER.deserialize(din);
-
-		// then:
-		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
-		assertEquals(subject, fromLegacy);
 	}
 
 	@AfterEach

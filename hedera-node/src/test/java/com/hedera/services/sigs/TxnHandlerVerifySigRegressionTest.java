@@ -4,7 +4,7 @@ package com.hedera.services.sigs;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,9 +47,7 @@ import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
-import com.hedera.test.mocks.TestExchangeRates;
 import com.hedera.test.mocks.TestFeesFactory;
-import com.hedera.test.mocks.TestProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -75,7 +73,6 @@ import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.FULL_PAY
 import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.INVALID_PAYER_SIGS_VIA_MAP_SCENARIO;
 import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.MISSING_PAYER_SIGS_VIA_MAP_SCENARIO;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
-import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -141,7 +138,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		setupFor(FULL_PAYER_SIGS_VIA_MAP_SCENARIO);
 
 		// expect:
-		assertTrue(subject.verifySignature(platformTxn.getSignedTxn()));
+		assertTrue(subject.verifySignature(platformTxn.getBackwardCompatibleSignedTxn()));
 	}
 
 	@Test
@@ -152,7 +149,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		setupFor(MISSING_PAYER_SIGS_VIA_MAP_SCENARIO);
 
 		// expect:
-		assertFalse(subject.verifySignature(platformTxn.getSignedTxn()));
+		assertFalse(subject.verifySignature(platformTxn.getBackwardCompatibleSignedTxn()));
 	}
 
 	@Test
@@ -163,7 +160,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		setupFor(INVALID_PAYER_SIGS_VIA_MAP_SCENARIO);
 
 		// expect:
-		assertFalse(subject.verifySignature(platformTxn.getSignedTxn()));
+		assertFalse(subject.verifySignature(platformTxn.getBackwardCompatibleSignedTxn()));
 	}
 
 	@Test
@@ -174,7 +171,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
 
 		// expect:
-		assertTrue(subject.verifySignature(platformTxn.getSignedTxn()));
+		assertTrue(subject.verifySignature(platformTxn.getBackwardCompatibleSignedTxn()));
 	}
 
 	@Test
@@ -185,7 +182,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		setupFor(VALID_QUERY_PAYMENT_SCENARIO);
 
 		// expect:
-		assertTrue(subject.verifySignature(platformTxn.getSignedTxn()));
+		assertTrue(subject.verifySignature(platformTxn.getBackwardCompatibleSignedTxn()));
 	}
 
 	@Test
@@ -196,7 +193,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		setupFor(INVALID_PAYER_ID_SCENARIO);
 
 		// expect:
-		assertFalse(subject.verifySignature(platformTxn.getSignedTxn()));
+		assertFalse(subject.verifySignature(platformTxn.getBackwardCompatibleSignedTxn()));
 	}
 
 	@Test
@@ -208,7 +205,7 @@ public class TxnHandlerVerifySigRegressionTest {
 
 		// expect:
 		assertThrows(InvalidAccountIDException.class,
-				() -> subject.verifySignature(platformTxn.getSignedTxn()));
+				() -> subject.verifySignature(platformTxn.getBackwardCompatibleSignedTxn()));
 		verify(runningAvgs).recordAccountLookupRetries(anyInt());
 		verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
 		verify(speedometers).cycleAccountLookupRetries();
@@ -223,7 +220,7 @@ public class TxnHandlerVerifySigRegressionTest {
 
 		// expect:
 		assertThrows(KeyPrefixMismatchException.class,
-				() -> subject.verifySignature(platformTxn.getSignedTxn()));
+				() -> subject.verifySignature(platformTxn.getBackwardCompatibleSignedTxn()));
 	}
 
 	@Test
@@ -234,7 +231,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		setupFor(QUERY_PAYMENT_MISSING_SIGS_SCENARIO);
 
 		// expect:
-		assertFalse(subject.verifySignature(platformTxn.getSignedTxn()));
+		assertFalse(subject.verifySignature(platformTxn.getBackwardCompatibleSignedTxn()));
 	}
 
 	private void setupFor(TxnHandlingScenario scenario)	throws Throwable {
@@ -247,7 +244,8 @@ public class TxnHandlerVerifySigRegressionTest {
 				new MockEntityNumbers(),
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
-				targetWaclSigns);
+				targetWaclSigns,
+				new MockGlobalDynamicProps());
 		retryingKeyOrder =
 				new HederaSigningOrder(
 						new MockEntityNumbers(),
@@ -255,7 +253,8 @@ public class TxnHandlerVerifySigRegressionTest {
 								null, () -> accounts, () -> null, ref -> null, ref -> null,
 								MN, MN, runningAvgs, speedometers),
 						updateAccountSigns,
-						targetWaclSigns);
+						targetWaclSigns,
+						new MockGlobalDynamicProps());
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);

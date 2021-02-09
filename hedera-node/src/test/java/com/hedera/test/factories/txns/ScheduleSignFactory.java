@@ -4,7 +4,7 @@ package com.hedera.test.factories.txns;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ public class ScheduleSignFactory extends SignedTxnFactory<ScheduleSignFactory> {
         return new ScheduleSignFactory();
     }
 
-    public ScheduleSignFactory updating(ScheduleID id) {
+    public ScheduleSignFactory signing(ScheduleID id) {
         this.id = id;
         return this;
     }

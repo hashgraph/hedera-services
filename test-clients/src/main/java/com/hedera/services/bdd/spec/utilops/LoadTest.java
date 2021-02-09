@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.utilops;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
@@ -45,8 +44,8 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt threadNumber = OptionalInt.empty();
 	public static OptionalInt hcsSubmitMessage = OptionalInt.empty();
 	public static OptionalInt hcsSubmitMessageSizeVar = OptionalInt.empty();
-	/** initial balance of payer account used for paying for performance test transactions */
-	public static OptionalLong initialBalance = OptionalLong.of(900_000_000_000L);
+	/** initial balance of account used as sender for performance test transactions */
+	public static OptionalLong initialBalance = OptionalLong.of(ONE_HBAR * 1_000_000L);
 	public static OptionalInt totalTestAccounts = OptionalInt.empty();
 	public static OptionalInt totalTestTopics = OptionalInt.empty();
 	public static OptionalInt totalTestTokens = OptionalInt.empty();

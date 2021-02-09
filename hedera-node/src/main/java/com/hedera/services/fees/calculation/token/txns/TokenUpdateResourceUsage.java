@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ public class TokenUpdateResourceUsage implements TxnResourceUsageEstimator {
 					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
 					.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
 					.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+					.givenCurrentMemo(info.getMemo())
 					.givenCurrentName(info.getName())
 					.givenCurrentSymbol(info.getSymbol());
 			if (info.hasAutoRenewAccount()) {

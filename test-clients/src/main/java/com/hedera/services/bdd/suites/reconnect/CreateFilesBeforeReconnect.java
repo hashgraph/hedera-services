@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_MINS_FOR_RECONNECT_TESTS;
+import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_THREADS_FOR_RECONNECT_TESTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -44,6 +46,7 @@ public class CreateFilesBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateFilesBeforeReconnect.class);
 
 	private static final int FILE_CREATION_LIMIT = 1000;
+	private static final int FILE_CREATION_RECONNECT_TPS = 6;
 
 	public static void main(String... args) {
 		new CreateFilesBeforeReconnect().runSuiteSync();
@@ -73,7 +76,10 @@ public class CreateFilesBeforeReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec runCreateFiles() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings(10, 2, 1);
+		PerfTestLoadSettings settings = new PerfTestLoadSettings(
+				FILE_CREATION_RECONNECT_TPS,
+				DEFAULT_MINS_FOR_RECONNECT_TESTS,
+				DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 
 		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
 				generateFileCreateOperation()

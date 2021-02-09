@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.token;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,8 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				checkTokenTotalSupplyAfterMintAndBurn(),
-				totalSupplyAfterWipe()
+						checkTokenTotalSupplyAfterMintAndBurn(),
+						totalSupplyAfterWipe()
 				}
 		);
 	}
@@ -76,7 +76,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
 								.decimals(1)
 								.supplyKey("supplyKey")
 								.via("createTxn")
-						).then(
+				).then(
 						getTxnRecord("createTxn").logged(),
 						mintToken(tokenName, 1000).via("mintToken"),
 						getTxnRecord("mintToken").logged(),
@@ -131,7 +131,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
 						getTokenInfo(tokenToWipe)
 								.hasTotalSupply(600)
 								.hasName(tokenToWipe)
-						.logged(),
+								.logged(),
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(tokenToWipe, 300)
 				);

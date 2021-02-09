@@ -4,7 +4,7 @@ package com.hedera.services.fees;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ package com.hedera.services.fees;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
@@ -37,7 +38,7 @@ public class StandardExemptions implements FeeExemptions {
 	}
 
 	@Override
-	public boolean hasExemptPayer(SignedTxnAccessor accessor) {
+	public boolean hasExemptPayer(TxnAccessor accessor) {
 		if (isAlwaysExempt(accessor.getPayer().getAccountNum())) {
 			return true;
 		}

@@ -4,7 +4,7 @@ package com.hedera.services.queries.crypto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,19 +86,12 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
 			for (TokenID tId : account.tokens().asIds()) {
-				var optionalToken = view.tokenWith(tId);
-				if (optionalToken.isPresent()) {
-					var token = optionalToken.get();
-					if (!token.isDeleted()) {
-						var relKey = fromAccountTokenRel(id, tId);
-						var relationship = view.tokenAssociations().get().get(relKey);
-						opAnswer.addTokenBalances(TokenBalance.newBuilder()
-								.setTokenId(tId)
-								.setBalance(relationship.getBalance())
-								.build());
-					}
-				}
-
+				var relKey = fromAccountTokenRel(id, tId);
+				var relationship = view.tokenAssociations().get().get(relKey);
+				opAnswer.addTokenBalances(TokenBalance.newBuilder()
+						.setTokenId(tId)
+						.setBalance(relationship.getBalance())
+						.build());
 			}
 		}
 

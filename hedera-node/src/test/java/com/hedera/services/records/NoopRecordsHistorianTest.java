@@ -4,7 +4,7 @@ package com.hedera.services.records;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,9 @@ class NoopRecordsHistorianTest {
 		// expect:
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::addNewRecords);
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::purgeExpiredRecords);
+		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::addNewEntities);
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setLedger(null));
+		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setCreator(null));
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.reviewExistingRecords());
 		assertTrue(NOOP_RECORDS_HISTORIAN.lastCreatedRecord().isEmpty());
 	}

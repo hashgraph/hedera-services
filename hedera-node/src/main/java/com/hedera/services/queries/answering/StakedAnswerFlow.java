@@ -4,7 +4,7 @@ package com.hedera.services.queries.answering;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.fee.FeeObject;
@@ -134,10 +133,10 @@ public class StakedAnswerFlow implements AnswerFlow {
 	private ResponseCodeEnum validatePayment(long requiredPayment, SignedTxnAccessor accessor) {
 		if (requiredPayment > 0) {
 			ResponseCodeEnum validity =
-					legacyHandler.validateTransactionPreConsensus(accessor.getSignedTxn(), true)
+					legacyHandler.validateTransactionPreConsensus(accessor.getBackwardCompatibleSignedTxn(), true)
 							.getValidity();
 			if (validity == OK) {
-				validity = legacyHandler.nodePaymentValidity(accessor.getSignedTxn(), requiredPayment);
+				validity = legacyHandler.nodePaymentValidity(accessor.getBackwardCompatibleSignedTxn(), requiredPayment);
 			}
 			return validity;
 		} else {

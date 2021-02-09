@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.token.queries;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ class GetTokenInfoResourceUsageTest {
 					.setSbpr(1)
 					.build(), 1);
 
+	String memo = "22 a million";
 	String symbol = "HEYMAOK";
 	String name = "IsItReallyOk";
 	TokenID target = IdUtils.asToken("0.0.123");
@@ -83,6 +84,7 @@ class GetTokenInfoResourceUsageTest {
 			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
 			.setSymbol(symbol)
 			.setName(name)
+			.setMemo(memo)
 			.setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
 			.build();
 
@@ -106,6 +108,7 @@ class GetTokenInfoResourceUsageTest {
 		given(estimator.givenCurrentFreezeKey(any())).willReturn(estimator);
 		given(estimator.givenCurrentSymbol(any())).willReturn(estimator);
 		given(estimator.givenCurrentName(any())).willReturn(estimator);
+		given(estimator.givenCurrentMemo(any())).willReturn(estimator);
 		given(estimator.givenCurrentlyUsingAutoRenewAccount()).willReturn(estimator);
 		given(estimator.get()).willReturn(MOCK_TOKEN_GET_INFO_USAGE);
 
@@ -145,6 +148,7 @@ class GetTokenInfoResourceUsageTest {
 		verify(estimator).givenCurrentSymbol(symbol);
 		verify(estimator).givenCurrentName(name);
 		verify(estimator).givenCurrentlyUsingAutoRenewAccount();
+		verify(estimator).givenCurrentMemo(memo);
 	}
 
 	@Test

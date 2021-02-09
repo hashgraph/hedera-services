@@ -4,7 +4,7 @@ package com.hedera.test.mocks;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import java.util.List;
 public enum TestContextValidator implements OptionValidator {
 	TEST_VALIDATOR;
 
+	public static final long CONSENSUS_NOW = 1_234_567L;
+
 	@Override
 	public boolean hasGoodEncoding(Key key) {
 		throw new UnsupportedOperationException();
@@ -46,7 +48,7 @@ public enum TestContextValidator implements OptionValidator {
 
 	@Override
 	public boolean isValidExpiry(Timestamp expiry) {
-		throw new UnsupportedOperationException();
+		return expiry.getSeconds() > CONSENSUS_NOW;
 	}
 
 	@Override

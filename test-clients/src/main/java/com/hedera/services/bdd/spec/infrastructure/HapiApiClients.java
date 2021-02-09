@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.infrastructure;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockin
 import com.hederahashgraph.service.proto.java.FreezeServiceGrpc;
 import com.hederahashgraph.service.proto.java.FreezeServiceGrpc.FreezeServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.NetworkServiceGrpc;
+import com.hederahashgraph.service.proto.java.ScheduleServiceGrpc;
+import com.hederahashgraph.service.proto.java.ScheduleServiceGrpc.ScheduleServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc.SmartContractServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc.ConsensusServiceBlockingStub;
@@ -61,8 +63,10 @@ public class HapiApiClients {
 	private static Map<String, FileServiceBlockingStub> fileSvcStubs = new HashMap<>();
 	private static Map<String, CryptoServiceBlockingStub> cryptoSvcStubs = new HashMap<>();
 	private static Map<String, TokenServiceBlockingStub> tokenSvcStubs = new HashMap<>();
+	private static Map<String, ScheduleServiceBlockingStub> scheduleSvcStubs = new HashMap<>();
 	private static Map<String, FreezeServiceBlockingStub> freezeSvcStubs = new HashMap<>();
 	private static Map<String, NetworkServiceBlockingStub> networkSvcStubs = new HashMap<>();
+	private static Map<String, ScheduleServiceBlockingStub> schedSvcStubs = new HashMap<>();
 	private static Map<String, ConsensusServiceBlockingStub> consSvcStubs = new HashMap<>();
 	private static Map<String, SmartContractServiceBlockingStub> scSvcStubs = new HashMap<>();
 
@@ -111,7 +115,9 @@ public class HapiApiClients {
 			scSvcStubs.put(uri, SmartContractServiceGrpc.newBlockingStub(channel));
 			consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(channel));
 			fileSvcStubs.put(uri, FileServiceGrpc.newBlockingStub(channel));
+			schedSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
 			tokenSvcStubs.put(uri, TokenServiceGrpc.newBlockingStub(channel));
+			scheduleSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
 			cryptoSvcStubs.put(uri, CryptoServiceGrpc.newBlockingStub(channel));
 			freezeSvcStubs.put(uri, FreezeServiceGrpc.newBlockingStub(channel));
 			networkSvcStubs.put(uri, NetworkServiceGrpc.newBlockingStub(channel));
@@ -142,10 +148,12 @@ public class HapiApiClients {
 		return scSvcStubs.size() +
 				consSvcStubs.size() +
 				fileSvcStubs.size() +
+				schedSvcStubs.size() +
 				tokenSvcStubs.size() +
 				cryptoSvcStubs.size() +
 				freezeSvcStubs.size() +
-				networkSvcStubs.size();
+				networkSvcStubs.size() +
+				scheduleSvcStubs.size();
 	}
 
 	public static HapiApiClients clientsFor(HapiSpecSetup setup) {
@@ -180,6 +188,10 @@ public class HapiApiClients {
 		return networkSvcStubs.get(stubId(nodeId, useTls));
 	}
 
+	public ScheduleServiceBlockingStub getScheduleSvcStub(AccountID nodeId, boolean useTls) {
+		return schedSvcStubs.get(stubId(nodeId, useTls));
+	}
+
 	private String stubId(AccountID nodeId, boolean useTls) {
 		return useTls ? tlsStubIds.get(nodeId) : stubIds.get(nodeId);
 	}
@@ -212,6 +224,7 @@ public class HapiApiClients {
 		consSvcStubs.clear();
 		fileSvcStubs.clear();
 		tokenSvcStubs.clear();
+		scheduleSvcStubs.clear();
 		cryptoSvcStubs.clear();
 		freezeSvcStubs.clear();
 		networkSvcStubs.clear();

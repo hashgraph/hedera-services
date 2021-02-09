@@ -4,7 +4,7 @@ package com.hedera.services.context;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.keys.CharacteristicsFactory;
+import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
@@ -42,6 +44,7 @@ import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.queries.schedule.ScheduleAnswers;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
@@ -114,6 +117,7 @@ import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.utils.SleepingPause;
+import com.hedera.test.factories.sigs.SigFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
@@ -478,6 +482,9 @@ public class ServicesContextTest {
 		assertThat(ctx.semVers(), instanceOf(SemanticVersions.class));
 		assertThat(ctx.freezeGrpc(), instanceOf(FreezeController.class));
 		assertThat(ctx.contractsGrpc(), instanceOf(ContractController.class));
+		assertThat(ctx.sigFactoryCreator(), instanceOf(SigFactoryCreator.class));
+		assertThat(ctx.activationHelper(), instanceOf(InHandleActivationHelper.class));
+		assertThat(ctx.characteristics(), instanceOf(CharacteristicsFactory.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

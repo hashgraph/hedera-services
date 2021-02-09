@@ -4,7 +4,7 @@ package com.hedera.services.state.expiry;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,31 +25,45 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
+import javafx.util.Pair;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class ExpiryManager {
 	private final RecordCache recordCache;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	private final FCMap<MerkleEntityId, MerkleSchedule> schedules;
+
+	private final ScheduleStore scheduleStore;
 
 	long sharedNow;
 	MonotonicFullQueueExpiries<Long> payerExpiries = new MonotonicFullQueueExpiries<>();
+	MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>> entityExpiries = new MonotonicFullQueueExpiries<>();
 
 	public ExpiryManager(
 			RecordCache recordCache,
-			Map<TransactionID, TxnIdRecentHistory> txnHistories
+			Map<TransactionID, TxnIdRecentHistory> txnHistories,
+			ScheduleStore scheduleStore,
+			FCMap<MerkleEntityId, MerkleSchedule> schedules
 	) {
 		this.recordCache = recordCache;
 		this.txnHistories = txnHistories;
+		this.scheduleStore = scheduleStore;
+
+		this.schedules = schedules;
 	}
 
 	public void trackRecord(AccountID owner, long expiry) {
@@ -71,6 +85,27 @@ public class ExpiryManager {
 		_payerExpiries.forEach(entry -> payerExpiries.track(entry.getKey(), entry.getValue()));
 
 		txnHistories.values().forEach(TxnIdRecentHistory::observeStaged);
+	}
+
+	/**
+	 * Invites the expiry manager to build any auxiliary data structures
+	 * later needed to purge expired entities
+	 */
+	public void restartEntitiesTrackingFrom() {
+		entityExpiries.reset();
+
+		var expiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
+		schedules.forEach((id, schedule) -> {
+			var pair = new Pair<Long, Consumer<EntityId>>(id.getNum(), scheduleStore::expire);
+			expiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
+		});
+		// todo: add accounts, files, tokens, topics
+
+		var cmp = Comparator
+				.comparing(Map.Entry<Pair<Long, Consumer<EntityId>>, Long>::getValue)
+				.thenComparing(entry -> entry.getKey().getKey());
+		expiries.sort(cmp);
+		expiries.forEach(entry -> entityExpiries.track(entry.getKey(), entry.getValue()));
 	}
 
 	private void addUniqueExpiries(
@@ -102,6 +137,23 @@ public class ExpiryManager {
 		recordCache.forgetAnyOtherExpiredHistory(now);
 	}
 
+	/**
+	 * Marks expired entities as deleted before given timestamp in seconds. Not that for
+	 * this to be done efficiently, the expiry manager will need the opportunity to scan
+	 * the ledger and build an auxiliary data structure of expiration times
+	 * @param now the time in seconds used to expire entities
+	 */
+	public void purgeExpiredEntitiesAt(long now) {
+		while (entityExpiries.hasExpiringAt(now)) {
+			var current = entityExpiries.expireNextAt(now);
+			current.getValue().accept(entityWith(current.getKey()));
+		}
+	}
+
+	public void trackEntity(Pair<Long, Consumer<EntityId>> entity, long expiry) {
+		entityExpiries.track(entity, expiry);
+	}
+
 	void updateHistory(ExpirableTxnRecord record) {
 		var txnId = record.getTxnId().toGrpc();
 		var history = txnHistories.get(txnId);
@@ -119,5 +171,9 @@ public class ExpiryManager {
 				.setRealmNum(0)
 				.setAccountNum(num)
 				.build();
+	}
+
+	EntityId entityWith(long num) {
+		return new EntityId(0, 0, num);
 	}
 }

@@ -4,7 +4,7 @@ package com.hedera.test.factories.scenarios;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -46,6 +47,8 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.swirlds.fcmap.FCMap;
+
+import java.time.Instant;
 
 import static com.hedera.test.factories.keys.KeyTree.withRoot;
 import static org.mockito.BDDMockito.given;
@@ -159,7 +162,8 @@ public interface TxnHandlingScenario {
 
 	default FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
 		@SuppressWarnings("unchecked")
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = (FCMap<MerkleBlobMeta, MerkleOptionalBlob>)mock(FCMap.class);
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = (FCMap<MerkleBlobMeta, MerkleOptionalBlob>) mock(
+				FCMap.class);
 
 		return storage;
 	}
@@ -208,7 +212,7 @@ public interface TxnHandlingScenario {
 
 		var kycToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
-				"KycToken","KYCTOKENNAME", false, true,
+				"KycToken", "KYCTOKENNAME", false, true,
 				new EntityId(1, 2, 4));
 		kycToken.setAdminKey(adminKey);
 		kycToken.setKycKey(optionalKycKey);
@@ -242,22 +246,62 @@ public interface TxnHandlingScenario {
 		return tokenStore;
 	}
 
+	default byte[] extantScheduleTxnBytes() throws Throwable {
+		return new byte[0];
+	}
+
 	default ScheduleStore scheduleStore() {
 		var scheduleStore = mock(ScheduleStore.class);
 
-		var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
-
-		var immutableSchedule = new MerkleSchedule(null, null, null);
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_IMMUTABLE))
 				.willReturn(KNOWN_SCHEDULE_IMMUTABLE);
-		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE)).willReturn(immutableSchedule);
+		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE))
+				.willAnswer(inv -> {
+					var entity = new MerkleSchedule(
+							extantScheduleTxnBytes(),
+							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							RichInstant.fromJava(Instant.now()));
+					entity.setPayer(EntityId.ofNullableAccountId(MISC_ACCOUNT));
+					return entity;
+				});
 
-		var vanillaSchedule = new MerkleSchedule(null, null, null);
-		vanillaSchedule.setAdminKey(adminKey);
 		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_ADMIN))
 				.willReturn(KNOWN_SCHEDULE_WITH_ADMIN);
-		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_ADMIN)).willReturn(vanillaSchedule);
+		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_ADMIN))
+				.willAnswer(inv -> {
+					var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
+					var entity = new MerkleSchedule(
+							extantScheduleTxnBytes(),
+							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							RichInstant.fromJava(Instant.now()));
+					entity.setPayer(EntityId.ofNullableAccountId(MISC_ACCOUNT));
+					entity.setAdminKey(adminKey);
+					return entity;
+				});
 
+		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER))
+				.willReturn(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER);
+		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER))
+				.willAnswer(inv -> {
+					var entity = new MerkleSchedule(
+							extantScheduleTxnBytes(),
+							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							RichInstant.fromJava(Instant.now()));
+					entity.setPayer(EntityId.ofNullableAccountId(DILIGENT_SIGNING_PAYER));
+					return entity;
+				});
+
+		given(scheduleStore.resolve(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER))
+				.willReturn(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER);
+		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER))
+				.willAnswer(inv -> {
+					var entity = new MerkleSchedule(
+							extantScheduleTxnBytes(),
+							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							RichInstant.fromJava(Instant.now()));
+					entity.setPayer(EntityId.ofNullableAccountId(MISSING_ACCOUNT));
+					return entity;
+				});
 
 		given(scheduleStore.resolve(UNKNOWN_SCHEDULE))
 				.willReturn(ScheduleStore.MISSING_SCHEDULE);
@@ -298,7 +342,7 @@ public interface TxnHandlingScenario {
 					ed25519(),
 					list(
 							threshold(2,
-									ed25519(), ed25519(),  ed25519()))));
+									ed25519(), ed25519(), ed25519()))));
 
 	String FROM_OVERLAP_PAYER_ID = "0.0.1343";
 	AccountID FROM_OVERLAP_PAYER = asAccount(FROM_OVERLAP_PAYER_ID);
@@ -399,6 +443,12 @@ public interface TxnHandlingScenario {
 
 	String KNOWN_SCHEDULE_WITH_ADMIN_ID = "0.0.456";
 	ScheduleID KNOWN_SCHEDULE_WITH_ADMIN = asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID);
+
+	String KNOWN_SCHEDULE_WITH_PAYER_ID = "0.0.456456";
+	ScheduleID KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER = asSchedule(KNOWN_SCHEDULE_WITH_PAYER_ID);
+
+	String KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER_ID = "0.0.654654";
+	ScheduleID KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER = asSchedule(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER_ID);
 
 	String UNKNOWN_SCHEDULE_ID = "0.0.123";
 	ScheduleID UNKNOWN_SCHEDULE = asSchedule(UNKNOWN_SCHEDULE_ID);

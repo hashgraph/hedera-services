@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -298,6 +298,8 @@ public class HapiApiSpec implements Runnable {
 				status = FAILED;
 			}
 		}
+		finalizingFuture.join();
+
 		tearDown();
 		log.info(logPrefix() + "final status: " + status + "!");
 
@@ -323,7 +325,7 @@ public class HapiApiSpec implements Runnable {
 							while (true) {
 								HapiSpecOpFinisher op = pendingOps.poll();
 								if (op != null) {
-									if (status != FAILED && !finishingError.get().isPresent()) {
+									if (status != FAILED && finishingError.get().isEmpty()) {
 										try {
 											op.finishFor(this);
 										} catch (Throwable t) {
@@ -337,12 +339,11 @@ public class HapiApiSpec implements Runnable {
 									} else {
 										try {
 											Thread.sleep(500L);
-										} catch (InterruptedException irrelevant) {
-										}
+										} catch (InterruptedException ignored) { }
 									}
 								}
 							}
-						}, finalizingExecutor)).toArray(n -> new CompletableFuture[n])
+						}, finalizingExecutor)).toArray(CompletableFuture[]::new)
 		);
 	}
 
@@ -355,7 +356,6 @@ public class HapiApiSpec implements Runnable {
 		if (!hapiSetup.statusDeferredResolvesDoAsync()) {
 			startFinalizingOps();
 		}
-		finalizingFuture.join();
 	}
 
 	public void offerFinisher(HapiSpecOpFinisher finisher) {

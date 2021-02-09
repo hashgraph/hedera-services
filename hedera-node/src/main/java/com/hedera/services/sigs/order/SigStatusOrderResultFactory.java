@@ -4,7 +4,7 @@ package com.hedera.services.sigs.order;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
@@ -138,6 +139,36 @@ public class SigStatusOrderResultFactory implements SigningOrderResultFactory<Si
 		SignatureStatus error = new SignatureStatus(
 				SignatureStatusCode.INVALID_SCHEDULE_ID, ResponseCodeEnum.INVALID_SCHEDULE_ID,
 				inHandleTxnDynamicContext, txnId, missing);
+		return new SigningOrderResult<>(error);
+	}
+
+	@Override
+	public SigningOrderResult<SignatureStatus> forUnresolvableRequiredSigners(
+			TransactionBody scheduled,
+			TransactionID txnId,
+			SignatureStatus resolutionReport
+	) {
+		SignatureStatus error = new SignatureStatus(
+				SignatureStatusCode.UNRESOLVABLE_REQUIRED_SIGNERS, ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS,
+				inHandleTxnDynamicContext, txnId, scheduled, resolutionReport);
+		return new SigningOrderResult<>(error);
+	}
+
+	@Override
+	public SigningOrderResult<SignatureStatus> forUnparseableScheduledTxn(TransactionID txnId) {
+		SignatureStatus error = new SignatureStatus(
+				SignatureStatusCode.UNPARSEABLE_SCHEDULED_TRANSACTION, ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION,
+				inHandleTxnDynamicContext, txnId);
+		return new SigningOrderResult<>(error);
+	}
+
+	@Override
+	public SigningOrderResult<SignatureStatus> forUnschedulableTxn(TransactionID txnId) {
+		SignatureStatus error = new SignatureStatus(
+				SignatureStatusCode.UNSCHEDULABLE_TRANSACTION,
+				ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION,
+				inHandleTxnDynamicContext,
+				txnId);
 		return new SigningOrderResult<>(error);
 	}
 }

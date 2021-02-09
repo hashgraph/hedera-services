@@ -4,14 +4,14 @@ package com.hedera.services.utils;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,15 +23,18 @@ package com.hedera.services.utils;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.function.Function;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.sha384HashOf;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
@@ -40,10 +43,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  *
  * @author Michael Tinker
  */
-public class SignedTxnAccessor {
+public class SignedTxnAccessor implements TxnAccessor {
 	private byte[] txnBytes;
-	private byte[] signedTxnBytes;
-	private Transaction signedTxn;
+	private byte[] backwardCompatibleSignedTxnBytes;
+	private Transaction backwardCompatibleSignedTxn;
+	private SignatureMap sigMap;
 	private TransactionID txnId;
 	private TransactionBody txn;
 	private HederaFunctionality function;
@@ -60,21 +64,35 @@ public class SignedTxnAccessor {
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
 			return new SignedTxnAccessor(validSignedTxn);
-		} catch (Exception impossible) {}
+		} catch (Exception impossible) {
+		}
 		return null;
 	}
 
-	public SignedTxnAccessor(byte[] signedTxnBytes) throws InvalidProtocolBufferException {
-		this.signedTxnBytes = signedTxnBytes;
-		signedTxn = Transaction.parseFrom(signedTxnBytes);
-		txnBytes = CommonUtils.extractTransactionBodyBytes(signedTxn);
+	public SignedTxnAccessor(byte[] backwardCompatibleSignedTxnBytes) throws InvalidProtocolBufferException {
+		this.backwardCompatibleSignedTxnBytes = backwardCompatibleSignedTxnBytes;
+		backwardCompatibleSignedTxn = Transaction.parseFrom(backwardCompatibleSignedTxnBytes);
+
+		if (!backwardCompatibleSignedTxn.getSignedTransactionBytes().isEmpty()) {
+			var signedTxn = SignedTransaction.parseFrom(backwardCompatibleSignedTxn.getSignedTransactionBytes());
+			txnBytes = signedTxn.getBodyBytes().toByteArray();
+			sigMap = signedTxn.getSigMap();
+		} else {
+			txnBytes = backwardCompatibleSignedTxn.getBodyBytes().toByteArray();
+			sigMap = backwardCompatibleSignedTxn.getSigMap();
+		}
+
 		txn = TransactionBody.parseFrom(txnBytes);
 		txnId = txn.getTransactionID();
-		hash = CommonUtils.sha384HashOf(signedTxn);
+		hash = sha384HashOf(backwardCompatibleSignedTxn);
 	}
 
-	public SignedTxnAccessor(Transaction signedTxn) throws InvalidProtocolBufferException {
-		this(signedTxn.toByteArray());
+	public SignedTxnAccessor(Transaction backwardCompatibleSignedTxn) throws InvalidProtocolBufferException {
+		this(backwardCompatibleSignedTxn.toByteArray());
+	}
+
+	public SignatureMap getSigMap() {
+		return sigMap;
 	}
 
 	public HederaFunctionality getFunction() {
@@ -85,15 +103,15 @@ public class SignedTxnAccessor {
 	}
 
 	public Transaction getSignedTxn4Log() {
-		return signedTxn;
+		return backwardCompatibleSignedTxn;
 	}
 
 	public byte[] getTxnBytes() {
 		return txnBytes;
 	}
 
-	public Transaction getSignedTxn() {
-		return signedTxn;
+	public Transaction getBackwardCompatibleSignedTxn() {
+		return backwardCompatibleSignedTxn;
 	}
 
 	public TransactionBody getTxn() {
@@ -108,11 +126,20 @@ public class SignedTxnAccessor {
 		return getTxnId().getAccountID();
 	}
 
-	public byte[] getSignedTxnBytes() {
-		return signedTxnBytes;
+	public byte[] getBackwardCompatibleSignedTxnBytes() {
+		return backwardCompatibleSignedTxnBytes;
 	}
 
 	public ByteString getHash() {
 		return hash;
 	}
+
+	@Override
+	public boolean canTriggerTxn() {
+		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
+	}
+
+	public boolean isTriggeredTxn() { return false; }
+
+	public ScheduleID getScheduleRef() { return ScheduleID.getDefaultInstance(); }
 }

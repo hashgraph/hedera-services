@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,15 +35,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
-public class SubmitMessagesBeforeReconnect extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SubmitMessagesBeforeReconnect.class);
+public class SubmitMessagesForReconnect extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(SubmitMessagesForReconnect.class);
 
 	public static void main(String... args) {
-		new SubmitMessagesBeforeReconnect().runSuiteSync();
+		new SubmitMessagesForReconnect().runSuiteSync();
 	}
 
 	@Override
@@ -54,9 +55,9 @@ public class SubmitMessagesBeforeReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec runSubmitMessages() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings(120, 3, 1);
+		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
-		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
+		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
 				submitMessageTo("0.0.30000")
 						.message(randomUtf8Bytes(100))
 						.noLogging()
@@ -66,10 +67,11 @@ public class SubmitMessagesBeforeReconnect extends HapiApiSuite {
 
 		return defaultHapiSpec("RunSubmitMessages")
 				.given(
+						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when()
 				.then(
-						defaultLoadTest(createBurst, settings)
+						defaultLoadTest(submitBurst, settings)
 				);
 	}
 

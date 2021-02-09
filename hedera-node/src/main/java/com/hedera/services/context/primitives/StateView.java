@@ -4,7 +4,7 @@ package com.hedera.services.context.primitives;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,26 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -38,15 +47,11 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
@@ -55,7 +60,6 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.hederahashgraph.api.proto.java.ScheduleInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,16 +69,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
+import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static java.util.Collections.unmodifiableMap;
 
@@ -85,6 +92,7 @@ public class StateView {
 
 	private static final byte[] EMPTY_BYTES = new byte[0];
 	public static final JKey EMPTY_WACL = new JKeyList();
+	public static final MerkleToken GONE_TOKEN = new MerkleToken(0L, 0L, 0, "", "", false, false, MISSING_ENTITY_ID);
 
 	public static final FCMap<MerkleEntityId, MerkleTopic> EMPTY_TOPICS =
 			new FCMap<>();
@@ -116,6 +124,7 @@ public class StateView {
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, JFileInfo> fileAttrs;
 	private final TokenStore tokenStore;
+	private final ScheduleStore scheduleStore;
 	private final Supplier<MerkleDiskFs> diskFs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
@@ -129,21 +138,25 @@ public class StateView {
 			PropertySource properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
+		this(NOOP_TOKEN_STORE, NOOP_SCHEDULE_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER,
+				EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
 	}
 
 	public StateView(
 			TokenStore tokenStore,
+			ScheduleStore scheduleStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			PropertySource properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
+		this(tokenStore, scheduleStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs,
+				properties);
 	}
 
 	public StateView(
 			TokenStore tokenStore,
+			ScheduleStore scheduleStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
@@ -155,6 +168,7 @@ public class StateView {
 		this.accounts = accounts;
 		this.tokenStore = tokenStore;
 		this.tokenAssociations = tokenAssociations;
+		this.scheduleStore = scheduleStore;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
 
@@ -172,21 +186,17 @@ public class StateView {
 		var tokenIds = account.tokens().asIds();
 		for (TokenID tId : tokenIds) {
 			var optionalToken = view.tokenWith(tId);
-			if (optionalToken.isPresent()) {
-				var token = optionalToken.get();
-				if (!token.isDeleted()) {
-					var relKey = fromAccountTokenRel(id, tId);
-					var relationship = view.tokenAssociations().get().get(relKey);
-					relationships.add(new RawTokenRelationship(
-							relationship.getBalance(),
-							tId.getShardNum(),
-							tId.getRealmNum(),
-							tId.getTokenNum(),
-							relationship.isFrozen(),
-							relationship.isKycGranted()
-					).asGrpcFor(token));
-				}
-			}
+			var effectiveToken = optionalToken.orElse(GONE_TOKEN);
+			var relKey = fromAccountTokenRel(id, tId);
+			var relationship = view.tokenAssociations().get().get(relKey);
+			relationships.add(new RawTokenRelationship(
+					relationship.getBalance(),
+					tId.getShardNum(),
+					tId.getRealmNum(),
+					tId.getTokenNum(),
+					relationship.isFrozen(),
+					relationship.isKycGranted()
+			).asGrpcFor(effectiveToken));
 		}
 		return relationships;
 	}
@@ -229,6 +239,7 @@ public class StateView {
 					.setDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
 					.setName(token.name())
+					.setMemo(token.memo())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setTotalSupply(token.totalSupply())
 					.setDecimals(token.decimals())
@@ -270,8 +281,36 @@ public class StateView {
 	}
 
 	public Optional<ScheduleInfo> infoForSchedule(ScheduleID scheduleID) {
-		// TODO: Implement logic for getting information for schedule from store.
-		throw new UnsupportedOperationException();
+		try {
+			var id = scheduleStore.resolve(scheduleID);
+			if (id == MISSING_SCHEDULE) {
+				return Optional.empty();
+			}
+			var schedule = scheduleStore.get(id);
+			var signatories = schedule.signatories();
+			var signatoriesList = KeyList.newBuilder();
+			signatories.forEach(a -> signatoriesList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+
+			var info = ScheduleInfo.newBuilder()
+					.setScheduleID(id)
+					.setTransactionBody(ByteString.copyFrom(schedule.transactionBody()))
+					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
+					.setPayerAccountID(schedule.payer().toGrpcAccountId())
+					.setSignatories(signatoriesList)
+					.setExpirationTime(Timestamp.newBuilder().setSeconds(schedule.expiry()));
+			schedule.memo().ifPresent(info::setMemo);
+
+			var adminCandidate = schedule.adminKey();
+			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
+
+			return Optional.of(info.build());
+		} catch (Exception unexpected) {
+			log.warn(
+					"Unexpected failure getting info for schedule {}!",
+					readableId(scheduleID),
+					unexpected);
+			return Optional.empty();
+		}
 	}
 
 	TokenFreezeStatus tfsFor(boolean flag) {
@@ -287,8 +326,7 @@ public class StateView {
 	}
 
 	public boolean scheduleExists(ScheduleID id) {
-		// TODO: return scheduleStore.resolve(id) != MISSING_SCHEDULE;
-		throw new UnsupportedOperationException();
+		return scheduleStore.resolve(id) != MISSING_SCHEDULE;
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
@@ -340,7 +378,7 @@ public class StateView {
 
 		var mirrorId = asAccount(id);
 
-		var	storageSize = storageOf(id).orElse(EMPTY_BYTES).length;
+		var storageSize = storageOf(id).orElse(EMPTY_BYTES).length;
 		var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
 		var totalBytesUsed = storageSize + bytecodeSize;
 		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
@@ -361,7 +399,8 @@ public class StateView {
 		try {
 			var adminKey = JKey.mapJKey(contract.getKey());
 			info.setAdminKey(adminKey);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 
 		return Optional.of(info.build());
 	}

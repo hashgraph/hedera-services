@@ -4,7 +4,7 @@ package com.hedera.services.context.domain.security;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,10 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -77,6 +81,33 @@ class PermissionFileUtilsTest {
 	@Test
 	public void returnsEmptyKeyForBlankQuery() {
 		assertEquals("", permissionFileKeyForQuery(Query.getDefaultInstance()));
+	}
+
+	@Test
+	public void worksForScheduleCreate() {
+		var op = ScheduleCreateTransactionBody.getDefaultInstance();
+		var txn = TransactionBody.newBuilder()
+				.setScheduleCreate(op)
+				.build();
+		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+	}
+
+	@Test
+	public void worksForScheduleDelete() {
+		var op = ScheduleDeleteTransactionBody.getDefaultInstance();
+		var txn = TransactionBody.newBuilder()
+				.setScheduleDelete(op)
+				.build();
+		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+	}
+
+	@Test
+	public void worksForScheduleSign() {
+		var op = ScheduleSignTransactionBody.getDefaultInstance();
+		var txn = TransactionBody.newBuilder()
+				.setScheduleSign(op)
+				.build();
+		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
 	}
 
 	@Test
@@ -432,6 +463,9 @@ class PermissionFileUtilsTest {
 			case CONTRACTGETINFO:
 				queryBody = "getContractInfo";
 				break;
+			case SCHEDULEGETINFO:
+				queryBody = "getScheduleInfo";
+				break;
 			case CONTRACTGETBYTECODE:
 				queryBody = "contractGetBytecode";
 				break;
@@ -517,6 +551,12 @@ class PermissionFileUtilsTest {
 			key = "updateTopic";
 		} else if (txn.hasConsensusDeleteTopic()) {
 			key = "deleteTopic";
+		} else if (txn.hasScheduleCreate()) {
+			key = "scheduleCreate";
+		} else if (txn.hasScheduleDelete()) {
+			key = "scheduleDelete";
+		} else if (txn.hasScheduleSign()) {
+			key = "scheduleSign";
 		} else if (txn.hasConsensusSubmitMessage()) {
 			key = "submitMessage";
 		}

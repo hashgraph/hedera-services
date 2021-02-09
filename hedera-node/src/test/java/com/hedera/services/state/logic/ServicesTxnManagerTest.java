@@ -4,7 +4,7 @@ package com.hedera.services.state.logic;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ class ServicesTxnManagerTest {
 
 	Runnable processLogic;
 	Runnable recordStreaming;
+	Runnable triggeredProcessLogic;
 	BiConsumer<Exception, String> warning;
 
 	HederaLedger ledger;
@@ -69,9 +70,10 @@ class ServicesTxnManagerTest {
 		processLogic = mock(Runnable.class);
 		recordCache = mock(RecordCache.class);
 		recordStreaming = mock(Runnable.class);
+		triggeredProcessLogic = mock(Runnable.class);
 		warning = mock(BiConsumer.class);
 
-		subject = new ServicesTxnManager(processLogic, recordStreaming, warning);
+		subject = new ServicesTxnManager(processLogic, recordStreaming, triggeredProcessLogic, warning);
 
 		ledger = mock(HederaLedger.class);
 		txnCtx = mock(TransactionContext.class);

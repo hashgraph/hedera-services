@@ -4,7 +4,7 @@ package com.hedera.services.sigs.order;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
@@ -233,6 +234,63 @@ public class SigStatusOrderResultFactoryTest {
 		// given:
 		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
 		SigningOrderResult<SignatureStatus> summary = subject.forMissingAutoRenewAccount(missing, txnId);
+		SignatureStatus error = summary.getErrorReport();
+
+		// expect:
+		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
+	}
+
+	@Test
+	public void reportsUnresolvableSigners() {
+		// setup:
+		var errorReport = new SignatureStatus(
+				SignatureStatusCode.INVALID_SCHEDULE_ID,
+				ResponseCodeEnum.INVALID_SCHEDULE_ID,
+				true,
+				TransactionID.getDefaultInstance(),
+				ScheduleID.getDefaultInstance());
+		TransactionBody scheduled = TransactionBody.getDefaultInstance();
+		SignatureStatus expectedError = new SignatureStatus(
+				SignatureStatusCode.UNRESOLVABLE_REQUIRED_SIGNERS, ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS,
+				inHandleTxnDynamicContext, txnId, scheduled, errorReport);
+
+		// given:
+		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
+		var summary = subject.forUnresolvableRequiredSigners(scheduled, txnId, errorReport);
+		SignatureStatus error = summary.getErrorReport();
+
+		// expect:
+		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
+	}
+
+	@Test
+	public void reportsUnparseableTxn() {
+		// setup:
+		SignatureStatus expectedError = new SignatureStatus(
+				SignatureStatusCode.UNPARSEABLE_SCHEDULED_TRANSACTION, ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION,
+				inHandleTxnDynamicContext, txnId);
+
+		// given:
+		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
+		var summary = subject.forUnparseableScheduledTxn(txnId);
+		SignatureStatus error = summary.getErrorReport();
+
+		// expect:
+		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
+	}
+
+	@Test
+	public void reportsNestedScheduleCreate() {
+		// setup:
+		SignatureStatus expectedError = new SignatureStatus(
+				SignatureStatusCode.UNSCHEDULABLE_TRANSACTION,
+				ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION,
+				inHandleTxnDynamicContext,
+				txnId);
+
+		// given:
+		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
+		var summary = subject.forUnschedulableTxn(txnId);
 		SignatureStatus error = summary.getErrorReport();
 
 		// expect:
