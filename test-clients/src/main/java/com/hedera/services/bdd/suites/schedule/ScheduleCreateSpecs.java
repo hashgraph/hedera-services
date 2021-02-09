@@ -115,6 +115,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				whitelistWorks(),
 				allowsDoublingScheduledCreates(),
 				scheduledTXCreatedAfterPreviousIdenticalIsExecuted(),
+				preservesRevocationServiceSemanticsForFileDelete(),
 				suiteCleanup(),
 		});
 	}

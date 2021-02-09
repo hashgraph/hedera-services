@@ -79,11 +79,11 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						overlappingKeysTreatedAsExpected(),
 						retestsActivationOnSignWithEmptySigMap(),
 						basicSignatureCollectionWorks(),
-						addingSignaturesToExecutedTxFails(),
 						addingSignaturesToNonExistingTxFails(),
 						addingSignatureByNonRequiredSignerFails(),
 						addingSignatureByNonRequiredSignerFails2(),
 						triggersUponFinishingPayerSig(),
+						addingSignaturesToExecutedTxFails(),
 						suiteCleanup(),
 				}
 		);
@@ -184,6 +184,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleSign("basicCryptoCreate")
 								.withSignatories("somesigner")
 								.hasKnownStatus(INVALID_SCHEDULE_ID)
+								.noLogging()
 				);
 	}
 
