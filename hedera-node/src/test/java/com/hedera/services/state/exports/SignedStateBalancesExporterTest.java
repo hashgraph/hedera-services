@@ -20,7 +20,6 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -33,8 +32,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.AllAccountBalances;
-import com.hederahashgraph.api.proto.java.SingleAccountBalances;
+import com.hedera.services.stream.proto.AllAccountBalances;
+import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
