@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.Units;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,6 +75,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '%s'.";
 	static final String CURRENT_VERSION = "version:2";
 
+	static final String PROTOBUF_FILE_EXTENSION = ".pb";
+	static final String CSV_FILE_EXTENSION = ".csv";
+
 	static final Instant NEVER = null;
 	static final Base64.Encoder encoder = Base64.getEncoder();
 
@@ -102,7 +106,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	public boolean isTimeToExport(Instant now) {
 		if (periodEnd == NEVER) {
 			periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());
-			return false;
 		} else {
 			if (now.isAfter(periodEnd)) {
 				periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());
@@ -113,7 +116,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	}
 
 	@Override
-	public void toCsvFile(ServicesState signedState, Instant when) {
+	public void toCsvFile(ServicesState signedState, Instant exportTimeStamp) {
 		if (!ensureExportDir(signedState.getNodeAccountId())) {
 			return;
 		}
@@ -123,23 +126,22 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		if (!expected.equals(summary.getTotalFloat())) {
 			throw new IllegalStateException(String.format(
 					"Signed state @ %s had total balance %d not %d!",
-					when,
+					exportTimeStamp,
 					summary.getTotalFloat(),
 					expectedFloat));
 		}
-		var csvLoc = lastUsedExportDir + when.toString().replace(":", "_") + "_Balances.csv";
-		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, when);
+		var csvLoc = lastUsedExportDir
+				+ exportTimeStamp.toString().replace(":", "_") + "_Balances" + CSV_FILE_EXTENSION;
+		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, exportTimeStamp);
 		if (exportSucceeded) {
 			tryToSign(csvLoc);
 		}
-		log.info("It took total {} Millisecond to export and sign the csv account files", (System.nanoTime() - startTime) / 1_000_000);
+		log.info("It took total {} Millisecond to export and sign the csv account files",
+				(System.nanoTime() - startTime) * Units.NANOSECONDS_TO_MILLISECONDS);
 	}
 
-	// TODO: add the log info to tell how long it take to export and sign the proto account balances file
-	//       as some validation info
-	//       Do the same to csv file.
 	@Override
-	public void toProtoFile(ServicesState signedState, Instant when) {
+	public void toProtoFile(ServicesState signedState, Instant exportTimeStamp) {
 		if (!ensureExportDir(signedState.getNodeAccountId())) {
 			return;
 		}
@@ -148,21 +150,23 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		AllAccountBalances.Builder allAccountBalancesBuilder = AllAccountBalances.newBuilder();
 
 		var expected = BigInteger.valueOf(expectedFloat);
-		var total = calcTotalAndBuildProtoMessage(signedState, when, allAccountBalancesBuilder);
+		var total = calcTotalAndBuildProtoMessage(signedState, exportTimeStamp, allAccountBalancesBuilder);
 
 		if (!expected.equals(total)) {
 			throw new IllegalStateException(String.format(
 					"Signed state @ %s had total balance %d not %d!",
-					when,total,	expectedFloat));
+					exportTimeStamp,total,	expectedFloat));
 		}
 
-		var protoLoc = lastUsedExportDir + when.toString().replace(":", "_") + "_Balances.proto";
+		var protoLoc = lastUsedExportDir
+				+ exportTimeStamp.toString().replace(":", "_") + "_Balances" + PROTOBUF_FILE_EXTENSION;
 		boolean exportSucceeded = exportBalancesProtoFile(allAccountBalancesBuilder, protoLoc);
 
 		if (exportSucceeded) {
 			tryToSign(protoLoc);
 		}
-		log.info("It took total {} Millisecond to export and sign the proto account files", (System.nanoTime() - startTime) / 1_000_000);
+		log.info("It took total {} Millisecond to export and sign the proto account files",
+				(System.nanoTime() - startTime) * Units.NANOSECONDS_TO_MILLISECONDS);
 	}
 
 	private void tryToSign(String csvLoc) {
@@ -204,7 +208,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		return true;
 	}
 
-	private BigInteger calcTotalAndBuildProtoMessage(ServicesState signedState, Instant when,
+	private BigInteger calcTotalAndBuildProtoMessage(ServicesState signedState, Instant exportTimeStamp,
 			AllAccountBalances.Builder allAccountBalancesBuilder) {
 
 		long nodeBalanceWarnThreshold = dynamicProperties.nodeBalanceWarningThreshold();
@@ -238,14 +242,16 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 						for (TokenID tokenId : accountTokens.asIds()) {
 							var token = tokens.get(fromTokenId(tokenId));
 							if (token != null && !token.isDeleted()) {
-								var relationship = tokenAssociations.get(fromAccountTokenRel(accountId, tokenId));
+								var relationship = tokenAssociations
+										.get(fromAccountTokenRel(accountId, tokenId));
 								singleAccountBuilder.addTokenBalances(tb(tokenId, relationship.getBalance()));
 							}
 						}
 					}
 				}
 				Timestamp.Builder consensusTimeStamp = Timestamp.newBuilder();
-				consensusTimeStamp.setSeconds(when.getEpochSecond()).setNanos(when.getNano());
+				consensusTimeStamp.setSeconds(exportTimeStamp.getEpochSecond())
+						.setNanos(exportTimeStamp.getNano());
 				allAccountBalancesBuilder.setConsensusTimestamp(consensusTimeStamp.build());
 				allAccountBalancesBuilder.addAllAccounts(singleAccountBuilder.build());
 			}

@@ -20,6 +20,7 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -57,6 +58,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+import java.util.Optional;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.b64Encode;
@@ -310,8 +312,8 @@ class SignedStateBalancesExporterTest {
 	public void testExportingTokenBalancesProto() throws IOException {
 		// setup:
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		Pattern CSV_NAME_PATTERN = Pattern.compile(
-				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.proto");
+		Pattern PB_NAME_PATTERN = Pattern.compile(
+				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.pb");
 		// and:
 		var loc = expectedExportLoc(true);
 
@@ -354,6 +356,27 @@ class SignedStateBalancesExporterTest {
 	}
 
 
+	@Test
+	public void getEmptyAllAccountBalancesFromCorruptedProtoFileImport() throws Exception {
+		// setup:
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		Pattern BAD_PB_NAME_PATTERN = Pattern.compile(
+				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.pb");
+		// and:
+		var loc = expectedExportLoc(true);
+
+		given(hashReader.readHash(loc)).willReturn(fileHash);
+
+		// when:
+		subject.toCsvFile(state, now);
+
+		// and:
+		java.util.Optional<AllAccountBalances> accounts = subject.importBalanceProtoFile(loc);
+
+		// then:
+		assertEquals(Optional.empty(), accounts);
+	}
+
 	private String expectedExportLoc() {
 		return expectedExportLoc(false);
 	}
@@ -368,12 +391,12 @@ class SignedStateBalancesExporterTest {
 
 
 	private String expectedBalancesName(Boolean isProto ) {
-		return isProto ? now.toString().replace(":", "_") + "_Balances.proto"
+		return isProto ? now.toString().replace(":", "_") + "_Balances.pb"
 				: now.toString().replace(":", "_") + "_Balances.csv";
 	}
 
 	private String expectedBalancesName() {
-		return  expectedBalancesName(false) ; // now.toString().replace(":", "_") + "_Balances.csv";
+		return  expectedBalancesName(false) ;
 	}
 
 
