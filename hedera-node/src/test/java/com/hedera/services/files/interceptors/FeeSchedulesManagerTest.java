@@ -4,7 +4,7 @@ package com.hedera.services.files.interceptors;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package com.hedera.services.files.interceptors;
 
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hederahashgraph.api.proto.java.FileID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +44,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 class FeeSchedulesManagerTest {
-	private JFileInfo attr;
+	private HFileMeta attr;
 
 	public final static String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
 	private static byte[] validBytes;
@@ -65,7 +65,7 @@ class FeeSchedulesManagerTest {
 
 	@BeforeEach
 	private void setup() {
-		attr = new JFileInfo(
+		attr = new HFileMeta(
 				false,
 				new JContractIDKey(1, 2, 3),
 				Instant.now().getEpochSecond());

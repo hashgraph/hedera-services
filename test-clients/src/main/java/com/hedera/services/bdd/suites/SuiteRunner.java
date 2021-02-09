@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
 import com.hedera.services.bdd.suites.file.FileAppendSuite;
+import com.hedera.services.bdd.suites.file.FileCreateSuite;
 import com.hedera.services.bdd.suites.file.FileDeleteSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
@@ -192,13 +193,13 @@ public class SuiteRunner {
 //				new ScheduleCreateSpecs(),
 //				new ScheduleSignSpecs(),
 //				new ScheduleRecordSpecs()));
-		put("CiTokenJob", aof(
-				new TokenAssociationSpecs(),
-				new TokenUpdateSpecs(),
-				new TokenCreateSpecs(),
-				new TokenDeleteSpecs(),
-				new TokenManagementSpecs(),
-				new TokenTransactSpecs()));
+//		put("CiTokenJob", aof(
+//				new TokenAssociationSpecs(),
+//				new TokenUpdateSpecs(),
+//				new TokenCreateSpecs(),
+//				new TokenDeleteSpecs(),
+//				new TokenManagementSpecs(),
+//				new TokenTransactSpecs()));
 //		put("CiFileJob", aof(
 //				new FileRecordsSanityCheckSuite(),
 //				new VersionInfoSpec(),
@@ -262,6 +263,7 @@ public class SuiteRunner {
 		put("ConsensusThrottlesSpecs", aof(new ConsensusThrottlesSuite()));
 		put("ConsensusQueriesStressTests", aof(new ConsensusQueriesStressTests()));
 		/* Functional tests - FILE */
+		put("FileCreateSuite", aof(new FileCreateSuite()));
 		put("FileAppendSuite", aof(new FileAppendSuite()));
 		put("FileUpdateSuite", aof(new FileUpdateSuite()));
 		put("FileDeleteSuite", aof(new FileDeleteSuite()));

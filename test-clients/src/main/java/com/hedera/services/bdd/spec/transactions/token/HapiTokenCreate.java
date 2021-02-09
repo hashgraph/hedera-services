@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions.token;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> wipeKey = Optional.empty();
 	private Optional<String> supplyKey = Optional.empty();
 	private Optional<String> symbol = Optional.empty();
+	private Optional<String> memo = Optional.empty();
 	private Optional<String> name = Optional.empty();
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
@@ -80,6 +81,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate(String token) {
 		this.token = token;
+	}
+
+	public HapiTokenCreate memo(String memo) {
+		this.memo = Optional.of(memo);
+		return this;
 	}
 
 	public HapiTokenCreate advertisingCreation() {
@@ -196,6 +202,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 						TokenCreateTransactionBody.class, b -> {
 							symbol.ifPresent(b::setSymbol);
 							name.ifPresent(b::setName);
+							memo.ifPresent(b::setMemo);
 							initialSupply.ifPresent(b::setInitialSupply);
 							decimals.ifPresent(b::setDecimals);
 							freezeDefault.ifPresent(b::setFreezeDefault);
@@ -241,8 +248,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 			return;
 		}
 		var registry = spec.registry();
-		registry.saveSymbol(token, symbol.orElse(token));
-		registry.saveName(token, name.orElse(token));
+		symbol.ifPresent(s -> registry.saveSymbol(token, s));
+		name.ifPresent(s -> registry.saveName(token, s));
+		registry.saveMemo(token, memo.orElse(""));
 		registry.saveTokenId(token, lastReceipt.getTokenID());
 		registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
 

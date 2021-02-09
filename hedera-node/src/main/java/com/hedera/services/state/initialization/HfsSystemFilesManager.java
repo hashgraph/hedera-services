@@ -4,7 +4,7 @@ package com.hedera.services.state.initialization;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.swirlds.common.Address;
@@ -200,7 +200,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		materialize(disFid, systemFileInfo(), rawProps);
 	}
 
-	private void materialize(FileID fid, JFileInfo info, byte[] contents) {
+	private void materialize(FileID fid, HFileMeta info, byte[] contents) {
 		hfs.getMetadata().put(fid, info);
 		if (fileNumbers.softwareUpdateZip() == fid.getFileNum()) {
 			hfs.diskFs().put(fid, contents);
@@ -265,8 +265,8 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		}
 	}
 
-	private JFileInfo systemFileInfo() {
-		return new JFileInfo(
+	private HFileMeta systemFileInfo() {
+		return new HFileMeta(
 				false,
 				new JKeyList(List.of(masterKey())),
 				properties.getLongProperty("bootstrap.system.entityExpiry"));

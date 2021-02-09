@@ -4,7 +4,7 @@ package com.hedera.services.txns.validation;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ package com.hedera.services.txns.validation;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -117,8 +117,8 @@ public class ContextOptionValidatorTest {
 	private TransactionContext txnCtx;
 	private ContextOptionValidator subject;
 	private JKey wacl;
-	private JFileInfo attr;
-	private JFileInfo deletedAttr;
+	private HFileMeta attr;
+	private HFileMeta deletedAttr;
 	private StateView view;
 	private long expiry = 2_000_000L;
 	private FileID target = asFile("0.0.123");
@@ -148,14 +148,14 @@ public class ContextOptionValidatorTest {
 		given(topics.get(MerkleEntityId.fromTopicId(expiredTopicId))).willReturn(expiredMerkleTopic);
 
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
-		attr = new JFileInfo(false, wacl, expiry);
-		deletedAttr = new JFileInfo(true, wacl, expiry);
+		attr = new HFileMeta(false, wacl, expiry);
+		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
 
 		subject = new ContextOptionValidator(txnCtx, dynamicProperties);
 	}
 
-	private FileGetInfoResponse.FileInfo asMinimalInfo(JFileInfo meta) throws Exception {
+	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
 		return FileGetInfoResponse.FileInfo.newBuilder()
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())

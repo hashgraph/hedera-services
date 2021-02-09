@@ -4,7 +4,7 @@ package com.hedera.services.files.interceptors;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 
 import java.util.AbstractMap;
 import java.util.Map;
@@ -90,7 +90,7 @@ public class ValidatingCallbackInterceptor implements FileUpdateInterceptor {
 	}
 
 	@Override
-	public Map.Entry<ResponseCodeEnum, Boolean> preAttrChange(FileID id, JFileInfo newAttr) {
+	public Map.Entry<ResponseCodeEnum, Boolean> preAttrChange(FileID id, HFileMeta newAttr) {
 		return YES_VERDICT;
 	}
 

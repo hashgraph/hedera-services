@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.file.txns;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ package com.hedera.services.fees.calculation.file.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
@@ -29,10 +31,10 @@ import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 
 public class FileCreateResourceUsage implements TxnResourceUsageEstimator {
-	private final FileFeeBuilder usageEstimator;
+	private final FileOpsUsage fileOpsUsage;
 
-	public FileCreateResourceUsage(FileFeeBuilder usageEstimator) {
-		this.usageEstimator = usageEstimator;
+	public FileCreateResourceUsage(FileOpsUsage fileOpsUsage) {
+		this.fileOpsUsage = fileOpsUsage;
 	}
 
 	@Override
@@ -41,7 +43,8 @@ public class FileCreateResourceUsage implements TxnResourceUsageEstimator {
 	}
 
 	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-		return usageEstimator.getFileCreateTxFeeMatrices(txn, sigUsage);
+	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
+		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+		return fileOpsUsage.fileCreateUsage(txn, sigUsage);
 	}
 }

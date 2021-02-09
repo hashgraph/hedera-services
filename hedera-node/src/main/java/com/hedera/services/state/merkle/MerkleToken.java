@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,16 +34,22 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
-	static final int MERKLE_VERSION = 1;
+	static final int PRE_RELEASE_0120_VERSION = 1;
+	static final int RELEASE_0120_VERSION = 2;
+
+	static final int MERKLE_VERSION = RELEASE_0120_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
+
 	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final long UNUSED_AUTO_RENEW_PERIOD = -1L;
 	public static final JKey UNUSED_KEY = null;
 	public static final EntityId UNUSED_AUTO_RENEW_ACCOUNT = null;
+	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 	public static final int UPPER_BOUND_SYMBOL_UTF8_BYTES = 1024;
 	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 1024;
 
@@ -58,6 +64,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	private JKey freezeKey = UNUSED_KEY;
 	private String symbol;
 	private String name;
+	private String memo = DEFAULT_MEMO;
 	private boolean deleted;
 	private boolean accountsFrozenByDefault;
 	private boolean accountsKycGrantedByDefault;
@@ -65,6 +72,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	private EntityId autoRenewAccount = UNUSED_AUTO_RENEW_ACCOUNT;
 
 	public MerkleToken() {
+		/* No-op. */
 	}
 
 	public MerkleToken(
@@ -107,6 +115,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
 				Objects.equals(this.symbol, that.symbol) &&
 				Objects.equals(this.name, that.name) &&
+				Objects.equals(this.memo, that.memo) &&
 				Objects.equals(this.treasury, that.treasury) &&
 				Objects.equals(this.autoRenewAccount, that.autoRenewAccount) &&
 				equalUpToDecodability(this.wipeKey, that.wipeKey) &&
@@ -130,6 +139,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				supplyKey,
 				symbol,
 				name,
+				memo,
 				accountsFrozenByDefault,
 				accountsKycGrantedByDefault,
 				treasury,
@@ -145,6 +155,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				.add("expiry", expiry)
 				.add("symbol", symbol)
 				.add("name", name)
+				.add("memo", memo)
 				.add("treasury", treasury.toAbbrevString())
 				.add("totalSupply", totalSupply)
 				.add("decimals", decimals)
@@ -193,6 +204,9 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		kycKey = serdes.readNullable(in, serdes::deserializeKey);
 		supplyKey = serdes.readNullable(in, serdes::deserializeKey);
 		wipeKey = serdes.readNullable(in, serdes::deserializeKey);
+		if (version >= RELEASE_0120_VERSION) {
+			memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
+		}
 	}
 
 	@Override
@@ -213,6 +227,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		serdes.writeNullable(kycKey, out, serdes::serializeKey);
 		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
 		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
+		out.writeNormalisedString(memo);
 	}
 
 	/* --- FastCopyable --- */
@@ -227,6 +242,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				accountsFrozenByDefault,
 				accountsKycGrantedByDefault,
 				treasury);
+		fc.setMemo(memo);
 		fc.setDeleted(deleted);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
@@ -395,4 +411,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		totalSupply += amount;
 	}
 
+	public String memo() {
+		return memo;
+	}
+
+	public void setMemo(String memo) {
+		this.memo = memo;
+	}
 }

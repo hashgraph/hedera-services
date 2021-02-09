@@ -4,7 +4,7 @@ package com.hedera.services.context.properties;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,6 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.genesisPemPassphrase.path", "TBD"),
 			entry("bootstrap.genesisPem.path", "TBD"),
 			entry("bootstrap.hapiPermissions.path", "data/config/api-permission.properties"),
-			entry("bootstrap.ledger.nodeAccounts.initialBalance", 0L),
-			entry("bootstrap.ledger.systemAccounts.initialBalance", 0L),
 			entry("bootstrap.networkProperties.path", "data/config/application.properties"),
 			entry("bootstrap.rates.currentHbarEquiv", 1),
 			entry("bootstrap.rates.currentCentEquiv", 12),
@@ -117,6 +115,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.schedule.txExpiryTimeSecs", 1800),
 			entry("precheck.account.maxLookupRetries", 10),
 			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
+			entry("queries.blob.lookupRetries", 3),
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),
 			entry("tokens.maxTokenNameUtf8Bytes",100),

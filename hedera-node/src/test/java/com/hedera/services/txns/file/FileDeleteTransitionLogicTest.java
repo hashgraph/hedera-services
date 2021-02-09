@@ -4,7 +4,7 @@ package com.hedera.services.txns.file;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,7 @@ class FileDeleteTransitionLogicTest {
 			true,
 			ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
 	JKey wacl;
-	JFileInfo attr, deletedAttr, immutableAttr;
+	HFileMeta attr, deletedAttr, immutableAttr;
 
 	TransactionID txnId;
 	TransactionBody fileDeleteTxn;
@@ -84,9 +84,9 @@ class FileDeleteTransitionLogicTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
-		attr = new JFileInfo(false, wacl, 2_000_000L);
-		deletedAttr = new JFileInfo(true, wacl, 2_000_000L);
-		immutableAttr = new JFileInfo(false, StateView.EMPTY_WACL, 2_000_000L);
+		attr = new HFileMeta(false, wacl, 2_000_000L);
+		deletedAttr = new HFileMeta(true, wacl, 2_000_000L);
+		immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, 2_000_000L);
 
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);

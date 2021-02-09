@@ -4,7 +4,7 @@ package com.hedera.services.txns.token;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -52,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -333,6 +335,14 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void rejectsExcessiveMemo() {
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
 	public void rejectsMissingToken() {
 		givenMissingToken();
 
@@ -400,6 +410,15 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void rejectsInvalidMemo() {
+		givenValidTxnCtx();
+		given(validator.isValidEntityMemo(any())).willReturn(false);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
 	public void rejectsInvalidFreezeKey() {
 		givenInvalidFreezeKey();
 
@@ -425,6 +444,7 @@ class TokenUpdateTransitionLogicTest {
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setSymbol(symbol)
 						.setName(name)
+						.setMemo(StringValue.newBuilder().setValue("FATALITY").build())
 						.setToken(target));
 		if (withNewTreasury) {
 			builder.getTokenUpdateBuilder()
@@ -489,5 +509,6 @@ class TokenUpdateTransitionLogicTest {
 	private void withAlwaysValidValidator() {
 		given(validator.tokenNameCheck(any())).willReturn(OK);
 		given(validator.tokenSymbolCheck(any())).willReturn(OK);
+		given(validator.isValidEntityMemo(any())).willReturn(true);
 	}
 }

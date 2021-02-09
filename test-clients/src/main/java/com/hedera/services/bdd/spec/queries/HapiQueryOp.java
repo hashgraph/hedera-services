@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.queries;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,17 +107,24 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (permissibleCostAnswerPrechecks.get().contains(actualPrecheck)) {
 				costAnswerPrecheck = Optional.of(actualPrecheck);
 			} else {
-				String errMsg = String.format("Cost-answer precheck was %s, not one of %s!",
-						actualPrecheck, permissibleCostAnswerPrechecks.get());
-				log.error(errMsg);
-
+				String errMsg = String.format(
+						"Cost-answer precheck was %s, not one of %s!",
+						actualPrecheck,
+						permissibleCostAnswerPrechecks.get());
+				if (!loggingOff) {
+					log.error(errMsg);
+				}
 				throw new HapiQueryCheckStateException(errMsg);
 			}
 		} else {
 			if (expectedCostAnswerPrecheck() != actualPrecheck) {
-				String errMsg = String.format("Bad costAnswerPrecheck! expected %s, actual %s",
-						expectedCostAnswerPrecheck(), actualPrecheck);
-				log.error(errMsg);
+				String errMsg = String.format(
+						"Bad costAnswerPrecheck! expected %s, actual %s",
+						expectedCostAnswerPrecheck(),
+						actualPrecheck);
+				if (!loggingOff) {
+					log.error(errMsg);
+				}
 				throw new HapiQueryCheckStateException(errMsg);
 			}
 		}

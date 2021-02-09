@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,8 @@ package com.hedera.services.fees.calculation.token.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenDeleteUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
@@ -46,6 +44,7 @@ class TokenDeleteResourceUsageTest {
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
 	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
 	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+	FeeData expected;
 
 	BiFunction<TransactionBody, SigUsage, TokenDeleteUsage> factory;
 
@@ -56,6 +55,7 @@ class TokenDeleteResourceUsageTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 
 		tokenDeleteTxn = mock(TransactionBody.class);
@@ -65,7 +65,7 @@ class TokenDeleteResourceUsageTest {
 		given(nonTokenDeleteTxn.hasTokenDeletion()).willReturn(false);
 
 		usage = mock(TokenDeleteUsage.class);
-		given(usage.get()).willReturn(MOCK_TOKEN_DELETE_USAGE);
+		given(usage.get()).willReturn(expected);
 
 		factory = (BiFunction<TransactionBody, SigUsage, TokenDeleteUsage>)mock(BiFunction.class);
 		given(factory.apply(tokenDeleteTxn, sigUsage)).willReturn(usage);
@@ -86,22 +86,7 @@ class TokenDeleteResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
-				MOCK_TOKEN_DELETE_USAGE,
+				expected,
 				subject.usageGiven(tokenDeleteTxn, obj, view));
 	}
-
-	public static final FeeData MOCK_TOKEN_DELETE_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(5)
-					.setBpt(5)
-					.setVpt(5)
-					.setRbh(5)
-					.setSbh(5)
-					.setGas(5)
-					.setTv(5)
-					.setBpr(5)
-					.setSbpr(5)
-					.build(), 5);
 }

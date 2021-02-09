@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.file.queries;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ package com.hedera.services.fees.calculation.file.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.services.usage.file.ExtantFileContext;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -32,10 +34,10 @@ import org.apache.logging.log4j.Logger;
 public class GetFileInfoResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(GetFileInfoResourceUsage.class);
 
-	private final FileFeeBuilder usageEstimator;
+	private final FileOpsUsage fileOpsUsage;
 
-	public GetFileInfoResourceUsage(FileFeeBuilder usageEstimator) {
-		this.usageEstimator = usageEstimator;
+	public GetFileInfoResourceUsage(FileOpsUsage fileOpsUsage) {
+		this.fileOpsUsage = fileOpsUsage;
 	}
 
 	@Override
@@ -59,6 +61,13 @@ public class GetFileInfoResourceUsage implements QueryResourceUsageEstimator {
 		if (info.isEmpty()) {
 			return FeeData.getDefaultInstance();
 		}
-		return usageEstimator.getFileInfoQueryFeeMatrices(info.get().getKeys(), type);
+		var details = info.get();
+		var ctx = ExtantFileContext.newBuilder()
+				.setCurrentSize(details.getSize())
+				.setCurrentWacl(details.getKeys())
+				.setCurrentMemo(details.getMemo())
+				.setCurrentExpiry(details.getExpirationTime().getSeconds())
+				.build();
+		return fileOpsUsage.fileInfoUsage(query, ctx);
 	}
 }

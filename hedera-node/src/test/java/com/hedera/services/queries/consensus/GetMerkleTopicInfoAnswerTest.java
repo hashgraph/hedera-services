@@ -4,7 +4,7 @@ package com.hedera.services.queries.consensus;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.hedera.services.queries.consensus;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
@@ -77,7 +78,7 @@ class GetMerkleTopicInfoAnswerTest {
 	private Transaction paymentTxn;
 
 	GetTopicInfoAnswer subject;
-	PropertySource propertySource;
+	NodeLocalProperties nodeProps;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -98,8 +99,8 @@ class GetMerkleTopicInfoAnswerTest {
 		MerkleEntityId key = MerkleEntityId.fromTopicId(asTopic(target));
 		given(topics.get(key)).willReturn(merkleTopic);
 
-		propertySource = mock(PropertySource.class);
-		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, propertySource, null);
+		nodeProps = mock(NodeLocalProperties.class);
+		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, nodeProps, null);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetTopicInfoAnswer(optionValidator);

@@ -4,7 +4,7 @@ package com.hedera.services.context.primitives;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -89,8 +89,9 @@ class StateViewTest {
 	byte[] data = "SOMETHING".getBytes();
 	byte[] expectedBytecode = "A Supermarket in California".getBytes();
 	byte[] expectedStorage = "The Ecstasy".getBytes();
-	JFileInfo metadata;
-	JFileInfo immutableMetadata;
+	String tokenMemo = "Goodbye and keep cold";
+	HFileMeta metadata;
+	HFileMeta immutableMetadata;
 	FileID target = asFile("0.0.123");
 	TokenID tokenId = asToken("2.4.5");
 	TokenID missingTokenId = asToken("3.4.5");
@@ -103,6 +104,7 @@ class StateViewTest {
 	AccountID autoRenew = asAccount("2.4.6");
 	AccountID creatorAccountID = asAccount("3.5.7");
 	long autoRenewPeriod = 1_234_567;
+	String fileMemo = "Originally she thought";
 
 	FileGetInfoResponse.FileInfo expected;
 	FileGetInfoResponse.FileInfo expectedImmutable;
@@ -110,7 +112,7 @@ class StateViewTest {
 	Map<byte[], byte[]> storage;
 	Map<byte[], byte[]> bytecode;
 	Map<FileID, byte[]> contents;
-	Map<FileID, JFileInfo> attrs;
+	Map<FileID, HFileMeta> attrs;
 	BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
 
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
@@ -122,18 +124,19 @@ class StateViewTest {
 	MerkleSchedule schedule;
 	MerkleAccount contract;
 	MerkleAccount notContract;
-	PropertySource propertySource;
+	NodeLocalProperties nodeProps;
 	MerkleDiskFs diskFs;
 
 	StateView subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		metadata = new JFileInfo(
+		metadata = new HFileMeta(
 				false,
 				TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(),
-				expiry);
-		immutableMetadata = new JFileInfo(
+				expiry,
+				fileMemo);
+		immutableMetadata = new HFileMeta(
 				false,
 				StateView.EMPTY_WACL,
 				expiry);
@@ -146,6 +149,7 @@ class StateViewTest {
 				.build();
 		expected = expectedImmutable.toBuilder()
 				.setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
+				.setMemo(fileMemo)
 				.build();
 
 		notContract = MerkleAccountFactory.newAccount()
@@ -173,6 +177,7 @@ class StateViewTest {
 				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", true, true,
 				new EntityId(1, 2, 3));
+		token.setMemo(tokenMemo);
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
@@ -208,7 +213,7 @@ class StateViewTest {
 		bytecode = mock(Map.class);
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
-		propertySource = mock(PropertySource.class);
+		nodeProps = mock(NodeLocalProperties.class);
 		diskFs = mock(MerkleDiskFs.class);
 
 		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
@@ -221,7 +226,7 @@ class StateViewTest {
 				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> contracts,
-				propertySource,
+				nodeProps,
 				() -> diskFs);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
@@ -350,6 +355,7 @@ class StateViewTest {
 
 		// then:
 		assertTrue(info.getDeleted());
+		assertEquals(token.memo(), info.getMemo());
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
@@ -506,7 +512,7 @@ class StateViewTest {
 	public void returnEmptyFileInfoForBinaryObjectNotFoundException() {
 		// setup:
 		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
-		given(propertySource.getIntProperty("binary.object.query.retry.times")).willReturn(3);
+		given(nodeProps.queryBlobLookupRetries()).willReturn(1);
 
 		// when:
 		var info = subject.infoForFile(target);
@@ -537,17 +543,6 @@ class StateViewTest {
 	public void returnsEmptyForMissingAttr() {
 		// when:
 		var info = subject.attrOf(target);
-
-		// then:
-		assertTrue(info.isEmpty());
-	}
-
-	@Test
-	public void returnsEmptyForTrouble() {
-		given(attrs.get(any())).willThrow(IllegalArgumentException.class);
-
-		// when:
-		var info = subject.infoForFile(target);
 
 		// then:
 		assertTrue(info.isEmpty());

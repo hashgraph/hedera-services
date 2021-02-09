@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ class MerkleTokenTest {
 	JKey kycKey, otherKycKey;
 	String symbol = "NotAnHbar", otherSymbol = "NotAnHbarEither";
 	String name = "NotAnHbarName", otherName = "NotAnHbarNameEither";
+	String memo = "NotAMemo", otherMemo = "NotAMemoEither";
 	int decimals = 2, otherDecimals = 3;
 	long expiry = Instant.now().getEpochSecond() + 1_234_567, otherExpiry = expiry + 2_345_678;
 	long autoRenewPeriod = 1_234_567, otherAutoRenewPeriod = 2_345_678;
@@ -97,6 +98,7 @@ class MerkleTokenTest {
 		subject.setWipeKey(wipeKey);
 		subject.setSupplyKey(supplyKey);
 		subject.setDeleted(isDeleted);
+		subject.setMemo(memo);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -144,6 +146,7 @@ class MerkleTokenTest {
 				argThat(supplyKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(serdes).writeNullable(
 				argThat(wipeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(out).writeNormalisedString(memo);
 	}
 
 	@Test
@@ -157,9 +160,46 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	public void v0120DeserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+
+		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
+		given(serdes.deserializeKey(fin)).willReturn(adminKey);
+		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
+				.willReturn(adminKey)
+				.willReturn(freezeKey)
+				.willReturn(kycKey)
+				.willReturn(supplyKey)
+				.willReturn(wipeKey);
+		given(fin.readNormalisedString(anyInt()))
+				.willReturn(symbol)
+				.willReturn(name)
+				.willReturn(memo);
+		given(fin.readLong())
+				.willReturn(subject.expiry())
+				.willReturn(subject.autoRenewPeriod())
+				.willReturn(subject.totalSupply());
+		given(fin.readInt()).willReturn(subject.decimals());
+		given(fin.readBoolean())
+				.willReturn(isDeleted)
+				.willReturn(subject.accountsAreFrozenByDefault());
+		given(fin.readSerializable()).willReturn(subject.treasury());
+		// and:
+		var read = new MerkleToken();
+
+		// when:
+		read.deserialize(fin, MerkleToken.MERKLE_VERSION);
+
+		// then:
+		assertEquals(subject, read);
+	}
+
+	@Test
+	public void pre0120DeserializeWorks() throws IOException {
+		// setup:
+		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+		subject.setMemo(MerkleAccountState.DEFAULT_MEMO);
 
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
 		given(serdes.deserializeKey(fin)).willReturn(adminKey);
@@ -185,10 +225,24 @@ class MerkleTokenTest {
 		var read = new MerkleToken();
 
 		// when:
-		read.deserialize(fin, MerkleToken.MERKLE_VERSION);
+		read.deserialize(fin, MerkleToken.PRE_RELEASE_0120_VERSION);
 
 		// then:
 		assertEquals(subject, read);
+	}
+
+	@Test
+	public void objectContractHoldsForDifferentMemos() {
+		// given:
+		other = new MerkleToken(
+				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+		setOptionalElements(other);
+		other.setMemo(otherMemo);
+
+		// expect:
+		assertNotEquals(subject, other);
+		// and:
+		assertNotEquals(subject.hashCode(), other.hashCode());
 	}
 
 	@Test
@@ -431,6 +485,7 @@ class MerkleTokenTest {
 		token.setKycKey(kycKey);
 		token.setAutoRenewAccount(autoRenewAccount);
 		token.setAutoRenewPeriod(autoRenewPeriod);
+		token.setMemo(memo);
 	}
 
 	@Test
@@ -470,6 +525,7 @@ class MerkleTokenTest {
 						"expiry=" + expiry + ", " +
 						"symbol=" + symbol + ", " +
 						"name=" + name + ", " +
+						"memo=" + memo + ", " +
 						"treasury=" + treasury.toAbbrevString() + ", " +
 						"totalSupply=" + totalSupply + ", " +
 						"decimals=" + decimals + ", " +

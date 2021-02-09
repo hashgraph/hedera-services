@@ -4,7 +4,7 @@ package com.hedera.services.store.tokens;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -405,6 +405,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				request.getFreezeDefault(),
 				kycKey.isEmpty(),
 				ofNullableAccountId(request.getTreasury()));
+		pendingCreation.setMemo(request.getMemo());
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		kycKey.ifPresent(pendingCreation::setKycKey);
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
@@ -597,6 +598,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
 				token.setTreasury(treasuryId);
 				addKnownTreasury(changes.getTreasury(), tId);
+			}
+			if (changes.hasMemo()) {
+				token.setMemo(changes.getMemo().getValue());
 			}
 			var expiry = changes.getExpiry().getSeconds();
 			if (expiry != 0) {

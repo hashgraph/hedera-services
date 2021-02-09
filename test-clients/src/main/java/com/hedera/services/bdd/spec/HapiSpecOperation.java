@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -72,6 +73,7 @@ public abstract class HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
 
 	private static final byte[] NO_NONCE = null;
+	protected static final FileOpsUsage fileOpsUsage = new FileOpsUsage();
 
 	private Random r = new Random();
 

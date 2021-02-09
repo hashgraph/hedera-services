@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.token.queries;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,10 @@ package com.hedera.services.fees.calculation.token.queries;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.queries.token.GetTokenInfoAnswer;
 import com.hedera.services.usage.token.TokenGetInfoUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -43,7 +41,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -52,24 +49,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
 class GetTokenInfoResourceUsageTest {
-	public static final FeeData MOCK_TOKEN_GET_INFO_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(1)
-					.setBpt(1)
-					.setVpt(1)
-					.setRbh(1)
-					.setSbh(1)
-					.setGas(1)
-					.setTv(1)
-					.setBpr(1)
-					.setSbpr(1)
-					.build(), 1);
-
+	String memo = "22 a million";
 	String symbol = "HEYMAOK";
 	String name = "IsItReallyOk";
 	TokenID target = IdUtils.asToken("0.0.123");
+	FeeData expected;
 
 	TokenGetInfoUsage estimator;
 	Function<Query, TokenGetInfoUsage> factory;
@@ -83,6 +67,7 @@ class GetTokenInfoResourceUsageTest {
 			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
 			.setSymbol(symbol)
 			.setName(name)
+			.setMemo(memo)
 			.setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
 			.build();
 
@@ -92,6 +77,7 @@ class GetTokenInfoResourceUsageTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 		estimator = mock(TokenGetInfoUsage.class);
 		factory = mock(Function.class);
@@ -106,8 +92,9 @@ class GetTokenInfoResourceUsageTest {
 		given(estimator.givenCurrentFreezeKey(any())).willReturn(estimator);
 		given(estimator.givenCurrentSymbol(any())).willReturn(estimator);
 		given(estimator.givenCurrentName(any())).willReturn(estimator);
+		given(estimator.givenCurrentMemo(any())).willReturn(estimator);
 		given(estimator.givenCurrentlyUsingAutoRenewAccount()).willReturn(estimator);
-		given(estimator.get()).willReturn(MOCK_TOKEN_GET_INFO_USAGE);
+		given(estimator.get()).willReturn(expected);
 
 		given(view.infoForToken(target)).willReturn(Optional.of(info));
 
@@ -135,7 +122,7 @@ class GetTokenInfoResourceUsageTest {
 
 		// then:
 		assertSame(info, queryCtx.get(TOKEN_INFO_CTX_KEY));
-		assertSame(MOCK_TOKEN_GET_INFO_USAGE, usage);
+		assertSame(expected, usage);
 		// and:
 		verify(estimator).givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey()));
 		verify(estimator).givenCurrentWipeKey(Optional.of(TxnHandlingScenario.TOKEN_WIPE_KT.asKey()));
@@ -145,6 +132,7 @@ class GetTokenInfoResourceUsageTest {
 		verify(estimator).givenCurrentSymbol(symbol);
 		verify(estimator).givenCurrentName(name);
 		verify(estimator).givenCurrentlyUsingAutoRenewAccount();
+		verify(estimator).givenCurrentMemo(memo);
 	}
 
 	@Test

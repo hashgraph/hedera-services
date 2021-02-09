@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.queries.file;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	private Optional<String> saveFileInfoToReg = Optional.empty();
 	private Optional<Boolean> expectedDeleted = Optional.empty();
 	private Optional<String> expectedWacl = Optional.empty();
+	private Optional<String> expectedMemo = Optional.empty();
 	private Optional<LongSupplier> expectedExpiry = Optional.empty();
 	private Optional<LongPredicate> expiryTest = Optional.empty();
 	private Optional<Supplier<String>> fileSupplier = Optional.empty();
@@ -66,6 +67,11 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 
 	public HapiGetFileInfo isUnmodifiable() {
 		immutable = true;
+		return this;
+	}
+
+	public HapiGetFileInfo hasMemo(String v) {
+		expectedMemo = Optional.of(v);
 		return this;
 	}
 
@@ -141,6 +147,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 		long actual = info.getExpirationTime().getSeconds();
 		expiryTest.ifPresent(p ->
 				Assert.assertTrue(String.format("Expiry of %d was not as expected!", actual), p.test(actual)));
+		expectedMemo.ifPresent(e -> Assert.assertEquals(e, info.getMemo()));
 	}
 
 	private Query getFileInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {

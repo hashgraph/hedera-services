@@ -4,7 +4,7 @@ package com.hedera.services.queries.crypto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -94,7 +95,7 @@ public class GetAccountBalanceAnswerTest {
 	private MerkleAccount contractV = MerkleAccountFactory.newContract().balance(balance).get();
 
 	private GetAccountBalanceAnswer subject;
-	private PropertySource propertySource;
+	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
 	private void setup() {
@@ -118,7 +119,7 @@ public class GetAccountBalanceAnswerTest {
 				new MerkleTokenRelStatus(dBalance, false, false));
 
 		accounts = mock(FCMap.class);
-		propertySource = mock(PropertySource.class);
+		nodeProps = mock(NodeLocalProperties.class);
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);
 
@@ -141,7 +142,7 @@ public class GetAccountBalanceAnswerTest {
 				StateView.EMPTY_STORAGE_SUPPLIER,
 				() -> tokenRels,
 				null,
-				propertySource);
+				nodeProps);
 
 		optionValidator = mock(OptionValidator.class);
 		subject = new GetAccountBalanceAnswer(optionValidator);

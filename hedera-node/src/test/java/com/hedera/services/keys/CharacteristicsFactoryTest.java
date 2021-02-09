@@ -4,7 +4,7 @@ package com.hedera.services.keys;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,21 +22,13 @@ package com.hedera.services.keys;
 
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.Transaction;
-import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +47,7 @@ class CharacteristicsFactoryTest {
 	FileID target = IdUtils.asFile("0.0.75231");
 	FileID missing = IdUtils.asFile("1.2.3");
 	JKeyList wacl = new JKeyList(List.of(new JEd25519Key("NOPE".getBytes())));
-	JFileInfo info = new JFileInfo(false, wacl, 1_234_567L);
+	HFileMeta info = new HFileMeta(false, wacl, 1_234_567L);
 
 	HederaFs hfs;
 	CharacteristicsFactory subject;

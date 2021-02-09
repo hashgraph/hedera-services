@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.infrastructure;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -230,7 +230,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasTimestamp(String label) {
-		return hasVia(this::getTimestamp, label);
+		return registry.containsKey(full(label, Timestamp.class));
 	}
 
 	public Timestamp getTimestamp(String label) {
@@ -283,6 +283,14 @@ public class HapiSpecRegistry {
 
 	public void saveName(String token, String name) {
 		put(token + "Name", name, String.class);
+	}
+
+	public void saveMemo(String entity, String memo) {
+		put(entity + "Memo", memo, String.class);
+	}
+
+	public String getMemo(String entity) {
+		return get(entity + "Memo", String.class);
 	}
 
 	public String getSymbol(String token) {

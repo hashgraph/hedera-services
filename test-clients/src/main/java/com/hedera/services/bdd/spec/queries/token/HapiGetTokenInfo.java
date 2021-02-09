@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.queries.token;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
 	OptionalInt expectedDecimals = OptionalInt.empty();
 	OptionalLong expectedTotalSupply = OptionalLong.empty();
+	Optional<String> expectedMemo = Optional.empty();
 	Optional<String> expectedId = Optional.empty();
 	Optional<String> expectedSymbol = Optional.empty();
 	Optional<String> expectedName = Optional.empty();
@@ -100,6 +101,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	}
 	public HapiGetTokenInfo hasRegisteredId(String token) {
 		expectedId = Optional.of(token);
+		return this;
+	}
+	public HapiGetTokenInfo hasRegisteredMemo() {
+		expectedMemo = Optional.of(token);
 		return this;
 	}
 	public HapiGetTokenInfo hasAutoRenewPeriod(Long renewPeriod) {
@@ -217,46 +222,49 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				(n, r) -> r.getTokenID(n),
 				"Wrong token id!",
 				registry);
-
+		assertFor(
+				actualInfo.getMemo(),
+				expectedMemo,
+				(n, r) -> r.getMemo(n),
+				"Wrong memo!",
+				registry);
 		assertFor(
 				actualInfo.getExpiry(),
 				expectedExpiry,
 				(n, r) -> Timestamp.newBuilder().setSeconds(r.getExpiry(token)).build(),
 				"Wrong token expiry!",
 				registry);
-
 		assertFor(
 				actualInfo.getFreezeKey(),
 				expectedFreezeKey,
-				(n, r) -> r.getFreezeKey(token),
+				(n, r) -> r.getFreezeKey(n),
 				"Wrong token freeze key!",
 				registry);
-
 		assertFor(
 				actualInfo.getAdminKey(),
 				expectedAdminKey,
-				(n, r) -> r.getAdminKey(token),
+				(n, r) -> r.getAdminKey(n),
 				"Wrong token admin key!",
 				registry);
 
 		assertFor(
 				actualInfo.getWipeKey(),
 				expectedWipeKey,
-				(n, r) -> r.getWipeKey(token),
+				(n, r) -> r.getWipeKey(n),
 				"Wrong token wipe key!",
 				registry);
 
 		assertFor(
 				actualInfo.getKycKey(),
 				expectedKycKey,
-				(n, r) -> r.getKycKey(token),
+				(n, r) -> r.getKycKey(n),
 				"Wrong token KYC key!",
 				registry);
 
 		assertFor(
 				actualInfo.getSupplyKey(),
 				expectedSupplyKey,
-				(n, r) -> r.getSupplyKey(token),
+				(n, r) -> r.getSupplyKey(n),
 				"Wrong token supply key!",
 				registry);
 	}
