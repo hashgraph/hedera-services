@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 class FileOpsUsageTest {
 	byte[] contents = "Pineapple and eggplant and avocado too".getBytes();
@@ -161,6 +162,33 @@ class FileOpsUsageTest {
 	}
 
 	@Test
+	void estimatesEmptyUpdateAsExpected() {
+		// setup:
+		long oldExpiry = expiry - 1_234L;
+		byte[] oldContents = "Archiac".getBytes();
+		KeyList oldWacl = KeyUtils.A_KEY_LIST.getKeyList();
+		String oldMemo = "Lettuce";
+
+		givenEmptyUpdateOp();
+		// and:
+		var ctx = ExtantFileContext.newBuilder()
+				.setCurrentExpiry(oldExpiry)
+				.setCurrentMemo(oldMemo)
+				.setCurrentWacl(oldWacl)
+				.setCurrentSize(oldContents.length)
+				.build();
+
+		// when:
+		var estimate = subject.fileUpdateUsage(txn, sigUsage, ctx);
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, estimate);
+		// and:
+		verify(base).addBpt(BASIC_ENTITY_ID_SIZE + LONG_SIZE);
+		verify(base, never()).addSbs(0L);
+	}
+
+	@Test
 	void hasExpectedBaseReprSize() {
 		// given:
 		int expected = FeeBuilder.BOOL_SIZE + FeeBuilder.LONG_SIZE;
@@ -174,6 +202,13 @@ class FileOpsUsageTest {
 				+ contents.length
 				+ memo.length()
 				+ FeeBuilder.getAccountKeyStorageSize(wacl);
+	}
+
+	private void givenEmptyUpdateOp() {
+		updateOp = FileUpdateTransactionBody.newBuilder()
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+				.build();
+		setUpdateTxn();
 	}
 
 	private void givenUpdateOp() {
