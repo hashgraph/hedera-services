@@ -866,7 +866,7 @@ public class ServicesContext {
 							new GetAccountInfoResourceUsage(),
 							new GetAccountRecordsResourceUsage(answerFunctions(), cryptoFees),
 							/* File */
-							new GetFileInfoResourceUsage(fileFees),
+							new GetFileInfoResourceUsage(fileOpsUsage),
 							new GetFileContentsResourceUsage(fileFees),
 							/* Consensus */
 							new GetTopicInfoResourceUsage(),

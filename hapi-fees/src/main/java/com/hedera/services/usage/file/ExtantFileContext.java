@@ -1,20 +1,19 @@
 package com.hedera.services.usage.file;
 
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.fee.FeeBuilder;
 
 import java.nio.charset.StandardCharsets;
 
 import static com.hedera.services.usage.file.FileOpsUsage.asKey;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
-public class FileUpdateContext {
+public class ExtantFileContext {
 	private final long currentSize;
 	private final long currentExpiry;
 	private final String currentMemo;
 	private final KeyList currentWacl;
 
-	private FileUpdateContext(FileUpdateContext.Builder builder) {
+	private ExtantFileContext(ExtantFileContext.Builder builder) {
 		currentMemo = builder.currentMemo;
 		currentSize = builder.currentSize;
 		currentExpiry = builder.currentExpiry;
@@ -63,32 +62,32 @@ public class FileUpdateContext {
 
 		private Builder() {}
 
-		public FileUpdateContext build() {
+		public ExtantFileContext build() {
 			if (mask != ALL_FIELDS_MASK) {
 				throw new IllegalStateException(String.format("Field mask is %d, not %d!", mask, ALL_FIELDS_MASK));
 			}
-			return new FileUpdateContext(this);
+			return new ExtantFileContext(this);
 		}
 
-		public FileUpdateContext.Builder setCurrentSize(long currentSize) {
+		public ExtantFileContext.Builder setCurrentSize(long currentSize) {
 			this.currentSize = currentSize;
 			mask |= SIZE_MASK;
 			return this;
 		}
 
-		public FileUpdateContext.Builder setCurrentExpiry(long currentExpiry) {
+		public ExtantFileContext.Builder setCurrentExpiry(long currentExpiry) {
 			this.currentExpiry = currentExpiry;
 			mask |= EXPIRY_MASK;
 			return this;
 		}
 
-		public FileUpdateContext.Builder setCurrentMemo(String currentMemo) {
+		public ExtantFileContext.Builder setCurrentMemo(String currentMemo) {
 			this.currentMemo = currentMemo;
 			mask |= MEMO_MASK;
 			return this;
 		}
 
-		public FileUpdateContext.Builder setCurrentWacl(KeyList currentWacl) {
+		public ExtantFileContext.Builder setCurrentWacl(KeyList currentWacl) {
 			this.currentWacl = currentWacl;
 			mask |= WACL_MASK;
 			return this;
