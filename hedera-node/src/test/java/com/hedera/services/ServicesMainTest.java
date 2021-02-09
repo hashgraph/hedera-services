@@ -523,6 +523,7 @@ public class ServicesMainTest {
 
 		// then:
 		verify(balancesExporter, never()).toCsvFile(any(), any());
+		verify(balancesExporter, never()).toProtoFile(any(), any());
 	}
 
 	@Test
@@ -540,6 +541,7 @@ public class ServicesMainTest {
 
 		// then:
 		verify(balancesExporter).toCsvFile(signedState, when);
+		verify(balancesExporter).toProtoFile(signedState, when);
 	}
 
 	@Test

@@ -355,6 +355,27 @@ class SignedStateBalancesExporterTest {
 		new File(loc).delete();
 	}
 
+	@Test
+	public void protoWriteIoException() throws IOException {
+		// setup:
+		var otherDynamicProperties = new MockGlobalDynamicProps() {
+			@Override
+			public String pathToBalancesExportDir() {
+				return "not/a/real/location";
+			}
+		};
+		subject = new SignedStateBalancesExporter(properties, signer, otherDynamicProperties);
+
+		// given:
+		subject.directories = assurance;
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// then:
+		verify(mockLog).error(any(String.class), any(Throwable.class));
+	}
+
 
 	@Test
 	public void getEmptyAllAccountBalancesFromCorruptedProtoFileImport() throws Exception {
@@ -367,7 +388,7 @@ class SignedStateBalancesExporterTest {
 
 		given(hashReader.readHash(loc)).willReturn(fileHash);
 
-		// when:
+		// when: Pretend the .csv file is a corrupted .pb file
 		subject.toCsvFile(state, now);
 
 		// and:
@@ -376,6 +397,30 @@ class SignedStateBalancesExporterTest {
 		// then:
 		assertEquals(Optional.empty(), accounts);
 	}
+
+	@Test
+	public void throwsOnUnexpectedTotalFloatForProtoFile() throws NegativeAccountBalanceException {
+		// given:
+		anotherNodeAccount.setBalance(anotherNodeBalance + 1);
+
+		// then:
+		assertThrows(IllegalStateException.class, () -> subject.toProtoFile(state, now));
+	}
+
+
+
+	@Test
+	public void assuresExpectedProtoFileDir() throws IOException {
+		// given:
+		subject.directories = assurance;
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// then:
+		verify(assurance).ensureExistenceOf(expectedExportDir());
+	}
+
 
 	private String expectedExportLoc() {
 		return expectedExportLoc(false);

@@ -20,7 +20,6 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -278,8 +277,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			FileInputStream fin = new FileInputStream(protoLoc);
 			AllAccountBalances allAccountBalances = AllAccountBalances.parseFrom(fin);
 			return Optional.ofNullable(allAccountBalances);
-		} catch (InvalidProtocolBufferException e) {
-			log.error("protobuf message file is corrupted: {}", protoLoc);
 		} catch (IOException e) {
 			log.error("Can't read protobuf message file {}", protoLoc);
 		}

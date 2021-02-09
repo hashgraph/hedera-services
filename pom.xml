@@ -6,8 +6,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
   <groupId>com.hedera.hashgraph</groupId>
   <artifactId>hedera-services</artifactId>
   <version>0.11.1-SNAPSHOT</version>
-  <description>Hedera Services (crypto, file, contract, consensus)
-  on the Platform</description>
+  <description>Hedera Services (crypto, file, contract, consensus) on the Platform</description>
   <inceptionYear>2018</inceptionYear>
   <modelVersion>4.0.0</modelVersion>
   <name>Hedera Services</name>
@@ -19,10 +18,8 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
   </organization>
   <scm>
     <url>https://github.com/hashgraph/hedera-services</url>
-    <connection>
-    scm:git:git@github.com:hashgraph/hedera-services.git</connection>
-    <developerConnection>
-    scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
+    <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
+    <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
     <tag>release/0.11</tag>
   </scm>
   <developers>
@@ -92,8 +89,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
   <repositories>
     <repository>
       <id>ossrh-snapshots</id>
-      <url>
-      https://oss.sonatype.org/content/repositories/snapshots</url>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
       <releases>
         <enabled>false</enabled>
       </releases>
@@ -105,26 +101,22 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
-      <url>
-      https://oss.sonatype.org/content/repositories/snapshots</url>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
     <repository>
       <id>ossrh</id>
-      <url>
-      https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
   <licenses>
     <license>
       <distribution>repo</distribution>
       <name>Apache License 2.0</name>
-      <url>
-      https://github.com/hashgraph/hedera-services/blob/master/LICENSE</url>
+      <url>https://github.com/hashgraph/hedera-services/blob/master/LICENSE</url>
     </license>
   </licenses>
   <properties>
-    <project.build.sourceEncoding>
-    UTF-8</project.build.sourceEncoding>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Plugin property overrides -->
     <maven.compiler.source>12</maven.compiler.source>
     <maven.compiler.target>12</maven.compiler.target>
@@ -158,8 +150,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <project.build.outputTimestamp>
-    2021-01-25T20:38:08Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2021-01-25T20:38:08Z</project.build.outputTimestamp>
   </properties>
   <modules>
     <module>hapi-utils</module>
@@ -177,16 +168,10 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
           <releaseProfiles>release</releaseProfiles>
           <autoVersionSubmodules>true</autoVersionSubmodules>
           <tagNameFormat>v@{project.version}</tagNameFormat>
-          <scmDevelopmentCommitComment>@{prefix} Prepare for next
-          dev iteration
-          ${git.signoff}</scmDevelopmentCommitComment>
-          <scmReleaseCommitComment>@{prefix} Prepare release
-          ${git.signoff}</scmReleaseCommitComment>
-          <scmBranchCommitComment>@{prefix} Create release branch
-          ${git.signoff}</scmBranchCommitComment>
-          <preparationGoals>clean license:update-file-header
-          exec:exec@gen-proto-docs exec:exec@ensure-proto-headers
-          verify exec:exec@stage-changes</preparationGoals>
+          <scmDevelopmentCommitComment>@{prefix} Prepare for next dev iteration ${git.signoff}</scmDevelopmentCommitComment>
+          <scmReleaseCommitComment>@{prefix} Prepare release ${git.signoff}</scmReleaseCommitComment>
+          <scmBranchCommitComment>@{prefix} Create release branch ${git.signoff}</scmBranchCommitComment>
+          <preparationGoals>clean license:update-file-header exec:exec@gen-proto-docs exec:exec@ensure-proto-headers verify exec:exec@stage-changes</preparationGoals>
         </configuration>
       </plugin>
       <plugin>
@@ -201,8 +186,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             </goals>
             <configuration>
               <executable>/bin/sh</executable>
-              <commandlineArgs>-c 'echo "Nothing to do
-              here."'</commandlineArgs>
+              <commandlineArgs>-c 'echo "Nothing to do here."'</commandlineArgs>
             </configuration>
           </execution>
         </executions>
@@ -256,8 +240,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             </roots>
             <processEndTag>&#226;&#8364;</processEndTag>
             <processStartTag>&#226;&#8364;&#338;</processStartTag>
-            <sectionDelimiter>
-            &#226;&#8364;&#8249;</sectionDelimiter>
+            <sectionDelimiter>&#226;&#8364;&#8249;</sectionDelimiter>
           </configuration>
         </plugin>
         <plugin>
@@ -439,8 +422,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
             <configuration>
-              <javadocExecutable>
-              ${java.home}/bin/javadoc</javadocExecutable>
+              <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
             </configuration>
             <executions>
               <execution>
