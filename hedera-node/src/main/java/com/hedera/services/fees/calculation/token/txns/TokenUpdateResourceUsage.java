@@ -56,6 +56,7 @@ public class TokenUpdateResourceUsage implements TxnResourceUsageEstimator {
 					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
 					.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
 					.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+					.givenCurrentMemo(info.getMemo())
 					.givenCurrentName(info.getName())
 					.givenCurrentSymbol(info.getSymbol());
 			if (info.hasAutoRenewAccount()) {
