@@ -405,6 +405,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				request.getFreezeDefault(),
 				kycKey.isEmpty(),
 				ofNullableAccountId(request.getTreasury()));
+		pendingCreation.setMemo(request.getMemo());
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		kycKey.ifPresent(pendingCreation::setKycKey);
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
@@ -597,6 +598,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
 				token.setTreasury(treasuryId);
 				addKnownTreasury(changes.getTreasury(), tId);
+			}
+			if (changes.hasMemo()) {
+				token.setMemo(changes.getMemo().getValue());
 			}
 			var expiry = changes.getExpiry().getSeconds();
 			if (expiry != 0) {

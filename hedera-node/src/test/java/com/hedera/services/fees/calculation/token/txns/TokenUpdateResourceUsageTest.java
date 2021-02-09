@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.verify;
 
 class TokenUpdateResourceUsageTest {
 	private TokenUpdateResourceUsage subject;
@@ -63,6 +64,7 @@ class TokenUpdateResourceUsageTest {
 	long expiry = 1_234_567L;
 	String symbol = "HEYMAOK";
 	String name = "IsItReallyOk";
+	String memo = "We just fake it all the time.";
 	TokenID target = IdUtils.asToken("0.0.123");
 	TokenInfo info = TokenInfo.newBuilder()
 			.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
@@ -72,6 +74,7 @@ class TokenUpdateResourceUsageTest {
 			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
 			.setSymbol(symbol)
 			.setName(name)
+			.setMemo(memo)
 			.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 			.build();
 
@@ -102,6 +105,7 @@ class TokenUpdateResourceUsageTest {
 		given(usage.givenCurrentSymbol(symbol)).willReturn(usage);
 		given(usage.givenCurrentName(name)).willReturn(usage);
 		given(usage.givenCurrentExpiry(expiry)).willReturn(usage);
+		given(usage.givenCurrentMemo(memo)).willReturn(usage);
 		given(usage.givenCurrentlyUsingAutoRenewAccount()).willReturn(usage);
 		given(usage.get()).willReturn(expected);
 
@@ -126,6 +130,9 @@ class TokenUpdateResourceUsageTest {
 		assertEquals(
 				expected,
 				subject.usageGiven(tokenUpdateTxn, obj, view));
+
+		// and:
+		verify(usage).givenCurrentMemo(memo);
 	}
 
 	@Test

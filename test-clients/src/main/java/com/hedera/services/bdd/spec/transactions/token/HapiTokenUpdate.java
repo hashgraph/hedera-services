@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.token;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
@@ -59,6 +60,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong autoRenewPeriod = OptionalLong.empty();
+	private Optional<String> newMemo = Optional.empty();
 	private Optional<String> newAdminKey = Optional.empty();
 	private Optional<String> newKycKey = Optional.empty();
 	private Optional<String> newWipeKey = Optional.empty();
@@ -99,6 +101,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate supplyKey(String name) {
 		newSupplyKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenUpdate memo(String memo) {
+		this.newMemo = Optional.of(memo);
 		return this;
 	}
 
@@ -184,6 +191,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 					estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
 				}
 				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
+						.givenCurrentMemo(info.getMemo())
 						.givenCurrentName(info.getName())
 						.givenCurrentSymbol(info.getSymbol());
 				if (info.hasAutoRenewAccount()) {
@@ -228,6 +236,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							b.setToken(id);
 							newSymbol.ifPresent(b::setSymbol);
 							newName.ifPresent(b::setName);
+							newMemo.ifPresent(s -> b.setMemo(StringValue.newBuilder().setValue(s).build()));
 							if (useImproperEmptyKey) {
 								b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
 							} else if (useEmptyAdminKeyList) {
@@ -282,6 +291,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		if (useEmptyAdminKeyList) {
 			registry.forgetAdminKey(token);
 		}
+		newMemo.ifPresent(m -> registry.saveMemo(token, m));
 		newAdminKey.ifPresent(n -> registry.saveAdminKey(token, registry.getKey(n)));
 		newSymbol.ifPresent(s -> registry.saveSymbol(token, s));
 		newName.ifPresent(s -> registry.saveName(token, s));

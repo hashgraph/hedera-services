@@ -40,6 +40,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 public class TokenGetInfoUsageTest {
 	Optional<Key> aKey = Optional.of(KeyUtils.A_COMPLEX_KEY);
+	String memo = "Hope";
 	String name = "WhyWhyWhyWHY";
 	String symbol = "OKITSFINE";
 	TokenID id = IdUtils.asToken("0.0.75231");
@@ -61,12 +62,15 @@ public class TokenGetInfoUsageTest {
 				.givenCurrentSupplyKey(aKey)
 				.givenCurrentlyUsingAutoRenewAccount()
 				.givenCurrentName(name)
+				.givenCurrentMemo(memo)
 				.givenCurrentSymbol(symbol);
 		// and:
 		var expectedKeyBytes = 5 * FeeBuilder.getAccountKeyStorageSize(aKey.get());
 		var expectedBytes = BASIC_QUERY_RES_HEADER
-				+ expectedKeyBytes
-				+ TOKEN_ENTITY_SIZES.totalBytesInfTokenReprGiven(symbol, name) + BASIC_ENTITY_ID_SIZE;
+                                + expectedKeyBytes
+				+ TOKEN_ENTITY_SIZES.totalBytesInTokenReprGiven(symbol, name)
+				+ memo.length()
+				+ BASIC_ENTITY_ID_SIZE;
 
 		// when:
 		var usage = subject.get();

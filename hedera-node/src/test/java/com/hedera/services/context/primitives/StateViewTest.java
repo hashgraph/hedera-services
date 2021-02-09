@@ -89,6 +89,7 @@ class StateViewTest {
 	byte[] data = "SOMETHING".getBytes();
 	byte[] expectedBytecode = "A Supermarket in California".getBytes();
 	byte[] expectedStorage = "The Ecstasy".getBytes();
+	String tokenMemo = "Goodbye and keep cold";
 	HFileMeta metadata;
 	HFileMeta immutableMetadata;
 	FileID target = asFile("0.0.123");
@@ -176,6 +177,7 @@ class StateViewTest {
 				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", true, true,
 				new EntityId(1, 2, 3));
+		token.setMemo(tokenMemo);
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
@@ -353,6 +355,7 @@ class StateViewTest {
 
 		// then:
 		assertTrue(info.getDeleted());
+		assertEquals(token.memo(), info.getMemo());
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());

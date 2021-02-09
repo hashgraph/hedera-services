@@ -1,12 +1,12 @@
 
 # Scheduled Transactions Spec 
 
-## Goals and Constrains  
+## Goals and Constraints  
   
 - Allow transaction to be submitted without all the required signatures and provide functionality for each of the signers to submit their signatures independently after a transaction was created.  
 - Allow users to submit transactions to Hedera that will execute **once** all required signatures are acquired.  
   
-**Constrains**  
+**Constraints**  
 - Expiry time for the scheduled transactions defined by a global property with a time limit of `N` seconds (`ledger.schedule.txExpiryTimeSecs`). If `N` seconds pass from the creation of the scheduled transactions, and it haven't gathered all of the required signatures, Hedera nodes will clear them from memory/state.  
 - Throttles on every GRPC Operation that is defined for the new MVP Scheduled Transactions will be implemented.
 - Based on the 2 bullets above, there is implicit limit of pending scheduled transactions in the network enforced by `txExpiryTimeSecds` and the throttle on `ScheduleCreate` operation.

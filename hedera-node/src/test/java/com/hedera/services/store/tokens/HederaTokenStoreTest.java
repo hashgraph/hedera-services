@@ -20,6 +20,7 @@ package com.hedera.services.store.tokens;
  * ‍
  */
 
+import com.google.protobuf.StringValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -131,6 +132,8 @@ class HederaTokenStoreTest {
 	Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
 	String symbol = "NOTHBAR";
 	String newSymbol = "REALLYSOM";
+	String newMemo = "NEWMEMO";
+	String memo = "TOKENMEMO";
 	String name = "TOKENNAME";
 	String newName = "NEWNAME";
 	long expiry = CONSENSUS_NOW + 1_234_567;
@@ -1128,6 +1131,32 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void updateHappyPathWorksWithNewMemo() {
+		// setup:
+		subject.addKnownTreasury(treasury, misc);
+
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(ALL_KEYS);
+		// and:
+		var op = updateWith(NO_KEYS,
+				false,
+				false,
+				false,
+				false,
+				false,
+				false,
+				true);
+
+		// when:
+		var outcome = subject.update(op, CONSENSUS_NOW);
+
+		// then:
+		assertEquals(OK, outcome);
+		verify(token).setMemo(newMemo);
+	}
+
+	@Test
 	public void updateHappyPathWorksWithNewAutoRenewAccount() {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
@@ -1171,7 +1200,15 @@ class HederaTokenStoreTest {
 			boolean useNewAutoRenewAccount,
 			boolean useNewAutoRenewPeriod
 	) {
-		return updateWith(keys, useNewSymbol, useNewName, useNewTreasury, useNewAutoRenewAccount, useNewAutoRenewPeriod, false);
+		return updateWith(
+				keys,
+				useNewSymbol,
+				useNewName,
+				useNewTreasury,
+				useNewAutoRenewAccount,
+				useNewAutoRenewPeriod,
+				false,
+				false);
 	}
 
 	private TokenUpdateTransactionBody updateWith(
@@ -1181,7 +1218,8 @@ class HederaTokenStoreTest {
 			boolean useNewTreasury,
 			boolean useNewAutoRenewAccount,
 			boolean useNewAutoRenewPeriod,
-			boolean setInvalidKeys
+			boolean setInvalidKeys,
+			boolean useNewMemo
 	) {
 		var invalidKey = Key.getDefaultInstance();
 		var op = TokenUpdateTransactionBody.newBuilder().setToken(misc);
@@ -1190,6 +1228,9 @@ class HederaTokenStoreTest {
 		}
 		if (useNewName) {
 			op.setName(newName);
+		}
+		if (useNewMemo) {
+			op.setMemo(StringValue.newBuilder().setValue(newMemo).build());
 		}
 		if (useNewTreasury) {
 			op.setTreasury(newTreasury);
@@ -1611,6 +1652,7 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setMemo(memo);
 
 		// given:
 		var req = fullyValidAttempt()
@@ -1647,6 +1689,7 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setMemo(memo);
 
 		// given:
 		var req = fullyValidAttempt().build();
@@ -1756,6 +1799,7 @@ class HederaTokenStoreTest {
 	TokenCreateTransactionBody.Builder fullyValidAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
+				.setMemo(memo)
 				.setAdminKey(adminKey)
 				.setKycKey(kycKey)
 				.setFreezeKey(freezeKey)

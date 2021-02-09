@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static java.util.stream.Collectors.toList;
 
