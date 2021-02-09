@@ -20,12 +20,16 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.google.protobuf.StringValue;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.file.FileOpsUsage;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -42,7 +46,8 @@ import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -51,8 +56,10 @@ import static org.mockito.Mockito.verify;
 class CryptoOpsUsageTest {
 	long secs = 500_000L;
 	long now = 1_234_567L;
+	long expiry = now + secs;
 	Key key = KeyUtils.A_COMPLEX_KEY;
 	String memo = "That abler soul, which thence doth flow";
+	AccountID proxy = IdUtils.asAccount("0.0.75231");
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 
@@ -60,6 +67,7 @@ class CryptoOpsUsageTest {
 	TxnUsageEstimator base;
 
 	CryptoCreateTransactionBody creationOp;
+	CryptoUpdateTransactionBody updateOp;
 	TransactionBody txn;
 
 	CryptoOpsUsage subject = new CryptoOpsUsage();
@@ -100,6 +108,41 @@ class CryptoOpsUsageTest {
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
+	@Test
+	void estimatesUpdateAsExpected() {
+		// setup:
+		Key oldKey = FileOpsUsage.asKey(KeyUtils.A_KEY_LIST.getKeyList());
+		long oldExpiry = expiry - 1_234L;
+		boolean oldWasUsingProxy = false;
+		String oldMemo = "Lettuce";
+		// and:
+		long bytesUsed = reprSize() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
+		// and:
+		long oldRbs = (oldExpiry - now) *
+				(oldMemo.length() + getAccountKeyStorageSize(oldKey));
+		// and:
+		long newRbs = (expiry - now) *
+				(memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE);
+
+		givenUpdateOp();
+		// and:
+		var ctx = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(oldExpiry)
+				.setCurrentMemo(oldMemo)
+				.setCurrentKey(oldKey)
+				.setCurrentlyHasProxy(oldWasUsingProxy)
+				.build();
+
+		// when:
+		var estimate = subject.cryptoUpdateUsage(txn, sigUsage, ctx);
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, estimate);
+		// and:
+		verify(base).addBpt(bytesUsed + BASIC_ENTITY_ID_SIZE + LONG_SIZE);
+		verify(base).addRbs(newRbs - oldRbs);
+	}
+
 	private long reprSize() {
 		return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 				/* The proxy account */
@@ -108,9 +151,28 @@ class CryptoOpsUsageTest {
 				+ FeeBuilder.getAccountKeyStorageSize(key);
 	}
 
+	private void givenUpdateOp() {
+		updateOp = CryptoUpdateTransactionBody.newBuilder()
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+				.setProxyAccountID(proxy)
+				.setMemo(StringValue.newBuilder().setValue(memo))
+				.setKey(key)
+				.build();
+		setUpdateTxn();
+	}
+
+	private void setUpdateTxn() {
+		txn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoUpdateAccount(updateOp)
+				.build();
+	}
+
 	private void givenCreationOp() {
 		creationOp = CryptoCreateTransactionBody.newBuilder()
-				.setProxyAccountID(IdUtils.asAccount("0.0.75231"))
+				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build())
 				.setMemo(memo)
 				.setKey(key)

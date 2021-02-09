@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.nio.charset.StandardCharsets;
+
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
@@ -34,9 +36,41 @@ import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class CryptoOpsUsage {
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
+
+	public FeeData cryptoUpdateUsage(TransactionBody cryptoUpdate, SigUsage sigUsage, ExtantCryptoContext ctx) {
+		var op = cryptoUpdate.getCryptoUpdateAccount();
+
+		long keyBytesUsed = op.hasKey() ? getAccountKeyStorageSize(op.getKey()) : 0;
+		long msgBytesUsed = BASIC_ENTITY_ID_SIZE
+				+ op.getMemo().getValueBytes().size()
+				+ keyBytesUsed
+				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
+				+ (op.hasAutoRenewPeriod() ? LONG_SIZE : 0)
+				+ (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0);
+		var estimate = txnEstimateFactory.get(sigUsage, cryptoUpdate, ESTIMATOR_UTILS);
+		estimate.addBpt(msgBytesUsed);
+
+		long newVariableBytes = 0;
+		newVariableBytes += !op.hasMemo()
+				? ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length
+				: op.getMemo().getValueBytes().size();
+		newVariableBytes += !op.hasKey() ? getAccountKeyStorageSize(ctx.currentKey()) : keyBytesUsed;
+		newVariableBytes += (op.hasProxyAccountID() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
+
+		long oldVariableBytes = ctx.currentNonBaseRb();
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, op.getExpirationTime().getSeconds());
+		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, ctx.currentExpiry());
+		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(oldVariableBytes, oldLifetime, newVariableBytes, newLifetime);
+		if (rbsDelta > 0) {
+			estimate.addRbs(rbsDelta);
+		}
+
+		return estimate.get();
+	}
 
 	public FeeData cryptoCreateUsage(TransactionBody cryptoCreation, SigUsage sigUsage) {
 		var op = cryptoCreation.getCryptoCreateAccount();
