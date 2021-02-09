@@ -27,7 +27,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,7 +56,7 @@ public class TieredHederaFs implements HederaFs {
 	private final EntityIdSource ids;
 	private final Supplier<Instant> now;
 	private final Map<FileID, byte[]> data;
-	private final Map<FileID, JFileInfo> metadata;
+	private final Map<FileID, HFileMeta> metadata;
 	private final GlobalDynamicProperties properties;
 
 	final List<FileUpdateInterceptor> updateInterceptors = new ArrayList<>();
@@ -86,7 +85,7 @@ public class TieredHederaFs implements HederaFs {
 			GlobalDynamicProperties properties,
 			Supplier<Instant> now,
 			Map<FileID, byte[]> data,
-			Map<FileID, JFileInfo> metadata,
+			Map<FileID, HFileMeta> metadata,
 			Supplier<MerkleDiskFs> diskFs
 	) {
 		this.ids = ids;
@@ -101,7 +100,7 @@ public class TieredHederaFs implements HederaFs {
 		return data;
 	}
 
-	public Map<FileID, JFileInfo> getMetadata() {
+	public Map<FileID, HFileMeta> getMetadata() {
 		return metadata;
 	}
 
@@ -115,7 +114,7 @@ public class TieredHederaFs implements HederaFs {
 	}
 
 	@Override
-	public FileID create(byte[] contents, JFileInfo attr, AccountID sponsor) {
+	public FileID create(byte[] contents, HFileMeta attr, AccountID sponsor) {
 		assertValid(attr);
 		assertWithinSizeLimits(contents);
 
@@ -142,14 +141,14 @@ public class TieredHederaFs implements HederaFs {
 	}
 
 	@Override
-	public JFileInfo getattr(FileID id) {
+	public HFileMeta getattr(FileID id) {
 		assertExtant(id);
 
 		return metadata.get(id);
 	}
 
 	@Override
-	public UpdateResult sudoSetattr(FileID id, JFileInfo attr) {
+	public UpdateResult sudoSetattr(FileID id, HFileMeta attr) {
 		assertExtant(id);
 		assertValid(attr);
 
@@ -157,7 +156,7 @@ public class TieredHederaFs implements HederaFs {
 	}
 
 	@Override
-	public UpdateResult setattr(FileID id, JFileInfo attr) {
+	public UpdateResult setattr(FileID id, HFileMeta attr) {
 		assertUsable(id);
 		assertValid(attr);
 
@@ -258,7 +257,7 @@ public class TieredHederaFs implements HederaFs {
 		return diskFs.get().contains(fid);
 	}
 
-	private UpdateResult uncheckedSetattr(FileID id, JFileInfo attr) {
+	private UpdateResult uncheckedSetattr(FileID id, HFileMeta attr) {
 		var verdict = judge(id, (interceptor, ignore) -> interceptor.preAttrChange(id, attr));
 
 		if (verdict.getValue()) {
@@ -267,7 +266,6 @@ public class TieredHederaFs implements HederaFs {
 
 		return new SimpleUpdateResult(verdict.getValue(), false, verdict.getKey());
 	}
-
 
 	private UpdateResult uncheckedUpdate(FileID id, byte[] newContents) {
 		var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
@@ -334,8 +332,8 @@ public class TieredHederaFs implements HederaFs {
 		}
 	}
 
-	private void assertValid(JFileInfo attr) {
-		if (attr.getExpirationTimeSeconds() < now.get().getEpochSecond()) {
+	private void assertValid(HFileMeta attr) {
+		if (attr.getExpiry() < now.get().getEpochSecond()) {
 			throwIllegal(FILE_WOULD_BE_EXPIRED);
 		}
 	}

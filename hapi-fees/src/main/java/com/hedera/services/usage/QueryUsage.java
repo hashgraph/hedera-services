@@ -26,15 +26,17 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 
-public abstract class QueryUsage {
-	private long rb = 0;
+public class QueryUsage {
+	private long sb = 0;
 	private long tb = BASIC_QUERY_HEADER;
+	private long rb = BASIC_QUERY_RES_HEADER;
 
 	/* Once state proofs are supported, this will be needed to compute {@code rb}. */
 	private final ResponseType responseType;
 
-	protected QueryUsage(ResponseType responseType) {
+	public QueryUsage(ResponseType responseType) {
 		this.responseType = responseType;
 	}
 
@@ -42,15 +44,20 @@ public abstract class QueryUsage {
 		var usage = FeeComponents.newBuilder()
 				.setBpt(tb)
 				.setBpr(rb)
+				.setSbpr(sb)
 				.build();
 		return ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
 	}
 
-	protected void updateRb(long amount) {
+	public void updateRb(long amount) {
 		rb += amount;
 	}
 
-	protected void updateTb(long amount) {
+	public void updateTb(long amount) {
 		tb += amount;
+	}
+
+	public void updateSb(long amount) {
+		sb += amount;
 	}
 }

@@ -21,10 +21,8 @@ package com.hedera.services.fees.calculation.schedule.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleDeleteUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
@@ -49,12 +47,14 @@ public class ScheduleDeleteResourceUsageTest {
     int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
     SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+    FeeData expected;
 
     TransactionBody nonScheduleDeleteTxn;
     TransactionBody scheduleDeleteTxn;
 
     @BeforeEach
     private void setup() {
+        expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleDeleteTxn = mock(TransactionBody.class);
         given(scheduleDeleteTxn.hasScheduleDelete()).willReturn(true);
@@ -63,7 +63,7 @@ public class ScheduleDeleteResourceUsageTest {
         given(nonScheduleDeleteTxn.hasScheduleDelete()).willReturn(false);
 
         usage = mock(ScheduleDeleteUsage.class);
-        given(usage.get()).willReturn(MOCK_SCHEDULE_DELETE_USAGE);
+        given(usage.get()).willReturn(expected);
 
         factory = (BiFunction<TransactionBody, SigUsage, ScheduleDeleteUsage>)mock(BiFunction.class);
         given(factory.apply(scheduleDeleteTxn, sigUsage)).willReturn(usage);
@@ -82,21 +82,6 @@ public class ScheduleDeleteResourceUsageTest {
     @Test
     public void delegatesToCorrectEstimate() throws Exception {
         // expect:
-        assertEquals(MOCK_SCHEDULE_DELETE_USAGE, subject.usageGiven(scheduleDeleteTxn, obj, view));
+        assertEquals(expected, subject.usageGiven(scheduleDeleteTxn, obj, view));
     }
-
-    private static final FeeData MOCK_SCHEDULE_DELETE_USAGE = UsageEstimatorUtils.defaultPartitioning(
-            FeeComponents.newBuilder()
-                    .setMin(1)
-                    .setMax(1_000_000)
-                    .setConstant(1)
-                    .setBpt(1)
-                    .setVpt(1)
-                    .setRbh(1)
-                    .setGas(1)
-                    .setTv(1)
-                    .setBpr(1)
-                    .setSbpr(1)
-                    .build(), 1);
-
 }

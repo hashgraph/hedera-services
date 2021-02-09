@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,6 +33,7 @@ import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -62,7 +62,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//    	        vanillaUpdateSucceeds(),
+    	        vanillaUpdateSucceeds(),
 				updateFeesCompatibleWithCreates(),
 				apiPermissionsChangeDynamically(),
 		});
@@ -127,7 +127,6 @@ public class FileUpdateSuite extends HapiApiSuite {
 							var extensionOp = getTxnRecord("extend");
 							var specialOp = getTxnRecord("special");
 							allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
-//							allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp);
 							var createFee = createOp.getResponseRecord().getTransactionFee();
 							opLog.info("Creation : " + createFee);
 							opLog.info("New 4k   : " + to4kOp.getResponseRecord().getTransactionFee()
@@ -144,14 +143,21 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec vanillaUpdateSucceeds() {
 		final byte[] old4K = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+		String firstMemo = "Originally";
+		String secondMemo = "Subsequently";
 
 		return defaultHapiSpec("VanillaUpdateSucceeds")
 				.given(
-						fileCreate("test").contents(old4K)
+						fileCreate("test")
+								.entityMemo(firstMemo)
+								.contents(old4K)
 				).when(
-						fileUpdate("test").contents(new4k)
+						fileUpdate("test")
+								.entityMemo(secondMemo)
+								.contents(new4k)
 				).then(
-						getFileContents("test").hasContents(ignore -> new4k)
+						getFileContents("test").hasContents(ignore -> new4k),
+						getFileInfo("test").hasMemo(secondMemo)
 				);
 	}
 

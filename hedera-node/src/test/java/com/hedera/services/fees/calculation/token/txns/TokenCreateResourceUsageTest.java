@@ -21,8 +21,6 @@ package com.hedera.services.fees.calculation.token.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hedera.test.utils.IdUtils;
@@ -38,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class TokenCreateResourceUsageTest {
@@ -54,6 +51,7 @@ class TokenCreateResourceUsageTest {
 			.build();
 
 	BiFunction<TransactionBody, SigUsage, TokenCreateUsage> factory;
+	FeeData expected;
 
 	StateView view;
 	TokenCreateUsage usage;
@@ -62,6 +60,7 @@ class TokenCreateResourceUsageTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 
 		tokenCreateTxn = mock(TransactionBody.class);
@@ -74,7 +73,7 @@ class TokenCreateResourceUsageTest {
 		given(nonTokenCreateTxn.hasTokenCreation()).willReturn(false);
 
 		usage = mock(TokenCreateUsage.class);
-		given(usage.get()).willReturn(MOCK_TOKEN_CREATE_USAGE);
+		given(usage.get()).willReturn(expected);
 
 		factory = (BiFunction<TransactionBody, SigUsage, TokenCreateUsage>)mock(BiFunction.class);
 		given(factory.apply(tokenCreateTxn, sigUsage)).willReturn(usage);
@@ -96,21 +95,6 @@ class TokenCreateResourceUsageTest {
 		var actual = subject.usageGiven(tokenCreateTxn, obj, view);
 
 		// expect:
-		assertSame(MOCK_TOKEN_CREATE_USAGE, actual);
+		assertSame(expected, actual);
 	}
-
-	public static final FeeData MOCK_TOKEN_CREATE_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(3)
-					.setBpt(3)
-					.setVpt(3)
-					.setRbh(3)
-					.setSbh(3)
-					.setGas(3)
-					.setTv(3)
-					.setBpr(3)
-					.setSbpr(3)
-					.build(), 3);
 }

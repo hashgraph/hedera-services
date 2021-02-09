@@ -230,7 +230,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasTimestamp(String label) {
-		return hasVia(this::getTimestamp, label);
+		return registry.containsKey(full(label, Timestamp.class));
 	}
 
 	public Timestamp getTimestamp(String label) {

@@ -31,6 +31,7 @@ import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -47,7 +48,7 @@ class CryptoGetInfoUsageTest {
 	public void getsExpectedUsage() {
 		// setup:
 		long expectedTb = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
-		long expectedRb = numTokenAssocs * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
+		long expectedRb = BASIC_QUERY_RES_HEADER + numTokenAssocs * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
 				+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 				+ getAccountKeyStorageSize(key)
 				+ memo.length()

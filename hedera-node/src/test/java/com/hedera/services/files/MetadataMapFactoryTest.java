@@ -23,9 +23,9 @@ package com.hedera.services.files;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.services.files.MetadataMapFactory.*;
+import static org.mockito.BDDMockito.*;
 
 class MetadataMapFactoryTest {
 	private long expiry = 1_234_567L;
@@ -55,17 +56,20 @@ class MetadataMapFactoryTest {
 	}
 
 	@Test
-	public void toValueThrowsIaeOnError() {
+	public void toValueThrowsIaeOnError() throws IOException {
+		HFileMeta suspect = mock(HFileMeta.class);
+
+		given(suspect.serialize()).willThrow(IllegalStateException.class);
+
 		// expect:
-		assertThrows(IllegalArgumentException.class, () ->
-				toValueBytes(new JFileInfo(false, null, 1_234_567L)));
+		assertThrows(IllegalArgumentException.class, () -> toValueBytes(suspect));
 	}
 
 	@Test
 	public void toValueConversionWorks() throws Throwable {
 		// given:
 		var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		var attr = new JFileInfo(false, validKey, expiry);
+		var attr = new HFileMeta(false, validKey, expiry);
 		// and:
 		var expected = attr.serialize();
 
@@ -80,7 +84,7 @@ class MetadataMapFactoryTest {
 	public void toAttrConversionWorks() throws Throwable {
 		// given:
 		var validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		var expected = new JFileInfo(false, validKey, expiry);
+		var expected = new HFileMeta(false, validKey, expiry);
 		// and:
 		var bytes = expected.serialize();
 
@@ -124,10 +128,10 @@ class MetadataMapFactoryTest {
 		// setup:
 		Map<String, byte[]> delegate = new HashMap<>();
 		var wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		var attr0 = new JFileInfo(true, wacl, 1_234_567L);
-		var attr1 = new JFileInfo(true, wacl, 7_654_321L);
-		var attr2 = new JFileInfo(false, wacl, 7_654_321L);
-		var attr3 = new JFileInfo(false, wacl, 1_234_567L);
+		var attr0 = new HFileMeta(true, wacl, 1_234_567L);
+		var attr1 = new HFileMeta(true, wacl, 7_654_321L);
+		var attr2 = new HFileMeta(false, wacl, 7_654_321L);
+		var attr3 = new HFileMeta(false, wacl, 1_234_567L);
 		delegate.put(asLegacyPath("0.2.7"), attr0.serialize());
 		// and:
 		var fid1 = IdUtils.asFile("0.2.3");

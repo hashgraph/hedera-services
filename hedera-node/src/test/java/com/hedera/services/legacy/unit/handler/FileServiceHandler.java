@@ -26,6 +26,7 @@ import com.google.protobuf.TextFormat;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.unit.GlobalFlag;
+import com.hedera.services.legacy.unit.serialization.HFileMetaSerdeTest;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -38,18 +39,18 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.DeserializationException;
 import com.hedera.services.legacy.unit.InvalidFileIDException;
-import com.hedera.services.legacy.exception.InvalidFileWACLException;
-import com.hedera.services.legacy.exception.SerializationException;
+import com.hedera.services.legacy.unit.InvalidFileWACLException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 
 import java.io.IOException;
@@ -58,6 +59,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.function.LongPredicate;
 
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -112,8 +114,8 @@ public class FileServiceHandler {
 		String metaPath = FeeCalcUtilsTest.pathOfMeta(fid);
 		if (fcfs.fileExists(metaPath)) {
 			long size = fcfs.getSize(FeeCalcUtilsTest.pathOf(fid));
-			JFileInfo jInfo = JFileInfo.deserialize(fcfs.fileRead(metaPath));
-			return jInfo.convert(fid, size);
+			HFileMeta jInfo = HFileMeta.deserialize(fcfs.fileRead(metaPath));
+			return HFileMetaSerdeTest.toGrpc(jInfo, fid, size);
 		} else {
 			throw new InvalidFileIDException(String.format("No such file '%s'!", readableId(fid)), fid);
 		}
@@ -228,7 +230,15 @@ public class FileServiceHandler {
 	  return AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(accNum).build();
 	}
 
-	/**
+  public static JKey convertWacl(KeyList waclAsKeyList) throws InvalidFileWACLException {
+        try {
+            return JKey.mapKey(Key.newBuilder().setKeyList(waclAsKeyList).build());
+        } catch (DecoderException e) {
+            throw new InvalidFileWACLException("input wacl=" + waclAsKeyList, e);
+        }
+    }
+
+  /**
    * Creates a file on the ledger.
    */
   public TransactionRecord createFile(TransactionBody gtx, Instant timestamp, FileID fid,
@@ -241,7 +251,7 @@ public class FileServiceHandler {
     // get wacl and handle exception
     ResponseCodeEnum status = ResponseCodeEnum.SUCCESS;
     try {
-      JKey jkey = JFileInfo.convertWacl(tx.getKeys());
+      JKey jkey = convertWacl(tx.getKeys());
 
       // create virtual file for the data bytes
 	  byte[] fileData = tx.getContents().toByteArray();
@@ -267,7 +277,7 @@ public class FileServiceHandler {
               expireTimeSec, string2bytesUTF8(fileDataPath));
 
       // create virtual file for the meta data
-      JFileInfo fi = new JFileInfo(false, jkey, expireTimeSec);
+      HFileMeta fi = new HFileMeta(false, jkey, expireTimeSec);
 
       String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
       storageWrapper.fileCreate(fileMetaDataPath, fi.serialize(), startTime.getEpochSecond(),
@@ -400,17 +410,17 @@ public class FileServiceHandler {
     try {
       String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
       String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
-      JFileInfo fi = getMetaFileInfo(fid);
+      HFileMeta fi = getMetaFileInfo(fid);
       if (fi.isDeleted()) {
         receipt = RequestBuilder.getTransactionReceipt(ResponseCodeEnum.FILE_DELETED,
             globalFlag.getExchangeRateSet());
       } else {
         if (tx.hasKeys()) {
-          JKey wacl = JFileInfo.convertWacl(tx.getKeys());
+          JKey wacl = convertWacl(tx.getKeys());
           fi.setWacl(wacl);
         }
 
-        long expireTimeSec = fi.getExpirationTimeSeconds();
+        long expireTimeSec = fi.getExpiry();
         boolean expTimeUpdated = false;
         if (tx.hasExpirationTime()) {
           // new exp time ignored if not later than the current value
@@ -470,7 +480,7 @@ public class FileServiceHandler {
 
         // exp time may be updated independent of content change
         if (expTimeUpdated) {
-          fi.setExpirationTimeSeconds(expireTimeSec);
+          fi.setExpiry(expireTimeSec);
         }
 
         if (validateCode.equals(ResponseCodeEnum.OK) || validateCode
@@ -482,7 +492,7 @@ public class FileServiceHandler {
         receipt = RequestBuilder.getTransactionReceipt(validateCode,
             globalFlag.getExchangeRateSet());
       }
-    } catch (SerializationException | DeserializationException e) {
+    } catch (IOException e) {
       receipt = RequestBuilder.getTransactionReceipt(ResponseCodeEnum.SERIALIZATION_FAILED,
           globalFlag.getExchangeRateSet());
       if (log.isDebugEnabled()) {
@@ -531,13 +541,12 @@ public class FileServiceHandler {
   /**
    * Gets meta data file info from storageWrapper given file ID.
    */
-  public JFileInfo getMetaFileInfo(FileID fid)
-      throws InvalidFileIDException, DeserializationException {
-    JFileInfo fileInfo;
+  public HFileMeta getMetaFileInfo(FileID fid) throws IOException, InvalidFileIDException {
+    HFileMeta fileInfo;
     String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
     if (storageWrapper.fileExists(fileMetaDataPath)) {
       byte[] oldBytes = storageWrapper.fileRead(fileMetaDataPath);
-      fileInfo = JFileInfo.deserialize(oldBytes);
+      fileInfo = HFileMeta.deserialize(oldBytes);
     } else {
       throw new InvalidFileIDException(String.format("Invalid FileID: %s", fid), fid);
     }

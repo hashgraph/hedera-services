@@ -21,12 +21,10 @@ package com.hedera.services.fees.calculation.token.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -58,6 +56,7 @@ class TokenUpdateResourceUsageTest {
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
 	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
 	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+	FeeData expected;
 
 	TokenUpdateUsage usage;
 	BiFunction<TransactionBody, SigUsage, TokenUpdateUsage> factory;
@@ -81,6 +80,7 @@ class TokenUpdateResourceUsageTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 
 		tokenUpdateTxn = mock(TransactionBody.class);
@@ -107,7 +107,7 @@ class TokenUpdateResourceUsageTest {
 		given(usage.givenCurrentExpiry(expiry)).willReturn(usage);
 		given(usage.givenCurrentMemo(memo)).willReturn(usage);
 		given(usage.givenCurrentlyUsingAutoRenewAccount()).willReturn(usage);
-		given(usage.get()).willReturn(MOCK_TOKEN_UPDATE_USAGE);
+		given(usage.get()).willReturn(expected);
 
 		given(view.infoForToken(target)).willReturn(Optional.of(info));
 
@@ -128,7 +128,7 @@ class TokenUpdateResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
-				MOCK_TOKEN_UPDATE_USAGE,
+				expected,
 				subject.usageGiven(tokenUpdateTxn, obj, view));
 
 		// and:
@@ -144,20 +144,4 @@ class TokenUpdateResourceUsageTest {
 				FeeData.getDefaultInstance(),
 				subject.usageGiven(tokenUpdateTxn, obj, view));
 	}
-
-	public static final FeeData MOCK_TOKEN_UPDATE_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(3)
-					.setBpt(3)
-					.setVpt(3)
-					.setRbh(3)
-					.setSbh(3)
-					.setGas(3)
-					.setTv(3)
-					.setBpr(3)
-					.setSbpr(3)
-					.build(), 3);
-
 }

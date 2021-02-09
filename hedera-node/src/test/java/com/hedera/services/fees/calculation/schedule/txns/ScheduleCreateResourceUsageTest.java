@@ -23,10 +23,8 @@ package com.hedera.services.fees.calculation.schedule.txns;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
@@ -56,9 +54,11 @@ public class ScheduleCreateResourceUsageTest {
     SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
     GlobalDynamicProperties props = new MockGlobalDynamicProps();
+    FeeData expected;
 
     @BeforeEach
     private void setup() {
+        expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleCreateTxn = mock(TransactionBody.class);
         given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
@@ -68,7 +68,7 @@ public class ScheduleCreateResourceUsageTest {
 
         usage = mock(ScheduleCreateUsage.class);
         given(usage.givenScheduledTxExpirationTimeSecs(anyInt())).willReturn(usage);
-        given(usage.get()).willReturn(MOCK_SCHEDULE_CREATE_USAGE);
+        given(usage.get()).willReturn(expected);
 
         factory = (BiFunction<TransactionBody, SigUsage, ScheduleCreateUsage>)mock(BiFunction.class);
         given(factory.apply(scheduleCreateTxn, sigUsage)).willReturn(usage);
@@ -87,20 +87,6 @@ public class ScheduleCreateResourceUsageTest {
     @Test
     public void delegatesToCorrectEstimate() throws Exception {
         // expect:
-        assertEquals(MOCK_SCHEDULE_CREATE_USAGE, subject.usageGiven(scheduleCreateTxn, obj, view));
+        assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
     }
-
-    private static final FeeData MOCK_SCHEDULE_CREATE_USAGE = UsageEstimatorUtils.defaultPartitioning(
-            FeeComponents.newBuilder()
-                    .setMin(1)
-                    .setMax(1_000_000)
-                    .setConstant(1)
-                    .setBpt(1)
-                    .setVpt(1)
-                    .setRbh(1)
-                    .setGas(1)
-                    .setTv(1)
-                    .setBpr(1)
-                    .setSbpr(1)
-                    .build(), 1);
 }

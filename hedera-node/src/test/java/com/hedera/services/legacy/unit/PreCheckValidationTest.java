@@ -28,6 +28,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.TestHelper;
@@ -176,14 +177,14 @@ class PreCheckValidationTest {
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		var platformStatus = new ContextPlatformStatus();
 		platformStatus.set(PlatformStatus.ACTIVE);
-		PropertySource propertySource = mock(PropertySource.class);
+		NodeLocalProperties nodeProps = mock(NodeLocalProperties.class);
 		transactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
 				nodeAccount,
 				precheckVerifier,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, nodeProps, null),
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
@@ -424,14 +425,13 @@ class PreCheckValidationTest {
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		var platformStatus = new ContextPlatformStatus();
 		platformStatus.set(PlatformStatus.ACTIVE);
-		PropertySource propertySource = mock(PropertySource.class);
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
 				nodeAccount,
 				precheckVerifier,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, mock(NodeLocalProperties.class), null),
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
@@ -471,14 +471,13 @@ class PreCheckValidationTest {
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		var platformStatus = new ContextPlatformStatus();
 		platformStatus.set(PlatformStatus.ACTIVE);
-		PropertySource propertySource = mock(PropertySource.class);
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				localRecordCache,
 				() -> accountFCMap,
 				nodeAccount,
 				precheckVerifier,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, mock(NodeLocalProperties.class), null),
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),

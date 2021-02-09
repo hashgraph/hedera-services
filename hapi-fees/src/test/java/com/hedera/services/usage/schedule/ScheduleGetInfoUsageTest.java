@@ -36,6 +36,7 @@ import java.util.Optional;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static org.junit.Assert.assertEquals;
 
 public class ScheduleGetInfoUsageTest {
@@ -64,7 +65,8 @@ public class ScheduleGetInfoUsageTest {
 		// and:
 		var expectedAdminBytes = FeeBuilder.getAccountKeyStorageSize(adminKey.get());
 		var signersBytes = signers.get().toByteArray().length;
-		var expectedBytes = expectedAdminBytes + signersBytes + SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, memo);
+		var expectedBytes = BASIC_QUERY_RES_HEADER
+				+ expectedAdminBytes + signersBytes + SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, memo);
 
 		// when:
 		var usage = subject.get();

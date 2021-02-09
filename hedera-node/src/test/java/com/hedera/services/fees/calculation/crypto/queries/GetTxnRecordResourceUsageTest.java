@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
@@ -40,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.engine.support.hierarchical.Node;
 
 import java.util.HashMap;
 import java.util.List;
@@ -70,7 +72,7 @@ class GetTxnRecordResourceUsageTest {
 	Query satisfiableCostAnswer = txnRecordQuery(targetTxnId, COST_ANSWER);
 	Query unsatisfiable = txnRecordQuery(missingTxnId, ANSWER_ONLY);
 
-	PropertySource propertySource;
+	NodeLocalProperties nodeProps;
 	StateView view;
 	RecordCache recordCache;
 	CryptoFeeBuilder usageEstimator;
@@ -86,8 +88,8 @@ class GetTxnRecordResourceUsageTest {
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
 		accounts = mock(FCMap.class);
-		propertySource = mock(PropertySource.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null);
+		nodeProps = mock(NodeLocalProperties.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
 
 		answerFunctions = mock(AnswerFunctions.class);
 		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))
