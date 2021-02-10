@@ -1255,7 +1255,7 @@ commands:
 
 executors:
   build-executor:
-    resource_class: 2xlarge+
+    resource_class: 2xlarge
     parameters:
       workflow-name:
         type: string
@@ -1873,7 +1873,7 @@ workflows:
           context: SonarCloud
           filters:
             branches:
-              ignore:
+              only:
                 - /.*-PERF/
                 - /.*-REGRESSION/
 
