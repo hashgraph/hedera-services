@@ -97,9 +97,6 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 				accessor.getTxnId(),
 				lastCreatedRecord.getReceipt().getStatus(),
 				payerRecord);
-//		if (SingletonContextsManager.CONTEXTS.lookup(0L).txnCtx() == txnCtx) {
-//			log.info("Created ({}) -> {}", accessor.getTxnId(), payerRecord);
-//		}
 	}
 
 	@Override
@@ -114,11 +111,10 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public void addNewEntities() {
-		var expiringEntities = txnCtx.expiringEntities();
-		if (expiringEntities.size() != 0) {
-			for (var expiringEntity : expiringEntities) {
-				expiries.trackEntity(new Pair<>(expiringEntity.id().num(), expiringEntity.consumer()), expiringEntity.expiry());
-			}
+		for (var expiringEntity : txnCtx.expiringEntities()) {
+			expiries.trackEntity(
+					new Pair<>(expiringEntity.id().num(), expiringEntity.consumer()),
+					expiringEntity.expiry());
 		}
 	}
 }
