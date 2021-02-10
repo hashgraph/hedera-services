@@ -52,6 +52,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
@@ -59,6 +61,7 @@ import java.util.regex.Pattern;
 import java.util.Optional;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
+import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.b64Encode;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
@@ -67,6 +70,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -255,7 +259,6 @@ class SignedStateBalancesExporterTest {
 		assertEquals("shardNum,realmNum,accountNum,balance,tokenBalances", lines.get(2));
 		for (int i = 0; i < expected.size(); i++) {
 			var entry = expected.get(i);
-			//String accountLine =
 			assertEquals(String.format(
 					"%d,%d,%d,%d,%s",
 					entry.getAccountID().getShardNum(),
@@ -463,6 +466,24 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
+	public void testSingleAccountBalancingSort() {
+		// given:
+		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
+		List<SingleAccountBalances> sorted = new ArrayList<>();
+		sorted.addAll(expectedBalances);
+
+		Collections.shuffle(sorted);
+
+		assertNotEquals(expectedBalances, sorted);
+		// when
+		sorted.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
+
+		// then:
+		assertEquals(expectedBalances, sorted);
+
+	}
+
+	@Test
 	public void summarizesAsExpected() {
 		// given:
 		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
@@ -485,13 +506,11 @@ class SignedStateBalancesExporterTest {
 				.setAccountID(asAccount("0.0.3"))
 				.setHbarBalance(thisNodeBalance).build();
 
-		var anotherNodeBuilder = SingleAccountBalances.newBuilder();
-		var anotherNode = anotherNodeBuilder
+		var anotherNode = singleAcctBuilder
 				.setHbarBalance(anotherNodeBalance)
 				.setAccountID(asAccount("0.0.4")).build();
 
-		var firstNonBuilder = SingleAccountBalances.newBuilder();
-		var firstNon = firstNonBuilder
+		var firstNon = singleAcctBuilder
 				.setAccountID(asAccount("0.0.1001"))
 				.setHbarBalance(firstNonNodeAccountBalance).build();
 
@@ -499,8 +518,8 @@ class SignedStateBalancesExporterTest {
 				.setTokenId(theToken)
 				.setBalance(secondNonNodeTokenBalance).build();
 
-		var secondNonBuilder = SingleAccountBalances.newBuilder();
-		var secondNon = secondNonBuilder.setAccountID(asAccount("0.0.1002"))
+		var secondNon = singleAcctBuilder
+				.setAccountID(asAccount("0.0.1002"))
 				.setHbarBalance(secondNonNodeAccountBalance)
 				.addTokenUnitBalances(tokenBalances).build();
 

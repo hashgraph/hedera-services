@@ -53,15 +53,14 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 
 public class SignedStateBalancesExporter implements BalancesExporter {
 	static Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
@@ -93,55 +92,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	Instant periodEnd = NEVER;
 
 
-	private static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
-			.comparingLong(AccountID::getAccountNum)
-			.thenComparingLong(AccountID::getShardNum)
-			.thenComparingLong(AccountID::getRealmNum);
-	private static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator
-			.comparingLong(TokenID::getTokenNum)
-			.thenComparingLong(TokenID::getRealmNum)
-			.thenComparingLong(TokenID::getShardNum);
-
-	private static final Comparator<TokenUnitBalance> TOKEN_UNIT_BALANCE_COMPARATOR = (tb1, tb2) -> {
-		int cmp = TOKEN_ID_COMPARATOR.compare(tb1.getTokenId(), tb2.getTokenId());
-		if(cmp != 0) {
-			return cmp;
-		}
-		long diff = tb1.getBalance() - tb2.getBalance();
-		return diff == 0L ? 0 : (diff < 0 ? -1 : 1);
-	};
-
-	/**
-	 * Comparator to check whether two SingleAccountBalances instances, including their har and
-	 * token balances, are equal or not
-	 */
-	private static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR = (sab1, sab2) -> {
-		int result = ACCOUNT_ID_COMPARATOR.compare(sab1.getAccountID(), sab2.getAccountID());
-		if (result != 0) {
-			return result;
-		} else {
-			if(sab1.getTokenUnitBalancesList().size() == 0 && sab2.getTokenUnitBalancesList().size() == 0) {
-				return 0;
-			} else if(sab1.getTokenUnitBalancesList().size() != sab2.getTokenUnitBalancesList().size() ) {
-				return -1; // we don't really care which one should be larger
-			} else { //   tokenBalances1.size() == tokenBalances2.size(), need to compare tokenBalances one by one
-				List<TokenUnitBalance> tokenBalances1 = sab1.getTokenUnitBalancesList()
-						.stream().sorted(TOKEN_UNIT_BALANCE_COMPARATOR).collect(Collectors.toList());
-				List<TokenUnitBalance> tokenBalances2 = sab2.getTokenUnitBalancesList()
-						.stream().sorted(TOKEN_UNIT_BALANCE_COMPARATOR).collect(Collectors.toList());
-
-				Iterator<TokenUnitBalance> it1 = tokenBalances1.listIterator();
-				Iterator<TokenUnitBalance> it2 = tokenBalances2.listIterator();
-				while(it1.hasNext()) {
-					result = TOKEN_UNIT_BALANCE_COMPARATOR.compare(it1.next(), it2.next());
-					if(result != 0) {
-						return result;
-					}
-				}
-			}
-		}
-		return 0;
-	};
+	public static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
+			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
 
 	public SignedStateBalancesExporter(
 			PropertySource properties,
