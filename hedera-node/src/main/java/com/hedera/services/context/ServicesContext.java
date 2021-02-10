@@ -900,7 +900,7 @@ public class ServicesContext {
 				/* Crypto */
 				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoOpsUsage))),
 				entry(CryptoDelete, List.of(new CryptoDeleteResourceUsage(cryptoFees))),
-				entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoFees))),
+				entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoOpsUsage))),
 				entry(CryptoTransfer, List.of(new CryptoTransferResourceUsage(globalDynamicProperties()))),
 				/* Contract */
 				entry(ContractCall, List.of(new ContractCallResourceUsage(contractFees))),

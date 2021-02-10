@@ -147,6 +147,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 			final CryptoGetInfoResponse.AccountInfo info = lookupInfo(spec);
 			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
 				var ctx = ExtantCryptoContext.newBuilder()
+						.setCurrentNumTokenRels(info.getTokenRelationshipsCount())
 						.setCurrentExpiry(info.getExpirationTime().getSeconds())
 						.setCurrentMemo(info.getMemo())
 						.setCurrentKey(info.getKey())
