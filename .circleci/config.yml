@@ -1873,7 +1873,7 @@ workflows:
           context: SonarCloud
           filters:
             branches:
-              only:
+              ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
 

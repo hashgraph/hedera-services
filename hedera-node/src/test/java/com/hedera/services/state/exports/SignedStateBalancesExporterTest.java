@@ -434,6 +434,21 @@ class SignedStateBalancesExporterTest {
 	}
 
 
+	@Test
+	public void errorProtoLogsOnIoException() throws IOException {
+		// given:
+		subject.directories = assurance;
+		// and:
+		willThrow(IOException.class).given(assurance).ensureExistenceOf(any());
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// then:
+		verify(mockLog).error(String.format(
+				SignedStateBalancesExporter.BAD_EXPORT_DIR_ERROR_MSG_TPL, expectedExportDir()));
+	}
+
 	private String expectedBalancesName(Boolean isProto ) {
 		return isProto ? now.toString().replace(":", "_") + "_Balances.pb"
 				: now.toString().replace(":", "_") + "_Balances.csv";
@@ -442,7 +457,6 @@ class SignedStateBalancesExporterTest {
 	private String expectedBalancesName() {
 		return  expectedBalancesName(false) ;
 	}
-
 
 	@Test
 	public void summarizesAsExpected() {
