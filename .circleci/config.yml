@@ -1255,7 +1255,7 @@ commands:
 
 executors:
   build-executor:
-    resource_class: xlarge
+    resource_class: 2xlarge+
     parameters:
       workflow-name:
         type: string
