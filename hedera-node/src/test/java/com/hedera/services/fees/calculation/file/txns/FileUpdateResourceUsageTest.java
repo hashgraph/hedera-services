@@ -60,7 +60,6 @@ class FileUpdateResourceUsageTest {
 	long size = 1L;
 
 	long newExpiry = 2_345_678L;
-	byte[] newContents = "Consider this".getBytes();
 
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
 	SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigsSize);

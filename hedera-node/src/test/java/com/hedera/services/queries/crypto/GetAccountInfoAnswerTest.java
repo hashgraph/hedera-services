@@ -81,6 +81,7 @@ class GetAccountInfoAnswerTest {
 	private OptionValidator optionValidator;
 
 	private String node = "0.0.3";
+	private String memo = "When had I my own will?";
 	private String payer = "0.0.12345";
 	private AccountID payerId = IdUtils.asAccount(payer);
 	private MerkleAccount payerAccount;
@@ -147,6 +148,7 @@ class GetAccountInfoAnswerTest {
 		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
 		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
+				.memo(memo)
 				.proxy(asAccount("1.2.3"))
 				.senderThreshold(1_234L)
 				.receiverThreshold(4_321L)
@@ -206,6 +208,24 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
+	public void identifiesFailInvalid() throws Throwable {
+		// setup:
+		Query query = validQuery(ANSWER_ONLY, fee, target);
+		// and:
+		StateView view = mock(StateView.class);
+
+		given(view.infoForAccount(any())).willReturn(Optional.empty());
+
+		// when:
+		Response response = subject.responseGiven(query, view, OK, fee);
+
+		// then:
+		assertTrue(response.hasCryptoGetInfo());
+		assertEquals(FAIL_INVALID, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, response.getCryptoGetInfo().getHeader().getResponseType());
+	}
+
+	@Test
 	public void getsTheAccountInfo() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
@@ -230,6 +250,7 @@ class GetAccountInfoAnswerTest {
 		assertEquals(JKey.mapJKey(payerAccount.getKey()), info.getKey());
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
+		assertEquals(memo, info.getMemo());
 		// and:
 		assertEquals(
 				List.of(

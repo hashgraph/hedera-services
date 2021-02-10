@@ -22,10 +22,17 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt64Value;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.usage.file.ExtantFileContext;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -46,9 +53,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.expiryGiven;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.inConsensusOrder;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
@@ -58,6 +67,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
 	private Optional<Long> lifetimeSecs = Optional.empty();
+	private Optional<String> entityMemo = Optional.empty();
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
 
@@ -71,6 +81,10 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	}
 	public HapiCryptoUpdate lifetime(long secs) {
 		lifetimeSecs = Optional.of(secs);
+		return this;
+	}
+	public HapiCryptoUpdate entityMemo(String memo) {
+		entityMemo = Optional.of(memo);
 		return this;
 	}
 	public HapiCryptoUpdate key(String name) {
@@ -108,6 +122,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 							builder.setAccountIDToUpdate(id);
 							updSigRequired.ifPresent(u -> builder.setReceiverSigRequiredWrapper(BoolValue.of(u)));
 							updKey.ifPresent(k -> builder.setKey(k));
+							entityMemo.ifPresent(m -> builder.setMemo(StringValue.newBuilder().setValue(m).build()));
 							sendThreshold.ifPresent(v ->
 									builder.setSendRecordThresholdWrapper(
 											UInt64Value.newBuilder().setValue(v).build()));
@@ -127,35 +142,35 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	}
 
 	@Override
-	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
+	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		try {
-			Timestamp oldExpiry = oldExpiry(spec);
-			Timestamp newExpiry = expiryGiven(lifetimeSecs.orElse(spec.setup().defaultExpirationSecs()));
-			final Timestamp netExpiry = inConsensusOrder(oldExpiry, newExpiry) ? newExpiry : oldExpiry;
-
-			FeeCalculator.ActivityMetrics metricsCalc = (txBody, sigUsage) ->
-					cryptoFees.getCryptoUpdateTxFeeMatrices(txBody, sigUsage, netExpiry,
-							spec.registry().getKey(account));
-
-			return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoUpdate, metricsCalc, txn, numPayerSigs);
+			final CryptoGetInfoResponse.AccountInfo info = lookupInfo(spec);
+			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
+				var ctx = ExtantCryptoContext.newBuilder()
+						.setCurrentNumTokenRels(info.getTokenRelationshipsCount())
+						.setCurrentExpiry(info.getExpirationTime().getSeconds())
+						.setCurrentMemo(info.getMemo())
+						.setCurrentKey(info.getKey())
+						.setCurrentlyHasProxy(info.hasProxyAccountID())
+						.build();
+				return cryptoOpsUsage.cryptoUpdateUsage(_txn, suFrom(svo), ctx);
+			};
+			return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoUpdate, metricsCalc, txn, numPayerKeys);
 		} catch (Throwable ignore) {
-			return spec.fees().maxFeeTinyBars();
+			return HapiApiSuite.ONE_HBAR;
 		}
 	}
 
-	private Timestamp oldExpiry(HapiApiSpec spec) throws Throwable {
+	private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiApiSpec spec) throws Throwable {
 		HapiGetAccountInfo subOp = getAccountInfo(account).noLogging();
 		Optional<Throwable> error = subOp.execFor(spec);
 		if (error.isPresent()) {
 			if (!loggingOff) {
-				log.warn(
-						"Unable to look up current expiration timestamp of "
-								+ HapiPropertySource.asAccountString(spec.registry().getAccountID(account)),
-						error.get());
+				log.warn("Unable to look up current account info!", error.get());
 			}
 			throw error.get();
 		}
-		return subOp.getResponse().getCryptoGetInfo().getAccountInfo().getExpirationTime();
+		return subOp.getResponse().getCryptoGetInfo().getAccountInfo();
 	}
 
 	@Override

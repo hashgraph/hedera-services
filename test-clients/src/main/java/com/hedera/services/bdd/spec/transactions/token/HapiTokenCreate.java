@@ -65,7 +65,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> wipeKey = Optional.empty();
 	private Optional<String> supplyKey = Optional.empty();
 	private Optional<String> symbol = Optional.empty();
-	private Optional<String> memo = Optional.empty();
+	private Optional<String> entityMemo = Optional.empty();
 	private Optional<String> name = Optional.empty();
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
@@ -83,8 +83,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		this.token = token;
 	}
 
-	public HapiTokenCreate memo(String memo) {
-		this.memo = Optional.of(memo);
+	public HapiTokenCreate entityMemo(String memo) {
+		this.entityMemo = Optional.of(memo);
 		return this;
 	}
 

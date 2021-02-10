@@ -594,7 +594,7 @@ public class SmartContractRequestHandler {
 		try {
 			MerkleAccount contract = ledger.get(id);
 			if (contract != null) {
-				boolean memoProvided = op.getMemo().length() > 0;
+				boolean memoProvided = op.hasMemoWrapper() || op.getMemo().length() > 0;
 				boolean adminKeyExist = Optional.ofNullable(contract.getKey())
 						.map(key -> !key.hasContractID())
 						.orElse(false);
@@ -616,7 +616,11 @@ public class SmartContractRequestHandler {
 						customizer.expiry(op.getExpirationTime().getSeconds());
 					}
 					if (memoProvided) {
-						customizer.memo(op.getMemo());
+						if (op.hasMemoWrapper()) {
+							customizer.memo(op.getMemoWrapper().getValue());
+						} else {
+							customizer.memo(op.getMemo());
+						}
 					}
 					var hasAcceptableAdminKey = true;
 					if (op.hasAdminKey()) {

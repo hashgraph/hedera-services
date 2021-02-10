@@ -157,6 +157,11 @@ class PreCheckValidationTest {
 	private Transaction createPossibleTransaction() throws Exception {
 		KeyPair keyGenerated = new KeyPairGenerator().generateKeyPair();
 		Transaction transaction = TestHelper.createAccount(payerAccount, nodeAccount, keyGenerated, 30);
+		TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+		var opBuilder = body.getCryptoCreateAccount().toBuilder();
+		opBuilder.setProxyAccountID(AccountID.newBuilder().setAccountNum(999666));
+		body = body.toBuilder().setCryptoCreateAccount(opBuilder).build();
+		transaction = transaction.toBuilder().setBodyBytes(body.toByteString()).build();
 
 		// calculate fee required
 		long correctFee = getCalculatedTransactionFee(transaction,
@@ -368,7 +373,8 @@ class PreCheckValidationTest {
 		Transaction origTransaction = createPossibleTransaction();
 		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
 		long correctFee = trBody.getTransactionFee();
-		trBody = trBody.toBuilder().setTransactionFee(correctFee - 1).build();
+		/* Allow for some tiny variation from not including send/receive thresholds in new BPT calculation. */
+		trBody = trBody.toBuilder().setTransactionFee((long)(.95 * correctFee)).build();
 		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
 
 		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
@@ -378,8 +384,7 @@ class PreCheckValidationTest {
 
 		TxnValidityAndFeeReq result =
 				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-		assert (result.getValidity() == ResponseCodeEnum.INSUFFICIENT_TX_FEE);
-		assert (result.getRequiredFee() == correctFee);
+		Assertions.assertEquals(result.getValidity(), ResponseCodeEnum.INSUFFICIENT_TX_FEE);
 	}
 
 	@Test

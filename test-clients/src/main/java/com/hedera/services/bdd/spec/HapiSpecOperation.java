@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -74,6 +75,7 @@ public abstract class HapiSpecOperation {
 
 	private static final byte[] NO_NONCE = null;
 	protected static final FileOpsUsage fileOpsUsage = new FileOpsUsage();
+	protected static final CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
 
 	private Random r = new Random();
 

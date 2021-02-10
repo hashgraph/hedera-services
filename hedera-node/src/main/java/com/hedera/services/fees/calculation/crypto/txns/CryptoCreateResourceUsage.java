@@ -22,6 +22,8 @@ package com.hedera.services.fees.calculation.crypto.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
@@ -29,10 +31,10 @@ import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 
 public class CryptoCreateResourceUsage implements TxnResourceUsageEstimator {
-	private final CryptoFeeBuilder usageEstimator;
+	private final CryptoOpsUsage cryptoOpsUsage;
 
-	public CryptoCreateResourceUsage(CryptoFeeBuilder usageEstimator) {
-		this.usageEstimator = usageEstimator;
+	public CryptoCreateResourceUsage(CryptoOpsUsage cryptoOpsUsage) {
+		this.cryptoOpsUsage = cryptoOpsUsage;
 	}
 
 	@Override
@@ -41,7 +43,8 @@ public class CryptoCreateResourceUsage implements TxnResourceUsageEstimator {
 	}
 
 	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-		return usageEstimator.getCryptoCreateTxFeeMatrices(txn, sigUsage);
+	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
+		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+		return cryptoOpsUsage.cryptoCreateUsage(txn, sigUsage);
 	}
 }
