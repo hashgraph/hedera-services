@@ -475,7 +475,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newKeyNamed("newWipeKey"),
 						tokenCreate("primary")
 								.name(saltedName)
-								.memo(originalMemo)
+								.entityMemo(originalMemo)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount("autoRenewAccount")
 								.autoRenewPeriod(A_HUNDRED_SECONDS)
@@ -490,7 +490,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenAssociate("newTokenTreasury", "primary"),
 						tokenUpdate("primary")
 								.name(newSaltedName)
-								.memo(updatedMemo)
+								.entityMemo(updatedMemo)
 								.treasury("newTokenTreasury")
 								.autoRenewAccount("newAutoRenewAccount")
 								.autoRenewPeriod(101)

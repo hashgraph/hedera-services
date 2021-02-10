@@ -104,7 +104,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return this;
 	}
 
-	public HapiTokenUpdate memo(String memo) {
+	public HapiTokenUpdate entityMemo(String memo) {
 		this.newMemo = Optional.of(memo);
 		return this;
 	}

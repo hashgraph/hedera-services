@@ -71,7 +71,7 @@ public class TokenCreatePerfSuite extends LoadTest {
 														.payingWith(GENESIS)
 														.signedBy(GENESIS)
 														.initialSupply(100_000_000_000L)
-														.memo(tokenCreateMemo)
+														.entityMemo(tokenCreateMemo)
 														.deferStatusResolution()
 								)
 						)
