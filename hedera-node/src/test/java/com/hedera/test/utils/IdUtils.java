@@ -109,10 +109,11 @@ public class IdUtils {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
 	}
 
-	public static TokenBalance tokenBalanceWith(TokenID id, long balance) {
+	public static TokenBalance tokenBalanceWith(TokenID id, long balance, int decimals) {
 		return TokenBalance.newBuilder()
 				.setTokenId(id)
 				.setBalance(balance)
+				.setDecimals(decimals)
 				.build();
 	}
 
