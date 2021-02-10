@@ -206,8 +206,8 @@ ${git.signoff}
 ${git.signoff}
           </scmBranchCommitComment>
           <preparationGoals>
-            clean
-            license:update-file-header
+            clean 
+            license:update-file-header 
             exec:exec@gen-proto-docs
             exec:exec@ensure-proto-headers
             verify
