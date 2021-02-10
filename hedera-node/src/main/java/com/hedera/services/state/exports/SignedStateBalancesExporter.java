@@ -372,12 +372,10 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 							balance));
 				}
 				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
-				//var balancesEntry = new AccountBalance(id.getShard(), id.getRealm(), id.getNum(), account.getBalance());
 				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
 				sabBuilder.setHbarBalance(balance)
 						.setAccountID(accountId);
 				if (dynamicProperties.shouldExportTokenBalances()) {
-					//addTokenBalances(accountId, account, balancesEntry, tokens, tokenAssociations);
 					addTokenBalances(accountId, account, sabBuilder,  tokens, tokenAssociations);
 				}
 				accountBalances.add(sabBuilder.build());
@@ -390,7 +388,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	private void addTokenBalances(
 			AccountID id,
 			MerkleAccount account,
-			//AccountBalance balancesEntry,
 			SingleAccountBalances.Builder sabBuilder,
 			FCMap<MerkleEntityId, MerkleToken> tokens,
 			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations
