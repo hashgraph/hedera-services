@@ -117,7 +117,7 @@ public enum TestFeesFactory {
 						/* Meta */
 						new GetTxnRecordResourceUsage(recordCache, answerFunctions, cryptoFees),
 						/* Crypto */
-						new GetAccountInfoResourceUsage(),
+						new GetAccountInfoResourceUsage(cryptoOpsUsage),
 						new GetAccountRecordsResourceUsage(answerFunctions, cryptoFees),
 						/* Consensus */
 						new GetTopicInfoResourceUsage()

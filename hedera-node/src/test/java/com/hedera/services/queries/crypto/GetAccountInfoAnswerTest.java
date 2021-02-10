@@ -208,6 +208,24 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
+	public void identifiesFailInvalid() throws Throwable {
+		// setup:
+		Query query = validQuery(ANSWER_ONLY, fee, target);
+		// and:
+		StateView view = mock(StateView.class);
+
+		given(view.infoForAccount(any())).willReturn(Optional.empty());
+
+		// when:
+		Response response = subject.responseGiven(query, view, OK, fee);
+
+		// then:
+		assertTrue(response.hasCryptoGetInfo());
+		assertEquals(FAIL_INVALID, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, response.getCryptoGetInfo().getHeader().getResponseType());
+	}
+
+	@Test
 	public void getsTheAccountInfo() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);

@@ -28,12 +28,14 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ExtantCryptoContext {
+	private final int currentNumTokenRels;
 	private final Key currentKey;
 	private final long currentExpiry;
 	private final String currentMemo;
 	private final boolean currentlyHasProxy;
 
 	private ExtantCryptoContext(ExtantCryptoContext.Builder builder) {
+		currentNumTokenRels = builder.currentNumTokenRels;
 		currentMemo = builder.currentMemo;
 		currentExpiry = builder.currentExpiry;
 		currentKey = builder.currentKey;
@@ -48,6 +50,10 @@ public class ExtantCryptoContext {
 
 	public Key currentKey() {
 		return currentKey;
+	}
+
+	public int currentNumTokenRels() {
+		return currentNumTokenRels;
 	}
 
 	public long currentExpiry() {
@@ -71,15 +77,17 @@ public class ExtantCryptoContext {
 		private static final int EXPIRY_MASK = 1 << 1;
 		private static final int MEMO_MASK = 1 << 2;
 		private static final int KEY_MASK = 1 << 3;
+		private static final int TOKEN_RELS_MASK = 1 << 4;
 
-		private static final int ALL_FIELDS_MASK = EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK;
+		private static final int ALL_FIELDS_MASK = TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK;
 
 		private int mask = 0;
 
+		private int currentNumTokenRels;
 		private Key currentKey;
-		private long currentExpiry;
 		private String currentMemo;
 		private boolean currentlyHasProxy;
+		private long currentExpiry;
 
 		private Builder() {}
 
@@ -88,6 +96,12 @@ public class ExtantCryptoContext {
 				throw new IllegalStateException(String.format("Field mask is %d, not %d!", mask, ALL_FIELDS_MASK));
 			}
 			return new ExtantCryptoContext(this);
+		}
+
+		public ExtantCryptoContext.Builder setCurrentNumTokenRels(int currentNumTokenRels) {
+			this.currentNumTokenRels = currentNumTokenRels;
+			mask |= TOKEN_RELS_MASK;
+			return this;
 		}
 
 		public ExtantCryptoContext.Builder setCurrentExpiry(long currentExpiry) {

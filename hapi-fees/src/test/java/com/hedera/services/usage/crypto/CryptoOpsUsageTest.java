@@ -27,15 +27,12 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.file.ExtantFileContext;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoGetInfo;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -53,8 +50,8 @@ import java.util.function.Function;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
-import static com.hederahashgraph.fee.FeeBuilder.BASE_FILEINFO_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
@@ -67,6 +64,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class CryptoOpsUsageTest {
+	int numTokenRels = 3;
 	long secs = 500_000L;
 	long now = 1_234_567L;
 	long expiry = now + secs;
@@ -120,6 +118,7 @@ class CryptoOpsUsageTest {
 				.setCurrentMemo(memo)
 				.setCurrentKey(key)
 				.setCurrentlyHasProxy(true)
+				.setCurrentNumTokenRels(numTokenRels)
 				.build();
 		// and:
 		given(queryBase.get()).willReturn(A_USAGES_MATRIX);
@@ -135,7 +134,8 @@ class CryptoOpsUsageTest {
 				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 						+ BASIC_ENTITY_ID_SIZE
 						+ memo.length()
-						+ getAccountKeyStorageSize(key));
+						+ getAccountKeyStorageSize(key)
+						+ numTokenRels * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship());
 	}
 
 	@Test
@@ -180,6 +180,7 @@ class CryptoOpsUsageTest {
 				.setCurrentMemo(oldMemo)
 				.setCurrentKey(oldKey)
 				.setCurrentlyHasProxy(oldWasUsingProxy)
+				.setCurrentNumTokenRels(numTokenRels)
 				.build();
 
 		// when:

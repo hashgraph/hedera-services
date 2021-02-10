@@ -24,6 +24,7 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -37,7 +38,7 @@ import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
-import static com.hederahashgraph.fee.FeeBuilder.BASE_FILEINFO_SIZE;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
@@ -58,6 +59,7 @@ public class CryptoOpsUsage {
 		if (ctx.currentlyHasProxy()) {
 			extraRb += BASIC_ENTITY_ID_SIZE;
 		}
+		extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
 		estimate.updateRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
 
 		return estimate.get();
