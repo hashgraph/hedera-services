@@ -25,7 +25,7 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,7 +61,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 			var target = op.getFileID();
 			var data = op.getContents().toByteArray();
 
-			Optional<JFileInfo> attr = hfs.exists(target) ? Optional.of(hfs.getattr(target)) : Optional.empty();
+			Optional<HFileMeta> attr = hfs.exists(target) ? Optional.of(hfs.getattr(target)) : Optional.empty();
 			var validity = classify(attr);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
@@ -78,7 +78,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private ResponseCodeEnum classify(Optional<JFileInfo> attr) {
+	private ResponseCodeEnum classify(Optional<HFileMeta> attr) {
 		if (attr.isEmpty()) {
 			return INVALID_FILE_ID;
 		} else {

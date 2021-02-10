@@ -22,15 +22,13 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.usage.crypto.CryptoGetInfoUsage;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -51,7 +49,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -59,20 +56,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class GetAccountInfoResourceUsageTest {
-	public static final FeeData MOCK_CRYPTO_GET_INFO_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(1)
-					.setBpt(1)
-					.setVpt(1)
-					.setRbh(1)
-					.setSbh(1)
-					.setGas(1)
-					.setTv(1)
-					.setBpr(1)
-					.setSbpr(1)
-					.build(), 1);
 	StateView view;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	GetAccountInfoResourceUsage subject;
@@ -83,14 +66,17 @@ class GetAccountInfoResourceUsageTest {
 	TokenID bToken = asToken("0.0.1002");
 	TokenID cToken = asToken("0.0.1003");
 	String memo = "Hi there!";
+	FeeData expected;
 
 	CryptoGetInfoUsage estimator;
 	Function<Query, CryptoGetInfoUsage> factory;
 
-	PropertySource propertySource;
+	NodeLocalProperties nodeProps;
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		expected = mock(FeeData.class);
+
 		aValue = MerkleAccountFactory.newAccount()
 				.accountKeys(aKey)
 				.tokens(aToken, bToken, cToken)
@@ -98,8 +84,8 @@ class GetAccountInfoResourceUsageTest {
 				.memo(memo)
 				.get();
 		accounts = mock(FCMap.class);
-		propertySource = mock(PropertySource.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null);
+		nodeProps = mock(NodeLocalProperties.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
 
 		estimator = mock(CryptoGetInfoUsage.class);
 		factory = mock(Function.class);
@@ -111,7 +97,7 @@ class GetAccountInfoResourceUsageTest {
 		given(estimator.givenCurrentlyUsingProxy()).willReturn(estimator);
 		given(estimator.givenCurrentMemo(any())).willReturn(estimator);
 		given(estimator.givenCurrentTokenAssocs(3)).willReturn(estimator);
-		given(estimator.get()).willReturn(MOCK_CRYPTO_GET_INFO_USAGE);
+		given(estimator.get()).willReturn(expected);
 
 		subject = new GetAccountInfoResourceUsage();
 	}
@@ -125,7 +111,7 @@ class GetAccountInfoResourceUsageTest {
 		var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
 
 		// then:
-		assertEquals(MOCK_CRYPTO_GET_INFO_USAGE, usage);
+		assertEquals(expected, usage);
 		// and:
 		verify(estimator).givenCurrentlyUsingProxy();
 	}

@@ -149,8 +149,6 @@ public class StandardizedPropertySources implements PropertySources {
 		/* Bootstrap properties, which must include defaults for every system property. */
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
-		source.put("binary.object.query.retry.times", PropertiesLoader::getBinaryObjectQueryRetryTimes);
-
 		/* Node-local properties. */
 		source.put("dev.defaultListeningNodeAccount", PropertiesLoader::getDefaultListeningNodeAccount);
 		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);

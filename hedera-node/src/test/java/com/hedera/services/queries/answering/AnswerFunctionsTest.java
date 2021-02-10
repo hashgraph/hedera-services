@@ -20,6 +20,7 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
@@ -74,7 +75,7 @@ class AnswerFunctionsTest {
 	private RecordCache recordCache;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	private PropertySource properties;
+	private NodeLocalProperties nodeProps;
 
 	private AnswerFunctions subject;
 
@@ -86,8 +87,8 @@ class AnswerFunctionsTest {
 
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
-		properties = mock(PropertySource.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, properties, null);
+		nodeProps = mock(NodeLocalProperties.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, nodeProps, null);
 
 		recordCache = mock(RecordCache.class);
 

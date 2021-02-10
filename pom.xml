@@ -92,7 +92,15 @@
   </issueManagement>
 
   <repositories>
-     <repository>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>central</id>
+      <name>Central Repository</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+    <repository>
       <id>ossrh-snapshots</id>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
       <releases>
@@ -308,6 +316,8 @@ ${git.signoff}
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven-surefire.version}</version>
           <configuration>
+            <forkCount>3</forkCount>
+            <reuseForks>true</reuseForks>
             <argLine>@{argLine} -Xmx2048m</argLine>
           </configuration>
         </plugin>

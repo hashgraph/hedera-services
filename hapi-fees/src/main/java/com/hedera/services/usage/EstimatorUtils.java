@@ -40,6 +40,13 @@ public interface EstimatorUtils {
 		return expiry - effectiveNow;
 	}
 
+	default long changeInBsUsage(long oldB, long oldLifetimeSecs, long newB, long newLifetimeSecs) {
+		newLifetimeSecs = Math.max(oldLifetimeSecs, newLifetimeSecs);
+		long oldBs = oldB * oldLifetimeSecs;
+		long newBs = newB * newLifetimeSecs;
+		return Math.max(0, newBs - oldBs);
+	}
+
 	long baseNetworkRbs();
 	FeeData withDefaultTxnPartitioning(FeeComponents usage, long networkRbh, int numPayerKeys);
 	FeeData withDefaultQueryPartitioning(FeeComponents usage);

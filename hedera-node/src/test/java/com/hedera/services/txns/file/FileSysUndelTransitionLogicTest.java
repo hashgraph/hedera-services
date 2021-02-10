@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,7 @@ class FileSysUndelTransitionLogicTest {
 			SUCCESS);
 
 	JKey wacl;
-	JFileInfo attr, deletedAttr;
+	HFileMeta attr, deletedAttr;
 
 	TransactionID txnId;
 	TransactionBody fileSysUndelTxn;
@@ -85,8 +85,8 @@ class FileSysUndelTransitionLogicTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
-		attr = new JFileInfo(false, wacl, currExpiry);
-		deletedAttr = new JFileInfo(true, wacl, currExpiry);
+		attr = new HFileMeta(false, wacl, currExpiry);
+		deletedAttr = new HFileMeta(true, wacl, currExpiry);
 
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
@@ -116,7 +116,7 @@ class FileSysUndelTransitionLogicTest {
 
 		// then:
 		assertFalse(deletedAttr.isDeleted());
-		assertEquals(oldFutureExpiry, deletedAttr.getExpirationTimeSeconds());
+		assertEquals(oldFutureExpiry, deletedAttr.getExpiry());
 		inOrder.verify(hfs).sudoSetattr(deleted, deletedAttr);
 		inOrder.verify(oldExpiries).remove(EntityId.ofNullableFileId(deleted));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);

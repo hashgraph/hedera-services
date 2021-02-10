@@ -21,11 +21,8 @@ package com.hedera.services.fees.calculation.token.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenGrantKycUsage;
-import com.hedera.services.usage.token.TokenWipeUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
@@ -50,12 +47,14 @@ class TokenGrantKycResourceUsageTest {
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
 	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
 	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+	FeeData expected;
 
 	TokenGrantKycUsage usage;
 	BiFunction<TransactionBody, SigUsage, TokenGrantKycUsage> factory;
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 
 		tokenGrantKycTxn = mock(TransactionBody.class);
@@ -68,7 +67,7 @@ class TokenGrantKycResourceUsageTest {
 		given(factory.apply(tokenGrantKycTxn, sigUsage)).willReturn(usage);
 
 		usage = mock(TokenGrantKycUsage.class);
-		given(usage.get()).willReturn(MOCK_TOKEN_GRANT_KYC_USAGE);
+		given(usage.get()).willReturn(expected);
 
 		TokenGrantKycResourceUsage.factory = factory;
 		given(factory.apply(tokenGrantKycTxn, sigUsage)).willReturn(usage);
@@ -87,23 +86,7 @@ class TokenGrantKycResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
-				MOCK_TOKEN_GRANT_KYC_USAGE,
+				expected,
 				subject.usageGiven(tokenGrantKycTxn, obj, view));
 	}
-
-	public static final FeeData MOCK_TOKEN_GRANT_KYC_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(1)
-					.setBpt(1)
-					.setVpt(1)
-					.setRbh(1)
-					.setSbh(1)
-					.setGas(1)
-					.setTv(1)
-					.setBpr(1)
-					.setSbpr(1)
-					.build(), 1);
-
 }

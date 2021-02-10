@@ -30,12 +30,14 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.stream.proto.AllAccountBalances;
+import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
+
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
@@ -55,6 +57,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+import java.util.Optional;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.b64Encode;
@@ -304,16 +307,155 @@ class SignedStateBalancesExporterTest {
 		new File(expectedExportLoc()).delete();
 	}
 
+	@Test
+	public void testExportingTokenBalancesProto() throws IOException {
+		// setup:
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		Pattern PB_NAME_PATTERN = Pattern.compile(
+				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.pb");
+		// and:
+		var loc = expectedExportLoc(true);
+
+		given(hashReader.readHash(loc)).willReturn(fileHash);
+		given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// and:
+		java.util.Optional<AllAccountBalances> fileContent = subject.importBalanceProtoFile(loc);
+
+		AllAccountBalances allAccountBalances = fileContent.get() ;
+
+		// then:
+		List<SingleAccountBalances> accounts = allAccountBalances.getAllAccountsList();
+
+		assertEquals(accounts.size(), 4);
+
+		for(SingleAccountBalances account : accounts) {
+			if(account.getAccountID().getAccountNum() == 1001) {
+				assertEquals(account.getHbarBalance(), 250);
+			}
+			else if(account.getAccountID().getAccountNum() == 1002) {
+				assertEquals(account.getHbarBalance(), 250);
+				assertEquals(account.getTokenBalances(0).getTokenId().getTokenNum(), 1004);
+				assertEquals(account.getTokenBalances(0).getBalance(), 100);
+			}
+		}
+
+		// and:
+		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
+		// and:
+		verify(mockLog).debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig"));
+		// and:
+//		assertTrue(CSV_NAME_PATTERN.matcher(captor.getValue()).matches());
+
+		// cleanup:
+		new File(loc).delete();
+	}
+
+	@Test
+	public void protoWriteIoException() throws IOException {
+		// setup:
+		var otherDynamicProperties = new MockGlobalDynamicProps() {
+			@Override
+			public String pathToBalancesExportDir() {
+				return "not/a/real/location";
+			}
+		};
+		subject = new SignedStateBalancesExporter(properties, signer, otherDynamicProperties);
+
+		// given:
+		subject.directories = assurance;
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// then:
+		verify(mockLog).error(any(String.class), any(Throwable.class));
+	}
+
+
+	@Test
+	public void getEmptyAllAccountBalancesFromCorruptedProtoFileImport() throws Exception {
+		// setup:
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		Pattern BAD_PB_NAME_PATTERN = Pattern.compile(
+				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.pb");
+		// and:
+		var loc = expectedExportLoc(true);
+
+		given(hashReader.readHash(loc)).willReturn(fileHash);
+
+		// when: Pretend the .csv file is a corrupted .pb file
+		subject.toCsvFile(state, now);
+
+		// and:
+		java.util.Optional<AllAccountBalances> accounts = subject.importBalanceProtoFile(loc);
+
+		// then:
+		assertEquals(Optional.empty(), accounts);
+	}
+
+	@Test
+	public void throwsOnUnexpectedTotalFloatForProtoFile() throws NegativeAccountBalanceException {
+		// given:
+		anotherNodeAccount.setBalance(anotherNodeBalance + 1);
+
+		// then:
+		assertThrows(IllegalStateException.class, () -> subject.toProtoFile(state, now));
+	}
+
+
+
+	@Test
+	public void assuresExpectedProtoFileDir() throws IOException {
+		// given:
+		subject.directories = assurance;
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// then:
+		verify(assurance).ensureExistenceOf(expectedExportDir());
+	}
+
+
 	private String expectedExportLoc() {
+		return expectedExportLoc(false);
+	}
+
+	private String expectedExportLoc(boolean isProto) {
 		return dynamicProperties.pathToBalancesExportDir()
 				+ File.separator
 				+ "balance0.0.3"
 				+ File.separator
-				+ expectedBalancesName();
+				+ expectedBalancesName(isProto);
+	}
+
+
+	@Test
+	public void errorProtoLogsOnIoException() throws IOException {
+		// given:
+		subject.directories = assurance;
+		// and:
+		willThrow(IOException.class).given(assurance).ensureExistenceOf(any());
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// then:
+		verify(mockLog).error(String.format(
+				SignedStateBalancesExporter.BAD_EXPORT_DIR_ERROR_MSG_TPL, expectedExportDir()));
+	}
+
+	private String expectedBalancesName(Boolean isProto ) {
+		return isProto ? now.toString().replace(":", "_") + "_Balances.pb"
+				: now.toString().replace(":", "_") + "_Balances.csv";
 	}
 
 	private String expectedBalancesName() {
-		return now.toString().replace(":", "_") + "_Balances.csv";
+		return  expectedBalancesName(false) ;
 	}
 
 	@Test

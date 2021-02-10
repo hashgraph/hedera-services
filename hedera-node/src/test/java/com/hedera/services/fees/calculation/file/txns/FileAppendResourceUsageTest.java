@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,7 +81,7 @@ class FileAppendResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// setup:
 		JKey wacl = JKey.mapKey(Key.newBuilder().setEd25519(ByteString.copyFrom("YUUP".getBytes())).build());
-		JFileInfo jInfo = new JFileInfo(false, wacl, Long.MAX_VALUE);
+		HFileMeta jInfo = new HFileMeta(false, wacl, Long.MAX_VALUE);
 		// and:
 		Timestamp expiry = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 

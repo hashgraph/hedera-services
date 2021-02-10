@@ -22,13 +22,12 @@ package com.hedera.services.files.interceptors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,7 +86,7 @@ public class FeeSchedulesManager implements FileUpdateInterceptor {
 	}
 
 	@Override
-	public Map.Entry<ResponseCodeEnum, Boolean> preAttrChange(FileID id, JFileInfo newAttr) {
+	public Map.Entry<ResponseCodeEnum, Boolean> preAttrChange(FileID id, HFileMeta newAttr) {
 		return YES_VERDICT;
 	}
 

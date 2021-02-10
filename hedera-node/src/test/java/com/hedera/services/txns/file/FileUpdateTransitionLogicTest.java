@@ -21,6 +21,7 @@ package com.hedera.services.txns.file;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.TransactionContext;
@@ -40,7 +41,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static junit.framework.TestCase.assertTrue;
@@ -68,7 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 
 class FileUpdateTransitionLogicTest {
-	enum UpdateTarget { KEY, EXPIRY, CONTENTS }
+	enum UpdateTarget { KEY, EXPIRY, CONTENTS, MEMO }
 
 	long lifetime = 1_234_567L;
 	long txnValidDuration = 180;
@@ -82,7 +84,9 @@ class FileUpdateTransitionLogicTest {
 	FileID sysFileTarget = IdUtils.asFile("0.1.121");
 	Key newWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
 	JKey oldWacl, actionableNewWacl;
-	JFileInfo oldAttr, newAttr, deletedAttr, immutableAttr;
+	HFileMeta oldAttr, newAttr, deletedAttr, immutableAttr;
+	String oldMemo = "Past";
+	String newMemo = "Future";
 	byte[] newContents = "STUFF".getBytes();
 	AccountID sysAdmin = IdUtils.asAccount("0.0.50");
 	AccountID nonSysAdmin = IdUtils.asAccount("0.0.13257");
@@ -101,12 +105,12 @@ class FileUpdateTransitionLogicTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		oldWacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
-		oldAttr = new JFileInfo(false, oldWacl, oldExpiry);
-		deletedAttr = new JFileInfo(true, oldWacl, oldExpiry);
-		immutableAttr = new JFileInfo(false, StateView.EMPTY_WACL, oldExpiry);
+		oldAttr = new HFileMeta(false, oldWacl, oldExpiry, oldMemo);
+		deletedAttr = new HFileMeta(true, oldWacl, oldExpiry);
+		immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, oldExpiry);
 
 		actionableNewWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-		newAttr = new JFileInfo(false, actionableNewWacl, newExpiry);
+		newAttr = new HFileMeta(false, actionableNewWacl, newExpiry, newMemo);
 
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
@@ -118,6 +122,7 @@ class FileUpdateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
 		given(validator.hasGoodEncoding(newWacl)).willReturn(true);
+		given(validator.isValidEntityMemo(newMemo)).willReturn(true);
 
 		subject = new FileUpdateTransitionLogic(hfs, number, validator, txnCtx);
 	}
@@ -126,12 +131,12 @@ class FileUpdateTransitionLogicTest {
 	public void doesntUpdateWaclIfNoNew() {
 		// setup:
 		HederaFs.UpdateResult res = mock(HederaFs.UpdateResult.class);
-		ArgumentCaptor<JFileInfo> captor = ArgumentCaptor.forClass(JFileInfo.class);
+		ArgumentCaptor<HFileMeta> captor = ArgumentCaptor.forClass(HFileMeta.class);
 
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		given(hfs.getattr(nonSysFileTarget)).willReturn(
-				new JFileInfo(false, oldWacl, oldExpiry));
+				new HFileMeta(false, oldWacl, oldExpiry));
 		given(hfs.setattr(any(), any())).willReturn(res);
 
 		// when:
@@ -266,7 +271,7 @@ class FileUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		assertEquals(oldExpiry, oldAttr.getExpirationTimeSeconds());
+		assertEquals(oldExpiry, oldAttr.getExpiry());
 	}
 
 	@Test
@@ -427,6 +432,20 @@ class FileUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void syntaxCheckTestsMemo() {
+		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.MEMO));
+		given(validator.isValidEntityMemo(newMemo)).willReturn(false);
+
+		// when:
+		var syntaxCheck = subject.syntaxCheck();
+		var status = syntaxCheck.apply(fileUpdateTxn);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, status);
+		verify(validator).isValidEntityMemo(newMemo);
+	}
+
+	@Test
 	public void syntaxCheckTestsExpiryAsAutoRenewPeriod() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
@@ -465,6 +484,9 @@ class FileUpdateTransitionLogicTest {
 		}
 		if (targets.contains(UpdateTarget.EXPIRY)) {
 			op.setExpirationTime(MiscUtils.asTimestamp(Instant.ofEpochSecond(newExpiry)));
+		}
+		if (targets.contains(UpdateTarget.MEMO)) {
+			op.setMemo(StringValue.newBuilder().setValue(newMemo).build());
 		}
 
 		txnId = TransactionID.newBuilder()

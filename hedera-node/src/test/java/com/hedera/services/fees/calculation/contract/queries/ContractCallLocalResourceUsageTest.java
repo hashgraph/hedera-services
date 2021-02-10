@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
@@ -194,7 +193,7 @@ class ContractCallLocalResourceUsageTest {
 				.build();
 	}
 
-	static final FeeData nonGasUsage = UsageEstimatorUtils.defaultPartitioning(
+	static final FeeData nonGasUsage = FeeData.newBuilder().setNodedata(
 			FeeComponents.newBuilder()
 					.setMin(1)
 					.setMax(1_000_000)
@@ -206,8 +205,8 @@ class ContractCallLocalResourceUsageTest {
 					.setGas(0)
 					.setTv(1)
 					.setBpr(1)
-					.setSbpr(1)
-					.build(), 1);
+					.setSbpr(1))
+			.build();
 
 	private FeeData expectedUsage() {
 		return nonGasUsage.toBuilder()
