@@ -127,6 +127,7 @@ public class ServicesMain implements SwirldMain {
 		if (ctx.globalDynamicProperties().shouldExportBalances() && ctx.balancesExporter().isTimeToExport(when)) {
 			try {
 				ctx.balancesExporter().toCsvFile((ServicesState) signedState, when);
+				ctx.balancesExporter().toProtoFile((ServicesState) signedState, when);
 			} catch (IllegalStateException ise) {
 				log.error("HederaNode#{} has invalid total balance in signed state, exiting!", ctx.id(), ise);
 				systemExits.fail(1);

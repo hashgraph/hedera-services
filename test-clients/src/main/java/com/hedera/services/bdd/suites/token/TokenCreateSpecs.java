@@ -182,7 +182,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("wipeKey")
 				).when(
 						tokenCreate("primary")
-								.memo(memo)
+								.entityMemo(memo)
 								.name(saltedName)
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount("autoRenewAccount")

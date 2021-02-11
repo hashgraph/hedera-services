@@ -20,6 +20,7 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
@@ -28,18 +29,21 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.hederahashgraph.api.proto.java.TokenBalances;
+import com.hedera.services.stream.proto.AllAccountBalances;
+import com.hedera.services.stream.proto.SingleAccountBalances;
+import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.Units;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Writer;
 import java.math.BigInteger;
@@ -48,13 +52,15 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 
 public class SignedStateBalancesExporter implements BalancesExporter {
 	static Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
@@ -67,6 +73,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	static final String BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL = "Could not sign balance file '%s'!";
 	static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '%s'.";
 	static final String CURRENT_VERSION = "version:2";
+
+	static final String PROTOBUF_FILE_EXTENSION = ".pb";
+	static final String CSV_FILE_EXTENSION = ".csv";
 
 	static final Instant NEVER = null;
 	static final Base64.Encoder encoder = Base64.getEncoder();
@@ -81,6 +90,10 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	String lastUsedExportDir = UNKNOWN_EXPORT_DIR;
 	Instant periodEnd = NEVER;
+
+
+	public static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
+			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
 
 	public SignedStateBalancesExporter(
 			PropertySource properties,
@@ -106,24 +119,57 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	}
 
 	@Override
-	public void toCsvFile(ServicesState signedState, Instant when) {
+	public void toCsvFile(ServicesState signedState, Instant exportTimeStamp) {
 		if (!ensureExportDir(signedState.getNodeAccountId())) {
 			return;
 		}
+		long startTime = System.nanoTime();
 		var summary = summarized(signedState);
 		var expected = BigInteger.valueOf(expectedFloat);
 		if (!expected.equals(summary.getTotalFloat())) {
 			throw new IllegalStateException(String.format(
 					"Signed state @ %s had total balance %d not %d!",
-					when,
+					exportTimeStamp,
 					summary.getTotalFloat(),
 					expectedFloat));
 		}
-		var csvLoc = lastUsedExportDir + when.toString().replace(":", "_") + "_Balances.csv";
-		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, when);
+		var csvLoc = lastUsedExportDir
+				+ exportTimeStamp.toString().replace(":", "_") + "_Balances" + CSV_FILE_EXTENSION;
+		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, exportTimeStamp);
 		if (exportSucceeded) {
 			tryToSign(csvLoc);
 		}
+		log.info("It took total {} Millisecond to export and sign the csv account files",
+				(System.nanoTime() - startTime) * Units.NANOSECONDS_TO_MILLISECONDS);
+	}
+
+	@Override
+	public void toProtoFile(ServicesState signedState, Instant exportTimeStamp) {
+		if (!ensureExportDir(signedState.getNodeAccountId())) {
+			return;
+		}
+
+		long startTime = System.nanoTime();
+		AllAccountBalances.Builder allAccountBalancesBuilder = AllAccountBalances.newBuilder();
+
+		var expected = BigInteger.valueOf(expectedFloat);
+		var total = calcTotalAndBuildProtoMessage(signedState, exportTimeStamp, allAccountBalancesBuilder);
+
+		if (!expected.equals(total)) {
+			throw new IllegalStateException(String.format(
+					"Signed state @ %s had total balance %d not %d!",
+					exportTimeStamp,total,	expectedFloat));
+		}
+
+		var protoLoc = lastUsedExportDir
+				+ exportTimeStamp.toString().replace(":", "_") + "_Balances" + PROTOBUF_FILE_EXTENSION;
+		boolean exportSucceeded = exportBalancesProtoFile(allAccountBalancesBuilder, protoLoc);
+
+		if (exportSucceeded) {
+			tryToSign(protoLoc);
+		}
+		log.info("It took total {} Millisecond to export and sign the proto account files",
+				(System.nanoTime() - startTime) * Units.NANOSECONDS_TO_MILLISECONDS);
 	}
 
 	private void tryToSign(String csvLoc) {
@@ -146,15 +192,20 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			} else {
 				addLegacyHeader(fout, when);
 			}
-			for (AccountBalance entry : summary.getOrderedBalances())  {
+			for (SingleAccountBalances singleAccountBalances : summary.getOrderedBalances())  {
 				fout.write(String.format(
 						"%d,%d,%d,%d",
-						entry.getShard(),
-						entry.getRealm(),
-						entry.getNum(),
-						entry.getBalance()));
+						singleAccountBalances.getAccountID().getShardNum(),
+						singleAccountBalances.getAccountID().getRealmNum(),
+						singleAccountBalances.getAccountID().getAccountNum(),
+						singleAccountBalances.getHbarBalance()));
 				if (dynamicProperties.shouldExportTokenBalances()) {
-					fout.write("," + entry.getB64TokenBalances());
+					if(singleAccountBalances.getTokenUnitBalancesList().size() > 0) {
+						fout.write("," + b64Encode(singleAccountBalances));
+					}
+					else {
+						fout.write(",");
+					}
 				}
 				fout.write(LINE_SEPARATOR);
 			}
@@ -163,6 +214,82 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			return false;
 		}
 		return true;
+	}
+
+	private BigInteger calcTotalAndBuildProtoMessage(ServicesState signedState, Instant exportTimeStamp,
+			AllAccountBalances.Builder allAccountBalancesBuilder) {
+
+		long nodeBalanceWarnThreshold = dynamicProperties.nodeBalanceWarningThreshold();
+		BigInteger totalFloat = BigInteger.valueOf(0L);
+
+		var nodeIds = MiscUtils.getNodeAccounts(signedState.addressBook());
+		var tokens = signedState.tokens();
+		var accounts = signedState.accounts();
+		var tokenAssociations = signedState.tokenAssociations();
+
+		for (MerkleEntityId id : accounts.keySet()) {
+			var account = accounts.get(id);
+			if (!account.isDeleted()) {
+				var accountId = id.toAccountId();
+				var balance = account.getBalance();
+				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
+					log.warn(String.format(
+							LOW_NODE_BALANCE_WARN_MSG_TPL,
+							readableId(accountId),
+							balance));
+				}
+				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
+
+				SingleAccountBalances.Builder singleAccountBuilder =SingleAccountBalances.newBuilder();
+				singleAccountBuilder.setAccountID(accountId)
+						.setHbarBalance(balance);
+
+				if (dynamicProperties.shouldExportTokenBalances()) {
+					var accountTokens = account.tokens();
+					if (accountTokens.numAssociations() > 0) {
+						for (TokenID tokenId : accountTokens.asIds()) {
+							var token = tokens.get(fromTokenId(tokenId));
+							if (token != null && !token.isDeleted()) {
+								var relationship = tokenAssociations
+										.get(fromAccountTokenRel(accountId, tokenId));
+								singleAccountBuilder.addTokenUnitBalances(tb(tokenId, relationship.getBalance()));
+							}
+						}
+					}
+				}
+				Timestamp.Builder consensusTimeStamp = Timestamp.newBuilder();
+				consensusTimeStamp.setSeconds(exportTimeStamp.getEpochSecond())
+						.setNanos(exportTimeStamp.getNano());
+				allAccountBalancesBuilder.setConsensusTimestamp(consensusTimeStamp.build());
+				allAccountBalancesBuilder.addAllAccounts(singleAccountBuilder.build());
+			}
+		}
+		return totalFloat;
+	}
+
+	private boolean exportBalancesProtoFile(AllAccountBalances.Builder allAccountsBuilder, String protoLoc) {
+		if(log.isDebugEnabled()) {
+			log.debug("Export all accounts to protobuf file {} ", protoLoc);
+		}
+
+		try (FileOutputStream fout = new FileOutputStream(protoLoc)) {
+			allAccountsBuilder.build().writeTo(fout);
+		} catch (IOException e) {
+			log.error(String.format(BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL, protoLoc), e);
+			return false;
+		}
+		return true;
+	}
+
+	public Optional<AllAccountBalances> importBalanceProtoFile(String protoLoc) {
+		try {
+			FileInputStream fin = new FileInputStream(protoLoc);
+			AllAccountBalances allAccountBalances = AllAccountBalances.parseFrom(fin);
+			return Optional.ofNullable(allAccountBalances);
+		} catch (IOException e) {
+			log.error("Can't read protobuf message file {}", protoLoc);
+		}
+		return Optional.empty();
 	}
 
 	private void addLegacyHeader(Writer writer, Instant at) throws IOException {
@@ -179,7 +306,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	BalancesSummary summarized(ServicesState signedState) {
 		long nodeBalanceWarnThreshold = dynamicProperties.nodeBalanceWarningThreshold();
 		BigInteger totalFloat = BigInteger.valueOf(0L);
-		List<AccountBalance> accountBalances = new ArrayList<>();
+		List<SingleAccountBalances> accountBalances = new ArrayList<>();
 
 		var nodeIds = MiscUtils.getNodeAccounts(signedState.addressBook());
 		var tokens = signedState.tokens();
@@ -197,47 +324,45 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 							balance));
 				}
 				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
-				var balancesEntry = new AccountBalance(id.getShard(), id.getRealm(), id.getNum(), account.getBalance());
+				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
+				sabBuilder.setHbarBalance(balance)
+						.setAccountID(accountId);
 				if (dynamicProperties.shouldExportTokenBalances()) {
-					addTokenBalances(accountId, account, balancesEntry, tokens, tokenAssociations);
+					addTokenBalances(accountId, account, sabBuilder,  tokens, tokenAssociations);
 				}
-				accountBalances.add(balancesEntry);
+				accountBalances.add(sabBuilder.build());
 			}
 		}
-		Collections.sort(accountBalances);
-
+		accountBalances.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
 		return new BalancesSummary(totalFloat, accountBalances);
 	}
 
 	private void addTokenBalances(
 			AccountID id,
 			MerkleAccount account,
-			AccountBalance balancesEntry,
+			SingleAccountBalances.Builder sabBuilder,
 			FCMap<MerkleEntityId, MerkleToken> tokens,
 			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations
 	) {
 		var accountTokens = account.tokens();
 		if (accountTokens.numAssociations() > 0) {
-			var tokenBalances = TokenBalances.newBuilder();
+
 			for (TokenID tokenId : accountTokens.asIds()) {
 				var token = tokens.get(fromTokenId(tokenId));
 				if (token != null && !token.isDeleted()) {
 					var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));
-					tokenBalances.addTokenBalances(tb(tokenId, relationship.getBalance()));
+					sabBuilder.addTokenUnitBalances(tb(tokenId, relationship.getBalance()));
 				}
-			}
-			if (tokenBalances.getTokenBalancesCount() > 0) {
-				balancesEntry.setB64TokenBalances(b64Encode(tokenBalances.build()));
 			}
 		}
 	}
 
-	private TokenBalance tb(TokenID id, long balance) {
-		return TokenBalance.newBuilder().setTokenId(id).setBalance(balance).build();
+	private TokenUnitBalance tb(TokenID id, long balance) {
+		return TokenUnitBalance.newBuilder().setTokenId(id).setBalance(balance).build();
 	}
 
-	static String b64Encode(TokenBalances tokenBalances) {
-		return encoder.encodeToString(tokenBalances.toByteArray());
+	static String b64Encode(SingleAccountBalances accountBalances) {
+		return encoder.encodeToString(accountBalances.toByteArray());
 	}
 
 	private boolean ensureExportDir(AccountID node) {
@@ -262,11 +387,11 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	static class BalancesSummary {
 		private final BigInteger totalFloat;
-		private final List<AccountBalance> orderedBalances;
+		private final List<SingleAccountBalances> orderedBalances;
 
 		BalancesSummary(
 				BigInteger totalFloat,
-				List<AccountBalance> orderedBalances
+				List<SingleAccountBalances> orderedBalances
 		) {
 			this.totalFloat = totalFloat;
 			this.orderedBalances = orderedBalances;
@@ -276,7 +401,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			return totalFloat;
 		}
 
-		public List<AccountBalance> getOrderedBalances() {
+		public List<SingleAccountBalances> getOrderedBalances() {
 			return orderedBalances;
 		}
 	}

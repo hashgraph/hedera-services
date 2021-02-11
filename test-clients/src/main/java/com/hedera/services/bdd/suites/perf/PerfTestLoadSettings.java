@@ -39,6 +39,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS = 2;
 	public static final int DEFAULT_TEST_TREASURE_START_ACCOUNT = 1001;
 	public static final int DEFAULT_TOTAL_CLIENTS = 1;
+	public static final int DEFAULT_MEMO_LENGTH = 25;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -48,6 +49,7 @@ public class PerfTestLoadSettings {
 	private int threads = DEFAULT_THREADS;
 	private int hcsSubmitMessageSize = DEFAULT_SUBMIT_MESSAGE_SIZE;
 	private int hcsSubmitMessageSizeVar = DEFAULT_SUBMIT_MESSAGE_SIZE_VAR;
+	private int memoLength = DEFAULT_MEMO_LENGTH;
 
 	/** totalTestAccounts specifies how many Crypto accounts in the state file.  All of them
 	 * participate random crypto transfer perf test */
@@ -89,6 +91,10 @@ public class PerfTestLoadSettings {
 		this.tps = tps;
 		this.mins = mins;
 		this.threads = threads;
+	}
+
+	public int getMemoLength() {
+		return memoLength;
 	}
 
 	public int getTps() {
@@ -196,6 +202,9 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("messageSizeVar")) {
 			hcsSubmitMessageSize = ciProps.getInteger("messageSizeVar");
 		}
+		if (ciProps.has("memoLength")) {
+			memoLength = ciProps.getInteger("memoLength");
+		}
 	}
 
 	@Override
@@ -215,6 +224,7 @@ public class PerfTestLoadSettings {
 				.add("testTreasureStartAccount", testTreasureStartAccount)
 				.add("submitMessageSize", hcsSubmitMessageSize)
 				.add("submitMessageSizeVar", hcsSubmitMessageSizeVar)
+				.add("memoLength", memoLength)
 				.toString();
 	}
 }

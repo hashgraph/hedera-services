@@ -30,12 +30,13 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.HederaDateTimeFormatter;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.hederahashgraph.api.proto.java.TokenBalances;
+import com.hedera.services.stream.proto.AllAccountBalances;
+import com.hedera.services.stream.proto.SingleAccountBalances;
+import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
+
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
@@ -51,12 +52,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+import java.util.Optional;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
+import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.b64Encode;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
@@ -65,6 +70,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -87,12 +93,16 @@ class SignedStateBalancesExporterTest {
 
 	long thisNodeBalance = 400;
 	AccountID thisNode = asAccount("0.0.3");
+
 	long anotherNodeBalance = 100;
 	AccountID anotherNode = asAccount("0.0.4");
+
 	long firstNonNodeAccountBalance = 250;
 	AccountID firstNonNode = asAccount("0.0.1001");
+
 	long secondNonNodeAccountBalance = 250;
 	AccountID secondNonNode = asAccount("0.0.1002");
+
 	AccountID deleted = asAccount("0.0.1003");
 
 	TokenID theToken = asToken("0.0.1004");
@@ -251,11 +261,11 @@ class SignedStateBalancesExporterTest {
 			var entry = expected.get(i);
 			assertEquals(String.format(
 					"%d,%d,%d,%d,%s",
-					entry.getShard(),
-					entry.getRealm(),
-					entry.getNum(),
-					entry.getBalance(),
-					entry.getB64TokenBalances()), lines.get(i + 3));
+					entry.getAccountID().getShardNum(),
+					entry.getAccountID().getRealmNum(),
+					entry.getAccountID().getAccountNum(),
+					entry.getHbarBalance(),
+					entry.getTokenUnitBalancesList().size() > 0 ? b64Encode(entry) : ""), lines.get(i + 3));
 		}
 		// and:
 		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
@@ -294,32 +304,189 @@ class SignedStateBalancesExporterTest {
 			var entry = expected.get(i);
 			assertEquals(String.format(
 					"%d,%d,%d,%d",
-					entry.getShard(),
-					entry.getRealm(),
-					entry.getNum(),
-					entry.getBalance()), lines.get(i + 2));
+					entry.getAccountID().getShardNum(),
+					entry.getAccountID().getRealmNum(),
+					entry.getAccountID().getAccountNum(),
+					entry.getHbarBalance()), lines.get(i + 2));
 		}
 
 		// cleanup:
 		new File(expectedExportLoc()).delete();
 	}
 
+	@Test
+	public void testExportingTokenBalancesProto() throws IOException {
+		// setup:
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		Pattern PB_NAME_PATTERN = Pattern.compile(
+				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.pb");
+		// and:
+		var loc = expectedExportLoc(true);
+
+		given(hashReader.readHash(loc)).willReturn(fileHash);
+		given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// and:
+		java.util.Optional<AllAccountBalances> fileContent = subject.importBalanceProtoFile(loc);
+
+		AllAccountBalances allAccountBalances = fileContent.get() ;
+
+		// then:
+		List<SingleAccountBalances> accounts = allAccountBalances.getAllAccountsList();
+
+		assertEquals(accounts.size(), 4);
+
+		for(SingleAccountBalances account : accounts) {
+			if(account.getAccountID().getAccountNum() == 1001) {
+				assertEquals(account.getHbarBalance(), 250);
+			}
+			else if(account.getAccountID().getAccountNum() == 1002) {
+				assertEquals(account.getHbarBalance(), 250);
+				assertEquals(account.getTokenUnitBalances(0).getTokenId().getTokenNum(), 1004);
+				assertEquals(account.getTokenUnitBalances(0).getBalance(), 100);
+			}
+		}
+
+		// and:
+		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
+		// and:
+		verify(mockLog).debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig"));
+		// and:
+//		assertTrue(CSV_NAME_PATTERN.matcher(captor.getValue()).matches());
+
+		// cleanup:
+		new File(loc).delete();
+	}
+
+	@Test
+	public void protoWriteIoException() throws IOException {
+		// setup:
+		var otherDynamicProperties = new MockGlobalDynamicProps() {
+			@Override
+			public String pathToBalancesExportDir() {
+				return "not/a/real/location";
+			}
+		};
+		subject = new SignedStateBalancesExporter(properties, signer, otherDynamicProperties);
+
+		// given:
+		subject.directories = assurance;
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// then:
+		verify(mockLog).error(any(String.class), any(Throwable.class));
+	}
+
+
+	@Test
+	public void getEmptyAllAccountBalancesFromCorruptedProtoFileImport() throws Exception {
+		// setup:
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		Pattern BAD_PB_NAME_PATTERN = Pattern.compile(
+				".*\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}[.]\\d{9}Z_Balances.pb");
+		// and:
+		var loc = expectedExportLoc(true);
+
+		given(hashReader.readHash(loc)).willReturn(fileHash);
+
+		// when: Pretend the .csv file is a corrupted .pb file
+		subject.toCsvFile(state, now);
+
+		// and:
+		java.util.Optional<AllAccountBalances> accounts = subject.importBalanceProtoFile(loc);
+
+		// then:
+		assertEquals(Optional.empty(), accounts);
+	}
+
+	@Test
+	public void throwsOnUnexpectedTotalFloatForProtoFile() throws NegativeAccountBalanceException {
+		// given:
+		anotherNodeAccount.setBalance(anotherNodeBalance + 1);
+
+		// then:
+		assertThrows(IllegalStateException.class, () -> subject.toProtoFile(state, now));
+	}
+
+
+
+	@Test
+	public void assuresExpectedProtoFileDir() throws IOException {
+		// given:
+		subject.directories = assurance;
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// then:
+		verify(assurance).ensureExistenceOf(expectedExportDir());
+	}
+
+
 	private String expectedExportLoc() {
+		return expectedExportLoc(false);
+	}
+
+	private String expectedExportLoc(boolean isProto) {
 		return dynamicProperties.pathToBalancesExportDir()
 				+ File.separator
 				+ "balance0.0.3"
 				+ File.separator
-				+ expectedBalancesName();
+				+ expectedBalancesName(isProto);
+	}
+
+
+	@Test
+	public void errorProtoLogsOnIoException() throws IOException {
+		// given:
+		subject.directories = assurance;
+		// and:
+		willThrow(IOException.class).given(assurance).ensureExistenceOf(any());
+
+		// when:
+		subject.toProtoFile(state, now);
+
+		// then:
+		verify(mockLog).error(String.format(
+				SignedStateBalancesExporter.BAD_EXPORT_DIR_ERROR_MSG_TPL, expectedExportDir()));
+	}
+
+	private String expectedBalancesName(Boolean isProto ) {
+		return isProto ? now.toString().replace(":", "_") + "_Balances.pb"
+				: now.toString().replace(":", "_") + "_Balances.csv";
 	}
 
 	private String expectedBalancesName() {
-		return now.toString().replace(":", "_") + "_Balances.csv";
+		return  expectedBalancesName(false) ;
+	}
+
+	@Test
+	public void testSingleAccountBalancingSort() {
+		// given:
+		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
+		List<SingleAccountBalances> sorted = new ArrayList<>();
+		sorted.addAll(expectedBalances);
+
+		Collections.shuffle(sorted);
+
+		assertNotEquals(expectedBalances, sorted);
+		// when
+		sorted.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
+
+		// then:
+		assertEquals(expectedBalances, sorted);
+
 	}
 
 	@Test
 	public void summarizesAsExpected() {
 		// given:
-		List<AccountBalance> expectedBalances = theExpectedBalances();
+		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
 
 		// when:
 		var summary = subject.summarized(state);
@@ -333,24 +500,32 @@ class SignedStateBalancesExporterTest {
 				"0.0.4", anotherNodeBalance));
 	}
 
-	private List<AccountBalance> theExpectedBalances() {
-		var expThisNode = new AccountBalance(0, 0, 3, thisNodeBalance);
-		var expAnotherNode = new AccountBalance(0, 0, 4, anotherNodeBalance);
-		var expFirstNon = new AccountBalance(0, 0, 1001, firstNonNodeAccountBalance);
-		var expSecondNon = new AccountBalance(0, 0, 1002, secondNonNodeAccountBalance);
-		TokenBalances expB64Balances = TokenBalances.newBuilder()
-				.addTokenBalances(TokenBalance.newBuilder()
-						.setTokenId(theToken)
-						.setBalance(secondNonNodeTokenBalance))
-				.build();
-		expSecondNon.setB64TokenBalances(b64Encode(expB64Balances));
-		return List.of(
-				expThisNode,
-				expAnotherNode,
-				expFirstNon,
-				expSecondNon
-		);
+	private List<SingleAccountBalances> theExpectedBalances() {
+		var singleAcctBuilder = SingleAccountBalances.newBuilder();
+		var thisNode = singleAcctBuilder
+				.setAccountID(asAccount("0.0.3"))
+				.setHbarBalance(thisNodeBalance).build();
+
+		var anotherNode = singleAcctBuilder
+				.setHbarBalance(anotherNodeBalance)
+				.setAccountID(asAccount("0.0.4")).build();
+
+		var firstNon = singleAcctBuilder
+				.setAccountID(asAccount("0.0.1001"))
+				.setHbarBalance(firstNonNodeAccountBalance).build();
+
+		TokenUnitBalance tokenBalances = TokenUnitBalance.newBuilder()
+				.setTokenId(theToken)
+				.setBalance(secondNonNodeTokenBalance).build();
+
+		var secondNon = singleAcctBuilder
+				.setAccountID(asAccount("0.0.1002"))
+				.setHbarBalance(secondNonNodeAccountBalance)
+				.addTokenUnitBalances(tokenBalances).build();
+
+		return List.of(thisNode, anotherNode, firstNon, secondNon);
 	}
+
 
 	@Test
 	public void assuresExpectedDir() throws IOException {

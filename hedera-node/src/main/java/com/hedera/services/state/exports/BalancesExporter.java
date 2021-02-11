@@ -27,4 +27,5 @@ import java.time.Instant;
 public interface BalancesExporter {
 	boolean isTimeToExport(Instant now);
 	void toCsvFile(ServicesState signedState, Instant when);
+	void toProtoFile(ServicesState signedState, Instant when);
 }
