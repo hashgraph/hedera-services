@@ -37,7 +37,6 @@ public class CryptoCreatePerfSuite extends LoadTest {
 	private static final Logger log = LogManager.getLogger(CryptoCreatePerfSuite.class);
 
 	public static void main(String... args) {
-		parseArgs(args);
 		CryptoCreatePerfSuite suite = new CryptoCreatePerfSuite();
 		suite.setReportStats(true);
 		suite.runSuiteSync();
@@ -55,7 +54,6 @@ public class CryptoCreatePerfSuite extends LoadTest {
 
 	private HapiApiSpec runCryptoCreates() {
 		final int NUM_CREATES = 1000000;
-		final String cryptoCreateMemo = TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString();
 		return defaultHapiSpec("cryptoCreatePerf")
 				.given(
 				).when(
@@ -73,7 +71,6 @@ public class CryptoCreatePerfSuite extends LoadTest {
 														.withRecharging()
 														.rechargeWindow(30)
 														.payingWith(GENESIS)
-														.entityMemo(cryptoCreateMemo)
 														.deferStatusResolution()
 								)
 						)
