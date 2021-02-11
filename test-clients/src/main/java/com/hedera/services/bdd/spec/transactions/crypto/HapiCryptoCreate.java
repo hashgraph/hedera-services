@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<AccountID> proxy = Optional.empty();
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<String> keyName = Optional.empty();
+	private Optional<String> entityMemo = Optional.empty();
 	private Optional<KeyType> keyType = Optional.empty();
 	private Optional<SigControl> keyShape = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
@@ -91,6 +92,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		this.account = account;
 	}
 
+	public HapiCryptoCreate entityMemo(String memo) {
+		entityMemo = Optional.of(memo);
+		return this;
+	}
 	public HapiCryptoCreate sendThreshold(Long amount) {
 		sendThresh = Optional.of(amount);
 		return this;

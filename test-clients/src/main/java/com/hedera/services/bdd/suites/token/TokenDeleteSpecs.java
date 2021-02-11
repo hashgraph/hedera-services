@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.token;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -77,9 +78,12 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.adminKey("tokenAdmin")
 								.treasury(TOKEN_TREASURY),
 						cryptoDelete(TOKEN_TREASURY)
+								.hasKnownStatus(ACCOUNT_IS_TREASURY),
+						tokenDissociate(TOKEN_TREASURY, "firstTbd")
 								.hasKnownStatus(ACCOUNT_IS_TREASURY)
 				).when(
 						tokenDelete("firstTbd"),
+						tokenDissociate(TOKEN_TREASURY, "firstTbd"),
 						cryptoDelete(TOKEN_TREASURY)
 								.hasKnownStatus(ACCOUNT_IS_TREASURY),
 						tokenDelete("secondTbd")

@@ -4,7 +4,7 @@ package com.hedera.services.context;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,15 +33,18 @@ import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.keys.CharacteristicsFactory;
+import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.queries.schedule.ScheduleAnswers;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
@@ -122,7 +125,6 @@ import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
-import com.hedera.services.legacy.stream.RecordStream;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
@@ -478,6 +480,9 @@ public class ServicesContextTest {
 		assertThat(ctx.semVers(), instanceOf(SemanticVersions.class));
 		assertThat(ctx.freezeGrpc(), instanceOf(FreezeController.class));
 		assertThat(ctx.contractsGrpc(), instanceOf(ContractController.class));
+		assertThat(ctx.sigFactoryCreator(), instanceOf(SigFactoryCreator.class));
+		assertThat(ctx.activationHelper(), instanceOf(InHandleActivationHelper.class));
+		assertThat(ctx.characteristics(), instanceOf(CharacteristicsFactory.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
@@ -495,7 +500,7 @@ public class ServicesContextTest {
 		var book = mock(AddressBook.class);
 		var diskFs = mock(MerkleDiskFs.class);
 		var blob = mock(MerkleOptionalBlob.class);
-		byte[] fileInfo = new JFileInfo(false, StateView.EMPTY_WACL, 1_234_567L).serialize();
+		byte[] fileInfo = new HFileMeta(false, StateView.EMPTY_WACL, 1_234_567L).serialize();
 		byte[] fileContents = new byte[0];
 		given(state.addressBook()).willReturn(book);
 		given(state.diskFs()).willReturn(diskFs);

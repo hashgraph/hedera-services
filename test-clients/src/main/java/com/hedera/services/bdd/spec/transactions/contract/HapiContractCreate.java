@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,7 +145,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		return this;
 	}
 
-	public HapiContractCreate memo(String s)	 {
+	public HapiContractCreate entityMemo(String s)	 {
 		memo = Optional.of(s);
 		return this;
 	}

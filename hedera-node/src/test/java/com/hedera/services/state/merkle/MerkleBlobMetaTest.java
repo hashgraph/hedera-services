@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -83,21 +82,6 @@ class MerkleBlobMetaTest {
 
 		// then:
 		inOrder.verify(out).writeNormalisedString(path);
-	}
-
-	@Test
-	public void legacyProviderWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-
-		given(in.readLong()).willReturn(0l).willReturn(1l);
-		given(in.readNormalisedString(MerkleBlobMeta.MAX_PATH_LEN)).willReturn(path);
-
-		// when:
-		var deSubject = (MerkleBlobMeta)(new MerkleBlobMeta.Provider().deserialize(in));
-
-		// then:
-		assertEquals(deSubject, subject);
 	}
 
 	@Test

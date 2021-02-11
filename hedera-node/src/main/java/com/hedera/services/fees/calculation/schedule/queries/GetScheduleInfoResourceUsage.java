@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.schedule.queries;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,8 @@ public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator
 			queryCtx.ifPresent(ctx -> ctx.put(SCHEDULE_INFO_CTX_KEY, info));
 			var estimate = factory.apply(query)
 					.givenTransaction(info.getTransactionBody().toByteArray())
-					.givenSigners(ifPresent(info, ScheduleInfo::hasSigners, ScheduleInfo::getSigners))
+					.givenMemo(info.getMemoBytes())
+					.givenSignatories(ifPresent(info, ScheduleInfo::hasSignatories, ScheduleInfo::getSignatories))
 					.givenCurrentAdminKey(ifPresent(info, ScheduleInfo::hasAdminKey, ScheduleInfo::getAdminKey));
 			return estimate.get();
 		} else {

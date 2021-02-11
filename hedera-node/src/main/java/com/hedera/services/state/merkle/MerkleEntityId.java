@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,12 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.FCMKey;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 
 public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
@@ -72,23 +69,6 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 
 	public static MerkleEntityId fromScheduleId(ScheduleID grpc) {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getScheduleNum());
-	}
-
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		public FastCopyable deserialize(DataInputStream in) throws IOException {
-			var id = new MerkleEntityId();
-
-			in.readLong();
-			in.readLong();
-
-			id.realm = in.readLong();
-			id.shard = in.readLong();
-			id.num = in.readLong();
-
-			return id;
-		}
 	}
 
 	/* --- MerkleLeaf --- */

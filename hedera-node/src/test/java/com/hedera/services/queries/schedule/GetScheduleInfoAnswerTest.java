@@ -247,7 +247,7 @@ public class GetScheduleInfoAnswerTest {
         Query query = validQuery(COST_ANSWER, fee, scheduleID);
 
         // expect:
-        assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+        assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
     }
 
     private Query validQuery(ResponseType type, long payment, ScheduleID id) throws Throwable {

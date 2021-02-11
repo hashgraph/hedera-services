@@ -4,7 +4,7 @@ package com.hedera.services.context.properties;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ public class NodeLocalProperties {
 	private long recordLogPeriod;
 	private boolean recordStreamEnabled;
 	private int recordStreamQueueCapacity;
+	private int queryBlobLookupRetries;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -55,6 +56,7 @@ public class NodeLocalProperties {
 		recordLogPeriod = properties.getLongProperty("hedera.recordStream.logPeriod");
 		recordStreamEnabled = properties.getBooleanProperty("hedera.recordStream.isEnabled");
 		recordStreamQueueCapacity = properties.getIntProperty("hedera.recordStream.queueCapacity");
+		queryBlobLookupRetries = properties.getIntProperty("queries.blob.lookupRetries");
 	}
 
 	public int port() {
@@ -103,5 +105,9 @@ public class NodeLocalProperties {
 
 	public int recordStreamQueueCapacity() {
 		return recordStreamQueueCapacity;
+	}
+
+	public int queryBlobLookupRetries() {
+		return queryBlobLookupRetries;
 	}
 }

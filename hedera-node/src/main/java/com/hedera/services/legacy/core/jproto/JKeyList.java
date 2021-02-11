@@ -4,7 +4,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,5 +83,26 @@ public class JKeyList extends JKey {
 
 	public JKeyList getKeyList() {
 		return this;
+	}
+
+	@Override
+	public void setForScheduledTxn(boolean flag) {
+		if (keys != null) {
+			for (JKey key : keys) {
+				key.setForScheduledTxn(flag);
+			}
+		}
+	}
+
+	@Override
+	public boolean isForScheduledTxn() {
+		if (keys != null) {
+			for (JKey key : keys) {
+				if (key.isForScheduledTxn()) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

@@ -4,7 +4,7 @@ package com.hedera.services.records;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ package com.hedera.services.records;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import java.util.Optional;
@@ -48,4 +46,7 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
 
   @Override
   public Optional<TransactionRecord> lastCreatedRecord() { return Optional.empty(); }
+
+  @Override
+  public void addNewEntities() { }
 }

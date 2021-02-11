@@ -4,7 +4,7 @@ package com.hedera.services.state.initialization;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -78,16 +77,9 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 			BackingStore<AccountID, MerkleAccount> accounts,
 			AddressBook addressBook
 	) {
-		var nodeAccountNums = MiscUtils.getNodeAccountNums(addressBook);
-
 		long N = properties.getIntProperty("ledger.numSystemAccounts");
 		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
 		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
-		long nodeBalance = properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance");
-		long defaultBalance = properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance");
-		long treasuryBalance = tinyBarFloat
-				- (nodeBalance * nodeAccountNums.size())
-				- (defaultBalance * (N - nodeAccountNums.size() - 1));
 
 		for (long num = 1; num <= N; num++) {
 			var id = idWith(num);
@@ -95,11 +87,9 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 				continue;
 			}
 			if (num == accountNums.treasury()) {
-				accounts.put(id, accountWith(treasuryBalance, expiry));
-			} else if (nodeAccountNums.contains(num)) {
-				accounts.put(id, accountWith(nodeBalance, expiry));
+				accounts.put(id, accountWith(tinyBarFloat, expiry));
 			} else {
-				accounts.put(id, accountWith(defaultBalance, expiry));
+				accounts.put(id, accountWith(0, expiry));
 			}
 		}
 

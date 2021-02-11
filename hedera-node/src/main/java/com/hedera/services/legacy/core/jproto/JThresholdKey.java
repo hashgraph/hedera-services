@@ -4,7 +4,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ package com.hedera.services.legacy.core.jproto;
  * @author Hua Li Created on 2018-11-02
  */
 public class JThresholdKey extends JKey {
-
 	private static final long serialVersionUID = 1L;
 	int threshold = 0;
 	private JKeyList keys = null;
@@ -81,5 +80,17 @@ public class JThresholdKey extends JKey {
 				return false;
 			}
 		}
+	}
+
+	@Override
+	public void setForScheduledTxn(boolean flag) {
+		if (keys != null) {
+			keys.setForScheduledTxn(flag);
+		}
+	}
+
+	@Override
+	public boolean isForScheduledTxn() {
+		return keys.isForScheduledTxn();
 	}
 }

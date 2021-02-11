@@ -4,7 +4,7 @@ package com.hedera.services.context.primitives;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,28 +20,18 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asContract;
-import static com.hedera.test.utils.IdUtils.asFile;
-import static com.hedera.test.utils.IdUtils.asSchedule;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static org.junit.jupiter.api.Assertions.*;
-
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -50,9 +40,10 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -68,25 +59,52 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asSchedule;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class StateViewTest {
+	RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
 	long expiry = 2_000_000L;
 	byte[] data = "SOMETHING".getBytes();
 	byte[] expectedBytecode = "A Supermarket in California".getBytes();
 	byte[] expectedStorage = "The Ecstasy".getBytes();
-	JFileInfo metadata;
-	JFileInfo immutableMetadata;
+	String tokenMemo = "Goodbye and keep cold";
+	HFileMeta metadata;
+	HFileMeta immutableMetadata;
 	FileID target = asFile("0.0.123");
 	TokenID tokenId = asToken("2.4.5");
 	TokenID missingTokenId = asToken("3.4.5");
+	AccountID payerAccountId = asAccount("9.9.9");
 	ScheduleID scheduleId = asSchedule("6.7.8");
+	ScheduleID missingScheduleId = asSchedule("7.8.9");
 	ContractID cid = asContract("3.2.1");
 	byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
 	ContractID notCid = asContract("1.2.3");
 	AccountID autoRenew = asAccount("2.4.6");
+	AccountID creatorAccountID = asAccount("3.5.7");
 	long autoRenewPeriod = 1_234_567;
+	String fileMemo = "Originally she thought";
 
 	FileGetInfoResponse.FileInfo expected;
 	FileGetInfoResponse.FileInfo expectedImmutable;
@@ -94,27 +112,31 @@ class StateViewTest {
 	Map<byte[], byte[]> storage;
 	Map<byte[], byte[]> bytecode;
 	Map<FileID, byte[]> contents;
-	Map<FileID, JFileInfo> attrs;
+	Map<FileID, HFileMeta> attrs;
 	BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
 
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
 	TokenStore tokenStore;
+	ScheduleStore scheduleStore;
+	byte[] scheduleBody = "abc".getBytes();
 
 	MerkleToken token;
+	MerkleSchedule schedule;
 	MerkleAccount contract;
 	MerkleAccount notContract;
-	PropertySource propertySource;
+	NodeLocalProperties nodeProps;
 	MerkleDiskFs diskFs;
 
 	StateView subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		metadata = new JFileInfo(
+		metadata = new HFileMeta(
 				false,
 				TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(),
-				expiry);
-		immutableMetadata = new JFileInfo(
+				expiry,
+				fileMemo);
+		immutableMetadata = new HFileMeta(
 				false,
 				StateView.EMPTY_WACL,
 				expiry);
@@ -127,6 +149,7 @@ class StateViewTest {
 				.build();
 		expected = expectedImmutable.toBuilder()
 				.setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
+				.setMemo(fileMemo)
 				.build();
 
 		notContract = MerkleAccountFactory.newAccount()
@@ -154,6 +177,7 @@ class StateViewTest {
 				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", true, true,
 				new EntityId(1, 2, 3));
+		token.setMemo(tokenMemo);
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
@@ -167,13 +191,29 @@ class StateViewTest {
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
 		given(tokenStore.get(tokenId)).willReturn(token);
 
+		scheduleStore = mock(ScheduleStore.class);
+		schedule = new MerkleSchedule(
+			scheduleBody,
+			EntityId.ofNullableAccountId(creatorAccountID),
+			now
+		);
+		schedule.setPayer(EntityId.ofNullableAccountId(payerAccountId));
+		schedule.setAdminKey(SCHEDULE_ADMIN_KT.asJKey());
+		schedule.setExpiry(expiry);
+		schedule.witnessValidEd25519Signature("firstPretendKey".getBytes());
+		schedule.witnessValidEd25519Signature("secondPretendKey".getBytes());
+		schedule.witnessValidEd25519Signature("thirdPretendKey".getBytes());
+		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
+		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
+		given(scheduleStore.get(scheduleId)).willReturn(schedule);
+
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
 		storage = mock(Map.class);
 		bytecode = mock(Map.class);
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
-		propertySource = mock(PropertySource.class);
+		nodeProps = mock(NodeLocalProperties.class);
 		diskFs = mock(MerkleDiskFs.class);
 
 		mockTokenRelsFn = (BiFunction<StateView, AccountID, List<TokenRelationship>>) mock(BiFunction.class);
@@ -183,9 +223,10 @@ class StateViewTest {
 
 		subject = new StateView(
 				tokenStore,
+				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> contracts,
-				propertySource,
+				nodeProps,
 				() -> diskFs);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
@@ -206,6 +247,13 @@ class StateViewTest {
 	}
 
 	@Test
+	public void scheduleExistsWorks() {
+		// expect:
+		assertTrue(subject.scheduleExists(scheduleId));
+		assertFalse(subject.scheduleExists(missingScheduleId));
+	}
+
+	@Test
 	public void tokenWithWorks() {
 		given(tokenStore.exists(tokenId)).willReturn(true);
 		given(tokenStore.get(tokenId)).willReturn(token);
@@ -223,6 +271,44 @@ class StateViewTest {
 	}
 
 	@Test
+	public void recognizesMissingSchedule() {
+		// when:
+		var info = subject.infoForSchedule(missingScheduleId);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void infoForScheduleFailsGracefully() {
+		given(scheduleStore.get(any())).willThrow(IllegalArgumentException.class);
+
+		// when:
+		var info = subject.infoForSchedule(scheduleId);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void getsScheduleInfo() {
+		// when:
+		var gotten = subject.infoForSchedule(scheduleId);
+		var info = gotten.get();
+
+		// then:
+		assertEquals(scheduleId, info.getScheduleID());
+		assertEquals(schedule.schedulingAccount().toGrpcAccountId(), info.getCreatorAccountID());
+		assertEquals(schedule.payer().toGrpcAccountId(), info.getPayerAccountID());
+		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpirationTime());
+		var expectedSignatoryList = KeyList.newBuilder();
+		schedule.signatories().forEach(a -> expectedSignatoryList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+		assertArrayEquals(expectedSignatoryList.build().getKeysList().toArray(), info.getSignatories().getKeysList().toArray());
+		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
+		assertEquals(ByteString.copyFrom(schedule.transactionBody()), info.getTransactionBody());
+	}
+
+	@Test
 	public void recognizesMissingToken() {
 		// when:
 		var info = subject.infoForToken(missingTokenId);
@@ -232,7 +318,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void failsGracefully() {
+	public void infoForTokenFailsGracefully() {
 		given(tokenStore.get(any())).willThrow(IllegalArgumentException.class);
 
 		// when:
@@ -269,6 +355,7 @@ class StateViewTest {
 
 		// then:
 		assertTrue(info.getDeleted());
+		assertEquals(token.memo(), info.getMemo());
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
@@ -284,16 +371,6 @@ class StateViewTest {
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
 		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
-	}
-
-	@Test
-	public void infoForScheduleIsUnsupported() {
-		assertThrows(UnsupportedOperationException.class, () -> subject.infoForSchedule(scheduleId));
-	}
-
-	@Test
-	public void scheduleExistsIsUnsupported() {
-		assertThrows(UnsupportedOperationException.class, () -> subject.scheduleExists(scheduleId));
 	}
 
 	@Test
@@ -435,7 +512,7 @@ class StateViewTest {
 	public void returnEmptyFileInfoForBinaryObjectNotFoundException() {
 		// setup:
 		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
-		given(propertySource.getIntProperty("binary.object.query.retry.times")).willReturn(3);
+		given(nodeProps.queryBlobLookupRetries()).willReturn(1);
 
 		// when:
 		var info = subject.infoForFile(target);
@@ -466,17 +543,6 @@ class StateViewTest {
 	public void returnsEmptyForMissingAttr() {
 		// when:
 		var info = subject.attrOf(target);
-
-		// then:
-		assertTrue(info.isEmpty());
-	}
-
-	@Test
-	public void returnsEmptyForTrouble() {
-		given(attrs.get(any())).willThrow(IllegalArgumentException.class);
-
-		// when:
-		var info = subject.infoForFile(target);
 
 		// then:
 		assertTrue(info.isEmpty());

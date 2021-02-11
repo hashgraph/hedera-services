@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.perf;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,6 @@ public class SubmitMessageLoadTest extends LoadTest {
 	private static HapiApiSpec runSubmitMessages() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
-
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
 				opSupplier(settings).get()
 		};
@@ -163,10 +162,23 @@ public class SubmitMessageLoadTest extends LoadTest {
 				:  settings.getIntProperty("messageSize", messageSize)
 				        - r.nextInt(settings.getHcsSubmitMessageSizeVar());
 
-		// maybe use some more realistic distributions to simulate real world scenarios
-		String senderId = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + r.nextInt(settings.getTotalAccounts()));
-		String topicId  = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + settings.getTotalAccounts()
-				+ r.nextInt(settings.getTotalTopics() ));
+		String senderId = "sender";
+		String topicId = "topic";
+		String senderKey= "sender";
+		String submitKey = "submitKey";
+		if(settings.getTotalAccounts() > 1) {
+			int s =  r.nextInt(settings.getTotalAccounts());
+			int re = 0;
+			do {
+				re =  r.nextInt(settings.getTotalAccounts());
+			} while (re == s);
+			// maybe use some more realistic distributions to simulate real world scenarios
+			senderId = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + r.nextInt(settings.getTotalAccounts()));
+			topicId  = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + settings.getTotalAccounts()
+					+ r.nextInt(settings.getTotalTopics() ));
+			senderKey = GENESIS;
+			submitKey = GENESIS;
+		}
 
 		if(log.isDebugEnabled()) {
 			log.debug("{} will submit a message of size {} to topic {}", senderId, msgSize, topicId);
@@ -176,7 +188,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 					randomUtf8Bytes( msgSize - 8)))
 				.noLogging()
 				.payingWith(senderId)
-				.signedBy(GENESIS, GENESIS)
+				.signedBy(senderKey, submitKey)
 				.fee(100_000_000)
 				.suppressStats(true)
 				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,

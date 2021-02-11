@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.utilops;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,8 @@ public class CustomSpecAssert extends UtilOp {
 		for (HapiSpecOperation op : ops) {
 			Optional<Throwable>	error = op.execFor(spec);
 			if (error.isPresent()) {
-				Assert.fail("Operation '" + op.toString() + "' :: " + error.get().getMessage());
+				log.error("Operation '" + op.toString() + "' :: " + error.get().getMessage());
+				break;
 			}
 		}
 	}

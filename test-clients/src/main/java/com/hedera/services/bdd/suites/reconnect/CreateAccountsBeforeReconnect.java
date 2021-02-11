@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,10 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateAccountsBeforeReconnect.class);
 
 	private static final int ACCOUNT_CREATION_LIMIT = 20_000;
+	private static final int ACCOUNT_CREATION_RECONNECT_TPS = 120;
+	
+	public static final int DEFAULT_MINS_FOR_RECONNECT_TESTS = 3;
+	public static final int DEFAULT_THREADS_FOR_RECONNECT_TESTS = 1;
 
 	public static void main(String... args) {
 		new CreateAccountsBeforeReconnect().runSuiteSync();
@@ -74,7 +78,10 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec runCreateAccounts() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings(120, 3, 1);
+		PerfTestLoadSettings settings = new PerfTestLoadSettings(
+				ACCOUNT_CREATION_RECONNECT_TPS,
+				DEFAULT_MINS_FOR_RECONNECT_TESTS,
+				DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 
 		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
 				generateCreateAccountOperation()

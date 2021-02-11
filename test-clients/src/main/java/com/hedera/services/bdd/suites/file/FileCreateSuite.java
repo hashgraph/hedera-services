@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.file;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
@@ -35,8 +33,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -65,6 +62,7 @@ public class FileCreateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
+				createWithMemoWorks()
 		);
 	}
 
@@ -73,6 +71,17 @@ public class FileCreateSuite extends HapiApiSuite {
 				createFailsWithMissingSigs(),
 				createFailsWithPayerAccountNotFound()
 		);
+	}
+
+	private HapiApiSpec createWithMemoWorks() {
+		String memo = "Really quite something!";
+
+		return defaultHapiSpec("createWithMemoWorks")
+				.given(
+						fileCreate("memorable").entityMemo(memo)
+				).when().then(
+						getFileInfo("memorable").hasMemo(memo)
+				);
 	}
 
 	private HapiApiSpec createFailsWithMissingSigs() {
@@ -102,10 +111,9 @@ public class FileCreateSuite extends HapiApiSuite {
 		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 
 		return defaultHapiSpec("CreateFailsWithPayerAccountNotFound")
-				.given(
-				).when(
-				).then(
+				.given( ).when( ).then(
 						fileCreate("test")
+								.withLegacyProtoStructure()
 								.waclShape(shape)
 								.sigControl(forKey("test", validSig))
 								.scrambleTxnBody(FileCreateSuite::replaceTxnNodeAccount)

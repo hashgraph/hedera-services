@@ -4,7 +4,7 @@ package com.hedera.services.state.forensics;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,8 @@ public class IssListener implements InvalidSignedStateListener {
 	static final String FC_DUMP_LOC_TPL = "data/saved/%s/%d/%s-round%d.fcm";
 	static final String ISS_ERROR_MSG_PATTERN =
 			"In round %d, node %d received a signed state from node %d with " +
-					"a signature different than %s on %s [accounts :: %s | storage :: %s | topics :: %s | runningHashLeaf :: %s ]!";
+					"a signature different than %s on %s [\n  accounts :: %s\n  storage :: %s\n  " +
+					"topics :: %s\n  runningHashLeaf :: %s\n]!";
 	static final String ISS_FALLBACK_ERROR_MSG_PATTERN =
 			"In round %d, node %s received a signed state from node %s differing from its local "
 					+ "signed state; could not provide all details!";

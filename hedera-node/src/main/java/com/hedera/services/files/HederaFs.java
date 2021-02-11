@@ -4,7 +4,7 @@ package com.hedera.services.files;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,12 @@ package com.hedera.services.files;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
 
 /**
  * A non-hierarchical collection of files managed by {@link FileID} using create/read/update/delete semantics.
  *
- * Each file has an associated expiration time and key encapsulated in a {@link JFileInfo}, which also indicates
+ * Each file has an associated expiration time and key encapsulated in a {@link HFileMeta}, which also indicates
  * if the file has been deleted. If a file is deleted before it expires, its contents are no longer be mutable or
  * readable; however, files are only purged from the system after they expire.
  *
@@ -61,7 +60,7 @@ public interface HederaFs {
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#FILE_WOULD_BE_EXPIRED} if expiry is past
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#OVERSIZE_CONTENTS} if the data are too large
 	 */
-	FileID create(byte[] contents, JFileInfo attr, AccountID sponsor);
+	FileID create(byte[] contents, HFileMeta attr, AccountID sponsor);
 
 	/**
 	 * Checks for existence of a the given file; this succeeds even after deletion.
@@ -89,7 +88,7 @@ public interface HederaFs {
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if file is missing
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
 	 */
-	JFileInfo getattr(FileID id);
+	HFileMeta getattr(FileID id);
 
 	/**
 	 * Updates the metadata for the given file. Although it is possible to delete a file with this
@@ -101,7 +100,7 @@ public interface HederaFs {
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#FILE_WOULD_BE_EXPIRED} if expiry is past
 	 */
-	UpdateResult setattr(FileID id, JFileInfo attr);
+	UpdateResult setattr(FileID id, HFileMeta attr);
 
 	/**
 	 * Updates the metadata for the given file, even if it is deleted.
@@ -111,7 +110,7 @@ public interface HederaFs {
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if file is missing
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#FILE_WOULD_BE_EXPIRED} if expiry is past
 	 */
-	UpdateResult sudoSetattr(FileID id, JFileInfo attr);
+	UpdateResult sudoSetattr(FileID id, HFileMeta attr);
 
 	/**
 	 * Replaces the contents of the given file.

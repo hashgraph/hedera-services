@@ -20,27 +20,30 @@ package com.hedera.services.fees.calculation.schedule.txns;
  * ‍
  */
 
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class ScheduleSignResourceUsageTest {
     ScheduleSignResourceUsage subject;
@@ -49,30 +52,43 @@ public class ScheduleSignResourceUsageTest {
     BiFunction<TransactionBody, SigUsage, ScheduleSignUsage> factory;
     TransactionBody nonScheduleSignTxn;
     TransactionBody scheduleSignTxn;
+    long expiry = 2_345_678L;
 
     int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    ScheduleID target = IdUtils.asSchedule("0.0.123");
     SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-    GlobalDynamicProperties props = new MockGlobalDynamicProps();
+    FeeData expected;
+
+    ScheduleInfo info = ScheduleInfo.newBuilder()
+            .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+            .build();
 
     @BeforeEach
     private void setup() {
+        expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleSignTxn = mock(TransactionBody.class);
         given(scheduleSignTxn.hasScheduleSign()).willReturn(true);
+        given(scheduleSignTxn.getScheduleSign())
+                .willReturn(ScheduleSignTransactionBody.newBuilder()
+                        .setScheduleID(target)
+                        .build());
 
         nonScheduleSignTxn = mock(TransactionBody.class);
         given(nonScheduleSignTxn.hasScheduleSign()).willReturn(false);
 
         usage = mock(ScheduleSignUsage.class);
-        given(usage.givenScheduledTxExpirationTimeSecs(anyInt())).willReturn(usage);
-        given(usage.get()).willReturn(MOCK_SCHEDULE_SIGN_USAGE);
+        given(usage.givenExpiry(anyLong())).willReturn(usage);
+        given(usage.get()).willReturn(expected);
 
         factory = (BiFunction<TransactionBody, SigUsage, ScheduleSignUsage>)mock(BiFunction.class);
         given(factory.apply(scheduleSignTxn, sigUsage)).willReturn(usage);
 
+        given(view.infoForSchedule(target)).willReturn(Optional.of(info));
+
         ScheduleSignResourceUsage.factory = factory;
-        subject = new ScheduleSignResourceUsage(props);
+        subject = new ScheduleSignResourceUsage();
     }
 
     @Test
@@ -85,20 +101,20 @@ public class ScheduleSignResourceUsageTest {
     @Test
     public void delegatesToCorrectEstimate() throws Exception {
         // expect:
-        assertEquals(MOCK_SCHEDULE_SIGN_USAGE, subject.usageGiven(scheduleSignTxn, obj, view));
+        assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
     }
 
-    private static final FeeData MOCK_SCHEDULE_SIGN_USAGE = UsageEstimatorUtils.defaultPartitioning(
-            FeeComponents.newBuilder()
-                    .setMin(1)
-                    .setMax(1_000_000)
-                    .setConstant(1)
-                    .setBpt(1)
-                    .setVpt(1)
-                    .setRbh(1)
-                    .setGas(1)
-                    .setTv(1)
-                    .setBpr(1)
-                    .setSbpr(1)
-                    .build(), 1);
+    @Test
+    public void returnsDefaultIfInfoMissing() throws Exception {
+        given(view.infoForSchedule(target)).willReturn(Optional.empty());
+
+        // expect:
+        assertEquals(
+                FeeData.getDefaultInstance(),
+                subject.usageGiven(scheduleSignTxn, obj, view));
+        // and:
+        verify(factory).apply(scheduleSignTxn, sigUsage);
+        verify(scheduleSignTxn).getScheduleSign();
+        verify(view).infoForSchedule(target);
+    }
 }

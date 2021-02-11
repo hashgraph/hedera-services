@@ -4,7 +4,7 @@ package com.hedera.services.records;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ package com.hedera.services.records;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -89,4 +88,11 @@ public interface AccountRecordsHistorian {
 	 * @return an optional record.
 	 */
 	Optional<TransactionRecord> lastCreatedRecord();
+
+	/**
+	 * At the moment before committing the active transaction,
+	 * checks if Transaction Context has any existing expiring entities
+	 * and if so, tracks them using {@link com.hedera.services.state.expiry.ExpiryManager}
+	 */
+	void addNewEntities();
 }

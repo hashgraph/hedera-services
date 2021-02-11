@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,8 @@ package com.hedera.services.fees.calculation.token.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenRevokeKycUsage;
-import com.hedera.services.usage.token.TokenWipeUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
@@ -50,12 +47,14 @@ class TokenRevokeKycResourceUsageTest {
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
 	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
 	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+	FeeData expected;
 
 	TokenRevokeKycUsage usage;
 	BiFunction<TransactionBody, SigUsage, TokenRevokeKycUsage> factory;
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 
 		tokenRevokeKycTxn = mock(TransactionBody.class);
@@ -68,7 +67,7 @@ class TokenRevokeKycResourceUsageTest {
 		given(factory.apply(tokenRevokeKycTxn, sigUsage)).willReturn(usage);
 
 		usage = mock(TokenRevokeKycUsage.class);
-		given(usage.get()).willReturn(MOCK_TOKEN_REVOKE_KYC_USAGE);
+		given(usage.get()).willReturn(expected);
 
 		TokenRevokeKycResourceUsage.factory = factory;
 		given(factory.apply(tokenRevokeKycTxn, sigUsage)).willReturn(usage);
@@ -87,23 +86,7 @@ class TokenRevokeKycResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
-				MOCK_TOKEN_REVOKE_KYC_USAGE,
+				expected,
 				subject.usageGiven(tokenRevokeKycTxn, obj, view));
 	}
-
-	public static final FeeData MOCK_TOKEN_REVOKE_KYC_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(1)
-					.setBpt(1)
-					.setVpt(1)
-					.setRbh(1)
-					.setSbh(1)
-					.setGas(1)
-					.setTv(1)
-					.setBpr(1)
-					.setSbpr(1)
-					.build(), 1);
-
 }

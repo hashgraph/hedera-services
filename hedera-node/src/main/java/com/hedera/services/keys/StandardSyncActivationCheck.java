@@ -4,7 +4,7 @@ package com.hedera.services.keys;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,13 @@ package com.hedera.services.keys;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigsFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.List;
@@ -38,15 +37,15 @@ public class StandardSyncActivationCheck {
 	public static boolean allKeysAreActive(
 			List<JKey> keys,
 			SyncVerifier syncVerifier,
-			PlatformTxnAccessor accessor,
+			TxnAccessor accessor,
 			PlatformSigsFactory sigsFactory,
 			Function<Transaction, PubKeyToSigBytes> sigBytesProvider,
-			Function<byte[], TxnScopedPlatformSigFactory> scopedSigProvider,
+			Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider,
 			BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
 			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider
 	) {
-		var sigFactory = scopedSigProvider.apply(accessor.getTxnBytes());
-		var sigBytes = sigBytesProvider.apply(accessor.getSignedTxn());
+		var sigFactory = scopedSigProvider.apply(accessor);
+		var sigBytes = sigBytesProvider.apply(accessor.getBackwardCompatibleSignedTxn());
 
 		var creationResult = sigsFactory.createEd25519From(keys, sigBytes, sigFactory);
 		if (creationResult.hasFailed()) {

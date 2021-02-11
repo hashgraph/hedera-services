@@ -4,7 +4,7 @@ package com.hedera.services.usage.token.entities;
  * ‌
  * Hedera Services API Fees
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public enum TokenEntitySizes {
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
 	}
 
-	public int totalBytesInfTokenReprGiven(String symbol, String name) {
+	public int totalBytesInTokenReprGiven(String symbol, String name) {
 		return fixedBytesInTokenRepr() + symbol.length() + name.length();
 	}
 

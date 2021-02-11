@@ -4,7 +4,7 @@ package com.hedera.services;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,10 @@ import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -90,6 +92,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.ServicesState.RELEASE_0100_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0110_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_0120_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_070_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
@@ -125,6 +128,7 @@ class ServicesStateTest {
 	PropertySources propertySources;
 	ServicesContext ctx;
 	AccountRecordsHistorian historian;
+	ExpiryManager expiryManager;
 	FCMap<MerkleEntityId, MerkleTopic> topics;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
@@ -153,6 +157,7 @@ class ServicesStateTest {
 	SystemExits systemExits;
 	SystemFilesManager systemFilesManager;
 	RecordStreamManager recordStreamManager;
+	SigFactoryCreator sigFactoryCreator;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
 	ServicesState subject;
@@ -160,6 +165,7 @@ class ServicesStateTest {
 	private static final Hash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	@BeforeEach
+	@SuppressWarnings("unchecked")
 	private void setup() {
 		CONTEXTS.clear();
 		mockDigest = (Consumer<MerkleNode>) mock(Consumer.class);
@@ -184,14 +190,17 @@ class ServicesStateTest {
 		given(book.copy()).willReturn(bookCopy);
 		given(book.getAddress(1)).willReturn(address);
 
+		FCMap<MerkleEntityId, MerkleSchedule> scheduledTxns = (FCMap<MerkleEntityId, MerkleSchedule>)mock(FCMap.class);
 		logic = mock(ProcessLogic.class);
 		ctx = mock(ServicesContext.class);
+		given(ctx.sigFactoryCreator()).willReturn(new SigFactoryCreator(() -> scheduledTxns));
 		given(ctx.id()).willReturn(self);
 		given(ctx.logic()).willReturn(logic);
 
 		systemFilesManager = mock(SystemFilesManager.class);
 		historian = mock(AccountRecordsHistorian.class);
 		txnHistories = mock(Map.class);
+		expiryManager = mock(ExpiryManager.class);
 		recordStreamManager = mock(RecordStreamManager.class);
 
 		topics = mock(FCMap.class);
@@ -243,6 +252,7 @@ class ServicesStateTest {
 		given(ctx.platform()).willReturn(platform);
 		given(ctx.recordsHistorian()).willReturn(historian);
 		given(ctx.txnHistories()).willReturn(txnHistories);
+		given(ctx.expiries()).willReturn(expiryManager);
 		given(ctx.propertySources()).willReturn(propertySources);
 		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
 		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
@@ -276,6 +286,8 @@ class ServicesStateTest {
 	public void hasExpectedMinChildCounts() {
 		// given:
 		subject = new ServicesState(ctx, self, Collections.emptyList());
+		// and:
+		int invalidVersion = ServicesState.MERKLE_VERSION + 1;
 
 		// expect:
 		assertEquals(ServicesState.ChildIndices.NUM_070_CHILDREN, subject.getMinimumChildCount(RELEASE_070_VERSION));
@@ -283,11 +295,12 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(RELEASE_090_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0100_CHILDREN, subject.getMinimumChildCount(RELEASE_0100_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0110_CHILDREN, subject.getMinimumChildCount(RELEASE_0110_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_0120_CHILDREN, subject.getMinimumChildCount(RELEASE_0120_VERSION));
 
 		Throwable throwable = assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(RELEASE_0110_VERSION + 1));
+				() -> subject.getMinimumChildCount(invalidVersion));
 		assertEquals(
-				String.format(ServicesState.UNSUPPORTED_VERSION_MSG_TPL, RELEASE_0110_VERSION + 1),
+				String.format(ServicesState.UNSUPPORTED_VERSION_MSG_TPL, invalidVersion),
 				throwable.getMessage());
 	}
 
@@ -708,6 +721,7 @@ class ServicesStateTest {
 		// then:
 		assertEquals(1, platformTxn.getSignatures().size());
 		assertEquals(mockPk, ByteString.copyFrom(platformTxn.getSignatures().get(0).getExpandedPublicKeyDirect()));
+		verify(ctx).sigFactoryCreator();
 	}
 
 	@Test

@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.infrastructure;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -61,6 +62,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.firstStartupKp;
 import static java.util.stream.Collectors.*;
@@ -229,7 +231,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasTimestamp(String label) {
-		return hasVia(this::getTimestamp, label);
+		return registry.containsKey(full(label, Timestamp.class));
 	}
 
 	public Timestamp getTimestamp(String label) {
@@ -322,6 +324,14 @@ public class HapiSpecRegistry {
 		put(token + "Name", name, String.class);
 	}
 
+	public void saveMemo(String entity, String memo) {
+		put(entity + "Memo", memo, String.class);
+	}
+
+	public String getMemo(String entity) {
+		return get(entity + "Memo", String.class);
+	}
+
 	public String getSymbol(String token) {
 		return get(token + "Symbol", String.class);
 	}
@@ -362,7 +372,7 @@ public class HapiSpecRegistry {
 		return get(name + "Kyc", Key.class);
 	}
 
-	public Long getTokenExpiry(String name) { return get(name + "Expiry", Long.class); }
+	public Long getExpiry(String name) { return get(name + "Expiry", Long.class); }
 
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);
@@ -497,6 +507,15 @@ public class HapiSpecRegistry {
 	public void saveAccountId(String name, AccountID id) {
 		put(name, id);
 		put(asAccountString(id), name);
+	}
+
+	public void saveScheduleId(String name, ScheduleID id) {
+		put(name, id);
+		put(asScheduleString(id), name);
+	}
+
+	public ScheduleID getScheduleId(String name) {
+		return get(name, ScheduleID.class);
 	}
 
 	public void saveTokenId(String name, TokenID id) {
@@ -643,7 +662,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasContractId(String name) {
-		return hasVia(this::getContractId, name);
+		return registry.containsKey(full(name, ContractID.class));
 	}
 
 	public void removeContractId(String name) {

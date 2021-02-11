@@ -4,7 +4,7 @@ package com.hedera.services.legacy.services.state;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ package com.hedera.services.legacy.services.state;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.HederaFs;
@@ -37,7 +36,6 @@ import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stream.RecordStreamManager;
@@ -48,10 +46,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -64,7 +59,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -72,9 +66,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.context.domain.trackers.IssEventStatus.NO_KNOWN_ISS;
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static org.mockito.BDDMockito.*;
 
 class AwareProcessLogicTest {
@@ -163,7 +155,7 @@ class AwareProcessLogicTest {
 		final com.hederahashgraph.api.proto.java.Transaction signedTxn = mock(com.hederahashgraph.api.proto.java.Transaction.class);
 		final TransactionID txnId = mock(TransactionID.class);
 
-		given(txnAccessor.getSignedTxn()).willReturn(signedTxn);
+		given(txnAccessor.getBackwardCompatibleSignedTxn()).willReturn(signedTxn);
 		given(signedTxn.getSignedTransactionBytes()).willReturn(ByteString.EMPTY);
 		given(txnAccessor.getTxn()).willReturn(txnBody);
 		given(txnBody.getTransactionID()).willReturn(txnId);

@@ -4,7 +4,7 @@ package com.hedera.services.txns.crypto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ public class CryptoCreateTransitionLogicTest {
 	final private long customSendThreshold = 49_000L;
 	final private long customReceiveThreshold = 51_001L;
 	final private Long balance = 1_234L;
+	final private String memo = "The particular is pounded til it is man";
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID created = AccountID.newBuilder().setAccountNum(9_999L).build();
@@ -92,6 +93,15 @@ public class CryptoCreateTransitionLogicTest {
 		// expect:
 		assertTrue(subject.applicability().test(cryptoCreateTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
+
+	@Test
+	public void returnsMemoTooLongWhenValidatorSays() {
+		givenValidTxnCtx();
+		given(validator.isValidEntityMemo(memo)).willReturn(false);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -187,12 +197,13 @@ public class CryptoCreateTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
-		assertEquals(5, changes.size());
+		assertEquals(6, changes.size());
 		assertEquals(customAutoRenewPeriod, (long)changes.get(AUTO_RENEW_PERIOD));
 		assertEquals(expiry, (long)changes.get(EXPIRY));
 		assertEquals(key, JKey.mapJKey((JKey)changes.get(KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
 		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(PROXY));
+		assertEquals(memo, changes.get(MEMO));
 	}
 
 	@Test
@@ -293,6 +304,7 @@ public class CryptoCreateTransitionLogicTest {
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
+								.setMemo(memo)
 								.setInitialBalance(balance)
 								.setProxyAccountID(proxy)
 								.setReceiverSigRequired(true)
@@ -317,5 +329,6 @@ public class CryptoCreateTransitionLogicTest {
 	private void withRubberstampingValidator() {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
+		given(validator.isValidEntityMemo(any())).willReturn(true);
 	}
 }

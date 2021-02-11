@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions.file;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hedera.services.usage.token.TokenCreateUsage;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -48,10 +50,12 @@ import java.util.function.Function;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
@@ -60,9 +64,11 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 	private Key waclKey;
 	private final String fileName;
 	private boolean immutable = false;
+	OptionalLong expiry = OptionalLong.empty();
 	OptionalLong lifetime = OptionalLong.empty();
 	Optional<String> contentsPath = Optional.empty();
 	Optional<byte[]> contents = Optional.empty();
+	Optional<String> memo = Optional.empty();
 	Optional<SigControl> waclControl = Optional.empty();
 	Optional<String> keyName = Optional.empty();
 	Optional<String> resourceName = Optional.empty();
@@ -98,8 +104,18 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		return this;
 	}
 
+	public HapiFileCreate expiry(long at) {
+		this.expiry = OptionalLong.of(at);
+		return this;
+	}
+
 	public HapiFileCreate lifetime(long secs) {
 		this.lifetime = OptionalLong.of(secs);
+		return this;
+	}
+
+	public HapiFileCreate entityMemo(String s) {
+		memo = Optional.of(s);
 		return this;
 	}
 
@@ -158,8 +174,12 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 							if (!immutable) {
 								builder.setKeys(waclKey.getKeyList());
 							}
+							memo.ifPresent(builder::setMemo);
 							contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
 							lifetime.ifPresent(s -> builder.setExpirationTime(TxnFactory.expiryGiven(s)));
+							expiry.ifPresent(t -> builder.setExpirationTime(Timestamp.newBuilder()
+									.setSeconds(t)
+									.build()));
 						});
 		return b -> {
 			expiryUsed.set(opBody.getExpirationTime());
@@ -199,7 +219,6 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		if (verboseLoggingOn) {
 			log.info("Created file {} with ID {}.",  fileName , lastReceipt.getFileID());
 		}
-
 	}
 
 	@Override
@@ -214,8 +233,11 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
-		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.FileCreate, fileFees::getFileCreateTxFeeMatrices, txn, numPayerSigs);
+		return spec.fees().forActivityBasedOp(HederaFunctionality.FileCreate, this::usageEstimate, txn, numPayerSigs);
+	}
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return fileOpsUsage.fileCreateUsage(txn, suFrom(svo));
 	}
 
 	@Override

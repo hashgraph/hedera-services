@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,9 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -74,8 +77,6 @@ import java.util.List;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -126,8 +127,7 @@ public class TxnFactory {
 		Consumer<TransactionBody.Builder> composedBodySpec = defaultBodySpec().andThen(spec);
 		TransactionBody.Builder bodyBuilder = TransactionBody.newBuilder();
 		composedBodySpec.accept(bodyBuilder);
-		return Transaction.newBuilder()
-			.setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
+		return Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
 	}
 
 	public TransactionID sampleRecentTxnId() {
@@ -333,5 +333,18 @@ public class TxnFactory {
 
 	public Consumer<CryptoTransferTransactionBody.Builder> defaultDef_CryptoTransferTransactionBody() {
 		return builder -> {};
+	}
+
+	public Consumer<ScheduleCreateTransactionBody.Builder> defaultDef_ScheduleCreateTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<ScheduleSignTransactionBody.Builder> defaultDef_ScheduleSignTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<ScheduleDeleteTransactionBody.Builder> defaultDef_ScheduleDeleteTransactionBody() {
+		return builder -> {
+		};
 	}
 }

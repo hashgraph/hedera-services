@@ -4,7 +4,7 @@ package com.hedera.services.usage.schedule;
  * ‌
  * Hedera Services API Fees
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,14 @@ package com.hedera.services.usage.schedule;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.usage.QueryUsage;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.fee.FeeBuilder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
@@ -53,8 +55,13 @@ public class ScheduleGetInfoUsage extends QueryUsage {
 		return this;
 	}
 
-	public ScheduleGetInfoUsage givenSigners(Optional<KeyList> keyList) {
-		keyList.map(kl -> kl.toByteArray().length).ifPresent(this::updateRb);
+	public ScheduleGetInfoUsage givenMemo(ByteString memo) {
+		this.updateRb(memo.size());
+		return this;
+	}
+
+	public ScheduleGetInfoUsage givenSignatories(Optional<KeyList> signatories) {
+		signatories.map(kl -> kl.toByteArray().length).ifPresent(this::updateRb);
 		return this;
 	}
 

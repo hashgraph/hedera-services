@@ -4,7 +4,7 @@ package com.hedera.services.stream;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-import static com.swirlds.common.Constants.SEC_TO_MS;
+import static com.swirlds.common.Units.SECONDS_TO_MILLISECONDS;
 
 /**
  * This class is used for generating record stream files when record streaming is enabled,
@@ -121,7 +121,7 @@ public class RecordStreamManager {
 			Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
 			streamFileWriter = new TimestampStreamFileWriter<>(
 					nodeScopedRecordLogDir,
-					nodeLocalProperties.recordLogPeriod() * SEC_TO_MS,
+					nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
 					platform,
 					startWriteAtCompleteWindow,
 					RecordStreamType.RECORD);

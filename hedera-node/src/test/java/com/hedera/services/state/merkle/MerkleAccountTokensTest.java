@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,24 +62,6 @@ class MerkleAccountTokensTest {
 	@BeforeEach
 	private void setup() {
 		subject = new MerkleAccountTokens(initialIds);
-	}
-
-	@Test
-	public void purgeWorks() {
-		// setup:
-		subject = new MerkleAccountTokens();
-		subject.associateAll(Set.of(a, b, c, d, e));
-		// and:
-		Predicate<TokenID> isGone = id -> b.equals(id);
-		Predicate<TokenID> isDeleted = id -> a.equals(id) || e.equals(id);
-
-		// when:
-		int effectiveAssociations = subject.purge(isGone, isDeleted);
-
-		// then:
-		assertEquals("[0.0.1, 0.0.2, 1.1.2, 0.0.3]", subject.readableTokenIds());
-		// and:
-		assertEquals(2, effectiveAssociations);
 	}
 
 	@Test

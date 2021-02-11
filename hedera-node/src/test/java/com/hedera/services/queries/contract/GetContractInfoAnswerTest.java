@@ -4,7 +4,7 @@ package com.hedera.services.queries.contract;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -255,7 +255,7 @@ class GetContractInfoAnswerTest {
 		Query query = validQuery(COST_ANSWER, fee, target);
 
 		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
 	}
 
 	private Query validQuery(ResponseType type, long payment, String idLit) throws Throwable {

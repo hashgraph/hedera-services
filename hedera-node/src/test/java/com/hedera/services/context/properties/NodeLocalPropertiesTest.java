@@ -4,7 +4,7 @@ package com.hedera.services.context.properties;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(10L, subject.recordLogPeriod());
 		Assertions.assertTrue(subject.isRecordStreamEnabled());
 		assertEquals(12, subject.recordStreamQueueCapacity());
+		assertEquals(13, subject.queryBlobLookupRetries());
 	}
 
 	@Test
@@ -85,6 +86,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(11L, subject.recordLogPeriod());
 		Assertions.assertFalse(subject.isRecordStreamEnabled());
 		assertEquals(13, subject.recordStreamQueueCapacity());
+		assertEquals(14, subject.queryBlobLookupRetries());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -100,6 +102,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(i + 9L);
 		given(properties.getBooleanProperty("hedera.recordStream.isEnabled")).willReturn(i % 2 == 1);
 		given(properties.getIntProperty("hedera.recordStream.queueCapacity")).willReturn(i + 11);
+		given(properties.getIntProperty("queries.blob.lookupRetries")).willReturn(i + 12);
 	}
 
 	static String logDir(int num) {

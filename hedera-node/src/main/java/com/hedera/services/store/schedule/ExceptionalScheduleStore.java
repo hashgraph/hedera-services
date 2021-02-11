@@ -4,7 +4,7 @@ package com.hedera.services.store.schedule;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,14 +26,16 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 
 public enum ExceptionalScheduleStore implements ScheduleStore {
@@ -61,19 +63,20 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, Optional<JKey> adminKey) {
+	public CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, RichInstant consensusTime, Optional<JKey> adminKey, Optional<String> entityMemo) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> key) {
+	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Key adminKey, String entityMemo) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer) {
-		throw new UnsupportedOperationException();
-	}
+	public ResponseCodeEnum markAsExecuted(ScheduleID id) { throw new UnsupportedOperationException(); }
+
+	@Override
+	public void expire(EntityId id) { throw new UnsupportedOperationException(); }
 
 	@Override
 	public ResponseCodeEnum delete(ScheduleID id) { throw new UnsupportedOperationException(); }

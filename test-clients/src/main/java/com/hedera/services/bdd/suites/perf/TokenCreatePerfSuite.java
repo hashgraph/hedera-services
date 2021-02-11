@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.perf;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.perf;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import org.apache.logging.log4j.LogManager;
@@ -38,6 +39,7 @@ public class TokenCreatePerfSuite extends LoadTest {
 	private static final Logger log = LogManager.getLogger(TokenCreatePerfSuite.class);
 
 	public static void main(String... args) {
+		parseArgs(args);
 		TokenCreatePerfSuite suite = new TokenCreatePerfSuite();
 		suite.setReportStats(true);
 		suite.runSuiteSync();
@@ -55,7 +57,7 @@ public class TokenCreatePerfSuite extends LoadTest {
 
 	private HapiApiSpec runTokenCreates() {
 		final int NUM_CREATES = 100000;
-
+		final String tokenCreateMemo = TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString();
 		return defaultHapiSpec("tokenCreatePerf")
 				.given(
 				).when(
@@ -69,6 +71,7 @@ public class TokenCreatePerfSuite extends LoadTest {
 														.payingWith(GENESIS)
 														.signedBy(GENESIS)
 														.initialSupply(100_000_000_000L)
+														.entityMemo(tokenCreateMemo)
 														.deferStatusResolution()
 								)
 						)

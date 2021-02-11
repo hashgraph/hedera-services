@@ -4,7 +4,7 @@ package com.hedera.services.sigs.sourcing;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ import static java.util.stream.Collectors.toList;
  */
 public class SigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	private final SignatureMap sigMap;
-	private static final byte[] EMPTY_SIG = {};
 
 	SigMapPubKeyToSigBytes(SignatureMap sigMap) {
 		this.sigMap = sigMap;

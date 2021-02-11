@@ -4,7 +4,7 @@ package com.hedera.test.utils;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,10 +109,11 @@ public class IdUtils {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
 	}
 
-	public static TokenBalance tokenBalanceWith(TokenID id, long balance) {
+	public static TokenBalance tokenBalanceWith(TokenID id, long balance, int decimals) {
 		return TokenBalance.newBuilder()
 				.setTokenId(id)
 				.setBalance(balance)
+				.setDecimals(decimals)
 				.build();
 	}
 

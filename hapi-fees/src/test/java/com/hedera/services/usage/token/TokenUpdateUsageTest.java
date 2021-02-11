@@ -4,7 +4,7 @@ package com.hedera.services.usage.token;
  * ‌
  * Hedera Services API Fees
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.google.protobuf.StringValue;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.EstimatorFactory;
@@ -50,21 +51,21 @@ import static org.mockito.BDDMockito.*;
 
 public class TokenUpdateUsageTest {
 	long newKeyBytes;
-	Key kycKey = KeyUtils.A_COMPLEX_KEY, oldKycKey = KeyUtils.A_KEY_LIST;
-	Key adminKey = KeyUtils.A_THRESHOLD_KEY, oldAdminKey = KeyUtils.A_KEY_LIST;
-	Key freezeKey = KeyUtils.A_KEY_LIST, oldFreezeKey = KeyUtils.A_KEY_LIST;
-	Key supplyKey = KeyUtils.B_COMPLEX_KEY, oldSupplyKey = KeyUtils.A_KEY_LIST;
-	Key wipeKey = C_COMPLEX_KEY, oldWipeKey = KeyUtils.A_KEY_LIST;
+	Key kycKey = KeyUtils.A_COMPLEX_KEY;
+	Key adminKey = KeyUtils.A_THRESHOLD_KEY;
+	Key freezeKey = KeyUtils.A_KEY_LIST;
+	Key supplyKey = KeyUtils.B_COMPLEX_KEY;
+	Key wipeKey = C_COMPLEX_KEY;
 	long oldExpiry = 2_345_670L;
 	long expiry = 2_345_678L;
 	long oldAutoRenewPeriod = 1_234_567L;
 	long now = oldExpiry - oldAutoRenewPeriod;
-	long autoRenewPeriod = expiry - now;
-	long delta = expiry - oldExpiry;
 	String oldSymbol = "ABC";
 	String symbol = "ABCDEFGH";
 	String oldName = "WhyWhy";
 	String name = "WhyWhyWhy";
+	String oldMemo = "Calm reigns";
+	String memo = "Calamity strikes";
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	AccountID treasury = IdUtils.asAccount("1.2.3");
@@ -197,6 +198,7 @@ public class TokenUpdateUsageTest {
 		newKeyBytes = FeeBuilder.getAccountKeyStorageSize(oldKey) * 5;
 		subject = TokenUpdateUsage.newEstimate(txn, sigUsage)
 				.givenCurrentExpiry(oldExpiry)
+				.givenCurrentMemo(oldMemo)
 				.givenCurrentName(oldName)
 				.givenCurrentSymbol(oldSymbol)
 				.givenCurrentAdminKey(Optional.of(oldKey))
@@ -207,13 +209,12 @@ public class TokenUpdateUsageTest {
 	}
 
 	private long curSize(Key oldKey) {
-		return oldSymbol.length() + oldName.length()
+		return oldSymbol.length() + oldName.length() + oldMemo.length()
 				+ 5 * FeeBuilder.getAccountKeyStorageSize(oldKey);
 	}
 
 	private long newRb() {
-		return symbol.length() + name.length()
-		+ FeeBuilder.getAccountKeyStorageSize(adminKey)
+		return symbol.length() + name.length() + memo.length() + FeeBuilder.getAccountKeyStorageSize(adminKey)
 				+ FeeBuilder.getAccountKeyStorageSize(kycKey)
 				+ FeeBuilder.getAccountKeyStorageSize(wipeKey)
 				+ FeeBuilder.getAccountKeyStorageSize(supplyKey)
@@ -223,6 +224,7 @@ public class TokenUpdateUsageTest {
 	private void givenOp() {
 		op = TokenUpdateTransactionBody.newBuilder()
 				.setToken(id)
+				.setMemo(StringValue.newBuilder().setValue(memo).build())
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setTreasury(treasury)
 				.setAutoRenewAccount(autoRenewAccount)

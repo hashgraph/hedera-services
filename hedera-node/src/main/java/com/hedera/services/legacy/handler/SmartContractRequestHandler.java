@@ -4,7 +4,7 @@ package com.hedera.services.legacy.handler;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -594,7 +594,7 @@ public class SmartContractRequestHandler {
 		try {
 			MerkleAccount contract = ledger.get(id);
 			if (contract != null) {
-				boolean memoProvided = op.getMemo().length() > 0;
+				boolean memoProvided = op.hasMemoWrapper() || op.getMemo().length() > 0;
 				boolean adminKeyExist = Optional.ofNullable(contract.getKey())
 						.map(key -> !key.hasContractID())
 						.orElse(false);
@@ -616,7 +616,11 @@ public class SmartContractRequestHandler {
 						customizer.expiry(op.getExpirationTime().getSeconds());
 					}
 					if (memoProvided) {
-						customizer.memo(op.getMemo());
+						if (op.hasMemoWrapper()) {
+							customizer.memo(op.getMemoWrapper().getValue());
+						} else {
+							customizer.memo(op.getMemo());
+						}
 					}
 					var hasAcceptableAdminKey = true;
 					if (op.hasAdminKey()) {

@@ -4,7 +4,7 @@ package com.hedera.services.sigs.verification;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ public class PrecheckVerifierTest {
 				KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),
 				KeyTree.withRoot(ed25519()).asJKey());
 		expectedSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				reqKeys, VALID_PROVIDER_FACTORY.get(), new BodySigningSigFactory(accessor.getTxnBytes())
+				reqKeys, VALID_PROVIDER_FACTORY.get(), new BodySigningSigFactory(accessor)
 		).getPlatformSigs();
 	}
 

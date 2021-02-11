@@ -4,7 +4,7 @@ package com.hedera.services.context.domain.topic;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,8 +127,8 @@ public class MerkleTopicTest {
 		assertEquals(0L, topic.getSequenceNumber());
 		assertTrue(topic.hasRunningHash());
 		assertArrayEquals(from.getRunningHash(), topic.getRunningHash());
-		assertNotSame(from.getAdminKey(), topic.getAdminKey());
-		assertNotSame(from.getSubmitKey(), topic.getSubmitKey());
+		assertSame(from.getAdminKey(), topic.getAdminKey());
+		assertSame(from.getSubmitKey(), topic.getSubmitKey());
 		assertSame(from.getAutoRenewAccountId(), topic.getAutoRenewAccountId());
 		assertSame(from.getExpirationTimestamp(), topic.getExpirationTimestamp());
 		assertNotSame(from.getRunningHash(), topic.getRunningHash());

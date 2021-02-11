@@ -4,7 +4,7 @@ package com.hedera.services.txns.submission;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 	}
 
 	private TxnValidityAndFeeReq metaValidityOf(SignedTxnAccessor accessor) {
-		return legacyTxnHandler.validateTransactionPreConsensus(accessor.getSignedTxn(), false);
+		return legacyTxnHandler.validateTransactionPreConsensus(accessor.getBackwardCompatibleSignedTxn(), false);
 	}
 
 	private TransactionResponse responseWith(ResponseCodeEnum validity) {

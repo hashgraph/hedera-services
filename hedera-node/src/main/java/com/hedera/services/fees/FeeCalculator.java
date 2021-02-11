@@ -4,7 +4,7 @@ package com.hedera.services.fees;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ package com.hedera.services.fees;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -44,9 +45,9 @@ public interface FeeCalculator {
 
 	long activeGasPriceInTinybars();
 	long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
-	long estimatedNonFeePayerAdjustments(SignedTxnAccessor accessor, Timestamp at);
-	FeeObject computeFee(SignedTxnAccessor accessor, JKey payerKey, StateView view);
-	FeeObject estimateFee(SignedTxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
+	long estimatedNonFeePayerAdjustments(TxnAccessor accessor, Timestamp at);
+	FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view);
+	FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
 	FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
 	FeeObject computePayment(
 			Query query,

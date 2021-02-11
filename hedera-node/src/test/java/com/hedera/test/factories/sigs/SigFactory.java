@@ -4,7 +4,7 @@ package com.hedera.test.factories.sigs;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBodyBytes;
 import static com.hedera.services.legacy.proto.utils.SignatureGenerator.signBytes;
 import static java.util.stream.Collectors.toList;
 
@@ -118,15 +120,12 @@ public class SigFactory {
 		throw new AssertionError("Impossible node type!");
 	}
 
-	public Transaction signWithSigMap(Transaction.Builder txn, List<KeyTree> signers) throws Throwable {
-		return signWithSigMap(txn, signers, KeyFactory.getDefaultInstance());
-	}
 	public Transaction signWithSigMap(
 			Transaction.Builder txn,
 			List<KeyTree> signers,
 			KeyFactory factory
 	) throws Throwable {
-		SimpleSigning signing = new SimpleSigning(CommonUtils.extractTransactionBodyBytes(txn), signers, factory);
+		SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), signers, factory);
 		List<Map.Entry<byte[], byte[]>> sigs = signing.completed();
 		txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
 		return txn.build();

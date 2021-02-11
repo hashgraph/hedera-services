@@ -4,7 +4,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,16 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hedera.services.legacy.util.ComplexKeyManager;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JKeyTest {
@@ -36,7 +42,7 @@ public class JKeyTest {
 				.genComplexKey(ComplexKeyManager.SUPPORTE_KEY_TYPES.single.name());
 
 		//expect
-		assertDoesNotThrow(() -> JKey.convertKey(accountKey,1));
+		assertDoesNotThrow(() -> JKey.convertKey(accountKey, 1));
 	}
 
 	@Test
@@ -46,7 +52,7 @@ public class JKeyTest {
 				.genComplexKey(ComplexKeyManager.SUPPORTE_KEY_TYPES.thresholdKey.name());
 
 		//expect
-		assertThrows(DecoderException.class, () -> JKey.convertKey(accountKey, KeyExpansion.KEY_EXPANSION_DEPTH+1),
+		assertThrows(DecoderException.class, () -> JKey.convertKey(accountKey, KeyExpansion.KEY_EXPANSION_DEPTH + 1),
 				"Exceeding max expansion depth of " + KeyExpansion.KEY_EXPANSION_DEPTH);
 	}
 
@@ -63,6 +69,26 @@ public class JKeyTest {
 			public boolean isValid() {
 				return false;
 			}
+
+			@Override
+			public void setForScheduledTxn(boolean flag) { }
+
+			@Override
+			public boolean isForScheduledTxn() {
+				return false;
+			}
 		}));
+	}
+
+	@Test
+	void duplicatesAsExpected() {
+		// given:
+		var orig = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked();
+
+		// when:
+		var dup = orig.duplicate();
+		// then:
+		assertNotSame(dup, orig);
+		assertEquals(asKeyUnchecked(orig), asKeyUnchecked(dup));
 	}
 }

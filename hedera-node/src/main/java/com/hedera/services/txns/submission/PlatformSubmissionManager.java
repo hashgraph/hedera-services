@@ -4,7 +4,7 @@ package com.hedera.services.txns.submission;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class PlatformSubmissionManager {
 	public ResponseCodeEnum trySubmission(SignedTxnAccessor accessor) {
 		accessor = effective(accessor);
 
-		var success = (accessor != null) && platform.createTransaction(new Transaction(accessor.getSignedTxnBytes()));
+		var success = (accessor != null) && platform.createTransaction(new Transaction(accessor.getBackwardCompatibleSignedTxnBytes()));
 		if (success) {
 			recordCache.addPreConsensus(accessor.getTxnId());
 			return OK;

@@ -4,7 +4,7 @@ package com.hedera.services.txns.file;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,14 +25,12 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,9 +44,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 public class FileCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FileCreateTransitionLogic.class);
@@ -112,20 +110,18 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	private JFileInfo asAttr(FileCreateTransactionBody op) {
-		JKey wacl;
-		if (op.hasKeys()) {
-			/* Note that {@code assessedValidity} above will guarantee this conversion succeeds. */
-			wacl = asFcKeyUnchecked(wrapped(op.getKeys()));
-		} else {
-			wacl = StateView.EMPTY_WACL;
-		}
+	private HFileMeta asAttr(FileCreateTransactionBody op) {
+		JKey wacl = op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : StateView.EMPTY_WACL;
 
-		return new JFileInfo(false, wacl, op.getExpirationTime().getSeconds());
+		return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
 	}
 
 	private ResponseCodeEnum validate(TransactionBody fileCreateTxn) {
 		var op = fileCreateTxn.getFileCreate();
+
+		if (!validator.isValidEntityMemo(op.getMemo())) {
+			return MEMO_TOO_LONG;
+		}
 
 		if (!op.hasExpirationTime()) {
 			return INVALID_EXPIRATION_TIME;

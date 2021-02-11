@@ -4,7 +4,7 @@ package com.hedera.services;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,6 +127,7 @@ public class ServicesMain implements SwirldMain {
 		if (ctx.globalDynamicProperties().shouldExportBalances() && ctx.balancesExporter().isTimeToExport(when)) {
 			try {
 				ctx.balancesExporter().toCsvFile((ServicesState) signedState, when);
+				ctx.balancesExporter().toProtoFile((ServicesState) signedState, when);
 			} catch (IllegalStateException ise) {
 				log.error("HederaNode#{} has invalid total balance in signed state, exiting!", ctx.id(), ise);
 				systemExits.fail(1);

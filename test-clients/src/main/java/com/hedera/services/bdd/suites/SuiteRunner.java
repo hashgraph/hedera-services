@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
 import com.hedera.services.bdd.suites.file.FileAppendSuite;
+import com.hedera.services.bdd.suites.file.FileCreateSuite;
 import com.hedera.services.bdd.suites.file.FileDeleteSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
@@ -93,7 +94,7 @@ import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
 import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.MixedValidationsAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.SubmitMessagesBeforeReconnect;
+import com.hedera.services.bdd.suites.reconnect.SubmitMessagesForReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
@@ -109,6 +110,11 @@ import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
+import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
@@ -154,7 +160,7 @@ public class SuiteRunner {
 	private static final int SUITE_NAME_WIDTH = 32;
 
 	private static final HapiSpecSetup.TlsConfig DEFAULT_TLS_CONFIG = OFF;
-	private static final HapiSpecSetup.TxnConfig DEFAULT_TXN_CONFIG = HapiSpecSetup.TxnConfig.ALTERNATE;
+	private static final HapiSpecSetup.TxnProtoStructure DEFAULT_TXN_CONFIG = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
 	private static final HapiSpecSetup.NodeSelection DEFAULT_NODE_SELECTOR = FIXED;
 
 	private static final int EXPECTED_DEV_NETWORK_SIZE = 3;
@@ -164,54 +170,60 @@ public class SuiteRunner {
 	public static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
 
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
-		/* CI jobs */
-		put("CiConsensusAndCryptoJob", aof(
-				new SignedTransactionBytesRecordsSuite(),
-				new DuplicateManagementTest(),
-				new TopicCreateSuite(),
-				new TopicUpdateSuite(),
-				new TopicDeleteSuite(),
-				new SubmitMessageSuite(),
-				new ChunkingSuite(),
-				new TopicGetInfoSuite(),
-				new BucketThrottlingSpec(),
-				new SpecialAccountsAreExempted(),
-				new CryptoTransferSuite(),
-				new CryptoUpdateSuite(),
-				new CryptoRecordsSanityCheckSuite(),
-				new PrivilegedOpsSuite(),
-				new CannotDeleteSystemEntitiesSuite()));
-		put("CiTokenJob", aof(
-				new TokenAssociationSpecs(),
-				new TokenUpdateSpecs(),
-				new TokenCreateSpecs(),
-				new TokenDeleteSpecs(),
-				new TokenManagementSpecs(),
-				new TokenTransactSpecs()));
-		put("CiFileJob", aof(
-				new FileRecordsSanityCheckSuite(),
-				new VersionInfoSpec(),
-				new ProtectedFilesUpdateSuite(),
-				new PermissionSemanticsSpec(),
-				new SysDelSysUndelSpec()));
-		put("CiSmartContractJob", aof(
-				new NewOpInConstructorSuite(),
-				new IssueXXXXSpec(),
-				new ContractCallSuite(),
-				new ContractCallLocalSuite(),
-				new ContractUpdateSuite(),
-				new ContractDeleteSuite(),
-				new ChildStorageSpec(),
-				new BigArraySpec(),
-				new CharacterizationSuite(),
-				new SmartContractFailFirstSpec(),
-				new SmartContractSelfDestructSpec(),
-				new DeprecatedContractKeySuite(),
-				new ContractRecordsSanityCheckSuite(),
-				new ContractGetBytecodeSuite(),
-				new SmartContractInlineAssemblySpec(),
-				new OCTokenSpec(),
-				new RecordCreationSuite()));
+		/* Convenience entries, uncomment locally to run CI jobs */
+//		put("CiConsensusAndCryptoJob", aof(
+//				new SignedTransactionBytesRecordsSuite(),
+//				new DuplicateManagementTest(),
+//				new TopicCreateSuite(),
+//				new TopicUpdateSuite(),
+//				new TopicDeleteSuite(),
+//				new SubmitMessageSuite(),
+//				new ChunkingSuite(),
+//				new TopicGetInfoSuite(),
+//				new BucketThrottlingSpec(),
+//				new SpecialAccountsAreExempted(),
+//				new CryptoTransferSuite(),
+//				new CryptoUpdateSuite(),
+//				new CryptoRecordsSanityCheckSuite(),
+//				new PrivilegedOpsSuite(),
+//				new CannotDeleteSystemEntitiesSuite()));
+//		put("CiScheduleJob", aof(
+//				new ScheduleDeleteSpecs(),
+//				new ScheduleExecutionSpecs(),
+//				new ScheduleCreateSpecs(),
+//				new ScheduleSignSpecs(),
+//				new ScheduleRecordSpecs()));
+//		put("CiTokenJob", aof(
+//				new TokenAssociationSpecs(),
+//				new TokenUpdateSpecs(),
+//				new TokenCreateSpecs(),
+//				new TokenDeleteSpecs(),
+//				new TokenManagementSpecs(),
+//				new TokenTransactSpecs()));
+//		put("CiFileJob", aof(
+//				new FileRecordsSanityCheckSuite(),
+//				new VersionInfoSpec(),
+//				new ProtectedFilesUpdateSuite(),
+//				new PermissionSemanticsSpec(),
+//				new SysDelSysUndelSpec()));
+//		put("CiSmartContractJob", aof(
+//				new NewOpInConstructorSuite(),
+//				new IssueXXXXSpec(),
+//				new ContractCallSuite(),
+//				new ContractCallLocalSuite(),
+//				new ContractUpdateSuite(),
+//				new ContractDeleteSuite(),
+//				new ChildStorageSpec(),
+//				new BigArraySpec(),
+//				new CharacterizationSuite(),
+//				new SmartContractFailFirstSpec(),
+//				new SmartContractSelfDestructSpec(),
+//				new DeprecatedContractKeySuite(),
+//				new ContractRecordsSanityCheckSuite(),
+//				new ContractGetBytecodeSuite(),
+//				new SmartContractInlineAssemblySpec(),
+//				new OCTokenSpec(),
+//				new RecordCreationSuite()));
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
@@ -230,7 +242,7 @@ public class SuiteRunner {
 		/* Functional tests - RECONNECT */
 		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
-		put("SubmitMessagesBeforeReconnect", aof(new SubmitMessagesBeforeReconnect()));
+		put("SubmitMessagesForReconnect", aof(new SubmitMessagesForReconnect()));
 		put("CreateFilesBeforeReconnect", aof(new CreateFilesBeforeReconnect()));
 		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
 		put("MixedValidationsAfterReconnect", aof(new MixedValidationsAfterReconnect()));
@@ -251,6 +263,7 @@ public class SuiteRunner {
 		put("ConsensusThrottlesSpecs", aof(new ConsensusThrottlesSuite()));
 		put("ConsensusQueriesStressTests", aof(new ConsensusQueriesStressTests()));
 		/* Functional tests - FILE */
+		put("FileCreateSuite", aof(new FileCreateSuite()));
 		put("FileAppendSuite", aof(new FileAppendSuite()));
 		put("FileUpdateSuite", aof(new FileUpdateSuite()));
 		put("FileDeleteSuite", aof(new FileDeleteSuite()));
@@ -258,6 +271,12 @@ public class SuiteRunner {
 		put("ExchangeRateControlSuite", aof(new ExchangeRateControlSuite()));
 		put("PermissionSemanticsSpec", aof(new PermissionSemanticsSpec()));
 		put("FileQueriesStressTests", aof(new FileQueriesStressTests()));
+		/* Functional tests - SCHEDULE */
+		put("ScheduleCreateSpecs", aof(new ScheduleCreateSpecs()));
+		put("ScheduleSignSpecs", aof(new ScheduleSignSpecs()));
+		put("ScheduleRecordSpecs", aof(new ScheduleRecordSpecs()));
+		put("ScheduleDeleteSpecs", aof(new ScheduleDeleteSpecs()));
+		put("ScheduleExecutionSpecs", aof(new ScheduleExecutionSpecs()));
 		/* Functional tests - TOKEN */
 		put("TokenCreateSpecs", aof(new TokenCreateSpecs()));
 		put("TokenUpdateSpecs", aof(new TokenUpdateSpecs()));
