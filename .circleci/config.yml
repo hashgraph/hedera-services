@@ -1304,7 +1304,7 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "28 16 * * *"
+          cron: "35 16 * * *"
           filters:
             branches:
               only:
@@ -1395,11 +1395,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "30 16 * * *"
+          cron: "20 5 * * *"
           filters:
             branches:
               only:
-                - 1035-M-Change-log4j-format
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1420,7 +1420,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
-          cron: "10 17 * * *"
+          cron: "35 16 * * *"
           filters:
             branches:
               only:
@@ -1515,11 +1515,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "0 17 * * *"
+          cron: "35 6 * * *"
           filters:
             branches:
               only:
-                - 1035-M-Change-log4j-format
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1561,11 +1561,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
       - schedule:
-          cron: "50 16 * * *"
+          cron: "5 7 * * *"
           filters:
             branches:
               only:
-                - 1035-M-Change-log4j-format
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2213,7 +2213,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout update-log4j;
+            cd regression; git checkout 00865-D-update-log4j-pattern;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
