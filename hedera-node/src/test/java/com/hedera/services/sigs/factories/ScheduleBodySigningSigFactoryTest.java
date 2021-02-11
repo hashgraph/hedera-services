@@ -24,8 +24,6 @@ import com.google.protobuf.ByteString;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.EXPECTED_DIFFERENT_SIG;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.EXPECTED_SIG;
@@ -35,7 +33,6 @@ import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.differen
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.pk;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.sig;
 
-@RunWith(JUnitPlatform.class)
 public class ScheduleBodySigningSigFactoryTest {
 	@Test
 	public void createsExpectedSig() {

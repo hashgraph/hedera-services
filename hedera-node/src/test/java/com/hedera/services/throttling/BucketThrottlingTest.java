@@ -137,8 +137,6 @@ class BucketThrottlingTest {
 	@Test
 	void rebuildsAsExpected() {
 		// setup:
-		var oldDisplay = BucketThrottling.displayFn;
-		BucketThrottling.displayFn = System.out::println;
 		subject.functions = new HederaFunctionality[] { FileAppend, ConsensusGetTopicInfo };
 		var oldCapacities = subject.capacities;
 
@@ -148,9 +146,6 @@ class BucketThrottlingTest {
 		// then:
 		assertEquals(2, subject.capacities.size());
 		assertNotSame(oldCapacities, subject.capacities);
-
-		// cleanup:
-		BucketThrottling.displayFn = oldDisplay;
 	}
 
 	@Test

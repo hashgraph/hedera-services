@@ -23,14 +23,11 @@ package com.hedera.services.sigs.sourcing;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class ScheduledPubKeyToSigBytesTest {
 	byte[] key = "Putative signatory...".getBytes();
 	byte[] expectedSig = "Anything else a great disappointment!".getBytes();
