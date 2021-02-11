@@ -1304,7 +1304,7 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "35 16 * * *"
+          cron: "32 19 * * *"
           filters:
             branches:
               only:
@@ -1420,7 +1420,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
-          cron: "35 16 * * *"
+          cron: "35 19 * * *"
           filters:
             branches:
               only:
@@ -1469,7 +1469,7 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "30 16 * * *"
+          cron: "36 19 * * *"
           filters:
             branches:
               only:
@@ -2213,7 +2213,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 00865-D-update-log4j-pattern;
+            cd regression; git checkout 865-D-test-changes;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
