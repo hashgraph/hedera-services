@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.*;
 
 class RawTokenRelationshipTest {
+	int decimals = 5;
 	long num = 123;
 	long balance = 234;
 	boolean frozen = true;
@@ -72,6 +73,8 @@ class RawTokenRelationshipTest {
 
 	@Test
 	public void grpcConversionRecognizesInapplicable() {
+		given(token.decimals()).willReturn(decimals);
+
 		// when:
 		var desc = subject.asGrpcFor(token);
 
@@ -80,6 +83,7 @@ class RawTokenRelationshipTest {
 		assertEquals(IdUtils.tokenWith(num), desc.getTokenId());
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, desc.getFreezeStatus());
 		assertEquals(TokenKycStatus.KycNotApplicable, desc.getKycStatus());
+		assertEquals(decimals, desc.getDecimals());
 	}
 
 	@Test

@@ -87,6 +87,7 @@ public class RawTokenRelationship {
 	public TokenRelationship asGrpcFor(MerkleToken token) {
 		return TokenRelationship.newBuilder()
 				.setBalance(balance)
+				.setDecimals(token.decimals())
 				.setSymbol(token.symbol())
 				.setTokenId(TokenID.newBuilder()
 						.setShardNum(shardNum)

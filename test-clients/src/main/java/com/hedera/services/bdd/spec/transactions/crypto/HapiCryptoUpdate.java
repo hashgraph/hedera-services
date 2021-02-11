@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.ExtantFileContext;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
@@ -66,7 +67,9 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private final String account;
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
+	private OptionalLong newExpiry = OptionalLong.empty();
 	private Optional<Long> lifetimeSecs = Optional.empty();
+	private Optional<String> newProxy = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
@@ -77,6 +80,14 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
 	public HapiCryptoUpdate sendThreshold(long v) {
 		sendThreshold = OptionalLong.of(v);
+		return this;
+	}
+	public HapiCryptoUpdate newProxy(String name) {
+		newProxy = Optional.of(name);
+		return this;
+	}
+	public HapiCryptoUpdate expiring(long at) {
+		newExpiry = OptionalLong.of(at);
 		return this;
 	}
 	public HapiCryptoUpdate lifetime(long secs) {
@@ -120,12 +131,18 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 				.<CryptoUpdateTransactionBody, CryptoUpdateTransactionBody.Builder>body(
 						CryptoUpdateTransactionBody.class, builder -> {
 							builder.setAccountIDToUpdate(id);
+							newProxy.ifPresent(p -> {
+								var proxyId = TxnUtils.asId(p, spec);
+								builder.setProxyAccountID(proxyId);
+							});
 							updSigRequired.ifPresent(u -> builder.setReceiverSigRequiredWrapper(BoolValue.of(u)));
 							updKey.ifPresent(k -> builder.setKey(k));
 							entityMemo.ifPresent(m -> builder.setMemo(StringValue.newBuilder().setValue(m).build()));
 							sendThreshold.ifPresent(v ->
 									builder.setSendRecordThresholdWrapper(
 											UInt64Value.newBuilder().setValue(v).build()));
+							newExpiry.ifPresent(l ->
+								builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
 						}
 				);
 		return builder -> builder.setCryptoUpdateAccount(opBody);

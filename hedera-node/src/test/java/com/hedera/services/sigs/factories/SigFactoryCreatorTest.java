@@ -40,8 +40,6 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.pk;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.sig;
@@ -51,7 +49,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class SigFactoryCreatorTest {
 	FCMap<MerkleEntityId, MerkleSchedule> scheduledTxns;
 

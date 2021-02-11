@@ -124,7 +124,7 @@ public class InHandleActivationHelper {
 			var otherOrderingResult = keyOrderer.keysForOtherParties(current.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
 			if (otherOrderingResult.hasErrorReport()) {
 				var errorReport = otherOrderingResult.getErrorReport();
-				log.warn("Allowing active other-party sigs: {} ({})!", errorReport, errorReport.getResponseCode());
+				log.debug("Allowing active other-party sigs: {} ({})!", errorReport, errorReport.getResponseCode());
 				otherParties = Collections.emptyList();
 			} else {
 				otherParties = otherOrderingResult.getOrderedKeys();
