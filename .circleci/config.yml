@@ -1473,7 +1473,7 @@ workflows:
           filters:
             branches:
               only:
-                - 1035-M-Change-log4j-format
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1492,11 +1492,11 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "40 16 * * *"
+          cron: "35 6 * * *"
           filters:
             branches:
               only:
-                - 1035-M-Change-log4j-format
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
