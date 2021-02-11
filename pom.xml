@@ -21,7 +21,7 @@
     <url>https://github.com/hashgraph/hedera-services</url>
     <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
     <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
-    <tag>release/0.11</tag>
+    <tag>release/0.12</tag>
   </scm>
 
   <developers>
