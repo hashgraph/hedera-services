@@ -21,7 +21,7 @@
     <url>https://github.com/hashgraph/hedera-services</url>
     <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
     <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
-    <tag>release/0.11</tag>
+    <tag>release/0.12</tag>
   </scm>
 
   <developers>
@@ -170,7 +170,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <project.build.outputTimestamp>2021-01-25T20:38:08Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2021-02-11T19:24:17Z</project.build.outputTimestamp>
   </properties>
 
   <modules>
