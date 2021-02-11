@@ -34,8 +34,7 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
-import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.hederahashgraph.api.proto.java.TokenBalances;
+import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 import com.swirlds.common.Address;
@@ -53,6 +52,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
@@ -60,6 +61,7 @@ import java.util.regex.Pattern;
 import java.util.Optional;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
+import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.b64Encode;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
@@ -68,6 +70,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -90,12 +93,16 @@ class SignedStateBalancesExporterTest {
 
 	long thisNodeBalance = 400;
 	AccountID thisNode = asAccount("0.0.3");
+
 	long anotherNodeBalance = 100;
 	AccountID anotherNode = asAccount("0.0.4");
+
 	long firstNonNodeAccountBalance = 250;
 	AccountID firstNonNode = asAccount("0.0.1001");
+
 	long secondNonNodeAccountBalance = 250;
 	AccountID secondNonNode = asAccount("0.0.1002");
+
 	AccountID deleted = asAccount("0.0.1003");
 
 	TokenID theToken = asToken("0.0.1004");
@@ -254,11 +261,11 @@ class SignedStateBalancesExporterTest {
 			var entry = expected.get(i);
 			assertEquals(String.format(
 					"%d,%d,%d,%d,%s",
-					entry.getShard(),
-					entry.getRealm(),
-					entry.getNum(),
-					entry.getBalance(),
-					entry.getB64TokenBalances()), lines.get(i + 3));
+					entry.getAccountID().getShardNum(),
+					entry.getAccountID().getRealmNum(),
+					entry.getAccountID().getAccountNum(),
+					entry.getHbarBalance(),
+					entry.getTokenUnitBalancesList().size() > 0 ? b64Encode(entry) : ""), lines.get(i + 3));
 		}
 		// and:
 		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
@@ -297,10 +304,10 @@ class SignedStateBalancesExporterTest {
 			var entry = expected.get(i);
 			assertEquals(String.format(
 					"%d,%d,%d,%d",
-					entry.getShard(),
-					entry.getRealm(),
-					entry.getNum(),
-					entry.getBalance()), lines.get(i + 2));
+					entry.getAccountID().getShardNum(),
+					entry.getAccountID().getRealmNum(),
+					entry.getAccountID().getAccountNum(),
+					entry.getHbarBalance()), lines.get(i + 2));
 		}
 
 		// cleanup:
@@ -338,8 +345,8 @@ class SignedStateBalancesExporterTest {
 			}
 			else if(account.getAccountID().getAccountNum() == 1002) {
 				assertEquals(account.getHbarBalance(), 250);
-				assertEquals(account.getTokenBalances(0).getTokenId().getTokenNum(), 1004);
-				assertEquals(account.getTokenBalances(0).getBalance(), 100);
+				assertEquals(account.getTokenUnitBalances(0).getTokenId().getTokenNum(), 1004);
+				assertEquals(account.getTokenUnitBalances(0).getBalance(), 100);
 			}
 		}
 
@@ -459,9 +466,27 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
+	public void testSingleAccountBalancingSort() {
+		// given:
+		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
+		List<SingleAccountBalances> sorted = new ArrayList<>();
+		sorted.addAll(expectedBalances);
+
+		Collections.shuffle(sorted);
+
+		assertNotEquals(expectedBalances, sorted);
+		// when
+		sorted.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
+
+		// then:
+		assertEquals(expectedBalances, sorted);
+
+	}
+
+	@Test
 	public void summarizesAsExpected() {
 		// given:
-		List<AccountBalance> expectedBalances = theExpectedBalances();
+		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
 
 		// when:
 		var summary = subject.summarized(state);
@@ -475,24 +500,32 @@ class SignedStateBalancesExporterTest {
 				"0.0.4", anotherNodeBalance));
 	}
 
-	private List<AccountBalance> theExpectedBalances() {
-		var expThisNode = new AccountBalance(0, 0, 3, thisNodeBalance);
-		var expAnotherNode = new AccountBalance(0, 0, 4, anotherNodeBalance);
-		var expFirstNon = new AccountBalance(0, 0, 1001, firstNonNodeAccountBalance);
-		var expSecondNon = new AccountBalance(0, 0, 1002, secondNonNodeAccountBalance);
-		TokenBalances expB64Balances = TokenBalances.newBuilder()
-				.addTokenBalances(TokenBalance.newBuilder()
-						.setTokenId(theToken)
-						.setBalance(secondNonNodeTokenBalance))
-				.build();
-		expSecondNon.setB64TokenBalances(b64Encode(expB64Balances));
-		return List.of(
-				expThisNode,
-				expAnotherNode,
-				expFirstNon,
-				expSecondNon
-		);
+	private List<SingleAccountBalances> theExpectedBalances() {
+		var singleAcctBuilder = SingleAccountBalances.newBuilder();
+		var thisNode = singleAcctBuilder
+				.setAccountID(asAccount("0.0.3"))
+				.setHbarBalance(thisNodeBalance).build();
+
+		var anotherNode = singleAcctBuilder
+				.setHbarBalance(anotherNodeBalance)
+				.setAccountID(asAccount("0.0.4")).build();
+
+		var firstNon = singleAcctBuilder
+				.setAccountID(asAccount("0.0.1001"))
+				.setHbarBalance(firstNonNodeAccountBalance).build();
+
+		TokenUnitBalance tokenBalances = TokenUnitBalance.newBuilder()
+				.setTokenId(theToken)
+				.setBalance(secondNonNodeTokenBalance).build();
+
+		var secondNon = singleAcctBuilder
+				.setAccountID(asAccount("0.0.1002"))
+				.setHbarBalance(secondNonNodeAccountBalance)
+				.addTokenUnitBalances(tokenBalances).build();
+
+		return List.of(thisNode, anotherNode, firstNon, secondNon);
 	}
+
 
 	@Test
 	public void assuresExpectedDir() throws IOException {

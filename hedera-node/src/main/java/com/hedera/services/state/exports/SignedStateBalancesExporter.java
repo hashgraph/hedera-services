@@ -33,8 +33,7 @@ import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
-import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.hederahashgraph.api.proto.java.TokenBalances;
+import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.Units;
 import com.swirlds.fcmap.FCMap;
@@ -53,7 +52,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.Optional;
@@ -61,6 +60,7 @@ import java.util.Optional;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 
 public class SignedStateBalancesExporter implements BalancesExporter {
 	static Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
@@ -90,6 +90,10 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	String lastUsedExportDir = UNKNOWN_EXPORT_DIR;
 	Instant periodEnd = NEVER;
+
+
+	public static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
+			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
 
 	public SignedStateBalancesExporter(
 			PropertySource properties,
@@ -188,15 +192,20 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			} else {
 				addLegacyHeader(fout, when);
 			}
-			for (AccountBalance entry : summary.getOrderedBalances())  {
+			for (SingleAccountBalances singleAccountBalances : summary.getOrderedBalances())  {
 				fout.write(String.format(
 						"%d,%d,%d,%d",
-						entry.getShard(),
-						entry.getRealm(),
-						entry.getNum(),
-						entry.getBalance()));
+						singleAccountBalances.getAccountID().getShardNum(),
+						singleAccountBalances.getAccountID().getRealmNum(),
+						singleAccountBalances.getAccountID().getAccountNum(),
+						singleAccountBalances.getHbarBalance()));
 				if (dynamicProperties.shouldExportTokenBalances()) {
-					fout.write("," + entry.getB64TokenBalances());
+					if(singleAccountBalances.getTokenUnitBalancesList().size() > 0) {
+						fout.write("," + b64Encode(singleAccountBalances));
+					}
+					else {
+						fout.write(",");
+					}
 				}
 				fout.write(LINE_SEPARATOR);
 			}
@@ -243,7 +252,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 							if (token != null && !token.isDeleted()) {
 								var relationship = tokenAssociations
 										.get(fromAccountTokenRel(accountId, tokenId));
-								singleAccountBuilder.addTokenBalances(tb(tokenId, relationship.getBalance()));
+								singleAccountBuilder.addTokenUnitBalances(tb(tokenId, relationship.getBalance()));
 							}
 						}
 					}
@@ -297,7 +306,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	BalancesSummary summarized(ServicesState signedState) {
 		long nodeBalanceWarnThreshold = dynamicProperties.nodeBalanceWarningThreshold();
 		BigInteger totalFloat = BigInteger.valueOf(0L);
-		List<AccountBalance> accountBalances = new ArrayList<>();
+		List<SingleAccountBalances> accountBalances = new ArrayList<>();
 
 		var nodeIds = MiscUtils.getNodeAccounts(signedState.addressBook());
 		var tokens = signedState.tokens();
@@ -315,47 +324,45 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 							balance));
 				}
 				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
-				var balancesEntry = new AccountBalance(id.getShard(), id.getRealm(), id.getNum(), account.getBalance());
+				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
+				sabBuilder.setHbarBalance(balance)
+						.setAccountID(accountId);
 				if (dynamicProperties.shouldExportTokenBalances()) {
-					addTokenBalances(accountId, account, balancesEntry, tokens, tokenAssociations);
+					addTokenBalances(accountId, account, sabBuilder,  tokens, tokenAssociations);
 				}
-				accountBalances.add(balancesEntry);
+				accountBalances.add(sabBuilder.build());
 			}
 		}
-		Collections.sort(accountBalances);
-
+		accountBalances.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
 		return new BalancesSummary(totalFloat, accountBalances);
 	}
 
 	private void addTokenBalances(
 			AccountID id,
 			MerkleAccount account,
-			AccountBalance balancesEntry,
+			SingleAccountBalances.Builder sabBuilder,
 			FCMap<MerkleEntityId, MerkleToken> tokens,
 			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations
 	) {
 		var accountTokens = account.tokens();
 		if (accountTokens.numAssociations() > 0) {
-			var tokenBalances = TokenBalances.newBuilder();
+
 			for (TokenID tokenId : accountTokens.asIds()) {
 				var token = tokens.get(fromTokenId(tokenId));
 				if (token != null && !token.isDeleted()) {
 					var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));
-					tokenBalances.addTokenBalances(tb(tokenId, relationship.getBalance()));
+					sabBuilder.addTokenUnitBalances(tb(tokenId, relationship.getBalance()));
 				}
-			}
-			if (tokenBalances.getTokenBalancesCount() > 0) {
-				balancesEntry.setB64TokenBalances(b64Encode(tokenBalances.build()));
 			}
 		}
 	}
 
-	private TokenBalance tb(TokenID id, long balance) {
-		return TokenBalance.newBuilder().setTokenId(id).setBalance(balance).build();
+	private TokenUnitBalance tb(TokenID id, long balance) {
+		return TokenUnitBalance.newBuilder().setTokenId(id).setBalance(balance).build();
 	}
 
-	static String b64Encode(TokenBalances tokenBalances) {
-		return encoder.encodeToString(tokenBalances.toByteArray());
+	static String b64Encode(SingleAccountBalances accountBalances) {
+		return encoder.encodeToString(accountBalances.toByteArray());
 	}
 
 	private boolean ensureExportDir(AccountID node) {
@@ -380,11 +387,11 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	static class BalancesSummary {
 		private final BigInteger totalFloat;
-		private final List<AccountBalance> orderedBalances;
+		private final List<SingleAccountBalances> orderedBalances;
 
 		BalancesSummary(
 				BigInteger totalFloat,
-				List<AccountBalance> orderedBalances
+				List<SingleAccountBalances> orderedBalances
 		) {
 			this.totalFloat = totalFloat;
 			this.orderedBalances = orderedBalances;
@@ -394,7 +401,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			return totalFloat;
 		}
 
-		public List<AccountBalance> getOrderedBalances() {
+		public List<SingleAccountBalances> getOrderedBalances() {
 			return orderedBalances;
 		}
 	}
