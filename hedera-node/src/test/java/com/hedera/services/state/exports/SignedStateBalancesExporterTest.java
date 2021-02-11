@@ -472,8 +472,9 @@ class SignedStateBalancesExporterTest {
 		List<SingleAccountBalances> sorted = new ArrayList<>();
 		sorted.addAll(expectedBalances);
 
-		Collections.shuffle(sorted);
-
+		SingleAccountBalances singleAccountBalances = sorted.remove(0);
+		sorted.add(singleAccountBalances);
+		
 		assertNotEquals(expectedBalances, sorted);
 		// when
 		sorted.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
