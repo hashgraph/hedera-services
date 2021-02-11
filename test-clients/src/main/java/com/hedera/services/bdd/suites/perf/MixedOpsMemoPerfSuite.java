@@ -7,6 +7,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -63,80 +64,60 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger createdSoFar = new AtomicInteger(0);
 		Supplier<HapiSpecOperation[]> transferBurst = () -> new HapiSpecOperation[] {
-				inParallel(flattened(
-						IntStream.range(0, settings.getBurstSize() * 3 / 16)
-								.mapToObj(ignore ->
-										cryptoCreate("testAccount" + createdSoFar)
-												.balance(100_000L)
-												.entityMemo(
-														TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
-												)
-												.logged()
-												.payingWith(GENESIS)
-												.deferStatusResolution())
-								.toArray(n -> new HapiSpecOperation[n]),
-						IntStream.range(0, settings.getBurstSize() * 3 / 16)
-								.mapToObj(ignore ->
-										cryptoUpdate(TARGET_ACCOUNT)
-												.entityMemo(
-														TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
-												)
-												.payingWith(GENESIS)
-												.logged()
-												.hasPrecheckFrom(
-														OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-												.deferStatusResolution())
-								.toArray(n -> new HapiSpecOperation[n]),
-						IntStream.range(0, settings.getBurstSize() * 3 / 16)
-								.mapToObj(ignore ->
-										tokenCreate("testToken" + createdSoFar)
-												.entityMemo(
-														TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
-												)
-												.payingWith(GENESIS)
-												.logged()
-												.initialSupply(100_000_000_000L)
-												.hasPrecheckFrom(
-														OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-												.deferStatusResolution())
-								.toArray(n -> new HapiSpecOperation[n]),
-						IntStream.range(0, settings.getBurstSize() / 2)
-								.mapToObj(ignore ->
-										tokenUpdate(TARGET_TOKEN)
-												.entityMemo(
-														TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
-												)
-												.payingWith(GENESIS)
-												.logged()
-												.hasPrecheckFrom(
-														OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-												.deferStatusResolution())
-								.toArray(n -> new HapiSpecOperation[n]),
-						IntStream.range(0, settings.getBurstSize() / 8)
-								.mapToObj(ignore ->
-										fileCreate("testFile" + createdSoFar)
-												.entityMemo(
-														TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
-												)
-												.payingWith(GENESIS)
-												.logged()
-												.hasPrecheckFrom(
-														OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-												.deferStatusResolution())
-								.toArray(n -> new HapiSpecOperation[n]),
-						IntStream.range(0, settings.getBurstSize() / 8)
-								.mapToObj(ignore ->
-										fileUpdate(TARGET_FILE)
-												.entityMemo(
-														TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
-												)
-												.payingWith(GENESIS)
-												.logged()
-												.hasPrecheckFrom(
-														OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-												.deferStatusResolution())
-								.toArray(n -> new HapiSpecOperation[n])
-				))
+				cryptoCreate("testAccount" + createdSoFar)
+						.balance(100_000L)
+						.entityMemo(
+								TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
+						)
+						.logged()
+						.payingWith(GENESIS)
+						.deferStatusResolution(),
+				cryptoUpdate(TARGET_ACCOUNT)
+						.entityMemo(
+								TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
+						)
+						.payingWith(GENESIS)
+						.logged()
+						.hasPrecheckFrom(
+								OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						.deferStatusResolution(),
+				tokenCreate("testToken" + createdSoFar)
+						.entityMemo(
+								TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
+						)
+						.payingWith(GENESIS)
+						.logged()
+						.initialSupply(100_000_000_000L)
+						.hasPrecheckFrom(
+								OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						.deferStatusResolution(),
+				tokenUpdate(TARGET_TOKEN)
+						.entityMemo(
+								TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
+						)
+						.payingWith(GENESIS)
+						.logged()
+						.hasPrecheckFrom(
+								OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						.deferStatusResolution(),
+				fileCreate("testFile" + createdSoFar)
+						.entityMemo(
+								TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
+						)
+						.payingWith(GENESIS)
+						.logged()
+						.hasPrecheckFrom(
+								OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						.deferStatusResolution(),
+				fileUpdate(TARGET_FILE)
+						.entityMemo(
+								TxnUtils.randomUtf8Bytes(memoLength.getAsInt()).toString()
+						)
+						.payingWith(GENESIS)
+						.logged()
+						.hasPrecheckFrom(
+								OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						.deferStatusResolution()
 		};
 		return defaultHapiSpec("RunMixedMemoOps")
 				.given(
@@ -144,6 +125,9 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 						logIt(ignore -> settings.toString())
 				)
 				.when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "1300000.0")),
 						cryptoCreate(TARGET_ACCOUNT)
 								.entityMemo("InitialMemo")
 								.logged(),
