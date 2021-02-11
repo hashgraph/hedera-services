@@ -35,6 +35,7 @@ import java.util.OptionalLong;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_MEMO_LENGTH;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class LoadTest extends HapiApiSuite {
@@ -52,7 +53,7 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt totalTestTokens = OptionalInt.empty();
 	public static OptionalInt testTreasureStartAccount = OptionalInt.empty();
 	public static OptionalInt totalTestTokenAccounts = OptionalInt.empty();
-	public static OptionalInt memoLength = OptionalInt.of(25);
+	public static OptionalInt memoLength = OptionalInt.of(DEFAULT_MEMO_LENGTH);
 
 	public static int parseArgs(String... args) {
 		int usedArgs = 0;
@@ -99,6 +100,10 @@ public class LoadTest extends HapiApiSuite {
 		return targetTPS.getAsDouble();
 	}
 
+	public static int getMemoLength() {
+		return memoLength.getAsInt();
+	}
+
 	public static int getTestDurationMinutes() {
 		return testDurationMinutes.getAsInt();
 	}
@@ -108,6 +113,7 @@ public class LoadTest extends HapiApiSuite {
 				.tps(targetTPS.isPresent() ? LoadTest::getTargetTPS : settings::getTps)
 				.tolerance(settings::getTolerancePercentage)
 				.allowedSecsBelow(settings::getAllowedSecsBelow)
+				.setMemoLength(memoLength.isPresent() ? LoadTest::getMemoLength : settings::getMemoLength)
 				.setNumberOfThreads(threadNumber.isPresent()
 						? threadNumber::getAsInt : settings::getThreads)
 				.setTotalTestAccounts(totalTestAccounts.isPresent()

@@ -83,6 +83,7 @@ import com.hedera.services.bdd.suites.perf.CryptoCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.FileUpdateLoadTest;
 import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
+import com.hedera.services.bdd.suites.perf.MixedOpsMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
@@ -239,6 +240,7 @@ public class SuiteRunner {
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
 		put("CryptoCreatePerfSuite", aof(new CryptoCreatePerfSuite()));
 		put("CreateTopicPerfSuite", aof(new CreateTopicPerfSuite()));
+		put("MixedOpsMemoPerfSuite", aof(new MixedOpsMemoPerfSuite()));
 		/* Functional tests - RECONNECT */
 		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
