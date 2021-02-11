@@ -1304,7 +1304,7 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "46 19 * * *"
+          cron: "0 21 * * *"
           filters:
             branches:
               only:
@@ -1395,11 +1395,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "20 5 * * *"
+          cron: "5 21 * * *"
           filters:
             branches:
               only:
-                - master
+                - 1035-M-Change-log4j-format
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1420,7 +1420,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
-          cron: "46 19 * * *"
+          cron: "10 21 * * *"
           filters:
             branches:
               only:
@@ -1469,11 +1469,11 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "5 6 * * *"
+          cron: "15 21 * * *"
           filters:
             branches:
               only:
-                - master
+                - 1035-M-Change-log4j-format
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1492,11 +1492,11 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "35 6 * * *"
+          cron: "20 21 * * *"
           filters:
             branches:
               only:
-                - master
+                - 1035-M-Change-log4j-format
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1515,11 +1515,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "35 6 * * *"
+          cron: "35 21 * * *"
           filters:
             branches:
               only:
-                - master
+                - 1035-M-Change-log4j-format
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1561,11 +1561,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
       - schedule:
-          cron: "5 7 * * *"
+          cron: "35 21 * * *"
           filters:
             branches:
               only:
-                - master
+                - 1035-M-Change-log4j-format
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2213,7 +2213,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 895-test;
+            cd regression; git checkout 00865-D-update-log4j-pattern;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
