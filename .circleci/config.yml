@@ -1809,7 +1809,7 @@ workflows:
   nightly-comprehensive-functional-regression:
     triggers:
       - schedule:
-          cron: "15 22,4 * * *"
+          cron: "15 4 * * *"
           filters:
             branches:
               only:
