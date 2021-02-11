@@ -20,68 +20,86 @@ package com.hedera.services.fees.calculation.crypto.txns;
  * ‍
  */
 
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.fees.calculation.file.txns.FileUpdateResourceUsage;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.usage.file.ExtantFileContext;
+import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.codec.digest.Crypt;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+
+import java.util.Optional;
 
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 
 class CryptoUpdateResourceUsageTest {
+	long expiry = 1_234_567L;
 	Key currKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
-	MerkleEntityId accountKey = new MerkleEntityId(0, 0, 1234);
+	AccountID proxy = IdUtils.asAccount("0.0.4321");
 	AccountID target = asAccount("0.0.1234");
-	Timestamp expiry = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
+	String memo = "Though like waves breaking it may be";
+	TokenID aToken = asToken("0.0.1001");
+	TokenID bToken = asToken("0.0.1002");
+	TokenID cToken = asToken("0.0.1003");
 	StateView view;
-	MerkleAccount account;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	private SigValueObj sigUsage;
-	private CryptoFeeBuilder usageEstimator;
+	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+	SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+	private CryptoOpsUsage cryptoOpsUsage;
+
+	FeeData expected;
+
 	private CryptoUpdateResourceUsage subject;
 
 	private TransactionBody nonCryptoUpdateTxn;
 	private TransactionBody cryptoUpdateTxn;
 
 	@BeforeEach
-	private void setup() throws Exception {
+	private void setup() {
 		cryptoUpdateTxn = mock(TransactionBody.class);
 		CryptoUpdateTransactionBody update = mock(CryptoUpdateTransactionBody.class);
 		given(update.getAccountIDToUpdate()).willReturn(target);
 		given(cryptoUpdateTxn.hasCryptoUpdateAccount()).willReturn(true);
 		given(cryptoUpdateTxn.getCryptoUpdateAccount()).willReturn(update);
 
+		cryptoOpsUsage = mock(CryptoOpsUsage.class);
+
 		nonCryptoUpdateTxn = mock(TransactionBody.class);
 		given(nonCryptoUpdateTxn.hasCryptoUpdateAccount()).willReturn(false);
 
-		account = mock(MerkleAccount.class);
-		given(account.getKey()).willReturn(JKey.mapKey(currKey));
-		given(account.getExpiry()).willReturn(Long.MAX_VALUE);
-		accounts = mock(FCMap.class);
-		given(accounts.get(accountKey)).willReturn(account);
 		view = mock(StateView.class);
-		given(view.accounts()).willReturn(accounts);
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(CryptoFeeBuilder.class);
-
-		subject = new CryptoUpdateResourceUsage(usageEstimator);
+		subject = new CryptoUpdateResourceUsage(cryptoOpsUsage);
 	}
 
 	@Test
@@ -92,26 +110,78 @@ class CryptoUpdateResourceUsageTest {
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	public void returnsAsExpectedWhenAvail() throws Exception {
 		// setup:
-		FeeData exp = mock(FeeData.class);
+		expected = mock(FeeData.class);
+		// and:
+		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+				.setMemo(memo)
+				.setKey(currKey)
+				.setProxyAccountID(proxy)
+				.addTokenRelationships(0, TokenRelationship.newBuilder().setTokenId(aToken))
+				.addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
+				.addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
+				.build();
+		// and:
+		ArgumentCaptor<ExtantCryptoContext> captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
 
-		given(usageEstimator.getCryptoUpdateTxFeeMatrices(cryptoUpdateTxn, sigUsage, expiry, currKey)).willReturn(exp);
+		given(cryptoOpsUsage.cryptoUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
+		given(view.infoForAccount(target)).willReturn(Optional.of(info));
 
 		// when:
-		FeeData actual = subject.usageGiven(cryptoUpdateTxn, sigUsage, view);
+		var actual = subject.usageGiven(cryptoUpdateTxn, svo, view);
 
 		// then:
-		verify(usageEstimator).getCryptoUpdateTxFeeMatrices(cryptoUpdateTxn, sigUsage, expiry, currKey);
-		assertEquals(exp, actual);
+		assertSame(expected, actual);
+		// and:
+		var ctxUsed = captor.getValue();
+		assertEquals(expiry, ctxUsed.currentExpiry());
+		assertEquals(memo, ctxUsed.currentMemo());
+		assertEquals(currKey, ctxUsed.currentKey());
+		assertEquals(3, ctxUsed.currentNumTokenRels());
+		assertTrue(ctxUsed.currentlyHasProxy());
 	}
 
 	@Test
-	public void returnsDefaultUsageOnException() throws Exception {
+	public void delegatesToCorrectEstimateWhenUnknown() throws Exception {
+		// setup:
+		long now = 1_234_567L;
+		expected = mock(FeeData.class);
+		// and:
+		ArgumentCaptor<ExtantCryptoContext> captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
+		// and:
+		TransactionID txnId = TransactionID.newBuilder()
+				.setTransactionValidStart(Timestamp.newBuilder().setSeconds(now).build())
+				.build();
+
+		given(cryptoUpdateTxn.getTransactionID()).willReturn(txnId);
+		given(cryptoOpsUsage.cryptoUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
+		given(view.infoForAccount(target)).willReturn(Optional.empty());
+
 		// when:
-		FeeData actual = subject.usageGiven(cryptoUpdateTxn, sigUsage, null);
+		var actual = subject.usageGiven(cryptoUpdateTxn, svo, view);
 
 		// then:
-		assertEquals(FeeData.getDefaultInstance(), actual);
+		assertSame(expected, actual);
+		// and:
+		var ctxUsed = captor.getValue();
+		assertEquals(now, ctxUsed.currentExpiry());
+	}
+
+	@Test
+	public void missingCtxScans() {
+		// setup:
+		long now = 1_234_567L;
+
+		// given:
+		var ctx = CryptoUpdateResourceUsage.missingCtx(now);
+
+		// expect:
+		assertEquals(0, ctx.currentNumTokenRels());
+		assertEquals(now, ctx.currentExpiry());
+		Assertions.assertSame(Key.getDefaultInstance(), ctx.currentKey());
+		Assertions.assertSame(DEFAULT_MEMO, ctx.currentMemo());
+		Assertions.assertFalse(ctx.currentlyHasProxy());
 	}
 }

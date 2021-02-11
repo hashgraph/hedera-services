@@ -145,7 +145,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		return this;
 	}
 
-	public HapiContractCreate memo(String s)	 {
+	public HapiContractCreate entityMemo(String s)	 {
 		memo = Optional.of(s);
 		return this;
 	}

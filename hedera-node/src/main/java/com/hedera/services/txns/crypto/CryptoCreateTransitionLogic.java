@@ -98,6 +98,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		JKey key = asFcKeyUnchecked(op.getKey());
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.key(key)
+				.memo(op.getMemo())
 				.expiry(expiry)
 				.autoRenewPeriod(autoRenewPeriod)
 				.isReceiverSigRequired(op.getReceiverSigRequired());
@@ -120,6 +121,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {
 		CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 
+		if (!validator.isValidEntityMemo(op.getMemo())) {
+			return MEMO_TOO_LONG;
+		}
 		if (!op.hasKey()) {
 			return KEY_REQUIRED;
 		}
@@ -133,7 +137,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		if (!fcKey.isValid()) {
 			return BAD_ENCODING;
 		}
-
 		if (op.getInitialBalance() < 0L) {
 			return INVALID_INITIAL_BALANCE;
 		}

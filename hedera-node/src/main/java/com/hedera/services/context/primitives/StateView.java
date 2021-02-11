@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -46,6 +47,8 @@ import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -361,6 +364,33 @@ public class StateView {
 		if (!attr.getWacl().isEmpty()) {
 			info.setKeys(MiscUtils.asKeyUnchecked(attr.getWacl()).getKeyList());
 		}
+		return Optional.of(info.build());
+	}
+
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id) {
+		var account = accounts().get(fromAccountId(id));
+		if (account == null) {
+			return Optional.empty();
+		}
+
+		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setKey(asKeyUnchecked(account.getKey()))
+				.setAccountID(id)
+				.setReceiverSigRequired(account.isReceiverSigRequired())
+				.setDeleted(account.isDeleted())
+				.setMemo(account.getMemo())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
+				.setBalance(account.getBalance())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
+				.setContractAccountID(asSolidityAddressHex(id));
+		Optional.ofNullable(account.getProxy())
+				.map(EntityId::toGrpcAccountId)
+				.ifPresent(info::setProxyAccountID);
+		var tokenRels = tokenRelsFn.apply(this, id);
+		if (!tokenRels.isEmpty()) {
+			info.addAllTokenRelationships(tokenRels);
+		}
+
 		return Optional.of(info.build());
 	}
 

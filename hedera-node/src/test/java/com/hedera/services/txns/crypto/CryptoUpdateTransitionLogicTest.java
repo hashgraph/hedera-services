@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt64Value;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
@@ -61,13 +62,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class CryptoUpdateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private long autoRenewPeriod = 100_001L;
-	final private long sendThresh = 49_000L;
-	final private long receiveThresh = 51_001L;
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
 
 	private long expiry;
+	private String memo = "Not since life began";
 	private boolean useLegacyFields;
 	private Instant consensusTime;
 	private HederaLedger ledger;
@@ -172,6 +172,24 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void updatesMemoIfPresent() throws Throwable {
+		// setup:
+		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+
+		givenValidTxnCtx(EnumSet.of(MEMO));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger).customize(argThat(target::equals), captor.capture());
+		// and:
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
+		assertEquals(1, changes.size());
+		assertEquals(memo, changes.get(AccountProperty.MEMO));
+	}
+
+	@Test
 	public void updatesAutoRenewIfPresent() throws Throwable {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
@@ -224,6 +242,15 @@ public class CryptoUpdateTransitionLogicTest {
 	@Test
 	public void rejectsInvalidKey() {
 		rejectsKey(emptyKey());
+	}
+
+	@Test
+	public void rejectsInvalidMemo() {
+		givenValidTxnCtx(EnumSet.of(MEMO));
+		given(validator.isValidEntityMemo(memo)).willReturn(false);
+
+		// expect:
+		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(cryptoUpdateTxn));
 	}
 
 	@Test
@@ -318,6 +345,7 @@ public class CryptoUpdateTransitionLogicTest {
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(EnumSet.of(
 				KEY,
+				MEMO,
 				PROXY,
 				EXPIRY,
 				IS_RECEIVER_SIG_REQUIRED,
@@ -327,6 +355,9 @@ public class CryptoUpdateTransitionLogicTest {
 
 	private void givenValidTxnCtx(EnumSet<AccountCustomizer.Option> updating) {
 		CryptoUpdateTransactionBody.Builder op = CryptoUpdateTransactionBody.newBuilder();
+		if (updating.contains(MEMO)) {
+			op.setMemo(StringValue.newBuilder().setValue(memo).build());
+		}
 		if (updating.contains(KEY)) {
 			op.setKey(key);
 		}
@@ -364,5 +395,6 @@ public class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
+		given(validator.isValidEntityMemo(any())).willReturn(true);
 	}
 }

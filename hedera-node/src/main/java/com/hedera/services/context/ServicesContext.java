@@ -276,6 +276,7 @@ import com.hedera.services.txns.token.TokenWipeTransitionLogic;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -851,6 +852,7 @@ public class ServicesContext {
 	public FeeCalculator fees() {
 		if (fees == null) {
 			FileOpsUsage fileOpsUsage = new FileOpsUsage();
+			CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
 			FileFeeBuilder fileFees = new FileFeeBuilder();
 			CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
 			SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
@@ -863,7 +865,7 @@ public class ServicesContext {
 							new GetVersionInfoResourceUsage(),
 							new GetTxnRecordResourceUsage(recordCache(), answerFunctions(), cryptoFees),
 							/* Crypto */
-							new GetAccountInfoResourceUsage(),
+							new GetAccountInfoResourceUsage(cryptoOpsUsage),
 							new GetAccountRecordsResourceUsage(answerFunctions(), cryptoFees),
 							/* File */
 							new GetFileInfoResourceUsage(fileOpsUsage),
@@ -881,13 +883,14 @@ public class ServicesContext {
 							/* Schedule */
 							new GetScheduleInfoResourceUsage()
 					),
-					txnUsageEstimators(fileOpsUsage, fileFees, cryptoFees, contractFees)
+					txnUsageEstimators(cryptoOpsUsage, fileOpsUsage, fileFees, cryptoFees, contractFees)
 			);
 		}
 		return fees;
 	}
 
 	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators(
+			CryptoOpsUsage cryptoOpsUsage,
 			FileOpsUsage fileOpsUsage,
 			FileFeeBuilder fileFees,
 			CryptoFeeBuilder cryptoFees,
@@ -895,9 +898,9 @@ public class ServicesContext {
 	) {
 		Map<HederaFunctionality, List<TxnResourceUsageEstimator>> estimatorsMap = Map.ofEntries(
 				/* Crypto */
-				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoFees))),
+				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoOpsUsage))),
 				entry(CryptoDelete, List.of(new CryptoDeleteResourceUsage(cryptoFees))),
-				entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoFees))),
+				entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoOpsUsage))),
 				entry(CryptoTransfer, List.of(new CryptoTransferResourceUsage(globalDynamicProperties()))),
 				/* Contract */
 				entry(ContractCall, List.of(new ContractCallResourceUsage(contractFees))),

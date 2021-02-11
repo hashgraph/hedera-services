@@ -28,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -51,6 +52,7 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt totalTestTokens = OptionalInt.empty();
 	public static OptionalInt testTreasureStartAccount = OptionalInt.empty();
 	public static OptionalInt totalTestTokenAccounts = OptionalInt.empty();
+	public static OptionalInt memoLength = OptionalInt.of(25);
 
 	public static int parseArgs(String... args) {
 		int usedArgs = 0;
@@ -83,6 +85,13 @@ public class LoadTest extends HapiApiSuite {
 			log.info("Set hcsSubmitMessageSize as " + hcsSubmitMessage.getAsInt());
 			usedArgs++;
 		}
+
+		if (args.length > 5) {
+			memoLength = OptionalInt.of(Integer.parseInt(args[5]));
+			log.info("Set Memo Length as " + memoLength.getAsInt());
+			usedArgs++;
+		}
+
 		return usedArgs;
 	}
 
