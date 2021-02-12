@@ -202,7 +202,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 						TokenCreateTransactionBody.class, b -> {
 							symbol.ifPresent(b::setSymbol);
 							name.ifPresent(b::setName);
-							memo.ifPresent(b::setMemo);
+							entityMemo.ifPresent(s -> b.setMemo(s));
 							initialSupply.ifPresent(b::setInitialSupply);
 							decimals.ifPresent(b::setDecimals);
 							freezeDefault.ifPresent(b::setFreezeDefault);
