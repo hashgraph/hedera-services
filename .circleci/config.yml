@@ -1334,6 +1334,7 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
+          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -1357,6 +1358,7 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
+          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -1372,14 +1374,15 @@ workflows:
   GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 15 * * 6,0"
+          cron: "17 21 * * *"
           filters:
             branches:
               only:
-                - master
+                - fix-15N-memory-error
     jobs:
       - build-platform-and-services
       - jrs-regression:
+          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
