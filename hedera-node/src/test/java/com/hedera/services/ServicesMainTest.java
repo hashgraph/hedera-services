@@ -522,8 +522,7 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, when, 1L);
 
 		// then:
-		verify(balancesExporter, never()).toCsvFile(any(), any());
-		verify(balancesExporter, never()).toProtoFile(any(), any());
+		verify(balancesExporter, never()).exportBalancesFrom(any(), any());
 	}
 
 	@Test
@@ -540,8 +539,7 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, when, 1L);
 
 		// then:
-		verify(balancesExporter).toCsvFile(signedState, when);
-		verify(balancesExporter).toProtoFile(signedState, when);
+		verify(balancesExporter).exportBalancesFrom(signedState, when);
 	}
 
 	@Test
@@ -569,7 +567,9 @@ public class ServicesMainTest {
 
 		given(globalDynamicProperties.shouldExportBalances()).willReturn(true);
 		given(balancesExporter.isTimeToExport(when)).willReturn(true);
-		willThrow(IllegalStateException.class).given(balancesExporter).toCsvFile(signedState, when);
+		willThrow(IllegalStateException.class)
+				.given(balancesExporter)
+				.exportBalancesFrom(signedState, when);
 
 		// when:
 		subject.newSignedState(signedState, when, 1L);
