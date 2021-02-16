@@ -109,11 +109,12 @@ public class LoadTest extends HapiApiSuite {
 	}
 
 	public static RunLoadTest defaultLoadTest(Supplier<HapiSpecOperation[]> opSource, PerfTestLoadSettings settings) {
+		log.info("memo length : " + settings.getMemoLength());
 		return runLoadTest(opSource)
 				.tps(targetTPS.isPresent() ? LoadTest::getTargetTPS : settings::getTps)
 				.tolerance(settings::getTolerancePercentage)
 				.allowedSecsBelow(settings::getAllowedSecsBelow)
-				.setMemoLength(memoLength.isPresent() ? LoadTest::getMemoLength : settings::getMemoLength)
+				.setMemoLength(settings::getMemoLength)
 				.setNumberOfThreads(threadNumber.isPresent()
 						? threadNumber::getAsInt : settings::getThreads)
 				.setTotalTestAccounts(totalTestAccounts.isPresent()
