@@ -101,8 +101,10 @@ public class GetAccountBalanceAnswerTest {
 	private void setup() {
 		deleted = mock(MerkleToken.class);
 		given(deleted.isDeleted()).willReturn(true);
+		given(deleted.decimals()).willReturn(123);
 		notDeleted = mock(MerkleToken.class);
 		given(notDeleted.isDeleted()).willReturn(false);
+		given(notDeleted.decimals()).willReturn(1).willReturn(2);
 
 		tokenRels = new FCMap<>();
 		tokenRels.put(
@@ -281,10 +283,10 @@ public class GetAccountBalanceAnswerTest {
 		// expect:
 		assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
 		assertEquals(
-				List.of(tokenBalanceWith(aToken, aBalance),
-						tokenBalanceWith(bToken, bBalance),
-						tokenBalanceWith(cToken, cBalance),
-						tokenBalanceWith(dToken, dBalance)
+				List.of(tokenBalanceWith(aToken, aBalance, 1),
+						tokenBalanceWith(bToken, bBalance, 2),
+						tokenBalanceWith(cToken, cBalance, 123),
+						tokenBalanceWith(dToken, dBalance, 0)
 				),
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);

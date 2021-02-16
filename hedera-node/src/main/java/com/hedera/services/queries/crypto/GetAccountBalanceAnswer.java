@@ -21,6 +21,7 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -88,9 +89,11 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			for (TokenID tId : account.tokens().asIds()) {
 				var relKey = fromAccountTokenRel(id, tId);
 				var relationship = view.tokenAssociations().get().get(relKey);
+				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);
 				opAnswer.addTokenBalances(TokenBalance.newBuilder()
 						.setTokenId(tId)
 						.setBalance(relationship.getBalance())
+						.setDecimals(decimals)
 						.build());
 			}
 		}

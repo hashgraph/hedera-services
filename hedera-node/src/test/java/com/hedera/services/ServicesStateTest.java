@@ -92,6 +92,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.ServicesState.RELEASE_0100_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0110_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_0120_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_070_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
@@ -285,6 +286,8 @@ class ServicesStateTest {
 	public void hasExpectedMinChildCounts() {
 		// given:
 		subject = new ServicesState(ctx, self, Collections.emptyList());
+		// and:
+		int invalidVersion = ServicesState.MERKLE_VERSION + 1;
 
 		// expect:
 		assertEquals(ServicesState.ChildIndices.NUM_070_CHILDREN, subject.getMinimumChildCount(RELEASE_070_VERSION));
@@ -292,11 +295,12 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(RELEASE_090_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0100_CHILDREN, subject.getMinimumChildCount(RELEASE_0100_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0110_CHILDREN, subject.getMinimumChildCount(RELEASE_0110_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_0120_CHILDREN, subject.getMinimumChildCount(RELEASE_0120_VERSION));
 
 		Throwable throwable = assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(RELEASE_0110_VERSION + 1));
+				() -> subject.getMinimumChildCount(invalidVersion));
 		assertEquals(
-				String.format(ServicesState.UNSUPPORTED_VERSION_MSG_TPL, RELEASE_0110_VERSION + 1),
+				String.format(ServicesState.UNSUPPORTED_VERSION_MSG_TPL, invalidVersion),
 				throwable.getMessage());
 	}
 

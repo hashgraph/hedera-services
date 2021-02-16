@@ -64,6 +64,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 	private Key waclKey;
 	private final String fileName;
 	private boolean immutable = false;
+	OptionalLong expiry = OptionalLong.empty();
 	OptionalLong lifetime = OptionalLong.empty();
 	Optional<String> contentsPath = Optional.empty();
 	Optional<byte[]> contents = Optional.empty();
@@ -100,6 +101,11 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
 	public HapiFileCreate unmodifiable() {
 		immutable = true;
+		return this;
+	}
+
+	public HapiFileCreate expiry(long at) {
+		this.expiry = OptionalLong.of(at);
 		return this;
 	}
 
@@ -171,6 +177,9 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 							memo.ifPresent(builder::setMemo);
 							contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
 							lifetime.ifPresent(s -> builder.setExpirationTime(TxnFactory.expiryGiven(s)));
+							expiry.ifPresent(t -> builder.setExpirationTime(Timestamp.newBuilder()
+									.setSeconds(t)
+									.build()));
 						});
 		return b -> {
 			expiryUsed.set(opBody.getExpirationTime());
