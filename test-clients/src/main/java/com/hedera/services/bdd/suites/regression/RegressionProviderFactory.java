@@ -53,19 +53,25 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyIn
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomReceipt;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomRecord;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAccountWipe;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenBurn;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenFreeze;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenInfo;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenKycGrant;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenKycRevoke;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenMint;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUnfreeze;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUpdate;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -235,6 +241,21 @@ public class RegressionProviderFactory {
 					.withOp(
 							new RandomTokenKycRevoke(tokenRels),
 							props.getInteger("randomTokenKycRevoke.bias"))
+					.withOp(
+							new RandomTokenMint(keys,tokens,allAccounts),
+							props.getInteger("randomTokenMint.bias"))
+					.withOp(
+							new RandomTokenBurn(keys, tokens, allAccounts),
+							props.getInteger("randomTokenBurn.bias"))
+					.withOp(
+							new RandomTokenUpdate(keys, tokens, allAccounts),
+							props.getInteger("randomTokenUpdate.bias"))
+					.withOp(
+							new RandomTokenAccountWipe(keys, tokens, allAccounts),
+							props.getInteger("randomTokenAccountWipe.bias"))
+					.withOp(
+							new RandomTokenInfo(tokens),
+							props.getInteger("randomTokenInfo.bias"))
 					/* ---- CONTRACT ---- */
 					.withOp(
 							new RandomCall(calls),
