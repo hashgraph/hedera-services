@@ -1334,6 +1334,7 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
+          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -1357,6 +1358,7 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
+          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -1380,6 +1382,7 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
+          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
