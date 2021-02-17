@@ -50,6 +50,8 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt totalTestAccounts = OptionalInt.empty();
 	public static OptionalInt totalTestTopics = OptionalInt.empty();
 	public static OptionalInt totalTestTokens = OptionalInt.empty();
+	public static OptionalInt durationCreateTokenAssociation = OptionalInt.empty();
+	public static OptionalInt durationTokenTransfer = OptionalInt.empty();
 	public static OptionalInt testTreasureStartAccount = OptionalInt.empty();
 	public static OptionalInt totalTestTokenAccounts = OptionalInt.empty();
 	public static OptionalInt memoLength = OptionalInt.of(25);
@@ -116,6 +118,10 @@ public class LoadTest extends HapiApiSuite {
 						? totalTestTopics::getAsInt : settings::getTotalTopics)
 				.setTotalTestTokens(totalTestTokens.isPresent()
 						? totalTestTokens::getAsInt : settings::getTotalTokens)
+				.setDurationCreateTokeAssociation(durationCreateTokenAssociation.isPresent()
+						? durationCreateTokenAssociation::getAsInt : settings::getDurationCreateTokenAssociation)
+				.setDurationTokenTransfer(durationTokenTransfer.isPresent()
+						? durationTokenTransfer::getAsInt : settings::getDurationTokenTransfer)
 				.setTotalTestTokenAccounts(totalTestTokenAccounts.isPresent()
 						? totalTestTokenAccounts::getAsInt : settings::getTotalTestTokenAccounts)
 				.setTestTreasureStartAccount(testTreasureStartAccount.isPresent()

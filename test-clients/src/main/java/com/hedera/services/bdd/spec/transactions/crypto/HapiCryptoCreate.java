@@ -73,6 +73,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<SigControl> keyShape = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
 
+	private boolean saveToFile = false;
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoCreate;
@@ -96,6 +98,12 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		entityMemo = Optional.of(memo);
 		return this;
 	}
+
+	public HapiCryptoCreate persists() {
+		saveToFile = true;
+		return this;
+	}
+
 	public HapiCryptoCreate sendThreshold(Long amount) {
 		sendThresh = Optional.of(amount);
 		return this;
@@ -205,6 +213,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		spec.registry().saveAccountId(account, lastReceipt.getAccountID());
 		receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
 
+		if(saveToFile) {
+//			log.info("Save account {}, total is now {}", lastReceipt.getAccountID(), spec.getAccounts().size());
+			spec.getAccounts().add(lastReceipt.getAccountID());
+		}
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(
 					String.format(
