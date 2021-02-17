@@ -1374,11 +1374,11 @@ workflows:
   GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "17 21 * * *"
+          cron: "5 15 * * 6,0"
           filters:
             branches:
               only:
-                - fix-15N-memory-error
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
