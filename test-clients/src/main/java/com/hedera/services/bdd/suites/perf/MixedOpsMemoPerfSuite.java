@@ -154,30 +154,30 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 //						.noLogging()
 //						.hasPrecheckFrom(permissiblePrechecks)
 //						.deferStatusResolution(),
-//				createTopic("testTopic" + createdSoFar.getAndIncrement())
-//						.topicMemo(
-//								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
-//						)
-//						.payingWith(GENESIS)
-//						.adminKeyName("adminKey")
-//						.noLogging()
-//						.hasPrecheckFrom(permissiblePrechecks)
-//						.deferStatusResolution(),
-//				getTopicInfo(TARGET_TOPIC+"Info")
-//						.payingWith(GENESIS)
-//						.hasMemo(TOPIC_MEMO)
-//						.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
-//						.hasCostAnswerPrecheckFrom(permissiblePrechecks)
-//						.noLogging(),
-//				updateTopic(TARGET_TOPIC)
-//						.topicMemo(
-//								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
-//						)
-//						.payingWith(GENESIS)
-//						.adminKey("adminKey")
-//						.noLogging()
-//						.hasPrecheckFrom(permissiblePrechecks)
-//						.deferStatusResolution()
+				createTopic("testTopic" + createdSoFar.getAndIncrement())
+						.topicMemo(
+								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
+						)
+						.payingWith(GENESIS)
+						.adminKeyName("adminKey")
+						.noLogging()
+						.hasPrecheckFrom(permissiblePrechecks)
+						.deferStatusResolution(),
+				getTopicInfo(TARGET_TOPIC+"Info")
+						.payingWith(GENESIS)
+						.hasMemo(TOPIC_MEMO)
+						.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
+						.hasCostAnswerPrecheckFrom(permissiblePrechecks)
+						.noLogging(),
+				updateTopic(TARGET_TOPIC)
+						.topicMemo(
+								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
+						)
+						.payingWith(GENESIS)
+						.adminKey("adminKey")
+						.noLogging()
+						.hasPrecheckFrom(permissiblePrechecks)
+						.deferStatusResolution()
 		};
 		return defaultHapiSpec("RunMixedMemoOps")
 				.given(
@@ -207,28 +207,25 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 								.fee(100_000_000L)
 								.payingWith(GENESIS)
 								.entityMemo(ACCOUNT_MEMO)
+								.logged(),
+						createTopic(TARGET_TOPIC)
+								.topicMemo(TOPIC_MEMO)
+								.adminKeyName("adminKey")
+								.payingWith(GENESIS)
+								.logged(),
+						createTopic(TARGET_TOPIC+"Info")
+								.payingWith(GENESIS)
+								.adminKeyName("adminKey")
+								.topicMemo(TOPIC_MEMO)
+								.logged(),
+						tokenCreate(TARGET_TOKEN)
+								.entityMemo(TOKEN_MEMO)
+								.payingWith(GENESIS)
+								.logged(),
+						tokenCreate(TARGET_TOKEN+"Info")
+								.entityMemo(TOKEN_MEMO)
+								.payingWith(GENESIS)
 								.logged()
-//						createTopic(TARGET_TOPIC)
-//								.topicMemo(TOPIC_MEMO)
-//								.adminKeyName("adminKey")
-//								.payingWith(GENESIS)
-//								.logged(),
-//						createTopic(TARGET_TOPIC+"Info")
-//								.payingWith(GENESIS)
-//								.adminKeyName("adminKey")
-//								.topicMemo(TOPIC_MEMO)
-//								.logged()
-//						tokenCreate(TARGET_TOKEN)
-//								.entityMemo(TOKEN_MEMO)
-//								.payingWith(GENESIS)
-//								.logged(),
-//						tokenCreate(TARGET_TOKEN+"Info")
-//								.entityMemo(TOKEN_MEMO)
-//								.payingWith(GENESIS)
-//								.logged()
-//						fileCreate(TARGET_FILE)
-//								.entityMemo(FILE_MEMO)
-//								.logged()
 				)
 				.then(
 						defaultLoadTest(mixedOpsBurst, settings)
