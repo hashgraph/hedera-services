@@ -167,6 +167,8 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 		return defaultHapiSpec("DeletingNonExistingFails")
 				.given().when().then(
 						scheduleDelete("0.0.534")
+								.hasKnownStatus(INVALID_SCHEDULE_ID),
+						scheduleDelete("0.0.0")
 								.hasKnownStatus(INVALID_SCHEDULE_ID)
 				);
 	}

@@ -49,7 +49,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
@@ -80,6 +82,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						nonZeroTransfersRejected(),
 						prechecksWork(),
 						allRequiredSigsAreChecked(),
+						missingEntitiesRejected(),
 				}
 		);
 	}
@@ -139,6 +142,22 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								moving(10, A_TOKEN)
 										.empty()
 						).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
+				);
+	}
+
+	public HapiApiSpec missingEntitiesRejected() {
+		return defaultHapiSpec("MissingTokensRejected")
+				.given(
+						tokenCreate("some").treasury(DEFAULT_PAYER)
+				).when().then(
+						cryptoTransfer(
+								moving(1L, "some")
+										.between(DEFAULT_PAYER, "0.0.0")
+						).signedBy(DEFAULT_PAYER).hasKnownStatus(INVALID_ACCOUNT_ID),
+						cryptoTransfer(
+								moving(100_000_000_000_000L, "0.0.0")
+										.between(DEFAULT_PAYER, FUNDING)
+						).signedBy(DEFAULT_PAYER).hasKnownStatus(INVALID_TOKEN_ID)
 				);
 	}
 

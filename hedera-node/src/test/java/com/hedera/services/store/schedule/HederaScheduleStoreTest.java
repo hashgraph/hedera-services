@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -323,6 +324,12 @@ public class HederaScheduleStoreTest {
 
         // expect:
         assertSame(schedule, subject.get(created));
+    }
+
+    @Test
+    public void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
+        // expect:
+        assertFalse(subject.exists(HederaScheduleStore.NO_PENDING_ID));
     }
 
     @Test

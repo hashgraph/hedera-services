@@ -38,6 +38,7 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -80,8 +81,17 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationSetsCorrectExpiry(),
 						creationHappyPath(),
 						numAccountsAllowedIsDynamic(),
+						worksAsExpectedWithDefaultTokenId(),
 				}
 		);
+	}
+
+
+	private HapiApiSpec worksAsExpectedWithDefaultTokenId() {
+		return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
+				.given().when().then(
+						getTokenInfo("0.0.0").hasCostAnswerPrecheck(INVALID_TOKEN_ID)
+				);
 	}
 
 	public HapiApiSpec autoRenewValidationWorks() {
@@ -334,7 +344,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				.given(
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						recordSystemProperty("tokens.maxSymbolUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set)
-				).when( ).then(
+				).when().then(
 						tokenCreate("missingSymbol")
 								.symbol("")
 								.hasPrecheck(MISSING_TOKEN_SYMBOL),

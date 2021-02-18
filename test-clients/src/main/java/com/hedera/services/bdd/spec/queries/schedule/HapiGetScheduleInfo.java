@@ -127,7 +127,6 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
                 "Wrong schedule expiry!",
                 spec.registry());
 
-
         var registry = spec.registry();
 
         expectedSignatories.ifPresent(s -> {
