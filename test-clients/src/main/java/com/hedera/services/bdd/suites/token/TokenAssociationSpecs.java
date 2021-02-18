@@ -101,8 +101,17 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						expiredAndDeletedTokensStillAppearInContractInfo(),
 						dissociationFromExpiredTokensAsExpected(),
 						accountInfoQueriesAsExpected(),
+						handlesUseOfDefaultTokenId(),
 				}
 		);
+	}
+
+	public HapiApiSpec handlesUseOfDefaultTokenId() {
+		return defaultHapiSpec("HandlesUseOfDefaultTokenId")
+				.given( ).when( ).then(
+						tokenAssociate(DEFAULT_PAYER, "0.0.0")
+								.hasKnownStatus(INVALID_TOKEN_ID)
+				);
 	}
 
 	public HapiApiSpec associatedContractsMustHaveAdminKeys() {
