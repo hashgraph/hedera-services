@@ -1874,9 +1874,7 @@ workflows:
           filters:
             branches:
               ignore:
-                - /.*-PERF/
-                - /.*-REGRESSION/
-
+                - /.*/
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
