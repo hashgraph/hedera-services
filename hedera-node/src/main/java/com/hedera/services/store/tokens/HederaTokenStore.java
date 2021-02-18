@@ -234,7 +234,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	@Override
 	public boolean exists(TokenID id) {
-		return pendingId.equals(id) || tokens.get().containsKey(fromTokenId(id));
+		return (isCreationPending() && pendingId.equals(id)) || tokens.get().containsKey(fromTokenId(id));
 	}
 
 	@Override
