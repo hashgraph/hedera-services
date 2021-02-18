@@ -96,7 +96,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	@Override
 	public boolean exists(ScheduleID id) {
-		return pendingId.equals(id) || schedules.get().containsKey(fromScheduleId(id));
+		return (isCreationPending() && pendingId.equals(id)) || schedules.get().containsKey(fromScheduleId(id));
 	}
 
 	@Override
