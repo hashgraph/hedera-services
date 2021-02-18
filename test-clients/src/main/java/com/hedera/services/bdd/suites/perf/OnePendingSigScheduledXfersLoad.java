@@ -20,19 +20,20 @@ package com.hedera.services.bdd.suites.perf;
  * ‍
  */
 
+import com.google.common.util.concurrent.AtomicDouble;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.SplittableRandom;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -44,20 +45,23 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_STATUSES;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
+import static com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad.inertReceiver;
+import static com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad.initializersGiven;
+import static com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad.payingSender;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class ReadyToRunScheduledXfersLoad extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ReadyToRunScheduledXfersLoad.class);
+public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(OnePendingSigScheduledXfersLoad.class);
 
+	private AtomicDouble probOfSignOp = new AtomicDouble(0.0);
 	private AtomicInteger numNonDefaultSenders = new AtomicInteger(0);
 	private AtomicInteger numInertReceivers = new AtomicInteger(0);
 
@@ -66,25 +70,29 @@ public class ReadyToRunScheduledXfersLoad extends HapiApiSuite {
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 	private SplittableRandom r = new SplittableRandom();
 
+	BlockingQueue<PendingSig> q = new PriorityBlockingQueue<>(
+			5000,
+			Comparator.comparingDouble(PendingSig::getPriority));
+
 	public static void main(String... args) {
-		new ReadyToRunScheduledXfersLoad().runSuiteSync();
+		new OnePendingSigScheduledXfersLoad().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						runReadyToRunXfers(),
+						runOnePendingSigXfers(),
 				}
 		);
 	}
 
-	private HapiApiSpec runReadyToRunXfers() {
-		return defaultHapiSpec("RunReadyToRunXfers")
+	private HapiApiSpec runOnePendingSigXfers() {
+		return defaultHapiSpec("RunOnePendingSigXfers")
 				.given(
 						stdMgmtOf(duration, unit, maxOpsPerSec)
 				).when(
-						runWithProvider(readyToRunXfersFactory())
+						runWithProvider(pendingSigsFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)
 				).then(
@@ -93,69 +101,42 @@ public class ReadyToRunScheduledXfersLoad extends HapiApiSuite {
 								var op = inParallel(IntStream.range(0, numInertReceivers.get())
 										.mapToObj(i -> getAccountBalance(inertReceiver(i)).logged())
 										.toArray(HapiSpecOperation[]::new));
-								CustomSpecAssert.allRunFor(spec, op);
+								allRunFor(spec, op);
 							}
 						})
 				);
 	}
 
-	static String payingSender(int id) {
-		return "payingSender" + id;
-	}
-
-	static String inertReceiver(int id) {
-		return "inertReceiver" + id;
-	}
-
-	static List<HapiSpecOperation> initializersGiven(int nonDefaultSenders, int inertReceivers) {
-		List<HapiSpecOperation> initializers = new ArrayList<>();
-		for (int i = 0; i < nonDefaultSenders; i++) {
-			initializers.add(
-					cryptoCreate(payingSender(i))
-							.balance(A_HUNDRED_HBARS)
-							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-			);
-		}
-		for (int i = 0; i < inertReceivers; i++) {
-			initializers.add(
-					cryptoCreate(inertReceiver(i))
-							.balance(0L)
-							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-			);
-		}
-
-		for (HapiSpecOperation op : initializers) {
-			if (op instanceof HapiTxnOp) {
-				((HapiTxnOp) op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
-			}
-		}
-
-		return initializers;
-	}
-
-	private Function<HapiApiSpec, OpProvider> readyToRunXfersFactory() {
+	private Function<HapiApiSpec, OpProvider> pendingSigsFactory() {
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				var ciProps = spec.setup().ciPropertiesMap();
 				numNonDefaultSenders.set(ciProps.getInteger("numNonDefaultSenders"));
 				numInertReceivers.set(ciProps.getInteger("numInertReceivers"));
+				probOfSignOp.set(ciProps.getDouble("probOfSigning"));
 				return initializersGiven(numNonDefaultSenders.get(), numInertReceivers.get());
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				var sendingPayer = DEFAULT_PAYER;
+				var senderId = -1;
 				if (numNonDefaultSenders.get() > 0) {
-					sendingPayer = payingSender(r.nextInt(numNonDefaultSenders.get()));
+					senderId = r.nextInt(numNonDefaultSenders.get());
 				}
+				var payerId = (senderId == -1) || (numNonDefaultSenders.get() == 1)
+						? -1
+						: (senderId + 1) % numNonDefaultSenders.get();
+
+				var payer = payerId == -1 ? DEFAULT_PAYER : payingSender(payerId);
+				var sender = senderId == -1 ? DEFAULT_PAYER : payingSender(senderId);
 				var receiver = FUNDING;
 				if (numInertReceivers.get() > 0) {
 					receiver = inertReceiver(r.nextInt(numInertReceivers.get()));
 				}
-				var innerOp = cryptoTransfer(tinyBarsFromTo(sendingPayer, receiver, 1L))
-						.payingWith(sendingPayer)
-						.signedBy(sendingPayer)
+				var innerOp = cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
+						.payingWith(payer)
+						.signedBy(payer)
 						.noLogging();
 				var op = scheduleCreate("wrapper", innerOp)
 						.rememberingNothing()
@@ -172,5 +153,35 @@ public class ReadyToRunScheduledXfersLoad extends HapiApiSuite {
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
+	}
+
+	private static class PendingSig {
+		private final byte[] scheduledTxnBytes;
+		private final String scheduleId;
+		private final String signatory;
+		private final double priority;
+
+		public PendingSig(byte[] scheduledTxnBytes, String scheduleId, String signatory, double priority) {
+			this.scheduledTxnBytes = scheduledTxnBytes;
+			this.scheduleId = scheduleId;
+			this.signatory = signatory;
+			this.priority = priority;
+		}
+
+		public byte[] getScheduledTxnBytes() {
+			return scheduledTxnBytes;
+		}
+
+		public String getScheduleId() {
+			return scheduleId;
+		}
+
+		public String getSignatory() {
+			return signatory;
+		}
+
+		public double getPriority() {
+			return priority;
+		}
 	}
 }
