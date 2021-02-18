@@ -61,6 +61,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
 	private boolean scheduleNonsense = false;
+	private boolean skipRegistryUpdate = false;
 	private boolean scheduleNoFunction = false;
 	private boolean inheritScheduledSigs = false;
 	private ByteString bytesSigned = ByteString.EMPTY;
@@ -76,6 +77,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
 		this.entity = scheduled;
 		this.scheduled = txn.withLegacyProtoStructure().sansTxnId();
+	}
+
+	public HapiScheduleCreate<T> rememberingNothing() {
+		skipRegistryUpdate = true;
+		return this;
 	}
 
 	public HapiScheduleCreate<T> inheritingScheduledSigs() {
@@ -212,6 +218,9 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		}
 		if (verboseLoggingOn) {
 			log.info("Created schedule '{}' as {}", entity, createdSchedule().get());
+		}
+		if (skipRegistryUpdate) {
+			return;
 		}
 		var registry = spec.registry();
 		registry.saveScheduleId(entity, lastReceipt.getScheduleID());
