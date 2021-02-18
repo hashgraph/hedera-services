@@ -2,7 +2,7 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 
@@ -41,7 +41,7 @@ public class FileContractMemoPerfSuite  extends LoadTest {
 	private final String FILE_MEMO = INITIAL_MEMO + " for File Entity";
 	private final String CONTRACT_MEMO = INITIAL_MEMO + " for Contract Entity";
 	private final String TARGET_FILE = "fileForMemo";
-	private final String CONTRACT_FILE = "contractForMemo";
+	private final String CONTRACT = "contractForMemo";
 
 	public static void main(String... args) {
 		parseArgs(args);
@@ -88,10 +88,27 @@ public class FileContractMemoPerfSuite  extends LoadTest {
 						.hasPrecheckFrom(
 								OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 						.deferStatusResolution(),
-//				contractCreate(),
-//				getContractInfo(),
-//				contractUpdate()
-
+				contractCreate("testContract" + createdSoFar.getAndIncrement())
+						.payingWith(GENESIS)
+						.bytecode(TARGET_FILE)
+						.entityMemo(
+								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
+						)
+						.noLogging()
+						.hasPrecheckFrom(
+								OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						.deferStatusResolution(),
+				getContractInfo(CONTRACT +"Info")
+						.hasExpectedInfo(),
+				contractUpdate(CONTRACT)
+						.payingWith(GENESIS)
+						.newMemo(
+						new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
+						)
+						.noLogging()
+						.hasPrecheckFrom(
+								OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						.deferStatusResolution()
 		};
 		return defaultHapiSpec("RunMixedFileContractMemoOps")
 				.given(
@@ -100,8 +117,24 @@ public class FileContractMemoPerfSuite  extends LoadTest {
 				)
 				.when(
 						fileCreate(TARGET_FILE)
-							.entityMemo(FILE_MEMO)
-							.logged()
+								.payingWith(GENESIS)
+								.path(ContractResources.VALID_BYTECODE_PATH)
+								.entityMemo(FILE_MEMO)
+								.logged(),
+						fileCreate(TARGET_FILE+"Info")
+								.payingWith(GENESIS)
+								.entityMemo(FILE_MEMO)
+								.logged(),
+						contractCreate(CONTRACT)
+								.payingWith(GENESIS)
+								.bytecode(TARGET_FILE)
+								.entityMemo(CONTRACT_MEMO)
+								.logged(),
+						contractCreate(CONTRACT +"Info")
+								.payingWith(GENESIS)
+								.bytecode(TARGET_FILE)
+								.entityMemo(CONTRACT_MEMO)
+								.logged()
 				)
 				.then(
 						defaultLoadTest(mixedOpsBurst, settings)
