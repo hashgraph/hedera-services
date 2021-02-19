@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_S
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
@@ -120,11 +122,35 @@ public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
+				var sample = r.nextDouble();
+				if (sample <= probOfSignOp.get()) {
+					return getScheduleSign();
+				} else {
+					return getScheduleCreate();
+				}
+			}
+
+			private Optional<HapiSpecOperation> getScheduleSign() {
+				var nextSig = q.poll();
+				if (nextSig == null) {
+					return Optional.empty();
+				}
+				var op = scheduleSign(nextSig.getScheduleId())
+						.signingExplicit(nextSig.getScheduledTxnBytes())
+						.withSignatories(nextSig.getSignatory())
+						.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+//						.noLogging()
+						.deferStatusResolution();
+				return Optional.of(op);
+			}
+
+			private Optional<HapiSpecOperation> getScheduleCreate() {
 				var senderId = -1;
 				if (numNonDefaultSenders.get() > 0) {
 					senderId = r.nextInt(numNonDefaultSenders.get());
 				}
-				var payerId = (senderId == -1) || (numNonDefaultSenders.get() == 1)
+				var payerId = (senderId == -1 || numNonDefaultSenders.get() == 1)
 						? -1
 						: (senderId + 1) % numNonDefaultSenders.get();
 
@@ -135,15 +161,19 @@ public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
 					receiver = inertReceiver(r.nextInt(numInertReceivers.get()));
 				}
 				var innerOp = cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
-						.payingWith(payer)
-						.signedBy(payer)
-						.noLogging();
+						.fee(ONE_HBAR)
+						.signedBy(payer);
 				var op = scheduleCreate("wrapper", innerOp)
-						.rememberingNothing()
+						.exposingSuccessTo((createdId, bytes) ->
+								q.offer(new PendingSig(bytes, createdId, sender, r.nextDouble()))
+						).rememberingNothing()
+						.withNonce(TxnUtils.randomUtf8Bytes(8))
+						.designatingPayer(payer)
+						.logged()
 						.inheritingScheduledSigs()
 						.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-						.noLogging()
+//						.noLogging()
 						.deferStatusResolution();
 				return Optional.of(op);
 			}
