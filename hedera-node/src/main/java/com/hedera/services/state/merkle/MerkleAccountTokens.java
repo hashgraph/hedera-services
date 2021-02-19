@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,34 +200,6 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		someTokenIds[shard(i)] = id.getShardNum();
 		someTokenIds[realm(i)] = id.getRealmNum();
 		someTokenIds[num(i)] = id.getTokenNum();
-	}
-
-	public int purge(Predicate<TokenID> isGone, Predicate<TokenID> isDeleted) {
-		int effectiveAssociations = 0, meaningfulAssociations = 0, n = numAssociations();
-		for (int i = 0; i < n; i++) {
-			var id = idAt(i);
-			if (isGone.test(id)) {
-				continue;
-			}
-			meaningfulAssociations++;
-			if (isDeleted.test(id)) {
-				continue;
-			}
-			effectiveAssociations++;
-		}
-
-		if (meaningfulAssociations != n) {
-			long[] newTokenIds = new long[meaningfulAssociations * NUM_ID_PARTS];
-			for (int i = 0, j = 0; i < n; i++) {
-				var id = idAt(i);
-				if (isGone.test(id)) {
-					continue;
-				}
-				set(newTokenIds, j++, id);
-			}
-			this.tokenIds = newTokenIds;
-		}
-		return effectiveAssociations;
 	}
 
 	private TokenID idAt(int i) {

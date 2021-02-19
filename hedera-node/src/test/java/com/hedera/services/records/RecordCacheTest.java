@@ -4,7 +4,7 @@ package com.hedera.services.records;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,15 +21,19 @@ package com.hedera.services.records;
  */
 
 import com.google.common.cache.Cache;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TriggeredTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -349,6 +353,54 @@ class RecordCacheTest {
 				argThat(expectedRecord::equals),
 				argThat(FAIL_INVALID::equals));
 	}
+
+	@Test
+	public void managesTriggeredFailInvalidRecordAsExpected() throws InvalidProtocolBufferException {
+		// setup:
+		Instant consensusTime = Instant.now();
+		TransactionID txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
+		Transaction signedTxn = Transaction.newBuilder()
+				.setBodyBytes(TransactionBody.newBuilder()
+						.setTransactionID(txnId)
+						.setMemo("Catastrophe!")
+						.build().toByteString())
+				.build();
+		// and:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+		// and:
+		AccountID effectivePayer = IdUtils.asAccount("0.0.3");
+		ScheduleID effectiveScheduleID = IdUtils.asSchedule("0.0.123");
+
+		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(history);
+
+		// given:
+		TxnAccessor accessor = new TriggeredTxnAccessor(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
+		// and:
+		var grpc = TransactionRecord.newBuilder()
+				.setTransactionID(txnId)
+				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
+				.setMemo(accessor.getTxn().getMemo())
+				.setTransactionHash(accessor.getHash())
+				.setConsensusTimestamp(asTimestamp(consensusTime))
+				.setScheduleRef(effectiveScheduleID)
+				.build();
+
+		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);
+		given(creator.createExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
+
+		// when:
+		subject.setFailInvalid(
+				effectivePayer,
+				accessor,
+				consensusTime,
+				submittingMember);
+
+		// then:
+		verify(history).observe(
+				argThat(expectedRecord::equals),
+				argThat(FAIL_INVALID::equals));
+	}
+
 
 	@Test
 	public void usesHistoryThenCacheToTestReceiptPresence() {

@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,7 +189,7 @@ class AwareFcfsUsagePricesTest {
 		var log = (org.apache.logging.log4j.core.Logger) LogManager.getLogger(AwareFcfsUsagePrices.class);
 		log.addAppender(mockAppender);
 		Level levelForReset = log.getLevel();
-		log.setLevel(Level.WARN);
+		log.setLevel(Level.DEBUG);
 
 		// given:
 		subject.loadPriceSchedules();
@@ -203,7 +203,7 @@ class AwareFcfsUsagePricesTest {
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, actual);
 		assertEquals(1, mockAppender.size());
-		assertEquals("WARN - Default usage price will be used, no specific usage prices available for function UNRECOGNIZED @ 1970-01-15T06:56:06Z!",
+		assertEquals("DEBUG - Default usage price will be used, no specific usage prices available for function UNRECOGNIZED @ 1970-01-15T06:56:06Z!",
 				mockAppender.get(0));
 
 		// tearDown:

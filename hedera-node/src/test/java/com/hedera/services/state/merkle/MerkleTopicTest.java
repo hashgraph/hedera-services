@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,52 +59,6 @@ class MerkleTopicTest {
 			new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes()),
 			new JKeyList(List.of(new JEd25519Key("AbCdEfGhIjKlMnOpQrStUvWxYz012345".getBytes())))
 	};
-
-	@Test
-	public void legacyProviderWorksWithFullTopic() throws Exception {
-		// setup:
-		var serde = mock(TopicSerde.class);
-		var serdes = mock(DomainSerdes.class);
-		var legacyIdProvider = mock(EntityId.Provider.class);
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		MerkleTopic.serdes = serdes;
-		MerkleTopic.legacyIdProvider = legacyIdProvider;
-		MerkleTopic.topicSerde = serde;
-		// and:
-		var expected = topicFrom(1);
-
-		given(in.readShort()).willReturn((short) -1)
-				.willReturn((short) -2);
-		given(in.readBoolean())
-				.willReturn(true)
-				.willReturn(true)
-				.willReturn(true)
-				.willReturn(true)
-				.willReturn(true)
-				.willReturn(false)
-				.willReturn(true);
-		given(in.readByteArray(MerkleTopic.MAX_MEMO_BYTES))
-				.willReturn(expected.getMemo().getBytes());
-		given(in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE))
-				.willReturn(expected.getRunningHash());
-		given(serdes.deserializeLegacyTimestamp(in))
-				.willReturn(expected.getExpirationTimestamp());
-		given(serdes.deserializeKey(in))
-				.willReturn(expected.getAdminKey())
-				.willReturn(expected.getSubmitKey());
-		given(in.readLong())
-				.willReturn(expected.getAutoRenewDurationSeconds())
-				.willReturn(expected.getSequenceNumber());
-		given(legacyIdProvider.deserialize(in))
-				.willReturn(expected.getAutoRenewAccountId());
-
-		// when:
-		var topic = (MerkleTopic) (MerkleTopic.LEGACY_PROVIDER.deserialize(in));
-
-		// then:
-		assertEquals(expected, topic);
-	}
 
 	@AfterEach
 	public void cleanup() {

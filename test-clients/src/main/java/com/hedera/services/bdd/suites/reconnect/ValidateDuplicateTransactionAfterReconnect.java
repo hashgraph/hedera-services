@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,12 +65,11 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 								.setNode("0.0.6")
 								.unavailableNode(),
 						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
+								.payingWith(GENESIS)
 								.overridingProps(Map.of("ledger.keepRecordsInState", "true"))
 				)
 				.when(
 						cryptoCreate("repeatedTransaction")
-								.payingWith(SYSTEM_ADMIN)
 								.validDurationSecs(180)
 								.via(transactionId),
 						getAccountBalance(GENESIS)
@@ -88,7 +87,6 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 								.loggingAvailabilityEvery(10)
 								.sleepingBetweenRetriesFor(5),
 						cryptoCreate("repeatedTransaction")
-								.payingWith(SYSTEM_ADMIN)
 								.txnId(transactionId)
 								.validDurationSecs(180)
 								.hasPrecheck(DUPLICATE_TRANSACTION)

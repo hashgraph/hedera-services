@@ -4,7 +4,7 @@ package com.hedera.services.queries.contract;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +131,7 @@ class ContractCallLocalAnswerTest {
 
 		// then:
 		assertEquals(HederaFunctionality.ContractCallLocal, subject.canonicalFunction());
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
 		assertTrue(subject.needsAnswerOnlyCost(query));
 		assertFalse(subject.requiresNodePayment(query));
 		assertEquals(INSUFFICIENT_TX_FEE, subject.extractValidityFrom(response));

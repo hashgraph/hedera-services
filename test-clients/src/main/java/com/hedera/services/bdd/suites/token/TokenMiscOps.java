@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.token;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 public class TokenMiscOps extends HapiApiSuite {
@@ -52,10 +54,36 @@ public class TokenMiscOps extends HapiApiSuite {
 		return allOf(
 				List.of(new HapiApiSpec[] {
 //								wellKnownAccountsHaveTokens(),
-								someInfoQueries(),
+//								someLowNumAccountsHaveTokens(),
+//								someInfoQueries(),
+								theCreation(),
 						}
 				)
 		);
+	}
+
+	public HapiApiSpec someLowNumAccountsHaveTokens() {
+		long aSupply = 666L, bSupply = 777L;
+
+		return defaultHapiSpec("SomeLowNumAccountsHaveTokens")
+				.given(
+						tokenCreate("first").treasury(GENESIS).initialSupply(aSupply),
+						tokenCreate("second").treasury(GENESIS).initialSupply(bSupply)
+				).when(
+						tokenAssociate("0.0.3", "second").signedBy(GENESIS),
+						cryptoTransfer(moving(aSupply / 2, "second")
+								.between(GENESIS, "0.0.3")).signedBy(GENESIS)
+				).then(
+						getAccountInfo(GENESIS).logged(),
+						getAccountInfo("0.0.3").logged()
+				);
+	}
+
+	public HapiApiSpec theCreation() {
+		return defaultHapiSpec("TheCreation")
+				.given().when().then(
+						cryptoCreate("adam")
+				);
 	}
 
 	public HapiApiSpec someInfoQueries() {

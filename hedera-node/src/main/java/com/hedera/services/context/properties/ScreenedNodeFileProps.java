@@ -4,7 +4,7 @@ package com.hedera.services.context.properties;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ public class ScreenedNodeFileProps implements PropertySource {
 	public ScreenedNodeFileProps() {
 		loadFrom(LEGACY_NODE_PROPS_LOC, false);
 		loadFrom(NODE_PROPS_LOC, true);
-		var msg = "Node-local properties overridden on disk are:\n " + NODE_PROPS.stream()
+		var msg = "Node-local properties overridden on disk are:\n  " + NODE_PROPS.stream()
 				.filter(fromFile::containsKey)
 				.sorted()
 				.map(name -> String.format("%s=%s", name, fromFile.get(name)))

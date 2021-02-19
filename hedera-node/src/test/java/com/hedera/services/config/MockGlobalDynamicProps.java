@@ -4,7 +4,7 @@ package com.hedera.services.config;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,9 @@ package com.hedera.services.config;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+
+import java.util.Set;
 
 public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public MockGlobalDynamicProps() {
@@ -155,5 +158,10 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public int scheduledTxExpiryTimeSecs() {
 		return 1800;
+	}
+
+	@Override
+	public Set<HederaFunctionality> schedulingWhitelist() {
+		return Set.of(HederaFunctionality.CryptoCreate, HederaFunctionality.CryptoTransfer);
 	}
 }

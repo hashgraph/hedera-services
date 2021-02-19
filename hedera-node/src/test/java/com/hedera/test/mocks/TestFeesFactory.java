@@ -4,7 +4,7 @@ package com.hedera.test.mocks;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,8 @@ import com.hedera.services.fees.calculation.file.txns.SystemUndeleteFileResource
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.FileFeeBuilder;
@@ -95,6 +97,8 @@ public enum TestFeesFactory {
 	}
 
 	public FeeCalculator getWithExchange(HbarCentExchange exchange) {
+		CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
+		FileOpsUsage fileOpsUsage = new FileOpsUsage();
 		FileFeeBuilder fileFees = new FileFeeBuilder();
 		CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
 		SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
@@ -113,25 +117,27 @@ public enum TestFeesFactory {
 						/* Meta */
 						new GetTxnRecordResourceUsage(recordCache, answerFunctions, cryptoFees),
 						/* Crypto */
-						new GetAccountInfoResourceUsage(),
+						new GetAccountInfoResourceUsage(cryptoOpsUsage),
 						new GetAccountRecordsResourceUsage(answerFunctions, cryptoFees),
 						/* Consensus */
 						new GetTopicInfoResourceUsage()
 				),
-				txnUsageFn(fileFees, cryptoFees, contractFees)
+				txnUsageFn(cryptoOpsUsage, fileOpsUsage, fileFees, cryptoFees, contractFees)
 		);
 	}
 
 	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageFn(
+			CryptoOpsUsage cryptoOpsUsage,
+			FileOpsUsage fileOpsUsage,
 			FileFeeBuilder fileFees,
 			CryptoFeeBuilder cryptoFees,
 			SmartContractFeeBuilder contractFees
 	) {
 		return Map.ofEntries(
 				/* Crypto */
-				entry(CryptoCreate, List.<TxnResourceUsageEstimator>of(new CryptoCreateResourceUsage(cryptoFees))),
+				entry(CryptoCreate, List.<TxnResourceUsageEstimator>of(new CryptoCreateResourceUsage(cryptoOpsUsage))),
 				entry(CryptoDelete, List.<TxnResourceUsageEstimator>of(new CryptoDeleteResourceUsage(cryptoFees))),
-				entry(CryptoUpdate, List.<TxnResourceUsageEstimator>of(new CryptoUpdateResourceUsage(cryptoFees))),
+				entry(CryptoUpdate, List.<TxnResourceUsageEstimator>of(new CryptoUpdateResourceUsage(cryptoOpsUsage))),
 				entry(CryptoTransfer, List.<TxnResourceUsageEstimator>of(new CryptoTransferResourceUsage(new MockGlobalDynamicProps()))),
 				/* Contract */
 				entry(ContractCall, List.<TxnResourceUsageEstimator>of(new ContractCallResourceUsage(contractFees))),
@@ -139,9 +145,9 @@ public enum TestFeesFactory {
 				entry(ContractDelete, List.<TxnResourceUsageEstimator>of(new ContractDeleteResourceUsage(contractFees))),
 				entry(ContractUpdate, List.<TxnResourceUsageEstimator>of(new ContractUpdateResourceUsage(contractFees))),
 				/* File */
-				entry(FileCreate, List.<TxnResourceUsageEstimator>of(new FileCreateResourceUsage(fileFees))),
+				entry(FileCreate, List.<TxnResourceUsageEstimator>of(new FileCreateResourceUsage(fileOpsUsage))),
 				entry(FileDelete, List.<TxnResourceUsageEstimator>of(new FileDeleteResourceUsage(fileFees))),
-				entry(FileUpdate, List.<TxnResourceUsageEstimator>of(new FileUpdateResourceUsage())),
+				entry(FileUpdate, List.<TxnResourceUsageEstimator>of(new FileUpdateResourceUsage(fileOpsUsage))),
 				entry(FileAppend, List.<TxnResourceUsageEstimator>of(new FileAppendResourceUsage(fileFees))),
 				/* Consensus */
 				entry(ConsensusCreateTopic, List.<TxnResourceUsageEstimator>of(new CreateTopicResourceUsage())),

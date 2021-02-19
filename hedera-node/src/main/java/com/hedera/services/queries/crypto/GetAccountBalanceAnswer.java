@@ -4,7 +4,7 @@ package com.hedera.services.queries.crypto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -86,19 +87,14 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
 			for (TokenID tId : account.tokens().asIds()) {
-				var optionalToken = view.tokenWith(tId);
-				if (optionalToken.isPresent()) {
-					var token = optionalToken.get();
-					if (!token.isDeleted()) {
-						var relKey = fromAccountTokenRel(id, tId);
-						var relationship = view.tokenAssociations().get().get(relKey);
-						opAnswer.addTokenBalances(TokenBalance.newBuilder()
-								.setTokenId(tId)
-								.setBalance(relationship.getBalance())
-								.build());
-					}
-				}
-
+				var relKey = fromAccountTokenRel(id, tId);
+				var relationship = view.tokenAssociations().get().get(relKey);
+				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);
+				opAnswer.addTokenBalances(TokenBalance.newBuilder()
+						.setTokenId(tId)
+						.setBalance(relationship.getBalance())
+						.setDecimals(decimals)
+						.build());
 			}
 		}
 

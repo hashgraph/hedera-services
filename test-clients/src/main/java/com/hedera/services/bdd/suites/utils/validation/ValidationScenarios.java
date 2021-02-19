@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.utils.validation;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -333,7 +333,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							tokenCreate("tokenTbd")
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME)
-									.treasury(GENESIS)
+									.treasury(DEFAULT_PAYER)
 									.autoRenewAccount(SCENARIO_PAYER_NAME)
 									.adminKey("tokenFirstKey")
 									.supplyKey("supplyKey")
@@ -353,7 +353,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							grantTokenKyc("tokenTbd", SCENARIO_PAYER_NAME)
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME),
-							cryptoTransfer(moving(10, "tokenTbd").between(GENESIS, SCENARIO_PAYER_NAME))
+							cryptoTransfer(moving(10, "tokenTbd")
+									.between(DEFAULT_PAYER, SCENARIO_PAYER_NAME))
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME),
 							wipeTokenAccount("tokenTbd", SCENARIO_PAYER_NAME, 10)
@@ -567,7 +568,7 @@ public class ValidationScenarios extends HapiApiSuite {
 									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer()))
 					).when().then(
 							IntStream.range(0, numNodes).mapToObj(i ->
-									cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+									cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
 											.hasAnyStatusAtAll()
 											.payingWith(SCENARIO_PAYER_NAME)
 											.setNode(String.format("0.0.%d",
@@ -921,7 +922,7 @@ public class ValidationScenarios extends HapiApiSuite {
 				cryptoDelete(NOVEL_ACCOUNT_NAME)
 						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
-						.transfer(GENESIS),
+						.transfer(DEFAULT_PAYER),
 				withOpContext((spec, opLog) ->
 						novelAccountUsed.set(HapiPropertySource.asAccountString(
 								spec.registry().getAccountID(NOVEL_ACCOUNT_NAME))))
@@ -968,7 +969,7 @@ public class ValidationScenarios extends HapiApiSuite {
 				spec.keys().incorporate(name, ocKeystore);
 
 				if (info.getBalance() < minBalance) {
-					var transfer = cryptoTransfer(tinyBarsFromTo(GENESIS, name, (minBalance - info.getBalance())))
+					var transfer = cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, name, (minBalance - info.getBalance())))
 							.setNodeFrom(ValidationScenarios::nextNode);
 					allRunFor(spec, transfer);
 				}
@@ -1294,7 +1295,7 @@ public class ValidationScenarios extends HapiApiSuite {
 
 				var bytecodeName = name + "Bytecode";
 				var bytecodeCreate = fileCreate(bytecodeName)
-						.key(GENESIS)
+						.key(DEFAULT_PAYER)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.contents(bytecode);
 				allRunFor(spec, bytecodeCreate);

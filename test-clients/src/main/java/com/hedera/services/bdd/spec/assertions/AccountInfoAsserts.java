@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.assertions;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,6 +89,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts balance(long amount) {
 		registerProvider((spec, o) -> {
 			Assert.assertEquals("Bad balance!", amount, ((AccountInfo)o).getBalance());
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts memo(String memo) {
+		registerProvider((spec, o) -> {
+			Assert.assertEquals("Bad memo!", memo, ((AccountInfo)o).getMemo());
 		});
 		return this;
 	}

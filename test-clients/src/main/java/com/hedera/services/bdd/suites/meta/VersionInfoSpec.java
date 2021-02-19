@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.meta;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ import java.util.List;
 public class VersionInfoSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);
 
-	private static final SemanticVersion EXPECTED_HAPI_PROTO = HapiPropertySource.asSemVer("0.11.0");
-	private static final SemanticVersion EXPECTED_HEDERA_SERVICES = HapiPropertySource.asSemVer("0.11.0");
+	private static final SemanticVersion EXPECTED_HAPI_PROTO = HapiPropertySource.asSemVer("0.12.0");
+	private static final SemanticVersion EXPECTED_HEDERA_SERVICES = HapiPropertySource.asSemVer("0.12.0");
 
 	public static void main(String... args) {
 		new VersionInfoSpec().runSuiteSync();

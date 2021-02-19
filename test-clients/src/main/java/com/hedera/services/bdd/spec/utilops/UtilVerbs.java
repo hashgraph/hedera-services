@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.utilops;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
+import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
 import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
@@ -109,6 +110,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.Assert.assertEquals;
 
 public class UtilVerbs {
 	public static HapiFreeze freeze() {
@@ -162,6 +164,10 @@ public class UtilVerbs {
 
 	public static NewSpecKey newKeyNamed(String key) {
 		return new NewSpecKey(key);
+	}
+
+	public static NewSpecKeyList newKeyListNamed(String key, List<String> childKeys) {
+		return new NewSpecKeyList(key, childKeys);
 	}
 
 	public static ParallelSpecOps inParallel(HapiSpecOperation... subs) {
@@ -228,6 +234,12 @@ public class UtilVerbs {
 		return new ProviderRun(provider);
 	}
 
+	public static HapiSpecOperation overriding(String property, String value) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Map.of(property, "" + value));
+	}
+
 	/* Stream validation. */
 	public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
 		return new RecordStreamVerification(baseDir);
@@ -292,7 +304,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic,
-			AtomicLong count) {
+											   AtomicLong count) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 			String overriddenFile = new String(filePath);
@@ -396,7 +408,7 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation makeFree(HederaFunctionality function) {
 		return withOpContext((spec, opLog) -> {
-			var query = getFileContents(FEE_SCHEDULE).payingWith(SYSTEM_ADMIN);
+			var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
@@ -418,7 +430,7 @@ public class UtilVerbs {
 			perturbedSchedules.getNextFeeScheduleBuilder()
 					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
-			allRunFor(spec, updateLargeFile(SYSTEM_ADMIN, FEE_SCHEDULE, rawPerturbedSchedules));
+			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
 	}
 
@@ -705,5 +717,44 @@ public class UtilVerbs {
 	public static boolean isNotThrottleProp(Setting setting) {
 		var name = setting.getName();
 		return !name.startsWith("hapi.throttling");
+	}
+
+	public static HapiSpecOperation ensureIdempotentlyCreated(String txId, String otherTxId) {
+		return withOpContext((spec, opLog) -> {
+			var firstTx = getTxnRecord(txId);
+			var secondTx = getTxnRecord(otherTxId);
+			allRunFor(spec, firstTx, secondTx);
+			assertEquals(
+					firstTx.getResponseRecord().getReceipt().getScheduleID(),
+					secondTx.getResponseRecord().getReceipt().getScheduleID());
+		});
+	}
+
+	public static HapiSpecOperation ensureDifferentScheduledTXCreated(String txId, String otherTxId) {
+		return withOpContext((spec, opLog) -> {
+			var txRecord = getTxnRecord(txId);
+			var otherTxRecord = getTxnRecord(otherTxId);
+
+			allRunFor(spec, txRecord, otherTxRecord);
+
+			Assert.assertNotEquals(
+					"Schedule Ids should not be the same!",
+					txRecord.getResponseRecord().getReceipt().getScheduleID(),
+					otherTxRecord.getResponseRecord().getReceipt().getScheduleID());
+		});
+	}
+
+	public static HapiSpecOperation saveExpirations(String txId, String otherTxId, long afterConsensusTime) {
+		return withOpContext((spec, opLog) -> {
+			var txRecord = getTxnRecord(txId);
+			var otherTxRecord = getTxnRecord(otherTxId);
+
+			allRunFor(spec, txRecord, otherTxRecord);
+
+			var timestampFirst = txRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
+			var timestampSecond = otherTxRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
+			spec.registry().saveExpiry("first", timestampFirst + afterConsensusTime);
+			spec.registry().saveExpiry("second", timestampSecond + afterConsensusTime);
+		});
 	}
 }

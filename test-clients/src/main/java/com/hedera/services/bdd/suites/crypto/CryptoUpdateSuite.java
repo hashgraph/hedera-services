@@ -4,14 +4,14 @@ package com.hedera.services.bdd.suites.crypto;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,14 +21,16 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -75,38 +78,45 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-//				positiveTests(),
-				negativeTests()
+		return List.of(new HapiApiSpec[] {
+						updateWithUniqueSigs(),
+						updateWithOverlappingSigs(),
+						updateWithOneEffectiveSig(),
+						canUpdateMemo(),
+						updateFailsWithInsufficientSigs(),
+						cannotSetThresholdNegative(),
+						updateWithEmptyKeyFails(),
+						updateFailsIfMissingSigs(),
+				}
 		);
 	}
 
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-				updateWithUniqueSigs(),
-				updateWithOverlappingSigs(),
-				updateWithOneEffectiveSig()
-		);
-	}
-
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-//				updateFailsWithInsufficientSigs(),
-//				updateFailsIfMissingSigs()
-//				cannotSetThresholdNegative()
-				updateWithEmptyKey()
-		);
+	private HapiApiSpec canUpdateMemo() {
+		String firstMemo = "First";
+		String secondMemo = "Second";
+		return defaultHapiSpec("CanUpdateMemo")
+				.given(
+						cryptoCreate(TARGET_ACCOUNT)
+								.balance(0L)
+								.entityMemo(firstMemo)
+				).when(
+						cryptoUpdate(TARGET_ACCOUNT)
+								.entityMemo(secondMemo)
+				).then(
+						getAccountInfo(TARGET_ACCOUNT)
+								.has(accountWith().memo(secondMemo))
+				);
 	}
 
 	private HapiApiSpec updateWithUniqueSigs() {
 		return defaultHapiSpec("UpdateWithUniqueSigs")
 				.given(
-					newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
-					cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
+						newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
+						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when().then(
-					cryptoUpdate(TARGET_ACCOUNT)
-							.sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
-							.receiverSigRequired(true)
+						cryptoUpdate(TARGET_ACCOUNT)
+								.sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
+								.receiverSigRequired(true)
 				);
 	}
 
@@ -133,8 +143,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec updateWithOverlappingSigs() {
 		return defaultHapiSpec("UpdateWithOverlappingSigs")
 				.given(
-					newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
-					cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
+						newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
+						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when().then(
 						cryptoUpdate(TARGET_ACCOUNT)
 								.sigControl(forKey(TARGET_KEY, ENOUGH_OVERLAPPING_SIGS))
@@ -146,8 +156,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec updateFailsWithInsufficientSigs() {
 		return defaultHapiSpec("UpdateFailsWithInsufficientSigs")
 				.given(
-					newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
-					cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
+						newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
+						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when().then(
 						cryptoUpdate(TARGET_ACCOUNT)
 								.sigControl(forKey(TARGET_KEY, NOT_ENOUGH_UNIQUE_SIGS))
@@ -158,7 +168,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 
 	private HapiApiSpec cannotSetThresholdNegative() {
-		return defaultFailingHapiSpec("CannotSetThresholdNegative")
+		return defaultHapiSpec("CannotSetThresholdNegative")
 				.given(
 						cryptoCreate("testAccount")
 				).when().then(
@@ -169,9 +179,9 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 	private HapiApiSpec updateFailsIfMissingSigs() {
 		SigControl origKeySigs = KeyShape.threshSigs(3, ON, ON, KeyShape.threshSigs(1, OFF, ON));
-		SigControl updKeySigs = KeyShape.listSigs(ON, ON, KeyShape.threshSigs(1, ON, OFF, OFF, OFF));
+		SigControl updKeySigs = KeyShape.listSigs(ON, OFF, KeyShape.threshSigs(1, ON, OFF, OFF, OFF));
 
-		return defaultFailingHapiSpec("UpdateFailsIfMissingSigs")
+		return defaultHapiSpec("UpdateFailsIfMissingSigs")
 				.given(
 						newKeyNamed("origKey").shape(origKeySigs),
 						newKeyNamed("updKey").shape(updKeySigs)
@@ -190,7 +200,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec updateWithEmptyKey() {
+	private HapiApiSpec updateWithEmptyKeyFails() {
 		SigControl origKeySigs = KeyShape.SIMPLE;
 		SigControl updKeySigs = threshOf(0, 0);
 

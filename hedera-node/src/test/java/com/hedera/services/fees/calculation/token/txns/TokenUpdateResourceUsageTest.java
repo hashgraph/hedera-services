@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,10 @@ package com.hedera.services.fees.calculation.token.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.verify;
 
 class TokenUpdateResourceUsageTest {
 	private TokenUpdateResourceUsage subject;
@@ -57,6 +56,7 @@ class TokenUpdateResourceUsageTest {
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
 	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
 	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+	FeeData expected;
 
 	TokenUpdateUsage usage;
 	BiFunction<TransactionBody, SigUsage, TokenUpdateUsage> factory;
@@ -64,6 +64,7 @@ class TokenUpdateResourceUsageTest {
 	long expiry = 1_234_567L;
 	String symbol = "HEYMAOK";
 	String name = "IsItReallyOk";
+	String memo = "We just fake it all the time.";
 	TokenID target = IdUtils.asToken("0.0.123");
 	TokenInfo info = TokenInfo.newBuilder()
 			.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
@@ -73,11 +74,13 @@ class TokenUpdateResourceUsageTest {
 			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
 			.setSymbol(symbol)
 			.setName(name)
+			.setMemo(memo)
 			.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 			.build();
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 
 		tokenUpdateTxn = mock(TransactionBody.class);
@@ -102,8 +105,9 @@ class TokenUpdateResourceUsageTest {
 		given(usage.givenCurrentSymbol(symbol)).willReturn(usage);
 		given(usage.givenCurrentName(name)).willReturn(usage);
 		given(usage.givenCurrentExpiry(expiry)).willReturn(usage);
+		given(usage.givenCurrentMemo(memo)).willReturn(usage);
 		given(usage.givenCurrentlyUsingAutoRenewAccount()).willReturn(usage);
-		given(usage.get()).willReturn(MOCK_TOKEN_UPDATE_USAGE);
+		given(usage.get()).willReturn(expected);
 
 		given(view.infoForToken(target)).willReturn(Optional.of(info));
 
@@ -124,8 +128,11 @@ class TokenUpdateResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
-				MOCK_TOKEN_UPDATE_USAGE,
+				expected,
 				subject.usageGiven(tokenUpdateTxn, obj, view));
+
+		// and:
+		verify(usage).givenCurrentMemo(memo);
 	}
 
 	@Test
@@ -137,20 +144,4 @@ class TokenUpdateResourceUsageTest {
 				FeeData.getDefaultInstance(),
 				subject.usageGiven(tokenUpdateTxn, obj, view));
 	}
-
-	public static final FeeData MOCK_TOKEN_UPDATE_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(3)
-					.setBpt(3)
-					.setVpt(3)
-					.setRbh(3)
-					.setSbh(3)
-					.setGas(3)
-					.setTv(3)
-					.setBpr(3)
-					.setSbpr(3)
-					.build(), 3);
-
 }

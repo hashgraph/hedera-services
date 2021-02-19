@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.crypto.txns;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ package com.hedera.services.fees.calculation.crypto.txns;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
@@ -33,8 +36,9 @@ import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCrypto
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 
 class CryptoCreateResourceUsageTest {
-	private SigValueObj sigUsage;
-	private CryptoFeeBuilder usageEstimator;
+	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+	SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+	private CryptoOpsUsage cryptoOpsUsage;
 	private CryptoCreateResourceUsage subject;
 
 	private TransactionBody nonCryptoCreateTxn;
@@ -45,10 +49,9 @@ class CryptoCreateResourceUsageTest {
 		cryptoCreateTxn = new SignedTxnAccessor(newSignedCryptoCreate().get()).getTxn();
 		nonCryptoCreateTxn = new SignedTxnAccessor(newSignedCryptoTransfer().get()).getTxn();
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(CryptoFeeBuilder.class);
+		cryptoOpsUsage = mock(CryptoOpsUsage.class);
 
-		subject = new CryptoCreateResourceUsage(usageEstimator);
+		subject = new CryptoCreateResourceUsage(cryptoOpsUsage);
 	}
 
 	@Test
@@ -60,10 +63,12 @@ class CryptoCreateResourceUsageTest {
 
 	@Test
 	public void delegatesToCorrectEstimate() throws Exception {
+		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
 		// when:
-		subject.usageGiven(cryptoCreateTxn, sigUsage, null);
+		subject.usageGiven(cryptoCreateTxn, svo, null);
 
 		// then:
-		verify(usageEstimator).getCryptoCreateTxFeeMatrices(cryptoCreateTxn, sigUsage);
+		verify(cryptoOpsUsage).cryptoCreateUsage(cryptoCreateTxn, sigUsage);
 	}
 }

@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.contract;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public class ContractGetInfoSuite extends HapiApiSuite {
 				.given(
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate")
-								.bytecode("parentDelegateBytecode").memo("This is a test.").autoRenewSecs(555L)
+								.bytecode("parentDelegateBytecode").entityMemo("This is a test.").autoRenewSecs(555L)
 				).when().then(
 						QueryVerbs.getContractInfo("parentDelegate").hasExpectedInfo());
 	}

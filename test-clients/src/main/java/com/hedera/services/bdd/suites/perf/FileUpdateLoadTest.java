@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.perf;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ public class FileUpdateLoadTest extends HapiApiSuite {
 
 	private HapiApiSpec runFileUpdates() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
+		String fileUpdateMemo = TxnUtils.randomUtf8Bytes(settings.getMemoLength()).toString();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
 		final byte[] NEW_CONTENTS = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 
@@ -77,6 +78,7 @@ public class FileUpdateLoadTest extends HapiApiSuite {
 										.fee(Integer.MAX_VALUE)
 										.contents(NEW_CONTENTS)
 										.noLogging()
+										.entityMemo(fileUpdateMemo)
 										.hasPrecheckFrom(
 												OK,
 												BUSY,

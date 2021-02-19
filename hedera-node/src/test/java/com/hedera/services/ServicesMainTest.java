@@ -4,7 +4,7 @@ package com.hedera.services;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -522,7 +522,7 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, when, 1L);
 
 		// then:
-		verify(balancesExporter, never()).toCsvFile(any(), any());
+		verify(balancesExporter, never()).exportBalancesFrom(any(), any());
 	}
 
 	@Test
@@ -539,7 +539,7 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, when, 1L);
 
 		// then:
-		verify(balancesExporter).toCsvFile(signedState, when);
+		verify(balancesExporter).exportBalancesFrom(signedState, when);
 	}
 
 	@Test
@@ -567,7 +567,9 @@ public class ServicesMainTest {
 
 		given(globalDynamicProperties.shouldExportBalances()).willReturn(true);
 		given(balancesExporter.isTimeToExport(when)).willReturn(true);
-		willThrow(IllegalStateException.class).given(balancesExporter).toCsvFile(signedState, when);
+		willThrow(IllegalStateException.class)
+				.given(balancesExporter)
+				.exportBalancesFrom(signedState, when);
 
 		// when:
 		subject.newSignedState(signedState, when, 1L);

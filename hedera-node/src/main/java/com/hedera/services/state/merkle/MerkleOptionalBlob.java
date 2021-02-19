@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,19 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.util.Objects;
-import java.util.function.Supplier;
-
 import com.google.common.base.MoreObjects;
+import com.swirlds.blob.BinaryObject;
+import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.FCMValue;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.blob.BinaryObject;
-import com.swirlds.blob.BinaryObjectStore;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+
+import java.io.IOException;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, MerkleExternalLeaf {
 	static final int MERKLE_VERSION = (int)BinaryObject.ClassVersion.ORIGINAL;

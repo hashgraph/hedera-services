@@ -4,7 +4,7 @@ package com.hedera.services.context.properties;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,8 +148,6 @@ public class StandardizedPropertySources implements PropertySources {
 
 		/* Bootstrap properties, which must include defaults for every system property. */
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
-
-		source.put("binary.object.query.retry.times", PropertiesLoader::getBinaryObjectQueryRetryTimes);
 
 		/* Node-local properties. */
 		source.put("dev.defaultListeningNodeAccount", PropertiesLoader::getDefaultListeningNodeAccount);

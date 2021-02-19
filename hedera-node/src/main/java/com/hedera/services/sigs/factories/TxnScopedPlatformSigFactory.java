@@ -4,7 +4,7 @@ package com.hedera.services.sigs.factories;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import com.swirlds.common.crypto.TransactionSignature;
  */
 public interface TxnScopedPlatformSigFactory {
 	/**
-	 * Returns a {@link com.swirlds.common.crypto.TransactionSignature} on the scoped transaction.
+	 * Returns a {@link com.swirlds.common.crypto.TransactionSignature} for the scoped transaction.
 	 *
 	 * @param publicKey
 	 * 		the public key to use in creating the platform sig.
@@ -41,4 +41,19 @@ public interface TxnScopedPlatformSigFactory {
 	 * @return a platform sig for the scoped transaction.
 	 */
 	TransactionSignature create(ByteString publicKey, ByteString sigBytes);
+
+	/**
+	 * Returns a {@link com.swirlds.common.crypto.TransactionSignature} for the scheduled transaction
+	 * linked to the scoped transaction.
+	 *
+	 * @param publicKey
+	 * 		the public key to use in creating the platform sig.
+	 * @param sigBytes
+	 * 		the cryptographic signature to use in creating the platform sig.
+	 * @return a platform sig for the linked scheduled transaction.
+	 * @throws IllegalStateException if the scoped transaction has no linked scheduled transaction.
+	 */
+	default TransactionSignature createForScheduled(ByteString publicKey, ByteString sigBytes) {
+		throw new UnsupportedOperationException();
+	}
 }

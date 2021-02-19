@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,14 @@ public class HapiSpecSetup {
 
 	private Random r = new Random();
 
+	private static final HapiPropertySource defaultNodeProps;
+	static {
+		defaultNodeProps = new JutilPropertySource("bootstrap.properties");
+	}
+	public static HapiPropertySource getDefaultNodeProps() {
+		return defaultNodeProps;
+	}
+
 	private HapiPropertySource ciPropertiesMap = null;
 	private static HapiPropertySource DEFAULT_PROPERTY_SOURCE = null;
 	private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE = JutilPropertySource.getDefaultInstance();
@@ -80,7 +88,7 @@ public class HapiSpecSetup {
 
 	public enum NodeSelection { FIXED, RANDOM }
 	public enum TlsConfig { ON, OFF, ALTERNATE }
-	public enum TxnConfig { NEW, OLD, ALTERNATE }
+	public enum TxnProtoStructure { NEW, OLD, ALTERNATE }
 
 	public HapiSpecSetup(HapiPropertySource props) {
 		this.props = props;
@@ -395,16 +403,16 @@ public class HapiSpecSetup {
 		return useTls;
 	}
 
-	public TxnConfig txnConfig() {
-		TxnConfig config = props.getTxnConfig("txn");
-		if (TxnConfig.ALTERNATE == config) {
+	TxnProtoStructure txnProtoStructure() {
+		var protoStructure = props.getTxnConfig("txn.proto.structure");
+		if (TxnProtoStructure.ALTERNATE == protoStructure) {
 			if (r.nextBoolean()) {
-				return TxnConfig.NEW;
+				return TxnProtoStructure.NEW;
 			} else {
-				return TxnConfig.OLD;
+				return TxnProtoStructure.OLD;
 			}
 		}
-		return config;
+		return protoStructure;
 	}
 	public long txnStartOffsetSecs() {
 		return props.getLong("txn.start.offset.secs");

@@ -4,7 +4,7 @@ package com.hedera.services.sigs.verification;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,8 +88,8 @@ public class PrecheckVerifier {
 	}
 
 	private List<TransactionSignature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor) throws Exception {
-		PubKeyToSigBytes sigBytes = provider.allPartiesSigBytesFor(accessor.getSignedTxn());
-		TxnScopedPlatformSigFactory sigFactory = new BodySigningSigFactory(accessor.getTxnBytes());
+		PubKeyToSigBytes sigBytes = provider.allPartiesSigBytesFor(accessor.getBackwardCompatibleSignedTxn());
+		TxnScopedPlatformSigFactory sigFactory = new BodySigningSigFactory(accessor);
 		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(reqKeys, sigBytes, sigFactory);
 		if (creationResult.hasFailed()) {
 			throw creationResult.getTerminatingEx();

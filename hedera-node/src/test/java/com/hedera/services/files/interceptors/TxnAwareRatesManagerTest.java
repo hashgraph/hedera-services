@@ -4,7 +4,7 @@ package com.hedera.services.files.interceptors;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,7 +32,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
 class TxnAwareRatesManagerTest {
-	private JFileInfo attr;
+	private HFileMeta attr;
 	byte[] invalidBytes = "Definitely not an ExchangeRateSet".getBytes();
 	ExchangeRate.Builder someRate = ExchangeRate.newBuilder()
 			.setHbarEquiv(30_000)
@@ -83,7 +82,7 @@ class TxnAwareRatesManagerTest {
 
 	@BeforeEach
 	private void setup() {
-		attr = new JFileInfo(
+		attr = new HFileMeta(
 				false,
 				new JContractIDKey(1, 2, 3),
 				Instant.now().getEpochSecond());

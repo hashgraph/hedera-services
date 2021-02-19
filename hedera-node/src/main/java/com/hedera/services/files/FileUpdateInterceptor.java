@@ -4,7 +4,7 @@ package com.hedera.services.files;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ package com.hedera.services.files;
 
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
 
 import java.util.OptionalInt;
 import java.util.Map.Entry;
@@ -73,5 +72,5 @@ public interface FileUpdateInterceptor {
 	 * @param newAttr the proposed new attributes of the file
 	 * @return this interceptor's assessment of and gate on the candidate change
 	 */
-	Entry<ResponseCodeEnum, Boolean> preAttrChange(FileID id, JFileInfo newAttr);
+	Entry<ResponseCodeEnum, Boolean> preAttrChange(FileID id, HFileMeta newAttr);
 }

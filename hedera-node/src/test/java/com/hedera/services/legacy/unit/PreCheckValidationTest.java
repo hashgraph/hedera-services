@@ -4,7 +4,7 @@ package com.hedera.services.legacy.unit;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.TestHelper;
@@ -156,6 +157,11 @@ class PreCheckValidationTest {
 	private Transaction createPossibleTransaction() throws Exception {
 		KeyPair keyGenerated = new KeyPairGenerator().generateKeyPair();
 		Transaction transaction = TestHelper.createAccount(payerAccount, nodeAccount, keyGenerated, 30);
+		TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+		var opBuilder = body.getCryptoCreateAccount().toBuilder();
+		opBuilder.setProxyAccountID(AccountID.newBuilder().setAccountNum(999666));
+		body = body.toBuilder().setCryptoCreateAccount(opBuilder).build();
+		transaction = transaction.toBuilder().setBodyBytes(body.toByteString()).build();
 
 		// calculate fee required
 		long correctFee = getCalculatedTransactionFee(transaction,
@@ -176,14 +182,14 @@ class PreCheckValidationTest {
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		var platformStatus = new ContextPlatformStatus();
 		platformStatus.set(PlatformStatus.ACTIVE);
-		PropertySource propertySource = mock(PropertySource.class);
+		NodeLocalProperties nodeProps = mock(NodeLocalProperties.class);
 		transactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
 				nodeAccount,
 				precheckVerifier,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, nodeProps, null),
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
@@ -367,7 +373,8 @@ class PreCheckValidationTest {
 		Transaction origTransaction = createPossibleTransaction();
 		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
 		long correctFee = trBody.getTransactionFee();
-		trBody = trBody.toBuilder().setTransactionFee(correctFee - 1).build();
+		/* Allow for some tiny variation from not including send/receive thresholds in new BPT calculation. */
+		trBody = trBody.toBuilder().setTransactionFee((long)(.95 * correctFee)).build();
 		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
 
 		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
@@ -377,8 +384,7 @@ class PreCheckValidationTest {
 
 		TxnValidityAndFeeReq result =
 				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-		assert (result.getValidity() == ResponseCodeEnum.INSUFFICIENT_TX_FEE);
-		assert (result.getRequiredFee() == correctFee);
+		Assertions.assertEquals(result.getValidity(), ResponseCodeEnum.INSUFFICIENT_TX_FEE);
 	}
 
 	@Test
@@ -424,14 +430,13 @@ class PreCheckValidationTest {
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		var platformStatus = new ContextPlatformStatus();
 		platformStatus.set(PlatformStatus.ACTIVE);
-		PropertySource propertySource = mock(PropertySource.class);
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
 				nodeAccount,
 				precheckVerifier,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, mock(NodeLocalProperties.class), null),
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
@@ -471,14 +476,13 @@ class PreCheckValidationTest {
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		var platformStatus = new ContextPlatformStatus();
 		platformStatus.set(PlatformStatus.ACTIVE);
-		PropertySource propertySource = mock(PropertySource.class);
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				localRecordCache,
 				() -> accountFCMap,
 				nodeAccount,
 				precheckVerifier,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, mock(NodeLocalProperties.class), null),
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),

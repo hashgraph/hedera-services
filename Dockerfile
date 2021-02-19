@@ -29,8 +29,8 @@ COPY .env /opt/hedera/services
 RUN for PIECE in $(cat .env | head -1 | tr '=' ' '); do \
   if [ "$IS_VERSION" = "true" ]; then echo $PIECE >> .VERSION ; else IS_VERSION=true; fi done
 COPY pom.xml /opt/hedera/services
-RUN mkdir /opt/hedera/services/hapi-proto
-COPY hapi-proto /opt/hedera/services/hapi-proto
+RUN mkdir /opt/hedera/services/hapi-utils
+COPY hapi-utils /opt/hedera/services/hapi-utils
 RUN mkdir /opt/hedera/services/hapi-fees
 COPY hapi-fees /opt/hedera/services/hapi-fees
 RUN mkdir /opt/hedera/services/hedera-node

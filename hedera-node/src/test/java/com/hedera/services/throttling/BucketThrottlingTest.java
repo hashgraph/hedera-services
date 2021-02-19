@@ -4,7 +4,7 @@ package com.hedera.services.throttling;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,8 +137,6 @@ class BucketThrottlingTest {
 	@Test
 	void rebuildsAsExpected() {
 		// setup:
-		var oldDisplay = BucketThrottling.displayFn;
-		BucketThrottling.displayFn = System.out::println;
 		subject.functions = new HederaFunctionality[] { FileAppend, ConsensusGetTopicInfo };
 		var oldCapacities = subject.capacities;
 
@@ -148,9 +146,6 @@ class BucketThrottlingTest {
 		// then:
 		assertEquals(2, subject.capacities.size());
 		assertNotSame(oldCapacities, subject.capacities);
-
-		// cleanup:
-		BucketThrottling.displayFn = oldDisplay;
 	}
 
 	@Test

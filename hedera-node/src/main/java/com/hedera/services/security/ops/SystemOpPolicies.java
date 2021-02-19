@@ -4,7 +4,7 @@ package com.hedera.services.security.ops;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ package com.hedera.services.security.ops;
  */
 
 import com.hedera.services.config.EntityNumbers;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -73,7 +73,7 @@ public class SystemOpPolicies {
 		functionPolicies.put(UncheckedSubmit, this::checkUncheckedSubmit);
 	}
 
-	public SystemOpAuthorization check(SignedTxnAccessor accessor) {
+	public SystemOpAuthorization check(TxnAccessor accessor) {
 		return check(accessor.getTxn(), accessor.getFunction());
 	}
 

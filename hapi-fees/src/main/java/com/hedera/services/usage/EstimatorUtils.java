@@ -4,7 +4,7 @@ package com.hedera.services.usage;
  * ‌
  * Hedera Services API Fees
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,13 @@ public interface EstimatorUtils {
 	default long relativeLifetime(TransactionBody txn, long expiry) {
 		long effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();
 		return expiry - effectiveNow;
+	}
+
+	default long changeInBsUsage(long oldB, long oldLifetimeSecs, long newB, long newLifetimeSecs) {
+		newLifetimeSecs = Math.max(oldLifetimeSecs, newLifetimeSecs);
+		long oldBs = oldB * oldLifetimeSecs;
+		long newBs = newB * newLifetimeSecs;
+		return Math.max(0, newBs - oldBs);
 	}
 
 	long baseNetworkRbs();

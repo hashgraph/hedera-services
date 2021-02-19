@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -57,6 +58,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private Optional<String> newMemo = Optional.empty();
 	private boolean wipeToThresholdKey = false;
 	private boolean useEmptyAdminKeyList = false;
+	private boolean useDeprecatedMemoField = false;
 
 	public HapiContractUpdate(String contract) {
 		this.contract = contract;
@@ -85,6 +87,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	}
 	public HapiContractUpdate useDeprecatedAdminKey() {
 		useDeprecatedAdminKey = true;
+		return this;
+	}
+	public HapiContractUpdate useDeprecatedMemoField() {
+		useDeprecatedMemoField = true;
 		return this;
 	}
 	public HapiContractUpdate improperlyEmptyingAdminKey() {
@@ -129,7 +135,13 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							newExpiryTime.ifPresent(s ->
 									b.setExpirationTime(Timestamp.newBuilder().setSeconds(s).build()));
 							newExpirySecs.ifPresent(s -> b.setExpirationTime(TxnFactory.expiryGiven(s)));
-							newMemo.ifPresent(s -> b.setMemo(s));
+							newMemo.ifPresent(s -> {
+								if (useDeprecatedMemoField)	 {
+									b.setMemo(s);
+								} else {
+									b.setMemoWrapper(StringValue.newBuilder().setValue(s).build());
+								}
+							});
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);

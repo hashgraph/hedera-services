@@ -4,7 +4,7 @@ package com.hedera.services.queries.crypto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
@@ -28,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -55,6 +57,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.hedera.services.context.primitives.StateView.GONE_TOKEN;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
@@ -72,11 +75,13 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KE
 class GetAccountInfoAnswerTest {
 	private StateView view;
 	private TokenStore tokenStore;
+	private ScheduleStore scheduleStore;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	private OptionValidator optionValidator;
 
 	private String node = "0.0.3";
+	private String memo = "When had I my own will?";
 	private String payer = "0.0.12345";
 	private AccountID payerId = IdUtils.asAccount(payer);
 	private MerkleAccount payerAccount;
@@ -88,14 +93,14 @@ class GetAccountInfoAnswerTest {
 			thirdToken = tokenWith(777),
 			fourthToken = tokenWith(888),
 			missingToken = tokenWith(999);
-	long firstBalance = 123, secondBalance = 234, thirdBalance = 345;
+	long firstBalance = 123, secondBalance = 234, thirdBalance = 345, fourthBalance = 456, missingBalance = 567;
 
 	private long fee = 1_234L;
 	private Transaction paymentTxn;
 
 	private GetAccountInfoAnswer subject;
 
-	private PropertySource propertySource;
+	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -109,14 +114,24 @@ class GetAccountInfoAnswerTest {
 		tokenRels.put(
 				fromAccountTokenRel(payerId, thirdToken),
 				new MerkleTokenRelStatus(thirdBalance, true, true));
+		tokenRels.put(
+				fromAccountTokenRel(payerId, fourthToken),
+				new MerkleTokenRelStatus(fourthBalance, false, false));
+		tokenRels.put(
+				fromAccountTokenRel(payerId, missingToken),
+				new MerkleTokenRelStatus(missingBalance, false, false));
 
 		token = mock(MerkleToken.class);
 		given(token.kycKey()).willReturn(Optional.of(new JEd25519Key("kyc".getBytes())));
 		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("freeze".getBytes())));
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
+		given(token.decimals())
+				.willReturn(1).willReturn(2).willReturn(3)
+				.willReturn(1).willReturn(2).willReturn(3);
 		deletedToken = mock(MerkleToken.class);
 		given(deletedToken.isDeleted()).willReturn(true);
+		given(deletedToken.decimals()).willReturn(4);
 
 		tokenStore = mock(TokenStore.class);
 		given(tokenStore.exists(firstToken)).willReturn(true);
@@ -129,11 +144,15 @@ class GetAccountInfoAnswerTest {
 		given(tokenStore.get(thirdToken)).willReturn(token);
 		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
 		given(token.symbol()).willReturn("HEYMA");
+		given(deletedToken.symbol()).willReturn("THEWAY");
+
+		scheduleStore = mock(ScheduleStore.class);
 
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
 		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
+				.memo(memo)
 				.proxy(asAccount("1.2.3"))
 				.senderThreshold(1_234L)
 				.receiverThreshold(4_321L)
@@ -147,15 +166,16 @@ class GetAccountInfoAnswerTest {
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
-		propertySource = mock(PropertySource.class);
+		nodeProps = mock(NodeLocalProperties.class);
 		view = new StateView(
 				tokenStore,
+				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> accounts,
 				StateView.EMPTY_STORAGE_SUPPLIER,
 				() -> tokenRels,
 				null,
-				propertySource);
+				nodeProps);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetAccountInfoAnswer(optionValidator);
@@ -192,6 +212,24 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
+	public void identifiesFailInvalid() throws Throwable {
+		// setup:
+		Query query = validQuery(ANSWER_ONLY, fee, target);
+		// and:
+		StateView view = mock(StateView.class);
+
+		given(view.infoForAccount(any())).willReturn(Optional.empty());
+
+		// when:
+		Response response = subject.responseGiven(query, view, OK, fee);
+
+		// then:
+		assertTrue(response.hasCryptoGetInfo());
+		assertEquals(FAIL_INVALID, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, response.getCryptoGetInfo().getHeader().getResponseType());
+	}
+
+	@Test
 	public void getsTheAccountInfo() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
@@ -216,6 +254,7 @@ class GetAccountInfoAnswerTest {
 		assertEquals(JKey.mapJKey(payerAccount.getKey()), info.getKey());
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
+		assertEquals(memo, info.getMemo());
 		// and:
 		assertEquals(
 				List.of(
@@ -227,7 +266,14 @@ class GetAccountInfoAnswerTest {
 								secondToken.getTokenNum(), false, false).asGrpcFor(token),
 						new RawTokenRelationship(
 								thirdBalance, 0, 0,
-								thirdToken.getTokenNum(), true, true).asGrpcFor(token)),
+								thirdToken.getTokenNum(), true, true).asGrpcFor(token),
+						new RawTokenRelationship(
+								fourthBalance, 0, 0,
+								fourthToken.getTokenNum(), false, false).asGrpcFor(deletedToken),
+						new RawTokenRelationship(
+								missingBalance, 0, 0,
+								missingToken.getTokenNum(), false, false).asGrpcFor(GONE_TOKEN)),
+
 				info.getTokenRelationshipsList());
 	}
 
@@ -253,7 +299,7 @@ class GetAccountInfoAnswerTest {
 		Query query = validQuery(COST_ANSWER, fee, target);
 
 		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
 	}
 
 	@Test

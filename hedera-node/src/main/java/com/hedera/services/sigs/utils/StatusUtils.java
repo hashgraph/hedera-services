@@ -4,7 +4,7 @@ package com.hedera.services.sigs.utils;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ package com.hedera.services.sigs.utils;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
  * Provides static factories of {@link SignatureStatus} instances representing various
@@ -40,7 +40,7 @@ public class StatusUtils {
 	 * @param platformTxn the platform txn experiencing success.
 	 * @return the desired representation of success.
 	 */
-	public static SignatureStatus successFor(boolean inHandleCtx, PlatformTxnAccessor platformTxn) {
+	public static SignatureStatus successFor(boolean inHandleCtx, TxnAccessor platformTxn) {
 		return new SignatureStatus(
 				SignatureStatusCode.SUCCESS, ResponseCodeEnum.OK,
 				inHandleCtx, platformTxn.getTxnId(),

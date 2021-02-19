@@ -4,7 +4,7 @@ package com.hedera.services.usage.schedule;
  * ‌
  * Hedera Services API Fees
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.hedera.services.usage.schedule;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -35,6 +36,7 @@ import java.util.Optional;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static org.junit.Assert.assertEquals;
 
 public class ScheduleGetInfoUsageTest {
@@ -44,6 +46,7 @@ public class ScheduleGetInfoUsageTest {
 	ScheduleID id = IdUtils.asSchedule("0.0.1");
 	byte[] transactionBody = new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
 	ScheduleGetInfoUsage subject;
+	ByteString memo = ByteString.copyFromUtf8("This is just a memo?");
 
 	@BeforeEach
 	public void setup() {
@@ -54,14 +57,16 @@ public class ScheduleGetInfoUsageTest {
 	public void assessesRequiredBytes() {
 		// given:
 		subject.givenCurrentAdminKey(adminKey)
-				.givenSigners(signers)
-				.givenTransaction(transactionBody);
+				.givenSignatories(signers)
+				.givenTransaction(transactionBody)
+				.givenMemo(memo);
 
 
 		// and:
 		var expectedAdminBytes = FeeBuilder.getAccountKeyStorageSize(adminKey.get());
 		var signersBytes = signers.get().toByteArray().length;
-		var expectedBytes = expectedAdminBytes + signersBytes + SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody);
+		var expectedBytes = BASIC_QUERY_RES_HEADER
+				+ expectedAdminBytes + signersBytes + SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, memo);
 
 		// when:
 		var usage = subject.get();

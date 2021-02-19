@@ -4,7 +4,7 @@ package com.hedera.services.txns.file;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,7 +68,7 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 
 		try {
 			var tbd = op.getFileID();
-			var attr = new AtomicReference<JFileInfo>();
+			var attr = new AtomicReference<HFileMeta>();
 			var validity = tryLookupAgainst(hfs, tbd, attr);
 
 			if (validity != OK) {
@@ -79,13 +79,13 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 			var info = attr.get();
 			var newExpiry = op.hasExpirationTime()
 					? op.getExpirationTime().getSeconds()
-					: info.getExpirationTimeSeconds();
+					: info.getExpiry();
 			if (newExpiry <= txnCtx.consensusTime().getEpochSecond()) {
 				hfs.rm(tbd);
 			} else {
-				var oldExpiry = info.getExpirationTimeSeconds();
+				var oldExpiry = info.getExpiry();
 				info.setDeleted(true);
-				info.setExpirationTimeSeconds(newExpiry);
+				info.setExpiry(newExpiry);
 				hfs.setattr(tbd, info);
 				expiries.put(ofNullableFileId(tbd), oldExpiry);
 			}
@@ -96,7 +96,7 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	static ResponseCodeEnum tryLookupAgainst(HederaFs hfs, FileID tbd, AtomicReference<JFileInfo> attr) {
+	static ResponseCodeEnum tryLookupAgainst(HederaFs hfs, FileID tbd, AtomicReference<HFileMeta> attr) {
 		if (hfs.exists(tbd)) {
 			var info = hfs.getattr(tbd);
 			if (info.isDeleted()) {

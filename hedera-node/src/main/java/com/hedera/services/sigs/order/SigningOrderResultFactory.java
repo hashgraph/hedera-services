@@ -4,7 +4,7 @@ package com.hedera.services.sigs.order;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,11 @@ package com.hedera.services.sigs.order;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.jproto.JKey;
 
@@ -152,4 +154,32 @@ public interface SigningOrderResultFactory<T> {
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forMissingAutoRenewAccount(AccountID account, TransactionID txnId);
+
+	/**
+	 * Report a failure resolving required signers for a scheduled transaction.
+	 *
+	 * @param scheduled the transaction that was attempted to be scheduled.
+	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate} or {@code ScheduleSign} txn.
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forUnresolvableRequiredSigners(
+			TransactionBody scheduled,
+			TransactionID txnId,
+			T errorReport);
+
+	/**
+	 * Report a failure parsing bytes that were to represent a scheduled txn.
+	 *
+	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate}.
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forUnparseableScheduledTxn(TransactionID txnId);
+
+	/**
+	 * Report an invalid attempt to schedule a schedule create txn .
+	 *
+	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate}.
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forUnschedulableTxn(TransactionID txnId);
 }

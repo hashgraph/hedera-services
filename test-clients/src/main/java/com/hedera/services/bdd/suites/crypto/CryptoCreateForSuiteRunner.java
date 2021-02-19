@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.crypto;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.SuiteRunner;
 import org.apache.logging.log4j.LogManager;
@@ -29,6 +30,7 @@ import org.junit.Assert;
 
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -48,6 +50,9 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	private String nodes;
 	private String defaultNode;
 
+	// Use more initialBalance for this account as it is used as payer for the performance tests
+	private static long initialBalance = 5L * LoadTest.initialBalance.getAsLong();
+
 	public CryptoCreateForSuiteRunner(String nodes, String defaultNode) {
 		this.nodes = nodes;
 		this.defaultNode = defaultNode;
@@ -65,8 +70,6 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	}
 
 	private HapiApiSpec createAccount() {
-		long initialBalance = 5_000_000_000_000L;
-
 		return customHapiSpec("CreatePayerAccountForEachClient")
 				.withProperties(Map.of(
 						"nodes", nodes,

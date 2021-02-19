@@ -4,7 +4,7 @@ package com.hedera.services.context.properties;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,8 +56,6 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.genesisPemPassphrase.path", "TBD"),
 			entry("bootstrap.genesisPem.path", "TBD"),
 			entry("bootstrap.hapiPermissions.path", "data/config/api-permission.properties"),
-			entry("bootstrap.ledger.nodeAccounts.initialBalance", 0L),
-			entry("bootstrap.ledger.systemAccounts.initialBalance", 0L),
 			entry("bootstrap.networkProperties.path", "data/config/application.properties"),
 			entry("bootstrap.rates.currentHbarEquiv", 1),
 			entry("bootstrap.rates.currentCentEquiv", 12),
@@ -114,6 +115,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.schedule.txExpiryTimeSecs", 1800),
 			entry("precheck.account.maxLookupRetries", 10),
 			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
+			entry("queries.blob.lookupRetries", 3),
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),
 			entry("tokens.maxTokenNameUtf8Bytes",100),
@@ -121,6 +123,7 @@ class BootstrapPropertiesTest {
 			entry("fees.tokenTransferUsageMultiplier", 380),
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
+			entry("scheduling.whitelist", Set.of(CryptoCreate, HederaFunctionality.CryptoTransfer)),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0)

@@ -4,7 +4,7 @@ package com.hedera.services.records;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,12 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -38,20 +41,25 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.function.Consumer;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
 public class TxnAwareRecordsHistorianTest {
 	final private long submittingMember = 1L;
 	final private AccountID a = asAccount("0.0.1111");
+	final private EntityId aEntity = EntityId.ofNullableAccountId(a);
 	final private TransactionID txnIdA = TransactionID.newBuilder().setAccountID(a).build();
 	final private AccountID b = asAccount("0.0.2222");
 	final private AccountID c = asAccount("0.0.3333");
@@ -85,6 +93,7 @@ public class TxnAwareRecordsHistorianTest {
 	private ExpiryManager expiries;
 	private GlobalDynamicProperties dynamicProperties;
 	private ExpiringCreations creator;
+	private ExpiringEntity expiringEntity;
 	private TransactionContext txnCtx;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
@@ -118,7 +127,40 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	public void managesReviewCorrectly() {
+	public void managesAddNewEntities() {
+		setupForAdd();
+
+		// when:
+		subject.addNewEntities();
+
+		// then:
+		verify(txnCtx).expiringEntities();
+		verify(expiringEntity).id();
+		verify(expiringEntity).consumer();
+		verify(expiringEntity).expiry();
+		// and:
+		verify(expiries).trackEntity(any(), eq(nows));
+	}
+
+	@Test
+	public void doesNotTrackExpiringEntity() {
+		setupForAdd();
+		given(txnCtx.expiringEntities()).willReturn(Collections.EMPTY_LIST);
+
+		// when:
+		subject.addNewEntities();
+
+		// then:
+		verify(txnCtx).expiringEntities();
+		verify(expiringEntity, never()).id();
+		verify(expiringEntity, never()).consumer();
+		verify(expiringEntity, never()).expiry();
+		// and:
+		verify(expiries, never()).trackEntity(any(), eq(nows));
+	}
+
+	@Test
+	public void managesReviewRecordsCorrectly() {
 		setupForReview();
 
 		// when:
@@ -129,7 +171,7 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
-	public void managesExpirationsCorrectly() {
+	public void managesExpiredRecordsCorrectly() {
 		setupForPurge();
 
 		// when:
@@ -156,6 +198,11 @@ public class TxnAwareRecordsHistorianTest {
 		creator = mock(ExpiringCreations.class);
 		given(creator.createExpiringRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
 
+		expiringEntity = mock(ExpiringEntity.class);
+		given(expiringEntity.id()).willReturn(aEntity);
+		given(expiringEntity.consumer()).willReturn(mock(Consumer.class));
+		given(expiringEntity.expiry()).willReturn(nows);
+
 		TransactionBody txn = mock(TransactionBody.class);
 		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getTxn()).willReturn(txn);
@@ -168,6 +215,7 @@ public class TxnAwareRecordsHistorianTest {
 		given(txnCtx.recordSoFar()).willReturn(finalRecord);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
 		given(txnCtx.effectivePayer()).willReturn(effPayer);
+		given(txnCtx.expiringEntities()).willReturn(Collections.singletonList(expiringEntity));
 
 		accounts = mock(FCMap.class);
 

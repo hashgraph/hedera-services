@@ -4,7 +4,7 @@ package com.hedera.services.usage.schedule;
  * ‌
  * Hedera Services API Fees
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verify;
 public class ScheduleSignUsageTest {
 
 	long now = 1_000L;
-	int scheduledTXExpiry = 1_000;
+	long scheduledTXExpiry = 2_700;
 	ScheduleID scheduleID = IdUtils.asSchedule("0.0.1");
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
@@ -86,7 +86,7 @@ public class ScheduleSignUsageTest {
 
 		// and:
 		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
-				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
+				.givenExpiry(scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -108,7 +108,7 @@ public class ScheduleSignUsageTest {
 
 		// and:
 		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
-				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
+				.givenExpiry(scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -117,7 +117,7 @@ public class ScheduleSignUsageTest {
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
 		verify(base).addBpt(expectedTxBytes);
-		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
+		verify(base).addRbs(expectedRamBytes * (scheduledTXExpiry - now));
 		verify(base).addVpt(sigMap.getSigPairCount());
 	}
 

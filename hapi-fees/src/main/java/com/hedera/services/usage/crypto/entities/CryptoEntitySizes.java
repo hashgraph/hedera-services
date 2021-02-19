@@ -4,7 +4,7 @@ package com.hedera.services.usage.crypto.entities;
  * ‌
  * Hedera Services API Fees
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ public enum CryptoEntitySizes {
 
 	/* { deleted, smartContract, receiverSigRequired } */
 	static int NUM_FLAGS_IN_BASE_ACCOUNT_REPRESENTATION = 3;
-	/* { expiry, hbarBalance, autoRenewSecs } */
-	static int NUM_LONG_FIELDS_IN_BASE_ACCOUNT_REPRESENTATION = 3;
+	/* { expiry, hbarBalance, autoRenewSecs } + (LEGACY) { sendThreshold, receiveThreshold } */
+	static int NUM_LONG_FIELDS_IN_BASE_ACCOUNT_REPRESENTATION = 5;
 
 	public int bytesInTokenAssocRepr() {
 		return LONG_SIZE + 2 * BOOL_SIZE;

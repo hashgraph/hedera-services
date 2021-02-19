@@ -4,7 +4,7 @@ package com.hedera.services.queries.crypto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -28,25 +27,17 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.Transaction;
 
-import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -77,23 +68,13 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				MerkleAccount account = view.accounts().get(fromAccountId(id));
-				String solidityAddress = asSolidityAddressHex(id);
-				CryptoGetInfoResponse.AccountInfo.Builder info = CryptoGetInfoResponse.AccountInfo.newBuilder()
-						.setKey(asKeyUnchecked(account.getKey()))
-						.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
-						.setProxyAccountID(asAccount(account.getProxy()))
-						.setAccountID(op.getAccountID())
-						.setBalance(account.getBalance())
-						.setContractAccountID(solidityAddress)
-						.setReceiverSigRequired(account.isReceiverSigRequired());
-				List<TokenRelationship> relationships = StateView.tokenRels(view, id);
-				if (!relationships.isEmpty()) {
-					info.addAllTokenRelationships(relationships);
+				var optionalInfo = view.infoForAccount(id);
+				if (optionalInfo.isPresent()) {
+					response.setHeader(answerOnlyHeader(OK));
+					response.setAccountInfo(optionalInfo.get());
+				} else {
+					response.setHeader(answerOnlyHeader(FAIL_INVALID));
 				}
-				response.setHeader(answerOnlyHeader(OK));
-				response.setAccountInfo(info);
 			}
 		}
 		return Response.newBuilder()

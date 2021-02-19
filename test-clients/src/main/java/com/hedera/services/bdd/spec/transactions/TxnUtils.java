@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -72,6 +73,7 @@ import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSchedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
@@ -177,6 +179,10 @@ public class TxnUtils {
 		return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);
 	}
 
+	public static ScheduleID asScheduleId(String s, HapiApiSpec lookupSpec) {
+		return isIdLiteral(s) ? asSchedule(s) : lookupSpec.registry().getScheduleId(s);
+	}
+
 	public static TopicID asTopicId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asTopic(s) : lookupSpec.registry().getTopicID(s);
 	}
@@ -238,35 +244,22 @@ public class TxnUtils {
 		return new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 	}
 
-	public static Timestamp defaultTimestamp() {
-		return getUniqueTimestampPlusSecs(0L);
-	}
-
-	public static Timestamp defaultTimestampPlusSecs(long offsetSecs) {
-		Instant instant = Instant.now(Clock.systemUTC());
-		return Timestamp.newBuilder()
-				.setSeconds(instant.getEpochSecond() + offsetSecs)
-				.setNanos(instant.getNano() - nanosBehind.addAndGet(1)).build();
-	}
-
 	private static int NANOS_IN_A_SECOND = 1_000_000_000;
 	private static AtomicInteger NEXT_NANO = new AtomicInteger(0);
-	private static int NANO_OFFSET = (int) System.currentTimeMillis() % 1_000;
+	private static int NANO_OFFSET = (int) (System.currentTimeMillis() % 1_000);
 
 	public static synchronized Timestamp getUniqueTimestampPlusSecs(long offsetSecs) {
 		Instant instant = Instant.now(Clock.systemUTC());
 
 		int candidateNano = NEXT_NANO.getAndIncrement() + NANO_OFFSET;
-		if( candidateNano >= NANOS_IN_A_SECOND ) {
+		if (candidateNano >= NANOS_IN_A_SECOND) {
 			candidateNano = 0;
 			NEXT_NANO.set(1);
 		}
 
-		Timestamp uniqueTS = Timestamp.newBuilder()
+		return Timestamp.newBuilder()
 				.setSeconds(instant.getEpochSecond() + offsetSecs)
 				.setNanos(candidateNano).build();
-
-		return uniqueTS;
 	}
 
 	public static TransactionID asTransactionID(HapiApiSpec spec, Optional<String> payer) {
@@ -276,8 +269,6 @@ public class TxnUtils {
 				.setTransactionValidStart(validStart)
 				.setAccountID(payerID).build();
 	}
-
-	private static AtomicInteger nanosBehind = new AtomicInteger(0);
 
 	public static String solidityIdFrom(ContractID contract) {
 		return ByteUtil.toHexString(ByteUtil.merge(
@@ -366,6 +357,7 @@ public class TxnUtils {
 		}
 		return sb.toString();
 	}
+
 	private static final SplittableRandom r = new SplittableRandom();
 	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
@@ -467,7 +459,8 @@ public class TxnUtils {
 
 			txnBody.setTransactionID(TransactionID.newBuilder()
 					.setAccountID(txnBody.getTransactionID().getAccountID())
-					.setTransactionValidStart(Timestamp.newBuilder().setSeconds(newStartTimeSecs).setNanos(newStartTimeNanos).build())
+					.setTransactionValidStart(
+							Timestamp.newBuilder().setSeconds(newStartTimeSecs).setNanos(newStartTimeNanos).build())
 					.build());
 			return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
 		} catch (Exception e) {
@@ -488,8 +481,7 @@ public class TxnUtils {
 	}
 
 	public static Transaction replaceTxnNodeAccount(Transaction txn, AccountID newNodeAccount) {
-		log.info(String.format("Old Txn attr: %s", TxnUtils.txnToString(txn) ));
-		Transaction newTxn = Transaction.getDefaultInstance();
+		log.info(String.format("Old Txn attr: %s", TxnUtils.txnToString(txn)));
 		try {
 
 			TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());

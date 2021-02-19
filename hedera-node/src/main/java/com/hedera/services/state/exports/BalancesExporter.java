@@ -4,7 +4,7 @@ package com.hedera.services.state.exports;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,5 +26,5 @@ import java.time.Instant;
 
 public interface BalancesExporter {
 	boolean isTimeToExport(Instant now);
-	void toCsvFile(ServicesState signedState, Instant when);
+	void exportBalancesFrom(ServicesState signedState, Instant when);
 }

@@ -4,7 +4,7 @@ package com.hedera.services.state.initialization;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -42,7 +41,7 @@ import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -93,7 +92,7 @@ class HfsSystemFilesManagerTest {
 	int nxtCentEquiv = 2;
 	int nxtHbarEquiv = 31;
 	Map<FileID, byte[]> data;
-	Map<FileID, JFileInfo> metadata;
+	Map<FileID, HFileMeta> metadata;
 	JKey masterKey;
 	byte[] aIpv4, bIpv4;
 	byte[] aKeyEncoding = "not-really-A-key".getBytes();
@@ -102,7 +101,7 @@ class HfsSystemFilesManagerTest {
 	Address addressA, addressB;
 	PublicKey keyA, keyB;
 	AddressBook currentBook;
-	JFileInfo expectedInfo;
+	HFileMeta expectedInfo;
 	TieredHederaFs hfs;
 	MerkleDiskFs diskFs;
 	MockFileNumbers fileNumbers;
@@ -117,7 +116,7 @@ class HfsSystemFilesManagerTest {
 	@BeforeEach
 	private void setup() throws Exception {
 		masterKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKey();
-		expectedInfo = new JFileInfo(
+		expectedInfo = new HFileMeta(
 				false,
 				JKey.mapKey(Key.newBuilder()
 								.setKeyList(KeyList.newBuilder()

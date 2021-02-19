@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.consensus.txns;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.consensus.txns;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
@@ -48,12 +49,12 @@ class TopicResourceUsageTestBase {
     protected FCMap<MerkleEntityId, MerkleTopic> topics;
     protected TopicID topicId = asTopic("0.0.1234");
     protected SigValueObj sigValueObj = new SigValueObj(totalSigCount, payerAcctSigCount, signatureSize);
-    protected PropertySource propertySource;
+    protected NodeLocalProperties nodeProps;
 
     void setup() throws Throwable {
         topics = mock(FCMap.class);
-        propertySource = mock(PropertySource.class);
-        view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, propertySource, null);
+        nodeProps = mock(NodeLocalProperties.class);
+        view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, nodeProps, null);
     }
 
     protected void checkServicesFee(FeeData feeData, int extraRbh) {

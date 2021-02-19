@@ -4,7 +4,7 @@ package com.hedera.services.bdd.suites.reconnect;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 											spec.registry().saveBytes("newRates", newRates);
 											return newRates;
 										}
-								).payingWith(SYSTEM_ADMIN),
+								).payingWith(GENESIS),
 
 						makeFree(CryptoGetInfo),
 
@@ -137,12 +137,12 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.3")
-								.payingWith(SYSTEM_ADMIN)
+								.payingWith(GENESIS)
 								.saveToRegistry(fileInfoRegistry),
 						getFileContents(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.6")
-								.payingWith(SYSTEM_ADMIN)
+								.payingWith(GENESIS)
 								.hasContents(fileInfoRegistry),
 
 						fileUpdate(nonUpdatableFile)

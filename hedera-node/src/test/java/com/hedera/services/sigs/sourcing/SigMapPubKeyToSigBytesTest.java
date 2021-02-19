@@ -4,7 +4,7 @@ package com.hedera.services.sigs.sourcing;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,8 @@ public class SigMapPubKeyToSigBytesTest {
 
 		// expect:
 		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+		// and:
+		assertThrows(UnsupportedOperationException.class, () -> subject.sigBytesForScheduled(new byte[0]));
 	}
 
 	@Test

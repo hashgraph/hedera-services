@@ -4,7 +4,7 @@ package com.hedera.services.bdd.spec.transactions;
  * ‌
  * Hedera Services Test Clients
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,12 @@ import static com.hedera.services.bdd.spec.fees.Payment.Reason.*;
 public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiTxnOp.class);
 
+	private static final Response UNKNOWN_RESPONSE = Response.newBuilder()
+			.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
+					.setReceipt(TransactionReceipt.newBuilder()
+							.setStatus(UNKNOWN)))
+			.build();
+
 	private long submitTime = 0L;
 	private TxnObs stats;
 	private boolean deferStatusResolution = false;
@@ -129,6 +135,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return finalizedTxn(spec, opBodyDef(spec));
 	}
 
+	public Transaction signedTxnFor(HapiApiSpec spec, byte[] nonce) throws Throwable {
+		this.nonce = nonce;
+		return finalizedTxn(spec, opBodyDef(spec));
+	}
+
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
 		stats = new TxnObs(type());
@@ -153,9 +164,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				if (isRecognizedRecoverable(msg)) {
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
-				}
-				else {
-					log.error("{} Status resolution failed due to unrecoverable runtime exception, possibly network connection lost." ,txn);
+				} else {
+					log.error(
+							"{} Status resolution failed due to unrecoverable runtime exception, possibly network " +
+									"connection lost.",
+							txn);
 					throw new HapiTxnCheckStateException("Unable to resolve txn status!");
 				}
 			}
@@ -185,16 +198,22 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				if (permissiblePrechecks.get().contains(actualPrecheck)) {
 					expectedPrecheck = Optional.of(actualPrecheck);
 				} else {
-					log.error(
-							"{} {} Wrong actual precheck status {}, not one of {}!",spec.logPrefix(), this,
-							actualPrecheck,
-							permissiblePrechecks.get());
-					throw new HapiTxnPrecheckStateException(String.format("Wrong actual precheck status %s, expected %s", actualStatus ,permissibleStatuses.get()));
+//					log.error(
+//							"{} {} Wrong actual precheck status {}, not one of {}!",spec.logPrefix(), this,
+//							actualPrecheck,
+//							permissiblePrechecks.get());
+					throw new HapiTxnPrecheckStateException(String.format(
+							"Wrong precheck status! Expected one of %s, actual %s",
+							permissibleStatuses.get(), actualStatus));
 				}
 			} else {
-				if(getExpectedPrecheck() != actualPrecheck) {
-					log.error( "{} {} Wrong actual precheck status {}, expecting {}", spec.logPrefix(), this, actualPrecheck, getExpectedPrecheck());
-					throw new HapiTxnPrecheckStateException(String.format("Wrong precheck status! expected %s, actual %s", getExpectedPrecheck(), actualPrecheck));
+				if (getExpectedPrecheck() != actualPrecheck) {
+					// Change to an info until HapiClientValidator can be modified and can understand new errors
+					log.info("{} {} Wrong actual precheck status {}, expecting {}", spec.logPrefix(), this,
+							actualPrecheck, getExpectedPrecheck());
+					throw new HapiTxnPrecheckStateException(String.format(
+							"Wrong precheck status! Expected %s, actual %s",
+							getExpectedPrecheck(), actualPrecheck));
 				}
 			}
 		}
@@ -242,14 +261,20 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			} else {
 				log.error(
 						"{} {} Wrong actual status {}, not one of {}!", spec.logPrefix(), this,
-								actualStatus,
-								permissibleStatuses.get());
-				throw new HapiTxnCheckStateException(String.format("Wrong actual status %s, expected %s", actualStatus ,permissibleStatuses.get()));
+						actualStatus,
+						permissibleStatuses.get());
+				throw new HapiTxnCheckStateException(String.format(
+						"Wrong status! Expected one of %s, was %s",
+						permissibleStatuses.get(), actualStatus));
 			}
 		} else {
-			if(getExpectedStatus() != actualStatus) {
-				log.error("{} {} Wrong actual status {}, expected {}", spec.logPrefix(), this,actualStatus, getExpectedStatus());
-				throw new HapiTxnCheckStateException(String.format("Wrong actual status %s, expected %s", actualStatus, getExpectedStatus()));
+			if (getExpectedStatus() != actualStatus) {
+				// Change to an info until HapiClientValidator can be modified and can understand new errors
+				log.info("{} {} Wrong actual status {}, expected {}", spec.logPrefix(), this, actualStatus,
+						getExpectedStatus());
+				throw new HapiTxnCheckStateException(String.format(
+						"Wrong status! Expected %s, was %s",
+						getExpectedStatus(), actualStatus));
 			}
 		}
 		if (!deferStatusResolution) {
@@ -315,11 +340,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		if (recordOfSubmission == null) {
 			lookupSubmissionRecord(spec);
 		}
-		if(!memo.get().equals(recordOfSubmission.getMemo())) {
+		if (!memo.get().equals(recordOfSubmission.getMemo())) {
 			log.error("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}."
-					,spec.logPrefix(), this, memo.get(), recordOfSubmission.getMemo());
-			throw new HapiTxnCheckStateException(String.format("%s Memo didn't come from submitted transaction! actual memo %s, recorded %s."
-					,this, memo.get(), recordOfSubmission.getMemo()));
+					, spec.logPrefix(), this, memo.get(), recordOfSubmission.getMemo());
+			throw new HapiTxnCheckStateException(
+					String.format("%s Memo didn't come from submitted transaction! actual memo %s, recorded %s."
+							, this, memo.get(), recordOfSubmission.getMemo()));
 		}
 	}
 
@@ -335,7 +361,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	@Override
 	protected void lookupSubmissionRecord(HapiApiSpec spec) throws Throwable {
 		if (actualStatus == UNKNOWN) {
-			throw new HapiTxnCheckStateException(this + " tried to lookup the submission record before status was known!");
+			throw new HapiTxnCheckStateException(
+					this + " tried to lookup the submission record before status was known!");
 		}
 		super.lookupSubmissionRecord(spec);
 	}
@@ -372,7 +399,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		stats.setConsensusLatency(consensusTime - submitTime);
 	}
 
-	protected ResponseCodeEnum resolvedStatusOfSubmission(HapiApiSpec spec) throws Throwable {
+	private ResponseCodeEnum resolvedStatusOfSubmission(HapiApiSpec spec) throws Throwable {
 		long delayMS = spec.setup().statusPreResolvePauseMs();
 		long elapsedMS = System.currentTimeMillis() - submitTime;
 		if (elapsedMS <= delayMS) {
@@ -404,31 +431,25 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		int allowedUnrecognizedExceptions = 10;
 		while (response == null) {
 			try {
-				response = spec.clients()
-						.getCryptoSvcStub(targetNodeFor(spec), useTls)
-						.getTransactionReceipts(receiptQuery);
+				var cryptoSvcStub = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls);
+				if (cryptoSvcStub == null) {
+					response = UNKNOWN_RESPONSE;
+				} else {
+					response = cryptoSvcStub.getTransactionReceipts(receiptQuery);
+				}
 			} catch (Exception e) {
 				var msg = e.toString();
 				if (isRecognizedRecoverable(msg)) {
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				}
+				log.warn("({}) Status resolution failed with unrecognized exception",
+						Thread.currentThread().getName(), e);
 				allowedUnrecognizedExceptions--;
 				if (allowedUnrecognizedExceptions == 0) {
-					response = Response.newBuilder()
-							.setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
-									.setReceipt(TransactionReceipt.newBuilder()
-											.setStatus(UNKNOWN)))
-							.build();
+					response = UNKNOWN_RESPONSE;
 				}
 			}
-		}
-		if(response.getTransactionGetReceipt().getReceipt().getStatus() == UNKNOWN) {
-			log.error(" [ accountID {} validStart({}, {}) ], status resolution failed with unrecognized exception, not getting txn response back",
-					receiptQuery.getTransactionGetReceipt().getTransactionID().getAccountID().getAccountNum(),
-					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getSeconds(),
-					receiptQuery.getTransactionGetReceipt().getTransactionID().getTransactionValidStart().getNanos()
-					);
 		}
 		long after = System.currentTimeMillis();
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
@@ -647,6 +668,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T asTxnWithOnlySigMap() {
 		asTxnWithOnlySigMap = true;
+		return self();
+	}
+
+	public T sansTxnId() {
+		omitTxnId = true;
+		return self();
+	}
+
+	public T withLegacyProtoStructure() {
+		alwaysWithLegacyProtoStructure = true;
 		return self();
 	}
 

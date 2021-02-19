@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.file.queries;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ package com.hedera.services.fees.calculation.file.queries;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.file.ExtantFileContext;
+import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
@@ -30,9 +32,11 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.Optional;
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -40,25 +44,34 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class GetFileInfoResourceUsageTest {
+	long expiry = 1_234_567L;
+	long size = 123;
+	String memo = "Ok whatever";
 	FileID target = asFile("0.0.123");
 	StateView view;
-	FileFeeBuilder usageEstimator;
+	FileOpsUsage fileOpsUsage;
 	GetFileInfoResourceUsage subject;
 	Key wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
 	FileGetInfoResponse.FileInfo targetInfo = FileGetInfoResponse.FileInfo.newBuilder()
+			.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry).build())
+			.setSize(size)
+			.setMemo(memo)
 			.setKeys(wacl.getKeyList())
 			.build();
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		usageEstimator = mock(FileFeeBuilder.class);
+		fileOpsUsage = mock(FileOpsUsage.class);
+
 		view = mock(StateView.class);
 
-		subject = new GetFileInfoResourceUsage(usageEstimator);
+		subject = new GetFileInfoResourceUsage(fileOpsUsage);
 	}
 
 	@Test
@@ -74,27 +87,28 @@ class GetFileInfoResourceUsageTest {
 	@Test
 	public void invokesEstimatorAsExpectedForType() {
 		// setup:
-		FeeData costAnswerUsage = mock(FeeData.class);
-		FeeData answerOnlyUsage = mock(FeeData.class);
-
-		// given:
+		FeeData expected = mock(FeeData.class);
+		// and:
+		ArgumentCaptor<ExtantFileContext> captor = ArgumentCaptor.forClass(ExtantFileContext.class);
+		// and:
 		Query answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
-		Query costAnswerQuery = fileInfoQuery(target, COST_ANSWER);
-		// and:
+
 		given(view.infoForFile(target)).willReturn(Optional.ofNullable(targetInfo));
-		// and:
-		given(usageEstimator.getFileInfoQueryFeeMatrices(wacl.getKeyList(), COST_ANSWER))
-				.willReturn(costAnswerUsage);
-		given(usageEstimator.getFileInfoQueryFeeMatrices(wacl.getKeyList(), ANSWER_ONLY))
-				.willReturn(answerOnlyUsage);
+		given(fileOpsUsage.fileInfoUsage(any(), any())).willReturn(expected);
 
 		// when:
-		FeeData costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
-		FeeData answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);
+		FeeData actual = subject.usageGiven(answerOnlyQuery, view);
 
 		// then:
-		assertTrue(costAnswerEstimate == costAnswerUsage);
-		assertTrue(answerOnlyEstimate == answerOnlyUsage);
+		assertSame(expected, actual);
+		// and:
+		verify(fileOpsUsage).fileInfoUsage(argThat(answerOnlyQuery::equals), captor.capture());
+		// and:
+		var ctxUsed = captor.getValue();
+		assertEquals(expiry, ctxUsed.currentExpiry());
+		assertEquals(memo, ctxUsed.currentMemo());
+		assertEquals(wacl.getKeyList(), ctxUsed.currentWacl());
+		assertEquals(size, ctxUsed.currentSize());
 	}
 
 	@Test

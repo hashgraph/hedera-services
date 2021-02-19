@@ -4,7 +4,7 @@ package com.hedera.services.sigs.metadata;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ public class ScheduleDelegatingSigMetadataLookupTest {
     @BeforeEach
     public void setup() {
         schedule = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
+        schedule.setPayer(new EntityId(0, 0, 2));
 
         scheduleStore = mock(ScheduleStore.class);
 

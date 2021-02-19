@@ -4,7 +4,7 @@ package com.hedera.services.records;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
+import javafx.util.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -39,6 +42,8 @@ import java.util.function.Supplier;
  * @author Michael Tinker
  */
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
+	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
+
 	private HederaLedger ledger;
 	private TransactionRecord lastCreatedRecord;
 
@@ -108,5 +113,14 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public void reviewExistingRecords() {
 		expiries.restartTrackingFrom(accounts.get());
+	}
+
+	@Override
+	public void addNewEntities() {
+		for (var expiringEntity : txnCtx.expiringEntities()) {
+			expiries.trackEntity(
+					new Pair<>(expiringEntity.id().num(), expiringEntity.consumer()),
+					expiringEntity.expiry());
+		}
 	}
 }

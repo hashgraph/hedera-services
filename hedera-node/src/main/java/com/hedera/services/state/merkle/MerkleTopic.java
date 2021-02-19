@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,19 +32,15 @@ import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.FCMValue;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.spongycastle.util.encoders.Hex;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.time.Instant;
@@ -87,8 +83,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
 	static TopicSerde topicSerde = new TopicSerde();
 	static DomainSerdes serdes = new DomainSerdes();
 	static EntityId.Provider legacyIdProvider = EntityId.LEGACY_PROVIDER;
-
-	public static final MerkleTopic.Provider LEGACY_PROVIDER = new Provider();
 
 	private String memo;
 	private JKey adminKey;
@@ -164,46 +158,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
 		this.runningHash = (null != other.runningHash)
 				? Arrays.copyOf(other.runningHash, other.runningHash.length)
 				: null;
-	}
-
-	@Deprecated
-	public static class Provider implements SerializedObjectProvider {
-		@Override
-		@SuppressWarnings("unchecked")
-		public FastCopyable deserialize(DataInputStream din) throws IOException {
-			var in = (SerializableDataInputStream) din;
-
-			in.readShort();
-			in.readShort();
-
-			var topic = new MerkleTopic();
-			if (in.readBoolean()) {
-				var bytes = in.readByteArray(MAX_MEMO_BYTES);
-				if (null != bytes) {
-					topic.setMemo(StringUtils.newStringUtf8(bytes));
-				}
-			}
-
-			if (in.readBoolean()) {
-				topic.setAdminKey(serdes.deserializeKey(in));
-			}
-			if (in.readBoolean()) {
-				topic.setSubmitKey(serdes.deserializeKey(in));
-			}
-			topic.setAutoRenewDurationSeconds(in.readLong());
-			if (in.readBoolean()) {
-				topic.setAutoRenewAccountId(legacyIdProvider.deserialize(in));
-			}
-			if (in.readBoolean()) {
-				topic.setExpirationTimestamp(serdes.deserializeLegacyTimestamp(in));
-			}
-			topic.setDeleted(in.readBoolean());
-			topic.setSequenceNumber(in.readLong());
-			if (in.readBoolean()) {
-				topic.setRunningHash(in.readByteArray(RUNNING_HASH_BYTE_ARRAY_SIZE));
-			}
-			return topic;
-		}
 	}
 
 	/* --- MerkleLeaf --- */

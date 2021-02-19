@@ -4,7 +4,7 @@ package com.hedera.services.context.properties;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+
+import java.util.Set;
 
 public class GlobalDynamicProperties {
 	private final HederaNumbers hederaNums;
@@ -55,6 +58,7 @@ public class GlobalDynamicProperties {
 	private long minAutoRenewDuration;
 	private int localCallEstRetBytes;
 	private int scheduledTxExpiryTimeSecs;
+	private Set<HederaFunctionality> schedulingWhitelist;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -99,6 +103,7 @@ public class GlobalDynamicProperties {
 		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
 		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
+		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
 	}
 
 	public int maxTokensPerAccount() {
@@ -211,5 +216,9 @@ public class GlobalDynamicProperties {
 
 	public int scheduledTxExpiryTimeSecs() {
 		return scheduledTxExpiryTimeSecs;
+	}
+
+	public Set<HederaFunctionality> schedulingWhitelist() {
+		return schedulingWhitelist;
 	}
 }

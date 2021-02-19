@@ -4,7 +4,7 @@ package com.hedera.services.ledger;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,7 +163,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void addsRecordsBeforeCommitting() {
+	public void addsRecordsAndEntitiesBeforeCommitting() {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
@@ -171,6 +171,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 
 		// then:
 		verify(historian).addNewRecords();
+		verify(historian).addNewEntities();
 	}
 
 	@Test
