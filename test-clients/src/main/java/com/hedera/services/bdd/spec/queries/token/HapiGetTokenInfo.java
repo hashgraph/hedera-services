@@ -227,12 +227,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				(n, r) -> r.getTokenID(n),
 				"Wrong token id!",
 				registry);
-//		assertFor(
-//				actualInfo.getMemo(),
-//				expectedMemo,
-//				(n, r) -> r.getMemo(n),
-//				"Wrong memo!",
-//				registry);
 		assertFor(
 				actualInfo.getExpiry(),
 				expectedExpiry,
