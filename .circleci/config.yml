@@ -1854,7 +1854,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 0940-M-CreateYahcli
             workflow-name: "Continuous integration"
         - build-platform-and-services:
             context: SonarCloud

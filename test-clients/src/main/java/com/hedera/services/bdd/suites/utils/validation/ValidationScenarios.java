@@ -155,6 +155,7 @@ public class ValidationScenarios extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
 	private static final String DEFAULT_CONFIG_LOC = "config.yml";
 	private static final long TINYBARS_PER_HBAR = 100_000_000L;
+	private static final long FEE_TO_OFFER = 50 * ONE_HBAR;
 
 	enum Scenario {
 		CRYPTO, FILE, CONTRACT, CONSENSUS,
@@ -236,6 +237,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given().when().then(
 							withOpContext((spec, opLog) -> {
@@ -477,6 +480,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given().when().then(
 							withOpContext((spec, opLog) -> {
@@ -561,6 +566,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -596,6 +603,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							LongStream.of(payers).mapToObj(payer ->
@@ -644,6 +653,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -732,6 +743,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given().when().then(flattened(
 							Arrays.stream(accounts)
@@ -759,6 +772,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given().when().then(
 							withOpContext((spec, opLog) -> {
@@ -783,6 +798,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 					).when().then(
@@ -818,6 +835,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -852,6 +871,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1001,6 +1022,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1154,6 +1177,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1343,6 +1368,8 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
 							"default.node", defaultNode(),
+							"fees.useFixedOffer", "true",
+							"fees.fixedOffer", "" + FEE_TO_OFFER,
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
