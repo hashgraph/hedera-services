@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 
@@ -31,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
@@ -44,27 +42,22 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 public class MixedOpsMemoPerfSuite extends LoadTest {
 	private static final Logger log = LogManager.getLogger(MixedOpsMemoPerfSuite.class);
@@ -74,11 +67,10 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 	private final String TOKEN_MEMO = INITIAL_MEMO + " for Token Entity";
 	private final String TARGET_ACCOUNT = "accountForMemo";
 	private final String TARGET_TOKEN = "tokenForMemo";
-	private final String TARGET_FILE = "fileForMemo";
 	private final String TARGET_TOPIC = "topicForMemo";
 
 	private final ResponseCodeEnum[] permissiblePrechecks = new ResponseCodeEnum[] {
-			OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED
+			OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN
 	};
 
 	public static void main(String... args) {
@@ -132,28 +124,28 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 						.noLogging()
 						.hasPrecheckFrom(permissiblePrechecks)
 						.deferStatusResolution(),
-//				tokenCreate("testToken" + createdSoFar.getAndIncrement())
-//						.payingWith(GENESIS)
-//						.entityMemo(
-//								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
-//						)
-//						.noLogging()
-//						.hasPrecheckFrom(permissiblePrechecks)
-//						.deferStatusResolution(),
-//				getTokenInfo(TARGET_TOKEN+"Info")
-//						.payingWith(GENESIS)
-//						.hasRegisteredMemo(TOKEN_MEMO)
-//						.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
-//						.hasCostAnswerPrecheckFrom(permissiblePrechecks)
-//						.noLogging(),
-//				tokenUpdate(TARGET_TOKEN)
-//						.payingWith(GENESIS)
-//						.entityMemo(
-//								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
-//						)
-//						.noLogging()
-//						.hasPrecheckFrom(permissiblePrechecks)
-//						.deferStatusResolution(),
+				tokenCreate("testToken" + createdSoFar.getAndIncrement())
+						.payingWith(GENESIS)
+						.entityMemo(
+								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
+						)
+						.noLogging()
+						.hasPrecheckFrom(permissiblePrechecks)
+						.deferStatusResolution(),
+				getTokenInfo(TARGET_TOKEN+"Info")
+						.payingWith(GENESIS)
+						.hasRegisteredMemo(TOKEN_MEMO)
+						.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
+						.hasCostAnswerPrecheckFrom(permissiblePrechecks)
+						.noLogging(),
+				tokenUpdate(TARGET_TOKEN)
+						.payingWith(GENESIS)
+						.entityMemo(
+								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
+						)
+						.noLogging()
+						.hasPrecheckFrom(permissiblePrechecks)
+						.deferStatusResolution(),
 				createTopic("testTopic" + createdSoFar.getAndIncrement())
 						.topicMemo(
 								new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8)
