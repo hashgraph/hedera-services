@@ -227,6 +227,11 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		if (txToEntityId.containsKey(keyToCheckFor)) {
+			var extantId = txToEntityId.get(keyToCheckFor);
+			var extantBytes = schedules.get().get(extantId).transactionBody();
+			if (!Arrays.equals(bodyBytes, extantBytes)) {
+				return Optional.empty();
+			}
 			var scheduleId = txToEntityId.get(keyToCheckFor).toScheduleId();
 			return Optional.of(scheduleId);
 		}
