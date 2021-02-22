@@ -66,8 +66,8 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
@@ -157,7 +157,6 @@ class ServicesStateTest {
 	SystemExits systemExits;
 	SystemFilesManager systemFilesManager;
 	RecordStreamManager recordStreamManager;
-	SigFactoryCreator sigFactoryCreator;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
 	ServicesState subject;
@@ -369,6 +368,7 @@ class ServicesStateTest {
 		inOrder.verify(ctx).setRecordsInitialHash(EMPTY_HASH);
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
+		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
 		inOrder.verify(systemFilesManager).loadAllSystemFiles();
 	}

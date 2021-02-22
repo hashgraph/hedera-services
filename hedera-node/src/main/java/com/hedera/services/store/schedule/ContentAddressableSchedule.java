@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;

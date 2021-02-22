@@ -41,11 +41,13 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
@@ -63,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
@@ -146,6 +149,38 @@ public class HederaScheduleStoreTest {
         subject = new HederaScheduleStore(globalDynamicProperties, ids, () -> schedules);
         subject.setAccountsLedger(accountsLedger);
         subject.setHederaLedger(hederaLedger);
+    }
+
+    @Test
+    void rebuildsAsExpected() {
+        // setup:
+		String reconnectMemo = "Back again!";
+        ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleSchedule>> captor = forClass(BiConsumer.class);
+        MerkleSchedule reconnectSchedule = new MerkleSchedule(
+                transactionBody,
+                EntityId.ofNullableAccountId(IdUtils.asAccount("1.2.3")),
+                RichInstant.MISSING_INSTANT);
+        reconnectSchedule.setMemo(reconnectMemo);
+        // and:
+        var expectedKey = ContentAddressableSchedule.fromMerkleSchedule(reconnectSchedule);
+
+        // when:
+        subject.rebuildViews();
+
+        // then:
+        verify(schedules, times(2)).forEach(captor.capture());
+        // and:
+        BiConsumer<MerkleEntityId,  MerkleSchedule> visitor = captor.getAllValues().get(1);
+
+        // and when:
+        visitor.accept(fromScheduleId(created), reconnectSchedule);
+
+        // then:
+        var extant = subject.getExistingSchedules();
+        assertEquals(1, extant.size());
+        // and:
+        assertTrue(extant.containsKey(expectedKey));
+        assertEquals(created, extant.get(expectedKey).toScheduleId());
     }
 
     @Test
