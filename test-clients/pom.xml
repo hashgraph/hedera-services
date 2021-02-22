@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.12.0-rc.4</version>
+    <version>0.12.0-rc.5-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -279,12 +279,12 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-utils</artifactId>
-      <version>0.12.0-rc.4</version>
+      <version>0.12.0-rc.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.12.0-rc.4</version>
+      <version>0.12.0-rc.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
