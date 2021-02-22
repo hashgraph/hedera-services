@@ -45,10 +45,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.SplittableRandom;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
@@ -432,12 +429,12 @@ public class HederaScheduleStoreTest {
     @Test
     public void getsScheduleID() {
         // given:
-        CompositeKey txKey = new CompositeKey(
-                transactionBodyHashCode,
-                ofNullableAccountId(payerId),
+        ContentAddressableSchedule txKey = new ContentAddressableSchedule(
                 adminKey,
-                entityMemo);
-        subject.txToEntityId.put(txKey, fromScheduleId(created));
+                entityMemo,
+                ofNullableAccountId(payerId),
+                transactionBody);
+        subject.existingSchedules.put(txKey, fromScheduleId(created));
 
         // when:
         var scheduleId = subject.lookupScheduleId(transactionBody, payerId, adminKey, entityMemo);
@@ -452,12 +449,12 @@ public class HederaScheduleStoreTest {
         byte[] candidate = Hex.decodeHex("e0d8");
 
         // given:
-        CompositeKey extantKey = new CompositeKey(
-                Arrays.hashCode(extant),
-                ofNullableAccountId(payerId),
+        ContentAddressableSchedule extantKey = new ContentAddressableSchedule(
                 adminKey,
-                entityMemo);
-        subject.txToEntityId.put(extantKey, fromScheduleId(created));
+                entityMemo,
+                ofNullableAccountId(payerId),
+                extant);
+        subject.existingSchedules.put(extantKey, fromScheduleId(created));
         // and:
         given(schedule.transactionBody()).willReturn(extant);
 
