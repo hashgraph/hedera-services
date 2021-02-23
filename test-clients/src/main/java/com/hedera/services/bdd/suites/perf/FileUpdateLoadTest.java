@@ -67,7 +67,6 @@ public class FileUpdateLoadTest extends HapiApiSuite {
 
 	private HapiApiSpec runFileUpdates() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
-		String fileUpdateMemo = TxnUtils.randomUtf8Bytes(settings.getMemoLength()).toString();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
 		final byte[] NEW_CONTENTS = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 
@@ -78,7 +77,6 @@ public class FileUpdateLoadTest extends HapiApiSuite {
 										.fee(Integer.MAX_VALUE)
 										.contents(NEW_CONTENTS)
 										.noLogging()
-										.entityMemo(fileUpdateMemo)
 										.hasPrecheckFrom(
 												OK,
 												BUSY,

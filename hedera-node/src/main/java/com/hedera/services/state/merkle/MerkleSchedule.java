@@ -208,11 +208,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
     @Override
     public MerkleSchedule copy() {
-
-        var fc = new MerkleSchedule(
-                transactionBody,
-                schedulingAccount,
-                schedulingTXValidStart);
+        var fc = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
 
         fc.setMemo(memo);
         fc.setExpiry(expiry);
