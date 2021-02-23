@@ -60,8 +60,8 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						deletionValidatesMissingAdminKey(),
 						deletionWorksAsExpected(),
 						deletionValidatesAlreadyDeletedToken(),
-						deletionValidatesRef(),
 						treasuryBecomesDeletableAfterTokenDelete(),
+						deletionValidatesRef(),
 				}
 		);
 	}
@@ -178,11 +178,11 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 				.given(
 						cryptoCreate("payer")
 				).when().then(
-						tokenDelete("1.2.3")
+						tokenDelete("0.0.0")
 								.payingWith("payer")
 								.signedBy("payer")
 								.hasKnownStatus(INVALID_TOKEN_ID),
-						tokenDelete("0.0.0")
+						tokenDelete("1.2.3")
 								.payingWith("payer")
 								.signedBy("payer")
 								.hasKnownStatus(INVALID_TOKEN_ID)

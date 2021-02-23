@@ -84,9 +84,9 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						updateWithOneEffectiveSig(),
 						canUpdateMemo(),
 						updateFailsWithInsufficientSigs(),
-						updateFailsIfMissingSigs(),
 						cannotSetThresholdNegative(),
 						updateWithEmptyKeyFails(),
+						updateFailsIfMissingSigs(),
 				}
 		);
 	}
@@ -179,7 +179,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 	private HapiApiSpec updateFailsIfMissingSigs() {
 		SigControl origKeySigs = KeyShape.threshSigs(3, ON, ON, KeyShape.threshSigs(1, OFF, ON));
-		SigControl updKeySigs = KeyShape.listSigs(ON, ON, KeyShape.threshSigs(1, ON, OFF, OFF, OFF));
+		SigControl updKeySigs = KeyShape.listSigs(ON, OFF, KeyShape.threshSigs(1, ON, OFF, OFF, OFF));
 
 		return defaultHapiSpec("UpdateFailsIfMissingSigs")
 				.given(

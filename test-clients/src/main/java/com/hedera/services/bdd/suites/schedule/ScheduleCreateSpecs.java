@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.saveExpirations;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
@@ -116,6 +117,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				allowsDoublingScheduledCreates(),
 				scheduledTXCreatedAfterPreviousIdenticalIsExecuted(),
 				preservesRevocationServiceSemanticsForFileDelete(),
+				worksAsExpectedWithDefaultScheduleId(),
 				suiteCleanup(),
 		});
 	}
@@ -131,6 +133,13 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteCleanup")
 				.given( ).when( ).then(
 						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
+				);
+	}
+
+	private HapiApiSpec worksAsExpectedWithDefaultScheduleId() {
+		return defaultHapiSpec("WorksAsExpectedWithDefaultScheduleId")
+				.given( ).when( ).then(
+						getScheduleInfo("0.0.0").hasCostAnswerPrecheck(INVALID_SCHEDULE_ID)
 				);
 	}
 

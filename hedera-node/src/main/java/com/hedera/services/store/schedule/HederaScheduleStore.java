@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -43,9 +42,10 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
+import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
-import static com.hedera.services.store.schedule.CompositeKey.fromMerkleSchedule;
+import static com.hedera.services.store.schedule.ContentAddressableSchedule.fromMerkleSchedule;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -61,12 +61,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IM
 public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
-	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
-	Map<CompositeKey, MerkleEntityId> txToEntityId = new HashMap<>();
-
 	private final GlobalDynamicProperties properties;
+	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
+
 	ScheduleID pendingId = NO_PENDING_ID;
 	MerkleSchedule pendingCreation;
+	Map<ContentAddressableSchedule, MerkleEntityId> existingSchedules = new HashMap<>();
 
 	public HederaScheduleStore(
 			GlobalDynamicProperties properties,
@@ -96,7 +96,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	@Override
 	public boolean exists(ScheduleID id) {
-		return pendingId.equals(id) || schedules.get().containsKey(fromScheduleId(id));
+		return (isCreationPending() && pendingId.equals(id)) || schedules.get().containsKey(fromScheduleId(id));
 	}
 
 	@Override
@@ -145,11 +145,11 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		pendingId = ids.newScheduleId(schedulingAccount);
 		pendingCreation = new MerkleSchedule(
 				bodyBytes,
-				EntityId.ofNullableAccountId(schedulingAccount),
+				ofNullableAccountId(schedulingAccount),
 				schedulingTXValidStart);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		entityMemo.ifPresent(pendingCreation::setMemo);
-		pendingCreation.setPayer(EntityId.ofNullableAccountId(payer));
+		pendingCreation.setPayer(ofNullableAccountId(payer));
 		pendingCreation.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
 
 		return success(pendingId);
@@ -178,7 +178,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var id = fromScheduleId(pendingId);
 		schedules.get().put(id, pendingCreation);
 		var key = fromMerkleSchedule(pendingCreation);
-		txToEntityId.put(key, id);
+		existingSchedules.put(key, id);
 		resetPendingCreation();
 	}
 
@@ -207,28 +207,32 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void buildTxToEntityIdMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
 		var schedulesMap = schedules.get();
-		schedulesMap.forEach((key, value) -> txToEntityId.put(fromMerkleSchedule(value), key));
+		schedulesMap.forEach((key, value) -> existingSchedules.put(fromMerkleSchedule(value), key));
 	}
 
 	@Override
-	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Key adminKey, String memo) {
-		var keyToCheckFor = new CompositeKey(
-				Arrays.hashCode(bodyBytes),
-				EntityId.ofNullableAccountId(scheduledTxPayer),
+	public Optional<ScheduleID> lookupScheduleId(
+			byte[] bodyBytes,
+			AccountID scheduledTxPayer,
+			Key adminKey,
+			String memo
+	) {
+		var contentKey = new ContentAddressableSchedule(
 				adminKey,
-				memo);
+				memo,
+				ofNullableAccountId(scheduledTxPayer),
+				bodyBytes);
 
 		if (isCreationPending()) {
-			var pendingKey = fromMerkleSchedule(pendingCreation);
-
-			if (keyToCheckFor.equals(pendingKey)) {
+			var pendingContentKey = fromMerkleSchedule(pendingCreation);
+			if (contentKey.equals(pendingContentKey)) {
 				return Optional.of(pendingId);
 			}
 		}
 
-		if (txToEntityId.containsKey(keyToCheckFor)) {
-			var scheduleId = txToEntityId.get(keyToCheckFor).toScheduleId();
-			return Optional.of(scheduleId);
+		if (existingSchedules.containsKey(contentKey)) {
+			var extantId = existingSchedules.get(contentKey);
+			return Optional.of(extantId.toScheduleId());
 		}
 
 		return Optional.empty();
@@ -249,13 +253,12 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	@Override
 	public void expire(EntityId entityId) {
-		var id = entityId.toGrpcScheduleId();
-		markAsExecuted(id);
+		markAsExecuted(entityId.toGrpcScheduleId());
 	}
 
 	private void delete(ScheduleID id, MerkleSchedule schedule) {
 		remove(id);
-		txToEntityId.remove(fromMerkleSchedule(schedule));
+		existingSchedules.remove(fromMerkleSchedule(schedule));
 	}
 
 	private void remove(ScheduleID id) {

@@ -362,6 +362,12 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
+		// expect:
+		assertFalse(subject.exists(HederaTokenStore.NO_PENDING_ID));
+	}
+
+	@Test
 	public void existenceCheckIncludesPending() {
 		// setup:
 		subject.pendingId = pending;

@@ -37,22 +37,21 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
+import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_SIGNER_ONE_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_SIGNER_TWO_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
@@ -97,8 +96,8 @@ public class HederaScheduleStoreTest {
     AccountID payerId = IdUtils.asAccount("1.2.456");
     AccountID anotherPayerId = IdUtils.asAccount("1.2.457");
 
-    EntityId entityPayer = EntityId.ofNullableAccountId(payerId);
-    EntityId entitySchedulingAccount = EntityId.ofNullableAccountId(schedulingAccount);
+    EntityId entityPayer = ofNullableAccountId(payerId);
+    EntityId entitySchedulingAccount = ofNullableAccountId(schedulingAccount);
 
     long expectedExpiry = 1_234_567L;
 
@@ -120,10 +119,10 @@ public class HederaScheduleStoreTest {
         given(schedule.transactionBody()).willReturn(transactionBody);
         given(schedule.hasAdminKey()).willReturn(true);
         given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
-        given(schedule.payer()).willReturn(EntityId.ofNullableAccountId(payerId));
+        given(schedule.payer()).willReturn(ofNullableAccountId(payerId));
         given(schedule.memo()).willReturn(Optional.of(entityMemo));
 
-        given(anotherSchedule.payer()).willReturn(EntityId.ofNullableAccountId(anotherPayerId));
+        given(anotherSchedule.payer()).willReturn(ofNullableAccountId(anotherPayerId));
 
         ids = mock(EntityIdSource.class);
         given(ids.newScheduleId(schedulingAccount)).willReturn(created);
@@ -326,6 +325,12 @@ public class HederaScheduleStoreTest {
     }
 
     @Test
+    public void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
+        // expect:
+        assertFalse(subject.exists(HederaScheduleStore.NO_PENDING_ID));
+    }
+
+    @Test
     public void rejectsCreateProvisionallyMissingPayer() {
         // given:
         given(accountsLedger.exists(payerId)).willReturn(false);
@@ -424,17 +429,40 @@ public class HederaScheduleStoreTest {
     @Test
     public void getsScheduleID() {
         // given:
-        CompositeKey txKey = new CompositeKey(
-                transactionBodyHashCode,
-                EntityId.ofNullableAccountId(payerId),
+        ContentAddressableSchedule txKey = new ContentAddressableSchedule(
                 adminKey,
-                entityMemo);
-        subject.txToEntityId.put(txKey, fromScheduleId(created));
+                entityMemo,
+                ofNullableAccountId(payerId),
+                transactionBody);
+        subject.existingSchedules.put(txKey, fromScheduleId(created));
 
         // when:
         var scheduleId = subject.lookupScheduleId(transactionBody, payerId, adminKey, entityMemo);
 
         assertEquals(Optional.of(created), scheduleId);
+    }
+
+    @Test
+    public void avoidsFalsePositivesFromHashCollision() throws DecoderException {
+        // setup:
+        byte[] extant = Hex.decodeHex("9a");
+        byte[] candidate = Hex.decodeHex("e0d8");
+
+        // given:
+        ContentAddressableSchedule extantKey = new ContentAddressableSchedule(
+                adminKey,
+                entityMemo,
+                ofNullableAccountId(payerId),
+                extant);
+        subject.existingSchedules.put(extantKey, fromScheduleId(created));
+        // and:
+        given(schedule.transactionBody()).willReturn(extant);
+
+        // when:
+        var optionalId = subject.lookupScheduleId(candidate, payerId, adminKey, entityMemo);
+
+        // then:
+        assertTrue(optionalId.isEmpty());
     }
 
     @Test
