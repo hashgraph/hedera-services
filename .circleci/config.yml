@@ -1854,7 +1854,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 01084-M-SchedulePerfClients
             workflow-name: "Continuous integration"
         - build-platform-and-services:
             context: SonarCloud
