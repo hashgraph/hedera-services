@@ -24,51 +24,26 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.SemanticVersions;
-import com.hedera.services.fees.AwareHbarCentExchange;
-import com.hedera.services.fees.StandardExemptions;
-import com.hedera.services.grpc.controllers.ContractController;
-import com.hedera.services.grpc.controllers.FreezeController;
-import com.hedera.services.grpc.controllers.ScheduleController;
-import com.hedera.services.grpc.controllers.TokenController;
-import com.hedera.services.keys.CharacteristicsFactory;
-import com.hedera.services.keys.InHandleActivationHelper;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
-import com.hedera.services.queries.contract.ContractAnswers;
-import com.hedera.services.queries.schedule.ScheduleAnswers;
-import com.hedera.services.queries.token.TokenAnswers;
-import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.sigs.factories.SigFactoryCreator;
-import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.expiry.ExpiryManager;
-import com.hedera.services.state.exports.SignedStateBalancesExporter;
-import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleDiskFs;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
+import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.contracts.execution.SolidityLifecycle;
 import com.hedera.services.contracts.execution.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.contracts.persistence.BlobStoragePersistence;
+import com.hedera.services.contracts.sources.BlobStorageSource;
+import com.hedera.services.contracts.sources.LedgerAccountsSource;
+import com.hedera.services.fees.AwareHbarCentExchange;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
@@ -76,18 +51,60 @@ import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.grpc.controllers.ConsensusController;
+import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
+import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
+import com.hedera.services.grpc.controllers.ScheduleController;
+import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.keys.CharacteristicsFactory;
+import com.hedera.services.keys.InHandleActivationHelper;
+import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
+import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.legacy.handler.FreezeHandler;
+import com.hedera.services.legacy.handler.SmartContractRequestHandler;
+import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.legacy.services.state.AwareProcessLogic;
+import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
+import com.hedera.services.queries.answering.AnswerFunctions;
+import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.answering.StakedAnswerFlow;
+import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.consensus.HcsAnswers;
+import com.hedera.services.queries.contract.ContractAnswers;
+import com.hedera.services.queries.crypto.CryptoAnswers;
+import com.hedera.services.queries.meta.MetaAnswers;
+import com.hedera.services.queries.schedule.ScheduleAnswers;
+import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.queries.validation.QueryFeeCheck;
+import com.hedera.services.records.RecordCache;
+import com.hedera.services.records.TxnAwareRecordsHistorian;
+import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.factories.SigFactoryCreator;
+import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.exports.SignedStateBalancesExporter;
+import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -96,35 +113,20 @@ import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsManager;
+import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.queries.answering.AnswerFunctions;
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.crypto.CryptoAnswers;
-import com.hedera.services.queries.meta.MetaAnswers;
-import com.hedera.services.records.TxnAwareRecordsHistorian;
-import com.hedera.services.records.RecordCache;
-import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.verification.PrecheckVerifier;
-import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.handler.FreezeHandler;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
-import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.contracts.sources.BlobStorageSource;
-import com.hedera.services.legacy.services.state.AwareProcessLogic;
-import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
@@ -146,14 +148,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static com.hedera.services.stream.RecordStreamManagerTest.INITIAL_RANDOM_HASH;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.*;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.spy;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.when;
 
 public class ServicesContextTest {
 	private final long id = 1L;
@@ -344,6 +352,30 @@ public class ServicesContextTest {
 		assertEquals(ServicesNodeType.ZERO_STAKE_NODE, ctx.nodeType());
 		// and:
 		assertThat(ctx.answerFlow(), instanceOf(ZeroStakeAnswerFlow.class));
+	}
+
+	@Test
+	public void rebuildsStoreViewsIfNonNull() {
+		// setup:
+		ScheduleStore scheduleStore = mock(ScheduleStore.class);
+		TokenStore tokenStore = mock(TokenStore.class);
+
+		// given:
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
+
+		// expect:
+		assertDoesNotThrow(ctx::rebuildStoreViewsIfPresent);
+
+		// and given:
+		ctx.setTokenStore(tokenStore);
+		ctx.setScheduleStore(scheduleStore);
+
+		// when:
+		ctx.rebuildStoreViewsIfPresent();
+
+		// then:
+		verify(tokenStore).rebuildViews();
+		verify(scheduleStore).rebuildViews();
 	}
 
 	@Test
