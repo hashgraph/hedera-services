@@ -214,7 +214,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
 
 		if(saveToFile) {
-//			log.info("Save account {}, total is now {}", lastReceipt.getAccountID(), spec.getAccounts().size());
 			spec.getAccounts().add(lastReceipt.getAccountID());
 		}
 		if (advertiseCreation) {

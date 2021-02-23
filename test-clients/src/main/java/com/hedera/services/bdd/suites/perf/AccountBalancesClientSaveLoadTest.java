@@ -60,7 +60,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 	final static long MAX_ACCOUNT_BALANCE = 1_000_000_000L;
 	final static int MIN_TOKEN_SUPPLY = 1000;
 	final static int MAX_TOKEN_SUPPLY = 1_000_000;
-	final static int MMX_TOKEN_TRANSFER = 100;
+	final static int MAX_TOKEN_TRANSFER = 100;
 	final static int SECOND = 1000;
 	private static final Random r = new Random();
 
@@ -209,7 +209,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						sourcing(() -> runWithProvider(treasureAcctCreate(settings))
 								.lasting(() -> totalTestTokenNum / ESTIMATED_TOKEN_CREATION_RATE + 10,
 										() -> TimeUnit.SECONDS)
-								.totalOpsToSumbit(() ->	(int)Math.ceil(totalTestTokenNum)) //TOTAL_ACTIVE_TOKENS))
+								.totalOpsToSumbit(() ->	(int)Math.ceil(totalTestTokenNum))
 								.maxOpsPerSec(() -> EXPECTED_MAX_OPS_PER_SEC )
 								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
 
@@ -218,8 +218,8 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						sourcing(() -> runWithProvider(tokenCreates(settings))
 								.lasting(() -> totalTestTokenNum / ESTIMATED_TOKEN_CREATION_RATE + 10,
 										() -> TimeUnit.SECONDS)
-								.totalOpsToSumbit(() -> (int)Math.ceil(totalTestTokenNum)) // TOTAL_ACTIVE_TOKENS))
-								.maxOpsPerSec(() -> (EXPECTED_MAX_OPS_PER_SEC )) // settings.getTotalClients()))
+								.totalOpsToSumbit(() -> (int)Math.ceil(totalTestTokenNum))
+								.maxOpsPerSec(() -> (EXPECTED_MAX_OPS_PER_SEC ))
 								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
 
 						sleepFor(12 * SECOND),
@@ -316,7 +316,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 				String senderAcctName = NORMAL_ACCT_NAME_PREFIX + tokenAndSenderOrd;
 				String receivedAcctName = NORMAL_ACCT_NAME_PREFIX + receiverOrd;
 				var op = cryptoTransfer(
-						moving(r.nextInt(MMX_TOKEN_TRANSFER) + 1, tokenName).between(senderAcctName, receivedAcctName))
+						moving(r.nextInt(MAX_TOKEN_TRANSFER) + 1, tokenName).between(senderAcctName, receivedAcctName))
 						.hasKnownStatusFrom(OK, SUCCESS, DUPLICATE_TRANSACTION,INVALID_SIGNATURE)
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 						.noLogging()
