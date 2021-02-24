@@ -101,7 +101,68 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 		return false;
 	}
 
-	private Function<HapiApiSpec, OpProvider> accountCreate(PerfTestLoadSettings settings) {
+
+	private HapiApiSpec runAccountBalancesClientSaveLoadTest() {
+		PerfTestLoadSettings settings = new PerfTestLoadSettings();
+		return defaultHapiSpec("AccountBalancesClientSaveLoadTest" )
+				.given(
+						tokenOpsEnablement(),
+						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+
+				).when(
+						sourcing(() -> runWithProvider(accountsCreate(settings))
+								.lasting(() -> totalAccounts / ESTIMATED_CRYPTO_CREATION_RATE + 10,
+										() -> TimeUnit.SECONDS)
+								.totalOpsToSumbit(() ->	(int)Math.ceil(totalAccounts))
+								.maxOpsPerSec(() -> settings.getTps())
+								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
+
+						sleepFor(20 * SECOND),
+
+						sourcing(() -> runWithProvider(tokensCreate(settings))
+								.lasting(() -> totalTestTokens / ESTIMATED_TOKEN_CREATION_RATE + 10,
+										() -> TimeUnit.SECONDS)
+								.totalOpsToSumbit(() -> (int)Math.ceil(totalTestTokens))
+								.maxOpsPerSec(() -> settings.getTps())
+								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
+
+						sleepFor(10 * SECOND),
+
+						sourcing(() -> runWithProvider(randomTokenAssociate(settings))
+								.lasting(() -> settings.getDurationCreateTokenAssociation(),() -> TimeUnit.SECONDS)
+								.maxOpsPerSec(() -> settings.getTps())
+								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
+
+						sleepFor( 15 * SECOND),
+
+						sourcing(() -> runWithProvider(randomTransfer(settings))
+								.lasting(() -> settings.getDurationTokenTransfer(),	() -> TimeUnit.SECONDS)
+								.maxOpsPerSec(() -> settings.getTps())
+								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP))
+				).then(
+						sleepFor(10 * SECOND),
+						withOpContext( (spec, log) -> {
+							log.info("Now get all {} accounts created and save it in spec", totalAccounts);
+							for(int i = totalAccounts; i >=0; i-- ) {
+								var op = getAccountBalance(ACCT_NAME_PREFIX + i)
+										.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
+										.persists(true)
+										.noLogging();
+
+								allRunFor(spec, op);
+							}
+						}),
+						sleepFor(10 * SECOND),
+						exportAccountBalances(() -> ACCOUNT_FILE_EXPORT_DIR ),
+
+						freeze().payingWith(GENESIS)
+								.startingIn(10).seconds()
+								.andLasting(2).minutes()
+
+						);
+	}
+
+	private Function<HapiApiSpec, OpProvider> accountsCreate(PerfTestLoadSettings settings) {
 		totalTestTokens = settings.getTotalTokens() > 10 ? settings.getTotalTokens() : TOTAL_TEST_TOKENS;
 		totalTreasureAccounts = totalTestTokens;
 		totalAccounts = settings.getTotalAccounts() > 100 ? settings.getTotalAccounts() : TOTAL_ACCOUNT;
@@ -114,7 +175,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
-				log.info("Now running treasureAcctCreation initializer");
+				log.info("Now running accountsCreate initializer");
 				return Collections.emptyList();
 			}
 
@@ -141,13 +202,13 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 		};
 	}
 
-	private Function<HapiApiSpec, OpProvider> tokenCreates(PerfTestLoadSettings settings) {
+	private Function<HapiApiSpec, OpProvider> tokensCreate(PerfTestLoadSettings settings) {
 		AtomicInteger createdSofar = new AtomicInteger(0);
 
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
-				log.info("Now running tokenAcctCreation initializer");
+				log.info("Now running tokensCreate initializer");
 				return Collections.emptyList();
 			}
 
@@ -178,70 +239,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 		};
 	}
 
-
-
-	private HapiApiSpec runAccountBalancesClientSaveLoadTest() {
-		PerfTestLoadSettings settings = new PerfTestLoadSettings();
-		return defaultHapiSpec("AccountBalancesClientSaveLoadTest" )
-				.given(
-						tokenOpsEnablement(),
-						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-
-				).when(
-						sourcing(() -> runWithProvider(accountCreate(settings))
-								.lasting(() -> totalAccounts / ESTIMATED_CRYPTO_CREATION_RATE + 10,
-										() -> TimeUnit.SECONDS)
-								.totalOpsToSumbit(() ->	(int)Math.ceil(totalAccounts))
-								.maxOpsPerSec(() -> settings.getTps())
-								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
-
-						sleepFor(20 * SECOND),
-
-						sourcing(() -> runWithProvider(tokenCreates(settings))
-								.lasting(() -> totalTestTokens / ESTIMATED_TOKEN_CREATION_RATE + 10,
-										() -> TimeUnit.SECONDS)
-								.totalOpsToSumbit(() -> (int)Math.ceil(totalTestTokens))
-								.maxOpsPerSec(() -> settings.getTps())
-								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
-
-						sleepFor(10 * SECOND),
-
-						sourcing(() -> runWithProvider(randomTokenAssociates(settings))
-								.lasting(() -> settings.getDurationCreateTokenAssociation(),() -> TimeUnit.SECONDS)
-								.maxOpsPerSec(() -> settings.getTps())
-								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
-
-						sleepFor( 15 * SECOND),
-
-						sourcing(() -> runWithProvider(randomTransfers(settings))
-								.lasting(() -> settings.getDurationTokenTransfer(),	() -> TimeUnit.SECONDS)
-								.maxOpsPerSec(() -> settings.getTps())
-								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP))
-				).then(
-						sleepFor(10 * SECOND),
-						withOpContext( (spec, log) -> {
-							log.info("Now get all {} accounts created ", totalAccounts);
-							for(int i = totalAccounts; i >=0; i-- ) {
-								var op = getAccountBalance(ACCT_NAME_PREFIX + i)
-										.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
-										.persists(true)
-										.noLogging()
-										;
-								allRunFor(spec, op);
-							}
-						}),
-						sleepFor(5 * SECOND),
-						exportAccountBalances(() -> ACCOUNT_FILE_EXPORT_DIR ),
-
-						freeze().payingWith(GENESIS)
-								.startingIn(10).seconds()
-								.andLasting(180).seconds()
-
-						);
-	}
-
-	private Function<HapiApiSpec, OpProvider> randomTokenAssociates(PerfTestLoadSettings settings) {
-
+	private Function<HapiApiSpec, OpProvider> randomTokenAssociate(PerfTestLoadSettings settings) {
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
@@ -275,8 +273,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 	}
 
 
-	private Function<HapiApiSpec, OpProvider> randomTransfers(PerfTestLoadSettings settings) {
-
+	private Function<HapiApiSpec, OpProvider> randomTransfer(PerfTestLoadSettings settings) {
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
