@@ -1855,10 +1855,14 @@ workflows:
                 ignore:
                   - /.*-PERF/
             workflow-name: "Continuous integration"
+        - javadoc-generation:
+            context: SonarCloud
+              requires:
+                - build-artifact
         - build-platform-and-services:
             context: SonarCloud
             requires:
-              - build-artifact
+              - javadoc-generation
             workflow-name: "Continuous integration GCP"
         - run-continuous-integration-gcp:
             context: Slack
@@ -2185,6 +2189,17 @@ jobs:
 
       - store_artifacts:
           path: /results.tar.gz
+
+  javadoc-generation:
+    executor:
+      name: build-executor
+    steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name: Generate javadocs
+          command: |
+            mvn javadoc:javadoc
 
   build-platform-and-services:
     parameters:
