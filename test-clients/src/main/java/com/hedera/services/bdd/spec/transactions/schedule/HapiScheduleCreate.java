@@ -45,9 +45,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
@@ -61,6 +63,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
 	private boolean scheduleNonsense = false;
+	private boolean skipRegistryUpdate = false;
 	private boolean scheduleNoFunction = false;
 	private boolean inheritScheduledSigs = false;
 	private ByteString bytesSigned = ByteString.EMPTY;
@@ -72,10 +75,16 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<String> payerAccountID = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
+	private Optional<BiConsumer<String, byte[]>> successCb = Optional.empty();
 
 	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
 		this.entity = scheduled;
 		this.scheduled = txn.withLegacyProtoStructure().sansTxnId();
+	}
+
+	public HapiScheduleCreate<T> rememberingNothing() {
+		skipRegistryUpdate = true;
+		return this;
 	}
 
 	public HapiScheduleCreate<T> inheritingScheduledSigs() {
@@ -100,6 +109,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
 	public HapiScheduleCreate<T> adminKey(String s) {
 		adminKey = Optional.of(s);
+		return this;
+	}
+
+	public HapiScheduleCreate<T> exposingSuccessTo(BiConsumer<String, byte[]> cb) {
+		successCb = Optional.of(cb);
 		return this;
 	}
 
@@ -213,6 +227,10 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		if (verboseLoggingOn) {
 			log.info("Created schedule '{}' as {}", entity, createdSchedule().get());
 		}
+		successCb.ifPresent(cb -> cb.accept(asScheduleString(lastReceipt.getScheduleID()), bytesSigned.toByteArray()));
+		if (skipRegistryUpdate) {
+			return;
+		}
 		var registry = spec.registry();
 		registry.saveScheduleId(entity, lastReceipt.getScheduleID());
 		registry.saveBytes(registryBytesTag(entity), bytesSigned);
@@ -235,6 +253,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private Optional<String> createdSchedule() {
 		return Optional
 				.ofNullable(lastReceipt)
-				.map(receipt -> HapiPropertySource.asScheduleString(receipt.getScheduleID()));
+				.map(receipt -> asScheduleString(receipt.getScheduleID()));
 	}
 }
