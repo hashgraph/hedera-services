@@ -2223,7 +2223,7 @@ jobs:
       - run:
           name: Build hedera-services repo
           command: |
-                mvn --no-transfer-progress clean install -DskipTests
+                mvn --no-transfer-progress clean install -DskipTests; mvn javadoc:javadoc;
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
