@@ -1862,11 +1862,11 @@ workflows:
             workflow-name: "Continuous integration GCP"
         - javadoc-generation:
             context: SonarCloud
-              requires:
-                - build-platform-and-services
-              pre-steps:
-                - attach_workspace:
-                    at: /
+            requires:
+              - build-platform-and-services
+            pre-steps:
+              - attach_workspace:
+                at: /
         - run-continuous-integration-gcp:
             context: Slack
             requires:
