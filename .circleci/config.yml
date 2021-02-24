@@ -2202,7 +2202,7 @@ jobs:
       - run:
           name: Generate javadocs
           command: |
-            mvn javadoc:javadoc
+            cd /repo; mvn javadoc:javadoc
 
   build-platform-and-services:
     parameters:
