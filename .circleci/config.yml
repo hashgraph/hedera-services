@@ -1866,7 +1866,7 @@ workflows:
               - build-platform-and-services
             pre-steps:
               - attach_workspace:
-                at: /
+                  at: /
         - run-continuous-integration-gcp:
             context: Slack
             requires:
