@@ -24,7 +24,6 @@ import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
-import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -48,6 +47,7 @@ import org.junit.Assert;
 
 
 import java.io.*;
+import java.nio.file.Paths;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
@@ -60,9 +60,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.suites.utils.keypairs.SpecUtils.asLegacyKp;
 import static java.util.Map.Entry;
 import static java.util.stream.Collectors.toList;
 
@@ -274,18 +276,29 @@ public class KeyFactory implements Serializable {
 	}
 
 	public static KeyPairObj firstStartupKp(HapiSpecSetup setup) throws Exception {
-		if (StringUtils.isNotEmpty(setup.defaultPayerMnemonic())) {
-			return SpecUtils.asLegacyKp(SpecKey.asEd25519Key(setup.defaultPayerMnemonic()));
+		if (StringUtils.isNotEmpty(setup.defaultPayerMnemonicFile())) {
+			var mnemonic = mnemonicFromFile(setup.defaultPayerMnemonicFile());
+			return asLegacyKp(SpecKey.mnemonicToEd25519Key(mnemonic));
+		} else if (StringUtils.isNotEmpty(setup.defaultPayerMnemonic())) {
+			return asLegacyKp(SpecKey.mnemonicToEd25519Key(setup.defaultPayerMnemonic()));
 		} else if (StringUtils.isNotEmpty(setup.defaultPayerPemKeyLoc())) {
-			var keyPair = SpecKey.readFirstKp(
+			var keyPair = SpecKey.readFirstKpFromPem(
 					new File(setup.defaultPayerPemKeyLoc()),
 					setup.defaultPayerPemKeyPassphrase());
-			return SpecUtils.asLegacyKp(keyPair);
+			return asLegacyKp(keyPair);
 		} else if (StringUtils.isNotEmpty(setup.startupAccountsLiteral())) {
 			Object keyStore = CommonUtils.convertFromBytes(CommonUtils.base64decode(setup.startupAccountsLiteral()));
 			return firstKpFrom(keyStore, setup.genesisStartupKey());
 		} else {
 			return firstListedKp(setup.startupAccountsPath(), setup.genesisStartupKey());
+		}
+	}
+
+	public static String mnemonicFromFile(String wordsLoc) {
+		try {
+			return java.nio.file.Files.lines(Paths.get(wordsLoc)).collect(Collectors.joining(" "));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 

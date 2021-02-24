@@ -22,6 +22,8 @@ package com.hedera.services.bdd.spec.persistence;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 
 import java.util.Optional;
 
@@ -46,7 +48,7 @@ public class Topic {
 		});
 	}
 
-	public HapiSpecOperation createOp(String name) {
+	HapiTxnOp<HapiTopicCreate> createOp(String name) {
 		var op = createTopic(name)
 				.advertisingCreation();
 

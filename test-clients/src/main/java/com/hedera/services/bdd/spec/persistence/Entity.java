@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.persistence;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 
 import java.util.Optional;
@@ -37,8 +38,8 @@ public class Entity implements Comparable<Entity> {
 	private static final Account UNSPECIFIED_ACCOUNT = null;
 	private static final EntityId UNCREATED_ENTITY_ID = null;
 
-	public static final SpecKey UNUSED_KEY = null;
-	public static final HapiSpecOperation UNNEEDED_CREATE_OP = null;
+	static final SpecKey UNUSED_KEY = null;
+	private static final HapiTxnOp<?> UNNEEDED_CREATE_OP = null;
 
 	private String name;
 	private String manifestAbsPath = "<N/A>";
@@ -46,16 +47,16 @@ public class Entity implements Comparable<Entity> {
 	private Topic topic = UNSPECIFIED_TOPIC;
 	private Token token = UNSPECIFIED_TOKEN;
 	private Account account = UNSPECIFIED_ACCOUNT;
-	private HapiSpecOperation createOp = UNNEEDED_CREATE_OP;
+	private HapiTxnOp<?> createOp = UNNEEDED_CREATE_OP;
 
-	public static Entity from(String name, Token token) {
+	public static Entity newTokenEntity(String name, Token token) {
 		var it = new Entity();
 		it.setName(name);
 		it.setToken(token);
 		return it;
 	}
 
-	public static Entity from(String name, Account account) {
+	public static Entity newAccountEntity(String name, Account account) {
 		var it = new Entity();
 		it.setName(name);
 		it.setAccount(account);
@@ -65,6 +66,16 @@ public class Entity implements Comparable<Entity> {
 	@Override
 	public int compareTo(Entity that) {
 		return Integer.compare(this.specifiedEntityPriority(), that.specifiedEntityPriority());
+	}
+
+	public HapiQueryOp<?> existenceCheck() {
+		if (token != UNSPECIFIED_TOKEN) {
+			return token.existenceCheck(name);
+		} else if (account != UNSPECIFIED_ACCOUNT) {
+			return account.existenceCheck(name);
+		} else {
+			throw new IllegalStateException("Only accounts and tokens are currently supported!");
+		}
 	}
 
 	private int specifiedEntityPriority() {
@@ -89,7 +100,7 @@ public class Entity implements Comparable<Entity> {
 		return manifestAbsPath;
 	}
 
-	public void registerWhatIsKnown(HapiApiSpec spec) {
+	void registerWhatIsKnown(HapiApiSpec spec) {
 		if (token != UNSPECIFIED_TOKEN) {
 			token.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
 		}
@@ -101,7 +112,7 @@ public class Entity implements Comparable<Entity> {
 		}
 	}
 
-	public HapiSpecOperation createOp() {
+	HapiSpecOperation createOp() {
 		if (token != UNSPECIFIED_TOKEN) {
 			return (createOp = token.createOp(name));
 		}
@@ -114,7 +125,7 @@ public class Entity implements Comparable<Entity> {
 		return assertionsHold((spec, opLog) -> {});
 	}
 
-	public boolean needsCreation() {
+	boolean needsCreation() {
 		return id == UNCREATED_ENTITY_ID;
 	}
 
@@ -158,12 +169,11 @@ public class Entity implements Comparable<Entity> {
 		this.account = account;
 	}
 
-	@SuppressWarnings("unchecked")
-	public HapiTxnOp getCreateOp() {
-		return (HapiTxnOp)createOp;
+	HapiTxnOp<?> getCreateOp() {
+		return createOp;
 	}
 
-	public void setCreateOp(HapiSpecOperation createOp) {
-		this.createOp = createOp;
+	void clearCreateOp() {
+		this.createOp = UNNEEDED_CREATE_OP;
 	}
 }

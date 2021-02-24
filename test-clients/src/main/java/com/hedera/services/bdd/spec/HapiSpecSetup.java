@@ -206,6 +206,9 @@ public class HapiSpecSetup {
 	public String defaultPayerMnemonic() {
 		return props.get("default.payer.mnemonic");
 	}
+	public String defaultPayerMnemonicFile() {
+		return props.get("default.payer.mnemonicFile");
+	}
 	public String defaultPayerPemKeyLoc() {
 		return props.get("default.payer.pemKeyLoc");
 	}
@@ -352,11 +355,11 @@ public class HapiSpecSetup {
 		return props.getNodeSelector("node.selector");
 	}
 	public Integer numOpFinisherThreads() { return props.getInteger("num.opFinisher.threads"); }
-	public String persistentEntitiesDirPath() {
+	public String persistentEntitiesDir() {
 		return props.get("persistentEntities.dir.path");
 	}
 	public boolean requiresPersistentEntities() {
-		return StringUtils.isNotEmpty(persistentEntitiesDirPath());
+		return StringUtils.isNotEmpty(persistentEntitiesDir());
 	}
 	public boolean updateManifestsForCreatedPersistentEntities() {
 		return props.getBoolean("persistentEntities.updateCreatedManifests");

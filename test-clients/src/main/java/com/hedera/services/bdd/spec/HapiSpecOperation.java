@@ -208,7 +208,7 @@ public abstract class HapiSpecOperation {
 			if (verboseLoggingOn) {
 				log.warn(spec.logPrefix() + this + " failed - {}", t);
 			} else if (!loggingOff) {
-				log.warn(spec.logPrefix() + this + " failed!");
+				log.warn(spec.logPrefix() + this + " failed {}!", t.getMessage());
 			}
 			return Optional.of(t);
 		}

@@ -108,7 +108,6 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.Assert.assertEquals;
 
@@ -152,6 +151,10 @@ public class UtilVerbs {
 
 	public static SpecKeyFromMnemonic keyFromMnemonic(String name, String mnemonic) {
 		return new SpecKeyFromMnemonic(name, mnemonic);
+	}
+
+	public static HapiSpecOperation checkPersistentEntities() {
+		return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
 	}
 
 	public static SpecKeyFromPem keyFromPem(String pemLoc) {

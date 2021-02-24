@@ -374,6 +374,10 @@ public class HapiApiSpec implements Runnable {
 		return keyFactory;
 	}
 
+	public EntityManager persistentEntities() {
+		return entities;
+	}
+
 	public HapiSpecRegistry registry() {
 		return hapiRegistry;
 	}

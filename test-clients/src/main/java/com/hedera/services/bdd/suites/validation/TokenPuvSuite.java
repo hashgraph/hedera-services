@@ -157,11 +157,11 @@ public class TokenPuvSuite extends HapiApiSuite {
 
 	private Entity catToken() {
 		var token = new Token();
-		token.setName("PostUpdateValidation Cat Token");
+		token.setTokenName("PostUpdateValidation Cat Token");
 		token.setAdminKey(SpecKey.prefixedAt(Names.CAT_TOKEN_ADMIN));
 		token.setSymbol("CAT");
 		token.setTreasury(Names.TREASURY);
-		return Entity.from(Names.CAT_TOKEN, token);
+		return Entity.newTokenEntity(Names.CAT_TOKEN, token);
 	}
 
 	private Entity tacoToken() {
@@ -171,28 +171,28 @@ public class TokenPuvSuite extends HapiApiSuite {
 		token.setAdminKey(SpecKey.prefixedAt(Names.TACO_TOKEN_ADMIN));
 		token.setSupplyKey(SpecKey.prefixedAt(Names.TACO_TOKEN_SUPPLY));
 		token.setFreezeKey(SpecKey.prefixedAt(Names.TACO_TOKEN_FREEZE));
-		token.setName("PostUpdateValidation Taco Token");
+		token.setTokenName("PostUpdateValidation Taco Token");
 		token.setSymbol("TACO");
 		token.setTreasury(Names.TREASURY);
-		return Entity.from(Names.TACO_TOKEN, token);
+		return Entity.newTokenEntity(Names.TACO_TOKEN, token);
 	}
 
 	private Entity treasury() {
 		var treasury = new Account();
 		treasury.setKey(SpecKey.prefixedAt(Names.TREASURY));
-		return Entity.from(Names.TREASURY, treasury);
+		return Entity.newAccountEntity(Names.TREASURY, treasury);
 	}
 
 	private Entity catBeneficiary() {
 		var bene = new Account();
 		bene.setKey(SpecKey.prefixedAt(Names.CAT_BENEFICIARY));
-		return Entity.from(Names.CAT_BENEFICIARY, bene);
+		return Entity.newAccountEntity(Names.CAT_BENEFICIARY, bene);
 	}
 
 	private Entity tacoBeneficiary() {
 		var bene = new Account();
 		bene.setKey(SpecKey.prefixedAt(Names.TACO_BENEFICIARY));
-		return Entity.from(Names.TACO_BENEFICIARY, bene);
+		return Entity.newAccountEntity(Names.TACO_BENEFICIARY, bene);
 	}
 
 	static class Names {
