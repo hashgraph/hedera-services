@@ -2197,8 +2197,6 @@ jobs:
     executor:
       name: build-executor
     steps:
-      - attach_workspace:
-          at: /
       - run:
           name: Generate javadocs
           command: |
