@@ -87,6 +87,7 @@ import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedOpsMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
+import com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.TokenRelStatusChanges;
 import com.hedera.services.bdd.suites.perf.TokenTransferBasicLoadTest;
@@ -231,6 +232,7 @@ public class SuiteRunner {
 		/* Load tests. */
 		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
 		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
+		put("ReadyToRunScheduledXfersLoad", aof(new ReadyToRunScheduledXfersLoad()));
 		put("TokenRelChangesLoad", aof(new TokenRelStatusChanges()));
 		put("FileUpdateLoadTest", aof(new FileUpdateLoadTest()));
 		put("ContractCallLoadTest", aof(new ContractCallLoadTest()));
