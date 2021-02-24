@@ -35,26 +35,31 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
+import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenBalance;
+import com.hederahashgraph.api.proto.java.TokenBalances;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -119,7 +124,6 @@ public class HapiApiSpec implements Runnable {
 	List<SingleAccountBalances> accountBalances = new ArrayList<>();
 
 	AtomicInteger totalAccountsToExport = new AtomicInteger(1_000_000);
-	Set<AccountID> accounts = new HashSet<>();
 
 	public void adhocIncrement() {
 		adhoc.getAndIncrement();
@@ -150,12 +154,6 @@ public class HapiApiSpec implements Runnable {
 		accountBalances.add(sab);
 	}
 
-	public synchronized void saveAccountIDToExport(AccountID accountID) {
-		int remaining = totalAccountsToExport.decrementAndGet();
-		if(remaining > 0) {
-			accounts.add(accountID);
-		}
-	}
 
 	public void exportAccountBalances(Supplier<String> dir) {
 		Instant now = Instant.now();
@@ -173,11 +171,7 @@ public class HapiApiSpec implements Runnable {
 			return;
 		}
 
-		log.info("Export {} captured account balances to file {}", accountBalances.size(), dir);
-	}
-
-	public Set<AccountID> getAccounts() {
-		return  accounts;
+		log.info("Export {} account balances registered to file {}", accountBalances.size(), dir);
 	}
 
 	public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {

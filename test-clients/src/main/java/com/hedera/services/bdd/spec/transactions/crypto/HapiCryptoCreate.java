@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -73,7 +72,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<SigControl> keyShape = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
 
-	private boolean saveToFile = false;
 
 	@Override
 	public HederaFunctionality type() {
@@ -96,11 +94,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
 	public HapiCryptoCreate entityMemo(String memo) {
 		entityMemo = Optional.of(memo);
-		return this;
-	}
-
-	public HapiCryptoCreate persists() {
-		saveToFile = true;
 		return this;
 	}
 
@@ -213,9 +206,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		spec.registry().saveAccountId(account, lastReceipt.getAccountID());
 		receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
 
-		if(saveToFile) {
-			spec.getAccounts().add(lastReceipt.getAccountID());
-		}
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(
 					String.format(
