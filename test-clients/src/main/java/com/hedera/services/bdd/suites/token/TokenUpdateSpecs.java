@@ -521,7 +521,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								),
 						getTokenInfo("primary")
 								.logged()
-								.hasRegisteredMemo()
+								.hasRegisteredMemo(updatedMemo)
 								.hasRegisteredId("primary")
 								.hasName(newSaltedName)
 								.hasTreasury("newTokenTreasury")

@@ -282,14 +282,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		 * All the initialization that follows will be a function of the primitive state. */
 		ctx.update(this);
 		ctx.rebuildBackingStoresIfPresent();
+		ctx.rebuildStoreViewsIfPresent();
 
 		/* Use any payer records stored in state to rebuild the recent transaction
 		 * history. This history has two main uses: Purging expired records, and
 		 * classifying duplicate transactions. */
 		ctx.recordsHistorian().reviewExistingRecords();
 		/*
-		 * Use any entities stored in state to rebuild the history for expired entities.
-		 * This has one main use: purge expired entities.
+		 * Use any entities stored in state to rebuild queue of expired entities.
 		 */
 		ctx.expiries().restartEntitiesTrackingFrom();
 		if (!blobStoreSupplier.get().isInitializing()) {

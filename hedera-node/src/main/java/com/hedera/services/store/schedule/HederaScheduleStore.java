@@ -74,9 +74,9 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
 		super(ids);
-		this.properties = properties;
 		this.schedules = schedules;
-		buildTxToEntityIdMap(this.schedules);
+		this.properties = properties;
+		buildContentAddressableViewOfExtantSchedules();
 	}
 
 	@Override
@@ -84,14 +84,6 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		throwIfMissing(id);
 
 		return pendingId.equals(id) ? pendingCreation : schedules.get().get(fromScheduleId(id));
-	}
-
-	private void throwIfMissing(ScheduleID id) {
-		if (!exists(id)) {
-			throw new IllegalArgumentException(String.format(
-					"Argument 'id=%s' does refer to an extant scheduled entity!",
-					readableId(id)));
-		}
 	}
 
 	@Override
@@ -205,9 +197,14 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 	}
 
-	private void buildTxToEntityIdMap(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules) {
-		var schedulesMap = schedules.get();
-		schedulesMap.forEach((key, value) -> existingSchedules.put(fromMerkleSchedule(value), key));
+	private void buildContentAddressableViewOfExtantSchedules() {
+		schedules.get().forEach((key, value) -> existingSchedules.put(fromMerkleSchedule(value), key));
+	}
+
+	@Override
+	public void rebuildViews() {
+		existingSchedules.clear();
+		buildContentAddressableViewOfExtantSchedules();
 	}
 
 	@Override
@@ -256,6 +253,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		markAsExecuted(entityId.toGrpcScheduleId());
 	}
 
+	Map<ContentAddressableSchedule, MerkleEntityId> getExistingSchedules() {
+		return existingSchedules;
+	}
+
 	private void delete(ScheduleID id, MerkleSchedule schedule) {
 		remove(id);
 		existingSchedules.remove(fromMerkleSchedule(schedule));
@@ -270,5 +271,13 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 		var key = fromScheduleId(id);
 		schedules.get().remove(key);
+	}
+
+	private void throwIfMissing(ScheduleID id) {
+		if (!exists(id)) {
+			throw new IllegalArgumentException(String.format(
+					"Argument 'id=%s' does refer to an extant scheduled entity!",
+					readableId(id)));
+		}
 	}
 }
