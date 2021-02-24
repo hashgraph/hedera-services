@@ -113,14 +113,12 @@ public class ReadyToRunScheduledXfersLoad extends HapiApiSuite {
 			initializers.add(
 					cryptoCreate(payingSender(i))
 							.balance(A_HUNDRED_HBARS)
-							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 			);
 		}
 		for (int i = 0; i < inertReceivers; i++) {
 			initializers.add(
 					cryptoCreate(inertReceiver(i))
 							.balance(0L)
-							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 			);
 		}
 
