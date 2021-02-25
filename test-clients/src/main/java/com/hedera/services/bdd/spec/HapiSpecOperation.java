@@ -256,9 +256,9 @@ public abstract class HapiSpecOperation {
 					TransactionID id = spec.registry().getTxnId(name);
 					builder.setTransactionID(id);
 				});
-				if (nonce != NO_NONCE) {
-					builder.getTransactionIDBuilder().setNonce(ByteString.copyFrom(nonce));
-				}
+			}
+			if (nonce != NO_NONCE) {
+				builder.getTransactionIDBuilder().setNonce(ByteString.copyFrom(nonce));
 			}
 
 			node.ifPresent(builder::setNodeAccountID);

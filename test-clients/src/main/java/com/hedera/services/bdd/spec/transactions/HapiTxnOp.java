@@ -202,17 +202,18 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 //							"{} {} Wrong actual precheck status {}, not one of {}!",spec.logPrefix(), this,
 //							actualPrecheck,
 //							permissiblePrechecks.get());
-					throw new HapiTxnPrecheckStateException(
-							String.format("Wrong actual precheck status %s, expected %s", actualStatus,
-									permissibleStatuses.get()));
+					throw new HapiTxnPrecheckStateException(String.format(
+							"Wrong precheck status! Expected one of %s, actual %s",
+							permissibleStatuses.get(), actualStatus));
 				}
 			} else {
 				if (getExpectedPrecheck() != actualPrecheck) {
 					// Change to an info until HapiClientValidator can be modified and can understand new errors
 					log.info("{} {} Wrong actual precheck status {}, expecting {}", spec.logPrefix(), this,
 							actualPrecheck, getExpectedPrecheck());
-//					throw new HapiTxnPrecheckStateException(String.format("Wrong precheck status! expected %s, actual
-//					%s", getExpectedPrecheck(), actualPrecheck));
+					throw new HapiTxnPrecheckStateException(String.format(
+							"Wrong precheck status! Expected %s, actual %s",
+							getExpectedPrecheck(), actualPrecheck));
 				}
 			}
 		}
@@ -262,16 +263,18 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 						"{} {} Wrong actual status {}, not one of {}!", spec.logPrefix(), this,
 						actualStatus,
 						permissibleStatuses.get());
-				throw new HapiTxnCheckStateException(
-						String.format("Wrong actual status %s, expected %s", actualStatus, permissibleStatuses.get()));
+				throw new HapiTxnCheckStateException(String.format(
+						"Wrong status! Expected one of %s, was %s",
+						permissibleStatuses.get(), actualStatus));
 			}
 		} else {
 			if (getExpectedStatus() != actualStatus) {
 				// Change to an info until HapiClientValidator can be modified and can understand new errors
 				log.info("{} {} Wrong actual status {}, expected {}", spec.logPrefix(), this, actualStatus,
 						getExpectedStatus());
-//				throw new HapiTxnCheckStateException(String.format("Wrong actual status %s, expected %s", actualStatus,
-//				getExpectedStatus()));
+				throw new HapiTxnCheckStateException(String.format(
+						"Wrong status! Expected %s, was %s",
+						getExpectedStatus(), actualStatus));
 			}
 		}
 		if (!deferStatusResolution) {

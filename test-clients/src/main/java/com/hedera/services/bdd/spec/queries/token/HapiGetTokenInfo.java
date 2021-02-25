@@ -103,8 +103,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedId = Optional.of(token);
 		return this;
 	}
-	public HapiGetTokenInfo hasRegisteredMemo() {
-		expectedMemo = Optional.of(token);
+	public HapiGetTokenInfo hasRegisteredMemo(String memo) {
+		expectedMemo = Optional.of(memo);
 		return this;
 	}
 	public HapiGetTokenInfo hasAutoRenewPeriod(Long renewPeriod) {
@@ -215,18 +215,17 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					actualInfo.getTreasury());
 		}
 
+		expectedMemo.ifPresent(s -> Assert.assertEquals(
+				"Wrong memo!",
+				s,
+				actualInfo.getMemo()));
+
 		var registry = spec.registry();
 		assertFor(
 				actualInfo.getTokenId(),
 				expectedId,
 				(n, r) -> r.getTokenID(n),
 				"Wrong token id!",
-				registry);
-		assertFor(
-				actualInfo.getMemo(),
-				expectedMemo,
-				(n, r) -> r.getMemo(n),
-				"Wrong memo!",
 				registry);
 		assertFor(
 				actualInfo.getExpiry(),

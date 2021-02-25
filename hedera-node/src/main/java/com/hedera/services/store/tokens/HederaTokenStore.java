@@ -46,8 +46,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -105,6 +103,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
  */
 public class HederaTokenStore extends HederaStore implements TokenStore {
 	private static final Logger log = LogManager.getLogger(HederaTokenStore.class);
+
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
 	static Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
@@ -133,10 +132,18 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.validator = validator;
 		this.properties = properties;
 		this.tokenRelsLedger = tokenRelsLedger;
+		rebuildViewOfKnownTreasuries();
+	}
 
-		tokens.get().forEach((key, value) -> {
-			addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId());
-		});
+	@Override
+	public void rebuildViews() {
+		knownTreasuries.clear();
+		rebuildViewOfKnownTreasuries();
+	}
+
+	private void rebuildViewOfKnownTreasuries() {
+		tokens.get().forEach((key, value) ->
+				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId()));
 	}
 
 	@Override
@@ -234,7 +241,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	@Override
 	public boolean exists(TokenID id) {
-		return pendingId.equals(id) || tokens.get().containsKey(fromTokenId(id));
+		return (isCreationPending() && pendingId.equals(id)) || tokens.get().containsKey(fromTokenId(id));
 	}
 
 	@Override
@@ -743,5 +750,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return validity;
 		}
 		return exists(tId) ? OK : INVALID_TOKEN_ID;
+	}
+
+	Map<AccountID, Set<TokenID>> getKnownTreasuries() {
+		return knownTreasuries;
 	}
 }
