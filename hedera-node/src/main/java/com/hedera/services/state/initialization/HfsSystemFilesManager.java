@@ -194,7 +194,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		try {
 			rawProps = loader.get();
 		} catch (Exception e) {
-			log.error("Failed to read bootstrap {}, unable to continue!", resource);
+			log.error("Failed to read bootstrap {}, unable to continue!", resource, e);
 			throw new IllegalStateException(e);
 		}
 		materialize(disFid, systemFileInfo(), rawProps);
