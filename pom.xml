@@ -469,7 +469,8 @@ ${git.signoff}
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
             <configuration>
-              <javadocExecutable>${java.home}/../bin/javadoc</javadocExecutable>
+<!--              <javadocExecutable>${java.home}/../bin/javadoc</javadocExecutable>-->
+              <javadocExecutable>/usr/bin</javadocExecutable>
             </configuration>
             <executions>
               <execution>
