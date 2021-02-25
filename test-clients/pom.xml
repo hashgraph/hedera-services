@@ -208,7 +208,7 @@
           </execution>
           <execution>
             <id>suite-runner-jar</id>
-              <!-- <phase>package</phase> -->
+            <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
