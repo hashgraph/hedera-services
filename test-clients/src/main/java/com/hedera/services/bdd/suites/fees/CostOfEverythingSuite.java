@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.fees;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -52,12 +53,16 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static java.util.stream.Collectors.toList;
@@ -79,8 +84,9 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 //				cryptoTransferPaths(),
 //				cryptoGetAccountInfoPaths(),
 //				cryptoGetAccountRecordsPaths(),
-//				transactionGetRecordPaths()
-				miscContractCreatesAndCalls()
+//				transactionGetRecordPaths(),
+//				miscContractCreatesAndCalls(),
+				canonicalScheduleOps()
 		).map(Stream::of).reduce(Stream.empty(), Stream::concat).collect(toList());
 	}
 
@@ -90,6 +96,52 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 				txnGetSmallTransferRecord(),
 				txnGetLargeTransferRecord(),
 		};
+	}
+
+	HapiApiSpec canonicalScheduleOps() {
+		return customHapiSpec("CanonicalScheduleOps")
+				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+				.given(
+						cryptoCreate("payingSender")
+								.balance(A_HUNDRED_HBARS),
+						cryptoCreate("receiver")
+								.balance(0L)
+								.receiverSigRequired(true),
+						cryptoCreate("throwaway")
+								.signedBy("payingSender")
+								.autoRenewSecs(7776000L)
+								.memo("")
+								.entityMemo("")
+								.payingWith("payingSender")
+								.balance(0L)
+				).when(
+						scheduleCreate("canonical",
+								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
+										.memo("")
+										.fee(ONE_HBAR)
+										.signedBy("payingSender")
+						)
+								.payingWith("payingSender")
+								.adminKey("payingSender")
+								.inheritingScheduledSigs(),
+						getScheduleInfo("canonical")
+								.payingWith("payingSender"),
+						scheduleSign("canonical")
+								.payingWith("payingSender")
+								.withSignatories("receiver")
+				).then(
+						scheduleCreate("tbd",
+								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
+										.memo("")
+										.fee(ONE_HBAR)
+										.signedBy("payingSender")
+						)
+								.payingWith("payingSender")
+								.adminKey("payingSender")
+								.inheritingScheduledSigs(),
+						scheduleDelete("tbd")
+								.payingWith("payingSender")
+				);
 	}
 
 	HapiApiSpec miscContractCreatesAndCalls() {
