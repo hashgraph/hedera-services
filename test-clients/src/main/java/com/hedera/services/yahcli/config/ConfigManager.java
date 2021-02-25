@@ -44,41 +44,47 @@ public class ConfigManager {
 		assertNoMissingDefaults();
 		var specConfig = targetNet.toSpecProperties();
 		if (useFixedFee()) {
-			specConfig.put("fees.useFixedOffer", "true");
 			specConfig.put("fees.fixedOffer", String.valueOf(useFixedFee()));
+			specConfig.put("fees.useFixedOffer", "true");
 		}
 		var payerId = asId(defaultPayer);
 		if (isLiteral(payerId)) {
-			var optKeyFile = ConfigUtils.keyFileFor(keysLoc(), "account" + defaultPayer);
-			if (optKeyFile.isEmpty()) {
-				fail(String.format("No key available for account %s!", payerId));
-			}
-			var keyFile = optKeyFile.get();
-			if (keyFile.getAbsolutePath().endsWith("pem")) {
-				var optPassFile = ConfigUtils.passFileFor(keyFile);
-				if (optPassFile.isEmpty()) {
-					fail(String.format("No password file available for PEM %s!", keyFile.getName()));
-				}
-				try {
-					var pass = Files.readString(optPassFile.get().toPath());
-					specConfig.put("default.payer.pemKeyLoc", keyFile.getPath());
-					specConfig.put("default.payer.pemKeyPassphrase", pass);
-				} catch (IOException e) {
-					fail(String.format(
-							"Password file inaccessible for PEM %s ('%s')!",
-							keyFile.getName(),
-							e.getMessage()));
-				}
-			} else {
-				try {
-					var mnemonic = Files.readString(keyFile.toPath());
-					specConfig.put("default.payer.mnemonic", mnemonic);
-				} catch (IOException e) {
-					fail(String.format("Mnemonic file %s is inaccessible!", keyFile.getPath()));
-				}
-			}
+			addPayerConfig(specConfig, payerId);
+		} else {
+			fail("Named accounts not yet supported!");
 		}
 		return specConfig;
+	}
+
+	private void addPayerConfig(Map<String, String> specConfig, String payerId) {
+		var optKeyFile = ConfigUtils.keyFileFor(keysLoc(), "account" + defaultPayer);
+		if (optKeyFile.isEmpty()) {
+			fail(String.format("No key available for account %s!", payerId));
+		}
+		var keyFile = optKeyFile.get();
+		if (keyFile.getAbsolutePath().endsWith("pem")) {
+			var optPassFile = ConfigUtils.passFileFor(keyFile);
+			if (optPassFile.isEmpty()) {
+				fail(String.format("No password file available for PEM %s!", keyFile.getName()));
+			}
+			try {
+				var pass = Files.readString(optPassFile.get().toPath());
+				specConfig.put("default.payer.pemKeyLoc", keyFile.getPath());
+				specConfig.put("default.payer.pemKeyPassphrase", pass.trim());
+			} catch (IOException e) {
+				fail(String.format(
+						"Password file inaccessible for PEM %s ('%s')!",
+						keyFile.getName(),
+						e.getMessage()));
+			}
+		} else {
+			try {
+				var mnemonic = Files.readString(keyFile.toPath());
+				specConfig.put("default.payer.mnemonic", mnemonic);
+			} catch (IOException e) {
+				fail(String.format("Mnemonic file %s is inaccessible!", keyFile.getPath()));
+			}
+		}
 	}
 
 	private String keysLoc() {

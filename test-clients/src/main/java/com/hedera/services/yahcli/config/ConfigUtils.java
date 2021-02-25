@@ -36,4 +36,13 @@ public class ConfigUtils {
 		var passFile = new File(absPath.replace(".pem", ".pass"));
 		return passFile.exists() ? Optional.of(passFile) : Optional.empty();
 	}
+
+	public static void ensureDir(String loc) {
+		File f = new File(loc);
+		if (!f.exists()) {
+			if (!f.mkdirs()) {
+				throw new IllegalStateException("Failed to create directory: " + f.getAbsolutePath());
+			}
+		}
+	}
 }

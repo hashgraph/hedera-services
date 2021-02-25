@@ -20,7 +20,9 @@ public class AccountsCommand implements Callable<Integer> {
 
 	@Override
 	public Integer call() throws Exception {
-		throw new CommandLine.ParameterException(yahcli.getSpec().commandLine(), "Please specify a subcommand!");
+		throw new CommandLine.ParameterException(
+				yahcli.getSpec().commandLine(),
+				"Please specify an accounts subcommand!");
 	}
 
 	public Yahcli getYahcli() {

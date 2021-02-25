@@ -2,6 +2,7 @@ package com.hedera.services.yahcli;
 
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.accounts.BalanceCommand;
+import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -16,7 +17,8 @@ import java.util.concurrent.Callable;
 		name = "yahcli",
 		subcommands = {
 				HelpCommand.class,
-				AccountsCommand.class
+				AccountsCommand.class,
+				SysFilesCommand.class
 		},
 		description = "Perform operations against well-known entities on a Hedera Services network")
 public class Yahcli implements Callable<Integer> {
