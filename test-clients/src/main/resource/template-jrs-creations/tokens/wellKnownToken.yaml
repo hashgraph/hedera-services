@@ -3,7 +3,7 @@ token:
   memo: There's not much else to say, really.
   treasury: wellKnownTreasury
   tokenName: Alpha Bravo Charlie
-  kcyKey:
+  kycKey:
     wordsLoc: wellKnownKyc.words
   wipeKey:
     wordsLoc: wellKnownWipe.words

@@ -35,6 +35,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.checkPersistentEntities;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 public class AddWellKnownEntities extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AddWellKnownEntities.class);
@@ -57,9 +59,15 @@ public class AddWellKnownEntities extends HapiApiSuite {
 	private HapiApiSpec instantiateEntities() {
 		return HapiApiSpec.customHapiSpec("AddWellKnownEntities")
 				.withProperties(Map.of(
+						"fees.useFixedOffer", "true",
+						"fees.fixedOffer", "" + A_HUNDRED_HBARS,
 						"persistentEntities.dir.path", "src/main/resource/jrs-creations"
-				)).given().when().then(
+				)).given(
 						checkPersistentEntities()
+				).when().then(
+						sleepFor(10_000L),
+						freeze().startingIn(60).seconds().andLasting(1).minutes()
+								.payingWith(GENESIS)
 				);
 	}
 
