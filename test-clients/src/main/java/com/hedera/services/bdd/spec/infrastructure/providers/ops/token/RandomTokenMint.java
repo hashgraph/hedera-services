@@ -49,10 +49,8 @@ public class RandomTokenMint implements OpProvider {
 	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
 			TOKEN_IS_IMMUTABLE,
 			TOKEN_WAS_DELETED,
-			/* The randomly chosen treasury might already have tokens.maxPerAccount associated tokens */
 			TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED
 			);
-
 
 
 	public RandomTokenMint(
@@ -81,5 +79,4 @@ public class RandomTokenMint implements OpProvider {
 
 		return Optional.of(op);
 	}
-
 }
