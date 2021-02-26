@@ -1304,7 +1304,7 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "20 16 * * *"
+          cron: "50 4 * * *"
           filters:
             branches:
               only:
@@ -1395,7 +1395,7 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "30 16 * * *"
+          cron: "35 5 * * *"
           filters:
             branches:
               only:
@@ -1420,7 +1420,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
-          cron: "50 16 * * *"
+          cron: "50 5 * * *"
           filters:
             branches:
               only:
@@ -1469,7 +1469,7 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "20 16 * * *"
+          cron: "20 6 * * *"
           filters:
             branches:
               only:
@@ -1492,7 +1492,7 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "50 16 * * *"
+          cron: "50 6 * * *"
           filters:
             branches:
               only:
@@ -1515,7 +1515,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "50 16 * * *"
+          cron: "50 6 * * *"
           filters:
             branches:
               only:
@@ -1538,7 +1538,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
     triggers:
       - schedule:
-          cron: "45 16 * * *"
+          cron: "45 4 * * *"
           filters:
             branches:
               only:
@@ -1561,7 +1561,7 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
       - schedule:
-          cron: "20 16 * * *"
+          cron: "20 7 * * *"
           filters:
             branches:
               only:
