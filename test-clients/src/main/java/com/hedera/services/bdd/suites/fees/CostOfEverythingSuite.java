@@ -22,7 +22,7 @@ package com.hedera.services.bdd.suites.fees;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -65,6 +65,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static java.util.stream.Collectors.toList;
 
 public class CostOfEverythingSuite extends HapiApiSuite {
@@ -86,7 +87,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 //				cryptoGetAccountRecordsPaths(),
 //				transactionGetRecordPaths(),
 //				miscContractCreatesAndCalls(),
-				canonicalScheduleOps()
+				canonicalScheduleOpsHaveExpectedUsdFees()
 		).map(Stream::of).reduce(Stream.empty(), Stream::concat).collect(toList());
 	}
 
@@ -98,7 +99,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 		};
 	}
 
-	HapiApiSpec canonicalScheduleOps() {
+	HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
 		return customHapiSpec("CanonicalScheduleOps")
 				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
 				.given(
@@ -106,14 +107,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 								.balance(A_HUNDRED_HBARS),
 						cryptoCreate("receiver")
 								.balance(0L)
-								.receiverSigRequired(true),
-						cryptoCreate("throwaway")
-								.signedBy("payingSender")
-								.autoRenewSecs(7776000L)
-								.memo("")
-								.entityMemo("")
-								.payingWith("payingSender")
-								.balance(0L)
+								.receiverSigRequired(true)
 				).when(
 						scheduleCreate("canonical",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
@@ -121,15 +115,16 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 										.fee(ONE_HBAR)
 										.signedBy("payingSender")
 						)
+								.via("canonicalCreation")
 								.payingWith("payingSender")
 								.adminKey("payingSender")
 								.inheritingScheduledSigs(),
 						getScheduleInfo("canonical")
 								.payingWith("payingSender"),
 						scheduleSign("canonical")
+								.via("canonicalSigning")
 								.payingWith("payingSender")
-								.withSignatories("receiver")
-				).then(
+								.withSignatories("receiver"),
 						scheduleCreate("tbd",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")
@@ -140,7 +135,12 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 								.adminKey("payingSender")
 								.inheritingScheduledSigs(),
 						scheduleDelete("tbd")
+								.via("canonicalDeletion")
 								.payingWith("payingSender")
+				).then(
+						validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
+						validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
+						validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0)
 				);
 	}
 

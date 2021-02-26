@@ -587,7 +587,10 @@ public class UtilVerbs {
 					* record.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
 					/ 100;
 			assertEquals(
-					String.format("Fee more than %f percent different than expected!", allowedPercentDiff),
+					String.format(
+							"%s fee more than %.2f percent different than expected!",
+							txn,
+							allowedPercentDiff),
 					expectedUsd,
 					actualUsdCharged,
 					(allowedPercentDiff / 100.0) * expectedUsd);
