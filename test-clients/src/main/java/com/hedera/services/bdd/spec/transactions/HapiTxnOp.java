@@ -487,6 +487,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	}
 
 	/* Fluent builder methods to chain. */
+	public T blankMemo() {
+		memo = Optional.of("");
+		return self();
+	}
+
 	public T memo(String text) {
 		memo = Optional.of(text);
 		return self();

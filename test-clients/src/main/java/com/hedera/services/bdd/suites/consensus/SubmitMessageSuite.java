@@ -62,8 +62,8 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				messageSubmissionWithSubmitKey(),
 				messageSubmissionMultiple(),
 				messageSubmissionOverSize(),
-				feeAsExpected(),
-				messageSubmissionCorrectlyUpdatesRunningHash()
+				messageSubmissionCorrectlyUpdatesRunningHash(),
+				feeAsExpected()
 		);
 	}
 
@@ -197,23 +197,23 @@ public class SubmitMessageSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec feeAsExpected() {
-		final byte[] messageBytes = new byte[4096]; // 4k
+		final byte[] messageBytes = new byte[100]; // 4k
 		Arrays.fill(messageBytes, (byte) 0b1);
 		return defaultHapiSpec("feeAsExpected")
 				.given(
-						newKeyNamed("submitKey"),
+						cryptoCreate("payer"),
 						createTopic("testTopic")
-								.submitKeyName("submitKey"),
-						cryptoCreate("payer")
+								.submitKeyName("payer")
 				)
 				.when(
 						submitMessageTo("testTopic")
+								.blankMemo()
 								.payingWith("payer")
 								.message(new String(messageBytes))
 								.via("submitMessage")
 				)
 				.then(
-						validateChargedUsd("submitMessage", 0.0002)
+						validateChargedUsd("submitMessage", 0.0001)
 				);
 	}
 

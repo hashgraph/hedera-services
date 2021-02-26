@@ -133,18 +133,18 @@ public class TopicDeleteSuite extends HapiApiSuite {
 	private HapiApiSpec feeAsExpected() {
 		return defaultHapiSpec("feeAsExpected")
 				.given(
-						newKeyNamed("adminKey"),
+						cryptoCreate("payer"),
 						createTopic("testTopic")
-								.adminKeyName("adminKey"),
-						cryptoCreate("payer")
+								.adminKeyName("payer")
 				)
 				.when(
 						deleteTopic("testTopic")
+								.blankMemo()
 								.payingWith("payer")
 								.via("topicDelete")
 				)
 				.then(
-				        validateChargedUsd("topicDelete", 0.0081)
+				        validateChargedUsd("topicDelete", 0.005)
 				);
 	}
 
