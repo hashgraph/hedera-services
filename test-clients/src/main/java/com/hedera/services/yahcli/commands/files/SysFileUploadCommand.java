@@ -27,8 +27,11 @@ public class SysFileUploadCommand implements Callable<Integer> {
 	@CommandLine.Parameters(
 			arity = "1",
 			paramLabel = "<sysfile>",
-			description = "system file name (one of addressBook.json, nodeDetails.json, exchangeRates.json," +
-					" feeSchedules.json, application.properties, api-permission.properties)")
+			description = "system file name (one of \n" +
+					" Full names ['addressBook.json', 'nodeDetails.json', 'feeSchedules.json', 'exchangeRates.json'," +
+					" 'application.properties', 'api-permission.properties'] \n" +
+					" Short handles ['book', 'details', 'fees', 'rates', 'props', 'permissions'] \n" +
+					" File numbers ['101', '102'', '111', '112', '121', '122'])")
 	String sysFile;
 
 	@Override
@@ -44,7 +47,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			srcDir = srcDir.substring(0, srcDir.length() - 1);
 		}
 
-		ConfigUtils.fileExists(srcDir + File.separator + sysFile);
+//		ConfigUtils.fileExists(srcDir + File.separator + sysFile);
 
 		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile);
 		delegate.runSuiteSync();

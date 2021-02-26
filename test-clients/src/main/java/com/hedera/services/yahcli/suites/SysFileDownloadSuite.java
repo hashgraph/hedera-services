@@ -108,11 +108,21 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 
 	private long[] rationalized(String[] sysfiles) {
 		return Arrays.stream(sysfiles)
-				.map(id -> NAMES_TO_NUMBERS.getOrDefault(id, Long.valueOf(id)))
+				.map(this::getFileId)
 				.peek(num -> {
 					if (!VALID_NUMBERS.contains(num)) {
 						throw new IllegalArgumentException("No such system file '" + num + "'!");
 					}
 				}).mapToLong(l -> l).toArray();
+	}
+
+	private long getFileId(String file) {
+		long fileId;
+		try{
+			fileId = Long.parseLong(file);
+		} catch (Exception e) {
+			fileId = NAMES_TO_NUMBERS.getOrDefault(file, 0L);
+		}
+		return fileId;
 	}
 }
