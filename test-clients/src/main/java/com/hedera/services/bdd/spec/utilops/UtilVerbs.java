@@ -108,7 +108,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.SYSTEM_ADMIN;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.Assert.assertEquals;
 
@@ -571,23 +571,26 @@ public class UtilVerbs {
 	 * Validates that fee charged for a transaction is within +/- 0.0001$ of
 	 * expected fee (taken from pricing calculator)
 	 */
-	public static CustomSpecAssert validateFee(String forTxn, double expectedFeeInDollars) {
+	public static CustomSpecAssert validateChargedUsd(String txn, double expectedUsd) {
+		return validateChargedUsdWithin(txn, expectedUsd, 1.0);
+	}
+
+	public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
 		return assertionsHold((spec, assertLog) -> {
-			HapiGetTxnRecord subOp = getTxnRecord(forTxn);
+			var subOp = getTxnRecord(txn);
 			allRunFor(spec, subOp);
-			TransactionRecord record = subOp.getResponseRecord();
-			double actualFee = (1.0 * record.getTransactionFee() *  // transactionFee is in tinyhbars
-					record.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv())
-					/ 100 // cents per dollar
-					/ 100000000L; // tinybar per hbar
-			double feeLowerBound = expectedFeeInDollars - 0.0001;
-			double feeUpperBound = expectedFeeInDollars + 0.0001;
-			Assert.assertTrue(
-					"actual fee (" + actualFee + "$) much less than expected fee (" + expectedFeeInDollars + "$)",
-					feeLowerBound <= actualFee);
-			Assert.assertTrue(
-					"actual fee (" + actualFee + "$) much more than expected fee (" + expectedFeeInDollars + "$)",
-					actualFee <= feeUpperBound);
+
+			var record = subOp.getResponseRecord();
+			double actualUsdCharged = (1.0 * record.getTransactionFee())
+					/ ONE_HBAR
+					/ record.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+					* record.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+					/ 100;
+			assertEquals(
+					String.format("Fee more than %f percent different than expected!", allowedPercentDiff),
+					expectedUsd,
+					actualUsdCharged,
+					(allowedPercentDiff / 100.0) * expectedUsd);
 		});
 	}
 

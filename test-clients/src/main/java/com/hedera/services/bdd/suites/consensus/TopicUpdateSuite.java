@@ -22,11 +22,9 @@ package com.hedera.services.bdd.suites.consensus;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -39,7 +37,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateFee;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class TopicUpdateSuite extends HapiApiSuite {
@@ -330,7 +328,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.via("updateTopic")
 				)
 				.then(
-						validateFee("updateTopic", 0.0004)
+						validateChargedUsd("updateTopic", 0.0004)
 				);
 	}
 

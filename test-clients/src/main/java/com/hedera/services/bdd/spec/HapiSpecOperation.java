@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
@@ -43,6 +44,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalLong;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -114,7 +117,6 @@ public abstract class HapiSpecOperation {
 	protected Optional<ControlForKey[]> controlOverrides = Optional.empty();
 	protected Map<Key, SigControl> overrides = Collections.EMPTY_MAP;
 
-	protected Optional<Long> gas = Optional.empty();
 	protected Optional<Long> fee = Optional.empty();
 	protected Optional<Long> submitDelay = Optional.empty();
 	protected Optional<Long> validDurationSecs = Optional.empty();
@@ -124,6 +126,7 @@ public abstract class HapiSpecOperation {
 	protected Optional<Boolean> genRecord = Optional.empty();
 	protected Optional<AccountID> node = Optional.empty();
 	protected Optional<Supplier<AccountID>> nodeSupplier = Optional.empty();
+	protected OptionalDouble usdFee = OptionalDouble.empty();
 
 	abstract protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable;
 
@@ -285,6 +288,14 @@ public abstract class HapiSpecOperation {
 
 		Transaction txn;
 		Consumer<TransactionBody.Builder> minDef = bodyDef(spec);
+		if (usdFee.isPresent()) {
+			double centsFee = usdFee.getAsDouble() * 100.0;
+			double tinybarFee = centsFee
+					/ spec.ratesProvider().rates().getCentEquiv()
+					* spec.ratesProvider().rates().getHbarEquiv()
+					* HapiApiSuite.ONE_HBAR;
+			fee = Optional.of((long)tinybarFee);
+		}
 		Consumer<TransactionBody.Builder> netDef = fee
 				.map(amount -> minDef.andThen(b -> b.setTransactionFee(amount)))
 				.orElse(minDef).andThen(opDef);

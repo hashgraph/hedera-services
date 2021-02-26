@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -508,17 +509,15 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return self();
 	}
 
-	public T gas(long amount) {
-		if (amount > 0) {
-			gas = Optional.of(amount);
-		}
-		return self();
-	}
-
 	public T fee(long amount) {
 		if (amount >= 0) {
 			fee = Optional.of(amount);
 		}
+		return self();
+	}
+
+	public T feeUsd(double price) {
+		usdFee = OptionalDouble.of(price);
 		return self();
 	}
 

@@ -213,7 +213,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.via("submitMessage")
 				)
 				.then(
-						validateFee("submitMessage", 0.0002)
+						validateChargedUsd("submitMessage", 0.0002)
 				);
 	}
 
