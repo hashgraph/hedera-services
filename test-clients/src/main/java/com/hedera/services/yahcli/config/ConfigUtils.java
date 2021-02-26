@@ -45,4 +45,11 @@ public class ConfigUtils {
 			}
 		}
 	}
+
+	public static void fileExists(String filePath) {
+		File f = new File(filePath);
+		if(!f.exists()) {
+			throw new IllegalStateException("File not found: " + filePath);
+		}
+	}
 }

@@ -11,7 +11,8 @@ import java.util.concurrent.Callable;
 		name = "sysfiles",
 		subcommands = {
 				picocli.CommandLine.HelpCommand.class,
-				SysFileDownloadCommand.class
+				SysFileDownloadCommand.class,
+				SysFileUploadCommand.class
 		},
 		description = "Perform system file operations")
 public class SysFilesCommand implements Callable<Integer> {

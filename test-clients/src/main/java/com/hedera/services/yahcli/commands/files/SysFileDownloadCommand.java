@@ -30,7 +30,7 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 			arity = "1..*",
 			paramLabel = "<sysfiles>",
 			description = "system file names ('book', 'details', 'rates', 'fees', 'props', 'permissions') or numbers")
-	String[] sysfiles;
+	String[] sysFiles;
 
 	@Override
 	public Integer call() throws Exception {
@@ -46,7 +46,7 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 			destDir = destDir.substring(0, destDir.length() - 1);
 		}
 
-		var delegate = new SysFileDownloadSuite(destDir, config.asSpecConfig(), sysfiles);
+		var delegate = new SysFileDownloadSuite(destDir, config.asSpecConfig(), sysFiles);
 		delegate.runSuiteSync();
 
 		return 0;
