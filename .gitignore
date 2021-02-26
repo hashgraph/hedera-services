@@ -36,6 +36,7 @@ hs_err_pid*
 !run/new-release-branch.sh
 !run/gcr-*.sh
 !test-clients/run/*.sh
+!test-clients/yahcli/refresh-jar.sh
 !hapi-proto/add-copyright.sh
 !hapi-proto/gen-proto-docs.sh
 !hedera-node/data/backup/*.sh
