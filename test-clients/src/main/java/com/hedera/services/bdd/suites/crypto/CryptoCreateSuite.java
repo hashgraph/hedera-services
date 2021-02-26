@@ -102,7 +102,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.balance(0L)
 								.memo("")
 								.entityMemo("")
-								.autoRenewSecs(90 * 24 * 60)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 								.payingWith("civilian")
 								.feeUsd(preV13PriceUsd)
 								.hasPrecheck(INSUFFICIENT_TX_FEE),
