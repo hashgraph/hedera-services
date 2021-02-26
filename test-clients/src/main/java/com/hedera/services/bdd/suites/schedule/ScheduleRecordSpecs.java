@@ -27,17 +27,22 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
 public class ScheduleRecordSpecs extends HapiApiSuite {
@@ -58,6 +63,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						allRecordsAreQueryable(),
 						schedulingTxnIdFieldsNotAllowed(),
 						suiteCleanup(),
+						canonicalScheduleOpsHaveExpectedUsdFees(),
 				}
 		);
 	}
@@ -73,6 +79,47 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteSetup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+				);
+	}
+
+	HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
+		return defaultHapiSpec("canonicalScheduleOpsHaveExpectedUsdFees")
+				.given(
+						cryptoCreate("payingSender"),
+						cryptoCreate("receiver")
+								.balance(0L)
+								.receiverSigRequired(true)
+				).when(
+						scheduleCreate("canonical",
+								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
+										.memo("")
+										.fee(ONE_HBAR)
+										.signedBy("payingSender")
+						)
+								.via("canonicalCreation")
+								.payingWith("payingSender")
+								.adminKey("payingSender")
+								.inheritingScheduledSigs(),
+						scheduleSign("canonical")
+								.via("canonicalSigning")
+								.payingWith("payingSender")
+								.withSignatories("receiver"),
+						scheduleCreate("tbd",
+								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
+										.memo("")
+										.fee(ONE_HBAR)
+										.signedBy("payingSender")
+						)
+								.payingWith("payingSender")
+								.adminKey("payingSender")
+								.inheritingScheduledSigs(),
+						scheduleDelete("tbd")
+								.via("canonicalDeletion")
+								.payingWith("payingSender")
+				).then(
+						validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
+						validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
+						validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0)
 				);
 	}
 

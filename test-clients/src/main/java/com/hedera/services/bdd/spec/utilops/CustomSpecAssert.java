@@ -66,6 +66,6 @@ public class CustomSpecAssert extends UtilOp {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(this).toString();
+		return "CustomSpecAssert";
 	}
 }

@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -67,7 +68,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	private boolean shouldAlsoRegisterAsAccount = true;
 	private boolean useDeprecatedAdminKey = false;
 	private final String contract;
-	private Optional<Long> gas = Optional.empty();
+	private OptionalLong gas = OptionalLong.empty();
 	Optional<String> key = Optional.empty();
 	Optional<Long> autoRenewPeriodSecs = Optional.empty();
 	Optional<Long> balance = Optional.empty();
@@ -141,7 +142,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	}
 
 	public HapiContractCreate gas(long amount) {
-		gas = Optional.of(amount);
+		gas = OptionalLong.of(amount);
 		return this;
 	}
 
@@ -219,7 +220,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(p).build()));
 							balance.ifPresent(a -> b.setInitialBalance(a));
 							memo.ifPresent(m -> b.setMemo(m));
-							gas.ifPresent(a -> b.setGas(a));
+							gas.ifPresent(b::setGas);
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
 							gas.ifPresent(a -> b.setGas(a));
 						}

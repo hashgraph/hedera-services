@@ -71,7 +71,6 @@ public interface PubKeyToSigBytes {
 	 *
 	 * @param pubKey a public key whose private key was used to sign some data.
 	 * @return the cryptographic signature that resulted.
-	 * @throws Exception if the desired cryptographic signature is unavailable.
 	 */
 	default byte[] sigBytesForScheduled(byte[] pubKey) {
 		throw new UnsupportedOperationException();
