@@ -124,7 +124,7 @@ public class LoadTest extends HapiApiSuite {
 						? totalTestTopics::getAsInt : settings::getTotalTopics)
 				.setTotalTestTokens(totalTestTokens.isPresent()
 						? totalTestTokens::getAsInt : settings::getTotalTokens)
-				.setDurationCreateTokeAssociation(durationCreateTokenAssociation.isPresent()
+				.setDurationCreateTokenAssociation(durationCreateTokenAssociation.isPresent()
 						? durationCreateTokenAssociation::getAsInt : settings::getDurationCreateTokenAssociation)
 				.setDurationTokenTransfer(durationTokenTransfer.isPresent()
 						? durationTokenTransfer::getAsInt : settings::getDurationTokenTransfer)

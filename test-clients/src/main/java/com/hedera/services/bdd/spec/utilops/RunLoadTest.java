@@ -126,8 +126,8 @@ public class RunLoadTest extends UtilOp {
 		return this;
 	}
 
-	public RunLoadTest setDurationCreateTokeAssociation(IntSupplier durationCreateTokeAssociation) {
-		this.durationCreateTokenAssociation = durationCreateTokeAssociation;
+	public RunLoadTest setDurationCreateTokenAssociation(IntSupplier durationCreateTokenAssociation) {
+		this.durationCreateTokenAssociation = durationCreateTokenAssociation;
 		return this;
 	}
 
