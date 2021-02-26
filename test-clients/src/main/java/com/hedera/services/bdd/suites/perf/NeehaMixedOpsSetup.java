@@ -117,6 +117,7 @@ public class NeehaMixedOpsSetup extends HapiApiSuite {
 												.signedBy("sender")
 								)
 										.advertisingCreation()
+										.fee(A_HUNDRED_HBARS)
 										.signedBy(DEFAULT_PAYER)
 										.inheritingScheduledSigs()
 										.withEntityMemo("This is the " + i + "th scheduled txn.")
