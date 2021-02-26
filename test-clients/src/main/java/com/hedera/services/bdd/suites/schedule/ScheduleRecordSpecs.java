@@ -22,27 +22,36 @@ package com.hedera.services.bdd.suites.schedule;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
 public class ScheduleRecordSpecs extends HapiApiSuite {
@@ -59,11 +68,12 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						suiteSetup(),
-						allRecordsAreQueryable(),
-						schedulingTxnIdFieldsNotAllowed(),
-						suiteCleanup(),
-						canonicalScheduleOpsHaveExpectedUsdFees(),
+//						suiteSetup(),
+//						allRecordsAreQueryable(),
+//						schedulingTxnIdFieldsNotAllowed(),
+//						suiteCleanup(),
+//						canonicalScheduleOpsHaveExpectedUsdFees(),
+						canScheduleChunkedMessages(),
 				}
 		);
 	}
@@ -121,6 +131,53 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
 						validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0)
 				);
+	}
+
+	public HapiApiSpec canScheduleChunkedMessages() {
+		String ofGeneralInterest = "Scotch";
+		AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
+
+		return defaultHapiSpec("CanScheduleChunkedMessages")
+				.given(
+						cryptoCreate("payingSender").balance(A_HUNDRED_HBARS),
+						createTopic(ofGeneralInterest),
+						getTopicInfo(ofGeneralInterest).logged()
+				).when(
+						withOpContext((spec, opLog) -> {
+							var subOp = usableTxnIdNamed("begin").payerId("payingSender");
+							allRunFor(spec, subOp);
+							initialTxnId.set(spec.registry().getTxnId("begin"));
+						}),
+						sourcing(() -> scheduleCreate("firstChunk",
+								submitMessageTo(ofGeneralInterest)
+										.chunkInfo(
+												3,
+												1,
+												scheduledVersionOf(initialTxnId.get()))
+										.signedBy("payingSender")
+								)
+										.txnId("begin")
+										.signedBy("payingSender")
+										.inheritingScheduledSigs()
+										.logged()
+						),
+						getTxnRecord("begin").scheduled().logged(),
+						getTopicInfo(ofGeneralInterest).logged()
+				).then(
+						scheduleCreate("secondChunk",
+								submitMessageTo(ofGeneralInterest)
+										.chunkInfo(3, 2, "payingSender")
+										.signedBy("payingSender")
+						)
+								.payingWith("payingSender")
+								.inheritingScheduledSigs()
+								.logged(),
+						getTopicInfo(ofGeneralInterest).logged()
+				);
+	}
+
+	private TransactionID scheduledVersionOf(TransactionID txnId) {
+		return txnId.toBuilder().setScheduled(true).build();
 	}
 
 	public HapiApiSpec schedulingTxnIdFieldsNotAllowed() {
