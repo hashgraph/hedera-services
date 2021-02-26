@@ -61,8 +61,8 @@ public class NeehaMixedOpsSetup extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-//						createNeehaStartState(),
-						triggerSavedScheduleTxn(),
+						createNeehaStartState()
+//						triggerSavedScheduleTxn(),
 				}
 		);
 	}
