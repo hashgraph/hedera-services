@@ -149,7 +149,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 								.submitKeyName("submitKey")
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED):
 								sleepFor(100),
-						sleepFor(1000) //wait all other thread ready
+						sleepFor(10000) //wait all other thread ready
 				).then(
 						defaultLoadTest(submitBurst, settings)
 				);
@@ -195,7 +195,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 						TOPIC_EXPIRED,
 						INVALID_TOPIC_ID,
 						INSUFFICIENT_PAYER_BALANCE)
-				.hasKnownStatusFrom(SUCCESS, OK, INVALID_TOPIC_ID)
+				.hasKnownStatusFrom(SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE)
 				.deferStatusResolution();
 		if (settings.getBooleanProperty("isChunk", false)) {
 			return () -> op.chunkInfo(1, 1).usePresetTimestamp();
