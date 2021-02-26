@@ -242,16 +242,16 @@ public class RegressionProviderFactory {
 							new RandomTokenKycRevoke(tokenRels),
 							props.getInteger("randomTokenKycRevoke.bias"))
 					.withOp(
-							new RandomTokenMint(keys,tokens,allAccounts),
+							new RandomTokenMint(tokens),
 							props.getInteger("randomTokenMint.bias"))
 					.withOp(
-							new RandomTokenBurn(keys, tokens, allAccounts),
+							new RandomTokenBurn(tokens),
 							props.getInteger("randomTokenBurn.bias"))
 					.withOp(
 							new RandomTokenUpdate(keys, tokens, allAccounts),
 							props.getInteger("randomTokenUpdate.bias"))
 					.withOp(
-							new RandomTokenAccountWipe(tokens, allAccounts),
+							new RandomTokenAccountWipe(tokenRels),
 							props.getInteger("randomTokenAccountWipe.bias"))
 					.withOp(
 							new RandomTokenInfo(tokens),
