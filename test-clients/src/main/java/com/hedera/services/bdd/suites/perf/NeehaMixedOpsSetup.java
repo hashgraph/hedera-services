@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -97,8 +98,10 @@ public class NeehaMixedOpsSetup extends HapiApiSuite {
 										cryptoTransfer(tinyBarsFromTo( "sender", "receiver", 1))
 												.signedBy("sender")
 								)
+										.advertisingCreation()
 										.signedBy(DEFAULT_PAYER)
 										.inheritingScheduledSigs()
+										.withEntityMemo("This is the " + i + "th scheduled txn.")
 						).toArray(HapiSpecOperation[]::new))
 				).then(
 						freeze().payingWith(GENESIS)
