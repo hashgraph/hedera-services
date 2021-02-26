@@ -55,6 +55,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 public class SubmitMessageLoadTest extends LoadTest {
 
@@ -195,7 +197,8 @@ public class SubmitMessageLoadTest extends LoadTest {
 						TOPIC_EXPIRED,
 						INVALID_TOPIC_ID,
 						INSUFFICIENT_PAYER_BALANCE)
-				.hasKnownStatusFrom(SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE)
+				.hasKnownStatusFrom(SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE
+						,UNKNOWN,TRANSACTION_EXPIRED)
 				.deferStatusResolution();
 		if (settings.getBooleanProperty("isChunk", false)) {
 			return () -> op.chunkInfo(1, 1).usePresetTimestamp();
