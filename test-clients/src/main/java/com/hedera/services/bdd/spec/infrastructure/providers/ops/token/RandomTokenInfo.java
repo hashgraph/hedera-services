@@ -50,11 +50,6 @@ public class RandomTokenInfo implements OpProvider {
 	}
 
 	@Override
-	public List<HapiSpecOperation> suggestedInitializers() {
-		return EMPTY_LIST;
-	}
-
-	@Override
 	public Optional<HapiSpecOperation> get() {
 		Optional<String> token = tokens.getQualifying();
 		if (token.isEmpty())	{

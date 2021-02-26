@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoDelete;
 import com.hedera.services.usage.token.TokenDeleteUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -47,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 	static final Logger log = LogManager.getLogger(HapiTokenDelete.class);
 
+	private boolean shouldPurge = false;
 	private String token;
 
 	@Override
@@ -56,6 +58,11 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 
 	public HapiTokenDelete(String token) {
 		this.token = token;
+	}
+
+	public HapiTokenDelete purging() {
+		shouldPurge = true;
+		return this;
 	}
 
 	@Override
@@ -99,7 +106,7 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) {
-		if (actualStatus != SUCCESS) {
+		if (actualStatus != SUCCESS || !shouldPurge) {
 			return;
 		}
 		var registry = spec.registry();

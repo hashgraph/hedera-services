@@ -382,8 +382,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor,
-			long now) {
+	public CreationResult<TokenID> createProvisionally(
+			TokenCreateTransactionBody request,
+			AccountID sponsor,
+			long now
+	) {
 		var validity = accountCheck(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		if (validity != OK) {
 			return failure(validity);

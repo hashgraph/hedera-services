@@ -80,7 +80,7 @@ public class PresenceTrackingListener<T> implements RegistryChangeListener<T> {
 			String tpl = present.contains(name)
 					? "%s '%s' is still available, but different."
 					: "%s '%s' is now available.";
-			log.info(String.format(tpl, type.getSimpleName(), name));
+			log.debug(String.format(tpl, type.getSimpleName(), name));
 		}
 		present.add(name);
 	}

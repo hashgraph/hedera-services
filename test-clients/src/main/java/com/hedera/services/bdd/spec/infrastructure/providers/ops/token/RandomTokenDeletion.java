@@ -52,6 +52,7 @@ public class RandomTokenDeletion implements OpProvider {
 		}
 
 		var op = tokenDelete(target.get())
+				.purging()
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 				.hasKnownStatusFrom(permissibleOutcomes);
 		return Optional.of(op);

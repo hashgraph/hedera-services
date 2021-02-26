@@ -251,7 +251,7 @@ public class RegressionProviderFactory {
 							new RandomTokenUpdate(keys, tokens, allAccounts),
 							props.getInteger("randomTokenUpdate.bias"))
 					.withOp(
-							new RandomTokenAccountWipe(keys, tokens, allAccounts),
+							new RandomTokenAccountWipe(tokens, allAccounts),
 							props.getInteger("randomTokenAccountWipe.bias"))
 					.withOp(
 							new RandomTokenInfo(tokens),
