@@ -61,7 +61,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -163,7 +162,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						sleepFor(10 * SECOND),
 						withOpContext( (spec, log) -> {
 							log.info("Now get all {} accounts created and save it in spec", totalAccounts);
-							for(int i = totalAccounts; i >=0; i-- ) {
+							for(int i = totalAccounts - 1; i >=0; i-- ) {
 								var op = getAccountBalance(ACCT_NAME_PREFIX + i)
 										.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
 										.persists(true)
@@ -247,7 +246,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
-								TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, FAIL_INVALID)
+								TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
 						.suppressStats(true)
 						.noLogging()
 						;
@@ -280,7 +279,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,INVALID_SIGNATURE,
-								TRANSACTION_EXPIRED, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,FAIL_INVALID)
+								TRANSACTION_EXPIRED, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
 						.fee(A_HUNDRED_HBARS)
 						.noLogging()
 						.suppressStats(true)
