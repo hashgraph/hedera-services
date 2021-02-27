@@ -90,7 +90,7 @@ public class TokenMovement {
 		if (sender.isPresent()) {
 			Map.Entry<String, Long> senderEntry = new AbstractMap.SimpleEntry<>(sender.get(), -amount);
 			return receiver.isPresent()
-					? List.of(senderEntry, new AbstractMap.SimpleEntry<>(receiver.get(), -amount))
+					? List.of(senderEntry, new AbstractMap.SimpleEntry<>(receiver.get(), +amount))
 					: (receivers.isPresent() ? involvedInDistribution(senderEntry) : List.of(senderEntry));
 		}
 		return Collections.emptyList();
