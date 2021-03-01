@@ -419,7 +419,6 @@ public class UtilVerbs {
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
-			var zeroTfs = zeroFor(function);
 			var schedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules);
 			var perturbedSchedules = schedules.toBuilder();
 			perturbedSchedules.getCurrentFeeScheduleBuilder()
@@ -436,27 +435,9 @@ public class UtilVerbs {
 					.findAny()
 					.get()
 					.clearFeeData();
-//			schedules.getCurrentFeeSchedule()
-//					.getTransactionFeeScheduleList()
-//					.stream()
-//					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-//					.forEach(perturbedSchedules.getCurrentFeeScheduleBuilder()::addTransactionFeeSchedule);
-//			schedules.getNextFeeSchedule()
-//					.getTransactionFeeScheduleList()
-//					.stream()
-//					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-//					.forEach(perturbedSchedules.getNextFeeScheduleBuilder()::addTransactionFeeSchedule);
-//			perturbedSchedules.getCurrentFeeScheduleBuilder()
-//					.setExpiryTime(schedules.getCurrentFeeSchedule().getExpiryTime());
-//			perturbedSchedules.getNextFeeScheduleBuilder()
-//					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
-	}
-
-	private static TransactionFeeSchedule zeroFor(HederaFunctionality function) {
-		return TransactionFeeSchedule.newBuilder().setHederaFunctionality(function).build();
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
