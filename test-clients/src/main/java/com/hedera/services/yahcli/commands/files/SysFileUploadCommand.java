@@ -47,8 +47,6 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			srcDir = srcDir.substring(0, srcDir.length() - 1);
 		}
 
-//		ConfigUtils.fileExists(srcDir + File.separator + sysFile);
-
 		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile);
 		delegate.runSuiteSync();
 
