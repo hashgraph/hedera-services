@@ -75,8 +75,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						complexKeyAcctPaysForOwnTransfer(),
 						twoComplexKeysRequired(),
 						specialAccountsBalanceCheck(),
-						tokenTransferFeesScaleAsExpected(),
 						transferToTopicReturnsInvalidAccountId(),
+						tokenTransferFeesScaleAsExpected(),
 				}
 		);
 	}
@@ -202,9 +202,18 @@ public class CryptoTransferSuite extends HapiApiSuite {
 							double pureOneTokenTwoAccountsUsd = rates.toUsdWithActiveRates(t1a2Fee);
 							double pureTwoTokensFourAccountsUsd = rates.toUsdWithActiveRates(t2a4Fee);
 							double pureThreeTokensSixAccountsUsd = rates.toUsdWithActiveRates(t3a6Fee);
-							Assert.assertEquals(10.0, pureOneTokenTwoAccountsUsd / pureHbarUsd, 1.0);
-							Assert.assertEquals(20.0, pureTwoTokensFourAccountsUsd / pureHbarUsd, 1.0);
-							Assert.assertEquals(30.0, pureThreeTokensSixAccountsUsd / pureHbarUsd, 1.0);
+							Assert.assertEquals(
+									10.0,
+									pureOneTokenTwoAccountsUsd / pureHbarUsd,
+									1.0);
+							Assert.assertEquals(
+									20.0,
+									pureTwoTokensFourAccountsUsd / pureHbarUsd,
+									2.0);
+							Assert.assertEquals(
+									30.0,
+									pureThreeTokensSixAccountsUsd / pureHbarUsd,
+									3.0);
 						})
 				);
 	}

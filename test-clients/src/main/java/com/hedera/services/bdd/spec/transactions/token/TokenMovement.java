@@ -88,9 +88,15 @@ public class TokenMovement {
 
 	public List<Map.Entry<String, Long>> generallyInvolved() {
 		if (sender.isPresent()) {
-			Map.Entry<String, Long> senderEntry = new AbstractMap.SimpleEntry<>(sender.get(), -amount);
+			Map.Entry<String, Long> senderEntry = new AbstractMap.SimpleEntry<>(
+					token + "|" + sender.get(),
+					-amount);
 			return receiver.isPresent()
-					? List.of(senderEntry, new AbstractMap.SimpleEntry<>(receiver.get(), +amount))
+					? List.of(
+							senderEntry,
+					new AbstractMap.SimpleEntry<>(
+							token + "|" + receiver.get(),
+							+amount))
 					: (receivers.isPresent() ? involvedInDistribution(senderEntry) : List.of(senderEntry));
 		}
 		return Collections.emptyList();

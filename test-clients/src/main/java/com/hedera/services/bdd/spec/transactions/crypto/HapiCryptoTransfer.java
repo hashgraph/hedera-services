@@ -46,8 +46,10 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -218,19 +220,21 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	private Function<HapiApiSpec, List<Key>> tokenAwareVariableDefaultSigners() {
 		return spec -> {
-			List<Key> partyKeys = new ArrayList<>();
+			Set<Key> partyKeys = new HashSet<>();
 			Map<String, Long> partyInvolvements = tokenAwareProviders.stream()
 					.map(TokenMovement::generallyInvolved)
 					.flatMap(List::stream)
 					.collect(groupingBy(
 							Map.Entry::getKey,
 							summingLong(Map.Entry<String, Long>::getValue)));
-			partyInvolvements.entrySet().forEach(entry -> {
-				if (entry.getValue() < 0 || spec.registry().isSigRequired(entry.getKey())) {
-					partyKeys.add(spec.registry().getKey(entry.getKey()));
+			partyInvolvements.forEach((account, value) -> {
+				int divider = account.indexOf("|");
+				var key = account.substring(divider + 1);
+				if (value < 0 || spec.registry().isSigRequired(key)) {
+					partyKeys.add(spec.registry().getKey(key));
 				}
 			});
-			return partyKeys;
+			return new ArrayList<>(partyKeys);
 		};
 	}
 
