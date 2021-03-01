@@ -57,6 +57,7 @@ public class ConfigManager {
 	}
 
 	private void addPayerConfig(Map<String, String> specConfig, String payerId) {
+		specConfig.put("default.payer", payerId);
 		var optKeyFile = ConfigUtils.keyFileFor(keysLoc(), "account" + defaultPayer);
 		if (optKeyFile.isEmpty()) {
 			fail(String.format("No key available for account %s!", payerId));
