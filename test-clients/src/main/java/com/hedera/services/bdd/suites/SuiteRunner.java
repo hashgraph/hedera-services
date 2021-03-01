@@ -85,7 +85,7 @@ import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedOpsMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
-import com.hedera.services.bdd.suites.perf.NeehaMixedOpsSetup;
+import com.hedera.services.bdd.suites.perf.MixedOpsScheduledTransactions;
 import com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.TokenRelStatusChanges;
@@ -347,7 +347,7 @@ public class SuiteRunner {
 		put("SimpleFreezeOnly", aof(new SimpleFreezeOnly()));
 		/* Transfer then freeze */
 		put("CryptoTransferThenFreezeTest", aof(new CryptoTransferThenFreezeTest()));
-		put("NeehaMixedOpsSetup", aof(new NeehaMixedOpsSetup()));
+		put("MixedOpsScheduledTransactions", aof(new MixedOpsScheduledTransactions()));
 	}};
 
 	static boolean runAsync;

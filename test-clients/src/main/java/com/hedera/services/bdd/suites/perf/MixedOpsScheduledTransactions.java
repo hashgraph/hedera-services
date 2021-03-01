@@ -22,18 +22,12 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -48,13 +42,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class NeehaMixedOpsSetup extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(NeehaMixedOpsSetup.class);
+public class MixedOpsScheduledTransactions extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(MixedOpsScheduledTransactions.class);
 
 	public static void main(String... args) {
-		new NeehaMixedOpsSetup().runSuiteSync();
+		new MixedOpsScheduledTransactions().runSuiteSync();
 	}
 
 	@Override

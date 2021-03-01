@@ -3,7 +3,6 @@ package com.hedera.services.bdd.suites.schedule;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.perf.NeehaMixedOpsSetup;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
