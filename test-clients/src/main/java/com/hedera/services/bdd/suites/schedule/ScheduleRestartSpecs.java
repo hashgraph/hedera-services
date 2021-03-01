@@ -41,20 +41,29 @@ public class ScheduleRestartSpecs extends HapiApiSuite {
 
 	private HapiApiSpec scheduleTransactionsScenario() {
 		return HapiApiSpec.defaultHapiSpec("scheduleTransactionsScenario").given().when().then(
-				withOpContext((spec, opLog) -> runBasedOnCIProps(spec)
+				withOpContext((spec, opLog) -> {
+							if (spec.setup().ciPropertiesMap().getBoolean("postRestart") == true) {
+								log.info("Transactions After restart");
+								transactionsAfterRestart();
+							} else {
+								log.info("Transactions before restart");
+								transactionsBeforeRestart();
+							}
+						}
 				));
-	}
-
-	private HapiApiSpec runBasedOnCIProps(HapiApiSpec spec) {
-		return spec.setup().ciPropertiesMap().getBoolean("post") ?
-				transactionsAfterRestart() : transactionsBeforeRestart();
 	}
 
 	private HapiApiSpec transactionsAfterRestart() {
 		return HapiApiSpec.defaultHapiSpec("Freeze").given().when().then(
+				cryptoCreate("afterRestart")
+						.advertisingCreation()
+						.balance(ONE_HBAR)
+						.payingWith(GENESIS)
+						.logged(),
 				freeze().payingWith(GENESIS)
 						.startingIn(60).seconds()
 						.andLasting(1).minutes()
+				.logged()
 		);
 	}
 
@@ -67,10 +76,10 @@ public class ScheduleRestartSpecs extends HapiApiSuite {
 								.payingWith(GENESIS)
 								.overridingProps(Map.of(
 										"ledger.schedule.txExpiryTimeSecs", "" + ONE_YEAR_IN_SECS
-								)),
+								)).logged(),
 						cryptoCreate("sender")
 								.advertisingCreation()
-								.balance(ONE_HBAR),
+								.balance(ONE_HBAR).logged(),
 						cryptoCreate("receiver")
 								.key(GENESIS)
 								.advertisingCreation()
@@ -102,7 +111,7 @@ public class ScheduleRestartSpecs extends HapiApiSuite {
 				).then(
 						freeze().payingWith(GENESIS)
 								.startingIn(60).seconds()
-								.andLasting(1).minutes()
+								.andLasting(1).minutes().logged()
 				);
 	}
 
