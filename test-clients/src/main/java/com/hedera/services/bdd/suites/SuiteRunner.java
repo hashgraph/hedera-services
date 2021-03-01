@@ -77,6 +77,7 @@ import com.hedera.services.bdd.suites.misc.CryptoQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.FileQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
+import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTest;
 import com.hedera.services.bdd.suites.perf.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.CreateTopicPerfSuite;
 import com.hedera.services.bdd.suites.perf.CryptoCreatePerfSuite;
@@ -234,6 +235,7 @@ public class SuiteRunner {
 		put("AddWellKnownEntities", aof(new AddWellKnownEntities()));
 		/* Load tests. */
 		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
+		put("AccountBalancesLoadTest", aof(new AccountBalancesClientSaveLoadTest()));
 		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
 		put("ReadyToRunScheduledXfersLoad", aof(new ReadyToRunScheduledXfersLoad()));
 		put("TokenRelChangesLoad", aof(new TokenRelStatusChanges()));

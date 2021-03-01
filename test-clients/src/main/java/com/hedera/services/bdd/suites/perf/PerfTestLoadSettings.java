@@ -40,6 +40,9 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_TEST_TREASURE_START_ACCOUNT = 1001;
 	public static final int DEFAULT_TOTAL_CLIENTS = 1;
 	public static final int DEFAULT_MEMO_LENGTH = 25;
+	public static final int DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION = 60; // in seconds
+	public static final int DEFAULT_DURATION_TOKEN_TRANSFER = 60; // in seconds
+
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -81,6 +84,17 @@ public class PerfTestLoadSettings {
 	 * When running from SuiteRunner, it will use the total client node number as its value if this
 	 * parameter is not explicitly provided. */
 	private int totalClients = DEFAULT_TOTAL_CLIENTS;
+
+	/**
+	 *  The duration for client account balances test to create account token association randomly
+	 *  */
+	private int durationCreateTokenAssociation = DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION;
+
+	/**
+	 *  The duration for client account balances test to do token transfer randomly
+	 *  */
+	private int durationTokenTransfer = DEFAULT_DURATION_TOKEN_TRANSFER;
+
 
 	private HapiPropertySource ciProps = null;
 
@@ -143,6 +157,10 @@ public class PerfTestLoadSettings {
 		return totalTestTokens;
 	}
 	public int getTotalTestTokenAccounts() { return totalTestTokenAccounts; }
+	public int getDurationCreateTokenAssociation() { return durationCreateTokenAssociation; }
+	public int getDurationTokenTransfer() { return durationTokenTransfer; }
+
+
 	public int getTestTreasureStartAccount() { return testTreasureStartAccount; }
 	public int getIntProperty(String property, int defaultValue) {
 		if (null != ciProps && ciProps.has(property)) {
@@ -193,6 +211,12 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("totalTestTokenAccounts")) {
 			totalTestTokenAccounts = ciProps.getInteger("totalTestTokenAccounts");
 		}
+		if (ciProps.has("durationCreateTokenAssociation")) {
+			durationCreateTokenAssociation = ciProps.getInteger("durationCreateTokenAssociation");
+		}
+		if (ciProps.has("durationTokenTransfer")) {
+			durationTokenTransfer = ciProps.getInteger("durationTokenTransfer");
+		}
 		if (ciProps.has("testTreasureStartAccount")) {
 			testTreasureStartAccount = ciProps.getInteger("testTreasureStartAccount");
 		}
@@ -220,6 +244,8 @@ public class PerfTestLoadSettings {
 				.add("totalTestAccounts", totalTestAccounts)
 				.add("totalTestTopics", totalTestTopics)
 				.add("totalTestTokens", totalTestTokens)
+				.add("durationCreateTokenAssociation", durationCreateTokenAssociation)
+				.add("durationTokenTransfer", durationTokenTransfer)
 				.add("testActiveTokenAccounts", totalTestTokenAccounts)
 				.add("testTreasureStartAccount", testTreasureStartAccount)
 				.add("submitMessageSize", hcsSubmitMessageSize)
