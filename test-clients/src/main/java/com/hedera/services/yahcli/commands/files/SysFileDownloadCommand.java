@@ -29,7 +29,8 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 	@Parameters(
 			arity = "1..*",
 			paramLabel = "<sysfiles>",
-			description = "system file names ('book', 'details', 'rates', 'fees', 'props', 'permissions') or numbers")
+			description = "system file names ('book', 'details', 'rates', 'fees', 'props', 'permissions')  \n or numbers" +
+					"\nor 'all' to download all system files ")
 	String[] sysFiles;
 
 	@Override

@@ -27,6 +27,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hedera.services.bdd.suites.utils.validation.ValidationScenarios;
 import com.hedera.services.bdd.suites.utils.validation.domain.SysFilesDownScenario;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -107,6 +108,10 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 	}
 
 	private long[] rationalized(String[] sysfiles) {
+		if(Arrays.asList(sysfiles).contains("all")) {
+			return VALID_NUMBERS.stream().mapToLong(Number::longValue).toArray();
+		}
+
 		return Arrays.stream(sysfiles)
 				.map(this::getFileId)
 				.peek(num -> {
