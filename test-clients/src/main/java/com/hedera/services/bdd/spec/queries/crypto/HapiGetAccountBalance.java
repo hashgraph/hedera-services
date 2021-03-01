@@ -21,6 +21,8 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.stream.proto.SingleAccountBalances;
+import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -59,6 +61,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
 	private Pattern DOT_DELIMTED_ACCOUNT = Pattern.compile("\\d+[.]\\d+[.]\\d+");
 	private String entity;
+	private Optional<AccountID> accountID = Optional.empty();
+	private boolean exportAccount = false;
 	Optional<Long> expected = Optional.empty();
 	Optional<Supplier<String>> entityFn = Optional.empty();
 	Optional<Function<HapiApiSpec, Function<Long, Optional<String>>>> expectedCondition = Optional.empty();
@@ -93,6 +97,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			expectedTokenBalances = new ArrayList<>();
 		}
 		expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount + "-" + decimals));
+		return this;
+	}
+
+	public HapiGetAccountBalance persists(boolean toExport) {
+		exportAccount = toExport;
 		return this;
 	}
 
@@ -146,6 +155,22 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 				}
 			}
 		}
+
+		if(exportAccount && accountID.isPresent()) {
+			SingleAccountBalances.Builder sab = SingleAccountBalances.newBuilder();
+			List<TokenUnitBalance> tokenUnitBalanceList = new ArrayList<>();
+			tokenUnitBalanceList = response.getCryptogetAccountBalance().getTokenBalancesList()
+					.stream()
+					.map(a -> TokenUnitBalance.newBuilder()
+							.setTokenId(a.getTokenId())
+							.setBalance(a.getBalance())
+							.build())
+					.collect(Collectors.toList());
+			sab.setAccountID(accountID.get())
+					.setHbarBalance(response.getCryptogetAccountBalance().getBalance())
+					.addAllTokenUnitBalances(tokenUnitBalanceList);
+			spec.saveSingleAccountBalances(sab.build());
+		}
 	}
 
 	@Override
@@ -176,6 +201,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			Matcher m = DOT_DELIMTED_ACCOUNT.matcher(entity);
 			AccountID id = m.matches() ? HapiPropertySource.asAccount(entity) : spec.registry().getAccountID(entity);
 			config = b -> b.setAccountID(id);
+			accountID = Optional.of(id);
 		}
 		CryptoGetAccountBalanceQuery.Builder query = CryptoGetAccountBalanceQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));

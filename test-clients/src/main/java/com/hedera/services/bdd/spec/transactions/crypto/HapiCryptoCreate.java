@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -73,6 +72,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<SigControl> keyShape = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
 
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoCreate;
@@ -96,6 +96,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		entityMemo = Optional.of(memo);
 		return this;
 	}
+
 	public HapiCryptoCreate sendThreshold(Long amount) {
 		sendThresh = Optional.of(amount);
 		return this;

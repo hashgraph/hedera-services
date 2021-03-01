@@ -240,6 +240,13 @@ public class UtilVerbs {
 				.overridingProps(Map.of(property, "" + value));
 	}
 
+	public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
+		return new CustomSpecAssert((spec, log) -> {
+			spec.exportAccountBalances(acctBalanceFile);
+		});
+	}
+
+
 	/* Stream validation. */
 	public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
 		return new RecordStreamVerification(baseDir);
