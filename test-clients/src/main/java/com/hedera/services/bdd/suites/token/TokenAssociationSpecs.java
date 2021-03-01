@@ -94,7 +94,6 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						treasuryAssociationIsAutomatic(),
 						dissociateHasExpectedSemantics(),
-						contractInfoQueriesAsExpected(),
 						associateHasExpectedSemantics(),
 						associatedContractsMustHaveAdminKeys(),
 						dissociateHasExpectedSemanticsForDeletedTokens(),
@@ -102,6 +101,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						dissociationFromExpiredTokensAsExpected(),
 						accountInfoQueriesAsExpected(),
 						handlesUseOfDefaultTokenId(),
+						contractInfoQueriesAsExpected(),
 				}
 		);
 	}
