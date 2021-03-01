@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.schedule;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
@@ -52,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
 public class ScheduleRecordSpecs extends HapiApiSuite {
@@ -68,11 +71,11 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						suiteSetup(),
-//						allRecordsAreQueryable(),
-//						schedulingTxnIdFieldsNotAllowed(),
-//						suiteCleanup(),
-//						canonicalScheduleOpsHaveExpectedUsdFees(),
+						suiteSetup(),
+						allRecordsAreQueryable(),
+						schedulingTxnIdFieldsNotAllowed(),
+						suiteCleanup(),
+						canonicalScheduleOpsHaveExpectedUsdFees(),
 						canScheduleChunkedMessages(),
 				}
 		);
@@ -140,8 +143,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 		return defaultHapiSpec("CanScheduleChunkedMessages")
 				.given(
 						cryptoCreate("payingSender").balance(A_HUNDRED_HBARS),
-						createTopic(ofGeneralInterest),
-						getTopicInfo(ofGeneralInterest).logged()
+						createTopic(ofGeneralInterest)
 				).when(
 						withOpContext((spec, opLog) -> {
 							var subOp = usableTxnIdNamed("begin").payerId("payingSender");
@@ -159,10 +161,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 										.txnId("begin")
 										.signedBy("payingSender")
 										.inheritingScheduledSigs()
-										.logged()
 						),
-						getTxnRecord("begin").scheduled().logged(),
-						getTopicInfo(ofGeneralInterest).logged()
+						getTxnRecord("begin").scheduled().hasPriority(recordWith().status(SUCCESS))
 				).then(
 						scheduleCreate("secondChunk",
 								submitMessageTo(ofGeneralInterest)
@@ -170,9 +170,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 										.signedBy("payingSender")
 						)
 								.payingWith("payingSender")
-								.inheritingScheduledSigs()
-								.logged(),
-						getTopicInfo(ofGeneralInterest).logged()
+								.inheritingScheduledSigs(),
+						getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L)
 				);
 	}
 
