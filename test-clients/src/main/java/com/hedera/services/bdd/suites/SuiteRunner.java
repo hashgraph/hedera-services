@@ -34,9 +34,6 @@ import com.hedera.services.bdd.suites.contract.ChildStorageSpec;
 import com.hedera.services.bdd.suites.contract.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
-import com.hedera.services.bdd.suites.contract.ContractDeleteSuite;
-import com.hedera.services.bdd.suites.contract.ContractGetBytecodeSuite;
-import com.hedera.services.bdd.suites.contract.ContractUpdateSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.contract.OCTokenSpec;
@@ -67,8 +64,8 @@ import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
-import com.hedera.services.bdd.suites.issues.PrivilegedOpsSuite;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
+import com.hedera.services.bdd.suites.issues.PrivilegedOpsSuite;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
@@ -92,32 +89,32 @@ import com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.TokenRelStatusChanges;
 import com.hedera.services.bdd.suites.perf.TokenTransferBasicLoadTest;
-import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
 import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
+import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.MixedValidationsAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.SubmitMessagesForReconnect;
+import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
-import com.hedera.services.bdd.suites.records.CharacterizationSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
-import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
+import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleRestartSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
@@ -284,6 +281,7 @@ public class SuiteRunner {
 		put("ScheduleRecordSpecs", aof(new ScheduleRecordSpecs()));
 		put("ScheduleDeleteSpecs", aof(new ScheduleDeleteSpecs()));
 		put("ScheduleExecutionSpecs", aof(new ScheduleExecutionSpecs()));
+		put("ScheduleRestartSpecs", aof(new ScheduleRestartSpecs()));
 		/* Functional tests - TOKEN */
 		put("TokenCreateSpecs", aof(new TokenCreateSpecs()));
 		put("TokenUpdateSpecs", aof(new TokenUpdateSpecs()));
@@ -360,7 +358,7 @@ public class SuiteRunner {
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
 	/* Specify the network to run legacy SC tests instead of using suiterunner */
-	private static final String LEGACY_SMART_CONTRACT_TESTS="SmartContractAggregatedTests";
+	private static final String LEGACY_SMART_CONTRACT_TESTS = "SmartContractAggregatedTests";
 	private static String payerId = DEFAULT_PAYER_ID;
 
 	public static void main(String... args) throws Exception {
@@ -371,10 +369,10 @@ public class SuiteRunner {
 		log.info("Effective args :: " + List.of(effArgs));
 		if (Arrays.asList(effArgs).contains(LEGACY_SMART_CONTRACT_TESTS)) {
 			SmartContractAggregatedTests.main(
-					new String[]{
+					new String[] {
 							System.getenv("NODES").split(":")[0],
 							args[1],
-							"1"});
+							"1" });
 		} else if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
@@ -386,7 +384,7 @@ public class SuiteRunner {
 			// For HTS perf regression test, we need to know the number of clients to distribute
 			// the creation of the test tokens and token associations to each client.
 			// For current perf test setup, this number will be the size of test network.
-			if(!otherOverrides.containsKey("totalClients")) {
+			if (!otherOverrides.containsKey("totalClients")) {
 				otherOverrides.put("totalClients", "" + expectedNetworkSize);
 			}
 			createPayerAccount(System.getenv("NODES"), args[1]);
@@ -431,7 +429,7 @@ public class SuiteRunner {
 			Thread.sleep(r.nextInt(5000));
 			new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
 			Thread.sleep(2000);
-			if(!isIdLiteral(payerId)){
+			if (!isIdLiteral(payerId)) {
 				payerId = DEFAULT_PAYER_ID;
 			}
 		} catch (InterruptedException e) {
