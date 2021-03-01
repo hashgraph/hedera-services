@@ -113,6 +113,7 @@ import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.AddWellKnownEntities;
+import com.hedera.services.bdd.suites.regression.RestartWithScheduledEntities;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
@@ -232,6 +233,8 @@ public class SuiteRunner {
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Regression saved state management helpers */
 		put("AddWellKnownEntities", aof(new AddWellKnownEntities()));
+		/* JRS restart tests */
+		put("RestartWithScheduledEntities", aof(new RestartWithScheduledEntities()));
 		/* Load tests. */
 		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
 		put("AccountBalancesLoadTest", aof(new AccountBalancesClientSaveLoadTest()));

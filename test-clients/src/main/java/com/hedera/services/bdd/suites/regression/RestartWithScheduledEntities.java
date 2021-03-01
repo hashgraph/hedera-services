@@ -22,9 +22,6 @@ package com.hedera.services.bdd.suites.regression;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +32,7 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -87,8 +84,10 @@ public class RestartWithScheduledEntities extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							boolean isPostRestart = spec.setup().ciPropertiesMap().getBoolean("postRestart");
 							if (isPostRestart) {
+								opLog.info("\n\n" + bannerWith("POST-RESTART VALIDATION PHASE"));
 								allRunFor(spec, postRestartValidation());
 							} else {
+								opLog.info("\n\n" + bannerWith("PRE-RESTART SETUP PHASE"));
 								allRunFor(spec, preRestartSetup());
 							}
 						})
@@ -103,6 +102,8 @@ public class RestartWithScheduledEntities extends HapiApiSuite {
 
 	private HapiSpecOperation[] postRestartValidation() {
 		return new HapiSpecOperation[] {
+				getAccountInfo(SENDER).has(accountWith()
+						.balance(1L)),
 				getAccountInfo(RECEIVER).has(accountWith()
 						.balance(99L)),
 
@@ -111,7 +112,9 @@ public class RestartWithScheduledEntities extends HapiApiSuite {
 						.lookingUpBytesToSign(),
 
 				getAccountInfo(RECEIVER).has(accountWith()
-						.balance(100L))
+						.balance(100L)),
+				getAccountInfo(SENDER).has(accountWith()
+						.balance(0L))
 		};
 	}
 

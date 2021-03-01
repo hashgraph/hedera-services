@@ -64,6 +64,7 @@ public class Schedule {
 		if (simpleXfer == UNSPECIFIED_SIMPLE_XFER) {
 			simpleXfer = new SimpleXfer();
 		}
+
 		var op = scheduleCreate(
 				name,
 				cryptoTransfer(tinyBarsFromTo(
@@ -73,12 +74,15 @@ public class Schedule {
 				).signedBy(signatories.toArray(new String[0]))
 		)
 				.inheritingScheduledSigs()
-				.adminKey(adminKeyFor(name))
 				.advertisingCreation();
 
+		if (adminKey != UNUSED_KEY) {
+			op.adminKey(adminKeyFor(name));
+		}
 		if (memo != UNSPECIFIED_MEMO) {
 			op.entityMemo(memo);
 		}
+
 		return op;
 	}
 

@@ -180,6 +180,8 @@ public class EntityManager {
 			createdEntityId = new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
 		} else if (receipt.hasFileID()) {
 			createdEntityId = new EntityId(HapiPropertySource.asFileString(receipt.getFileID()));
+		} else if (receipt.hasScheduleID()) {
+			createdEntityId = new EntityId(HapiPropertySource.asScheduleString(receipt.getScheduleID()));
 		}
 		return Optional.ofNullable(createdEntityId);
 	}
