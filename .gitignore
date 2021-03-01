@@ -8,7 +8,7 @@
 !test-clients/yahcli/localhost/keys/*.words
 
 # Yahcli
-test-clients/yahcli/yahcli.jar
+test-clients/yahcli/assets/yahcli.jar
 test-clients/yahcli/localhost/sysfiles
 
 # VIM
