@@ -31,11 +31,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
 public class Entity implements Comparable<Entity> {
 	enum Type {
-		ACCOUNT, TOKEN, UNKNOWN
+		ACCOUNT, TOKEN, SCHEDULE, UNKNOWN
 	}
 	private static final Token UNSPECIFIED_TOKEN = null;
 	private static final Topic UNSPECIFIED_TOPIC = null;
 	private static final Account UNSPECIFIED_ACCOUNT = null;
+	private static final Schedule UNSPECIFIED_SCHEDULE = null;
 	private static final EntityId UNCREATED_ENTITY_ID = null;
 
 	static final SpecKey UNUSED_KEY = null;
@@ -47,6 +48,7 @@ public class Entity implements Comparable<Entity> {
 	private Topic topic = UNSPECIFIED_TOPIC;
 	private Token token = UNSPECIFIED_TOKEN;
 	private Account account = UNSPECIFIED_ACCOUNT;
+	private Schedule schedule = UNSPECIFIED_SCHEDULE;
 	private HapiTxnOp<?> createOp = UNNEEDED_CREATE_OP;
 
 	public static Entity newTokenEntity(String name, Token token) {
@@ -73,6 +75,8 @@ public class Entity implements Comparable<Entity> {
 			return token.existenceCheck(name);
 		} else if (account != UNSPECIFIED_ACCOUNT) {
 			return account.existenceCheck(name);
+		} else if (schedule != UNSPECIFIED_SCHEDULE) {
+			return schedule.existenceCheck(name);
 		} else {
 			throw new IllegalStateException("Only accounts and tokens are currently supported!");
 		}
@@ -87,6 +91,8 @@ public class Entity implements Comparable<Entity> {
 			return Type.TOKEN;
 		} else if (account != UNSPECIFIED_ACCOUNT) {
 			return Type.ACCOUNT;
+		} else if (schedule != UNSPECIFIED_SCHEDULE) {
+			return Type.SCHEDULE;
 		} else {
 			return Type.UNKNOWN;
 		}
@@ -103,11 +109,11 @@ public class Entity implements Comparable<Entity> {
 	void registerWhatIsKnown(HapiApiSpec spec) {
 		if (token != UNSPECIFIED_TOKEN) {
 			token.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
-		}
-		if (topic != UNSPECIFIED_TOPIC) {
+		} else if (topic != UNSPECIFIED_TOPIC) {
 			topic.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
-		}
-		if (account != UNSPECIFIED_ACCOUNT) {
+		} else if (schedule != UNSPECIFIED_SCHEDULE) {
+			schedule.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		} else if (account != UNSPECIFIED_ACCOUNT) {
 			account.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
 		}
 	}
@@ -115,12 +121,12 @@ public class Entity implements Comparable<Entity> {
 	HapiSpecOperation createOp() {
 		if (token != UNSPECIFIED_TOKEN) {
 			return (createOp = token.createOp(name));
-		}
-		if (topic != UNSPECIFIED_TOPIC) {
+		} else if (topic != UNSPECIFIED_TOPIC) {
 			return (createOp = topic.createOp(name));
-		}
-		if (account != UNSPECIFIED_ACCOUNT) {
+		} else if (account != UNSPECIFIED_ACCOUNT) {
 			return (createOp = account.createOp(name));
+		} else if (schedule != UNSPECIFIED_SCHEDULE) {
+			return (createOp = schedule.createOp(name));
 		}
 		return assertionsHold((spec, opLog) -> {});
 	}
@@ -171,6 +177,14 @@ public class Entity implements Comparable<Entity> {
 
 	HapiTxnOp<?> getCreateOp() {
 		return createOp;
+	}
+
+	public Schedule getSchedule() {
+		return schedule;
+	}
+
+	public void setSchedule(Schedule schedule) {
+		this.schedule = schedule;
 	}
 
 	void clearCreateOp() {

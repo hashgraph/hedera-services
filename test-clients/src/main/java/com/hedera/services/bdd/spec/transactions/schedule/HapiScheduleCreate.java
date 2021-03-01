@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.TrieSigMapGenerator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -51,6 +52,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE;
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -62,6 +64,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private static final int defaultScheduleTxnExpiry = HapiSpecSetup.getDefaultNodeProps()
 			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
+	private boolean advertiseCreation = false;
 	private boolean scheduleNonsense = false;
 	private boolean skipRegistryUpdate = false;
 	private boolean scheduleNoFunction = false;
@@ -80,6 +83,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
 		this.entity = scheduled;
 		this.scheduled = txn.withLegacyProtoStructure().sansTxnId();
+	}
+
+	public HapiScheduleCreate<T> advertisingCreation() {
+		advertiseCreation = true;
+		return this;
 	}
 
 	public HapiScheduleCreate<T> rememberingNothing() {
@@ -127,7 +135,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
-	public HapiScheduleCreate<T> withEntityMemo(String entityMemo) {
+	public HapiScheduleCreate<T> entityMemo(String entityMemo) {
 		this.entityMemo = Optional.of(entityMemo);
 		return this;
 	}
@@ -236,6 +244,15 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		registry.saveBytes(registryBytesTag(entity), bytesSigned);
 		registry.saveExpiry(entity, (long)defaultScheduleTxnExpiry);
 		adminKey.ifPresent(k -> registry.saveAdminKey(entity, spec.registry().getKey(k)));
+
+		if (advertiseCreation) {
+			String banner = "\n\n" + bannerWith(
+					String.format(
+							"Created schedule '%s' with id '0.0.%d'.",
+							entity,
+							lastReceipt.getScheduleID().getScheduleNum()));
+			log.info(banner);
+		}
 	}
 
 	@Override

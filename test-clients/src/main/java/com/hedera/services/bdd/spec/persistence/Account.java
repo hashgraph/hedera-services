@@ -44,6 +44,7 @@ public class Account {
 	private String memo = UNSPECIFIED_MEMO;
 	private SpecKey key = UNUSED_KEY;
 	private Integer rechargeWindow = UNSPECIFIED_RECHARGE_WINDOW;
+	private Boolean receiverSigRequired = Boolean.FALSE;
 	private boolean recharging = false;
 
 	public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
@@ -54,6 +55,9 @@ public class Account {
 		if (recharging) {
 			spec.registry().setRecharging(name, effBalance(spec));
 			spec.registry().setRechargingWindow(name, effRechargeWindow());
+		}
+		if (receiverSigRequired) {
+			spec.registry().saveSigRequirement(name, receiverSigRequired);
 		}
 		entityId.ifPresent(id -> {
 			spec.registry().saveAccountId(name, id.asAccount());
@@ -73,6 +77,9 @@ public class Account {
 		}
 		if (memo != UNSPECIFIED_MEMO) {
 			op.entityMemo(memo);
+		}
+		if (receiverSigRequired) {
+			op.receiverSigRequired(true);
 		}
 		if (recharging) {
 			op.withRecharging().rechargeWindow(effRechargeWindow());
@@ -110,5 +117,29 @@ public class Account {
 
 	private int effRechargeWindow() {
 		return (rechargeWindow == UNSPECIFIED_RECHARGE_WINDOW) ? DEFAULT_RECHARGE_WINDOW : rechargeWindow;
+	}
+
+	public Boolean getReceiverSigRequired() {
+		return receiverSigRequired;
+	}
+
+	public void setReceiverSigRequired(Boolean receiverSigRequired) {
+		this.receiverSigRequired = receiverSigRequired;
+	}
+
+	public Integer getRechargeWindow() {
+		return rechargeWindow;
+	}
+
+	public void setRechargeWindow(Integer rechargeWindow) {
+		this.rechargeWindow = rechargeWindow;
+	}
+
+	public boolean isRecharging() {
+		return recharging;
+	}
+
+	public void setRecharging(boolean recharging) {
+		this.recharging = recharging;
 	}
 }

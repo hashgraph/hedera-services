@@ -177,7 +177,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given( ).when(
 						scheduleCreate("onlyBodyAndMemo",
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
-						).withEntityMemo("sample memo")
+						).entityMemo("sample memo")
 				).then(
 						getScheduleInfo("onlyBodyAndMemo")
 								.hasScheduleId("onlyBodyAndMemo")
@@ -238,7 +238,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("FailsWithTooLongMemo")
 				.given( ).when(
 						scheduleCreate("invalidMemo", cryptoCreate("secondary"))
-								.withEntityMemo(nAscii(101))
+								.entityMemo(nAscii(101))
 								.hasPrecheck(MEMO_TOO_LONG)
 				)
 				.then();
@@ -401,14 +401,14 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).adminKey("admin")
 								.designatingPayer("payer")
-								.withEntityMemo("memo here")
+								.entityMemo("memo here")
 								.via("first")
 				).when(
 						scheduleCreate("second",
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).adminKey("admin")
 								.designatingPayer("payer")
-								.withEntityMemo("different memo here")
+								.entityMemo("different memo here")
 								.via("second")
 				).then(
 						ensureDifferentScheduledTXCreated("first", "second"),
@@ -500,14 +500,14 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).designatingPayer("payer")
 								.adminKey("admin")
-								.withEntityMemo("memo here")
+								.entityMemo("memo here")
 								.via("first")
 				).when(
 						scheduleCreate("second",
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).designatingPayer("payer")
 								.adminKey("admin")
-								.withEntityMemo("memo here")
+								.entityMemo("memo here")
 								.via("second")
 				).then(
 						ensureIdempotentlyCreated("first", "second"),
