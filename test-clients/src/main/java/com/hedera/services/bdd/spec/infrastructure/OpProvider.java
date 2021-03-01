@@ -23,8 +23,10 @@ package com.hedera.services.bdd.spec.infrastructure;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.SplittableRandom;
 import java.util.stream.Stream;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -55,7 +57,9 @@ public interface OpProvider {
 			UNKNOWN,
 	};
 
-	List<HapiSpecOperation> suggestedInitializers();
+	default List<HapiSpecOperation> suggestedInitializers() {
+		return Collections.emptyList();
+	}
 	Optional<HapiSpecOperation> get();
 
 	default ResponseCodeEnum[] standardQueryPrechecksAnd(ResponseCodeEnum... more) {
@@ -83,5 +87,6 @@ public interface OpProvider {
 	String UNIQUE_PAYER_ACCOUNT = "uniquePayerAccount";
 	long UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE = 500_000_000_000L;
 	long TRANSACTION_FEE = 50_000_000_000L;
-
+	SplittableRandom BASE_RANDOM = new SplittableRandom();
 }
+

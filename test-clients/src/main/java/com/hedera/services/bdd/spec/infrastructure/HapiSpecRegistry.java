@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
@@ -255,10 +256,24 @@ public class HapiSpecRegistry {
 		remove(name + "Admin", Key.class);
 	}
 
-	public void saveAdminKey(String name, Key key) { put(name + "Admin", key, Key.class); }
+	public void saveAdminKey(String name, Key key) {
+		put(name + "Admin", key, Key.class);
+	}
+
+	public boolean hasAdminKey(String name) {
+		return has(name + "Admin", Key.class);
+	}
 
 	public void saveFreezeKey(String name, Key key) {
 		put(name + "Freeze", key, Key.class);
+	}
+
+	public boolean hasFreezeKey(String name) {
+		return has(name + "Freeze", Key.class);
+	}
+
+	public void forgetFreezeKey(String name) {
+		remove(name + "Freeze", Key.class);
 	}
 
 	public void saveExpiry(String name, Long value) {
@@ -269,12 +284,36 @@ public class HapiSpecRegistry {
 		put(name + "Supply", key, Key.class);
 	}
 
+	public boolean hasSupplyKey(String name) {
+		return has(name + "Supply", Key.class);
+	}
+
 	public void saveWipeKey(String name, Key key) {
 		put(name + "Wipe", key, Key.class);
 	}
 
+	public boolean hasWipeKey(String name) {
+		return has(name + "Wipe", Key.class);
+	}
+
+	public void forgetWipeKey(String name) {
+		remove(name + "Wipe", Key.class);
+	}
+
+	public void forgetSupplyKey(String name) {
+		remove(name + "Supply", Key.class);
+	}
+
+	public boolean hasKycKey(String name) {
+		return has(name + "Kyc", Key.class);
+	}
+
 	public void saveKycKey(String name, Key key) {
 		put(name + "Kyc", key, Key.class);
+	}
+
+	public void forgetKycKey(String name) {
+		remove(name + "Kyc", Key.class);
 	}
 
 	public void saveSymbol(String token, String symbol) {
@@ -297,8 +336,16 @@ public class HapiSpecRegistry {
 		return get(token + "Symbol", String.class);
 	}
 
+	public void forgetSymbol(String token) {
+		remove(token + "Symbol", String.class);
+	}
+
 	public String getName(String token) {
 		return get(token + "Name", String.class);
+	}
+
+	public void forgetName(String token) {
+		remove(token + "Name", String.class);
 	}
 
 	public Key getKey(String name) {
@@ -334,8 +381,7 @@ public class HapiSpecRegistry {
 	public void removeKey(String name) {
 		try {
 			remove(name, Key.class);
-		} catch (Exception ignore) {
-		}
+		} catch (Exception ignore) { }
 	}
 
 	public void saveTopicMeta(String name, ConsensusCreateTopicTransactionBody meta, Long approxConsensusTime) {
@@ -477,8 +523,28 @@ public class HapiSpecRegistry {
 		put(asTokenString(id), name);
 	}
 
+	public void forgetTokenId(String name) {
+		try {
+			var id = getTokenID(name);
+			remove(name, TokenID.class);
+			remove(asTokenString(id), String.class);
+		} catch (Throwable ignore) {}
+	}
+
+	public void saveTokenRel(String account, String token) {
+		put(tokenRelKey(account, token), new TokenAccountRegistryRel(token, account));
+	}
+
+	private String tokenRelKey(String account, String token) {
+		return account + "|" + token;
+	}
+
 	public void saveTreasury(String token, String treasury) {
 		put(token + "Treasury", treasury);
+	}
+
+	public void forgetTreasury(String token) {
+		remove(token + "Treasury", String.class);
 	}
 
 	public String getTreasury(String token) {
@@ -725,6 +791,10 @@ public class HapiSpecRegistry {
 			throw new RegistryNotFound("Missing " + type.getSimpleName() + " '" + name + "'!");
 		}
 		return type.cast(v);
+	}
+
+	private <T> boolean has(String name, Class<T> type) {
+		return registry.containsKey(full(name, type));
 	}
 
 	private synchronized <T> T getOrElse(String name, Class<T> type, T defaultValue) {

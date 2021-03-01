@@ -47,6 +47,7 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toList;
 
 public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
@@ -149,7 +150,11 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) {
-		/* No-op. */
+		if (actualStatus != SUCCESS) {
+			return;
+		}
+		var registry = spec.registry();
+		tokens.forEach(token -> registry.saveTokenRel(account, token));
 	}
 
 	@Override
