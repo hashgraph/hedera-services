@@ -118,7 +118,7 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 
 	private long getFileId(String file) {
 		long fileId;
-		try{
+		try {
 			fileId = Long.parseLong(file);
 		} catch (Exception e) {
 			fileId = NAMES_TO_NUMBERS.getOrDefault(file, 0L);
