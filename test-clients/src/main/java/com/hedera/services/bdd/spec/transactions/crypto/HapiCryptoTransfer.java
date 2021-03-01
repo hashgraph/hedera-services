@@ -40,12 +40,16 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -61,9 +65,13 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
+	static final Logger log = LogManager.getLogger(HapiCryptoTransfer.class);
+
 	private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = null;
 	private static final Function<HapiApiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
 	private static final int DEFAULT_TOKEN_TRANSFER_USAGE_MULTIPLIER = 60;
+
+	private boolean logResolvedStatus = false;
 
 	private Function<HapiApiSpec, TransferList> hbarOnlyProvider = MISSING_HBAR_ONLY_PROVIDER;
 	private List<TokenMovement> tokenAwareProviders = MISSING_TOKEN_AWARE_PROVIDERS;
@@ -71,6 +79,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoTransfer;
+	}
+
+	public HapiCryptoTransfer showingResolvedStatus() {
+		logResolvedStatus = true;
+		return this;
 	}
 
 	private static Collector<TransferList, ?, TransferList> transferCollector(
@@ -207,19 +220,21 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	private Function<HapiApiSpec, List<Key>> tokenAwareVariableDefaultSigners() {
 		return spec -> {
-			List<Key> partyKeys = new ArrayList<>();
+			Set<Key> partyKeys = new HashSet<>();
 			Map<String, Long> partyInvolvements = tokenAwareProviders.stream()
 					.map(TokenMovement::generallyInvolved)
 					.flatMap(List::stream)
 					.collect(groupingBy(
 							Map.Entry::getKey,
 							summingLong(Map.Entry<String, Long>::getValue)));
-			partyInvolvements.entrySet().forEach(entry -> {
-				if (entry.getValue() < 0 || spec.registry().isSigRequired(entry.getKey())) {
-					partyKeys.add(spec.registry().getKey(entry.getKey()));
+			partyInvolvements.forEach((account, value) -> {
+				int divider = account.indexOf("|");
+				var key = account.substring(divider + 1);
+				if (value < 0 || spec.registry().isSigRequired(key)) {
+					partyKeys.add(spec.registry().getKey(key));
 				}
 			});
-			return partyKeys;
+			return new ArrayList<>(partyKeys);
 		};
 	}
 
@@ -250,5 +265,12 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 						.addAllTransfers(entry.getValue())
 						.build())
 				.collect(toList());
+	}
+
+	@Override
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (logResolvedStatus) {
+			log.info("Resolved to {}", actualStatus);
+		}
 	}
 }

@@ -35,7 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateFee;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class TopicDeleteSuite extends HapiApiSuite {
@@ -133,18 +133,18 @@ public class TopicDeleteSuite extends HapiApiSuite {
 	private HapiApiSpec feeAsExpected() {
 		return defaultHapiSpec("feeAsExpected")
 				.given(
-						newKeyNamed("adminKey"),
+						cryptoCreate("payer"),
 						createTopic("testTopic")
-								.adminKeyName("adminKey"),
-						cryptoCreate("payer")
+								.adminKeyName("payer")
 				)
 				.when(
 						deleteTopic("testTopic")
+								.blankMemo()
 								.payingWith("payer")
 								.via("topicDelete")
 				)
 				.then(
-				        validateFee("topicDelete", 0.0081)
+				        validateChargedUsd("topicDelete", 0.005)
 				);
 	}
 

@@ -24,11 +24,9 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -261,7 +259,7 @@ public class TopicCreateSuite extends HapiApiSuite {
 								.via("topicCreate")
 				)
 				.then(
-				        validateFee("topicCreate", 0.0226)
+				        validateChargedUsd("topicCreate", 0.0226)
 				);
 	}
 

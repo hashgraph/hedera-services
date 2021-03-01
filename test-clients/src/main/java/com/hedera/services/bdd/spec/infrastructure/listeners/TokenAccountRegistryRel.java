@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.spec.utilops;
+package com.hedera.services.bdd.spec.infrastructure.listeners;
 
 /*-
  * ‌
@@ -20,28 +20,20 @@ package com.hedera.services.bdd.spec.utilops;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
+public class TokenAccountRegistryRel {
+	/* Names of a token and account in a spec registry */
+	private final String token, account;
 
-import java.util.function.Supplier;
-
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-
-public class SourcedOp extends UtilOp {
-	private final Supplier<HapiSpecOperation> source;
-
-	public SourcedOp(Supplier<HapiSpecOperation> source) {
-		this.source = source;
+	public TokenAccountRegistryRel(String token, String account) {
+		this.token = token;
+		this.account = account;
 	}
 
-	@Override
-	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		allRunFor(spec, source.get());
-		return false;
+	public String getToken() {
+		return token;
 	}
 
-	@Override
-	public String toString() {
-		return "SourcedOp";
+	public String getAccount() {
+		return account;
 	}
 }
