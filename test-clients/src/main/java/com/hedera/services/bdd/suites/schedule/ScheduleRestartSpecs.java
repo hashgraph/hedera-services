@@ -24,7 +24,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class ScheduleRestartSpecs extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(NeehaMixedOpsSetup.class);
+	private static final Logger log = LogManager.getLogger(ScheduleRestartSpecs.class);
 
 	public static void main(String... args) {
 		new ScheduleRestartSpecs().runSuiteSync();
