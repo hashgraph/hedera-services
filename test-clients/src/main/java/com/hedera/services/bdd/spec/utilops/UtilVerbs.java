@@ -421,21 +421,35 @@ public class UtilVerbs {
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 			var zeroTfs = zeroFor(function);
 			var schedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules);
-			var perturbedSchedules = CurrentAndNextFeeSchedule.newBuilder();
-			schedules.getCurrentFeeSchedule()
-					.getTransactionFeeScheduleList()
-					.stream()
-					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-					.forEach(perturbedSchedules.getCurrentFeeScheduleBuilder()::addTransactionFeeSchedule);
-			schedules.getNextFeeSchedule()
-					.getTransactionFeeScheduleList()
-					.stream()
-					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-					.forEach(perturbedSchedules.getNextFeeScheduleBuilder()::addTransactionFeeSchedule);
+			var perturbedSchedules = schedules.toBuilder();
 			perturbedSchedules.getCurrentFeeScheduleBuilder()
-					.setExpiryTime(schedules.getCurrentFeeSchedule().getExpiryTime());
+					.getTransactionFeeScheduleBuilderList()
+					.stream()
+					.filter(tfs -> tfs.getHederaFunctionality() == function)
+					.findAny()
+					.get()
+					.clearFeeData();
 			perturbedSchedules.getNextFeeScheduleBuilder()
-					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
+					.getTransactionFeeScheduleBuilderList()
+					.stream()
+					.filter(tfs -> tfs.getHederaFunctionality() == function)
+					.findAny()
+					.get()
+					.clearFeeData();
+//			schedules.getCurrentFeeSchedule()
+//					.getTransactionFeeScheduleList()
+//					.stream()
+//					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
+//					.forEach(perturbedSchedules.getCurrentFeeScheduleBuilder()::addTransactionFeeSchedule);
+//			schedules.getNextFeeSchedule()
+//					.getTransactionFeeScheduleList()
+//					.stream()
+//					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
+//					.forEach(perturbedSchedules.getNextFeeScheduleBuilder()::addTransactionFeeSchedule);
+//			perturbedSchedules.getCurrentFeeScheduleBuilder()
+//					.setExpiryTime(schedules.getCurrentFeeSchedule().getExpiryTime());
+//			perturbedSchedules.getNextFeeScheduleBuilder()
+//					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
