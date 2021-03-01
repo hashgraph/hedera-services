@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.regression;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
@@ -51,12 +52,28 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.files.RandomFil
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyInventoryCreation;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomReceipt;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomRecord;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAccountWipe;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenBurn;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDeletion;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenFreeze;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenInfo;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenKycGrant;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenKycRevoke;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenMint;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenTransfer;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUnfreeze;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUpdate;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.function.Function;
@@ -74,6 +91,10 @@ public class RegressionProviderFactory {
 					Key.class, spec.registry(), new RandomSelector());
 			var files = new RegistrySourcedNameProvider<>(
 					FileID.class, spec.registry(), new RandomSelector());
+			var tokens = new RegistrySourcedNameProvider<>(
+					TokenID.class, spec.registry(), new RandomSelector());
+			var tokenRels = new RegistrySourcedNameProvider<>(
+					TokenAccountRegistryRel.class, spec.registry(), new RandomSelector());
 			var allAccounts = new RegistrySourcedNameProvider<>(
 					AccountID.class, spec.registry(), new RandomSelector());
 			var unstableAccounts = new RegistrySourcedNameProvider<>(
@@ -165,7 +186,6 @@ public class RegressionProviderFactory {
 					.withOp(
 							new RandomTopicInfo(allTopics),
 							intPropOrElse("randomTopicInfo.bias", 0, props))
-
 					/* ---- FILE ---- */
 					.withOp(
 							new RandomFile(files)
@@ -189,6 +209,53 @@ public class RegressionProviderFactory {
 					.withOp(
 							new RandomContents(files),
 							intPropOrElse("randomContents.bias", 0, props))
+					/* ---- TOKEN ---- */
+					.withOp(
+							new RandomToken(keys, tokens, allAccounts),
+							props.getInteger("randomToken.bias"))
+					.withOp(
+							new RandomTokenAssociation(tokens, allAccounts, tokenRels)
+									.ceiling(intPropOrElse(
+											"randomTokenAssociation.ceilingNum",
+											RandomTokenAssociation.DEFAULT_CEILING_NUM,
+											props)),
+							props.getInteger("randomTokenAssociation.bias"))
+					.withOp(
+							new RandomTokenDissociation(tokenRels),
+							props.getInteger("randomTokenDissociation.bias"))
+					.withOp(
+							new RandomTokenDeletion(tokens),
+							props.getInteger("randomTokenDeletion.bias"))
+					.withOp(
+							new RandomTokenTransfer(tokenRels),
+							props.getInteger("randomTokenTransfer.bias"))
+					.withOp(
+							new RandomTokenFreeze(tokenRels),
+							props.getInteger("randomTokenFreeze.bias"))
+					.withOp(
+							new RandomTokenUnfreeze(tokenRels),
+							props.getInteger("randomTokenUnfreeze.bias"))
+					.withOp(
+							new RandomTokenKycGrant(tokenRels),
+							props.getInteger("randomTokenKycGrant.bias"))
+					.withOp(
+							new RandomTokenKycRevoke(tokenRels),
+							props.getInteger("randomTokenKycRevoke.bias"))
+					.withOp(
+							new RandomTokenMint(tokens),
+							props.getInteger("randomTokenMint.bias"))
+					.withOp(
+							new RandomTokenBurn(tokens),
+							props.getInteger("randomTokenBurn.bias"))
+					.withOp(
+							new RandomTokenUpdate(keys, tokens, allAccounts),
+							props.getInteger("randomTokenUpdate.bias"))
+					.withOp(
+							new RandomTokenAccountWipe(tokenRels),
+							props.getInteger("randomTokenAccountWipe.bias"))
+					.withOp(
+							new RandomTokenInfo(tokens),
+							props.getInteger("randomTokenInfo.bias"))
 					/* ---- CONTRACT ---- */
 					.withOp(
 							new RandomCall(calls),

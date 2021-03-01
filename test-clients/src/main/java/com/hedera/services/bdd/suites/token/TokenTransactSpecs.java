@@ -83,8 +83,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenPlusHbarTxnsAreAtomic(),
 						nonZeroTransfersRejected(),
 						prechecksWork(),
-						allRequiredSigsAreChecked(),
 						missingEntitiesRejected(),
+						allRequiredSigsAreChecked(),
 				}
 		);
 	}
@@ -226,7 +226,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec allRequiredSigsAreChecked() {
-		return defaultHapiSpec("SenderSigsAreChecked")
+		return defaultHapiSpec("AllRequiredSigsAreChecked")
 				.given(
 						cryptoCreate("payer"),
 						cryptoCreate("firstTreasury").balance(0L),

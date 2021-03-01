@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.utilops;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -147,8 +147,8 @@ public class ProviderRun extends UtilOp {
 				}
 			}
 
-			if(fixedOpSubmission && remainingOpsToSubmit.get() <= 0) {
-				if(numPending > 0) {
+			if (fixedOpSubmission && remainingOpsToSubmit.get() <= 0) {
+				if (numPending > 0) {
 					continue;
 				}
 				log.info("Finished submission of total {} operations", totalOpsToSubmit.getAsInt());
@@ -157,8 +157,9 @@ public class ProviderRun extends UtilOp {
 			if (numPending < MAX_PENDING_OPS) {
 				HapiSpecOperation[] burst = IntStream
 						.range(0, Math.min(MAX_N,
-								fixedOpSubmission ? Math.min(remainingOpsToSubmit.get(), MAX_OPS_PER_SEC - opsThisSecond.get())
-								:  MAX_OPS_PER_SEC - opsThisSecond.get()))
+								fixedOpSubmission ? Math.min(remainingOpsToSubmit.get(),
+										MAX_OPS_PER_SEC - opsThisSecond.get())
+										: MAX_OPS_PER_SEC - opsThisSecond.get()))
 						.mapToObj(ignore -> provider.get())
 						.flatMap(Optional::stream)
 						.peek(op -> counts.get(op.type()).getAndIncrement())
@@ -166,7 +167,7 @@ public class ProviderRun extends UtilOp {
 				if (burst.length > 0) {
 					allRunFor(spec, inParallel(burst));
 					submittedSoFar += burst.length;
-					if(fixedOpSubmission) {
+					if (fixedOpSubmission) {
 						remainingOpsToSubmit.getAndAdd(-burst.length);
 					}
 					opsThisSecond.getAndAdd(burst.length);
@@ -175,7 +176,8 @@ public class ProviderRun extends UtilOp {
 				log.warn("Now " + numPending + " ops pending; backing off for " + BACKOFF_SLEEP_SECS + "s!");
 				try {
 					Thread.sleep(BACKOFF_SLEEP_SECS * 1_000L);
-				} catch (InterruptedException ignore) { }
+				} catch (InterruptedException ignore) {
+				}
 			}
 		}
 
@@ -183,8 +185,8 @@ public class ProviderRun extends UtilOp {
 				.stream()
 				.filter(entry -> entry.getValue().get() > 0)
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get()));
-		log.info("Final breakdown of *provided* ops: "  + finalCounts);
-		log.info("Final breakdown of *resolved* statuses: "  + spec.finalizedStatusCounts());
+		log.info("Final breakdown of *provided* ops: " + finalCounts);
+		log.info("Final breakdown of *resolved* statuses: " + spec.finalizedStatusCounts());
 
 
 		return false;

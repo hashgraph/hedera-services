@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -201,9 +202,18 @@ public class CryptoTransferSuite extends HapiApiSuite {
 							double pureOneTokenTwoAccountsUsd = rates.toUsdWithActiveRates(t1a2Fee);
 							double pureTwoTokensFourAccountsUsd = rates.toUsdWithActiveRates(t2a4Fee);
 							double pureThreeTokensSixAccountsUsd = rates.toUsdWithActiveRates(t3a6Fee);
-							Assert.assertEquals(10.0, pureOneTokenTwoAccountsUsd / pureHbarUsd, 1.0);
-							Assert.assertEquals(20.0, pureTwoTokensFourAccountsUsd / pureHbarUsd, 1.0);
-							Assert.assertEquals(30.0, pureThreeTokensSixAccountsUsd / pureHbarUsd, 1.0);
+							Assert.assertEquals(
+									10.0,
+									pureOneTokenTwoAccountsUsd / pureHbarUsd,
+									1.0);
+							Assert.assertEquals(
+									20.0,
+									pureTwoTokensFourAccountsUsd / pureHbarUsd,
+									2.0);
+							Assert.assertEquals(
+									30.0,
+									pureThreeTokensSixAccountsUsd / pureHbarUsd,
+									3.0);
 						})
 				);
 	}
@@ -225,11 +235,13 @@ public class CryptoTransferSuite extends HapiApiSuite {
 							invalidAccountId.set(asTopicString(topicId));
 						})
 				).when().then(
-						cryptoTransfer(spec -> tinyBarsFromTo(DEFAULT_PAYER, invalidAccountId.get(), 1L).apply((spec)))
-								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						cryptoTransfer(moving(1, "token")
-								.between(spec -> DEFAULT_PAYER, spec -> invalidAccountId.get()))
-								.hasKnownStatus(INVALID_ACCOUNT_ID)
+						sourcing(() -> cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, invalidAccountId.get(), 1L))
+								.signedBy(DEFAULT_PAYER)
+								.hasKnownStatus(INVALID_ACCOUNT_ID)),
+						sourcing(() -> cryptoTransfer(moving(1, "token")
+								.between(DEFAULT_PAYER, invalidAccountId.get()))
+								.signedBy(DEFAULT_PAYER)
+								.hasKnownStatus(INVALID_ACCOUNT_ID))
 				);
 	}
 
