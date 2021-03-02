@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -114,6 +115,7 @@ public class MixedOpsScheduledTransactions extends HapiApiSuite {
 										.signedBy(DEFAULT_PAYER)
 										.inheritingScheduledSigs()
 										.withEntityMemo("This is the " + i + "th scheduled txn.")
+										.withNonce(TxnUtils.randomUtf8Bytes(8))
 						).toArray(HapiSpecOperation[]::new))
 				).then(
 						freeze().payingWith(GENESIS)
