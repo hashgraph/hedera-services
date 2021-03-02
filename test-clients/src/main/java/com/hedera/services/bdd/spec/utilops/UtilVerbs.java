@@ -414,7 +414,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation makeFree(HederaFunctionality function) {
-		return reduceFeeFor(function, 0, 0, 0);
+		return reduceFeeFor(function, 0L, 0L, 0L);
 	}
 
 	public static HapiSpecOperation reduceFeeFor(HederaFunctionality function,
@@ -424,11 +424,15 @@ public class UtilVerbs {
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
+
+			// Convert from tinyBar to one-thousandth of a tinyCent, the unit of max field in FeeComponents
+			long centEquiv = spec.ratesProvider().rates().getCentEquiv();
+			long hbarEquiv = spec.ratesProvider().rates().getHbarEquiv();
+			long maxNodeFee = tinyBarMaxNodeFee * centEquiv * 1000L / hbarEquiv;
+			long maxNetworkFee = tinyBarMaxNetworkFee * centEquiv * 1000L / hbarEquiv;
+			long maxServiceFee = tinyBarMaxServiceFee * centEquiv * 1000L / hbarEquiv;
+
 			var perturbedSchedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
-			var rates = spec.ratesProvider().rates();
-			long maxNodeFee = tinyBarMaxNodeFee * rates.getCentEquiv() * 1000L / rates.getHbarEquiv();
-			long maxNetworkFee = tinyBarMaxNetworkFee * rates.getCentEquiv() * 1000L / rates.getHbarEquiv();
-			long maxServiceFee = tinyBarMaxServiceFee * rates.getCentEquiv() * 1000L / rates.getHbarEquiv();
 			reduceFeeComponentsFor(perturbedSchedules.getCurrentFeeScheduleBuilder(), function,
 					maxNodeFee, maxNetworkFee, maxServiceFee);
 			reduceFeeComponentsFor(perturbedSchedules.getNextFeeScheduleBuilder(), function,
