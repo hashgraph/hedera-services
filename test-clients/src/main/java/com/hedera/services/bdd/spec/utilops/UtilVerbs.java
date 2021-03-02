@@ -414,14 +414,21 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation makeFree(HederaFunctionality function) {
+		return reduceFeeFor(function, 0, 0, 0);
+	}
+
+	public static HapiSpecOperation reduceFeeFor(HederaFunctionality function,
+			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
 		return withOpContext((spec, opLog) -> {
 			var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 			var perturbedSchedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
-			reduceFeeComponentsFor(perturbedSchedules.getCurrentFeeScheduleBuilder(), function, 0, 0, 0);
-			reduceFeeComponentsFor(perturbedSchedules.getNextFeeScheduleBuilder(), function, 0, 0, 0);
+			reduceFeeComponentsFor(perturbedSchedules.getCurrentFeeScheduleBuilder(), function,
+					maxNodeFee, maxNetworkFee, maxServiceFee);
+			reduceFeeComponentsFor(perturbedSchedules.getNextFeeScheduleBuilder(), function,
+					maxNodeFee, maxNetworkFee, maxServiceFee);
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
