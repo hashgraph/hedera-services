@@ -429,14 +429,15 @@ public class UtilVerbs {
 	}
 
 	private static void makeNodePaymentFree(FeeSchedule.Builder feeSchedule, HederaFunctionality function) {
-		feeSchedule.getTransactionFeeScheduleBuilderList()
+		var feeData = feeSchedule.getTransactionFeeScheduleBuilderList()
 				.stream()
 				.filter(tfs -> tfs.getHederaFunctionality() == function)
 				.findAny()
 				.get()
-				.getFeeDataBuilder()
-				.getNodedataBuilder()
-				.setMax(0);
+				.getFeeDataBuilder();
+		feeData.getNodedataBuilder().setMax(0);
+		feeData.getNetworkdataBuilder().setMax(0);
+		feeData.getServicedataBuilder().setMax(0);
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
