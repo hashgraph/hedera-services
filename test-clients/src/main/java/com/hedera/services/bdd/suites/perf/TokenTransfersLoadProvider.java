@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -62,6 +63,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.Map.entry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -102,7 +109,9 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						// end to prevent it from making new export files that may cause account balances validator to
 						// be inconsistent. The freeze shouldn't cause normal perf test any issue.
 						freeze().payingWith(GENESIS)
-								.startingIn(10).seconds()
+								.startingIn(30).seconds()
+								.hasKnownStatusFrom(SUCCESS,UNKNOWN)
+								.hasAnyPrecheck()
 								.andLasting(10).minutes(),
 						sleepFor(60_000)
 				);
@@ -149,7 +158,8 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						boolean hasKnownHtsFeeSchedules = false;
 						SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
 						while (!hasKnownHtsFeeSchedules) {
-							var query = QueryVerbs.getFileContents(FEE_SCHEDULE);
+							var query = QueryVerbs.getFileContents(FEE_SCHEDULE)
+									.fee(10_000_000_000L);
 							try {
 								allRunFor(spec, query);
 								var contents = query.getResponse().getFileGetContents().getFileContents().getContents();
@@ -221,8 +231,9 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						}
 					}
 					op = cryptoTransfer(xfers)
-							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+							.hasKnownStatusFrom(OK, DUPLICATE_TRANSACTION, SUCCESS, UNKNOWN, INSUFFICIENT_PAYER_BALANCE)
 							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+							.hasPrecheckFrom(OK, PLATFORM_NOT_ACTIVE)
 							.noLogging()
 							.deferStatusResolution();
 					firstDir.set(Boolean.FALSE);
@@ -240,8 +251,9 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						}
 					}
 					op = cryptoTransfer(xfers)
+							.hasKnownStatusFrom(OK, DUPLICATE_TRANSACTION, SUCCESS, UNKNOWN, INSUFFICIENT_PAYER_BALANCE)
 							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+							.hasPrecheckFrom(OK, PLATFORM_NOT_ACTIVE)
 							.noLogging()
 							.deferStatusResolution();
 					firstDir.set(Boolean.TRUE);
