@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 
 public class MixedOpsScheduledTransactions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MixedOpsScheduledTransactions.class);
@@ -80,6 +81,7 @@ public class MixedOpsScheduledTransactions extends HapiApiSuite {
 		int numScheduledTxns = 10;
 		return HapiApiSpec.defaultHapiSpec("CreateNeehaStartState")
 				.given(
+						PerfUtilOps.scheduleOpsEnablement(),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of(
@@ -105,7 +107,7 @@ public class MixedOpsScheduledTransactions extends HapiApiSuite {
 						createTopic("wellKnownTopic")
 								.advertisingCreation()
 				).when(
-						inParallel(IntStream.range(0, numScheduledTxns).mapToObj(i ->
+						IntStream.range(0, numScheduledTxns).mapToObj(i ->
 								scheduleCreate("schedule" + i,
 										cryptoTransfer(tinyBarsFromTo( "sender", "receiver", 1))
 												.signedBy("sender")
@@ -116,7 +118,7 @@ public class MixedOpsScheduledTransactions extends HapiApiSuite {
 										.inheritingScheduledSigs()
 										.withEntityMemo("This is the " + i + "th scheduled txn.")
 										.withNonce(TxnUtils.randomUtf8Bytes(8))
-						).toArray(HapiSpecOperation[]::new))
+						).toArray(HapiSpecOperation[]::new)
 				).then(
 						freeze().payingWith(GENESIS)
 								.startingIn(60).seconds()

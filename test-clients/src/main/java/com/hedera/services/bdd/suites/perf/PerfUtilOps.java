@@ -77,4 +77,16 @@ public class PerfUtilOps {
 						entry("tokenDissociateFromAccount", "0-*")
 				));
 	}
+
+	public static HapiTxnOp scheduleOpsEnablement() {
+		return fileUpdate(API_PERMISSIONS)
+				.fee(9_999_999_999L)
+				.payingWith(GENESIS)
+				.overridingProps(Map.ofEntries(
+						entry("ScheduleCreate", "0-*"),
+						entry("ScheduleDelete", "0-*"),
+						entry("ScheduleSign", "0-*"),
+						entry("ScheduleGetInfo", "0-*")
+				));
+	}
 }
