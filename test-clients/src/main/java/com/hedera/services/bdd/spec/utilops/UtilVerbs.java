@@ -418,13 +418,17 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation reduceFeeFor(HederaFunctionality function,
-			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
+			long tinyBarMaxNodeFee, long tinyBarMaxNetworkFee, long tinyBarMaxServiceFee) {
 		return withOpContext((spec, opLog) -> {
 			var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 			var perturbedSchedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
+			var rates = spec.ratesProvider().rates();
+			long maxNodeFee = tinyBarMaxNodeFee * rates.getCentEquiv() * 1000L / rates.getHbarEquiv();
+			long maxNetworkFee = tinyBarMaxNetworkFee * rates.getCentEquiv() * 1000L / rates.getHbarEquiv();
+			long maxServiceFee = tinyBarMaxServiceFee * rates.getCentEquiv() * 1000L / rates.getHbarEquiv();
 			reduceFeeComponentsFor(perturbedSchedules.getCurrentFeeScheduleBuilder(), function,
 					maxNodeFee, maxNetworkFee, maxServiceFee);
 			reduceFeeComponentsFor(perturbedSchedules.getNextFeeScheduleBuilder(), function,
