@@ -53,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -168,8 +169,8 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 						.signedBy(GENESIS)
 						.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED, DUPLICATE_TRANSACTION,INSUFFICIENT_PAYER_BALANCE)
 						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
-						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
-								TRANSACTION_EXPIRED, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,FAIL_INVALID)
+						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,INVALID_TOKEN_ID,
+								TRANSACTION_EXPIRED, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,FAIL_INVALID, OK)
 						.fee(A_HUNDRED_HBARS)
 						.noLogging()
 						.suppressStats(true)
@@ -237,7 +238,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
 				.hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS
 						,DUPLICATE_TRANSACTION)
 				.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-				.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_TOKEN_BALANCE,TRANSACTION_EXPIRED,
+				.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_TOKEN_BALANCE,TRANSACTION_EXPIRED,INVALID_TOKEN_ID,
 						UNKNOWN, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 				.deferStatusResolution();
 		return () -> op;
