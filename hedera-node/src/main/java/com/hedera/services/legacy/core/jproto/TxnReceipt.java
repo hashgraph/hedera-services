@@ -64,56 +64,6 @@ public class TxnReceipt implements SelfSerializable {
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x65ef569a77dcf125L;
 
 	static DomainSerdes serdes = new DomainSerdes();
-	static EntityId.Provider legacyIdProvider = EntityId.LEGACY_PROVIDER;
-	static ExchangeRates.Provider legacyRatesProvider = ExchangeRates.LEGACY_PROVIDER;
-	public static final TxnReceipt.Provider LEGACY_PROVIDER = new TxnReceipt.Provider();
-
-	@Deprecated
-	public static class Provider {
-		private static final long VERSION_WITHOUT_FINAL_RUNNING_HASH = 3;
-
-		public TxnReceipt deserialize(DataInputStream in) throws IOException {
-			var receipt = new TxnReceipt();
-
-			var version = in.readLong();
-			in.readLong();
-			if (in.readBoolean()) {
-				receipt.accountId = legacyIdProvider.deserialize(in);
-			}
-			if (in.readBoolean()) {
-				receipt.fileId = legacyIdProvider.deserialize(in);
-			}
-			if (in.readBoolean()) {
-				receipt.contractId = legacyIdProvider.deserialize(in);
-			}
-			int numStatusBytes = in.readInt();
-			if (numStatusBytes > 0) {
-				byte[] statusBytes = new byte[numStatusBytes];
-				in.readFully(statusBytes);
-				receipt.status = newStringUtf8(statusBytes);
-			}
-			if (in.readBoolean()) {
-				receipt.exchangeRates = legacyRatesProvider.deserialize(in);
-			}
-
-			if (in.readBoolean()) {
-				receipt.topicId = legacyIdProvider.deserialize(in);
-			}
-			if (in.readBoolean()) {
-				receipt.topicSequenceNumber = in.readLong();
-				int numHashBytes = in.readInt();
-				if (numHashBytes > 0) {
-					receipt.topicRunningHash = new byte[numHashBytes];
-					in.readFully(receipt.topicRunningHash);
-				}
-			}
-			if (version != VERSION_WITHOUT_FINAL_RUNNING_HASH) {
-				receipt.runningHashVersion = in.readLong();
-			}
-
-			return receipt;
-		}
-	}
 
 	long runningHashVersion = MISSING_RUNNING_HASH_VERSION;
 	long topicSequenceNumber = MISSING_TOPIC_SEQ_NO;

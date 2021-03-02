@@ -57,29 +57,6 @@ public class TxnId implements SelfSerializable {
 	public static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
 
 	static DomainSerdes serdes = new DomainSerdes();
-	static EntityId.Provider legacyIdProvider = EntityId.LEGACY_PROVIDER;
-	static RichInstant.Provider legacyInstantProvider = RichInstant.LEGACY_PROVIDER;
-
-	public static final TxnId.Provider LEGACY_PROVIDER = new TxnId.Provider();
-
-	@Deprecated
-	public static class Provider {
-		public TxnId deserialize(DataInputStream in) throws IOException {
-			var txnId = new TxnId();
-
-			in.readLong();
-			in.readLong();
-
-			if (in.readChar() == P) {
-				txnId.payerAccount = legacyIdProvider.deserialize(in);
-			}
-			if (in.readBoolean()) {
-				txnId.validStart = legacyInstantProvider.deserialize(in);
-			}
-
-			return txnId;
-		}
-	}
 
 	private byte[] nonce = ABSENT_NONCE;
 	private boolean scheduled = false;

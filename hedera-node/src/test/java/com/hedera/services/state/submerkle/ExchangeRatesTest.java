@@ -84,24 +84,6 @@ class ExchangeRatesTest {
 	}
 
 	@Test
-	public void legacyProviderWorks() throws IOException {
-		given(din.readBoolean()).willReturn(true);
-		given(din.readLong())
-				.willReturn(-1L).willReturn(-2L)
-				.willReturn(-1L).willReturn(-2L).willReturn(expCurrentExpiry)
-				.willReturn(-1L).willReturn(-2L).willReturn(expNextExpiry);
-		given(din.readInt())
-				.willReturn(expCurrentHbarEquiv).willReturn(expCurrentCentEquiv)
-				.willReturn(expNextHbarEquiv).willReturn(expNextCentEquiv);
-
-		// when:
-		var subjectRead = ExchangeRates.LEGACY_PROVIDER.deserialize(din);
-
-		// then:
-		assertEquals(subject, subjectRead);
-	}
-
-	@Test
 	public void copyWorks() {
 		// given:
 		var subjectCopy = subject.copy();
