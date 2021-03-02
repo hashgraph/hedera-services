@@ -25,14 +25,11 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 public class RandomScheduleInfo implements OpProvider {
 	private final RegistrySourcedNameProvider<ScheduleID> schedules;
