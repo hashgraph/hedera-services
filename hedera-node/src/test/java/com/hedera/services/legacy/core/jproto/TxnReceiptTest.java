@@ -57,6 +57,7 @@ public class TxnReceiptTest {
   private static final int MAX_STATUS_BYTES = 128;
 
   final TransactionID scheduledTxnId = TransactionID.newBuilder()
+		  .setScheduled(true)
           .setAccountID(IdUtils.asAccount("0.0.2"))
           .setNonce(ByteString.copyFromUtf8("Something something something"))
           .build();

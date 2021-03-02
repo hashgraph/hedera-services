@@ -80,6 +80,11 @@ public class ScheduleCreateTransitionLogicTest {
 			.setMemo("Just this")
 			.build()
 			.toByteArray();
+	final TransactionID scheduledTxnId = TransactionID.newBuilder()
+			.setAccountID(IdUtils.asAccount("0.0.2"))
+			.setNonce(ByteString.copyFromUtf8("Something something something"))
+			.setScheduled(true)
+			.build();
 
 	private final Optional<ScheduleID> EMPTY_SCHEDULE = Optional.empty();
 	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -161,6 +166,7 @@ public class ScheduleCreateTransitionLogicTest {
 	public void followsHappyPath() {
 		// setup:
 		MerkleSchedule created = mock(MerkleSchedule.class);
+		given(created.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(created.transactionBody()).willReturn(transactionBody);
 		given(created.expiry()).willReturn(now.getEpochSecond());
 
@@ -193,6 +199,7 @@ public class ScheduleCreateTransitionLogicTest {
 		verify(store).commitCreation();
 		verify(txnCtx).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
 	}
 
 	@Test
