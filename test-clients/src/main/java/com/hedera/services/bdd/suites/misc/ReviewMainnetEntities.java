@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.misc;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,6 +34,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -66,9 +66,35 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 //						checkTls(),
 //						doSomething(),
 //						oneOfEveryTokenTxn(),
-						customPayerOp(),
+//						customPayerOp(),
+						previewnetCryptoCreatePrice(),
 				}
 		);
+	}
+
+	public HapiApiSpec previewnetCryptoCreatePrice() {
+		return customHapiSpec("cryptoCreatePrice")
+				.withProperties(Map.of(
+						"nodes", "35.231.208.148",
+						"default.payer.pemKeyLoc", "previewtestnet-account2.pem",
+						"default.payer.pemKeyPassphrase", "<secret>"
+				))
+				.given(
+						cryptoCreate("civilian")
+								.balance(A_HUNDRED_HBARS)
+				).when(
+						cryptoCreate("another")
+								.payingWith("civilian")
+//								.signedBy("civilian")
+								.balance(0L)
+								.receiverSigRequired(true)
+								.blankMemo()
+								.entityMemo("")
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.via("civilianCreate")
+				).then(
+						getTxnRecord("civilianCreate").logged()
+				);
 	}
 
 	private HapiApiSpec oneOfEveryTokenTxn() {
