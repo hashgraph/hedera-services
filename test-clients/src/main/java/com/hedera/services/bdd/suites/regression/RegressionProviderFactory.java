@@ -53,6 +53,7 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyIn
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomReceipt;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomRecord;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomSchedule;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomScheduleInfo;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAccountWipe;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
@@ -283,7 +284,10 @@ public class RegressionProviderFactory {
 											"randomSchedule.ceilingNum",
 											RandomSchedule.DEFAULT_CEILING_NUM,
 											props)),
-							intPropOrElse("randomSchedule.bias", 0, props));
+							intPropOrElse("randomSchedule.bias", 0, props))
+					.withOp(
+							new RandomScheduleInfo(allSchedules),
+							intPropOrElse("randomScheduleInfo.bias", 0, props));
 		};
 	}
 
