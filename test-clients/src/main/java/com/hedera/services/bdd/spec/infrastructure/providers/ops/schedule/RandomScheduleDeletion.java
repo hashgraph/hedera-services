@@ -31,6 +31,9 @@ import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_PAYER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -39,7 +42,7 @@ public class RandomScheduleDeletion implements OpProvider {
 	private final RegistrySourcedNameProvider<ScheduleID> schedules;
 
 	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
-			SCHEDULE_IS_IMMUTABLE
+			SCHEDULE_IS_IMMUTABLE, INVALID_SCHEDULE_ID, INVALID_SIGNATURE
 	);
 
 	public RandomScheduleDeletion(RegistrySourcedNameProvider<ScheduleID> schedules) {
@@ -55,7 +58,8 @@ public class RandomScheduleDeletion implements OpProvider {
 
 		var op = scheduleDelete(target.get())
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-				.hasKnownStatusFrom(permissibleOutcomes);
+				.hasKnownStatusFrom(permissibleOutcomes)
+				.signedBy(DEFAULT_PAYER);
 		return Optional.of(op);
 	}
 }

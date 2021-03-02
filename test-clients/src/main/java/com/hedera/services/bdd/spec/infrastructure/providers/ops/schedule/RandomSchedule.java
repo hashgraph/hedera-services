@@ -22,13 +22,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.suites.HapiApiSuite.A_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_PAYER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static java.util.stream.Collectors.toList;
 
 public class RandomSchedule implements OpProvider {
 	private final AtomicInteger opNo = new AtomicInteger();
 	private final RegistrySourcedNameProvider<ScheduleID> schedules;
 	private final EntityNameProvider<AccountID> accounts;
-	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd();
+	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(MEMO_TOO_LONG,
+			UNSCHEDULABLE_TRANSACTION,
+			UNRESOLVABLE_REQUIRED_SIGNERS);
 
 	private int numStableAccounts = DEFAULT_NUM_STABLE_ACCOUNTS;
 	static final long INITIAL_BALANCE = 1_000_000_000L;
@@ -60,6 +65,7 @@ public class RandomSchedule implements OpProvider {
 				)
 				.collect(toList());
 	}
+
 	@Override
 	public Optional<HapiSpecOperation> get() {
 		if (schedules.numPresent() >= ceilingNum) {
@@ -74,15 +80,16 @@ public class RandomSchedule implements OpProvider {
 		String from = involved.get().getKey(), to = involved.get().getValue();
 
 		HapiScheduleCreate op = scheduleCreate("schedule" + id,
-				cryptoTransfer(tinyBarsFromTo( from,to, 1))
-				.signedBy(from)
+				cryptoTransfer(tinyBarsFromTo(from, to, 1))
+						.signedBy(from)
 		)
 				.signedBy(DEFAULT_PAYER)
 				.fee(A_HUNDRED_HBARS)
 				.inheritingScheduledSigs()
 				.memo("randomlycreated" + id)
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-				.hasKnownStatusFrom(permissibleOutcomes);
+				.hasKnownStatusFrom(permissibleOutcomes)
+				.adminKey(DEFAULT_PAYER);
 		return Optional.of(op);
 	}
 

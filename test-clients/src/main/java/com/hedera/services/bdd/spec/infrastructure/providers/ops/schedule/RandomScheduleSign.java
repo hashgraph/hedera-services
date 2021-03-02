@@ -36,6 +36,8 @@ import java.util.Set;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 public class RandomScheduleSign implements OpProvider {
 	static final Logger log = LogManager.getLogger(RandomScheduleSign.class);
@@ -50,6 +52,7 @@ public class RandomScheduleSign implements OpProvider {
 	private final RegistrySourcedNameProvider<ScheduleSignersRegistry> scheduleSigners;
 
 	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+			SOME_SIGNATURES_WERE_INVALID, INVALID_SCHEDULE_ID
 	);
 
 	public RandomScheduleSign(
