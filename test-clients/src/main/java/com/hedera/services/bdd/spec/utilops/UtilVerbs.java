@@ -420,23 +420,24 @@ public class UtilVerbs {
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 			var perturbedSchedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
-			makeAllFeeComponentsFree(perturbedSchedules.getCurrentFeeScheduleBuilder(), function);
-			makeAllFeeComponentsFree(perturbedSchedules.getNextFeeScheduleBuilder(), function);
+			reduceFeeComponentsFor(perturbedSchedules.getCurrentFeeScheduleBuilder(), function, 0, 0, 0);
+			reduceFeeComponentsFor(perturbedSchedules.getNextFeeScheduleBuilder(), function, 0, 0, 0);
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
 	}
 
-	private static void makeAllFeeComponentsFree(FeeSchedule.Builder feeSchedule, HederaFunctionality function) {
+	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
+			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
 		var feeData = feeSchedule.getTransactionFeeScheduleBuilderList()
 				.stream()
 				.filter(tfs -> tfs.getHederaFunctionality() == function)
 				.findAny()
 				.get()
 				.getFeeDataBuilder();
-		feeData.getNodedataBuilder().setMax(0);
-		feeData.getNetworkdataBuilder().setMax(0);
-		feeData.getServicedataBuilder().setMax(0);
+		feeData.getNodedataBuilder().setMax(maxNodeFee);
+		feeData.getNetworkdataBuilder().setMax(maxNetworkFee);
+		feeData.getServicedataBuilder().setMax(maxServiceFee);
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
