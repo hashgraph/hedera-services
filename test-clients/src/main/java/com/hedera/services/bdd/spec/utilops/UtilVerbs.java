@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
@@ -421,27 +422,22 @@ public class UtilVerbs {
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 			var schedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules);
 			var perturbedSchedules = schedules.toBuilder();
-			perturbedSchedules.getCurrentFeeScheduleBuilder()
-					.getTransactionFeeScheduleBuilderList()
-					.stream()
-					.filter(tfs -> tfs.getHederaFunctionality() == function)
-					.findAny()
-					.get()
-					.getFeeDataBuilder()
-					.getNodedataBuilder()
-					.setMax(0);
-			perturbedSchedules.getNextFeeScheduleBuilder()
-					.getTransactionFeeScheduleBuilderList()
-					.stream()
-					.filter(tfs -> tfs.getHederaFunctionality() == function)
-					.findAny()
-					.get()
-					.getFeeDataBuilder()
-					.getNodedataBuilder()
-					.setMax(0);
+			makeNodePaymentFree(perturbedSchedules.getCurrentFeeScheduleBuilder(), function);
+			makeNodePaymentFree(perturbedSchedules.getNextFeeScheduleBuilder(), function);
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
+	}
+
+	private static void makeNodePaymentFree(FeeSchedule.Builder feeSchedule, HederaFunctionality function) {
+		feeSchedule.getTransactionFeeScheduleBuilderList()
+				.stream()
+				.filter(tfs -> tfs.getHederaFunctionality() == function)
+				.findAny()
+				.get()
+				.getFeeDataBuilder()
+				.getNodedataBuilder()
+				.setMax(0);
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
