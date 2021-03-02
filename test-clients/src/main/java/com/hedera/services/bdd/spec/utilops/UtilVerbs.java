@@ -56,7 +56,6 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -421,14 +420,14 @@ public class UtilVerbs {
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 			var perturbedSchedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
-			makeNodePaymentFree(perturbedSchedules.getCurrentFeeScheduleBuilder(), function);
-			makeNodePaymentFree(perturbedSchedules.getNextFeeScheduleBuilder(), function);
+			makeAllFeeComponentsFree(perturbedSchedules.getCurrentFeeScheduleBuilder(), function);
+			makeAllFeeComponentsFree(perturbedSchedules.getNextFeeScheduleBuilder(), function);
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
 	}
 
-	private static void makeNodePaymentFree(FeeSchedule.Builder feeSchedule, HederaFunctionality function) {
+	private static void makeAllFeeComponentsFree(FeeSchedule.Builder feeSchedule, HederaFunctionality function) {
 		var feeData = feeSchedule.getTransactionFeeScheduleBuilderList()
 				.stream()
 				.filter(tfs -> tfs.getHederaFunctionality() == function)
