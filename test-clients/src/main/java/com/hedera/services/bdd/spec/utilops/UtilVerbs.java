@@ -427,14 +427,18 @@ public class UtilVerbs {
 					.filter(tfs -> tfs.getHederaFunctionality() == function)
 					.findAny()
 					.get()
-					.clearFeeData();
+					.getFeeDataBuilder()
+					.getNodedataBuilder()
+					.setMax(0);
 			perturbedSchedules.getNextFeeScheduleBuilder()
 					.getTransactionFeeScheduleBuilderList()
 					.stream()
 					.filter(tfs -> tfs.getHederaFunctionality() == function)
 					.findAny()
 					.get()
-					.clearFeeData();
+					.getFeeDataBuilder()
+					.getNodedataBuilder()
+					.setMax(0);
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
