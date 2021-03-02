@@ -56,8 +56,8 @@ public class UtilVerbChecks extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						testLivenessTimeout(),
-//						testMakingFree(),
-						testDissociation(),
+						testMakingFree(),
+//						testDissociation(),
 				}
 		);
 	}
