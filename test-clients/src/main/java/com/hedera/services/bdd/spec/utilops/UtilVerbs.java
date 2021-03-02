@@ -420,8 +420,7 @@ public class UtilVerbs {
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
-			var schedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules);
-			var perturbedSchedules = schedules.toBuilder();
+			var perturbedSchedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
 			makeNodePaymentFree(perturbedSchedules.getCurrentFeeScheduleBuilder(), function);
 			makeNodePaymentFree(perturbedSchedules.getNextFeeScheduleBuilder(), function);
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
