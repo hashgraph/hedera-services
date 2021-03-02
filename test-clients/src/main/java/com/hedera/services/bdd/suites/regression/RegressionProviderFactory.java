@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.regression;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.listeners.ScheduleSignersRegistry;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
@@ -53,7 +54,9 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyIn
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomReceipt;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomRecord;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomSchedule;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomScheduleDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomScheduleInfo;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomScheduleSign;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAccountWipe;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
@@ -114,6 +117,8 @@ public class RegressionProviderFactory {
 					TopicID.class, spec.registry(), new RandomSelector(topic -> !topic.startsWith("stable-")));
 			var allSchedules = new RegistrySourcedNameProvider<>(
 					ScheduleID.class, spec.registry(), new RandomSelector());
+			var scheduleSignerRels = new RegistrySourcedNameProvider<>(
+					ScheduleSignersRegistry.class, spec.registry(), new RandomSelector());
 
 			KeyInventoryCreation keyInventory = new KeyInventoryCreation();
 
@@ -287,7 +292,13 @@ public class RegressionProviderFactory {
 							intPropOrElse("randomSchedule.bias", 0, props))
 					.withOp(
 							new RandomScheduleInfo(allSchedules),
-							intPropOrElse("randomScheduleInfo.bias", 0, props));
+							intPropOrElse("randomScheduleInfo.bias", 0, props))
+					.withOp(
+							new RandomScheduleDeletion(allSchedules),
+							intPropOrElse("randomScheduleDelete.bias", 0, props))
+					.withOp(
+							new RandomScheduleSign(allSchedules, allAccounts, scheduleSignerRels),
+							intPropOrElse("randomScheduleSign.bias", 0, props));
 		};
 	}
 
