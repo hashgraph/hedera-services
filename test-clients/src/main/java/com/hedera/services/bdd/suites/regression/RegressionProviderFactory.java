@@ -52,6 +52,7 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.files.RandomFil
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyInventoryCreation;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomReceipt;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.meta.RandomRecord;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomSchedule;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAccountWipe;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
@@ -72,6 +73,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ScheduleCreate;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
@@ -108,6 +111,8 @@ public class RegressionProviderFactory {
 					TopicID.class, spec.registry(), new RandomSelector());
 			var unstableTopics = new RegistrySourcedNameProvider<>(
 					TopicID.class, spec.registry(), new RandomSelector(topic -> !topic.startsWith("stable-")));
+			var allSchedules = new RegistrySourcedNameProvider<>(
+					ScheduleID.class, spec.registry(), new RandomSelector());
 
 			KeyInventoryCreation keyInventory = new KeyInventoryCreation();
 
@@ -271,7 +276,14 @@ public class RegressionProviderFactory {
 											"randomContract.ceilingNum",
 											RandomContract.DEFAULT_CEILING_NUM,
 											props)),
-							intPropOrElse("randomContract.bias", 0, props));
+							intPropOrElse("randomContract.bias", 0, props))
+					.withOp(
+							new RandomSchedule(allSchedules, allAccounts)
+									.ceiling(intPropOrElse(
+											"randomSchedule.ceilingNum",
+											RandomSchedule.DEFAULT_CEILING_NUM,
+											props)),
+							intPropOrElse("randomSchedule.bias", 0, props));
 		};
 	}
 
