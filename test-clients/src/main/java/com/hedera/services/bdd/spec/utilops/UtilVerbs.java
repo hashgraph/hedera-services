@@ -588,7 +588,7 @@ public class UtilVerbs {
 
 	public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
 		return assertionsHold((spec, assertLog) -> {
-			var subOp = getTxnRecord(txn);
+			var subOp = getTxnRecord(txn).logged();
 			allRunFor(spec, subOp);
 
 			var record = subOp.getResponseRecord();
