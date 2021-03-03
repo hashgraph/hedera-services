@@ -537,7 +537,11 @@ public class HapiSpecRegistry {
 	}
 
 	public void saveScheduleSigners(String schedule, List<String> signers) {
-		put(schedule, new ScheduleSignersRegistry(schedule, signers));
+		put(scheduleRelKey(schedule, signers), new ScheduleSignersRegistry(schedule, signers));
+	}
+
+	private String scheduleRelKey(String schedule, List<String> signers) {
+		return schedule + "|" + signers.toString();
 	}
 
 	private String tokenRelKey(String account, String token) {
