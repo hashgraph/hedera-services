@@ -1,4 +1,6 @@
+id: {num: 1011, realm: 0, shard: 0}
+name: ofGeneralInterest
 topic:
   adminKey: {generateIfMissing: true, wordsLoc: admin.words}
-  submitKey: {generateIfMissing: true, wordsLoc: submit.words}
   autoRenewAccount: autoRenewAccount
+  submitKey: {generateIfMissing: true, wordsLoc: submit.words}

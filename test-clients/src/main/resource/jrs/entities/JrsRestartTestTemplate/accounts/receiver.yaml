@@ -2,3 +2,6 @@ account:
   balance: 99
   key: {generateIfMissing: true, wordsLoc: receiver.words}
   receiverSigRequired: true
+  recharging: false
+id: {num: 1009, realm: 0, shard: 0}
+name: receiver

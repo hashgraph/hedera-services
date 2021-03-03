@@ -1,3 +1,4 @@
+id: {num: 1010, realm: 0, shard: 0}
 name: pendingXfer
 schedule:
   signatories: [sender]

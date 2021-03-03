@@ -1,2 +1,6 @@
 account:
   key: {generateIfMissing: true, wordsLoc: treasury.words}
+  receiverSigRequired: false
+  recharging: false
+id: {num: 1006, realm: 0, shard: 0}
+name: treasury

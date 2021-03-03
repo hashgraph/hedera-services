@@ -26,6 +26,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +35,7 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.checkPersistentEntities;
@@ -107,6 +109,23 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	}
 
 	private HapiSpecOperation[] postRestartValidation() {
+		return List.of(
+				postRestartScheduleValidation(),
+				postRestartTopicValidation()
+		)
+				.stream()
+				.flatMap(Arrays::stream)
+				.toArray(HapiSpecOperation[]::new);
+	}
+
+	private HapiSpecOperation[] postRestartTopicValidation() {
+		return new HapiSpecOperation[] {
+				submitMessageTo("ofGeneralInterest")
+						.message("Brave new world, isn't it?")
+		};
+	}
+
+	private HapiSpecOperation[] postRestartScheduleValidation() {
 		return new HapiSpecOperation[] {
 				getAccountInfo(SENDER).has(accountWith()
 						.balance(1L)),

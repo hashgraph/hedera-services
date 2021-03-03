@@ -1,2 +1,6 @@
 account:
   key: {generateIfMissing: true, wordsLoc: autoRenewAccount.words}
+  receiverSigRequired: false
+  recharging: false
+id: {num: 1008, realm: 0, shard: 0}
+name: autoRenewAccount
