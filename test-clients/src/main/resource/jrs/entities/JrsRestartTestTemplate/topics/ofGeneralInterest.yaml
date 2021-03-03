@@ -1,3 +1,4 @@
 topic:
+  adminKey: {generateIfMissing: true, wordsLoc: admin.words}
   submitKey: {generateIfMissing: true, wordsLoc: submit.words}
   autoRenewAccount: autoRenewAccount
