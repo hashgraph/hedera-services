@@ -422,6 +422,8 @@ public class UtilVerbs {
 			long tinyBarMaxNodeFee, long tinyBarMaxNetworkFee, long tinyBarMaxServiceFee) {
 		return withOpContext((spec, opLog) -> {
 			if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
+				opLog.info("Sleeping to wait for fee reduction...");
+				Thread.sleep(5000);
 				return;
 			}
 			opLog.info("Reducing fee for {}...", function);
