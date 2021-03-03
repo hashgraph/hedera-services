@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 
 public class MixedOpsScheduledTransactions extends HapiApiSuite {
@@ -82,11 +83,13 @@ public class MixedOpsScheduledTransactions extends HapiApiSuite {
 		return HapiApiSpec.defaultHapiSpec("CreateNeehaStartState")
 				.given(
 						PerfUtilOps.scheduleOpsEnablement(),
+						tokenOpsEnablement(),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of(
 										"ledger.schedule.txExpiryTimeSecs", "" + ONE_YEAR_IN_SECS
 								)),
+						sleepFor(10000),
 						cryptoCreate("sender")
 								.advertisingCreation()
 								.balance(ONE_HBAR),
