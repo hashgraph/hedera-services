@@ -22,6 +22,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.suites.HapiApiSuite.A_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_PAYER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
@@ -34,6 +36,11 @@ public class RandomSchedule implements OpProvider {
 	public final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(MEMO_TOO_LONG,
 			UNSCHEDULABLE_TRANSACTION,
 			UNRESOLVABLE_REQUIRED_SIGNERS);
+
+	private final ResponseCodeEnum[] outcomesForTransfer = standardOutcomesAnd(
+			ACCOUNT_DELETED,
+			INSUFFICIENT_ACCOUNT_BALANCE
+	);
 
 	private int numStableAccounts = DEFAULT_NUM_STABLE_ACCOUNTS;
 	static final long INITIAL_BALANCE = 1_000_000_000L;
@@ -63,7 +70,6 @@ public class RandomSchedule implements OpProvider {
 								.deferStatusResolution()
 								.payingWith(UNIQUE_PAYER_ACCOUNT)
 								.receiverSigRequired(true)
-								.rechargeWindow(3)
 				)
 				.collect(toList());
 	}
@@ -85,6 +91,8 @@ public class RandomSchedule implements OpProvider {
 				cryptoTransfer(tinyBarsFromTo(from, "stable-receiver", 1))
 						.signedBy(from)
 						.payingWith(DEFAULT_PAYER)
+						.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+						.hasKnownStatusFrom(outcomesForTransfer)
 		)
 				.signedBy(DEFAULT_PAYER)
 				.fee(A_HUNDRED_HBARS)
