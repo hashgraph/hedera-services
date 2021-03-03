@@ -1,0 +1,3 @@
+topic:
+  submitKey: {generateIfMissing: true, wordsLoc: submit.words}
+  autoRenewAccount: autoRenewAccount
