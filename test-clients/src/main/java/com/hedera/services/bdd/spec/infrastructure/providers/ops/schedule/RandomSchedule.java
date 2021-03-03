@@ -55,13 +55,14 @@ public class RandomSchedule implements OpProvider {
 
 	@Override
 	public List<HapiSpecOperation> suggestedInitializers() {
-		return stableAccounts(numStableAccounts).stream()
+		return stableAccounts(1).stream()
 				.map(account ->
-						cryptoCreate(my(account))
+						cryptoCreate("stable-receiver")
 								.noLogging()
 								.balance(INITIAL_BALANCE)
 								.deferStatusResolution()
 								.payingWith(UNIQUE_PAYER_ACCOUNT)
+								.receiverSigRequired(true)
 				)
 				.collect(toList());
 	}
@@ -80,7 +81,7 @@ public class RandomSchedule implements OpProvider {
 		String from = involved.get().getKey(), to = involved.get().getValue();
 
 		HapiScheduleCreate op = scheduleCreate("schedule" + id,
-				cryptoTransfer(tinyBarsFromTo(from, to, 1))
+				cryptoTransfer(tinyBarsFromTo(from, "stable-receiver", 1))
 						.signedBy(from)
 		)
 				.signedBy(DEFAULT_PAYER)

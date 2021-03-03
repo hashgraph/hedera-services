@@ -245,7 +245,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		registry.saveBytes(registryBytesTag(entity), bytesSigned);
 		registry.saveExpiry(entity, (long)defaultScheduleTxnExpiry);
 		adminKey.ifPresent(k -> registry.saveAdminKey(entity, spec.registry().getKey(k)));
-		registry.saveScheduleSigners(entity, signatories);
 
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(

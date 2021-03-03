@@ -536,14 +536,6 @@ public class HapiSpecRegistry {
 		put(tokenRelKey(account, token), new TokenAccountRegistryRel(token, account));
 	}
 
-	public void saveScheduleSigners(String schedule, List<String> signers) {
-		put(scheduleRelKey(schedule, signers), new ScheduleSignersRegistry(schedule, signers));
-	}
-
-	private String scheduleRelKey(String schedule, List<String> signers) {
-		return schedule + "|" + String.join(",", signers);
-	}
-
 	private String tokenRelKey(String account, String token) {
 		return account + "|" + token;
 	}

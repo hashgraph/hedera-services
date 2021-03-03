@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.regression;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.listeners.ScheduleSignersRegistry;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
@@ -77,7 +76,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ScheduleCreate;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -117,8 +115,6 @@ public class RegressionProviderFactory {
 					TopicID.class, spec.registry(), new RandomSelector(topic -> !topic.startsWith("stable-")));
 			var allSchedules = new RegistrySourcedNameProvider<>(
 					ScheduleID.class, spec.registry(), new RandomSelector());
-			var scheduleSignerRels = new RegistrySourcedNameProvider<>(
-					ScheduleSignersRegistry.class, spec.registry(), new RandomSelector());
 
 			KeyInventoryCreation keyInventory = new KeyInventoryCreation();
 
@@ -297,7 +293,7 @@ public class RegressionProviderFactory {
 							new RandomScheduleDeletion(allSchedules),
 							intPropOrElse("randomScheduleDelete.bias", 0, props))
 					.withOp(
-							new RandomScheduleSign(allSchedules, allAccounts, scheduleSignerRels),
+							new RandomScheduleSign(allSchedules, allAccounts),
 							intPropOrElse("randomScheduleSign.bias", 0, props));
 		};
 	}
