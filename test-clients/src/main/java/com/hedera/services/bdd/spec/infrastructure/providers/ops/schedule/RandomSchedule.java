@@ -31,7 +31,7 @@ public class RandomSchedule implements OpProvider {
 	private final AtomicInteger opNo = new AtomicInteger();
 	private final RegistrySourcedNameProvider<ScheduleID> schedules;
 	private final EntityNameProvider<AccountID> accounts;
-	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(MEMO_TOO_LONG,
+	public final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(MEMO_TOO_LONG,
 			UNSCHEDULABLE_TRANSACTION,
 			UNRESOLVABLE_REQUIRED_SIGNERS);
 
@@ -63,6 +63,7 @@ public class RandomSchedule implements OpProvider {
 								.deferStatusResolution()
 								.payingWith(UNIQUE_PAYER_ACCOUNT)
 								.receiverSigRequired(true)
+								.rechargeWindow(3)
 				)
 				.collect(toList());
 	}
@@ -83,6 +84,7 @@ public class RandomSchedule implements OpProvider {
 		HapiScheduleCreate op = scheduleCreate("schedule" + id,
 				cryptoTransfer(tinyBarsFromTo(from, "stable-receiver", 1))
 						.signedBy(from)
+						.payingWith(DEFAULT_PAYER)
 		)
 				.signedBy(DEFAULT_PAYER)
 				.fee(A_HUNDRED_HBARS)

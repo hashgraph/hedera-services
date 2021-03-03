@@ -34,16 +34,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SplittableRandom;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.SEND_THRESHOLD;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_PAYER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static java.util.stream.Collectors.toList;
-import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.*;
 import static java.util.stream.Collectors.toSet;
 
 public class RandomTransfer implements OpProvider {
@@ -95,6 +96,7 @@ public class RandomTransfer implements OpProvider {
 										.balance(INITIAL_BALANCE)
 										.deferStatusResolution()
 										.payingWith(UNIQUE_PAYER_ACCOUNT)
+										.rechargeWindow(3)
 						)
 						.collect(toList());
 	}
@@ -112,7 +114,8 @@ public class RandomTransfer implements OpProvider {
 
 		HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromTo(from, to, amount))
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-				.hasKnownStatusFrom(permissibleOutcomes);
+				.hasKnownStatusFrom(permissibleOutcomes)
+				.payingWith(DEFAULT_PAYER);
 
 		return Optional.of(op);
 	}
