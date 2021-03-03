@@ -57,7 +57,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 public class JrsRestartTestTemplate extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);
 
-	private static final String ENTITIES_DIR = "src/main/resource/jrs/entities/RestartWithScheduledEntities";
+	private static final String ENTITIES_DIR = "src/main/resource/jrs/entities/JrsRestartTestTemplate";
 
 	private static final String SENDER = "sender";
 	private static final String RECEIVER = "receiver";
