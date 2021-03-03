@@ -115,7 +115,6 @@ import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
-import com.hedera.services.bdd.suites.schedule.ScheduleRestartSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
@@ -283,7 +282,6 @@ public class SuiteRunner {
 		put("ScheduleRecordSpecs", aof(new ScheduleRecordSpecs()));
 		put("ScheduleDeleteSpecs", aof(new ScheduleDeleteSpecs()));
 		put("ScheduleExecutionSpecs", aof(new ScheduleExecutionSpecs()));
-		put("ScheduleRestartSpecs", aof(new ScheduleRestartSpecs()));
 		/* Functional tests - TOKEN */
 		put("TokenCreateSpecs", aof(new TokenCreateSpecs()));
 		put("TokenUpdateSpecs", aof(new TokenUpdateSpecs()));
