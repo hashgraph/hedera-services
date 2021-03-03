@@ -423,9 +423,10 @@ public class UtilVerbs {
 		return withOpContext((spec, opLog) -> {
 			if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
 				opLog.info("Sleeping to wait for fee reduction...");
-				Thread.sleep(10000);
+				Thread.sleep(20000);
 				return;
 			}
+			Thread.sleep(10000);
 			opLog.info("Reducing fee for {}...", function);
 			var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
 			allRunFor(spec, query);
