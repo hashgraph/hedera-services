@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_STATUSES;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
@@ -95,6 +96,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 	private HapiApiSpec runTokenTransfers() {
 		return HapiApiSpec.defaultHapiSpec("RunTokenTransfers")
 				.given(
+						getAccountBalance(DEFAULT_PAYER).logged(),
 						stdMgmtOf(duration, unit, maxOpsPerSec),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -105,6 +107,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						.lasting(duration::get, unit::get)
 						.maxOpsPerSec(maxOpsPerSec::get)
 				).then(
+						getAccountBalance(DEFAULT_PAYER).logged(),
 						// The freeze and long wait after freeze means to keep the server in MAINTAENANCE state till test
 						// end to prevent it from making new export files that may cause account balances validator to
 						// be inconsistent. The freeze shouldn't cause normal perf test any issue.
