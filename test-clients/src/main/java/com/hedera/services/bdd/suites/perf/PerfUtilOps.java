@@ -83,10 +83,10 @@ public class PerfUtilOps {
 				.fee(9_999_999_999L)
 				.payingWith(GENESIS)
 				.overridingProps(Map.ofEntries(
-						entry("ScheduleCreate", "0-*"),
-						entry("ScheduleDelete", "0-*"),
-						entry("ScheduleSign", "0-*"),
-						entry("ScheduleGetInfo", "0-*")
+						entry("scheduleCreate", "0-*"),
+						entry("scheduleDelete", "0-*"),
+						entry("scheduleSign", "0-*"),
+						entry("scheduleGetInfo", "0-*")
 				));
 	}
 }
