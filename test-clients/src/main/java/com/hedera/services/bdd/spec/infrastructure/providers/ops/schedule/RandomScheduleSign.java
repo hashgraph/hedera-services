@@ -30,9 +30,9 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURE
 public class RandomScheduleSign implements OpProvider {
 	static final Logger log = LogManager.getLogger(RandomScheduleSign.class);
 
-	public static final int MAX_SIGNATURES_PER_OP = 1;
+	public static final int MAX_SIGNATURES_PER_OP = 2;
 	public static final int DEFAULT_CEILING_NUM = 10_000;
 
 	private int ceilingNum = DEFAULT_CEILING_NUM;
@@ -72,8 +72,13 @@ public class RandomScheduleSign implements OpProvider {
 
 	@Override
 	public Optional<HapiSpecOperation> get() {
-		var schedule = schedules.getQualifying();
-		if (schedule.isEmpty()) {
+		var schedulesQualifying = schedules.getQualifying();
+		if (schedulesQualifying.isEmpty()) {
+			return Optional.empty();
+		}
+
+		var signerRels = scheduleSigners.getQualifying();
+		if(signerRels.isEmpty()){
 			return Optional.empty();
 		}
 
@@ -82,17 +87,7 @@ public class RandomScheduleSign implements OpProvider {
 			return Optional.empty();
 		}
 
-		int numOfSignaturesNeeded = BASE_RANDOM.nextInt(MAX_SIGNATURES_PER_OP) + 1;
-		Set<String> chosen = new HashSet<>();
-		while (numOfSignaturesNeeded-- > 0) {
-			var signer = schedules.getQualifyingExcept(chosen);
-			signer.ifPresent(chosen::add);
-		}
-		if (chosen.isEmpty()) {
-			return Optional.empty();
-		}
-		String[] toUse = chosen.toArray(new String[0]);
-		var op= scheduleSign(schedule.get())
+		var op= scheduleSign(schedulesQualifying.get())
 				.logged()
 				.lookingUpBytesToSign()
 				.withSignatories(GENESIS)

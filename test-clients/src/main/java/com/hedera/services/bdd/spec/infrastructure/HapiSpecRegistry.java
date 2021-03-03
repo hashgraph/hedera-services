@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.listeners.ScheduleSignersRegistry;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
@@ -533,6 +534,10 @@ public class HapiSpecRegistry {
 
 	public void saveTokenRel(String account, String token) {
 		put(tokenRelKey(account, token), new TokenAccountRegistryRel(token, account));
+	}
+
+	public void saveScheduleSigners(String schedule, List<String> signers) {
+		put(schedule, new ScheduleSignersRegistry(schedule, signers));
 	}
 
 	private String tokenRelKey(String account, String token) {
