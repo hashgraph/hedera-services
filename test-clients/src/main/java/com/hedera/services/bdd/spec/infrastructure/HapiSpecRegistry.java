@@ -541,7 +541,7 @@ public class HapiSpecRegistry {
 	}
 
 	private String scheduleRelKey(String schedule, List<String> signers) {
-		return schedule + "|" + signers.toString();
+		return schedule + "|" + String.join(",", signers);
 	}
 
 	private String tokenRelKey(String account, String token) {
