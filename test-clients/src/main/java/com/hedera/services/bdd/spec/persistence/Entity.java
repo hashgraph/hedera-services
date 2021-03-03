@@ -31,7 +31,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
 public class Entity implements Comparable<Entity> {
 	enum Type {
-		ACCOUNT, TOKEN, SCHEDULE, UNKNOWN
+		ACCOUNT, TOKEN, SCHEDULE, TOPIC, UNKNOWN
 	}
 	private static final Token UNSPECIFIED_TOKEN = null;
 	private static final Topic UNSPECIFIED_TOPIC = null;
@@ -77,6 +77,8 @@ public class Entity implements Comparable<Entity> {
 			return account.existenceCheck(name);
 		} else if (schedule != UNSPECIFIED_SCHEDULE) {
 			return schedule.existenceCheck(name);
+		} else if (topic != UNSPECIFIED_TOPIC) {
+			return topic.existenceCheck(name);
 		} else {
 			throw new IllegalStateException("Only accounts and tokens are currently supported!");
 		}
@@ -93,6 +95,8 @@ public class Entity implements Comparable<Entity> {
 			return Type.ACCOUNT;
 		} else if (schedule != UNSPECIFIED_SCHEDULE) {
 			return Type.SCHEDULE;
+		} else if (topic != UNSPECIFIED_TOPIC) {
+			return Type.TOPIC;
 		} else {
 			return Type.UNKNOWN;
 		}

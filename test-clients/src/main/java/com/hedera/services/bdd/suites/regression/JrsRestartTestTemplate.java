@@ -45,21 +45,27 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
  * ACCOUNTS
  *   - sender (balance = 1tℏ)
  *   - receiver (balance = 99tℏ, receiverSigRequired = true)
+ *   - treasury (treasury account for token jrsToken)
+ *   - autoRenew (auto-renew account for topic ofGeneralInterest)
+ *
+ * TOPICS
+ *   - ofGeneralInterest (has submit key)
  *
  * SCHEDULES
  * 	 - pendingXfer (1tℏ from sender to receiver; has sender sig only)
  */
-public class RestartWithScheduledEntities extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(RestartWithScheduledEntities.class);
+public class JrsRestartTestTemplate extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);
 
 	private static final String ENTITIES_DIR = "src/main/resource/jrs/entities/RestartWithScheduledEntities";
 
 	private static final String SENDER = "sender";
 	private static final String RECEIVER = "receiver";
+	private static final String TREASURY = "treasury";
 	private static final String PENDING_XFER = "pendingXfer";
 
 	public static void main(String... args) {
-		var hero = new RestartWithScheduledEntities();
+		var hero = new JrsRestartTestTemplate();
 
 		hero.runSuiteSync();
 	}
@@ -68,14 +74,14 @@ public class RestartWithScheduledEntities extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						scheduleFocusedJrsRestartSpec(),
+						jrsRestartTemplate(),
 				}
 		);
 	}
 
-	private HapiApiSpec scheduleFocusedJrsRestartSpec() {
+	private HapiApiSpec jrsRestartTemplate() {
 
-		return customHapiSpec("ScheduleFocusedJrsRestartSpec")
+		return customHapiSpec("JrsRestartTemplate")
 				.withProperties(Map.of(
 						"persistentEntities.dir.path", ENTITIES_DIR
 				)).given(
