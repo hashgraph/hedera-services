@@ -423,7 +423,7 @@ public class UtilVerbs {
 		return withOpContext((spec, opLog) -> {
 			if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
 				opLog.info("Sleeping to wait for fee reduction...");
-				Thread.sleep(5000);
+				Thread.sleep(10000);
 				return;
 			}
 			opLog.info("Reducing fee for {}...", function);
