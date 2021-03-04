@@ -39,6 +39,7 @@ import static com.hedera.services.fees.TxnFeeType.SERVICE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NODE_FEE;
+import static com.hedera.services.fees.charging.ItemizableFeeCharging.SERVICE_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -100,7 +101,7 @@ class TxnFeeChargingPolicyTest {
 	}
 
 	@Test
-	public void liveFireDiscountWorksForTriggered() {
+	public void liveFireWorksForTriggered() {
 		// setup:
 		TransactionBody txn = mock(TransactionBody.class);
 		AccountID submittingNode = IdUtils.asAccount("0.0.3");
@@ -123,8 +124,11 @@ class TxnFeeChargingPolicyTest {
 		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
 
 		// then:
-		verify(ledger).doTransfer(payer, funding, network);
 		verify(ledger).doTransfer(payer, funding, service);
+		verify(ledger, never()).doTransfer(
+				argThat(payer::equals),
+				argThat(funding::equals),
+				longThat(l -> l == network));
 		verify(ledger, never()).doTransfer(
 				argThat(payer::equals),
 				argThat(submittingNode::equals),
@@ -242,21 +246,33 @@ class TxnFeeChargingPolicyTest {
 	}
 
 	@Test
-	public void doesntChargeNodePenaltyForPayerUnableToPayNetworkWhenTriggeredTxn() {
-		given(charging.isPayerWillingToCover(NETWORK_FEE)).willReturn(true);
-		given(charging.canPayerAfford(NETWORK_FEE)).willReturn(false);
+	public void requiresWillingToPayServiceWhenTriggeredTxn() {
+		given(charging.isPayerWillingToCover(SERVICE_FEE)).willReturn(false);
 
 		// when:
 		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
 
 		// then:
-		verify(charging).setFor(NODE, node);
-		verify(charging).setFor(NETWORK, network);
 		verify(charging).setFor(SERVICE, service);
 		// and:
-		verify(charging).isPayerWillingToCover(NETWORK_FEE);
-		verify(charging).canPayerAfford(NETWORK_FEE);
-		verify(charging, never()).chargeSubmittingNodeUpTo(NETWORK_FEE);
+		verify(charging).isPayerWillingToCover(SERVICE_FEE);
+		// and:
+		assertEquals(INSUFFICIENT_TX_FEE, outcome);
+	}
+
+	@Test
+	public void requiresAbleToPayServiceWhenTriggeredTxn() {
+		given(charging.isPayerWillingToCover(SERVICE_FEE)).willReturn(true);
+		given(charging.canPayerAfford(SERVICE_FEE)).willReturn(false);
+
+		// when:
+		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
+
+		// then:
+		verify(charging).setFor(SERVICE, service);
+		// and:
+		verify(charging).isPayerWillingToCover(SERVICE_FEE);
+		verify(charging).canPayerAfford(SERVICE_FEE);
 		// and:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, outcome);
 	}
@@ -279,24 +295,6 @@ class TxnFeeChargingPolicyTest {
 		verify(charging).chargeSubmittingNodeUpTo(NETWORK_FEE);
 		// and:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, outcome);
-	}
-
-	@Test
-	public void doesntChargeNodePenaltyForPayerUnwillingToPayNetworkWhenTriggeredTxn() {
-		given(charging.isPayerWillingToCover(NETWORK_FEE)).willReturn(false);
-
-		// when:
-		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
-
-		// then:
-		verify(charging).setFor(NODE, node);
-		verify(charging).setFor(NETWORK, network);
-		verify(charging).setFor(SERVICE, service);
-		// and:
-		verify(charging).isPayerWillingToCover(NETWORK_FEE);
-		verify(charging, never()).chargeSubmittingNodeUpTo(NETWORK_FEE);
-		// and:
-		assertEquals(INSUFFICIENT_TX_FEE, outcome);
 	}
 
 	@Test

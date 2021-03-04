@@ -31,6 +31,7 @@ import static com.hedera.services.fees.TxnFeeType.SERVICE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NODE_FEE;
+import static com.hedera.services.fees.charging.ItemizableFeeCharging.SERVICE_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -74,7 +75,16 @@ public class TxnFeeChargingPolicy {
 	 * @return the outcome of applying the policy
 	 */
 	public ResponseCodeEnum applyForTriggered(ItemizableFeeCharging charging, FeeObject fee) {
-		return applyNonPenalizingWithDiscount(charging, fee, TRIGGERED_TXN_DISCOUNT);
+		charging.setFor(SERVICE, fee.getServiceFee());
+
+		if (!charging.isPayerWillingToCover(SERVICE_FEE)) {
+			return INSUFFICIENT_TX_FEE;
+		} else if (!charging.canPayerAfford(SERVICE_FEE)) {
+			return INSUFFICIENT_PAYER_BALANCE;
+		} else {
+			charging.chargePayer(SERVICE_FEE);
+			return OK;
+		}
 	}
 
 	/**
@@ -115,22 +125,6 @@ public class TxnFeeChargingPolicy {
 			return INSUFFICIENT_TX_FEE;
 		} else if (!charging.canPayerAfford(NETWORK_FEE)) {
 			charging.chargeSubmittingNodeUpTo(NETWORK_FEE);
-			return INSUFFICIENT_PAYER_BALANCE;
-		} else {
-			return applyGivenNodeDueDiligence(charging, discount);
-		}
-	}
-
-	private ResponseCodeEnum applyNonPenalizingWithDiscount(
-			ItemizableFeeCharging charging,
-			FeeObject fee,
-			Consumer<ItemizableFeeCharging> discount
-	) {
-		setStandardFees(charging, fee);
-
-		if (!charging.isPayerWillingToCover(NETWORK_FEE)) {
-			return INSUFFICIENT_TX_FEE;
-		} else if (!charging.canPayerAfford(NETWORK_FEE)) {
 			return INSUFFICIENT_PAYER_BALANCE;
 		} else {
 			return applyGivenNodeDueDiligence(charging, discount);

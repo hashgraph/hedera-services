@@ -52,6 +52,7 @@ import static com.hedera.services.fees.TxnFeeType.*;
 public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements TxnScopedFeeCharging {
 	public static EnumSet<TxnFeeType> NODE_FEE = EnumSet.of(NODE);
 	public static EnumSet<TxnFeeType> NETWORK_FEE = EnumSet.of(NETWORK);
+	public static EnumSet<TxnFeeType> SERVICE_FEE = EnumSet.of(SERVICE);
 	public static EnumSet<TxnFeeType> NETWORK_NODE_SERVICE_FEES = EnumSet.of(NETWORK, NODE, SERVICE);
 
 	private HederaLedger ledger;

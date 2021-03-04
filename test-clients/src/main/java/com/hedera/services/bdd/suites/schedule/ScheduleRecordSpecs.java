@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -51,6 +52,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
@@ -76,6 +79,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						suiteCleanup(),
 						canonicalScheduleOpsHaveExpectedUsdFees(),
 						canScheduleChunkedMessages(),
+						noFeesChargedIfTriggeredPayerIsInsolvent(),
+						noFeesChargedIfTriggeredPayerIsUnwilling(),
 				}
 		);
 	}
@@ -132,6 +137,51 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
 						validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
 						validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0)
+				);
+	}
+
+	public HapiApiSpec noFeesChargedIfTriggeredPayerIsUnwilling() {
+		return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")
+				.given(
+						cryptoCreate("unwillingPayer")
+				).when(
+						scheduleCreate("schedule",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+										.fee(1L)
+										.signedBy(GENESIS, "unwillingPayer")
+						).inheritingScheduledSigs()
+								.via("simpleXferSchedule")
+								.designatingPayer("unwillingPayer")
+								.savingExpectedScheduledTxnId()
+				).then(
+						getTxnRecord("simpleXferSchedule")
+								.scheduledBy("schedule")
+								.hasPriority(recordWith()
+										.transfers(exactParticipants(ignore -> Collections.emptyList()))
+										.status(INSUFFICIENT_TX_FEE))
+
+				);
+	}
+
+	public HapiApiSpec noFeesChargedIfTriggeredPayerIsInsolvent() {
+		return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsInsolvent")
+				.given(
+						cryptoCreate("insolventPayer").balance(0L)
+				).when(
+						scheduleCreate("schedule",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+										.signedBy(GENESIS, "insolventPayer")
+						).inheritingScheduledSigs()
+								.via("simpleXferSchedule")
+								.designatingPayer("insolventPayer")
+								.savingExpectedScheduledTxnId()
+				).then(
+						getTxnRecord("simpleXferSchedule")
+								.scheduledBy("schedule")
+								.hasPriority(recordWith()
+										.transfers(exactParticipants(ignore -> Collections.emptyList()))
+										.status(INSUFFICIENT_PAYER_BALANCE))
+
 				);
 	}
 
