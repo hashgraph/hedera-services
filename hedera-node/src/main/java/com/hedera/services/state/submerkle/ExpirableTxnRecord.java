@@ -67,11 +67,6 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static DomainSerdes serdes = new DomainSerdes();
-	static TxnId.Provider legacyTxnIdProvider = TxnId.LEGACY_PROVIDER;
-	static TxnReceipt.Provider legacyReceiptProvider = TxnReceipt.LEGACY_PROVIDER;
-	static RichInstant.Provider legacyInstantProvider = RichInstant.LEGACY_PROVIDER;
-	static CurrencyAdjustments.Provider legacyAdjustmentsProvider = CurrencyAdjustments.LEGACY_PROVIDER;
-	static SolidityFnResult.Provider legacyFnResultProvider = SolidityFnResult.LEGACY_PROVIDER;
 
 	private long expiry;
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;

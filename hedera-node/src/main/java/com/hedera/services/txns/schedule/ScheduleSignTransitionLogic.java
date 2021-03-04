@@ -74,8 +74,12 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
         var signingOutcome = signingsWitness.observeInScope(numSigs, scheduleId, store, activationHelper);
 
         var outcome = signingOutcome.getLeft();
-        if (outcome == OK && signingOutcome.getRight()) {
-            outcome = executor.doProcess(scheduleId);
+        if (outcome == OK) {
+            var schedule = store.get(scheduleId);
+            txnCtx.setScheduledTxnId(schedule.scheduledTransactionId());
+            if (signingOutcome.getRight()) {
+                outcome = executor.doProcess(scheduleId);
+            }
         }
 		txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
     }

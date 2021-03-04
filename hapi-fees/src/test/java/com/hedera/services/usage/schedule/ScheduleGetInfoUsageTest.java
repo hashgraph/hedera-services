@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,11 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static org.junit.Assert.assertEquals;
 
 public class ScheduleGetInfoUsageTest {
-
+	TransactionID scheduledTxnId = TransactionID.newBuilder()
+			.setScheduled(true)
+			.setAccountID(IdUtils.asAccount("0.0.2"))
+			.setNonce(ByteString.copyFromUtf8("Something something something"))
+			.build();
 	Optional<Key> adminKey = Optional.of(KeyUtils.A_COMPLEX_KEY);
 	Optional<KeyList> signers = Optional.of(KeyUtils.DUMMY_KEY_LIST);
 	ScheduleID id = IdUtils.asSchedule("0.0.1");
@@ -59,14 +64,17 @@ public class ScheduleGetInfoUsageTest {
 		subject.givenCurrentAdminKey(adminKey)
 				.givenSignatories(signers)
 				.givenTransaction(transactionBody)
-				.givenMemo(memo);
-
+				.givenMemo(memo)
+				.givenScheduledTxnId(scheduledTxnId);
 
 		// and:
 		var expectedAdminBytes = FeeBuilder.getAccountKeyStorageSize(adminKey.get());
 		var signersBytes = signers.get().toByteArray().length;
 		var expectedBytes = BASIC_QUERY_RES_HEADER
-				+ expectedAdminBytes + signersBytes + SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, memo);
+				+ scheduledTxnId.toByteArray().length
+				+ expectedAdminBytes
+				+ signersBytes
+				+ SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, memo);
 
 		// when:
 		var usage = subject.get();

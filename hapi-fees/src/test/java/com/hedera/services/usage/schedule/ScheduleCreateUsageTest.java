@@ -43,6 +43,8 @@ import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -50,13 +52,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class ScheduleCreateUsageTest {
-
 	Key adminKey = KeyUtils.A_THRESHOLD_KEY;
-	byte[] transactionBody = new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+	byte[] nonce = "abcdefghijklmnop".getBytes();
+	byte[] transactionBody = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder()
+					.setNonce(ByteString.copyFrom(nonce)))
+			.build().toByteArray();
+
 	long now = 1_000L;
 	int scheduledTXExpiry = 1000;
 	AccountID payer = IdUtils.asAccount("0.0.2");
 	String memo = "Just some memo!";
+
+	int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE + nonce.length;
 
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
@@ -113,7 +121,8 @@ public class ScheduleCreateUsageTest {
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
 		verify(base).addVpt(0);
-		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		verify(base).addNetworkRbs(
+				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	@Test
@@ -136,7 +145,8 @@ public class ScheduleCreateUsageTest {
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
 		verify(base).addVpt(0);
-		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		verify(base).addNetworkRbs(
+				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	@Test
@@ -159,7 +169,8 @@ public class ScheduleCreateUsageTest {
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
 		verify(base).addVpt(0);
-		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		verify(base).addNetworkRbs(
+				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	@Test
@@ -182,7 +193,8 @@ public class ScheduleCreateUsageTest {
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
 		verify(base).addVpt(0);
-		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		verify(base).addNetworkRbs(
+				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	@Test
@@ -205,7 +217,8 @@ public class ScheduleCreateUsageTest {
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
 		verify(base).addVpt(sigMap.getSigPairCount());
-		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		verify(base).addNetworkRbs(
+				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	private long baseRamBytes() {

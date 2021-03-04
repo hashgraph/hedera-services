@@ -20,6 +20,8 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
@@ -28,6 +30,10 @@ import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.codec.binary.Hex;
@@ -45,6 +51,7 @@ import java.util.stream.Collectors;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.MerkleSchedule.UPPER_BOUND_MEMO_UTF8_BYTES;
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.swirlds.common.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -52,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -113,6 +121,75 @@ public class MerkleScheduleTest {
 	@AfterEach
 	public void cleanup() {
 		MerkleSchedule.serdes = new DomainSerdes();
+	}
+
+	@Test
+	void translatesInvariantFailure() {
+		assertThrows(IllegalStateException.class, subject::scheduledTransactionId);
+	}
+
+	@Test
+	void constructsScheduledTxnAsExpected() throws InvalidProtocolBufferException {
+		// setup:
+		var nonce = ByteString.copyFromUtf8("Surely this isn't taken!");
+		transactionBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setNonce(nonce))
+				.build()
+				.toByteArray();
+		// and:
+		var expectedId = TransactionID.newBuilder()
+				.setAccountID(schedulingAccount.toGrpcAccountId())
+				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
+				.setNonce(nonce)
+				.setScheduled(true)
+				.build();
+		var expectedTxn = Transaction.newBuilder()
+				.setSignedTransactionBytes(
+						SignedTransaction.newBuilder()
+								.setBodyBytes(
+										TransactionBody.newBuilder()
+												.mergeFrom(transactionBody)
+												.setTransactionID(expectedId)
+												.build().toByteString())
+								.build().toByteString())
+				.build();
+
+		// given:
+		subject = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
+
+		// when:
+		var actual = subject.asScheduledTransaction();
+
+		// then:
+		assertEquals(expectedTxn, actual);
+	}
+
+	@Test
+	void constructsScheduledTxnIdAsExpected() {
+		// setup:
+		var nonce = ByteString.copyFromUtf8("Surely this isn't taken!");
+		transactionBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setNonce(nonce))
+				.build()
+				.toByteArray();
+		// and:
+		var expected = TransactionID.newBuilder()
+				.setAccountID(schedulingAccount.toGrpcAccountId())
+				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
+				.setNonce(nonce)
+				.setScheduled(true)
+				.build();
+
+		// given:
+		subject = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
+
+		// when:
+		var actual = subject.scheduledTransactionId();
+
+		// then:
+		assertEquals(expected, actual);
 	}
 
 	@Test
