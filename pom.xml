@@ -3,7 +3,7 @@
 
   <groupId>com.hedera.hashgraph</groupId>
   <artifactId>hedera-services</artifactId>
-  <version>0.13.0-SNAPSHOT</version>
+  <version>0.14.0-SNAPSHOT</version>
   <description>
     Hedera Services (crypto, file, contract, consensus) on the Platform
   </description>
@@ -21,7 +21,7 @@
     <url>https://github.com/hashgraph/hedera-services</url>
     <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
     <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
-    <tag>release/0.13</tag>
+    <tag>release/0.11</tag>
   </scm>
 
   <developers>
@@ -170,7 +170,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <project.build.outputTimestamp>2021-03-04T21:40:03Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2021-03-04T21:40:09Z</project.build.outputTimestamp>
   </properties>
 
   <modules>
