@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
+import static com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomSchedule.STABLE_RECEIVER;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
@@ -77,7 +78,7 @@ public class RandomScheduleSign implements OpProvider {
 		var op = scheduleSign(schedulesQualifying.get())
 				.logged()
 				.lookingUpBytesToSign()
-				.withSignatories("stable-receiver")
+				.withSignatories(STABLE_RECEIVER)
 				.hasAnyPrecheck()
 				.hasKnownStatusFrom(permissibleOutcomes);
 		return Optional.of(op);
