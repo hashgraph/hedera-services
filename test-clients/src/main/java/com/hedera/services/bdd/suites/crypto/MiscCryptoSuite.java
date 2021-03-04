@@ -68,22 +68,26 @@ public class MiscCryptoSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec reduceTransferFee() {
+		final long REDUCED_NODE_FEE = 2L;
+		final long REDUCED_NETWORK_FEE = 3L;
+		final long REDUCED_SERVICE_FEE = 3L;
+		final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
 		return defaultHapiSpec("ReduceTransferFee")
 				.given(
 						cryptoCreate("sender").balance(A_HUNDRED_HBARS),
 						cryptoCreate("receiver").balance(0L),
 						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
 								.payingWith("sender")
-								.fee(8L)
+								.fee(REDUCED_TOTAL_FEE)
 								.hasPrecheck(INSUFFICIENT_TX_FEE)
 				)
 				.when(
-						reduceFeeFor(CryptoTransfer, 2L, 3L, 3L)
+						reduceFeeFor(CryptoTransfer, REDUCED_NODE_FEE, REDUCED_NETWORK_FEE, REDUCED_SERVICE_FEE)
 				)
 				.then(
 						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
 								.payingWith("sender")
-								.fee(8L)
+								.fee(REDUCED_TOTAL_FEE)
 								.hasPrecheck(OK)
 				);
 	}
