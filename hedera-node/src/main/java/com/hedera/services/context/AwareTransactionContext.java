@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -258,6 +259,11 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public void setCreated(ScheduleID id) {
 		receiptConfig = receipt -> receipt.setScheduleID(id);
+	}
+
+	@Override
+	public void setScheduledTxnId(TransactionID txnId) {
+		receiptConfig = receiptConfig.andThen(receipt -> receipt.setScheduledTransactionID(txnId));
 	}
 
 	@Override

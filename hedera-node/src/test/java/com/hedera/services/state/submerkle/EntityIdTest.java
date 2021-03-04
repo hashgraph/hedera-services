@@ -145,22 +145,6 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void legacyProviderWorks() throws IOException {
-		given(in.readLong())
-				.willReturn(5L)
-				.willReturn(4L)
-				.willReturn(shard)
-				.willReturn(realm)
-				.willReturn(num);
-
-		// when:
-		var readSubject = EntityId.LEGACY_PROVIDER.deserialize(in);
-
-		// then:
-		assertEquals(subject, readSubject);
-	}
-
-	@Test
 	public void serializableDetWorks() {
 		// expect;
 		assertEquals(EntityId.MERKLE_VERSION, subject.getVersion());

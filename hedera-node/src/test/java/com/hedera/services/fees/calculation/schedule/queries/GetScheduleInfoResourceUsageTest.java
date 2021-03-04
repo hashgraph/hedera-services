@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,6 +53,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class GetScheduleInfoResourceUsageTest {
+    TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setScheduled(true)
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .setNonce(ByteString.copyFromUtf8("Something something something"))
+            .build();
     ScheduleID target = IdUtils.asSchedule("0.0.123");
 
     Key randomKey = new KeyFactory().newEd25519();
@@ -61,6 +67,7 @@ public class GetScheduleInfoResourceUsageTest {
             .setAdminKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
             .setPayerAccountID(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT)
             .setSignatories(KeyList.newBuilder().addKeys(randomKey))
+			.setScheduledTransactionID(scheduledTxnId)
             .build();
 
     StateView view;
@@ -83,6 +90,7 @@ public class GetScheduleInfoResourceUsageTest {
         given(estimator.givenMemo(info.getMemoBytes())).willReturn(estimator);
         given(estimator.givenCurrentAdminKey(any())).willReturn(estimator);
         given(estimator.givenSignatories(any())).willReturn(estimator);
+        given(estimator.givenScheduledTxnId(any())).willReturn(estimator);
         given(estimator.get()).willReturn(expected);
 
         GetScheduleInfoResourceUsage.factory = factory;
@@ -110,6 +118,7 @@ public class GetScheduleInfoResourceUsageTest {
         verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
         verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
+        verify(estimator).givenScheduledTxnId(scheduledTxnId);
         assertSame(expected, usage);
     }
 

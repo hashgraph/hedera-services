@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -52,6 +53,7 @@ import java.util.function.BiConsumer;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static org.junit.Assert.assertArrayEquals;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
@@ -62,13 +64,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	String txn;
 	boolean scheduled = false;
 	boolean assertNothing = false;
-	boolean assertNothingAboutHashes = false;
 	boolean useDefaultTxnId = false;
 	boolean requestDuplicates = false;
 	boolean shouldBeTransferFree = false;
+	boolean assertNothingAboutHashes = false;
+	boolean lookupScheduledFromRegistryId = false;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
+	Optional<String> creationName = Optional.empty();
 	Optional<String> saveTxnRecordToRegistry = Optional.empty();
 	Optional<String> registryEntry = Optional.empty();
 	Optional<String> topicToValidate = Optional.empty();
@@ -95,6 +99,13 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord scheduled() {
 		scheduled = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord scheduledBy(String creation) {
+		scheduled = true;
+		creationName = Optional.of(creation);
+		lookupScheduledFromRegistryId = true;
 		return this;
 	}
 
@@ -269,7 +280,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					registryEntry.get() + "CallResult",
 					record.getContractCallResult().getCreatedContractIDsList());
 		}
-		if(saveTxnRecordToRegistry.isPresent()) {
+		if (saveTxnRecordToRegistry.isPresent()) {
 			spec.registry().saveTransactionRecord(saveTxnRecordToRegistry.get(), record);
 		}
 	}
@@ -285,13 +296,17 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		TransactionID txnId = useDefaultTxnId
 				? defaultTxnId
 				: explicitTxnId.orElseGet(() -> spec.registry().getTxnId(txn));
-		if (scheduled) {
-			txnId = txnId.toBuilder()
-					.setScheduled(true)
-					.build();
-		}
-		if (nonce.isPresent()) {
-			txnId = txnId.toBuilder().setNonce(ByteString.copyFrom(nonce.get())).build();
+		if (lookupScheduledFromRegistryId) {
+			txnId = spec.registry().getTxnId(correspondingScheduledTxnId(creationName.get()));
+		} else {
+			if (scheduled) {
+				txnId = txnId.toBuilder()
+						.setScheduled(true)
+						.build();
+			}
+			if (nonce.isPresent()) {
+				txnId = txnId.toBuilder().setNonce(ByteString.copyFrom(nonce.get())).build();
+			}
 		}
 		TransactionGetRecordQuery getRecordQuery = TransactionGetRecordQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))

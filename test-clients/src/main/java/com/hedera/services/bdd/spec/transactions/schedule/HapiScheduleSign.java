@@ -26,10 +26,8 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
@@ -50,6 +48,7 @@ import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.withNature;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asScheduleId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static java.util.stream.Collectors.toList;
@@ -60,6 +59,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	private boolean lookupBytesToSign = false;
 	private final String schedule;
 	private List<String> signatories = Collections.emptyList();
+	private Optional<String> savedScheduledTxnId = Optional.empty();
 	private Optional<byte[]> explicitBytes = Optional.empty();
 
 	public HapiScheduleSign(String schedule) {
@@ -78,6 +78,11 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	public HapiScheduleSign signingExplicit(byte[] bytes) {
 		explicitBytes = Optional.of(bytes);
+		return this;
+	}
+
+	public HapiScheduleSign receiptHasScheduledTxnId(String creation) {
+		savedScheduledTxnId = Optional.of(correspondingScheduledTxnId(creation));
 		return this;
 	}
 

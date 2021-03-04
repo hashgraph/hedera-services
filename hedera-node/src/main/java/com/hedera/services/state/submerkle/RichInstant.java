@@ -37,20 +37,9 @@ public class RichInstant {
 	private static final Logger log = LogManager.getLogger(RichInstant.class);
 
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
-	public static final RichInstant.Provider LEGACY_PROVIDER = new Provider();
 
 	private int nanos;
 	private long seconds;
-
-	@Deprecated
-	public static class Provider {
-		public RichInstant deserialize(DataInputStream in) throws IOException {
-			in.readLong();
-			in.readLong();
-
-			return new RichInstant(in.readLong(), in.readInt());
-		}
-	}
 
 	public RichInstant() { }
 

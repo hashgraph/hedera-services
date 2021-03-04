@@ -39,37 +39,6 @@ public class ExchangeRates implements SelfSerializable {
 	public static final int MERKLE_VERSION = 1;
 	public static final long RUNTIME_CONSTRUCTABLE_ID = 0x5dfb7b68d7473416L;
 
-	public static final ExchangeRates.Provider LEGACY_PROVIDER = new Provider();
-
-	@Deprecated
-	public static class Provider {
-		public ExchangeRates deserialize(DataInputStream in) throws IOException {
-			in.readLong();
-			in.readLong();
-
-			int currHbarEquiv, currCentEquiv, nextHbarEquiv, nextCentEquiv;
-			long currExpiry, nextExpiry;
-
-			in.readBoolean();
-			in.readLong();
-			in.readLong();
-			currHbarEquiv = in.readInt();
-			currCentEquiv = in.readInt();
-			currExpiry = in.readLong();
-
-			in.readBoolean();
-			in.readLong();
-			in.readLong();
-			nextHbarEquiv = in.readInt();
-			nextCentEquiv = in.readInt();
-			nextExpiry = in.readLong();
-
-			return new ExchangeRates(
-					currHbarEquiv, currCentEquiv, currExpiry,
-					nextHbarEquiv, nextCentEquiv, nextExpiry);
-		}
-	}
-
 	private int currHbarEquiv;
 	private int currCentEquiv;
 	private long currExpiry;

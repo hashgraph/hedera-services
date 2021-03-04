@@ -37,8 +37,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
+import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -46,7 +49,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class ScheduleSignUsageTest {
-
+	int nonceBytes = 32;
+	int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE + nonceBytes;
 	long now = 1_000L;
 	long scheduledTXExpiry = 2_700;
 	ScheduleID scheduleID = IdUtils.asSchedule("0.0.1");
@@ -86,6 +90,7 @@ public class ScheduleSignUsageTest {
 
 		// and:
 		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
+				.givenNonceBytes(nonceBytes)
 				.givenExpiry(scheduledTXExpiry);
 
 		// when:
@@ -97,6 +102,7 @@ public class ScheduleSignUsageTest {
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(0L);
 		verify(base).addVpt(0);
+		verify(base).addNetworkRbs(scheduledTxnIdSize * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	@Test
@@ -108,6 +114,7 @@ public class ScheduleSignUsageTest {
 
 		// and:
 		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
+				.givenNonceBytes(nonceBytes)
 				.givenExpiry(scheduledTXExpiry);
 
 		// when:
@@ -119,6 +126,7 @@ public class ScheduleSignUsageTest {
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * (scheduledTXExpiry - now));
 		verify(base).addVpt(sigMap.getSigPairCount());
+		verify(base).addNetworkRbs(scheduledTxnIdSize * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	private void givenBaseOp() {

@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -78,6 +79,10 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 public class AwareTransactionContextTest {
+	final TransactionID scheduledTxnId = TransactionID.newBuilder()
+			.setAccountID(IdUtils.asAccount("0.0.2"))
+			.setNonce(ByteString.copyFromUtf8("Something something something"))
+			.build();
 	private long fee = 123L;
 	private long memberId = 3;
 	private long anotherMemberId = 4;
@@ -512,13 +517,16 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForScheduleCreation() {
+	public void getsExpectedReceiptForSuccessfulScheduleOps() {
 		// when:
 		subject.setCreated(scheduleCreated);
+		subject.setScheduledTxnId(scheduledTxnId);
+		// and:
 		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(scheduleCreated, record.getReceipt().getScheduleID());
+		assertEquals(scheduledTxnId, record.getReceipt().getScheduledTransactionID());
 	}
 
 	@Test

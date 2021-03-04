@@ -25,16 +25,15 @@ import com.hedera.services.usage.QueryUsage;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 public class ScheduleGetInfoUsage extends QueryUsage {
-
 	private ScheduleGetInfoUsage(Query query) {
 		super(query.getScheduleGetInfo().getHeader().getResponseType());
 		updateTb(BASIC_ENTITY_ID_SIZE);
@@ -65,4 +64,8 @@ public class ScheduleGetInfoUsage extends QueryUsage {
 		return this;
 	}
 
+	public ScheduleGetInfoUsage givenScheduledTxnId(TransactionID txnId) {
+		this.updateRb(txnId.getSerializedSize());
+		return this;
+	}
 }

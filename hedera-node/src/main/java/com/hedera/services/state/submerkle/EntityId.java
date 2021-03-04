@@ -33,7 +33,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -44,21 +43,10 @@ public class EntityId implements SelfSerializable {
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf35ba643324efa37L;
 
 	public static final EntityId MISSING_ENTITY_ID = new EntityId(0, 0, 0);
-	public static final EntityId.Provider LEGACY_PROVIDER = new Provider();
 
 	private long shard;
 	private long realm;
 	private long num;
-
-	@Deprecated
-	public static class Provider {
-		public EntityId deserialize(DataInputStream in) throws IOException {
-			in.readLong();
-			in.readLong();
-
-			return new EntityId(in.readLong(), in.readLong(), in.readLong());
-		}
-	}
 
 	public EntityId() { }
 
