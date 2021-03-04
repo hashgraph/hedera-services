@@ -28,7 +28,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.checkPersistentEntities;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.expectedEntitiesExist;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
@@ -57,7 +57,7 @@ public class AddWellKnownEntities extends HapiApiSuite {
 						"fees.fixedOffer", "" + A_HUNDRED_HBARS,
 						"persistentEntities.dir.path", "src/main/resource/jrs-creations"
 				)).given(
-						checkPersistentEntities()
+						expectedEntitiesExist()
 				).when().then(
 						sleepFor(10_000L),
 						freeze().startingIn(60).seconds().andLasting(1).minutes()

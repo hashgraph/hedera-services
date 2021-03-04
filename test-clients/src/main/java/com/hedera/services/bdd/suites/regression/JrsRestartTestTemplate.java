@@ -53,7 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.checkPersistentEntities;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.expectedEntitiesExist;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -116,7 +116,7 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 				.withProperties(Map.of(
 						"persistentEntities.dir.path", ENTITIES_DIR
 				)).given(
-						checkPersistentEntities()
+						expectedEntitiesExist()
 				).when().then(
 						withOpContext((spec, opLog) -> {
 							boolean isPostRestart = spec.setup().ciPropertiesMap().getBoolean("postRestart");
@@ -134,6 +134,7 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	private HapiSpecOperation[] preRestartSetup() {
 		return new HapiSpecOperation[] {
 				assertionsHold((spec, opLog) -> {
+					/* For this template, nothing to setup beyond the entity auto-creation. */
 				})
 		};
 	}

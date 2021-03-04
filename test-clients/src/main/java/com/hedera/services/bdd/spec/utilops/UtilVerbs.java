@@ -154,7 +154,7 @@ public class UtilVerbs {
 		return new SpecKeyFromMnemonic(name, mnemonic);
 	}
 
-	public static HapiSpecOperation checkPersistentEntities() {
+	public static HapiSpecOperation expectedEntitiesExist() {
 		return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
 	}
 
