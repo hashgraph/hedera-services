@@ -28,6 +28,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -37,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class MiscCryptoSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MiscCryptoSuite.class);
@@ -56,13 +59,35 @@ public class MiscCryptoSuite extends HapiApiSuite {
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
 //				transferChangesBalance()
-				getsGenesisBalance()
+//				getsGenesisBalance()
+				reduceTransferFee()
 		);
 	}
 	private List<HapiApiSpec> negativeTests() {
 		return List.of(
 				updateWithOutOfDateKeyFails()
 		);
+	}
+
+	private HapiApiSpec reduceTransferFee() {
+		return defaultHapiSpec("ReduceTransferFee")
+				.given(
+						cryptoCreate("sender").balance(A_HUNDRED_HBARS),
+						cryptoCreate("receiver").balance(0L),
+						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
+								.payingWith("sender")
+								.fee(8L)
+								.hasPrecheck(INSUFFICIENT_TX_FEE)
+				)
+				.when(
+						reduceFeeFor(CryptoTransfer, 2L, 3L, 3L)
+				)
+				.then(
+						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
+								.payingWith("sender")
+								.fee(8L)
+								.hasPrecheck(OK)
+				);
 	}
 
 	public static HapiApiSpec getsGenesisBalance() {
