@@ -87,8 +87,9 @@ public class MiscCryptoSuite extends HapiApiSuite {
 				.then(
 						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
 								.payingWith("sender")
-								.fee(REDUCED_TOTAL_FEE)
-								.hasPrecheck(OK)
+								.fee(ONE_HBAR)
+								.hasPrecheck(OK),
+						getAccountBalance("sender").hasTinyBars(A_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE).logged()
 				);
 	}
 
