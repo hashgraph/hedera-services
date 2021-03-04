@@ -53,6 +53,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
  * TOPICS
  *   - ofGeneralInterest (has submit key)
  *
+ * TOKENS
+ *   - jrsToken
+ *
  * SCHEDULES
  * 	 - pendingXfer (1tℏ from sender to receiver; has sender sig only)
  */
