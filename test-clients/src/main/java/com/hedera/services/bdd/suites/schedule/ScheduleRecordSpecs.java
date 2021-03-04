@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.exactParticipants;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
@@ -157,18 +158,39 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 										.signedBy("payingSender")
 								)
 										.txnId("begin")
+										.logged()
 										.signedBy("payingSender")
 										.inheritingScheduledSigs()
 						),
-						getTxnRecord("begin").scheduled().hasPriority(recordWith().status(SUCCESS))
+						getTxnRecord("begin").hasPriority(recordWith()
+								.status(SUCCESS)
+								.transfers(exactParticipants(spec -> List.of(
+										spec.setup().defaultNode(),
+										spec.setup().fundingAccount(),
+										spec.registry().getAccountID("payingSender")
+								)))).assertingOnlyPriority().logged(),
+						getTxnRecord("begin").scheduled().hasPriority(recordWith()
+								.status(SUCCESS)
+								.transfers(exactParticipants(spec -> List.of(
+										spec.setup().fundingAccount(),
+										spec.registry().getAccountID("payingSender")
+								)))).logged()
 				).then(
 						scheduleCreate("secondChunk",
 								submitMessageTo(ofGeneralInterest)
 										.chunkInfo(3, 2, "payingSender")
 										.signedBy("payingSender")
 						)
+								.via("end")
+								.logged()
 								.payingWith("payingSender")
 								.inheritingScheduledSigs(),
+						getTxnRecord("end").scheduled().hasPriority(recordWith()
+								.status(SUCCESS)
+								.transfers(exactParticipants(spec -> List.of(
+										spec.setup().fundingAccount(),
+										spec.registry().getAccountID("payingSender")
+								)))).logged(),
 						getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L)
 				);
 	}

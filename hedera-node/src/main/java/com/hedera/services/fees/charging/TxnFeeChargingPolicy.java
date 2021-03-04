@@ -50,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 public class TxnFeeChargingPolicy {
 	private final Consumer<ItemizableFeeCharging> NO_DISCOUNT = c -> {};
+	private final Consumer<ItemizableFeeCharging> TRIGGERED_TXN_DISCOUNT = c -> c.setFor(NODE, 0);
 	private final Consumer<ItemizableFeeCharging> DUPLICATE_TXN_DISCOUNT = c -> c.setFor(SERVICE, 0);
 
 	/**
@@ -62,6 +63,18 @@ public class TxnFeeChargingPolicy {
 	 */
 	public ResponseCodeEnum apply(ItemizableFeeCharging charging, FeeObject fee) {
 		return applyWithDiscount(charging, fee, NO_DISCOUNT);
+	}
+
+	/**
+	 * Apply the fee charging policy to a txn that was submitted responsibly, but
+	 * is a triggered txn rather than a parent txn requiring node precheck work.
+	 *
+	 * @param charging the charging facility to use
+	 * @param fee the fee to charge
+	 * @return the outcome of applying the policy
+	 */
+	public ResponseCodeEnum applyForTriggered(ItemizableFeeCharging charging, FeeObject fee) {
+		return applyWithDiscount(charging, fee, TRIGGERED_TXN_DISCOUNT);
 	}
 
 	/**

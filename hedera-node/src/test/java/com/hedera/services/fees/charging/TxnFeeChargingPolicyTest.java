@@ -100,7 +100,41 @@ class TxnFeeChargingPolicyTest {
 	}
 
 	@Test
-	public void liveFireDiscountWorks() {
+	public void liveFireDiscountWorksForTriggered() {
+		// setup:
+		TransactionBody txn = mock(TransactionBody.class);
+		AccountID submittingNode = IdUtils.asAccount("0.0.3");
+		AccountID payer = IdUtils.asAccount("0.0.1001");
+		AccountID funding = IdUtils.asAccount("0.0.98");
+		HederaLedger ledger = mock(HederaLedger.class);
+		GlobalDynamicProperties properties = mock(GlobalDynamicProperties.class);
+		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+		charging = new ItemizableFeeCharging(ledger, new NoExemptions(), properties);
+
+		given(ledger.getBalance(any())).willReturn(Long.MAX_VALUE);
+		given(properties.fundingAccount()).willReturn(funding);
+		given(txn.getTransactionFee()).willReturn(10L);
+		given(accessor.getTxn()).willReturn(txn);
+
+		given(accessor.getPayer()).willReturn(payer);
+
+		// when:
+		charging.resetFor(accessor, submittingNode);
+		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
+
+		// then:
+		verify(ledger).doTransfer(payer, funding, network);
+		verify(ledger).doTransfer(payer, funding, service);
+		verify(ledger, never()).doTransfer(
+				argThat(payer::equals),
+				argThat(submittingNode::equals),
+				longThat(l -> l == node));
+		// and:
+		assertEquals(OK, outcome);
+	}
+
+	@Test
+	public void liveFireDiscountWorksForDuplicate() {
 		// setup:
 		TransactionBody txn = mock(TransactionBody.class);
 		AccountID submittingNode = IdUtils.asAccount("0.0.3");
