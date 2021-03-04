@@ -38,10 +38,11 @@ import static java.util.stream.Collectors.toList;
 
 public class File {
 	private static final String UNSPECIFIED_CONTENTS_LOC = null;
-	private static final String DEFAULT_CONTENTS = "...What America did you have / When Charon quit poling his ferry." +
-			"..";
+	private static final String DEFAULT_CONTENTS = "What America did you have / When Charon quit poling his ferry";
 	private static final String CONTENTS_SUBDIR = "data";
+	private static final String MISSING_MEMO = null;
 
+	private String memo = MISSING_MEMO;
 	private String data = UNSPECIFIED_CONTENTS_LOC;
 	private SpecKeyList wacl = UNUSED_KEY_LIST;
 
@@ -71,6 +72,10 @@ public class File {
 					String.join(java.io.File.separator, new String[] { FILES_SUBDIR, CONTENTS_SUBDIR, data }));
 		}
 
+		if (memo != MISSING_MEMO) {
+			op.entityMemo(memo);
+		}
+
 		if (wacl != UNUSED_KEY_LIST) {
 			var constituents = IntStream.range(0, wacl.getListOf().size()).mapToObj(i -> name + i).collect(toList());
 			op.key(name);
@@ -94,5 +99,13 @@ public class File {
 
 	public void setWacl(SpecKeyList wacl) {
 		this.wacl = wacl;
+	}
+
+	public String getMemo() {
+		return memo;
+	}
+
+	public void setMemo(String memo) {
+		this.memo = memo;
 	}
 }

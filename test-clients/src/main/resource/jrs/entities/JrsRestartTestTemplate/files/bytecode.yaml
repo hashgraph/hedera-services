@@ -1,4 +1,5 @@
 file:
+  memo: EVM bytecode for multipurpose contract
   data: Multipurpose.bin
   wacl:
     listOf:

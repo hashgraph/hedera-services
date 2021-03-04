@@ -34,6 +34,7 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -77,9 +78,10 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	private static final String SENDER = "sender";
 	private static final String RECEIVER = "receiver";
 	private static final String TREASURY = "treasury";
-	private static final String PENDING_XFER = "pendingXfer";
 	private static final String JRS_TOKEN = "jrsToken";
-
+	private static final String PENDING_XFER = "pendingXfer";
+	private static final String BYTECODE_FILE = "bytecode";
+	private static final String BYTECODE_FILE_MEMO = "EVM bytecode for multipurpose contract";
 
 	public static void main(String... args) {
 		var hero = new JrsRestartTestTemplate();
@@ -127,7 +129,7 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 				postRestartScheduleValidation(),
 				postRestartTopicValidation(),
 				postRestartTokenValidation(),
-
+				postRestartFileValidation()
 		)
 				.stream()
 				.flatMap(Arrays::stream)
@@ -136,6 +138,7 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 
 	private HapiSpecOperation[] postRestartFileValidation() {
 		return new HapiSpecOperation[] {
+				getFileInfo(BYTECODE_FILE).hasMemo(BYTECODE_FILE_MEMO)
 		};
 	}
 
