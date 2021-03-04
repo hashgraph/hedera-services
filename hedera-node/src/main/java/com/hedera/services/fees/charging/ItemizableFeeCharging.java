@@ -58,7 +58,6 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 
 	private final GlobalDynamicProperties properties;
 
-	AccountID node;
 	AccountID funding;
 	AccountID submittingNode;
 	EnumMap<TxnFeeType, Long> payerFeesCharged = new EnumMap<>(TxnFeeType.class);

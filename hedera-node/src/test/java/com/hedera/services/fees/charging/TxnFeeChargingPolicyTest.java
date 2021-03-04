@@ -242,6 +242,26 @@ class TxnFeeChargingPolicyTest {
 	}
 
 	@Test
+	public void doesntChargeNodePenaltyForPayerUnableToPayNetworkWhenTriggeredTxn() {
+		given(charging.isPayerWillingToCover(NETWORK_FEE)).willReturn(true);
+		given(charging.canPayerAfford(NETWORK_FEE)).willReturn(false);
+
+		// when:
+		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
+
+		// then:
+		verify(charging).setFor(NODE, node);
+		verify(charging).setFor(NETWORK, network);
+		verify(charging).setFor(SERVICE, service);
+		// and:
+		verify(charging).isPayerWillingToCover(NETWORK_FEE);
+		verify(charging).canPayerAfford(NETWORK_FEE);
+		verify(charging, never()).chargeSubmittingNodeUpTo(NETWORK_FEE);
+		// and:
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, outcome);
+	}
+
+	@Test
 	public void chargesNodePenaltyForPayerUnableToPayNetwork() {
 		given(charging.isPayerWillingToCover(NETWORK_FEE)).willReturn(true);
 		given(charging.canPayerAfford(NETWORK_FEE)).willReturn(false);
@@ -259,6 +279,24 @@ class TxnFeeChargingPolicyTest {
 		verify(charging).chargeSubmittingNodeUpTo(NETWORK_FEE);
 		// and:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, outcome);
+	}
+
+	@Test
+	public void doesntChargeNodePenaltyForPayerUnwillingToPayNetworkWhenTriggeredTxn() {
+		given(charging.isPayerWillingToCover(NETWORK_FEE)).willReturn(false);
+
+		// when:
+		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
+
+		// then:
+		verify(charging).setFor(NODE, node);
+		verify(charging).setFor(NETWORK, network);
+		verify(charging).setFor(SERVICE, service);
+		// and:
+		verify(charging).isPayerWillingToCover(NETWORK_FEE);
+		verify(charging, never()).chargeSubmittingNodeUpTo(NETWORK_FEE);
+		// and:
+		assertEquals(INSUFFICIENT_TX_FEE, outcome);
 	}
 
 	@Test

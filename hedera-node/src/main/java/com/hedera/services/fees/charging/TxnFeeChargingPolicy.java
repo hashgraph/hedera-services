@@ -74,7 +74,7 @@ public class TxnFeeChargingPolicy {
 	 * @return the outcome of applying the policy
 	 */
 	public ResponseCodeEnum applyForTriggered(ItemizableFeeCharging charging, FeeObject fee) {
-		return applyWithDiscount(charging, fee, TRIGGERED_TXN_DISCOUNT);
+		return applyNonPenalizingWithDiscount(charging, fee, TRIGGERED_TXN_DISCOUNT);
 	}
 
 	/**
@@ -121,10 +121,27 @@ public class TxnFeeChargingPolicy {
 		}
 	}
 
+	private ResponseCodeEnum applyNonPenalizingWithDiscount(
+			ItemizableFeeCharging charging,
+			FeeObject fee,
+			Consumer<ItemizableFeeCharging> discount
+	) {
+		setStandardFees(charging, fee);
+
+		if (!charging.isPayerWillingToCover(NETWORK_FEE)) {
+			return INSUFFICIENT_TX_FEE;
+		} else if (!charging.canPayerAfford(NETWORK_FEE)) {
+			return INSUFFICIENT_PAYER_BALANCE;
+		} else {
+			return applyGivenNodeDueDiligence(charging, discount);
+		}
+	}
+
 	private ResponseCodeEnum applyGivenNodeDueDiligence(
 			ItemizableFeeCharging charging,
 			Consumer<ItemizableFeeCharging> discount
 	) {
+		discount.accept(charging);
 		if (!charging.isPayerWillingToCover(NETWORK_NODE_SERVICE_FEES))	{
 			penalizePayer(charging);
 			return INSUFFICIENT_TX_FEE;
@@ -132,7 +149,6 @@ public class TxnFeeChargingPolicy {
 			penalizePayer(charging);
 			return INSUFFICIENT_PAYER_BALANCE;
 		} else {
-			discount.accept(charging);
 			charging.chargePayer(NETWORK_NODE_SERVICE_FEES);
 			return OK;
 		}
