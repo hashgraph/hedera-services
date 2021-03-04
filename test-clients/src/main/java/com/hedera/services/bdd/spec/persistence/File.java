@@ -67,7 +67,7 @@ public class File {
 		if (data == UNSPECIFIED_CONTENTS_LOC) {
 			op.contents(DEFAULT_CONTENTS);
 		} else {
-			op.path(spec -> spec.setup().persistentEntitiesDir() +
+			op.path(spec -> spec.setup().persistentEntitiesDir() + java.io.File.separator +
 					String.join(java.io.File.separator, new String[] { FILES_SUBDIR, CONTENTS_SUBDIR, data }));
 		}
 
@@ -85,5 +85,13 @@ public class File {
 
 	public void setData(String data) {
 		this.data = data;
+	}
+
+	public SpecKeyList getWacl() {
+		return wacl;
+	}
+
+	public void setWacl(SpecKeyList wacl) {
+		this.wacl = wacl;
 	}
 }
