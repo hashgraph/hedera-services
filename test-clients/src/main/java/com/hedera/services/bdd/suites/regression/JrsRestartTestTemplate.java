@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.regression;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,8 +35,11 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.checkPersistentEntities;
@@ -74,6 +78,8 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	private static final String RECEIVER = "receiver";
 	private static final String TREASURY = "treasury";
 	private static final String PENDING_XFER = "pendingXfer";
+	private static final String JRS_TOKEN = "jrsToken";
+
 
 	public static void main(String... args) {
 		var hero = new JrsRestartTestTemplate();
@@ -91,7 +97,6 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	}
 
 	private HapiApiSpec jrsRestartTemplate() {
-
 		return customHapiSpec("JrsRestartTemplate")
 				.withProperties(Map.of(
 						"persistentEntities.dir.path", ENTITIES_DIR
@@ -120,17 +125,31 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	private HapiSpecOperation[] postRestartValidation() {
 		return List.of(
 				postRestartScheduleValidation(),
-				postRestartTopicValidation()
+				postRestartTopicValidation(),
+				postRestartTokenValidation(),
+
 		)
 				.stream()
 				.flatMap(Arrays::stream)
 				.toArray(HapiSpecOperation[]::new);
 	}
 
+	private HapiSpecOperation[] postRestartFileValidation() {
+		return new HapiSpecOperation[] {
+		};
+	}
+
 	private HapiSpecOperation[] postRestartTopicValidation() {
 		return new HapiSpecOperation[] {
 				submitMessageTo("ofGeneralInterest")
 						.message("Brave new world, isn't it?")
+		};
+	}
+
+	private HapiSpecOperation[] postRestartTokenValidation() {
+		return new HapiSpecOperation[] {
+				tokenAssociate(SENDER, JRS_TOKEN),
+				cryptoTransfer(moving(1, JRS_TOKEN).between(TREASURY, SENDER))
 		};
 	}
 
