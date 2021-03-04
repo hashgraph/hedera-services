@@ -73,6 +73,7 @@ public class File {
 
 		if (wacl != UNUSED_KEY_LIST) {
 			var constituents = IntStream.range(0, wacl.getListOf().size()).mapToObj(i -> name + i).collect(toList());
+			op.key(name);
 			return blockingOrder(newKeyListNamed(name, constituents), op);
 		}
 
