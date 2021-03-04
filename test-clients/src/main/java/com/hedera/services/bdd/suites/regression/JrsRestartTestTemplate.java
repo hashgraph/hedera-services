@@ -44,6 +44,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 /**
  * This restart test uses the following named persistent entities:
  *
+ * FILES
+ *   - bytecode (EVM constructor bytecode for multipurpose contract)
+ *
  * ACCOUNTS
  *   - sender (balance = 1tℏ)
  *   - receiver (balance = 99tℏ, receiverSigRequired = true)
@@ -58,6 +61,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
  *
  * SCHEDULES
  * 	 - pendingXfer (1tℏ from sender to receiver; has sender sig only)
+ *
+ * CONTRACTS
+ *   - multipurpose
  */
 public class JrsRestartTestTemplate extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);

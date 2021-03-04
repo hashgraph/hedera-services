@@ -66,7 +66,7 @@ public class EntityManager {
 	static final String ACCOUNTS_SUBDIR = "accounts";
 	static final String SCHEDULES_SUBDIR = "schedules";
 	static final String[] ALL_SUBDIRS = {
-		KEYS_SUBDIR, TOKENS_SUBDIR, TOPICS_SUBDIR, ACCOUNTS_SUBDIR, SCHEDULES_SUBDIR
+		KEYS_SUBDIR, TOKENS_SUBDIR, TOPICS_SUBDIR, ACCOUNTS_SUBDIR, SCHEDULES_SUBDIR, FILES_SUBDIR
 	};
 
 	public boolean init() {
