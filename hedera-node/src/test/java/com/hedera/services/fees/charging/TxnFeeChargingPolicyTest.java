@@ -39,6 +39,7 @@ import static com.hedera.services.fees.TxnFeeType.SERVICE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NODE_FEE;
+import static com.hedera.services.fees.charging.ItemizableFeeCharging.SERVICE_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -100,7 +101,44 @@ class TxnFeeChargingPolicyTest {
 	}
 
 	@Test
-	public void liveFireDiscountWorks() {
+	public void liveFireWorksForTriggered() {
+		// setup:
+		TransactionBody txn = mock(TransactionBody.class);
+		AccountID submittingNode = IdUtils.asAccount("0.0.3");
+		AccountID payer = IdUtils.asAccount("0.0.1001");
+		AccountID funding = IdUtils.asAccount("0.0.98");
+		HederaLedger ledger = mock(HederaLedger.class);
+		GlobalDynamicProperties properties = mock(GlobalDynamicProperties.class);
+		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+		charging = new ItemizableFeeCharging(ledger, new NoExemptions(), properties);
+
+		given(ledger.getBalance(any())).willReturn(Long.MAX_VALUE);
+		given(properties.fundingAccount()).willReturn(funding);
+		given(txn.getTransactionFee()).willReturn(10L);
+		given(accessor.getTxn()).willReturn(txn);
+
+		given(accessor.getPayer()).willReturn(payer);
+
+		// when:
+		charging.resetFor(accessor, submittingNode);
+		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
+
+		// then:
+		verify(ledger).doTransfer(payer, funding, service);
+		verify(ledger, never()).doTransfer(
+				argThat(payer::equals),
+				argThat(funding::equals),
+				longThat(l -> l == network));
+		verify(ledger, never()).doTransfer(
+				argThat(payer::equals),
+				argThat(submittingNode::equals),
+				longThat(l -> l == node));
+		// and:
+		assertEquals(OK, outcome);
+	}
+
+	@Test
+	public void liveFireDiscountWorksForDuplicate() {
 		// setup:
 		TransactionBody txn = mock(TransactionBody.class);
 		AccountID submittingNode = IdUtils.asAccount("0.0.3");
@@ -205,6 +243,38 @@ class TxnFeeChargingPolicyTest {
 		verify(charging).chargePayerUpTo(NODE_FEE);
 		// and:
 		assertEquals(INSUFFICIENT_TX_FEE, outcome);
+	}
+
+	@Test
+	public void requiresWillingToPayServiceWhenTriggeredTxn() {
+		given(charging.isPayerWillingToCover(SERVICE_FEE)).willReturn(false);
+
+		// when:
+		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
+
+		// then:
+		verify(charging).setFor(SERVICE, service);
+		// and:
+		verify(charging).isPayerWillingToCover(SERVICE_FEE);
+		// and:
+		assertEquals(INSUFFICIENT_TX_FEE, outcome);
+	}
+
+	@Test
+	public void requiresAbleToPayServiceWhenTriggeredTxn() {
+		given(charging.isPayerWillingToCover(SERVICE_FEE)).willReturn(true);
+		given(charging.canPayerAfford(SERVICE_FEE)).willReturn(false);
+
+		// when:
+		ResponseCodeEnum outcome = subject.applyForTriggered(charging, fee);
+
+		// then:
+		verify(charging).setFor(SERVICE, service);
+		// and:
+		verify(charging).isPayerWillingToCover(SERVICE_FEE);
+		verify(charging).canPayerAfford(SERVICE_FEE);
+		// and:
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, outcome);
 	}
 
 	@Test

@@ -27,11 +27,13 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.exactParticipants;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
@@ -50,6 +52,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
@@ -75,6 +79,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						suiteCleanup(),
 						canonicalScheduleOpsHaveExpectedUsdFees(),
 						canScheduleChunkedMessages(),
+						noFeesChargedIfTriggeredPayerIsInsolvent(),
+						noFeesChargedIfTriggeredPayerIsUnwilling(),
 				}
 		);
 	}
@@ -134,6 +140,51 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec noFeesChargedIfTriggeredPayerIsUnwilling() {
+		return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")
+				.given(
+						cryptoCreate("unwillingPayer")
+				).when(
+						scheduleCreate("schedule",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+										.fee(1L)
+										.signedBy(GENESIS, "unwillingPayer")
+						).inheritingScheduledSigs()
+								.via("simpleXferSchedule")
+								.designatingPayer("unwillingPayer")
+								.savingExpectedScheduledTxnId()
+				).then(
+						getTxnRecord("simpleXferSchedule")
+								.scheduledBy("schedule")
+								.hasPriority(recordWith()
+										.transfers(exactParticipants(ignore -> Collections.emptyList()))
+										.status(INSUFFICIENT_TX_FEE))
+
+				);
+	}
+
+	public HapiApiSpec noFeesChargedIfTriggeredPayerIsInsolvent() {
+		return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsInsolvent")
+				.given(
+						cryptoCreate("insolventPayer").balance(0L)
+				).when(
+						scheduleCreate("schedule",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+										.signedBy(GENESIS, "insolventPayer")
+						).inheritingScheduledSigs()
+								.via("simpleXferSchedule")
+								.designatingPayer("insolventPayer")
+								.savingExpectedScheduledTxnId()
+				).then(
+						getTxnRecord("simpleXferSchedule")
+								.scheduledBy("schedule")
+								.hasPriority(recordWith()
+										.transfers(exactParticipants(ignore -> Collections.emptyList()))
+										.status(INSUFFICIENT_PAYER_BALANCE))
+
+				);
+	}
+
 	public HapiApiSpec canScheduleChunkedMessages() {
 		String ofGeneralInterest = "Scotch";
 		AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
@@ -157,18 +208,39 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 										.signedBy("payingSender")
 								)
 										.txnId("begin")
+										.logged()
 										.signedBy("payingSender")
 										.inheritingScheduledSigs()
 						),
-						getTxnRecord("begin").scheduled().hasPriority(recordWith().status(SUCCESS))
+						getTxnRecord("begin").hasPriority(recordWith()
+								.status(SUCCESS)
+								.transfers(exactParticipants(spec -> List.of(
+										spec.setup().defaultNode(),
+										spec.setup().fundingAccount(),
+										spec.registry().getAccountID("payingSender")
+								)))).assertingOnlyPriority().logged(),
+						getTxnRecord("begin").scheduled().hasPriority(recordWith()
+								.status(SUCCESS)
+								.transfers(exactParticipants(spec -> List.of(
+										spec.setup().fundingAccount(),
+										spec.registry().getAccountID("payingSender")
+								)))).logged()
 				).then(
 						scheduleCreate("secondChunk",
 								submitMessageTo(ofGeneralInterest)
 										.chunkInfo(3, 2, "payingSender")
 										.signedBy("payingSender")
 						)
+								.via("end")
+								.logged()
 								.payingWith("payingSender")
 								.inheritingScheduledSigs(),
+						getTxnRecord("end").scheduled().hasPriority(recordWith()
+								.status(SUCCESS)
+								.transfers(exactParticipants(spec -> List.of(
+										spec.setup().fundingAccount(),
+										spec.registry().getAccountID("payingSender")
+								)))).logged(),
 						getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L)
 				);
 	}
