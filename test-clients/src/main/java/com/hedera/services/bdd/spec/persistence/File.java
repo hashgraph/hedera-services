@@ -53,7 +53,7 @@ public class File {
 			}
 		}
 		entityId.ifPresent(id -> {
-			spec.registry().saveTopicId(name, id.asTopic());
+			spec.registry().saveFileId(name, id.asFile());
 		});
 	}
 

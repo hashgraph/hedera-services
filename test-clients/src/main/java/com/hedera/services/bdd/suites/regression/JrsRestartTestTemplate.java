@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,14 +38,18 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.checkPersistentEntities;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 
 /**
  * This restart test uses the following named persistent entities:
@@ -152,6 +157,12 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	private HapiSpecOperation[] postRestartTokenValidation() {
 		return new HapiSpecOperation[] {
 				tokenAssociate(SENDER, JRS_TOKEN),
+				cryptoTransfer(moving(1, JRS_TOKEN).between(TREASURY, SENDER))
+						.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+				tokenUnfreeze(JRS_TOKEN, SENDER),
+				cryptoTransfer(moving(1, JRS_TOKEN).between(TREASURY, SENDER))
+						.hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+				grantTokenKyc(JRS_TOKEN, SENDER),
 				cryptoTransfer(moving(1, JRS_TOKEN).between(TREASURY, SENDER))
 		};
 	}

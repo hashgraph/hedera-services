@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.persistence;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -61,6 +62,10 @@ public class EntityId {
 
 	public TopicID asTopic() {
 		return HapiPropertySource.asTopic(asLiteral());
+	}
+
+	public FileID asFile() {
+		return HapiPropertySource.asFile(asLiteral());
 	}
 
 	private long shard = DEFAULT_SHARD;
