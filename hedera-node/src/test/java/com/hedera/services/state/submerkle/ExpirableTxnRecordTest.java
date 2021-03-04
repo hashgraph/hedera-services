@@ -64,11 +64,6 @@ class ExpirableTxnRecordTest {
 	DataInputStream din;
 
 	DomainSerdes serdes;
-	TxnId.Provider legacyTxnIdProvider;
-	TxnReceipt.Provider legacyReceiptProvider;
-	RichInstant.Provider legacyInstantProvider;
-	CurrencyAdjustments.Provider legacyAdjustmentsProvider;
-	SolidityFnResult.Provider legacyFnResultProvider;
 
 	byte[] pretendHash = "not-really-a-hash".getBytes();
 
@@ -98,17 +93,7 @@ class ExpirableTxnRecordTest {
 		din = mock(DataInputStream.class);
 
 		serdes = mock(DomainSerdes.class);
-		legacyTxnIdProvider = mock(TxnId.Provider.class);
-		legacyReceiptProvider = mock(TxnReceipt.Provider.class);
-		legacyInstantProvider = mock(RichInstant.Provider.class);
-		legacyFnResultProvider = mock(SolidityFnResult.Provider.class);
-		legacyAdjustmentsProvider = mock(CurrencyAdjustments.Provider.class);
 
-		ExpirableTxnRecord.legacyAdjustmentsProvider = legacyAdjustmentsProvider;
-		ExpirableTxnRecord.legacyFnResultProvider = legacyFnResultProvider;
-		ExpirableTxnRecord.legacyInstantProvider = legacyInstantProvider;
-		ExpirableTxnRecord.legacyReceiptProvider = legacyReceiptProvider;
-		ExpirableTxnRecord.legacyTxnIdProvider = legacyTxnIdProvider;
 		ExpirableTxnRecord.serdes = serdes;
 	}
 
@@ -364,11 +349,6 @@ class ExpirableTxnRecordTest {
 
 	@AfterEach
 	public void cleanup() {
-		ExpirableTxnRecord.legacyTxnIdProvider = TxnId.LEGACY_PROVIDER;
-		ExpirableTxnRecord.legacyReceiptProvider = TxnReceipt.LEGACY_PROVIDER;
-		ExpirableTxnRecord.legacyInstantProvider = RichInstant.LEGACY_PROVIDER;
-		ExpirableTxnRecord.legacyAdjustmentsProvider = CurrencyAdjustments.LEGACY_PROVIDER;
-		ExpirableTxnRecord.legacyFnResultProvider = SolidityFnResult.LEGACY_PROVIDER;
 		ExpirableTxnRecord.serdes = new DomainSerdes();
 	}
 }

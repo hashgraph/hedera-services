@@ -25,7 +25,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -37,7 +36,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.legacy.logic.ApplicationConstants.P;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
@@ -48,7 +46,7 @@ public class TxnId implements SelfSerializable {
 
 	private static final byte[] ABSENT_NONCE = null;
 
-	public static final int MAX_PERMISSIBLE_NONCE_BYTES = 48;
+	static final int MAX_CONCEIVABLE_NONCE_BYTES = Integer.MAX_VALUE;
 
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
@@ -57,29 +55,6 @@ public class TxnId implements SelfSerializable {
 	public static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
 
 	static DomainSerdes serdes = new DomainSerdes();
-	static EntityId.Provider legacyIdProvider = EntityId.LEGACY_PROVIDER;
-	static RichInstant.Provider legacyInstantProvider = RichInstant.LEGACY_PROVIDER;
-
-	public static final TxnId.Provider LEGACY_PROVIDER = new TxnId.Provider();
-
-	@Deprecated
-	public static class Provider {
-		public TxnId deserialize(DataInputStream in) throws IOException {
-			var txnId = new TxnId();
-
-			in.readLong();
-			in.readLong();
-
-			if (in.readChar() == P) {
-				txnId.payerAccount = legacyIdProvider.deserialize(in);
-			}
-			if (in.readBoolean()) {
-				txnId.validStart = legacyInstantProvider.deserialize(in);
-			}
-
-			return txnId;
-		}
-	}
 
 	private byte[] nonce = ABSENT_NONCE;
 	private boolean scheduled = false;
@@ -127,7 +102,7 @@ public class TxnId implements SelfSerializable {
 			scheduled = in.readBoolean();
 			var hasNonce = in.readBoolean();
 			if (hasNonce) {
-				nonce = in.readByteArray(MAX_PERMISSIBLE_NONCE_BYTES);
+				nonce = in.readByteArray(MAX_CONCEIVABLE_NONCE_BYTES);
 			}
 		}
 	}

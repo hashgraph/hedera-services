@@ -48,6 +48,8 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,7 +120,11 @@ class StateViewTest {
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
 	TokenStore tokenStore;
 	ScheduleStore scheduleStore;
-	byte[] scheduleBody = "abc".getBytes();
+	byte[] scheduleBody = TransactionBody.newBuilder()
+					.setTransactionID(TransactionID.newBuilder()
+							.setNonce(ByteString.copyFromUtf8("Surely this isn't taken!")))
+					.build()
+					.toByteArray();
 
 	MerkleToken token;
 	MerkleSchedule schedule;
@@ -306,6 +312,7 @@ class StateViewTest {
 		assertArrayEquals(expectedSignatoryList.build().getKeysList().toArray(), info.getSignatories().getKeysList().toArray());
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(ByteString.copyFrom(schedule.transactionBody()), info.getTransactionBody());
+		assertEquals(schedule.scheduledTransactionId(), info.getScheduledTransactionID());
 	}
 
 	@Test
