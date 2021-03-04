@@ -31,8 +31,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
 public class Entity implements Comparable<Entity> {
 	enum Type {
-		ACCOUNT, TOKEN, SCHEDULE, TOPIC, UNKNOWN
+		ACCOUNT, TOKEN, SCHEDULE, TOPIC, FILE, UNKNOWN
 	}
+
+	private static final File UNSPECIFIED_FILE = null;
 	private static final Token UNSPECIFIED_TOKEN = null;
 	private static final Topic UNSPECIFIED_TOPIC = null;
 	private static final Account UNSPECIFIED_ACCOUNT = null;
@@ -40,16 +42,18 @@ public class Entity implements Comparable<Entity> {
 	private static final EntityId UNCREATED_ENTITY_ID = null;
 
 	static final SpecKey UNUSED_KEY = null;
+	static final SpecKeyList UNUSED_KEY_LIST = null;
 	private static final HapiTxnOp<?> UNNEEDED_CREATE_OP = null;
 
 	private String name;
 	private String manifestAbsPath = "<N/A>";
 	private EntityId id = UNCREATED_ENTITY_ID;
+	private File file = UNSPECIFIED_FILE;
 	private Topic topic = UNSPECIFIED_TOPIC;
 	private Token token = UNSPECIFIED_TOKEN;
 	private Account account = UNSPECIFIED_ACCOUNT;
 	private Schedule schedule = UNSPECIFIED_SCHEDULE;
-	private HapiTxnOp<?> createOp = UNNEEDED_CREATE_OP;
+	private HapiSpecOperation createOp = UNNEEDED_CREATE_OP;
 
 	public static Entity newTokenEntity(String name, Token token) {
 		var it = new Entity();
@@ -79,8 +83,10 @@ public class Entity implements Comparable<Entity> {
 			return schedule.existenceCheck(name);
 		} else if (topic != UNSPECIFIED_TOPIC) {
 			return topic.existenceCheck(name);
+		} else if (file != UNSPECIFIED_FILE) {
+			return file.existenceCheck(name);
 		} else {
-			throw new IllegalStateException("Only accounts and tokens are currently supported!");
+			throw new IllegalStateException("Unsupported type!");
 		}
 	}
 
@@ -97,6 +103,8 @@ public class Entity implements Comparable<Entity> {
 			return Type.SCHEDULE;
 		} else if (topic != UNSPECIFIED_TOPIC) {
 			return Type.TOPIC;
+		} else if (file != UNSPECIFIED_FILE) {
+			return Type.FILE;
 		} else {
 			return Type.UNKNOWN;
 		}
@@ -119,6 +127,10 @@ public class Entity implements Comparable<Entity> {
 			schedule.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
 		} else if (account != UNSPECIFIED_ACCOUNT) {
 			account.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		} else if (file != UNSPECIFIED_FILE) {
+			file.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		} else {
+			throw new IllegalStateException("Unsupported type!");
 		}
 	}
 
@@ -131,8 +143,11 @@ public class Entity implements Comparable<Entity> {
 			return (createOp = account.createOp(name));
 		} else if (schedule != UNSPECIFIED_SCHEDULE) {
 			return (createOp = schedule.createOp(name));
+		} else if (file != UNSPECIFIED_FILE) {
+			return (createOp = file.createOp(name));
+		} else {
+			throw new IllegalStateException("Unsupported type!");
 		}
-		return assertionsHold((spec, opLog) -> {});
 	}
 
 	boolean needsCreation() {
@@ -179,7 +194,7 @@ public class Entity implements Comparable<Entity> {
 		this.account = account;
 	}
 
-	HapiTxnOp<?> getCreateOp() {
+	HapiSpecOperation getCreateOp() {
 		return createOp;
 	}
 
@@ -193,5 +208,13 @@ public class Entity implements Comparable<Entity> {
 
 	void clearCreateOp() {
 		this.createOp = UNNEEDED_CREATE_OP;
+	}
+
+	public File getFile() {
+		return file;
+	}
+
+	public void setFile(File file) {
+		this.file = file;
 	}
 }

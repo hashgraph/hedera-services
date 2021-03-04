@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.spec.utilops.grouping;
+package com.hedera.services.bdd.spec.persistence;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.utilops.grouping;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,26 +20,17 @@ package com.hedera.services.bdd.spec.utilops.grouping;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.UtilOp;
+import java.util.ArrayList;
+import java.util.List;
 
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+public class SpecKeyList {
+	List<SpecKey> listOf = new ArrayList<>();
 
-public class InBlockingOrder extends UtilOp {
-	private final HapiSpecOperation[] ops;
-
-	public InBlockingOrder(HapiSpecOperation... ops) {
-		this.ops = ops;
+	public List<SpecKey> getListOf() {
+		return listOf;
 	}
 
-	@Override
-	protected boolean submitOp(HapiApiSpec spec) {
-		allRunFor(spec, ops);
-		return false;
-	}
-
-	public HapiSpecOperation last() {
-		return ops[ops.length - 1];
+	public void setListOf(List<SpecKey> listOf) {
+		this.listOf = listOf;
 	}
 }

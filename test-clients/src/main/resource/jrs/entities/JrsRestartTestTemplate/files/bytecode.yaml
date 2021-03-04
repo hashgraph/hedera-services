@@ -1,0 +1,6 @@
+file:
+  data: Multipurpose.bin
+  wacl:
+    listOf:
+      - wordsLoc: oneOfTwo.words
+      - wordsLoc: twoOfTwo.words

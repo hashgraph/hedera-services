@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.suites.validation.YamlHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,6 +60,7 @@ public class EntityManager {
 	private Map<String, EntityMeta> registeredEntityMeta = new HashMap<>();
 
 	static final String KEYS_SUBDIR = "keys";
+	static final String FILES_SUBDIR = "files";
 	static final String TOKENS_SUBDIR = "tokens";
 	static final String TOPICS_SUBDIR = "topics";
 	static final String ACCOUNTS_SUBDIR = "accounts";
@@ -167,7 +169,13 @@ public class EntityManager {
 				});
 	}
 
-	private Optional<EntityId> extractCreated(HapiTxnOp creationOp) {
+	private Optional<EntityId> extractCreated(HapiSpecOperation veiledCreationOp) {
+		HapiTxnOp<?> creationOp;
+		if (veiledCreationOp instanceof HapiTxnOp) {
+			creationOp = (HapiTxnOp<?>)	veiledCreationOp;
+		} else {
+			creationOp = (HapiTxnOp<?>)((InBlockingOrder)veiledCreationOp).last();
+		}
 		var receipt = creationOp.getLastReceipt();
 		EntityId createdEntityId = null;
 		if (receipt.hasAccountID()) {
