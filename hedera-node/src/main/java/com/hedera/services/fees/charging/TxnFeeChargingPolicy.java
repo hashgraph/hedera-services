@@ -38,12 +38,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the transaction fee-charging policy for the processing
- * logic. The policy offers three basic entry points:
+ * logic. The policy offers four basic entry points:
  * <ol>
  *    <li>For a txn whose submitting node seemed to ignore due diligence
  *    (e.g. submitted a txn with an impermissible valid duration); and, </li>
  *    <li>For a txn that looks to have been submitted responsibly, but is
  *    a duplicate of a txn already submitted by a different node; and,</li>
+ *    <li>For a triggered txn; and,</li>
  *    <li>For a txn that was submitted responsibly, and is believed unique.</li>
  * </ol>
  *
@@ -51,7 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 public class TxnFeeChargingPolicy {
 	private final Consumer<ItemizableFeeCharging> NO_DISCOUNT = c -> {};
-	private final Consumer<ItemizableFeeCharging> TRIGGERED_TXN_DISCOUNT = c -> c.setFor(NODE, 0);
 	private final Consumer<ItemizableFeeCharging> DUPLICATE_TXN_DISCOUNT = c -> c.setFor(SERVICE, 0);
 
 	/**
