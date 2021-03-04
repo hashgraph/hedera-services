@@ -31,13 +31,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
 public class Entity implements Comparable<Entity> {
 	enum Type {
-		ACCOUNT, TOKEN, SCHEDULE, TOPIC, FILE, UNKNOWN
+		ACCOUNT, TOKEN, SCHEDULE, TOPIC, FILE, CONTRACT, UNKNOWN
 	}
 
 	private static final File UNSPECIFIED_FILE = null;
 	private static final Token UNSPECIFIED_TOKEN = null;
 	private static final Topic UNSPECIFIED_TOPIC = null;
 	private static final Account UNSPECIFIED_ACCOUNT = null;
+	private static final Contract UNSPECIFIED_CONTRACT = null;
 	private static final Schedule UNSPECIFIED_SCHEDULE = null;
 	private static final EntityId UNCREATED_ENTITY_ID = null;
 
@@ -52,6 +53,7 @@ public class Entity implements Comparable<Entity> {
 	private Topic topic = UNSPECIFIED_TOPIC;
 	private Token token = UNSPECIFIED_TOKEN;
 	private Account account = UNSPECIFIED_ACCOUNT;
+	private Contract contract = UNSPECIFIED_CONTRACT;
 	private Schedule schedule = UNSPECIFIED_SCHEDULE;
 	private HapiSpecOperation createOp = UNNEEDED_CREATE_OP;
 
@@ -85,6 +87,8 @@ public class Entity implements Comparable<Entity> {
 			return topic.existenceCheck(name);
 		} else if (file != UNSPECIFIED_FILE) {
 			return file.existenceCheck(name);
+		} else if (contract != UNSPECIFIED_CONTRACT) {
+			return contract.existenceCheck(name);
 		} else {
 			throw new IllegalStateException("Unsupported type!");
 		}
@@ -105,6 +109,8 @@ public class Entity implements Comparable<Entity> {
 			return Type.TOPIC;
 		} else if (file != UNSPECIFIED_FILE) {
 			return Type.FILE;
+		} else if (contract != UNSPECIFIED_CONTRACT) {
+			return Type.CONTRACT;
 		} else {
 			return Type.UNKNOWN;
 		}
@@ -129,6 +135,8 @@ public class Entity implements Comparable<Entity> {
 			account.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
 		} else if (file != UNSPECIFIED_FILE) {
 			file.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		} else if (contract != UNSPECIFIED_CONTRACT) {
+			contract.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
 		} else {
 			throw new IllegalStateException("Unsupported type!");
 		}
@@ -145,6 +153,8 @@ public class Entity implements Comparable<Entity> {
 			return (createOp = schedule.createOp(name));
 		} else if (file != UNSPECIFIED_FILE) {
 			return (createOp = file.createOp(name));
+		} else if (contract != UNSPECIFIED_CONTRACT) {
+			return (createOp = contract.createOp(name));
 		} else {
 			throw new IllegalStateException("Unsupported type!");
 		}
@@ -216,5 +226,13 @@ public class Entity implements Comparable<Entity> {
 
 	public void setFile(File file) {
 		this.file = file;
+	}
+
+	public Contract getContract() {
+		return contract;
+	}
+
+	public void setContract(Contract contract) {
+		this.contract = contract;
 	}
 }

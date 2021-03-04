@@ -81,6 +81,7 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	private static final String ENTITIES_DIR = "src/main/resource/jrs/entities/JrsRestartTestTemplate";
 
 	private static final String SENDER = "sender";
+	private static final String CONTRACT = "multipurpose";
 	private static final String RECEIVER = "receiver";
 	private static final String TREASURY = "treasury";
 	private static final String JRS_TOKEN = "jrsToken";

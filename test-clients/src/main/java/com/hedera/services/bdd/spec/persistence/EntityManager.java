@@ -65,8 +65,9 @@ public class EntityManager {
 	static final String TOPICS_SUBDIR = "topics";
 	static final String ACCOUNTS_SUBDIR = "accounts";
 	static final String SCHEDULES_SUBDIR = "schedules";
+	static final String CONTRACTS_SUBDIR = "contracts";
 	static final String[] ALL_SUBDIRS = {
-		KEYS_SUBDIR, TOKENS_SUBDIR, TOPICS_SUBDIR, ACCOUNTS_SUBDIR, SCHEDULES_SUBDIR, FILES_SUBDIR
+		KEYS_SUBDIR, TOKENS_SUBDIR, TOPICS_SUBDIR, ACCOUNTS_SUBDIR, SCHEDULES_SUBDIR, FILES_SUBDIR, CONTRACTS_SUBDIR
 	};
 
 	public boolean init() {
@@ -190,6 +191,8 @@ public class EntityManager {
 			createdEntityId = new EntityId(HapiPropertySource.asFileString(receipt.getFileID()));
 		} else if (receipt.hasScheduleID()) {
 			createdEntityId = new EntityId(HapiPropertySource.asScheduleString(receipt.getScheduleID()));
+		} else if (receipt.hasContractID()) {
+			createdEntityId = new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
 		}
 		return Optional.ofNullable(createdEntityId);
 	}
