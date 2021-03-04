@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.perf;
+package com.hedera.services.bdd.suites.misc;
 
 /*-
  * ‌
@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.perf.PerfUtilOps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,22 +43,21 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 
-public class MixedOpsScheduledTransactions extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(MixedOpsScheduledTransactions.class);
+public class MixedOpsTransactionsSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(MixedOpsTransactionsSuite.class);
 
 	public static void main(String... args) {
-		new MixedOpsScheduledTransactions().runSuiteSync();
+		new MixedOpsTransactionsSuite().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						createNeehaStartState()
+						createStateWithMixedOps()
 //						triggerSavedScheduleTxn(),
 				}
 		);
@@ -76,11 +76,11 @@ public class MixedOpsScheduledTransactions extends HapiApiSuite {
 						getAccountBalance("0.0.1002").hasTinyBars(1L)
 				);
 	}
-
-	private HapiApiSpec createNeehaStartState() {
+	// Used to generate state with mixed operations
+	private HapiApiSpec createStateWithMixedOps() {
 		long ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
 		int numScheduledTxns = 10;
-		return HapiApiSpec.defaultHapiSpec("CreateNeehaStartState")
+		return HapiApiSpec.defaultHapiSpec("createStateWithMixedOps")
 				.given(
 						PerfUtilOps.scheduleOpsEnablement(),
 						tokenOpsEnablement(),
