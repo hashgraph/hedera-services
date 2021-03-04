@@ -58,12 +58,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -179,6 +181,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						spec.tryReinitializingFees();
 					}));
 				}
+				initializers.add(reduceFeeFor(CryptoTransfer, 2L, 3L, 3L));
 				for (int i = 0; i < tokensPerTxn.get(); i++) {
 					var token = "token" + i;
 					var treasury = "treasury" + i;
