@@ -22,21 +22,28 @@ package com.hedera.services.bdd.suites.regression;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BELIEVE_IN_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.LUCKY_NO_LOOKUP_ABI;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -52,28 +59,28 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 
 /**
- * This restart test uses the following named persistent entities:
+ * This restart test uses the named entities under src/main/resource/jrs/entities/JrsRestartTestTemplate
  *
  * FILES
- *   - bytecode (EVM constructor bytecode for multipurpose contract)
+ * - bytecode (EVM constructor bytecode for multipurpose contract)
  *
  * ACCOUNTS
- *   - sender (balance = 1tℏ)
- *   - receiver (balance = 99tℏ, receiverSigRequired = true)
- *   - treasury (treasury account for token jrsToken)
- *   - autoRenew (auto-renew account for topic ofGeneralInterest)
+ * - sender (balance = 1tℏ)
+ * - receiver (balance = 99tℏ, receiverSigRequired = true)
+ * - treasury (treasury account for token jrsToken)
+ * - autoRenew (auto-renew account for topic ofGeneralInterest)
  *
  * TOPICS
- *   - ofGeneralInterest (has submit key)
+ * - ofGeneralInterest (has submit key)
  *
  * TOKENS
- *   - jrsToken
+ * - jrsToken
  *
  * SCHEDULES
- * 	 - pendingXfer (1tℏ from sender to receiver; has sender sig only)
+ * - pendingXfer (1tℏ from sender to receiver; has sender sig only)
  *
  * CONTRACTS
- *   - multipurpose
+ * - multipurpose
  */
 public class JrsRestartTestTemplate extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);
@@ -81,7 +88,7 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 	private static final String ENTITIES_DIR = "src/main/resource/jrs/entities/JrsRestartTestTemplate";
 
 	private static final String SENDER = "sender";
-	private static final String CONTRACT = "multipurpose";
+	private static final String MULTIPURPOSE = "multipurpose";
 	private static final String RECEIVER = "receiver";
 	private static final String TREASURY = "treasury";
 	private static final String JRS_TOKEN = "jrsToken";
@@ -126,20 +133,40 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 
 	private HapiSpecOperation[] preRestartSetup() {
 		return new HapiSpecOperation[] {
-				assertionsHold((spec, opLog) -> {})
+				assertionsHold((spec, opLog) -> {
+				})
 		};
 	}
 
 	private HapiSpecOperation[] postRestartValidation() {
 		return List.of(
+				postRestartAccountValidation(),
 				postRestartScheduleValidation(),
 				postRestartTopicValidation(),
 				postRestartTokenValidation(),
-				postRestartFileValidation()
+				postRestartFileValidation(),
+				postRestartContractValidation()
 		)
 				.stream()
 				.flatMap(Arrays::stream)
 				.toArray(HapiSpecOperation[]::new);
+	}
+
+	private HapiSpecOperation[] postRestartContractValidation() {
+		return new HapiSpecOperation[] {
+				contractCall(MULTIPURPOSE, BELIEVE_IN_ABI, 256),
+				contractCallLocal(MULTIPURPOSE, ContractResources.LUCKY_NO_LOOKUP_ABI)
+						.has(resultWith()
+						.resultThruAbi(
+								LUCKY_NO_LOOKUP_ABI,
+								isLiteralResult(new Object[] { BigInteger.valueOf(256) }))),
+		};
+	}
+
+	private HapiSpecOperation[] postRestartAccountValidation() {
+		return new HapiSpecOperation[] {
+				getAccountBalance(RECEIVER).hasTinyBars(99L)
+		};
 	}
 
 	private HapiSpecOperation[] postRestartFileValidation() {
