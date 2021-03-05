@@ -21,6 +21,7 @@ package com.hedera.services.context;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
@@ -135,7 +136,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.NftOwnershipProperty;
+import com.hedera.services.ledger.properties.NftOwningAccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.FreezeHandler;
@@ -203,7 +204,7 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleNamedAssociation;
+import com.hedera.services.state.merkle.MerkleNftOwnership;
 import com.hedera.services.state.merkle.MerkleNftType;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerklePlaceholder;
@@ -310,7 +311,6 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
@@ -1330,7 +1330,7 @@ public class ServicesContext {
 		return exchange;
 	}
 
-	public BackingStore<Triple<AccountID, NftID, String>, MerklePlaceholder> backingNftOwnerships() {
+	public BackingStore<Pair<NftID, ByteString>, MerkleEntityId> backingNftOwnerships() {
 		if (backingNftOwnerships == null) {
 			backingNftOwnerships = new BackingNftOwnerships(this::nftOwnerships);
 		}
@@ -1368,11 +1368,11 @@ public class ServicesContext {
 	public NftStore nftStore() {
 		if (nftStore == null) {
 			TransactionalLedger<
-					Triple<AccountID, NftID, String>,
-					NftOwnershipProperty,
-					MerklePlaceholder> nftOwnershipsLedger = new TransactionalLedger<>(
-							NftOwnershipProperty.class,
-							MerklePlaceholder::new,
+					Pair<NftID, ByteString>,
+					NftOwningAccountProperty,
+					MerkleEntityId> nftOwnershipsLedger = new TransactionalLedger<>(
+							NftOwningAccountProperty.class,
+							MerkleEntityId::new,
 							backingNftOwnerships(),
 							new ChangeSummaryManager<>());
 			nftOwnershipsLedger.setKeyComparator(OWNERSHIP_CMP);
@@ -1928,7 +1928,7 @@ public class ServicesContext {
 		return state.tokenAssociations();
 	}
 
-	public FCMap<MerkleNamedAssociation, MerklePlaceholder> nftOwnerships() {
+	public FCMap<MerkleNftOwnership, MerkleEntityId> nftOwnerships() {
 		return state.nftOwnerships();
 	}
 

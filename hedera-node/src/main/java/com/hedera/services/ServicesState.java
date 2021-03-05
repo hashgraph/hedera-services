@@ -32,11 +32,10 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleNamedAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleNftOwnership;
 import com.hedera.services.state.merkle.MerkleNftType;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.merkle.MerklePlaceholder;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -183,8 +182,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			log.info("Created tokens FCMap after 0.7.0 state restoration");
 		}
 		if (tokenAssociations() == null) {
-			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
-					new FCMap<>());
+			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			log.info("Created token associations FCMap after <=0.8.0 state restoration");
 		}
 		if (diskFs() == null) {
@@ -201,6 +199,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			RecordsRunningHashLeaf initialRecordsRunningHashLeaf = new RecordsRunningHashLeaf(runningHash);
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, initialRecordsRunningHashLeaf);
 			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
+		}
+		if (nfts() == null) {
+			setChild(ChildIndices.NFTS, new FCMap<>());
+		}
+		if (nftOwnerships() == null) {
+			setChild(ChildIndices.NFT_OWNERSHIPS, new FCMap<>());
 		}
 	}
 
@@ -442,7 +446,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(ChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 
-	public FCMap<MerkleNamedAssociation, MerklePlaceholder> nftOwnerships() {
+	public FCMap<MerkleNftOwnership, MerkleEntityId> nftOwnerships() {
 		return getChild(ChildIndices.NFT_OWNERSHIPS);
 	}
 

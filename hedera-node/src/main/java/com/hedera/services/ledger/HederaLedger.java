@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -27,12 +28,13 @@ import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.NftOwnershipProperty;
+import com.hedera.services.ledger.properties.NftOwningAccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerklePlaceholder;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -109,9 +111,9 @@ public class HederaLedger {
 			TokenRelProperty,
 			MerkleTokenRelStatus> UNUSABLE_TOKEN_RELS_LEDGER = null;
 	static final TransactionalLedger<
-			Triple<AccountID, NftID, String>,
-			NftOwnershipProperty,
-			MerklePlaceholder> UNUSABLE_NFT_OWNERSHIP_LEDGER = null;
+			Pair<NftID, ByteString>,
+			NftOwningAccountProperty,
+			MerkleEntityId> UNUSABLE_NFT_OWNERSHIP_LEDGER = null;
 
 	private static final int MAX_CONCEIVABLE_NFTS_PER_TXN = 1_000;
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
@@ -152,9 +154,9 @@ public class HederaLedger {
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = UNUSABLE_TOKEN_RELS_LEDGER;
 	TransactionalLedger<
-			Triple<AccountID, NftID, String>,
-			NftOwnershipProperty,
-			MerklePlaceholder> nftOwnershipLedger = UNUSABLE_NFT_OWNERSHIP_LEDGER;
+			Pair<NftID, ByteString>,
+			NftOwningAccountProperty,
+			MerkleEntityId> nftOwnershipLedger = UNUSABLE_NFT_OWNERSHIP_LEDGER;
 
 	public HederaLedger(
 			TokenStore tokenStore,
@@ -186,9 +188,9 @@ public class HederaLedger {
 
 	public void setNftOwnershipLedger(
 			TransactionalLedger<
-					Triple<AccountID, NftID, String>,
-					NftOwnershipProperty,
-					MerklePlaceholder> nftOwnershipLedger
+					Pair<NftID, ByteString>,
+					NftOwningAccountProperty,
+					MerkleEntityId> nftOwnershipLedger
 	) {
 		this.nftOwnershipLedger = nftOwnershipLedger;
 	}

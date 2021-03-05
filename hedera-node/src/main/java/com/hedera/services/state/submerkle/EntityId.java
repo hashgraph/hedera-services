@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -172,6 +173,12 @@ public class EntityId implements SelfSerializable {
 				: new EntityId(contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
 	}
 
+	public static EntityId ofNullableNftId(NftID nftId) {
+		return (nftId == null )
+				? null
+				: new EntityId(nftId.getShardNum(), nftId.getRealmNum(), nftId.getNftNum());
+	}
+
 	public ContractID toGrpcContractId() {
 		return ContractID.newBuilder()
 				.setShardNum(shard)
@@ -201,6 +208,14 @@ public class EntityId implements SelfSerializable {
 				.setShardNum(shard)
 				.setRealmNum(realm)
 				.setAccountNum(num)
+				.build();
+	}
+
+	public NftID toGrpcNftId() {
+		return NftID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setNftNum(num)
 				.build();
 	}
 }

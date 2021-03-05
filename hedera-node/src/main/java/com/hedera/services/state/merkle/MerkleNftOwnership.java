@@ -1,11 +1,14 @@
 package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.EntityId;
-import com.swirlds.common.FCMValue;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.swirlds.common.FCMKey;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -14,7 +17,7 @@ import java.util.Optional;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
-public class MerkleNftOwnership extends AbstractMerkleLeaf implements FCMValue {
+public class MerkleNftOwnership extends AbstractMerkleLeaf implements FCMKey {
 	private static final byte[] MISSING_SERIAL_NO = new byte[0];
 
 	static final int RELEASE_0140_VERSION = 1;
@@ -33,6 +36,14 @@ public class MerkleNftOwnership extends AbstractMerkleLeaf implements FCMValue {
 	public MerkleNftOwnership(EntityId nftType, byte[] serialNo) {
 		this.nftType = nftType;
 		this.serialNo = serialNo;
+	}
+
+	public Pair<NftID, ByteString> asPair() {
+		return Pair.of(nftType.toGrpcNftId(), ByteString.copyFrom(serialNo));
+	}
+
+	public static MerkleNftOwnership fromPair(Pair<NftID, ByteString> pair) {
+		return new MerkleNftOwnership(EntityId.ofNullableNftId(pair.getLeft()), pair.getRight().toByteArray());
 	}
 
 	/* --- MerkleLeaf --- */

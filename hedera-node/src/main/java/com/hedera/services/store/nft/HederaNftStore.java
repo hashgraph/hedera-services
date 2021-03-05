@@ -1,9 +1,10 @@
 package com.hedera.services.store.nft;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.NftOwnershipProperty;
+import com.hedera.services.ledger.properties.NftOwningAccountProperty;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNftType;
 import com.hedera.services.state.merkle.MerklePlaceholder;
@@ -14,6 +15,7 @@ import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,9 +36,9 @@ public class HederaNftStore extends HederaStore implements NftStore {
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleNftType>> nfts;
 	private final TransactionalLedger<
-			Triple<AccountID, NftID, String>,
-			NftOwnershipProperty,
-			MerklePlaceholder> nftOwnershipLedger;
+			Pair<NftID, ByteString>,
+			NftOwningAccountProperty,
+			MerkleEntityId> nftOwnershipLedger;
 
 	NftID pendingId = NO_PENDING_ID;
 	MerkleNftType pendingCreation;
@@ -45,9 +47,9 @@ public class HederaNftStore extends HederaStore implements NftStore {
 			EntityIdSource ids,
 			Supplier<FCMap<MerkleEntityId, MerkleNftType>> nfts,
 			TransactionalLedger<
-					Triple<AccountID, NftID, String>,
-					NftOwnershipProperty,
-					MerklePlaceholder> nftOwnershipLedger
+					Pair<NftID, ByteString>,
+					NftOwningAccountProperty,
+					MerkleEntityId> nftOwnershipLedger
 	) {
 		super(ids);
 		this.nfts = nfts;

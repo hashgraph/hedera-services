@@ -1,13 +1,11 @@
 package com.hedera.services.ledger.accounts;
 
-import com.hedera.services.state.merkle.MerkleNamedAssociation;
-import com.hedera.services.state.merkle.MerklePlaceholder;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.google.protobuf.ByteString;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNftOwnership;
 import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -16,25 +14,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.NFT_ID_COMPARATOR;
-import static com.hedera.services.state.merkle.MerkleNamedAssociation.fromAccountNftSerialNoOwnership;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 
-public class BackingNftOwnerships implements BackingStore<Triple<AccountID, NftID, String>, MerklePlaceholder> {
-	public static final Comparator<Triple<AccountID, NftID, String>> OWNERSHIP_CMP =
-			Comparator.<Triple<AccountID, NftID, String>, AccountID>comparing(Triple::getLeft, ACCOUNT_ID_COMPARATOR)
-					.thenComparing(Triple::getMiddle, NFT_ID_COMPARATOR)
-					.thenComparing(Triple::getRight);
-	private static final Comparator<Map.Entry<Triple<AccountID, NftID, String>, MerklePlaceholder>> OWNERSHIP_ENTRY_CMP =
+public class BackingNftOwnerships implements BackingStore<Pair<NftID, ByteString>, MerkleEntityId> {
+	public static final Comparator<Pair<NftID, ByteString>> OWNERSHIP_CMP =
+			Comparator.<Pair<NftID, ByteString>, NftID>comparing(Pair::getLeft, NFT_ID_COMPARATOR)
+					.thenComparing(Pair::getRight, ByteString.unsignedLexicographicalComparator());
+	private static final Comparator<Map.Entry<Pair<NftID, ByteString>, MerkleEntityId>> OWNERSHIP_ENTRY_CMP =
 			Comparator.comparing(Map.Entry::getKey, OWNERSHIP_CMP);
 
-	Set<Triple<AccountID, NftID, String>> existingOwnerships = new HashSet<>();
-	Map<Triple<AccountID, NftID, String>, MerklePlaceholder> cache = new HashMap<>();
+	Set<Pair<NftID, ByteString>> existingOwnerships = new HashSet<>();
+	Map<Pair<NftID, ByteString>, MerkleEntityId> cache = new HashMap<>();
 
-	private final Supplier<FCMap<MerkleNamedAssociation, MerklePlaceholder>> delegate;
+	private final Supplier<FCMap<MerkleNftOwnership, MerkleEntityId>> delegate;
 
-	public BackingNftOwnerships(Supplier<FCMap<MerkleNamedAssociation, MerklePlaceholder>> delegate) {
+	public BackingNftOwnerships(Supplier<FCMap<MerkleNftOwnership, MerkleEntityId>> delegate) {
 		this.delegate = delegate;
 		rebuildFromSources();
 	}
@@ -43,7 +37,7 @@ public class BackingNftOwnerships implements BackingStore<Triple<AccountID, NftI
 	public void rebuildFromSources() {
 		existingOwnerships.clear();
 		delegate.get().keySet().stream()
-				.map(MerkleNamedAssociation::asAccountNftSerialNoOwnership)
+				.map(MerkleNftOwnership::asPair)
 				.forEach(existingOwnerships::add);
 	}
 	@Override
@@ -51,51 +45,51 @@ public class BackingNftOwnerships implements BackingStore<Triple<AccountID, NftI
 		cache.entrySet().stream()
 				.sorted(OWNERSHIP_ENTRY_CMP)
 				.forEach(entry ->
-						delegate.get().replace(fromAccountNftSerialNoOwnership(entry.getKey()), entry.getValue()));
+						delegate.get().replace(MerkleNftOwnership.fromPair(entry.getKey()), entry.getValue()));
 		cache.clear();
 	}
 
 	@Override
-	public MerklePlaceholder getRef(Triple<AccountID, NftID, String> key) {
+	public MerkleEntityId getRef(Pair<NftID, ByteString> key) {
 		return cache.computeIfAbsent(
 				key,
-				ignore -> delegate.get().getForModify(fromAccountNftSerialNoOwnership(key)));
+				ignore -> delegate.get().getForModify(MerkleNftOwnership.fromPair(key)));
 	}
 
 	@Override
-	public MerklePlaceholder getUnsafeRef(Triple<AccountID, NftID, String> id) {
+	public MerkleEntityId getUnsafeRef(Pair<NftID, ByteString> key) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void put(Triple<AccountID, NftID, String> key, MerklePlaceholder placeholder) {
+	public void put(Pair<NftID, ByteString> key, MerkleEntityId account) {
 		if (!existingOwnerships.contains(key)) {
-			delegate.get().put(fromAccountNftSerialNoOwnership(key), placeholder);
+			delegate.get().put(MerkleNftOwnership.fromPair(key), account);
 			existingOwnerships.add(key);
-		} else if (!cache.containsKey(key) || cache.get(key) != placeholder) {
+		} else if (!cache.containsKey(key) || cache.get(key) != account) {
 			throw new IllegalArgumentException(String.format(
 					"Argument 'key=%s' does not map to a mutable ref!",
-					fromAccountNftSerialNoOwnership(key).toAbbrevString()));
+					MerkleNftOwnership.fromPair(key)));
 		}
 	}
 
 	@Override
-	public void remove(Triple<AccountID, NftID, String> id) {
-		existingOwnerships.remove(id);
-		delegate.get().remove(fromAccountNftSerialNoOwnership(id));
+	public void remove(Pair<NftID, ByteString> key) {
+		existingOwnerships.remove(key);
+		delegate.get().remove(MerkleNftOwnership.fromPair(key));
 	}
 
 	@Override
-	public boolean contains(Triple<AccountID, NftID, String> key) {
+	public boolean contains(Pair<NftID, ByteString> key) {
 		return existingOwnerships.contains(key);
 	}
 
 	@Override
-	public Set<Triple<AccountID, NftID, String>> idSet() {
+	public Set<Pair<NftID, ByteString>> idSet() {
 		throw new UnsupportedOperationException();
 	}
 
-	public static String readableNftOwnership(Triple<AccountID, NftID, String> ownership) {
-		return fromAccountNftSerialNoOwnership(ownership).toAbbrevString();
+	public static String readableNftOwnership(Pair<NftID, ByteString> key) {
+		return MerkleNftOwnership.fromPair(key).toString();
 	}
 }
