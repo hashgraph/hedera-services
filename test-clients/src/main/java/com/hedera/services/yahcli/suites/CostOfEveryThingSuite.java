@@ -109,7 +109,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 
 	private EnumSet<service> rationalized(final String[] services) {
 		if(Arrays.asList(services).contains("all")) {
-			return (EnumSet<service>) VALID_SERVICES;
+			return EnumSet.copyOf(VALID_SERVICES);
 		}
 		return Arrays.stream(services)
 				.map(s -> SERVICES_TO_ENUM.getOrDefault(s, service.INVALID))
@@ -138,7 +138,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec canonicalContractOps() {
-//		appendServiceName("Smart Contract Service");
 		return HapiApiSpec.customHapiSpec(String.format("canonicalContractOps"))
 				.withProperties(
 						specConfig,
@@ -209,7 +208,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec canonicalFileOps() {
-//		appendServiceName("File Service");
 		int fileSize = 1000;
 		final byte[] first = randomUtf8Bytes(fileSize);
 		final byte[] next = randomUtf8Bytes(fileSize);
@@ -269,7 +267,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec canonicalTopicOps() {
-//		appendServiceName("Consensus Service");
 		return HapiApiSpec.customHapiSpec(String.format("canonicalTopicOps"))
 				.withProperties(
 						specConfig,
@@ -318,7 +315,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec canonicalTokenOps() {
-//		appendServiceName("Token Service");
 		return HapiApiSpec.customHapiSpec(String.format("canonicalTokenOps"))
 				.withProperties(
 						specConfig,
@@ -439,7 +435,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec canonicalCryptoOps() {
-//		appendServiceName("Cryptocurrency Service");
 		KeyShape shape = SIMPLE;
 		KeyShape smallKey = threshOf(1, 3);
 		KeyShape midsizeKey = listOf(SIMPLE, listOf(2), threshOf(1, 2));
@@ -501,7 +496,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec canonicalScheduleOps() {
-//		appendServiceName("Schedule Transaction Service");
 		return HapiApiSpec.customHapiSpec(String.format("canonicalScheduleOps"))
 				.withProperties(
 						specConfig,
