@@ -41,15 +41,18 @@ public class MerkleNftType extends AbstractMerkleLeaf implements FCMValue {
 
 	private int serialNoCount;
 	private EntityId treasury;
+	private boolean deleted;
 
 	public MerkleNftType() {
 		/* No-op. */
 	}
 
 	public MerkleNftType(
+			boolean deleted,
 			int serialNoCount,
 			EntityId treasury
 	) {
+		this.deleted = deleted;
 		this.treasury = treasury;
 		this.serialNoCount = serialNoCount;
 	}
@@ -66,12 +69,14 @@ public class MerkleNftType extends AbstractMerkleLeaf implements FCMValue {
 
 		var that = (MerkleNftType) o;
 		return this.serialNoCount == that.serialNoCount &&
+				this.deleted == that.deleted &&
 				Objects.equals(this.treasury, that.treasury);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
+				deleted,
 				serialNoCount,
 				treasury);
 	}
@@ -81,6 +86,7 @@ public class MerkleNftType extends AbstractMerkleLeaf implements FCMValue {
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleNftType.class)
 				.add("serialNoCount", serialNoCount)
+				.add("deleted", deleted)
 				.add("treasury", treasury.toAbbrevString())
 				.toString();
 	}
@@ -98,12 +104,14 @@ public class MerkleNftType extends AbstractMerkleLeaf implements FCMValue {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		deleted = in.readBoolean();
 		serialNoCount = in.readInt();
 		treasury = in.readSerializable();
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
+		out.writeBoolean(deleted);
 		out.writeInt(serialNoCount);
 		out.writeSerializable(treasury, true);
 	}
@@ -112,6 +120,7 @@ public class MerkleNftType extends AbstractMerkleLeaf implements FCMValue {
 	@Override
 	public MerkleNftType copy() {
 		var fc = new MerkleNftType(
+				deleted,
 				serialNoCount,
 				treasury);
 		return fc;
@@ -125,5 +134,9 @@ public class MerkleNftType extends AbstractMerkleLeaf implements FCMValue {
 
 	public EntityId getTreasury() {
 		return treasury;
+	}
+
+	public boolean isDeleted() {
+		return deleted;
 	}
 }

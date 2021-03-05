@@ -7,7 +7,6 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.NftOwningAccountProperty;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNftType;
-import com.hedera.services.state.merkle.MerklePlaceholder;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -16,17 +15,19 @@ import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.properties.NftOwningAccountProperty.OWNER;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromNftId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_NOT_OWNER_OF_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class HederaNftStore extends HederaStore implements NftStore {
@@ -62,8 +63,15 @@ public class HederaNftStore extends HederaStore implements NftStore {
 	}
 
 	@Override
-	public ResponseCodeEnum transferOwnership(NftID nft, String serialNo, AccountID from, AccountID to) {
-		return null;
+	public ResponseCodeEnum transferOwnership(NftID nId, ByteString serialNo, AccountID from, AccountID to) {
+		var validity = transferValidity(nId, serialNo, from, to);
+		if (validity != OK) {
+			return validity;
+		}
+		var key = Pair.of(nId, serialNo);
+		nftOwnershipLedger.set(key, OWNER, to);
+		hederaLedger.updateNftXfers(nId, serialNo, from, to);
+		return OK;
 	}
 
 	@Override
@@ -126,13 +134,7 @@ public class HederaNftStore extends HederaStore implements NftStore {
 		throw new UnsupportedOperationException();
 	}
 
-	private ResponseCodeEnum sanityChecked(
-			AccountID from,
-			AccountID to,
-			NftID nft,
-			String serialNo,
-			Function<MerkleNftType, ResponseCodeEnum> action
-	) {
+	private ResponseCodeEnum transferValidity(NftID nId, ByteString serialNo, AccountID from, AccountID to) {
 		ResponseCodeEnum validity;
 		if ((validity = checkAccountExistence(from)) != OK) {
 			return validity;
@@ -140,28 +142,31 @@ public class HederaNftStore extends HederaStore implements NftStore {
 		if ((validity = checkAccountExistence(to)) != OK) {
 			return validity;
 		}
-		if ((validity = (exists(nft) ? OK : INVALID_NFT_ID)) != OK) {
+		if ((validity = (exists(nId) ? OK : INVALID_NFT_ID)) != OK) {
 			return validity;
 		}
-//
-//		var token = get(tId);
-//		if (token.isDeleted()) {
-//			return TOKEN_WAS_DELETED;
-//		}
-//
-//		var key = asTokenRel(aId, tId);
-//		if (!tokenRelsLedger.exists(key)) {
-//			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-//		}
-//
-//		return action.apply(token);
+
+		var nftType = get(nId);
+		if (nftType.isDeleted()) {
+			return NFT_WAS_DELETED;
+		}
+
+		var key = Pair.of(nId, serialNo);
+		if (!nftOwnershipLedger.exists(key)) {
+			return INVALID_NFT_SERIAL_NO;
+		}
+		var owner = nftOwnershipLedger.get(key);
+		if (!owner.toAccountId().equals(from)) {
+			return ACCOUNT_NOT_OWNER_OF_NFT;
+		}
+
 		return OK;
 	}
 
 	private void throwIfMissing(NftID id) {
 		if (!exists(id)) {
 			throw new IllegalArgumentException(String.format(
-					"Argument 'id=%s' does not refer to a known nft!",
+					"Argument 'id=%s' does not refer to a known NFT!",
 					readableId(id)));
 		}
 	}

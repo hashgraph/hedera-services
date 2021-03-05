@@ -1,5 +1,6 @@
 package com.hedera.services.store.nft;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleNftType;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
@@ -13,7 +14,7 @@ public interface NftStore extends Store<NftID, MerkleNftType> {
 
 	CreationResult<NftID> createProvisionally(NftCreateTransactionBody request, AccountID sponsor, long now);
 
-	ResponseCodeEnum transferOwnership(NftID nft, String serialNo, AccountID from, AccountID to);
+	ResponseCodeEnum transferOwnership(NftID nft, ByteString serialNo, AccountID from, AccountID to);
 
 	default NftID resolve(NftID id) {
 		return exists(id) ? id : MISSING_NFT;

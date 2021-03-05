@@ -207,7 +207,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNftOwnership;
 import com.hedera.services.state.merkle.MerkleNftType;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.state.merkle.MerklePlaceholder;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -1422,6 +1421,7 @@ public class ServicesContext {
 							new ChangeSummaryManager<>());
 			accountsLedger.setKeyComparator(ACCOUNT_ID_COMPARATOR);
 			ledger = new HederaLedger(
+					nftStore(),
 					tokenStore(),
 					ids(),
 					creator(),
