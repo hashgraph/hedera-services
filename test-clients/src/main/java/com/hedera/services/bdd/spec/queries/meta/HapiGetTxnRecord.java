@@ -27,10 +27,7 @@ import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -67,6 +64,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	boolean useDefaultTxnId = false;
 	boolean requestDuplicates = false;
 	boolean shouldBeTransferFree = false;
+	boolean assertOnlyPriority = false;
 	boolean assertNothingAboutHashes = false;
 	boolean lookupScheduledFromRegistryId = false;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
@@ -99,6 +97,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord scheduled() {
 		scheduled = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord assertingOnlyPriority() {
+		assertOnlyPriority = true;
 		return this;
 	}
 
@@ -242,11 +245,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (assertNothing) {
 			return;
 		}
-		if (scheduled) {
-			return;
-		}
 		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
 		assertPriority(spec, actualRecord);
+		if (scheduled || assertOnlyPriority) {
+			return;
+		}
 		assertDuplicates(spec);
 		if (!assertNothingAboutHashes) {
 			assertTransactionHash(spec, actualRecord);

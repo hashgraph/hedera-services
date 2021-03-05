@@ -95,6 +95,7 @@ public abstract class HapiSpecOperation {
 	protected boolean omitTxnId = false;
 	protected boolean loggingOff = false;
 	protected boolean suppressStats = false;
+	protected boolean omitNodeAccount = false;
 	protected boolean verboseLoggingOn = false;
 	protected boolean shouldRegisterTxn = false;
 	protected boolean useDefaultTxnAsCostAnswerPayment = false;
@@ -262,7 +263,11 @@ public abstract class HapiSpecOperation {
 				builder.getTransactionIDBuilder().setNonce(ByteString.copyFrom(nonce));
 			}
 
-			node.ifPresent(builder::setNodeAccountID);
+			if (omitNodeAccount) {
+				builder.clearNodeAccountID();
+			} else {
+				node.ifPresent(builder::setNodeAccountID);
+			}
 			validDurationSecs.ifPresent(s -> {
 				builder.setTransactionValidDuration(Duration.newBuilder().setSeconds(s).build());
 			});
