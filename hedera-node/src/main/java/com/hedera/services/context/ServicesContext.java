@@ -204,7 +204,7 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNamedAssociation;
-import com.hedera.services.state.merkle.MerkleNft;
+import com.hedera.services.state.merkle.MerkleNftType;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerklePlaceholder;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -1920,7 +1920,7 @@ public class ServicesContext {
 		return state.tokens();
 	}
 
-	public FCMap<MerkleEntityId, MerkleNft> nfts() {
+	public FCMap<MerkleEntityId, MerkleNftType> nfts() {
 		return state.nfts();
 	}
 

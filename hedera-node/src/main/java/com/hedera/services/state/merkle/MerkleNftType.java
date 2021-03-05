@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.FCMValue;
@@ -31,13 +30,8 @@ import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Optional;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
-import static com.hedera.services.utils.MiscUtils.describe;
-
-public class MerkleNft extends AbstractMerkleLeaf implements FCMValue {
+public class MerkleNftType extends AbstractMerkleLeaf implements FCMValue {
 	static final int RELEASE_0140_VERSION = 1;
 
 	static final int MERKLE_VERSION = RELEASE_0140_VERSION;
@@ -48,11 +42,11 @@ public class MerkleNft extends AbstractMerkleLeaf implements FCMValue {
 	private int serialNoCount;
 	private EntityId treasury;
 
-	public MerkleNft() {
+	public MerkleNftType() {
 		/* No-op. */
 	}
 
-	public MerkleNft(
+	public MerkleNftType(
 			int serialNoCount,
 			EntityId treasury
 	) {
@@ -66,11 +60,11 @@ public class MerkleNft extends AbstractMerkleLeaf implements FCMValue {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || MerkleNft.class != o.getClass()) {
+		if (o == null || MerkleNftType.class != o.getClass()) {
 			return false;
 		}
 
-		var that = (MerkleNft) o;
+		var that = (MerkleNftType) o;
 		return this.serialNoCount == that.serialNoCount &&
 				Objects.equals(this.treasury, that.treasury);
 	}
@@ -85,7 +79,7 @@ public class MerkleNft extends AbstractMerkleLeaf implements FCMValue {
 	/* --- Bean --- */
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(MerkleNft.class)
+		return MoreObjects.toStringHelper(MerkleNftType.class)
 				.add("serialNoCount", serialNoCount)
 				.add("treasury", treasury.toAbbrevString())
 				.toString();
@@ -116,8 +110,8 @@ public class MerkleNft extends AbstractMerkleLeaf implements FCMValue {
 
 	/* --- FastCopyable --- */
 	@Override
-	public MerkleNft copy() {
-		var fc = new MerkleNft(
+	public MerkleNftType copy() {
+		var fc = new MerkleNftType(
 				serialNoCount,
 				treasury);
 		return fc;
