@@ -174,7 +174,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 		// and:
-		assertEquals(0, subject.numTouches);
+		assertEquals(0, subject.numTokenTouches);
 		verify(tokenStore, times(1)).adjustBalance(any(), any(), anyLong());
 		verify(tokenRelsLedger).rollback();
 	}
@@ -193,7 +193,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 		// and:
-		assertEquals(0, subject.numTouches);
+		assertEquals(0, subject.numTokenTouches);
 		verify(tokenStore).adjustBalance(misc, tokenId, -555);
 		verify(tokenStore).adjustBalance(rand, tokenId, 555);
 		verify(tokenRelsLedger).rollback();
@@ -220,7 +220,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		// setup:
 		subject.begin();
 		// and:
-		subject.numTouches = 2;
+		subject.numTokenTouches = 2;
 		subject.tokensTouched[0] = tokenWith(111);
 		subject.tokensTouched[1] = tokenWith(222);
 		// and:
@@ -241,7 +241,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		subject.rollback();
 
 		// then:
-		assertEquals(0, subject.numTouches);
+		assertEquals(0, subject.numTokenTouches);
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
 	}

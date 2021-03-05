@@ -27,11 +27,13 @@ import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftOwnershipProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerklePlaceholder;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.TokenStore;
@@ -39,12 +41,15 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.NftTransferList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -103,7 +108,12 @@ public class HederaLedger {
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> UNUSABLE_TOKEN_RELS_LEDGER = null;
+	static final TransactionalLedger<
+			Triple<AccountID, NftID, String>,
+			NftOwnershipProperty,
+			MerklePlaceholder> UNUSABLE_NFT_OWNERSHIP_LEDGER = null;
 
+	private static final int MAX_CONCEIVABLE_NFTS_PER_TXN = 1_000;
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 	private static final long[] NO_NEW_BALANCES = new long[0];
 
@@ -112,6 +122,10 @@ public class HederaLedger {
 			.comparingLong(AccountID::getAccountNum)
 			.thenComparingLong(AccountID::getShardNum)
 			.thenComparingLong(AccountID::getRealmNum);
+	public static final Comparator<NftID> NFT_ID_COMPARATOR = Comparator
+			.comparingLong(NftID::getNftNum)
+			.thenComparingLong(NftID::getRealmNum)
+			.thenComparingLong(NftID::getShardNum);
 	public static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator
 			.comparingLong(TokenID::getTokenNum)
 			.thenComparingLong(TokenID::getRealmNum)
@@ -127,13 +141,20 @@ public class HederaLedger {
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
-	int numTouches = 0;
+	int numNftTouches = 0;
+	int numTokenTouches = 0;
+	final NftID[] nftsTouched = new NftID[MAX_CONCEIVABLE_NFTS_PER_TXN];
 	final TokenID[] tokensTouched = new TokenID[MAX_CONCEIVABLE_TOKENS_PER_TXN];
+	final Map<NftID, NftTransferList.Builder> netNftTransfers = new HashMap<>();
 	final Map<TokenID, TransferList.Builder> netTokenTransfers = new HashMap<>();
 	TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = UNUSABLE_TOKEN_RELS_LEDGER;
+	TransactionalLedger<
+			Triple<AccountID, NftID, String>,
+			NftOwnershipProperty,
+			MerklePlaceholder> nftOwnershipLedger = UNUSABLE_NFT_OWNERSHIP_LEDGER;
 
 	public HederaLedger(
 			TokenStore tokenStore,
@@ -155,9 +176,21 @@ public class HederaLedger {
 	}
 
 	public void setTokenRelsLedger(
-			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
+			TransactionalLedger<
+					Pair<AccountID, TokenID>,
+					TokenRelProperty,
+					MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
+	}
+
+	public void setNftOwnershipLedger(
+			TransactionalLedger<
+					Triple<AccountID, NftID, String>,
+					NftOwnershipProperty,
+					MerklePlaceholder> nftOwnershipLedger
+	) {
+		this.nftOwnershipLedger = nftOwnershipLedger;
 	}
 
 	/* -- TRANSACTIONAL SEMANTICS -- */
@@ -199,13 +232,32 @@ public class HederaLedger {
 		return netTransfers;
 	}
 
+	public List<NftTransferList> netNftTransfersInTxn() {
+		if (numNftTouches == 0) {
+			return Collections.emptyList();
+		}
+		List<NftTransferList> all = new ArrayList<>();
+		Arrays.sort(nftsTouched, 0, numNftTouches, NFT_ID_COMPARATOR);
+		for (int i = 0; i < numNftTouches; i++) {
+			var nft = nftsTouched[i];
+			if (i == 0 || !nft.equals(nftsTouched[i - 1])) {
+				var netTransfersHere = netNftTransfers.get(nft);
+				all.add(NftTransferList.newBuilder()
+						.setNft(nft)
+						.addAllTransfer(netTransfersHere.getTransferList())
+						.build());
+			}
+		}
+		return all;
+	}
+
 	public List<TokenTransferList> netTokenTransfersInTxn() {
-		if (numTouches == 0) {
+		if (numTokenTouches == 0) {
 			return Collections.emptyList();
 		}
 		List<TokenTransferList> all = new ArrayList<>();
-		Arrays.sort(tokensTouched, 0, numTouches, TOKEN_ID_COMPARATOR);
-		for (int i = 0; i < numTouches; i++) {
+		Arrays.sort(tokensTouched, 0, numTokenTouches, TOKEN_ID_COMPARATOR);
+		for (int i = 0; i < numTokenTouches; i++) {
 			var token = tokensTouched[i];
 			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
 				var netTransfersHere = netTokenTransfers.get(token);
@@ -561,7 +613,7 @@ public class HederaLedger {
 	}
 
 	public void updateTokenXfers(TokenID tId, AccountID aId, long amount) {
-		tokensTouched[numTouches++] = tId;
+		tokensTouched[numTokenTouches++] = tId;
 		var xfers = netTokenTransfers.computeIfAbsent(tId, ignore -> TransferList.newBuilder());
 		updateXfers(aId, amount, xfers);
 	}
@@ -593,10 +645,10 @@ public class HederaLedger {
 	}
 
 	private ResponseCodeEnum checkNetOfTokenTransfers() {
-		if (numTouches == 0) {
+		if (numTokenTouches == 0) {
 			return OK;
 		}
-		for (int i = 0; i < numTouches; i++) {
+		for (int i = 0; i < numTokenTouches; i++) {
 			var token = tokensTouched[i];
 			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
 				if (!isNetZeroAdjustment(netTokenTransfers.get(token))) {
@@ -608,10 +660,10 @@ public class HederaLedger {
 	}
 
 	private void clearNetTokenTransfers() {
-		for (int i = 0; i < numTouches; i++) {
+		for (int i = 0; i < numTokenTouches; i++) {
 			netTokenTransfers.get(tokensTouched[i]).clearAccountAmounts();
 		}
-		numTouches = 0;
+		numTokenTouches = 0;
 	}
 
 	private void purgeZeroAdjustments(TransferList.Builder xfers) {

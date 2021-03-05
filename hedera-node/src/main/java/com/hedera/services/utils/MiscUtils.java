@@ -137,6 +137,8 @@ public class MiscUtils {
 	static final String SCHEDULE_SIGN_METRIC = "signSchedule";
 	static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
 
+	static final String NFT_CREATE_METRIC = "nftCreate";
+
 	private static final EnumMap<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
 	static {
@@ -197,6 +199,7 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(ScheduleCreate, SCHEDULE_CREATE_METRIC);
 		BASE_STAT_NAMES.put(ScheduleSign, SCHEDULE_SIGN_METRIC);
 		BASE_STAT_NAMES.put(ScheduleDelete, SCHEDULE_DELETE_METRIC);
+		BASE_STAT_NAMES.put(NftCreate, NFT_CREATE_METRIC);
 		BASE_STAT_NAMES.put(UncheckedSubmit, UNCHECKED_SUBMIT_METRIC);
 		BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
 		BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);

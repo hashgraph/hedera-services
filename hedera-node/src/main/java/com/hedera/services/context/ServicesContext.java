@@ -234,6 +234,7 @@ import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
+import com.hedera.services.txns.nft.NftCreateTransitionLogic;
 import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
 import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
 import com.hedera.services.txns.consensus.TopicUpdateTransitionLogic;
@@ -366,6 +367,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NftCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
@@ -1226,6 +1228,9 @@ public class ServicesContext {
 						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
 				entry(ScheduleDelete,
 						List.of(new ScheduleDeleteTransitionLogic(scheduleStore(), txnCtx()))),
+				/* Nft */
+				entry(NftCreate,
+						List.of(new NftCreateTransitionLogic(txnCtx(), validator()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(

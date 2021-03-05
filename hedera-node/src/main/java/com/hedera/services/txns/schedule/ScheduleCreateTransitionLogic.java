@@ -79,7 +79,6 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 		try {
 			transitionFor(txnCtx.accessor().getTxn().getScheduleCreate());
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
 			abortWith(FAIL_INVALID);
 		}

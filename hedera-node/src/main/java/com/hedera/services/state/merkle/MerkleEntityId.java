@@ -23,6 +23,7 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -53,6 +54,10 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 
 	public static MerkleEntityId fromAccountId(AccountID grpc) {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getAccountNum());
+	}
+
+	public static MerkleEntityId fromNftId(NftID grpc) {
+		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getNftNum());
 	}
 
 	public static MerkleEntityId fromTokenId(TokenID grpc) {

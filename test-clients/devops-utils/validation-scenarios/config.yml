@@ -59,14 +59,11 @@ networks:
     - {account: 4, ipv4Addr: 35.199.15.177}
     - {account: 5, ipv4Addr: 35.225.201.195}
     - {account: 6, ipv4Addr: 35.247.109.135}
-    scenarioPayer: 16111
+    scenarioPayer: 2103
     scenarios:
-      feeSnapshots:
-        appendToSnapshotCsv: true
-        ignoreCostAnswer: true
-        opsConfig: {bytecode: 7490, memoLength: 32}
-        scheduleDesc: Bootstrap
-        tinyBarsToOffer: 10000000000
+      sysFilesUp:
+        updates:
+        - {num: 122, payer: 2}
       sysFilesDown:
         evalMode: snapshot
         numsToFetch: [122]

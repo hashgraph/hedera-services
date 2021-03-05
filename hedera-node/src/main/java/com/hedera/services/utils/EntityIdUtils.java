@@ -25,6 +25,7 @@ import com.google.common.primitives.Longs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -56,6 +57,9 @@ public class EntityIdUtils {
 		} else if (o instanceof ScheduleID) {
 			ScheduleID id = (ScheduleID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
+		} else if (o instanceof NftID) {
+			NftID id = (NftID) o;
+			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getNftNum());
 		} else {
 			return String.valueOf(o);
 		}

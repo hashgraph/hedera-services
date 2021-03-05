@@ -1854,6 +1854,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
+                  - nft-poc
             workflow-name: "Continuous integration"
         - build-platform-and-services:
             context: SonarCloud
