@@ -271,11 +271,6 @@
       <version>${picocli.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.github.novacrypto</groupId>
-      <artifactId>BIP39</artifactId>
-      <version>${BIP39.version}</version>
-    </dependency>
-    <dependency>
       <groupId>net.i2p.crypto</groupId>
       <artifactId>eddsa</artifactId>
     </dependency>

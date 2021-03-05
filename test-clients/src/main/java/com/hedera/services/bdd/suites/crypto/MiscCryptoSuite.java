@@ -28,15 +28,16 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class MiscCryptoSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MiscCryptoSuite.class);
@@ -56,13 +57,40 @@ public class MiscCryptoSuite extends HapiApiSuite {
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
 //				transferChangesBalance()
-				getsGenesisBalance()
+//				getsGenesisBalance()
+				reduceTransferFee()
 		);
 	}
 	private List<HapiApiSpec> negativeTests() {
 		return List.of(
 				updateWithOutOfDateKeyFails()
 		);
+	}
+
+	private HapiApiSpec reduceTransferFee() {
+		final long REDUCED_NODE_FEE = 2L;
+		final long REDUCED_NETWORK_FEE = 3L;
+		final long REDUCED_SERVICE_FEE = 3L;
+		final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
+		return defaultHapiSpec("ReduceTransferFee")
+				.given(
+						cryptoCreate("sender").balance(A_HUNDRED_HBARS),
+						cryptoCreate("receiver").balance(0L),
+						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
+								.payingWith("sender")
+								.fee(REDUCED_TOTAL_FEE)
+								.hasPrecheck(INSUFFICIENT_TX_FEE)
+				)
+				.when(
+						reduceFeeFor(CryptoTransfer, REDUCED_NODE_FEE, REDUCED_NETWORK_FEE, REDUCED_SERVICE_FEE)
+				)
+				.then(
+						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
+								.payingWith("sender")
+								.fee(ONE_HBAR)
+								.hasPrecheck(OK),
+						getAccountBalance("sender").hasTinyBars(A_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE).logged()
+				);
 	}
 
 	public static HapiApiSpec getsGenesisBalance() {
