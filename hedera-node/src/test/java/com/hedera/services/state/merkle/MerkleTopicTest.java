@@ -64,7 +64,6 @@ class MerkleTopicTest {
 	public void cleanup() {
 		MerkleTopic.topicSerde = new TopicSerde();
 		MerkleTopic.serdes = new DomainSerdes();
-		MerkleTopic.legacyIdProvider = EntityId.LEGACY_PROVIDER;
 	}
 
 	@Test

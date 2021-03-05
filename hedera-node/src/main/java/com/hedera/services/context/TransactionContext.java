@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
@@ -185,15 +186,22 @@ public interface TransactionContext {
 	/**
 	 * Record that the current transaction created a scheduled transaction.
 	 *
-	 * @param id the created scheduled transaction.
+	 * @param id the created scheduled transaction
 	 */
 	void setCreated(ScheduleID id);
+
+	/**
+	 * Record that the current transaction references a particular scheduled transaction.
+	 *
+	 * @param txnId the id of the referenced scheduled transaction
+	 */
+	void setScheduledTxnId(TransactionID txnId);
 
 	/**
 	 * Record that the current transaction called a smart contract with
 	 * a specified result.
 	 *
-	 * @param result the result of the contract call.
+	 * @param result the result of the contract call
 	 */
 	void setCallResult(ContractFunctionResult result);
 

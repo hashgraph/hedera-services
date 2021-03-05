@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -79,6 +80,11 @@ public class ScheduleCreateTransitionLogicTest {
 			.setMemo("Just this")
 			.build()
 			.toByteArray();
+	final TransactionID scheduledTxnId = TransactionID.newBuilder()
+			.setAccountID(IdUtils.asAccount("0.0.2"))
+			.setNonce(ByteString.copyFromUtf8("Something something something"))
+			.setScheduled(true)
+			.build();
 
 	private final Optional<ScheduleID> EMPTY_SCHEDULE = Optional.empty();
 	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -93,7 +99,6 @@ public class ScheduleCreateTransitionLogicTest {
 	private ScheduleReadyForExecution.ExecutionProcessor executor;
 
 	private AccountID payer = IdUtils.asAccount("1.2.3");
-	private AccountID schedulingAccount = IdUtils.asAccount("7.12.5");
 	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
 	private String entityMemo = "some cool memo?";
 
@@ -131,11 +136,8 @@ public class ScheduleCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		MerkleSchedule created = mock(MerkleSchedule.class);
-		given(created.transactionBody()).willReturn(scheduleCreateTxn.toByteArray());
-		given(created.expiry()).willReturn(now.getEpochSecond());
-		given(created.schedulingTXValidStart()).willReturn(RichInstant.fromJava(now));
-		given(created.schedulingAccount()).willReturn(EntityId.ofNullableAccountId(schedulingAccount));
 		given(created.payer()).willReturn(EntityId.ofNullableAccountId(payer));
+		given(created.asScheduledTransaction()).willReturn(Transaction.getDefaultInstance());
 		given(store.get(schedule)).willReturn(created);
 		// and:
 		given(store.markAsExecuted(schedule)).willReturn(OK);
@@ -164,6 +166,7 @@ public class ScheduleCreateTransitionLogicTest {
 	public void followsHappyPath() {
 		// setup:
 		MerkleSchedule created = mock(MerkleSchedule.class);
+		given(created.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(created.transactionBody()).willReturn(transactionBody);
 		given(created.expiry()).willReturn(now.getEpochSecond());
 
@@ -196,6 +199,7 @@ public class ScheduleCreateTransitionLogicTest {
 		verify(store).commitCreation();
 		verify(txnCtx).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
 	}
 
 	@Test

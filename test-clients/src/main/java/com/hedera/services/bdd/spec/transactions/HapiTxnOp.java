@@ -695,6 +695,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return self();
 	}
 
+	public T sansNodeAccount() {
+		omitNodeAccount = true;
+		return self();
+	}
+
 	public TransactionReceipt getLastReceipt() {
 		return lastReceipt;
 	}

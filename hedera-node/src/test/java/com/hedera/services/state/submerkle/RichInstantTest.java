@@ -90,18 +90,6 @@ class RichInstantTest {
 	}
 
 	@Test
-	public void legacyProviderWorks() throws IOException {
-		given(din.readLong()).willReturn(-1L).willReturn(-2L).willReturn(seconds);
-		given(din.readInt()).willReturn(nanos);
-
-		// when:
-		var readSubject = RichInstant.LEGACY_PROVIDER.deserialize(din);
-
-		// expect:
-		assertEquals(subject, readSubject);
-	}
-
-	@Test
 	public void knowsIfMissing() {
 		// expect:
 		assertFalse(subject.isMissing());

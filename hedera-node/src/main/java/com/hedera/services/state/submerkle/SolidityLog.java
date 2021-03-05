@@ -52,54 +52,10 @@ public class SolidityLog implements SelfSerializable {
 	private List<byte[]> topics = Collections.emptyList();
 
 	static DomainSerdes serdes = new DomainSerdes();
-	static EntityId.Provider legacyIdProvider = EntityId.LEGACY_PROVIDER;
 
 	public static final int MAX_DATA_BYTES = 32 * 1024;
 	public static final int MAX_BLOOM_BYTES = 256;
 	public static final int MAX_TOPIC_BYTES = 1024;
-
-	public static final Provider LEGACY_PROVIDER = new Provider();
-
-	@Deprecated
-	public static class Provider {
-		public SolidityLog deserialize(DataInputStream in) throws IOException {
-			var log = new SolidityLog();
-
-			in.readLong();
-			in.readLong();
-			if (in.readBoolean()) {
-				log.contractId = legacyIdProvider.deserialize(in);
-			}
-
-			int numBloomBytes = in.readInt();
-			if (numBloomBytes > 0) {
-				log.bloom = new byte[numBloomBytes];
-				in.readFully(log.bloom);
-			}
-
-			int numDataBytes = in.readInt();
-			if (numDataBytes > 0) {
-				log.data = new byte[numDataBytes];
-				in.readFully(log.data);
-			}
-
-			int numTopics = in.readInt();
-			if (numTopics > 0) {
-				log.topics = new LinkedList<>();
-				for (int i = 0; i < numTopics; i++) {
-					int numTopicBytes = in.readInt();
-					if (numTopicBytes > 0) {
-						byte[] topic = new byte[numTopicBytes];
-						in.readFully(topic);
-						log.topics.add(topic);
-					} else {
-						log.topics.add(MISSING_BYTES);
-					}
-				}
-			}
-			return log;
-		}
-	}
 
 	public SolidityLog() { }
 

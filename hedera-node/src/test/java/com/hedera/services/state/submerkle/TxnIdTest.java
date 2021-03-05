@@ -22,9 +22,6 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -142,7 +139,7 @@ class TxnIdTest {
 		// then:
 		assertEquals(subject, deserializedId);
 		verify(din, never()).readBoolean();
-		verify(din, never()).readByteArray(TxnId.MAX_PERMISSIBLE_NONCE_BYTES);
+		verify(din, never()).readByteArray(TxnId.MAX_CONCEIVABLE_NONCE_BYTES);
 
 		// cleanup:
 		TxnId.serdes = new DomainSerdes();
@@ -188,7 +185,7 @@ class TxnIdTest {
 		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
 		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
 		given(din.readBoolean()).willReturn(true).willReturn(true);
-		given(din.readByteArray(TxnId.MAX_PERMISSIBLE_NONCE_BYTES)).willReturn(nonce.toByteArray());
+		given(din.readByteArray(TxnId.MAX_CONCEIVABLE_NONCE_BYTES)).willReturn(nonce.toByteArray());
 		// and:
 		var deserializedId = new TxnId();
 

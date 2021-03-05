@@ -116,16 +116,22 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			return;
 		}
 
+		var schedule = store.get(scheduleId);
 		if (store.isCreationPending()) {
 			store.commitCreation();
-			var expiringEntity = new ExpiringEntity(EntityId.ofNullableScheduleId(scheduleId), store::expire, store.get(scheduleId).expiry());
+			var expiringEntity = new ExpiringEntity(
+					EntityId.ofNullableScheduleId(scheduleId),
+					store::expire,
+					schedule.expiry());
 			txnCtx.addExpiringEntities(Collections.singletonList(expiringEntity));
 		}
+
+		txnCtx.setCreated(scheduleId);
+		txnCtx.setScheduledTxnId(schedule.scheduledTransactionId());
 		var finalOutcome = OK;
 		if (signingOutcome.getRight()) {
 			finalOutcome = executor.doProcess(scheduleId);
 		}
-		txnCtx.setCreated(scheduleId);
 		txnCtx.setStatus(finalOutcome == OK ? SUCCESS : finalOutcome);
 	}
 
