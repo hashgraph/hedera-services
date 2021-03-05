@@ -126,6 +126,7 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.BackingNftOwnerships;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
@@ -134,6 +135,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.NftOwnershipProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.FreezeHandler;
@@ -201,7 +203,10 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNamedAssociation;
+import com.hedera.services.state.merkle.MerkleNft;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.merkle.MerklePlaceholder;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -221,6 +226,8 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.RunningAvgFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.SpeedometerFactory;
+import com.hedera.services.store.nft.HederaNftStore;
+import com.hedera.services.store.nft.NftStore;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -285,6 +292,7 @@ import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -302,6 +310,7 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
@@ -329,6 +338,7 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.stora
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
+import static com.hedera.services.ledger.accounts.BackingNftOwnerships.OWNERSHIP_CMP;
 import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.legacy.config.PropertiesLoader.log;
@@ -410,6 +420,7 @@ public class ServicesContext {
 	private Address address;
 	private Console console;
 	private HederaFs hfs;
+	private NftStore nftStore;
 	private StateView currentView;
 	private AccountID accountId;
 	private AnswerFlow answerFlow;
@@ -486,6 +497,7 @@ public class ServicesContext {
 	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
 	private FCMapBackingAccounts backingAccounts;
+	private BackingNftOwnerships backingNftOwnerships;
 	private TransitionLogicLookup transitionLogic;
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
@@ -563,6 +575,9 @@ public class ServicesContext {
 		}
 		if (tokenStore != null) {
 			tokenStore.rebuildViews();
+		}
+		if (nftStore != null) {
+			nftStore.rebuildViews();
 		}
 	}
 
@@ -1223,7 +1238,8 @@ public class ServicesContext {
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* Schedule */
 				entry(ScheduleCreate,
-						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx(), activationHelper(), validator()))),
+						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx(), activationHelper(),
+								validator()))),
 				entry(ScheduleSign,
 						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
 				entry(ScheduleDelete,
@@ -1314,6 +1330,13 @@ public class ServicesContext {
 		return exchange;
 	}
 
+	public BackingStore<Triple<AccountID, NftID, String>, MerklePlaceholder> backingNftOwnerships() {
+		if (backingNftOwnerships == null) {
+			backingNftOwnerships = new BackingNftOwnerships(this::nftOwnerships);
+		}
+		return backingNftOwnerships;
+	}
+
 	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
 		if (backingTokenRels == null) {
 			backingTokenRels = new BackingTokenRels(this::tokenAssociations);
@@ -1340,6 +1363,26 @@ public class ServicesContext {
 			globalDynamicProperties = new GlobalDynamicProperties(hederaNums(), properties());
 		}
 		return globalDynamicProperties;
+	}
+
+	public NftStore nftStore() {
+		if (nftStore == null) {
+			TransactionalLedger<
+					Triple<AccountID, NftID, String>,
+					NftOwnershipProperty,
+					MerklePlaceholder> nftOwnershipsLedger = new TransactionalLedger<>(
+							NftOwnershipProperty.class,
+							MerklePlaceholder::new,
+							backingNftOwnerships(),
+							new ChangeSummaryManager<>());
+			nftOwnershipsLedger.setKeyComparator(OWNERSHIP_CMP);
+			nftOwnershipsLedger.setKeyToString(BackingNftOwnerships::readableNftOwnership);
+			nftStore = new HederaNftStore(
+					ids(),
+					this::nfts,
+					nftOwnershipsLedger);
+		}
+		return nftStore;
 	}
 
 	public TokenStore tokenStore() {
@@ -1877,8 +1920,16 @@ public class ServicesContext {
 		return state.tokens();
 	}
 
+	public FCMap<MerkleEntityId, MerkleNft> nfts() {
+		return state.nfts();
+	}
+
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();
+	}
+
+	public FCMap<MerkleNamedAssociation, MerklePlaceholder> nftOwnerships() {
+		return state.nftOwnerships();
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {

@@ -141,13 +141,14 @@ public class MerkleNamedAssociation extends AbstractMerkleLeaf implements FCMKey
 		return new HashCodeBuilder(17, 37)
 				.append(fromShard).append(fromRealm).append(fromNum)
 				.append(toShard).append(toRealm).append(toNum)
+				.append(name)
 				.toHashCode();
 	}
 
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleNamedAssociation copy() {
-		return new MerkleNamedAssociation(fromShard, fromRealm, fromNum, toShard, toRealm, toNum);
+		return this;
 	}
 
 	/* --- Bean --- */
@@ -157,13 +158,16 @@ public class MerkleNamedAssociation extends AbstractMerkleLeaf implements FCMKey
 		return MoreObjects.toStringHelper(this)
 				.add("fromShard", fromShard).add("fromRealm", fromRealm).add("fromNum", fromNum)
 				.add("toShard", toShard).add("toRealm", toRealm).add("toNum", toNum)
+				.add("toShard", toShard).add("toRealm", toRealm).add("toNum", toNum)
+				.add("name", name)
 				.toString();
 	}
 
 	public String toAbbrevString() {
 		return String.format(
-				"%d.%d.%d <-> %d.%d.%d",
+				"(%d.%d.%d <-> %d.%d.%d) '%s'",
 				fromShard, fromRealm, fromNum,
-				toShard, toRealm, toNum);
+				toShard, toRealm, toNum,
+				name);
 	}
 }
