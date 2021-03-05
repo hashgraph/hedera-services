@@ -426,6 +426,7 @@ public class UtilVerbs {
 				Thread.sleep(20000);
 				return;
 			}
+			opLog.info("Sleeping so not to spoil/fail the fee initializations on other clients...");
 			Thread.sleep(10000);
 			opLog.info("Reducing fee for {}...", function);
 			var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
