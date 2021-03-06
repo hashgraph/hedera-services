@@ -3,6 +3,49 @@
     "currentFeeSchedule": [
       {
         "transactionFeeSchedule": {
+          "hederaFunctionality": "NftCreate",
+          "feeData": {
+            "nodedata": {
+              "constant": 4498129603,
+              "bpt": 7191161,
+              "vpt": 17977903216,
+              "rbh": 4794,
+              "sbh": 360,
+              "gas": 47941,
+              "bpr": 7191161,
+              "sbpr": 179779,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 71970073651,
+              "bpt": 115058581,
+              "vpt": 287646451463,
+              "rbh": 76706,
+              "sbh": 5753,
+              "gas": 767057,
+              "bpr": 115058581,
+              "sbpr": 2876465,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 71970073651,
+              "bpt": 115058581,
+              "vpt": 287646451463,
+              "rbh": 76706,
+              "sbh": 5753,
+              "gas": 767057,
+              "bpr": 115058581,
+              "sbpr": 2876465,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
+      {
+        "transactionFeeSchedule": {
           "hederaFunctionality": "CryptoCreate",
           "feeData": {
             "nodedata": {
@@ -2416,6 +2459,49 @@
   },
   {
     "nextFeeSchedule": [
+      {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "NftCreate",
+          "feeData": {
+            "nodedata": {
+              "constant": 4498129603,
+              "bpt": 7191161,
+              "vpt": 17977903216,
+              "rbh": 4794,
+              "sbh": 360,
+              "gas": 47941,
+              "bpr": 7191161,
+              "sbpr": 179779,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 71970073651,
+              "bpt": 115058581,
+              "vpt": 287646451463,
+              "rbh": 76706,
+              "sbh": 5753,
+              "gas": 767057,
+              "bpr": 115058581,
+              "sbpr": 2876465,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 71970073651,
+              "bpt": 115058581,
+              "vpt": 287646451463,
+              "rbh": 76706,
+              "sbh": 5753,
+              "gas": 767057,
+              "bpr": 115058581,
+              "sbpr": 2876465,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
       {
         "transactionFeeSchedule": {
           "hederaFunctionality": "CryptoCreate",

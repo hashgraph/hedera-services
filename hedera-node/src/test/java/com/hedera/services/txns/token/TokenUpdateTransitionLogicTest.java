@@ -100,7 +100,7 @@ class TokenUpdateTransitionLogicTest {
 
 		token = mock(MerkleToken.class);
 		given(token.adminKey()).willReturn(Optional.of(adminKey));
-		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(oldTreasury));
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccount(oldTreasury));
 		given(store.resolve(target)).willReturn(target);
 		given(store.get(target)).willReturn(token);
 		given(store.associationExists(newTreasury, target)).willReturn(true);

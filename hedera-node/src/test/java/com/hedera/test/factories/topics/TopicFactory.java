@@ -52,7 +52,7 @@ public class TopicFactory {
 		autoRenewDuration.ifPresent(value::setAutoRenewDurationSeconds);
 		adminKey.ifPresent(k -> value.setAdminKey(uncheckedMap(k)));
 		submitKey.ifPresent(k -> value.setSubmitKey(uncheckedMap(k)));
-		autoRenewAccount.ifPresent(id -> value.setAutoRenewAccountId(EntityId.ofNullableAccountId(id)));
+		autoRenewAccount.ifPresent(id -> value.setAutoRenewAccountId(EntityId.fromGrpcAccount(id)));
 
 		return value;
 	}

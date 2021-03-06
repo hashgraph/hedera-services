@@ -27,7 +27,6 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -103,7 +102,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.autoRenewPeriod(autoRenewPeriod)
 				.isReceiverSigRequired(op.getReceiverSigRequired());
 		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.ofNullableAccountId(op.getProxyAccountID()));
+			customizer.proxy(EntityId.fromGrpcAccount(op.getProxyAccountID()));
 		}
 		return customizer;
 	}

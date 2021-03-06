@@ -314,14 +314,14 @@ public class TxnReceipt implements SelfSerializable {
 	public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
 		String status = grpc.getStatus() != null ? grpc.getStatus().name() : null;
 		EntityId accountId =
-				grpc.hasAccountID() ? EntityId.ofNullableAccountId(grpc.getAccountID()) : null;
+				grpc.hasAccountID() ? EntityId.fromGrpcAccount(grpc.getAccountID()) : null;
 		EntityId jFileID = grpc.hasFileID() ? EntityId.ofNullableFileId(grpc.getFileID()) : null;
 		EntityId jContractID =
 				grpc.hasContractID() ? EntityId.ofNullableContractId(grpc.getContractID()) : null;
 		EntityId topicId = grpc.hasTopicID() ? EntityId.ofNullableTopicId(grpc.getTopicID()) : null;
 		EntityId tokenId = grpc.hasTokenID() ? EntityId.ofNullableTokenId(grpc.getTokenID()) : null;
 		EntityId scheduleId = grpc.hasScheduleID() ? EntityId.ofNullableScheduleId(grpc.getScheduleID()) : null;
-		EntityId nftId = grpc.hasNftID() ? EntityId.ofNullableNftId(grpc.getNftID()) : null;
+		EntityId nftId = grpc.hasNftID() ? EntityId.fromGrpcNftType(grpc.getNftID()) : null;
 		long runningHashVersion = Math.max(MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
 		long newTotalSupply = grpc.getNewTotalSupply();
 		TxnId scheduledTxnId = grpc.hasScheduledTransactionID()

@@ -65,7 +65,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRAN
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccount;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -325,7 +325,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (!skipKeyCheck && !token.hasWipeKey()) {
 				return TOKEN_HAS_NO_WIPE_KEY;
 			}
-			if (ofNullableAccountId(aId).equals(token.treasury())) {
+			if (fromGrpcAccount(aId).equals(token.treasury())) {
 				return CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 			}
 
@@ -414,7 +414,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				request.getName(),
 				request.getFreezeDefault(),
 				kycKey.isEmpty(),
-				ofNullableAccountId(request.getTreasury()));
+				fromGrpcAccount(request.getTreasury()));
 		pendingCreation.setMemo(request.getMemo());
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		kycKey.ifPresent(pendingCreation::setKycKey);
@@ -422,7 +422,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);
 		supplyKey.ifPresent(pendingCreation::setSupplyKey);
 		if (request.hasAutoRenewAccount()) {
-			pendingCreation.setAutoRenewAccount(ofNullableAccountId(request.getAutoRenewAccount()));
+			pendingCreation.setAutoRenewAccount(fromGrpcAccount(request.getAutoRenewAccount()));
 			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod().getSeconds());
 		}
 
@@ -575,7 +575,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				}
 			}
 			if (changes.hasAutoRenewAccount()) {
-				token.setAutoRenewAccount(ofNullableAccountId(changes.getAutoRenewAccount()));
+				token.setAutoRenewAccount(fromGrpcAccount(changes.getAutoRenewAccount()));
 			}
 			if (token.hasAutoRenewAccount()) {
 				long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
@@ -604,7 +604,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				token.setName(newName);
 			}
 			if (changes.hasTreasury() && !changes.getTreasury().equals(token.treasury().toGrpcAccountId())) {
-				var treasuryId = ofNullableAccountId(changes.getTreasury());
+				var treasuryId = fromGrpcAccount(changes.getTreasury());
 				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
 				token.setTreasury(treasuryId);
 				addKnownTreasury(changes.getTreasury(), tId);

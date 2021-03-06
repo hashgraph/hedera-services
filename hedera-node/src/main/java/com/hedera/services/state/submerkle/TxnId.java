@@ -37,7 +37,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 
@@ -164,7 +163,7 @@ public class TxnId implements SelfSerializable {
 		var grpcNonce = grpc.getNonce();
 		byte[] nonce = grpcNonce.isEmpty() ? ABSENT_NONCE : grpcNonce.toByteArray();
 		return new TxnId(
-				ofNullableAccountId(grpc.getAccountID()),
+				EntityId.fromGrpcAccount(grpc.getAccountID()),
 				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
 				grpc.getScheduled(),
 				nonce);

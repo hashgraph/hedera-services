@@ -72,7 +72,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 		static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
 		static final int NUM_090_CHILDREN = 3;
 
-		static final int NFTS = 3;
+		static final int NFT_TYPES = 3;
 		static final int NUM_0140_CHILDREN = 3;
 	}
 
@@ -85,6 +85,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 		this(List.of(
 				new MerkleAccountState(),
 				new FCQueue<ExpirableTxnRecord>(),
+				new MerkleAccountEntities(),
 				new MerkleAccountEntities()));
 	}
 
@@ -125,8 +126,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 					getChild(ChildIndices.RELEASE_081_PAYER_RECORDS),
 					new MerkleAccountEntities()), MERKLE_VERSION);
 		} else {
-			if (nfts() == null) {
-				setChild(ChildIndices.NFTS, new MerkleAccountEntities());
+			if (nftTypes() == null) {
+				setChild(ChildIndices.NFT_TYPES, new MerkleAccountEntities());
 			}
 		}
 	}
@@ -148,7 +149,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 		return new MerkleAccount(List.of(
 				state().copy(),
 				records().copy(),
-				tokens().copy()));
+				tokens().copy(),
+				nftTypes().copy()));
 	}
 
 	/* ---- Object ---- */
@@ -163,12 +165,13 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 		var that = (MerkleAccount) o;
 		return this.state().equals(that.state()) &&
 				this.records().equals(that.records()) &&
-				this.tokens().equals(that.tokens());
+				this.tokens().equals(that.tokens()) &&
+				this.nftTypes().equals(that.nftTypes());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(state(), records(), tokens());
+		return Objects.hash(state(), records(), tokens(), nftTypes());
 	}
 
 	@Override
@@ -177,6 +180,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 				.add("state", state())
 				.add("# records", records().size())
 				.add("tokens", tokens().readableEntityIds())
+				.add("nftTypes", nftTypes().readableEntityIds())
 				.toString();
 	}
 
@@ -201,12 +205,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
 	}
 
-	public MerkleAccountEntities nfts() {
-		return getChild(ChildIndices.NFTS);
+	public MerkleAccountEntities nftTypes() {
+		return getChild(ChildIndices.NFT_TYPES);
 	}
 
-	public void setNfts(MerkleAccountEntities nfts) {
-		setChild(ChildIndices.NFTS, nfts);
+	public void setNftTypes(MerkleAccountEntities nftTypes) {
+		setChild(ChildIndices.NFT_TYPES, nftTypes);
 	}
 
 	/* ----  Bean  ---- */

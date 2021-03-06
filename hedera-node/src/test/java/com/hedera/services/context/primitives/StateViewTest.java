@@ -189,7 +189,7 @@ class StateViewTest {
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
 		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
-		token.setAutoRenewAccount(EntityId.ofNullableAccountId(autoRenew));
+		token.setAutoRenewAccount(EntityId.fromGrpcAccount(autoRenew));
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setDeleted(true);
@@ -200,10 +200,10 @@ class StateViewTest {
 		scheduleStore = mock(ScheduleStore.class);
 		schedule = new MerkleSchedule(
 			scheduleBody,
-			EntityId.ofNullableAccountId(creatorAccountID),
+			EntityId.fromGrpcAccount(creatorAccountID),
 			now
 		);
-		schedule.setPayer(EntityId.ofNullableAccountId(payerAccountId));
+		schedule.setPayer(EntityId.fromGrpcAccount(payerAccountId));
 		schedule.setAdminKey(SCHEDULE_ADMIN_KT.asJKey());
 		schedule.setExpiry(expiry);
 		schedule.witnessValidEd25519Signature("firstPretendKey".getBytes());

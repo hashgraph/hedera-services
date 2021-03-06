@@ -52,7 +52,7 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccount;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -99,8 +99,8 @@ public class HederaScheduleStoreTest {
     AccountID payerId = IdUtils.asAccount("1.2.456");
     AccountID anotherPayerId = IdUtils.asAccount("1.2.457");
 
-    EntityId entityPayer = ofNullableAccountId(payerId);
-    EntityId entitySchedulingAccount = ofNullableAccountId(schedulingAccount);
+    EntityId entityPayer = fromGrpcAccount(payerId);
+    EntityId entitySchedulingAccount = fromGrpcAccount(schedulingAccount);
 
     long expectedExpiry = 1_234_567L;
 
@@ -122,10 +122,10 @@ public class HederaScheduleStoreTest {
         given(schedule.transactionBody()).willReturn(transactionBody);
         given(schedule.hasAdminKey()).willReturn(true);
         given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
-        given(schedule.payer()).willReturn(ofNullableAccountId(payerId));
+        given(schedule.payer()).willReturn(fromGrpcAccount(payerId));
         given(schedule.memo()).willReturn(Optional.of(entityMemo));
 
-        given(anotherSchedule.payer()).willReturn(ofNullableAccountId(anotherPayerId));
+        given(anotherSchedule.payer()).willReturn(fromGrpcAccount(anotherPayerId));
 
         ids = mock(EntityIdSource.class);
         given(ids.newScheduleId(schedulingAccount)).willReturn(created);
@@ -158,7 +158,7 @@ public class HederaScheduleStoreTest {
         ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleSchedule>> captor = forClass(BiConsumer.class);
         MerkleSchedule reconnectSchedule = new MerkleSchedule(
                 transactionBody,
-                EntityId.ofNullableAccountId(IdUtils.asAccount("1.2.3")),
+                EntityId.fromGrpcAccount(IdUtils.asAccount("1.2.3")),
                 RichInstant.MISSING_INSTANT);
         reconnectSchedule.setMemo(reconnectMemo);
         // and:
@@ -467,7 +467,7 @@ public class HederaScheduleStoreTest {
         ContentAddressableSchedule txKey = new ContentAddressableSchedule(
                 adminKey,
                 entityMemo,
-                ofNullableAccountId(payerId),
+                fromGrpcAccount(payerId),
                 transactionBody);
         subject.existingSchedules.put(txKey, fromScheduleId(created));
 
@@ -487,7 +487,7 @@ public class HederaScheduleStoreTest {
         ContentAddressableSchedule extantKey = new ContentAddressableSchedule(
                 adminKey,
                 entityMemo,
-                ofNullableAccountId(payerId),
+                fromGrpcAccount(payerId),
                 extant);
         subject.existingSchedules.put(extantKey, fromScheduleId(created));
         // and:

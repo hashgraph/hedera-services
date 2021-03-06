@@ -22,6 +22,7 @@ package com.hedera.services.ledger.ids;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
@@ -39,12 +40,19 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
 	}
 
 	@Override
+	public NftID newNftId(AccountID sponsor) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public TokenID newTokenId(AccountID sponsor) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public ScheduleID newScheduleId(AccountID sponsor) { throw  new UnsupportedOperationException(); }
+
+
 
 	@Override
 	public void reclaimLastId() {

@@ -1,4 +1,4 @@
-package com.hedera.services.fees.calculation.nft;
+package com.hedera.services.fees.calculation.nft.txns;
 
 /*-
  * ‌
@@ -21,18 +21,26 @@ package com.hedera.services.fees.calculation.nft;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleCreateUsage;
+import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
-import java.util.function.BiFunction;
-
 public class NftCreateResourceUsage implements TxnResourceUsageEstimator {
+	private static final FeeData MOCK_USAGE;
+	static {
+		var usagesBuilder = FeeData.newBuilder();
+		usagesBuilder.setNetworkdata(FeeComponents.newBuilder()
+				.setConstant(1).setBpt(256).setVpt(2).setRbh(2160));
+		usagesBuilder.setNodedata(FeeComponents.newBuilder()
+				.setConstant(1).setBpt(256).setVpt(1).setBpr(32));
+		usagesBuilder.setServicedata(FeeComponents.newBuilder()
+				.setConstant(1).setRbh(2160));
+		MOCK_USAGE = usagesBuilder.build();
+	}
+
 	@Override
 	public boolean applicableTo(TransactionBody txn) {
 		return txn.hasNftCreate();
@@ -40,6 +48,6 @@ public class NftCreateResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		return FeeData.getDefaultInstance();
+		return MOCK_USAGE;
 	}
 }

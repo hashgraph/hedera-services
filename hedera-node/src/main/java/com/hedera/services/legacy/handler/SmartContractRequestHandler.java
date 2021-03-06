@@ -99,7 +99,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -607,7 +606,7 @@ public class SmartContractRequestHandler {
 				} else {
 					HederaAccountCustomizer customizer = new HederaAccountCustomizer();
 					if (op.hasProxyAccountID()) {
-						customizer.proxy(EntityId.ofNullableAccountId(op.getProxyAccountID()));
+						customizer.proxy(EntityId.fromGrpcAccount(op.getProxyAccountID()));
 					}
 					if (op.hasAutoRenewPeriod()) {
 						customizer.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds());

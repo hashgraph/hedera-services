@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions.nft;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
@@ -44,6 +45,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 
 public class HapiNftCreate extends HapiTxnOp<HapiNftCreate> {
 	static final Logger log = LogManager.getLogger(HapiNftCreate.class);
+
+	private static final FeeData MOCK_USAGE;
+	static {
+		var usagesBuilder = FeeData.newBuilder();
+		usagesBuilder.setNetworkdata(FeeComponents.newBuilder()
+				.setConstant(1).setBpt(256).setVpt(2).setRbh(2160));
+		usagesBuilder.setNodedata(FeeComponents.newBuilder()
+				.setConstant(1).setBpt(256).setVpt(1).setBpr(32));
+		usagesBuilder.setServicedata(FeeComponents.newBuilder()
+				.setConstant(1).setRbh(2160));
+		MOCK_USAGE = usagesBuilder.build();
+	}
 
 	private boolean advertiseCreation = false;
 	private String nftType;
@@ -82,7 +95,7 @@ public class HapiNftCreate extends HapiTxnOp<HapiNftCreate> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.NftCreate, (_txn, sigUsage) -> FeeData.getDefaultInstance(), txn, numPayerKeys);
+				HederaFunctionality.NftCreate, (_txn, sigUsage) -> MOCK_USAGE, txn, numPayerKeys);
 	}
 
 	@Override

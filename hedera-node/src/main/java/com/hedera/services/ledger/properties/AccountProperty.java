@@ -171,12 +171,12 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	NFTS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setNfts((MerkleAccountEntities) t);
+			return (a, t) -> a.setNftTypes((MerkleAccountEntities) t);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::nfts;
+			return MerkleAccount::nftTypes;
 		}
 	};
 

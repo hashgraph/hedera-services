@@ -25,7 +25,7 @@ public class MerkleNftOwnership extends AbstractMerkleLeaf implements FCMKey {
 	static final int MERKLE_VERSION = RELEASE_0140_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1954c68f44cb9498L;
 
-	public static final int NUM_NFT_ID_BYTES = 32;
+	public static final int NUM_NFT_SERIAL_NO_BYTES = 32;
 
 	private byte[] serialNo = MISSING_SERIAL_NO;
 	private EntityId nftType = MISSING_ENTITY_ID;
@@ -43,7 +43,7 @@ public class MerkleNftOwnership extends AbstractMerkleLeaf implements FCMKey {
 	}
 
 	public static MerkleNftOwnership fromPair(Pair<NftID, ByteString> pair) {
-		return new MerkleNftOwnership(EntityId.ofNullableNftId(pair.getLeft()), pair.getRight().toByteArray());
+		return new MerkleNftOwnership(EntityId.fromGrpcNftType(pair.getLeft()), pair.getRight().toByteArray());
 	}
 
 	/* --- MerkleLeaf --- */
@@ -60,7 +60,7 @@ public class MerkleNftOwnership extends AbstractMerkleLeaf implements FCMKey {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		nftType = in.readSerializable();
-		serialNo = in.readByteArray(NUM_NFT_ID_BYTES);
+		serialNo = in.readByteArray(NUM_NFT_SERIAL_NO_BYTES);
 	}
 
 	@Override

@@ -98,6 +98,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsa
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
+import com.hedera.services.fees.calculation.nft.txns.NftCreateResourceUsage;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.DataMapFactory;
@@ -119,6 +120,7 @@ import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
+import com.hedera.services.grpc.controllers.NftController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.CharacteristicsFactory;
@@ -439,6 +441,7 @@ public class ServicesContext {
 	private HederaNumbers hederaNums;
 	private ExpiryManager expiries;
 	private FeeCalculator fees;
+	private NftController nftGrpc;
 	private FeeExemptions exemptions;
 	private EntityNumbers entityNums;
 	private FreezeHandler freeze;
@@ -943,6 +946,8 @@ public class ServicesContext {
 				entry(ConsensusUpdateTopic, List.of(new UpdateTopicResourceUsage())),
 				entry(ConsensusDeleteTopic, List.of(new DeleteTopicResourceUsage())),
 				entry(ConsensusSubmitMessage, List.of(new SubmitMessageResourceUsage())),
+				/* Nft */
+				entry(NftCreate, List.of(new NftCreateResourceUsage())),
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
@@ -1556,6 +1561,13 @@ public class ServicesContext {
 		return systemOpPolicies;
 	}
 
+	public NftController nftGrpc() {
+		if (nftGrpc == null) {
+			nftGrpc = new NftController(txnResponseHelper(), queryResponseHelper());
+		}
+		return nftGrpc;
+	}
+
 	public TokenController tokenGrpc() {
 		if (tokenGrpc == null) {
 			tokenGrpc = new TokenController(tokenAnswers(), txnResponseHelper(), queryResponseHelper());
@@ -1615,6 +1627,7 @@ public class ServicesContext {
 							consensusGrpc(),
 							networkGrpc(),
 							tokenGrpc(),
+							nftGrpc(),
 							scheduleGrpc()),
 					Collections.emptyList());
 		}

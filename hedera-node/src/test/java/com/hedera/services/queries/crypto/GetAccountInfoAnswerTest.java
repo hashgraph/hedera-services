@@ -249,7 +249,7 @@ class GetAccountInfoAnswerTest {
 		assertEquals(address, info.getContractAccountID());
 		assertEquals(payerAccount.getBalance(), info.getBalance());
 		assertEquals(payerAccount.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
-		assertEquals(payerAccount.getProxy(), EntityId.ofNullableAccountId(info.getProxyAccountID()));
+		assertEquals(payerAccount.getProxy(), EntityId.fromGrpcAccount(info.getProxyAccountID()));
 		assertEquals(JKey.mapJKey(payerAccount.getKey()), info.getKey());
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());

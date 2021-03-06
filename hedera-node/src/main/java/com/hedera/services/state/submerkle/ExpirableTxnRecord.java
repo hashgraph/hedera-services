@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
+import com.hederahashgraph.api.proto.java.NftTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.Hash;
@@ -51,6 +52,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	private static final Logger log = LogManager.getLogger(ExpirableTxnRecord.class);
 
 	static final List<EntityId> NO_TOKENS = null;
+	static final List<EntityId> NO_NFT_TYPES = null;
+	static final List<OwnershipChanges> NO_OWNERSHIP_CHANGES = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
 	static final EntityId NO_SCHEDULE_REF = null;
 
@@ -59,11 +62,13 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_0120_VERSION = 3;
-	static final int MERKLE_VERSION = RELEASE_0120_VERSION;
+	static final int RELEASE_0140_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0140_VERSION;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
 	static final int MAX_INVOLVED_TOKENS = 10;
+	static final int MAX_INVOLVED_NFT_TYPES = 10;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -84,6 +89,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	private List<EntityId> tokens = NO_TOKENS;
 	private List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
 	private EntityId scheduleRef = NO_SCHEDULE_REF;
+	private List<EntityId> nftTypes = NO_NFT_TYPES;
+	private List<OwnershipChanges> ownershipChanges = NO_OWNERSHIP_CHANGES;
 
 	@Override
 	public void release() {
@@ -116,6 +123,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				createResult,
 				NO_TOKENS,
 				NO_TOKEN_ADJUSTMENTS,
+				NO_NFT_TYPES,
+				NO_OWNERSHIP_CHANGES,
 				NO_SCHEDULE_REF);
 	}
 
@@ -131,6 +140,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 			SolidityFnResult createResult,
 			List<EntityId> tokens,
 			List<CurrencyAdjustments> tokenTransferLists,
+			List<EntityId> nftTypes,
+			List<OwnershipChanges> ownershipChanges,
 			EntityId scheduleRef
 	) {
 		this.receipt = receipt;
@@ -144,6 +155,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		this.contractCreateResult = createResult;
 		this.tokens = tokens;
 		this.tokenAdjustments = tokenTransferLists;
+		this.nftTypes = nftTypes;
+		this.ownershipChanges = ownershipChanges;
 		this.scheduleRef = scheduleRef;
 	}
 
@@ -180,6 +193,16 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 					.collect(joining(", "));
 			helper.add("tokenAdjustments", readable);
 		}
+		if (nftTypes != NO_NFT_TYPES) {
+			int n = nftTypes.size();
+			var readable = IntStream.range(0, n)
+					.mapToObj(i -> String.format(
+							"%s(%s)",
+							nftTypes.get(i).toAbbrevString(),
+							ownershipChanges.get(i)))
+					.collect(joining(", "));
+			helper.add("ownershipChanges", readable);
+		}
 		if (scheduleRef != NO_SCHEDULE_REF) {
 			helper.add("scheduleRef", scheduleRef);
 		}
@@ -208,6 +231,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				Objects.equals(this.hbarAdjustments, that.hbarAdjustments) &&
 				Objects.equals(this.tokens, that.tokens) &&
 				Objects.equals(this.tokenAdjustments, that.tokenAdjustments) &&
+				Objects.equals(this.nftTypes, that.nftTypes) &&
+				Objects.equals(this.ownershipChanges, that.ownershipChanges) &&
 				Objects.equals(this.scheduleRef, that.scheduleRef);
 	}
 
@@ -226,6 +251,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				submittingMember,
 				tokens,
 				tokenAdjustments,
+				nftTypes,
+				ownershipChanges,
 				scheduleRef);
 		return result * 31 + Arrays.hashCode(txnHash);
 	}
@@ -264,6 +291,9 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		out.writeSerializableList(tokenAdjustments, true, true);
 
 		serdes.writeNullableSerializable(scheduleRef, out);
+
+		out.writeSerializableList(nftTypes, true, true);
+		out.writeSerializableList(ownershipChanges, true, true);
 	}
 
 	@Override
@@ -285,6 +315,10 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		}
 		if (version > RELEASE_080_VERSION) {
 			scheduleRef = serdes.readNullableSerializable(in);
+		}
+		if (version >= RELEASE_0140_VERSION) {
+			nftTypes = in.readSerializableList(MAX_INVOLVED_NFT_TYPES);
+			ownershipChanges = in.readSerializableList(MAX_INVOLVED_NFT_TYPES);
 		}
 	}
 
@@ -308,6 +342,14 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 
 	public List<CurrencyAdjustments> getTokenAdjustments() {
 		return tokenAdjustments;
+	}
+
+	public List<EntityId> getNftTypes() {
+		return nftTypes;
+	}
+
+	public List<OwnershipChanges> getOwnershipChanges() {
+		return ownershipChanges;
 	}
 
 	public TxnReceipt getReceipt() {
@@ -379,6 +421,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	public static ExpirableTxnRecord fromGprc(TransactionRecord record) {
 		List<EntityId> tokens = NO_TOKENS;
 		List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
+		List<EntityId> nftTypes = NO_NFT_TYPES;
+		List<OwnershipChanges> ownershipChanges = NO_OWNERSHIP_CHANGES;
 		int n = record.getTokenTransferListsCount();
 		if (n > 0) {
 			tokens = new ArrayList<>();
@@ -388,6 +432,15 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
 			}
 
+		}
+		n = record.getNftTransferListsCount();
+		if (n > 0) {
+			nftTypes = new ArrayList<>();
+			ownershipChanges = new ArrayList<>();
+			for (NftTransferList nftTransfers : record.getNftTransferListsList()) {
+				nftTypes.add(EntityId.fromGrpcNftType(nftTransfers.getNft()));
+				ownershipChanges.add(OwnershipChanges.fromGrpc(nftTransfers.getTransferList()));
+			}
 		}
 		return new ExpirableTxnRecord(
 				TxnReceipt.fromGrpc(record.getReceipt()),
@@ -401,6 +454,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(record.getContractCreateResult()) : null,
 				tokens,
 				tokenAdjustments,
+				nftTypes,
+				ownershipChanges,
 				record.hasScheduleRef() ? ofNullableScheduleId(record.getScheduleRef()) : null);
 	}
 
@@ -446,7 +501,13 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 						.addAllTransfers(tokenAdjustments.get(i).toGrpc().getAccountAmountsList()));
 			}
 		}
-
+		if (nftTypes != NO_NFT_TYPES) {
+			for (int i = 0, n = nftTypes.size(); i < n; i++) {
+				grpc.addNftTransferLists(NftTransferList.newBuilder()
+						.setNft(nftTypes.get(i).toGrpcNftId())
+						.addAllTransfer(ownershipChanges.get(i).toGrpc().getTransferList()));
+			}
+		}
 		if (scheduleRef != NO_SCHEDULE_REF) {
 			grpc.setScheduleRef(scheduleRef.toGrpcScheduleId());
 		}

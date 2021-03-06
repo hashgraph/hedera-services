@@ -28,7 +28,6 @@ import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -59,7 +58,7 @@ import static org.mockito.Mockito.never;
 public class TxnAwareRecordsHistorianTest {
 	final private long submittingMember = 1L;
 	final private AccountID a = asAccount("0.0.1111");
-	final private EntityId aEntity = EntityId.ofNullableAccountId(a);
+	final private EntityId aEntity = EntityId.fromGrpcAccount(a);
 	final private TransactionID txnIdA = TransactionID.newBuilder().setAccountID(a).build();
 	final private AccountID b = asAccount("0.0.2222");
 	final private AccountID c = asAccount("0.0.3333");

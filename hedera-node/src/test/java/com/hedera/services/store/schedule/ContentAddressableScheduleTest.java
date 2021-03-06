@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.Arrays;
 
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccount;
 import static com.hedera.services.store.schedule.ContentAddressableSchedule.fromMerkleSchedule;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
@@ -52,8 +52,8 @@ public class ContentAddressableScheduleTest {
 	Key adminKey = SCHEDULE_ADMIN_KT.asKey();
 	Key diffAdminKey = MISC_ACCOUNT_KT.asKey();
 
-	EntityId payerId = ofNullableAccountId(IdUtils.asAccount("1.2.456"));
-	EntityId diffPayerId = ofNullableAccountId(IdUtils.asAccount("1.2.654"));
+	EntityId payerId = fromGrpcAccount(IdUtils.asAccount("1.2.456"));
+	EntityId diffPayerId = fromGrpcAccount(IdUtils.asAccount("1.2.654"));
 
 	String entityMemo = "Some memo here";
 	String diffEntityMemo = "Some other memo here";

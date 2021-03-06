@@ -95,7 +95,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 					op.hasAdminKey() ? JKey.mapKey(op.getAdminKey()) : null,
 					op.hasSubmitKey() ? JKey.mapKey(op.getSubmitKey()) : null,
 					op.getAutoRenewPeriod().getSeconds(),
-					op.hasAutoRenewAccount() ? EntityId.ofNullableAccountId(op.getAutoRenewAccount()) : null,
+					op.hasAutoRenewAccount() ? EntityId.fromGrpcAccount(op.getAutoRenewAccount()) : null,
 					new RichInstant(expirationTime.getEpochSecond(), expirationTime.getNano()));
 
 			var newEntityId = entityIdSource.newAccountId(payerAccountId);

@@ -137,7 +137,7 @@ public class EntityId implements SelfSerializable {
 
 	/* --- Helpers --- */
 
-	public static EntityId ofNullableAccountId(AccountID accountId) {
+	public static EntityId fromGrpcAccount(AccountID accountId) {
 		return (accountId == null )
 				? null
 				: new EntityId(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
@@ -173,7 +173,7 @@ public class EntityId implements SelfSerializable {
 				: new EntityId(contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
 	}
 
-	public static EntityId ofNullableNftId(NftID nftId) {
+	public static EntityId fromGrpcNftType(NftID nftId) {
 		return (nftId == null )
 				? null
 				: new EntityId(nftId.getShardNum(), nftId.getRealmNum(), nftId.getNftNum());

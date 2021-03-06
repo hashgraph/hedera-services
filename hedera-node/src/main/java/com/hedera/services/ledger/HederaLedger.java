@@ -235,6 +235,9 @@ public class HederaLedger {
 		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
 		}
+		if (nftOwnershipLedger != UNUSABLE_NFT_OWNERSHIP_LEDGER && nftOwnershipLedger.isInTransaction()) {
+			nftOwnershipLedger.commit();
+		}
 		netTransfers.clear();
 		clearNetTokenTransfers();
 		clearNetNftTransfers();
@@ -352,7 +355,7 @@ public class HederaLedger {
 
 	public boolean isAssociatedTo(AccountID aId, NftID nId) {
 		var account = accountsLedger.getUnsafe(aId);
-		return account.nfts().includes(nId);
+		return account.nftTypes().includes(nId);
 	}
 
 	public void dropPendingNftChanges() {

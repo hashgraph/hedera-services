@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftTransferList;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -244,6 +245,18 @@ public class MiscUtils {
 				.sorted(comparing(Map.Entry::getKey, HederaLedger.ACCOUNT_ID_COMPARATOR))
 				.map(e -> AccountAmount.newBuilder().setAccountID(e.getKey()).setAmount(e.getValue()).build())
 				.collect(toList());
+	}
+
+	public static String readableOwnershipChanges(NftTransferList acquisitions) {
+		return acquisitions.getTransferList()
+				.stream()
+				.map(aa -> String.format(
+						"%s --%s-->> %s",
+						EntityIdUtils.readableId(aa.getFromAccount()),
+						aa.getSerialNo().toStringUtf8(),
+						EntityIdUtils.readableId(aa.getToAccount())))
+				.collect(toList())
+				.toString();
 	}
 
 	public static String readableTransferList(TransferList accountAmounts) {

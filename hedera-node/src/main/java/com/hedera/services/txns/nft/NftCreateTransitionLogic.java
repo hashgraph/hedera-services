@@ -23,7 +23,7 @@ package com.hedera.services.txns.nft;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.store.nft.HederaNftStore;
+import com.hedera.services.state.merkle.MerkleNftOwnership;
 import com.hedera.services.store.nft.NftStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -33,12 +33,14 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.state.merkle.MerkleNftOwnership.NUM_NFT_SERIAL_NO_BYTES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -93,7 +95,7 @@ public class NftCreateTransitionLogic implements TransitionLogic {
 
 		var origSerialNos = IntStream.range(0, op.getSerialNoCount())
 				.mapToObj(i -> "SN" + i)
-				.map(ByteString::copyFromUtf8)
+				.map(NftCreateTransitionLogic::asSerialNo)
 				.collect(Collectors.toList());
 		status = store.mint(created, origSerialNos);
 		if (status != OK) {
@@ -104,6 +106,14 @@ public class NftCreateTransitionLogic implements TransitionLogic {
 		store.commitCreation();
 		txnCtx.setCreated(created);
 		txnCtx.setStatus(SUCCESS);
+	}
+
+	public static ByteString asSerialNo(String shortUtf8) {
+		int used = shortUtf8.length();
+		byte[] bytes = new byte[NUM_NFT_SERIAL_NO_BYTES];
+		System.arraycopy(shortUtf8.getBytes(), 0, bytes, 0, used);
+		Arrays.fill(bytes, used, NUM_NFT_SERIAL_NO_BYTES, " ".getBytes()[0]);
+		return ByteString.copyFrom(bytes);
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {

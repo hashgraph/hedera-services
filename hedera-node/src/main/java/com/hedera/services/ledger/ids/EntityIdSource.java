@@ -22,6 +22,7 @@ package com.hedera.services.ledger.ids;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
@@ -46,6 +47,14 @@ public interface EntityIdSource {
 	 * @return an appropriate id to use
 	 */
 	FileID newFileId(AccountID newFileSponsor);
+
+	/**
+	 * Returns the {@link TokenID} to use for a new token with the given sponsor.
+	 *
+	 * @param sponsor the sponsor of the new token.
+	 * @return an appropriate id to use
+	 */
+	NftID newNftId(AccountID sponsor);
 
 	/**
 	 * Returns the {@link TokenID} to use for a new token with the given sponsor.

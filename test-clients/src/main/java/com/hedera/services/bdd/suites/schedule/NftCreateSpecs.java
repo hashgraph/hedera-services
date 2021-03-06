@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nftCreate;
@@ -54,9 +55,14 @@ public class NftCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec simpleNftCreation() {
 		return defaultHapiSpec("SimpleNftCreation")
-				.given().when(
-						nftCreate("first")
+				.given(
+						cryptoCreate("Smithsonian")
+				).when(
+						nftCreate("naturalHistory")
+								.memo("NFT with first run minting of three serial numbers.")
 								.via("creation")
+								.payingWith("Smithsonian")
+								.initialSerialNos(3)
 								.logged()
 				).then(
 						getTxnRecord("creation").logged()

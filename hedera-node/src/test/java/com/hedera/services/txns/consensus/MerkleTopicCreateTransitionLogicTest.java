@@ -159,7 +159,7 @@ class MerkleTopicCreateTransitionLogicTest {
 		assertArrayEquals(JKey.mapKey(key).serialize(), topic.getAdminKey().serialize());
 		assertArrayEquals(JKey.mapKey(key).serialize(), topic.getSubmitKey().serialize());
 		assertEquals(VALID_AUTORENEW_PERIOD_SECONDS, topic.getAutoRenewDurationSeconds());
-		assertEquals(EntityId.ofNullableAccountId(MISC_ACCOUNT), topic.getAutoRenewAccountId());
+		assertEquals(EntityId.fromGrpcAccount(MISC_ACCOUNT), topic.getAutoRenewAccountId());
 		assertEquals(expirationTimestamp.getEpochSecond(), topic.getExpirationTimestamp().getSeconds());
 		verify(transactionContext).setStatus(SUCCESS);
 	}

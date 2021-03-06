@@ -202,7 +202,7 @@ public class CryptoCreateTransitionLogicTest {
 		assertEquals(expiry, (long)changes.get(EXPIRY));
 		assertEquals(key, JKey.mapJKey((JKey)changes.get(KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
-		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(PROXY));
+		assertEquals(EntityId.fromGrpcAccount(proxy), changes.get(PROXY));
 		assertEquals(memo, changes.get(MEMO));
 	}
 

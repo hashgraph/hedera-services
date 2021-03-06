@@ -130,13 +130,13 @@ public class EntityIdTest {
 	public void factoriesWork() {
 		// expect:
 		assertNull(EntityId.ofNullableFileId(null));
-		assertNull(EntityId.ofNullableAccountId(null));
+		assertNull(EntityId.fromGrpcAccount(null));
 		assertNull(EntityId.ofNullableContractId(null));
 		assertNull(EntityId.ofNullableTopicId(null));
 		assertNull(EntityId.ofNullableTokenId(null));
 		assertNull(EntityId.ofNullableScheduleId(null));
 		// and:
-		assertEquals(subject, EntityId.ofNullableAccountId(accountId));
+		assertEquals(subject, EntityId.fromGrpcAccount(accountId));
 		assertEquals(subject, EntityId.ofNullableContractId(contractId));
 		assertEquals(subject, EntityId.ofNullableTopicId(topicId));
 		assertEquals(subject, EntityId.ofNullableFileId(fileId));

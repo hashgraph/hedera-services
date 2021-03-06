@@ -259,9 +259,9 @@ public interface TxnHandlingScenario {
 				.willAnswer(inv -> {
 					var entity = new MerkleSchedule(
 							extantScheduleTxnBytes(),
-							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							EntityId.fromGrpcAccount(MISC_ACCOUNT),
 							RichInstant.fromJava(Instant.now()));
-					entity.setPayer(EntityId.ofNullableAccountId(MISC_ACCOUNT));
+					entity.setPayer(EntityId.fromGrpcAccount(MISC_ACCOUNT));
 					return entity;
 				});
 
@@ -272,9 +272,9 @@ public interface TxnHandlingScenario {
 					var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
 					var entity = new MerkleSchedule(
 							extantScheduleTxnBytes(),
-							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							EntityId.fromGrpcAccount(MISC_ACCOUNT),
 							RichInstant.fromJava(Instant.now()));
-					entity.setPayer(EntityId.ofNullableAccountId(MISC_ACCOUNT));
+					entity.setPayer(EntityId.fromGrpcAccount(MISC_ACCOUNT));
 					entity.setAdminKey(adminKey);
 					return entity;
 				});
@@ -285,9 +285,9 @@ public interface TxnHandlingScenario {
 				.willAnswer(inv -> {
 					var entity = new MerkleSchedule(
 							extantScheduleTxnBytes(),
-							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							EntityId.fromGrpcAccount(MISC_ACCOUNT),
 							RichInstant.fromJava(Instant.now()));
-					entity.setPayer(EntityId.ofNullableAccountId(DILIGENT_SIGNING_PAYER));
+					entity.setPayer(EntityId.fromGrpcAccount(DILIGENT_SIGNING_PAYER));
 					return entity;
 				});
 
@@ -297,9 +297,9 @@ public interface TxnHandlingScenario {
 				.willAnswer(inv -> {
 					var entity = new MerkleSchedule(
 							extantScheduleTxnBytes(),
-							EntityId.ofNullableAccountId(MISC_ACCOUNT),
+							EntityId.fromGrpcAccount(MISC_ACCOUNT),
 							RichInstant.fromJava(Instant.now()));
-					entity.setPayer(EntityId.ofNullableAccountId(MISSING_ACCOUNT));
+					entity.setPayer(EntityId.fromGrpcAccount(MISSING_ACCOUNT));
 					return entity;
 				});
 

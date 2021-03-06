@@ -42,7 +42,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccount;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.store.schedule.ContentAddressableSchedule.fromMerkleSchedule;
@@ -137,11 +137,11 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		pendingId = ids.newScheduleId(schedulingAccount);
 		pendingCreation = new MerkleSchedule(
 				bodyBytes,
-				ofNullableAccountId(schedulingAccount),
+				fromGrpcAccount(schedulingAccount),
 				schedulingTXValidStart);
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		entityMemo.ifPresent(pendingCreation::setMemo);
-		pendingCreation.setPayer(ofNullableAccountId(payer));
+		pendingCreation.setPayer(fromGrpcAccount(payer));
 		pendingCreation.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
 
 		return success(pendingId);
@@ -217,7 +217,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		var contentKey = new ContentAddressableSchedule(
 				adminKey,
 				memo,
-				ofNullableAccountId(scheduledTxPayer),
+				fromGrpcAccount(scheduledTxPayer),
 				bodyBytes);
 
 		if (isCreationPending()) {

@@ -121,6 +121,11 @@ public class BaseHederaLedgerTest {
 			public ScheduleID newScheduleId(AccountID sponsor) { return ScheduleID.newBuilder().setScheduleNum(nextId++).build(); }
 
 			@Override
+			public NftID newNftId(AccountID sponsor) {
+				return NftID.newBuilder().setNftNum(nextId++).build();
+			}
+
+			@Override
 			public void reclaimLastId() {
 				nextId--;
 			}

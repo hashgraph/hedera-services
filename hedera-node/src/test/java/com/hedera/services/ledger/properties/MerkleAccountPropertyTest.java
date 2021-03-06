@@ -112,7 +112,7 @@ public class MerkleAccountPropertyTest {
 		MerkleAccount account = new HederaAccountCustomizer()
 				.key(JKey.mapKey(origKey))
 				.expiry(origExpiry)
-				.proxy(EntityId.ofNullableAccountId(origProxy))
+				.proxy(EntityId.fromGrpcAccount(origProxy))
 				.autoRenewPeriod(origAutoRenew)
 				.isDeleted(origIsDeleted)
 				.memo(origMemo)
