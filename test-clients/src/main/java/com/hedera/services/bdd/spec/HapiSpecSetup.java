@@ -203,6 +203,9 @@ public class HapiSpecSetup {
 	public long defaultNodePaymentTinyBars() {
 		return props.getLong("default.nodePayment.tinyBars");
 	}
+	public int defaultNftTypeSerialNoCount() {
+		return props.getInteger("default.nftType.serialNoCount");
+	}
 	public String defaultPayerPemKeyLoc() {
 		return props.get("default.payer.pemKeyLoc");
 	}

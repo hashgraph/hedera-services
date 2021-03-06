@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -161,6 +162,10 @@ public interface HapiPropertySource {
 	}
 	static String asAccountString(AccountID account) {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+	}
+
+	static String asNftString(NftID nftType) {
+		return String.format("%d.%d.%d", nftType.getShardNum(), nftType.getRealmNum(), nftType.getNftNum());
 	}
 
 	static TopicID asTopic(String v) {

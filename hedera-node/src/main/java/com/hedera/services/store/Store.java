@@ -38,8 +38,12 @@ public interface Store<T, K> {
     boolean exists(T id);
     void apply(T id, Consumer<K> change);
 
-    void setHederaLedger(HederaLedger ledger);
-    void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
+    default void setHederaLedger(HederaLedger ledger) {
+        /* No-op. */
+    };
+    default void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+        /* No-op. */
+    }
 
     default void rebuildViews() {
         /* No-op. */

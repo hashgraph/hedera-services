@@ -114,16 +114,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		/* No-op */
-	}
-
-	@Override
-	public void setHederaLedger(HederaLedger ledger) {
-		/* No-op */
-	}
-
-	@Override
 	public void apply(TokenID id, Consumer<MerkleToken> change) {
 		throw new UnsupportedOperationException();
 	}

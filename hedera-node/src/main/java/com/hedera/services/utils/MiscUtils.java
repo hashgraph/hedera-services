@@ -441,6 +441,8 @@ public class MiscUtils {
 			return ScheduleSign;
 		} else if (txn.hasScheduleDelete()) {
 			return ScheduleDelete;
+		} else if (txn.hasNftCreate()) {
+			return NftCreate;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

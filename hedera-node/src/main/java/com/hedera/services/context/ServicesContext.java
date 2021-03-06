@@ -226,7 +226,6 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.RunningAvgFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.SpeedometerFactory;
-import com.hedera.services.store.nft.ExceptionalNftStore;
 import com.hedera.services.store.nft.HederaNftStore;
 import com.hedera.services.store.nft.NftStore;
 import com.hedera.services.store.schedule.HederaScheduleStore;
@@ -1247,7 +1246,7 @@ public class ServicesContext {
 						List.of(new ScheduleDeleteTransitionLogic(scheduleStore(), txnCtx()))),
 				/* Nft */
 				entry(NftCreate,
-						List.of(new NftCreateTransitionLogic(txnCtx(), validator()))),
+						List.of(new NftCreateTransitionLogic(nftStore(), ledger(), validator(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(
@@ -1924,7 +1923,7 @@ public class ServicesContext {
 	}
 
 	public FCMap<MerkleEntityId, MerkleNftType> nfts() {
-		return state.nfts();
+		return state.nftTypes();
 	}
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {

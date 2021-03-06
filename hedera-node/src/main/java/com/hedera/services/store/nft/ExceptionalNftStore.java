@@ -55,16 +55,6 @@ public enum ExceptionalNftStore implements NftStore {
 	}
 
 	@Override
-	public void setHederaLedger(HederaLedger ledger) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public void rebuildViews() {
 		throw new UnsupportedOperationException();
 	}

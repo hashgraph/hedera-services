@@ -53,6 +53,7 @@ import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -64,6 +65,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -117,7 +119,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int RECORD_STREAM_RUNNING_HASH = 9;
 		static final int NUM_0110_CHILDREN = 10;
 		static final int NUM_0120_CHILDREN = 10;
-		static final int NFTS = 10;
+		static final int NFT_TYPES = 10;
 		static final int NFT_OWNERSHIPS = 11;
 		static final int NUM_0140_CHILDREN = 12;
 	}
@@ -195,13 +197,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			log.info("Created scheduled transactions FCMap after <=0.10.0 state restoration");
 		}
 		if (runningHashLeaf() == null) {
-			final RunningHash runningHash = new RunningHash(emptyHash);
-			RecordsRunningHashLeaf initialRecordsRunningHashLeaf = new RecordsRunningHashLeaf(runningHash);
-			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, initialRecordsRunningHashLeaf);
+			initializeRunningHashTo(emptyHash);
 			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
 		}
-		if (nfts() == null) {
-			setChild(ChildIndices.NFTS, new FCMap<>());
+		if (nftTypes() == null) {
+			setChild(ChildIndices.NFT_TYPES, new FCMap<>());
 		}
 		if (nftOwnerships() == null) {
 			setChild(ChildIndices.NFT_OWNERSHIPS, new FCMap<>());
@@ -231,21 +231,25 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
 		boolean initWithMerkle = true;
-		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_0120_CHILDREN) {
 			initWithMerkle = false;
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX,
-					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart),
+					new MerkleNetworkContext(
+							UNKNOWN_CONSENSUS_TIME,
+							new SequenceNumber(seqStart),
 							new ExchangeRates()));
 			setChild(ChildIndices.TOPICS, new FCMap<>());
 			setChild(ChildIndices.STORAGE, new FCMap<>());
 			setChild(ChildIndices.ACCOUNTS, new FCMap<>());
 			setChild(ChildIndices.TOKENS, new FCMap<>());
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
-			setChild(ChildIndices.DISK_FS,
-					new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
+			setChild(ChildIndices.DISK_FS, new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
+			setChild(ChildIndices.NFT_TYPES, new FCMap<>());
+			setChild(ChildIndices.NFT_OWNERSHIPS, new FCMap<>());
+			initializeRunningHashTo(emptyHash);
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 
@@ -261,22 +265,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			}
 		}
 
-		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN
-				|| runningHashLeaf().getRunningHash().getHash().equals(emptyHash)) {
-			// read file hash from the last record stream .rcd_sig file and set it as initial value of
-			// records running Hash
-			byte[] lastHash = hashReader.apply(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties()));
-			ImmutableHash hash = new ImmutableHash(lastHash);
-			final RunningHash runningHash = new RunningHash();
-			runningHash.setHash(hash);
-			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));
+		if (runningHashIsAbInitio()) {
+			byte[] hashFromDisk = hashReader.apply(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties()));
+			if (!Arrays.equals(hashFromDisk, emptyHash.getValue())) {
+				initializeRunningHashTo(new ImmutableHash(hashFromDisk));
+			}
 		}
 		log.info("initial Hash in RecordsRunningHashLeaf: {}", () -> runningHashLeaf().getRunningHash().getHash());
 		// set records initialHash
 		ctx.setRecordsInitialHash(runningHashLeaf().getRunningHash().getHash());
 
 		if (initWithMerkle) {
-			// only digest when initialize with Merkle state
 			merkleDigest.accept(this);
 			printHashes();
 		}
@@ -362,7 +361,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				tokenAssociations().copy(),
 				diskFs().copy(),
 				scheduleTxs().copy(),
-				runningHashLeaf().copy()
+				runningHashLeaf().copy(),
+				nftTypes().copy(),
+				nftOwnerships().copy()
 		));
 	}
 
@@ -381,7 +382,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						"  Storage           :: %s\n" +
 						"  Topics            :: %s\n" +
 						"  Tokens            :: %s\n" +
-						"  Nfts              :: %s\n" +
+						"  NftTypes          :: %s\n" +
 						"  NftOwnerships     :: %s\n" +
 						"  TokenAssociations :: %s\n" +
 						"  DiskFs            :: %s\n" +
@@ -395,7 +396,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				storage().getHash(),
 				topics().getHash(),
 				tokens().getHash(),
-				nfts().getHash(),
+				nftTypes().getHash(),
 				nftOwnerships().getHash(),
 				tokenAssociations().getHash(),
 				diskFs().getHash(),
@@ -450,7 +451,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(ChildIndices.NFT_OWNERSHIPS);
 	}
 
-	public FCMap<MerkleEntityId, MerkleNftType> nfts() {
-		return getChild(ChildIndices.NFTS);
+	public FCMap<MerkleEntityId, MerkleNftType> nftTypes() {
+		return getChild(ChildIndices.NFT_TYPES);
+	}
+
+	private void initializeRunningHashTo(Hash lastHash) {
+		var runningHash = new RunningHash(lastHash);
+		var initialRecordsRunningHashLeaf = new RecordsRunningHashLeaf(runningHash);
+		setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, initialRecordsRunningHashLeaf);
+	}
+
+	private boolean runningHashIsAbInitio() {
+		return runningHashLeaf().getRunningHash().getHash().equals(emptyHash);
 	}
 }

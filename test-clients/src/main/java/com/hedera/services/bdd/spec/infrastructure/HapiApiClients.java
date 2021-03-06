@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
@@ -33,6 +34,8 @@ import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockin
 import com.hederahashgraph.service.proto.java.FreezeServiceGrpc;
 import com.hederahashgraph.service.proto.java.FreezeServiceGrpc.FreezeServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.NetworkServiceGrpc;
+import com.hederahashgraph.service.proto.java.NftServiceGrpc;
+import com.hederahashgraph.service.proto.java.NftServiceGrpc.NftServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.ScheduleServiceGrpc;
 import com.hederahashgraph.service.proto.java.ScheduleServiceGrpc.ScheduleServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
@@ -60,6 +63,7 @@ import static java.util.stream.Collectors.toMap;
 public class HapiApiClients {
 	static final Logger log = LogManager.getLogger(HapiApiClients.class);
 
+	private static Map<String, NftServiceBlockingStub> nftSvcStubs = new HashMap<>();
 	private static Map<String, FileServiceBlockingStub> fileSvcStubs = new HashMap<>();
 	private static Map<String, CryptoServiceBlockingStub> cryptoSvcStubs = new HashMap<>();
 	private static Map<String, TokenServiceBlockingStub> tokenSvcStubs = new HashMap<>();
@@ -113,6 +117,7 @@ public class HapiApiClients {
 			ManagedChannel channel = createNettyChannel(node, useTls);
 			channels.put(uri, channel);
 			scSvcStubs.put(uri, SmartContractServiceGrpc.newBlockingStub(channel));
+			nftSvcStubs.put(uri, NftServiceGrpc.newBlockingStub(channel));
 			consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(channel));
 			fileSvcStubs.put(uri, FileServiceGrpc.newBlockingStub(channel));
 			schedSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
@@ -146,6 +151,7 @@ public class HapiApiClients {
 
 	private int stubCount() {
 		return scSvcStubs.size() +
+				nftSvcStubs.size() +
 				consSvcStubs.size() +
 				fileSvcStubs.size() +
 				schedSvcStubs.size() +
@@ -158,6 +164,10 @@ public class HapiApiClients {
 
 	public static HapiApiClients clientsFor(HapiSpecSetup setup) {
 		return new HapiApiClients(setup.nodes(), setup.defaultNode());
+	}
+
+	public NftServiceBlockingStub getNftSvcStub(AccountID nodeId, boolean useTls) {
+		return nftSvcStubs.get(stubId(nodeId, useTls));
 	}
 
 	public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls) {
@@ -221,6 +231,7 @@ public class HapiApiClients {
 
 	private static void clearStubs() {
 		scSvcStubs.clear();
+		nftSvcStubs.clear();
 		consSvcStubs.clear();
 		fileSvcStubs.clear();
 		tokenSvcStubs.clear();

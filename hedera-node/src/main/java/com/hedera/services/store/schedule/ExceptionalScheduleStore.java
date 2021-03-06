@@ -20,11 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -34,7 +30,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
-import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -46,16 +41,6 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 
 	@Override
 	public boolean exists(ScheduleID id) { throw new UnsupportedOperationException(); }
-
-	@Override
-	public void setHederaLedger(HederaLedger ledger) {
-		/* No-op */
-	}
-
-	@Override
-	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-		/* No-op */
-	}
 
 	@Override
 	public void apply(ScheduleID id, Consumer<MerkleSchedule> change) {

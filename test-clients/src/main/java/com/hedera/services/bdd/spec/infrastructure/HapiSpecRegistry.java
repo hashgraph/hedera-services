@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -62,6 +63,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asNftString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.firstStartupKp;
@@ -507,6 +509,11 @@ public class HapiSpecRegistry {
 	public void saveAccountId(String name, AccountID id) {
 		put(name, id);
 		put(asAccountString(id), name);
+	}
+
+	public void saveNftId(String name, NftID id) {
+		put(name, id);
+		put(asNftString(id), name);
 	}
 
 	public void saveScheduleId(String name, ScheduleID id) {

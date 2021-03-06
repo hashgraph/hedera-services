@@ -21,7 +21,6 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -96,7 +95,7 @@ public class TxnReceiptTest {
     final var topicId = getTopicJAccountId(1L, 22L, 333L);
     final var sequenceNumber = 0L;
     final var cut = new TxnReceipt(
-            null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null,
             topicId, sequenceNumber, null);
 
     assertAll(() -> assertEquals(topicId, cut.getTopicId()),
@@ -109,7 +108,7 @@ public class TxnReceiptTest {
   public void constructorPostConsensusSubmitMessage() {
     final var sequenceNumber = 55555L;
     final var cut = new TxnReceipt(
-            null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null,
             sequenceNumber, getSha384Hash());
 
     assertAll(() -> assertNull(cut.getTopicId()),
@@ -284,7 +283,7 @@ public class TxnReceiptTest {
   public void scheduleConstructor() {
     final var scheduleId = EntityId.ofNullableScheduleId(IdUtils.asSchedule("0.0.123"));
     final var cut = new TxnReceipt(
-            "SUCCESS", null, null, null, null, scheduleId, null,
+            "SUCCESS", null, null, null, null, scheduleId, null, null,
             null, 0L, TxnReceipt.MISSING_RUNNING_HASH, 0, 0,
             TxnId.fromGrpc(scheduledTxnId));
 
@@ -298,7 +297,7 @@ public class TxnReceiptTest {
     final var sequenceNumber = 2L;
     final var runningHash = new byte[3];
     final var cut = new TxnReceipt(
-            "SUCCESS", null, null, null, null, null, null,
+            "SUCCESS", null, null, null, null, null, null, null,
             topicId, sequenceNumber, runningHash);
 
     assertEquals(topicId, cut.getTopicId());
@@ -313,7 +312,7 @@ public class TxnReceiptTest {
     final var tokenId = EntityId.ofNullableTokenId(
             TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
     final var cut = new TxnReceipt(
-            "SUCCESS", null, null, null, tokenId, null, null,
+            "SUCCESS", null, null, null, tokenId, null, null, null,
             null, 0L, null);
 
     assertEquals(tokenId, cut.getTokenId());
@@ -327,7 +326,7 @@ public class TxnReceiptTest {
     final var tokenId = EntityId.ofNullableTokenId(
             TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
     final var cut = new TxnReceipt(
-            "SUCCESS", null, null, null, tokenId, null, null,
+            "SUCCESS", null, null, null, tokenId, null, null, null,
             null, 0L, null, TxnReceipt.MISSING_RUNNING_HASH_VERSION, 1000L,
             TxnReceipt.MISSING_SCHEDULED_TXN_ID);
 
@@ -346,7 +345,7 @@ public class TxnReceiptTest {
 
     subject = new TxnReceipt("SUCCESS", null, null, null,
             null,null,mockRates,
-            null, -1, null, -1, 100,
+            null, null, -1, null, -1, 100,
             TxnId.fromGrpc(scheduledTxnId));
     // when:
     subject.serialize(fout);
@@ -366,7 +365,7 @@ public class TxnReceiptTest {
     SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
     subject = new TxnReceipt("SUCCESS", null, null, null,
             null,scheduleId, mockRates,
-            null, -1, null, -1, 0,
+            null, null, -1, null, -1, 0,
             TxnId.fromGrpc(scheduledTxnId));
 
     given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());
@@ -406,7 +405,7 @@ public class TxnReceiptTest {
     SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
     subject = new TxnReceipt("SUCCESS", null, null, null,
             null,tokenId, mockRates,
-            null, -1, null, -1, 100,
+            null, null, -1, null, -1, 100,
             TxnReceipt.MISSING_SCHEDULED_TXN_ID);
 
     given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());

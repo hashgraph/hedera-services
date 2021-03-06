@@ -40,6 +40,7 @@ public class BackingNftOwnerships implements BackingStore<Pair<NftID, ByteString
 				.map(MerkleNftOwnership::asPair)
 				.forEach(existingOwnerships::add);
 	}
+
 	@Override
 	public void flushMutableRefs() {
 		cache.entrySet().stream()

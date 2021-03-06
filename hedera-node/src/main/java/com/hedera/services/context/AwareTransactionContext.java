@@ -166,15 +166,17 @@ public class AwareTransactionContext implements TransactionContext {
 		if (log.isDebugEnabled()) {
 			logItemized();
 		}
+		var ledger = ctx.ledger();
 		recordSoFar
 				.setMemo(accessor.getTxn().getMemo())
 				.setReceipt(receiptSoFar())
-				.setTransferList(ctx.ledger().netTransfersInTxn())
+				.setTransferList(ledger.netTransfersInTxn())
 				.setTransactionID(accessor.getTxnId())
 				.setTransactionFee(amount)
 				.setTransactionHash(hash)
 				.setConsensusTimestamp(consensusTimestamp)
-				.addAllTokenTransferLists(ctx.ledger().netTokenTransfersInTxn());
+				.addAllTokenTransferLists(ledger.netTokenTransfersInTxn())
+				.addAllNftTransferLists(ledger.netNftTransfersInTxn());
 		if (accessor.isTriggeredTxn()) {
 			recordSoFar.setScheduleRef(accessor.getScheduleRef());
 		}
