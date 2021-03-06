@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -249,6 +250,11 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public void setCreated(AccountID id) {
 		receiptConfig = receipt -> receipt.setAccountID(id);
+	}
+
+	@Override
+	public void setCreated(NftID id) {
+		receiptConfig = receipt -> receipt.setNftID(id);
 	}
 
 	@Override

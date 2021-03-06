@@ -69,6 +69,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.NFTS;
 import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -208,6 +209,9 @@ public class HederaLedger {
 		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER) {
 			tokenRelsLedger.begin();
 		}
+		if (nftOwnershipLedger != UNUSABLE_NFT_OWNERSHIP_LEDGER) {
+			nftOwnershipLedger.begin();
+		}
 	}
 
 	public void rollback() {
@@ -215,8 +219,12 @@ public class HederaLedger {
 		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
 		}
+		if (nftOwnershipLedger != UNUSABLE_NFT_OWNERSHIP_LEDGER && nftOwnershipLedger.isInTransaction()) {
+			nftOwnershipLedger.rollback();
+		}
 		netTransfers.clear();
 		clearNetTokenTransfers();
+		clearNetNftTransfers();
 	}
 
 	public void commit() {
@@ -229,6 +237,7 @@ public class HederaLedger {
 		}
 		netTransfers.clear();
 		clearNetTokenTransfers();
+		clearNetNftTransfers();
 	}
 
 	public TransferList netTransfersInTxn() {
@@ -288,6 +297,10 @@ public class HederaLedger {
 				sb.append("\n--- TOKEN RELATIONSHIPS ---\n")
 						.append(tokenRelsLedger.changeSetSoFar());
 			}
+			if (nftOwnershipLedger != UNUSABLE_NFT_OWNERSHIP_LEDGER) {
+				sb.append("\n--- NFT OWNERSHIPS ---\n")
+						.append(nftOwnershipLedger.changeSetSoFar());
+			}
 			return sb.toString();
 		} else {
 			return NO_ACTIVE_TXN_CHANGE_SET;
@@ -326,6 +339,27 @@ public class HederaLedger {
 		for (AccountAmount aa : accountAmounts.getAccountAmountsList()) {
 			updateXfers(aa.getAccountID(), aa.getAmount(), netTransfers);
 		}
+	}
+
+	/* --- NFT MANIPULATION --- */
+	public MerkleAccountEntities getAssociatedNfts(AccountID aId) {
+		return (MerkleAccountEntities) accountsLedger.get(aId, NFTS);
+	}
+
+	public void setAssociatedNfts(AccountID aId, MerkleAccountEntities nfts) {
+		accountsLedger.set(aId, NFTS, nfts);
+	}
+
+	public boolean isAssociatedTo(AccountID aId, NftID nId) {
+		var account = accountsLedger.getUnsafe(aId);
+		return account.nfts().includes(nId);
+	}
+
+	public void dropPendingNftChanges() {
+		if (nftOwnershipLedger.isInTransaction()) {
+			nftOwnershipLedger.rollback();
+		}
+		clearNetNftTransfers();
 	}
 
 	/* --- TOKEN MANIPULATION --- */
@@ -384,12 +418,6 @@ public class HederaLedger {
 	public void dropPendingTokenChanges() {
 		if (tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
-		}
-		clearNetTokenTransfers();
-	}
-	public void dropPendingNftChanges() {
-		if (nftOwnershipLedger.isInTransaction()) {
-			nftOwnershipLedger.rollback();
 		}
 		clearNetTokenTransfers();
 	}
@@ -714,6 +742,13 @@ public class HederaLedger {
 			netTokenTransfers.get(tokensTouched[i]).clearAccountAmounts();
 		}
 		numTokenTouches = 0;
+	}
+
+	private void clearNetNftTransfers() {
+		for (int i = 0; i < numNftTouches; i++) {
+			netNftTransfers.get(nftsTouched[i]).clearTransfer();
+		}
+		numNftTouches = 0;
 	}
 
 	private void purgeZeroAdjustments(TransferList.Builder xfers) {

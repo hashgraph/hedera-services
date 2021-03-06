@@ -20,33 +20,26 @@ package com.hedera.services.txns.nft;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.keys.InHandleActivationHelper;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.expiry.ExpiringEntity;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.store.nft.HederaNftStore;
+import com.hedera.services.store.nft.NftStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collections;
-import java.util.Optional;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import static com.hedera.services.state.submerkle.RichInstant.fromGrpc;
-import static com.hedera.services.state.submerkle.RichInstant.fromJava;
-import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -55,14 +48,19 @@ public class NftCreateTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-	private final OptionValidator validator;
+	private final NftStore store;
+	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
-
+	private final OptionValidator validator;
 
 	public NftCreateTransitionLogic(
-			TransactionContext txnCtx,
-			OptionValidator validator
+			NftStore store,
+			HederaLedger ledger,
+			OptionValidator validator,
+			TransactionContext txnCtx
 	) {
+		this.store = store;
+		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 	}
@@ -78,11 +76,43 @@ public class NftCreateTransitionLogic implements TransitionLogic {
 	}
 
 	private void transitionFor(NftCreateTransactionBody op) {
-//		txnCtx.setCreated(scheduleId);
-		var finalOutcome = OK;
-		txnCtx.setStatus(finalOutcome == OK ? SUCCESS : finalOutcome);
+		var result = store.createProvisionally(op, txnCtx.activePayer(), txnCtx.consensusTime().getEpochSecond());
+		if (result.getStatus() != OK) {
+			abortWith(result.getStatus());
+			return;
+		}
+
+		var created = result.getCreated().get();
+		var treasury = op.getTreasury();
+		var status = OK;
+		status = store.associate(treasury, List.of(created));
+		if (status != OK) {
+			abortWith(status);
+			return;
+		}
+
+		var origSerialNos = IntStream.range(0, op.getSerialNoCount())
+				.mapToObj(i -> "SN" + i)
+				.map(ByteString::copyFromUtf8)
+				.collect(Collectors.toList());
+		status = store.mint(created, origSerialNos);
+		if (status != OK) {
+			abortWith(status);
+			return;
+		}
+
+		store.commitCreation();
+		txnCtx.setCreated(created);
+		txnCtx.setStatus(SUCCESS);
 	}
 
+	private void abortWith(ResponseCodeEnum cause) {
+		if (store.isCreationPending()) {
+			store.rollbackCreation();
+		}
+		ledger.dropPendingNftChanges();
+		txnCtx.setStatus(cause);
+	}
 
 	@Override
 	public Predicate<TransactionBody> applicability() {

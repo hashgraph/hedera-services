@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -154,6 +155,13 @@ public interface TransactionContext {
 	 * @param id the created file.
 	 */
 	void setCreated(FileID id);
+
+	/**
+	 * Record that the current transaction created a NFT type.
+	 *
+	 * @param id the created NFT type
+	 */
+	void setCreated(NftID id);
 
 	/**
 	 * Record that the current transaction created a crypto account.

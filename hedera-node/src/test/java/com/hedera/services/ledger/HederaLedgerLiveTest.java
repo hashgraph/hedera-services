@@ -71,10 +71,11 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 	void setup() {
 		commonSetup();
 
+		var accounts = new HashMapBackingAccounts();
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				() -> new MerkleAccount(),
-				new HashMapBackingAccounts(),
+				accounts,
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 

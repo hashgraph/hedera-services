@@ -11,11 +11,23 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 public enum ExceptionalNftStore implements NftStore {
 	NOOP_NFT_STORE;
+
+	@Override
+	public ResponseCodeEnum mint(NftID nId, List<ByteString> serialNos) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum associate(AccountID aId, List<NftID> nftTypes) {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
 	public CreationResult<NftID> createProvisionally(NftCreateTransactionBody request, AccountID sponsor, long now) {
@@ -23,7 +35,7 @@ public enum ExceptionalNftStore implements NftStore {
 	}
 
 	@Override
-	public ResponseCodeEnum transferOwnership(NftID nft, ByteString serialNo, AccountID from, AccountID to) {
+	public ResponseCodeEnum transferOwnership(NftID nId, ByteString serialNo, AccountID from, AccountID to) {
 		throw new UnsupportedOperationException();
 	}
 

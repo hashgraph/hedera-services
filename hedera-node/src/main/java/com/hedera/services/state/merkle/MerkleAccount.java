@@ -71,10 +71,13 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 		static final int RELEASE_090_RECORDS = 1;
 		static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
 		static final int NUM_090_CHILDREN = 3;
+
+		static final int NFTS = 3;
+		static final int NUM_0140_CHILDREN = 3;
 	}
 
 	public MerkleAccount(List<MerkleNode> children) {
-		super(ChildIndices.NUM_090_CHILDREN);
+		super(ChildIndices.NUM_0140_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -102,8 +105,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 			return ChildIndices.NUM_081_CHILDREN;
 		} else if (version == RELEASE_090_ALPHA_VERSION) {
 			return ChildIndices.NUM_090_ALPHA_CHILDREN;
-		} else {
+		} else if (version == RELEASE_090_VERSION) {
 			return ChildIndices.NUM_090_CHILDREN;
+		} else {
+			return ChildIndices.NUM_0140_CHILDREN;
 		}
 	}
 
@@ -120,7 +125,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 					getChild(ChildIndices.RELEASE_081_PAYER_RECORDS),
 					new MerkleAccountEntities()), MERKLE_VERSION);
 		} else {
-			/* Must be a v0.9.0 state. */
+			if (nfts() == null) {
+				setChild(ChildIndices.NFTS, new MerkleAccountEntities());
+			}
 		}
 	}
 
@@ -192,6 +199,14 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 
 	public void setTokens(MerkleAccountEntities tokens) {
 		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
+	}
+
+	public MerkleAccountEntities nfts() {
+		return getChild(ChildIndices.NFTS);
+	}
+
+	public void setNfts(MerkleAccountEntities nfts) {
+		setChild(ChildIndices.NFTS, nfts);
 	}
 
 	/* ----  Bean  ---- */

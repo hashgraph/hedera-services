@@ -229,6 +229,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 	}
 
+	public A getUnsafe(K id) {
+		return entities.getUnsafeRef(id);
+	}
+
 	@Override
 	public void create(K id) {
 		assertIsCreatable(id);

@@ -8,15 +8,22 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+
+import java.util.List;
 
 public interface NftStore extends Store<NftID, MerkleNftType> {
 	NftID MISSING_NFT = NftID.getDefaultInstance();
 
+
+	ResponseCodeEnum mint(NftID nId, List<ByteString> serialNos);
+	ResponseCodeEnum associate(AccountID aId, List<NftID> nftTypes);
+
 	CreationResult<NftID> createProvisionally(NftCreateTransactionBody request, AccountID sponsor, long now);
 
-	ResponseCodeEnum transferOwnership(NftID nft, ByteString serialNo, AccountID from, AccountID to);
+	ResponseCodeEnum transferOwnership(NftID nId, ByteString serialNo, AccountID from, AccountID to);
 
-	default NftID resolve(NftID id) {
-		return exists(id) ? id : MISSING_NFT;
+	default NftID resolve(NftID nId) {
+		return exists(nId) ? nId : MISSING_NFT;
 	}
 }
