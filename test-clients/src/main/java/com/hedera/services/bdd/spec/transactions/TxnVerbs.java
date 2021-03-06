@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicDelete;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
+import com.hedera.services.bdd.spec.transactions.nft.HapiNftAssociate;
 import com.hedera.services.bdd.spec.transactions.nft.HapiNftCreate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
@@ -81,6 +82,9 @@ public class TxnVerbs {
 	public static HapiCryptoTransfer cryptoTransfer(TokenMovement... sources) {
 		return new HapiCryptoTransfer(sources);
 	}
+	public static HapiCryptoTransfer cryptoTransfer() {
+		return new HapiCryptoTransfer();
+	}
 	public static HapiCryptoUpdate cryptoUpdate(String account) {
 		return new HapiCryptoUpdate(account);
 	}
@@ -125,6 +129,9 @@ public class TxnVerbs {
 	/* NFT */
 	public static HapiNftCreate nftCreate(String nft) {
 		return new HapiNftCreate(nft);
+	}
+	public static HapiNftAssociate nftAssociate(String account, String... nftTypes) {
+		return new HapiNftAssociate(account, nftTypes);
 	}
 
 	/* TOKEN */

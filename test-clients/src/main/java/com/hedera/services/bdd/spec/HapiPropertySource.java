@@ -167,6 +167,14 @@ public interface HapiPropertySource {
 	static String asNftString(NftID nftType) {
 		return String.format("%d.%d.%d", nftType.getShardNum(), nftType.getRealmNum(), nftType.getNftNum());
 	}
+	static NftID asNft(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return NftID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setNftNum(nativeParts[2])
+				.build();
+	}
 
 	static TopicID asTopic(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);

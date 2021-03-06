@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -229,6 +230,9 @@ public class HederaLedger {
 
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
+		if (SingletonContextsManager.CONTEXTS.lookup(0L).ledger() == this) {
+			log.info("Will be committing {}", currentChangeSet());
+		}
 		historian.addNewRecords();
 		historian.addNewEntities();
 		accountsLedger.commit();

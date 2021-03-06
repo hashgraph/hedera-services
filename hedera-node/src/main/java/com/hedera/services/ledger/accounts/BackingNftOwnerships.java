@@ -1,11 +1,15 @@
 package com.hedera.services.ledger.accounts;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SingletonContextsManager;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNftOwnership;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -17,6 +21,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.ledger.HederaLedger.NFT_ID_COMPARATOR;
 
 public class BackingNftOwnerships implements BackingStore<Pair<NftID, ByteString>, MerkleEntityId> {
+	private static final Logger log = LogManager.getLogger(BackingNftOwnerships.class);
+
 	public static final Comparator<Pair<NftID, ByteString>> OWNERSHIP_CMP =
 			Comparator.<Pair<NftID, ByteString>, NftID>comparing(Pair::getLeft, NFT_ID_COMPARATOR)
 					.thenComparing(Pair::getRight, ByteString.unsignedLexicographicalComparator());
@@ -45,6 +51,9 @@ public class BackingNftOwnerships implements BackingStore<Pair<NftID, ByteString
 	public void flushMutableRefs() {
 		cache.entrySet().stream()
 				.sorted(OWNERSHIP_ENTRY_CMP)
+				.peek(entry -> System.out.println("Flushing " + entry.getKey()
+						+ " as " + entry.getValue()
+						+ " where the key is " + MerkleNftOwnership.fromPair(entry.getKey())))
 				.forEach(entry ->
 						delegate.get().replace(MerkleNftOwnership.fromPair(entry.getKey()), entry.getValue()));
 		cache.clear();
@@ -52,6 +61,10 @@ public class BackingNftOwnerships implements BackingStore<Pair<NftID, ByteString
 
 	@Override
 	public MerkleEntityId getRef(Pair<NftID, ByteString> key) {
+		var merkleKey = MerkleNftOwnership.fromPair(key);
+		if (SingletonContextsManager.CONTEXTS.lookup(0).backingNftOwnerships() == this) {
+			log.info("Looking up {} (hashCode = {})", merkleKey, merkleKey.hashCode());
+		}
 		return cache.computeIfAbsent(
 				key,
 				ignore -> delegate.get().getForModify(MerkleNftOwnership.fromPair(key)));
@@ -65,7 +78,11 @@ public class BackingNftOwnerships implements BackingStore<Pair<NftID, ByteString
 	@Override
 	public void put(Pair<NftID, ByteString> key, MerkleEntityId account) {
 		if (!existingOwnerships.contains(key)) {
-			delegate.get().put(MerkleNftOwnership.fromPair(key), account);
+			var merkleKey = MerkleNftOwnership.fromPair(key);
+			delegate.get().put(merkleKey, account);
+			if (SingletonContextsManager.CONTEXTS.lookup(0).backingNftOwnerships() == this) {
+				log.info("Put {} @ {} (hashCode = {})", account.toAbbrevString(), merkleKey, merkleKey.hashCode());
+			}
 			existingOwnerships.add(key);
 		} else if (!cache.containsKey(key) || cache.get(key) != account) {
 			throw new IllegalArgumentException(String.format(

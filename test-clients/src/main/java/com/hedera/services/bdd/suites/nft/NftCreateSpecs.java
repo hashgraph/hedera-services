@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.schedule;
+package com.hedera.services.bdd.suites.nft;
 
 /*-
  * ‌

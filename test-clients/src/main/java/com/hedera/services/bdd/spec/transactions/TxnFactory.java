@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.NftAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
@@ -352,5 +353,9 @@ public class TxnFactory {
 	public Consumer<NftCreateTransactionBody.Builder> defaultDef_NftCreateTransactionBody() {
 		return builder -> builder
 				.setSerialNoCount(setup.defaultNftTypeSerialNoCount());
+	}
+
+	public Consumer<NftAssociateTransactionBody.Builder> defaultDef_NftAssociateTransactionBody() {
+		return builder -> {};
 	}
 }

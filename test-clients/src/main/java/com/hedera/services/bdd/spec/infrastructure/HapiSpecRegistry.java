@@ -629,6 +629,10 @@ public class HapiSpecRegistry {
 		return get(name, TopicID.class);
 	}
 
+	public NftID getNftID(String name) {
+		return get(name, NftID.class);
+	}
+
 	public TokenID getTokenID(String name) {
 		return get(name, TokenID.class);
 	}
@@ -666,6 +670,10 @@ public class HapiSpecRegistry {
 
 	public ContractID getContractId(String name) {
 		return get(name, ContractID.class);
+	}
+
+	public boolean hasNftId(String name) {
+		return registry.containsKey(full(name, NftID.class));
 	}
 
 	public boolean hasContractId(String name) {

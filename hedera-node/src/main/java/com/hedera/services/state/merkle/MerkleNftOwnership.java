@@ -86,7 +86,7 @@ public class MerkleNftOwnership extends AbstractMerkleLeaf implements FCMKey {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(nftType, serialNo);
+		return Objects.hash(nftType, Arrays.hashCode(serialNo));
 	}
 
 	/* --- FastCopyable --- */

@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.nft.Acquisition;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.crypto.CryptoTransferUsage;
@@ -31,6 +32,9 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.NftTransferList;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -67,6 +71,7 @@ import static java.util.stream.Collectors.toList;
 public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	static final Logger log = LogManager.getLogger(HapiCryptoTransfer.class);
 
+	private static final List<Acquisition> MISSING_NFT_PROVIDERS = null;
 	private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = null;
 	private static final Function<HapiApiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
 	private static final int DEFAULT_TOKEN_TRANSFER_USAGE_MULTIPLIER = 60;
@@ -75,6 +80,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	private Function<HapiApiSpec, TransferList> hbarOnlyProvider = MISSING_HBAR_ONLY_PROVIDER;
 	private List<TokenMovement> tokenAwareProviders = MISSING_TOKEN_AWARE_PROVIDERS;
+	private List<Acquisition> nftProviders = MISSING_NFT_PROVIDERS;
 
 	@Override
 	public HederaFunctionality type() {
@@ -121,8 +127,16 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		}
 	}
 
+	public HapiCryptoTransfer() {
+	}
+
 	public HapiCryptoTransfer(TokenMovement... sources) {
 		this.tokenAwareProviders = List.of(sources);
+	}
+
+	public HapiCryptoTransfer changingOwnership(Acquisition... acquisitions) {
+		nftProviders = List.of(acquisitions);
+		return this;
 	}
 
 	@Override
@@ -159,7 +173,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 						CryptoTransferTransactionBody.class, b -> {
 							if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
 								b.setTransfers(hbarOnlyProvider.apply(spec));
-							} else {
+							}
+							if (tokenAwareProviders != MISSING_TOKEN_AWARE_PROVIDERS) {
 								var xfers = transfersFor(spec);
 								for (TokenTransferList scopedXfers : xfers) {
 									if (scopedXfers.getToken() == HBAR_SENTINEL_TOKEN_ID) {
@@ -170,6 +185,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 										b.addTokenTransfers(scopedXfers);
 									}
 								}
+							}
+							if (nftProviders != MISSING_NFT_PROVIDERS) {
+								b.addAllNftTransfers(nftTransfersFor(spec));
 							}
 						}
 				);
@@ -221,26 +239,29 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Function<HapiApiSpec, List<Key>> tokenAwareVariableDefaultSigners() {
 		return spec -> {
 			Set<Key> partyKeys = new HashSet<>();
-			Map<String, Long> partyInvolvements = tokenAwareProviders.stream()
-					.map(TokenMovement::generallyInvolved)
-					.flatMap(List::stream)
-					.collect(groupingBy(
-							Map.Entry::getKey,
-							summingLong(Map.Entry<String, Long>::getValue)));
-			partyInvolvements.forEach((account, value) -> {
-				int divider = account.indexOf("|");
-				var key = account.substring(divider + 1);
-				if (value < 0 || spec.registry().isSigRequired(key)) {
-					partyKeys.add(spec.registry().getKey(key));
-				}
-			});
+			if (tokenAwareProviders != MISSING_TOKEN_AWARE_PROVIDERS) {
+				Map<String, Long> partyInvolvements = tokenAwareProviders.stream()
+						.map(TokenMovement::generallyInvolved)
+						.flatMap(List::stream)
+						.collect(groupingBy(
+								Map.Entry::getKey,
+								summingLong(Map.Entry<String, Long>::getValue)));
+				partyInvolvements.forEach((account, value) -> {
+					int divider = account.indexOf("|");
+					var key = account.substring(divider + 1);
+					if (value < 0 || spec.registry().isSigRequired(key)) {
+						partyKeys.add(spec.registry().getKey(key));
+					}
+				});
+			}
+			addNftSignersFor(spec, partyKeys);
 			return new ArrayList<>(partyKeys);
 		};
 	}
 
 	private Function<HapiApiSpec, List<Key>> hbarOnlyVariableDefaultSigners() {
 		return spec -> {
-			List<Key> partyKeys = new ArrayList<>();
+			Set<Key> partyKeys = new HashSet<>();
 			TransferList transfers = hbarOnlyProvider.apply(spec);
 			transfers.getAccountAmountsList().stream().forEach(accountAmount -> {
 				String account = spec.registry().getAccountIdName(accountAmount.getAccountID());
@@ -249,8 +270,33 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 					partyKeys.add(spec.registry().getKey(account));
 				}
 			});
-			return partyKeys;
+			addNftSignersFor(spec, partyKeys);
+			return new ArrayList<>(partyKeys);
 		};
+	}
+
+	private void addNftSignersFor(HapiApiSpec spec, Set<Key> partyKeys) {
+		if (nftProviders != MISSING_NFT_PROVIDERS) {
+			var registry = spec.registry();
+			nftProviders.forEach(acquisition ->
+					partyKeys.add(registry.getKey(acquisition.getFromAccount())));
+		}
+	}
+
+	private List<NftTransferList> nftTransfersFor(HapiApiSpec spec) {
+		Map<NftID, List<NftTransfer>> aggregated = nftProviders.stream()
+				.map(p -> p.specializedFor(spec))
+				.collect(groupingBy(
+						NftTransferList::getNft,
+						flatMapping(
+								xfers -> xfers.getTransferList().stream(),
+								toList())));
+		return aggregated.entrySet().stream()
+				.map(entry -> NftTransferList.newBuilder()
+						.setNft(entry.getKey())
+						.addAllTransfer(entry.getValue())
+						.build())
+				.collect(toList());
 	}
 
 	private List<TokenTransferList> transfersFor(HapiApiSpec spec) {

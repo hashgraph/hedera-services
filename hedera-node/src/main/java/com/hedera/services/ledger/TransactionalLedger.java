@@ -59,7 +59,6 @@ import static java.util.stream.Collectors.joining;
  * @author Michael Tinker
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
-
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
 	private final Set<K> deadEntities = new HashSet<>();
@@ -169,7 +168,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 					.append(": [");
 			desc.append(
 					change.getValue().entrySet().stream()
-							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
+							.map(entry -> String.format("%s -> (%s) %s",
+									entry.getKey(),
+									entry.getValue().getClass().getSimpleName(),
+									readableProperty(entry.getValue())))
 							.collect(joining(", ")));
 			desc.append("]");
 			isFirstChange.set(false);

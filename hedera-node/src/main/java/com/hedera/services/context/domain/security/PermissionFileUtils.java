@@ -92,6 +92,7 @@ public class PermissionFileUtils {
 		permissionKeys.put(ScheduleDelete, "scheduleDelete");
 		permissionKeys.put(ScheduleSign, "scheduleSign");
 		permissionKeys.put(NftCreate, "nftCreate");
+		permissionKeys.put(NftAssociate, "nftAssociate");
 		/* Queries */
 		permissionKeys.put(ConsensusGetTopicInfo, "getTopicInfo");
 		permissionKeys.put(GetBySolidityID, "getBySolidityID");

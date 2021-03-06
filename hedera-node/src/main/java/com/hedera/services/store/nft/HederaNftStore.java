@@ -110,8 +110,6 @@ public class HederaNftStore extends HederaStore implements NftStore {
 
 	private void doAcquisition(AccountID to, AccountID from, Pair<NftID, ByteString> nft) {
 		nftOwnershipLedger.set(nft, OWNER, to);
-		log.info("Alerting ledger of {} ownership changing from {} to {}",
-				nft, readableId(from), readableId(to));
 		hederaLedger.updateNftXfers(nft.getLeft(), nft.getRight(), from, to);
 	}
 
