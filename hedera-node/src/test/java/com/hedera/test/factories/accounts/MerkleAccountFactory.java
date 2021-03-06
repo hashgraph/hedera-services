@@ -20,7 +20,7 @@ package com.hedera.test.factories.accounts;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleAccountEntities;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -61,8 +61,8 @@ public class MerkleAccountFactory {
 		autoRenewPeriod.ifPresent(d -> value.setAutoRenewSecs(d));
 		isSmartContract.ifPresent(b -> value.setSmartContract(b));
 		receiverSigRequired.ifPresent(b -> value.setReceiverSigRequired(b));
-		var tokens = new MerkleAccountTokens();
-		tokens.associateAll(associatedTokens);
+		var tokens = new MerkleAccountEntities();
+		tokens.associateAllTokens(associatedTokens);
 		value.setTokens(tokens);
 		return value;
 	}

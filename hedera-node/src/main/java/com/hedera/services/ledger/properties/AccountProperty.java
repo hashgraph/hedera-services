@@ -23,7 +23,7 @@ package com.hedera.services.ledger.properties;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleAccountEntities;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
@@ -149,7 +149,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	TOKENS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setTokens((MerkleAccountTokens) t);
+			return (a, t) -> a.setTokens((MerkleAccountEntities) t);
 		}
 
 		@Override

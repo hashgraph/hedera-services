@@ -20,25 +20,30 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftOwningAccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleAccountEntities;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.nft.HederaNftStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcqueue.FCQueue;
@@ -67,12 +72,14 @@ public class BaseHederaLedgerTest {
 
 	protected HederaLedger subject;
 
+	protected HederaNftStore nftStore;
 	protected HederaTokenStore tokenStore;
 	protected EntityIdSource ids;
 	protected ExpiringCreations creator;
 	protected AccountRecordsHistorian historian;
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	protected TransactionalLedger<Pair<NftID, ByteString>, NftOwningAccountProperty, MerkleEntityId> nftOwnershipLedger;
 	protected AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
 	protected long MISC_BALANCE = 1_234L;
 	protected long RAND_BALANCE = 2_345L;
@@ -149,8 +156,8 @@ public class BaseHederaLedgerTest {
 		when(accountsLedger.get(id, IS_DELETED)).thenReturn(false);
 		when(accountsLedger.get(id, IS_SMART_CONTRACT)).thenReturn(false);
 		when(accountsLedger.exists(id)).thenReturn(true);
-		var tokens = new MerkleAccountTokens();
-		tokens.associateAll(tokenInfo.keySet());
+		var tokens = new MerkleAccountEntities();
+		tokens.associateAllTokens(tokenInfo.keySet());
 		when(accountsLedger.get(id, TOKENS)).thenReturn(tokens);
 		// and:
 		for (TokenID tId : tokenInfo.keySet()) {
@@ -209,7 +216,9 @@ public class BaseHederaLedgerTest {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
+		nftStore = mock(HederaNftStore.class);
+
+		subject = new HederaLedger(nftStore, tokenStore, ids, creator, historian, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 	}
 

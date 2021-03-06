@@ -86,7 +86,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			var key = MerkleEntityId.fromAccountId(id);
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
-			for (TokenID tId : account.tokens().asIds()) {
+			for (TokenID tId : account.tokens().asTokenIds()) {
 				var relKey = fromAccountTokenRel(id, tId);
 				var relationship = view.tokenAssociations().get().get(relKey);
 				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);

@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleAccountEntities;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -55,7 +55,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	@Test
 	public void delegatesToSetTokens() {
 		// setup:
-		var tokens = new MerkleAccountTokens();
+		var tokens = new MerkleAccountEntities();
 
 		// when:
 		subject.setAssociatedTokens(genesis, tokens);
@@ -140,7 +140,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	@Test
 	public void delegatesToGetTokens() {
 		// setup:
-		var tokens = new MerkleAccountTokens();
+		var tokens = new MerkleAccountEntities();
 
 		given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
 

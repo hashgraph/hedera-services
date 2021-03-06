@@ -22,9 +22,8 @@ package com.hedera.services.queries.crypto;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleAccountEntities;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -148,8 +147,8 @@ class GetAccountInfoAnswerTest {
 
 		scheduleStore = mock(ScheduleStore.class);
 
-		var tokens = new MerkleAccountTokens();
-		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
+		var tokens = new MerkleAccountEntities();
+		tokens.associateAllTokens(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
 		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.memo(memo)

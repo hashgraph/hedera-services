@@ -226,6 +226,7 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.RunningAvgFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.SpeedometerFactory;
+import com.hedera.services.store.nft.ExceptionalNftStore;
 import com.hedera.services.store.nft.HederaNftStore;
 import com.hedera.services.store.nft.NftStore;
 import com.hedera.services.store.schedule.HederaScheduleStore;
@@ -352,6 +353,7 @@ import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FAC
 import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY;
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
+import static com.hedera.services.store.nft.ExceptionalNftStore.NOOP_NFT_STORE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
@@ -1702,6 +1704,7 @@ public class ServicesContext {
 					new PureFCMapBackingAccounts(this::accounts),
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
+					NOOP_NFT_STORE,
 					NOOP_TOKEN_STORE,
 					NOOP_ID_SOURCE,
 					NOOP_EXPIRING_CREATIONS,

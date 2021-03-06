@@ -97,7 +97,7 @@ public class MerkleAccountTest {
 	MerkleAccountState state;
 	MerkleAccountState otherState;
 	FCQueue<ExpirableTxnRecord> payerRecords;
-	MerkleAccountTokens tokens;
+	MerkleAccountEntities tokens;
 	DomainSerdes serdes;
 
 	MerkleAccount subject;
@@ -112,7 +112,7 @@ public class MerkleAccountTest {
 		given(payerRecords.copy()).willReturn(payerRecords);
 		given(payerRecords.isImmutable()).willReturn(false);
 
-		tokens = mock(MerkleAccountTokens.class);
+		tokens = mock(MerkleAccountEntities.class);
 		given(tokens.copy()).willReturn(tokens);
 
 		delegate = mock(MerkleAccountState.class);
@@ -177,7 +177,7 @@ public class MerkleAccountTest {
 	@Test
 	public void toStringWorks() {
 		given(payerRecords.size()).willReturn(3);
-		given(tokens.readableTokenIds()).willReturn("[1.2.3, 2.3.4]");
+		given(tokens.readableEntityIds()).willReturn("[1.2.3, 2.3.4]");
 
 		// expect:
 		assertEquals(
@@ -274,7 +274,7 @@ public class MerkleAccountTest {
 	public void initializeTranslatesFromRelease090AlphaStates() {
 		// setup:
 		var accountState = new MerkleAccountState();
-		var accountTokens = new MerkleAccountTokens();
+		var accountTokens = new MerkleAccountEntities();
 
 		// given:
 		subject.addDeserializedChildren(
@@ -306,7 +306,7 @@ public class MerkleAccountTest {
 		// then:
 		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));
 		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_RECORDS));
-		assertThat(subject.getChild(RELEASE_090_ASSOCIATED_TOKENS), instanceOf(MerkleAccountTokens.class));
+		assertThat(subject.getChild(RELEASE_090_ASSOCIATED_TOKENS), instanceOf(MerkleAccountEntities.class));
 	}
 
 	@Test

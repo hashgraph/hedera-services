@@ -44,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.nft.NftStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -144,6 +145,7 @@ public class SmartContractRequestHandlerPayableTest {
             backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
+            mock(NftStore.class),
             mock(TokenStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),

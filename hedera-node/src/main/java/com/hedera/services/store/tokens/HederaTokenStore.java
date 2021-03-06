@@ -170,7 +170,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if ((accountTokens.numAssociations() + tokenIds.size()) > properties.maxTokensPerAccount()) {
 				validity = TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 			} else {
-				accountTokens.associateAll(new HashSet<>(tokenIds));
+				accountTokens.associateAllTokens(new HashSet<>(tokenIds));
 				for (TokenID id : tokenIds) {
 					var relationship = asTokenRel(aId, id);
 					tokenRelsLedger.create(relationship);
@@ -227,7 +227,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 				}
 			}
-			accountTokens.dissociateAll(new HashSet<>(tokenIds));
+			accountTokens.dissociateAllTokens(new HashSet<>(tokenIds));
 			tokenIds.forEach(id -> tokenRelsLedger.destroy(asTokenRel(aId, id)));
 			hederaLedger.setAssociatedTokens(aId, accountTokens);
 			return OK;

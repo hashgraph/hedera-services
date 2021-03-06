@@ -33,7 +33,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleAccountEntities;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -329,11 +329,11 @@ public class HederaLedger {
 	}
 
 	/* --- TOKEN MANIPULATION --- */
-	public MerkleAccountTokens getAssociatedTokens(AccountID aId) {
-		return (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
+	public MerkleAccountEntities getAssociatedTokens(AccountID aId) {
+		return (MerkleAccountEntities) accountsLedger.get(aId, TOKENS);
 	}
 
-	public void setAssociatedTokens(AccountID aId, MerkleAccountTokens tokens) {
+	public void setAssociatedTokens(AccountID aId, MerkleAccountEntities tokens) {
 		accountsLedger.set(aId, TOKENS, tokens);
 	}
 
@@ -347,8 +347,8 @@ public class HederaLedger {
 			throw new IllegalStateException("Ledger has no manageable token relationships!");
 		}
 
-		var tokens = (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
-		for (TokenID tId : tokens.asIds()) {
+		var tokens = (MerkleAccountEntities) accountsLedger.get(aId, TOKENS);
+		for (TokenID tId : tokens.asTokenIds()) {
 			if (tokenStore.get(tId).isDeleted()) {
 				continue;
 			}

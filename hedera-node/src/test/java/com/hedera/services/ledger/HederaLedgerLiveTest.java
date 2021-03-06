@@ -28,11 +28,16 @@ import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.NftOwningAccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNftOwnership;
+import com.hedera.services.state.merkle.MerkleNftType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.nft.HederaNftStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
@@ -72,6 +77,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				() -> new MerkleTokenRelStatus(),
@@ -84,7 +90,19 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new MockGlobalDynamicProps(),
 				() -> tokens,
 				tokenRelsLedger);
-		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
+
+		nftOwnershipLedger = new TransactionalLedger<>(
+				NftOwningAccountProperty.class,
+				() -> new MerkleEntityId(),
+				null,
+				new ChangeSummaryManager<>());
+		FCMap<MerkleEntityId, MerkleNftType> nfts = new FCMap<>();
+		nftStore = new HederaNftStore(
+				ids,
+				() -> nfts,
+				nftOwnershipLedger);
+
+		subject = new HederaLedger(nftStore, tokenStore, ids, creator, historian, accountsLedger);
 	}
 
 	@Test

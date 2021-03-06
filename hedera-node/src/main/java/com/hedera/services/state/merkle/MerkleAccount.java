@@ -82,7 +82,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 		this(List.of(
 				new MerkleAccountState(),
 				new FCQueue<ExpirableTxnRecord>(),
-				new MerkleAccountTokens()));
+				new MerkleAccountEntities()));
 	}
 
 	/* --- MerkleInternal --- */
@@ -114,11 +114,11 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 					getChild(ChildIndices.STATE),
 					getChild(ChildIndices.RELEASE_090_ALPHA_PAYER_RECORDS),
 					getChild(ChildIndices.RELEASE_090_ALPHA_ASSOCIATED_TOKENS)), MERKLE_VERSION);
-		} else if (!(getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS) instanceof MerkleAccountTokens)) {
+		} else if (!(getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS) instanceof MerkleAccountEntities)) {
 			addDeserializedChildren(List.of(
 					getChild(ChildIndices.STATE),
 					getChild(ChildIndices.RELEASE_081_PAYER_RECORDS),
-					new MerkleAccountTokens()), MERKLE_VERSION);
+					new MerkleAccountEntities()), MERKLE_VERSION);
 		} else {
 			/* Must be a v0.9.0 state. */
 		}
@@ -169,7 +169,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 		return MoreObjects.toStringHelper(MerkleAccount.class)
 				.add("state", state())
 				.add("# records", records().size())
-				.add("tokens", tokens().readableTokenIds())
+				.add("tokens", tokens().readableEntityIds())
 				.toString();
 	}
 
@@ -186,11 +186,11 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
 	}
 
-	public MerkleAccountTokens tokens() {
+	public MerkleAccountEntities tokens() {
 		return getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS);
 	}
 
-	public void setTokens(MerkleAccountTokens tokens) {
+	public void setTokens(MerkleAccountEntities tokens) {
 		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
 	}
 

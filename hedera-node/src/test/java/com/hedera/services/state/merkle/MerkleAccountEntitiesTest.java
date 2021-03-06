@@ -34,7 +34,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +46,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
-class MerkleAccountTokensTest {
+class MerkleAccountEntitiesTest {
 	TokenID a = IdUtils.asToken("0.0.2");
 	TokenID b = IdUtils.asToken("0.1.2");
 	TokenID c = IdUtils.asToken("1.1.2");
@@ -57,11 +56,11 @@ class MerkleAccountTokensTest {
 		2, 0, 0, 2, 1, 0, 2, 1, 1
 	};
 
-	MerkleAccountTokens subject;
+	MerkleAccountEntities subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new MerkleAccountTokens(initialIds);
+		subject = new MerkleAccountEntities(initialIds);
 	}
 
 	@Test
@@ -69,7 +68,7 @@ class MerkleAccountTokensTest {
 		// expect:
 		Assertions.assertThrows(
 				IllegalArgumentException.class,
-				() -> new MerkleAccountTokens(new long[MerkleAccountTokens.NUM_ID_PARTS + 1]));
+				() -> new MerkleAccountEntities(new long[MerkleAccountEntities.NUM_ID_PARTS + 1]));
 	}
 
 	@Test
@@ -77,20 +76,20 @@ class MerkleAccountTokensTest {
 		// expect:
 		assertEquals(
 				List.of(a, b, c),
-				subject.asIds());
+				subject.asTokenIds());
 		// and when:
-		subject = new MerkleAccountTokens();
+		subject = new MerkleAccountEntities();
 		// then:
-		assertSame(Collections.emptyList(), subject.asIds());
+		assertSame(Collections.emptyList(), subject.asTokenIds());
 	}
 
 	@Test
 	public void dissociateAllWorks() {
 		// when:
-		subject.dissociateAll(Set.of(a, e));
+		subject.dissociateAllTokens(Set.of(a, e));
 
 		// then:
-		assertArrayEquals(new long[] {2, 1, 0}, Arrays.copyOfRange(subject.getTokenIds(), 0, 3));
+		assertArrayEquals(new long[] {2, 1, 0}, Arrays.copyOfRange(subject.getEntityIds(), 0, 3));
 		// and:
 		assertFalse(subject.includes(a));
 	}
@@ -98,20 +97,20 @@ class MerkleAccountTokensTest {
 	@Test
 	public void associateAllWorks() {
 		// when:
-		subject.associateAll(Set.of(d, e));
+		subject.associateAllTokens(Set.of(d, e));
 
 		// then:
-		assertArrayEquals(new long[] {1, 0, 0}, Arrays.copyOfRange(subject.getTokenIds(), 0, 3));
+		assertArrayEquals(new long[] {1, 0, 0}, Arrays.copyOfRange(subject.getEntityIds(), 0, 3));
 		// and:
-		assertArrayEquals(new long[] {3, 0, 0}, Arrays.copyOfRange(subject.getTokenIds(), 12, 15));
+		assertArrayEquals(new long[] {3, 0, 0}, Arrays.copyOfRange(subject.getEntityIds(), 12, 15));
 	}
 
 	@Test
 	public void objectContractMet() {
 		// given:
-		var one = new MerkleAccountTokens();
-		var two = new MerkleAccountTokens();
-		two.associateAll(Set.of(a, b, c));
+		var one = new MerkleAccountEntities();
+		var two = new MerkleAccountEntities();
+		two.associateAllTokens(Set.of(a, b, c));
 
 		// then:
 		assertNotEquals(one, null);
@@ -125,8 +124,8 @@ class MerkleAccountTokensTest {
 	@Test
 	public void merkleMethodsWork() {
 		// expect;
-		assertEquals(MerkleAccountTokens.MERKLE_VERSION, subject.getVersion());
-		assertEquals(MerkleAccountTokens.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(MerkleAccountEntities.MERKLE_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountEntities.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
 
@@ -149,12 +148,12 @@ class MerkleAccountTokensTest {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
-		var defaultSubject = new MerkleAccountTokens();
+		var defaultSubject = new MerkleAccountEntities();
 
-		given(in.readLongArray(MerkleAccountTokens.MAX_CONCEIVABLE_TOKEN_ID_PARTS)).willReturn(initialIds);
+		given(in.readLongArray(MerkleAccountEntities.MAX_CONCEIVABLE_ENTITY_ID_PARTS)).willReturn(initialIds);
 
 		// when:
-		defaultSubject.deserialize(in, MerkleAccountTokens.MERKLE_VERSION);
+		defaultSubject.deserialize(in, MerkleAccountEntities.MERKLE_VERSION);
 
 		// then:
 		assertEquals(subject, defaultSubject);
@@ -164,7 +163,7 @@ class MerkleAccountTokensTest {
 	public void toStringWorks() {
 		// expect:
 		assertEquals(
-				"MerkleAccountTokens{tokens=[0.0.2, 0.1.2, 1.1.2]}",
+				"MerkleAccountEntities{entities=[0.0.2, 0.1.2, 1.1.2]}",
 				subject.toString());
 	}
 

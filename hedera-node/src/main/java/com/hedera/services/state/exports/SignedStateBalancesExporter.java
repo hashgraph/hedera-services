@@ -285,7 +285,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations
 	) {
 		var accountTokens = account.tokens();
-		for (TokenID tokenId : accountTokens.asIds()) {
+		for (TokenID tokenId : accountTokens.asTokenIds()) {
 			var token = tokens.get(fromTokenId(tokenId));
 			if (token != null && !token.isDeleted()) {
 				var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));

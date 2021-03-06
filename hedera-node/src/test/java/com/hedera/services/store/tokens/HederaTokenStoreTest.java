@@ -30,14 +30,11 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleAccountEntities;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.schedule.ContentAddressableSchedule;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -60,7 +57,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -71,7 +67,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
@@ -471,7 +466,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingRejectsUnassociatedTokens() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		given(tokens.includes(misc)).willReturn(false);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
@@ -485,7 +480,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingRejectsTreasuryAccount() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		subject = spy(subject);
@@ -501,7 +496,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingRejectsFrozenAccount() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(true);
@@ -516,7 +511,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void associatingRejectsAlreadyAssociatedTokens() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
@@ -530,7 +525,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void associatingRejectsIfCappedAssociationsLimit() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		given(tokens.includes(misc)).willReturn(false);
 		given(tokens.numAssociations()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
@@ -541,14 +536,14 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 		// and:
-		verify(tokens, never()).associateAll(any());
+		verify(tokens, never()).associateAllTokens(any());
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 	}
 
 	@Test
 	public void associatingHappyPathWorks() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		var key = asTokenRel(sponsor, misc);
 
 		given(tokens.includes(misc)).willReturn(false);
@@ -564,7 +559,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		// and:
-		verify(tokens).associateAll(Set.of(misc));
+		verify(tokens).associateAllTokens(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
@@ -574,7 +569,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingWorksEvenIfTokenDoesntExistAnymore() {
 		// setup:
-		var accountTokens = mock(MerkleAccountTokens.class);
+		var accountTokens = mock(MerkleAccountEntities.class);
 		var key = asTokenRel(sponsor, misc);
 
 		given(accountTokens.includes(misc)).willReturn(true);
@@ -588,7 +583,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		// and:
-		verify(accountTokens).dissociateAll(Set.of(misc));
+		verify(accountTokens).dissociateAllTokens(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, accountTokens);
 		verify(tokenRelsLedger).destroy(key);
 	}
@@ -596,7 +591,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingHappyPathWorks() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		var key = asTokenRel(sponsor, misc);
 
 		given(tokens.includes(misc)).willReturn(true);
@@ -609,7 +604,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		// and:
-		verify(tokens).dissociateAll(Set.of(misc));
+		verify(tokens).dissociateAllTokens(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger).destroy(key);
 	}
@@ -617,7 +612,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingFailsIfTokenBalanceIsNonzero() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		var key = asTokenRel(sponsor, misc);
 
 		given(tokens.includes(misc)).willReturn(true);
@@ -631,7 +626,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES, status);
 		// and:
-		verify(tokens, never()).dissociateAll(Set.of(misc));
+		verify(tokens, never()).dissociateAllTokens(Set.of(misc));
 		verify(hederaLedger, never()).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger, never()).destroy(key);
 	}
@@ -639,7 +634,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingPermitsFrozenRelIfDeleted() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		var key = asTokenRel(sponsor, misc);
 
 		given(tokens.includes(misc)).willReturn(true);
@@ -655,7 +650,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		// and:
-		verify(tokens).dissociateAll(Set.of(misc));
+		verify(tokens).dissociateAllTokens(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger).destroy(key);
 	}
@@ -663,7 +658,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void dissociatingPermitsNonzeroTokenBalanceIfDeleted() {
 		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		var key = asTokenRel(sponsor, misc);
 
 		given(tokens.includes(misc)).willReturn(true);
@@ -678,7 +673,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		// and:
-		verify(tokens).dissociateAll(Set.of(misc));
+		verify(tokens).dissociateAllTokens(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger).destroy(key);
 	}
@@ -687,7 +682,7 @@ class HederaTokenStoreTest {
 	public void dissociatingPermitsNonzeroTokenBalanceIfExpired() {
 		// setup:
 		long balance = 123L;
-		var tokens = mock(MerkleAccountTokens.class);
+		var tokens = mock(MerkleAccountEntities.class);
 		var key = asTokenRel(sponsor, misc);
 
 		given(tokens.includes(misc)).willReturn(true);
@@ -702,7 +697,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		// and:
-		verify(tokens).dissociateAll(Set.of(misc));
+		verify(tokens).dissociateAllTokens(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger).destroy(key);
 		verify(hederaLedger).doTokenTransfer(misc, sponsor, treasury, balance);
