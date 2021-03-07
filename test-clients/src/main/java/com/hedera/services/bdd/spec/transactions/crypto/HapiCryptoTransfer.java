@@ -278,8 +278,13 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private void addNftSignersFor(HapiApiSpec spec, Set<Key> partyKeys) {
 		if (nftProviders != MISSING_NFT_PROVIDERS) {
 			var registry = spec.registry();
-			nftProviders.forEach(acquisition ->
-					partyKeys.add(registry.getKey(acquisition.getFromAccount())));
+			nftProviders.forEach(acquisition -> {
+						partyKeys.add(registry.getKey(acquisition.getFromAccount()));
+						if (registry.isSigRequired(acquisition.getToAccount())) {
+							partyKeys.add(registry.getKey(acquisition.getToAccount()));
+						}
+					}
+			);
 		}
 	}
 

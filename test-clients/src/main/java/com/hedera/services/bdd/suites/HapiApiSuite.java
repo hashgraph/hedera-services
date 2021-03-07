@@ -71,6 +71,7 @@ public abstract class HapiApiSuite {
 	public static final long A_HUNDRED_HBARS = 100 * ONE_HBAR;
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	public static String TOKEN_TREASURY = "treasury";
+	public static String CIVILIAN = "civilian";
 
 	private List<HapiApiSpec> finalSpecs = Collections.EMPTY_LIST;
 

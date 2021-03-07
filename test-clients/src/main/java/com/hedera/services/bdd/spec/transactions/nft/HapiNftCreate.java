@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -34,6 +35,8 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
@@ -148,5 +151,13 @@ public class HapiNftCreate extends HapiTxnOp<HapiNftCreate> {
 					}
 				});
 		return helper;
+	}
+
+	@Override
+	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(List.of(
+				spec -> spec.registry().getKey(effectivePayer(spec)),
+				spec -> spec.registry().getKey(treasury.orElseGet(spec.setup()::defaultPayerName))));
+		return signers;
 	}
 }

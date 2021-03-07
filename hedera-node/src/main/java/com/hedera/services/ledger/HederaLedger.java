@@ -230,9 +230,6 @@ public class HederaLedger {
 
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
-		if (SingletonContextsManager.CONTEXTS.lookup(0L).ledger() == this) {
-			log.info("Will be committing {}", currentChangeSet());
-		}
 		historian.addNewRecords();
 		historian.addNewEntities();
 		accountsLedger.commit();

@@ -194,4 +194,9 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id) {
 		return tokenSigMetaLookup.apply(id);
 	}
+
+	@Override
+	public SafeLookupResult<AccountSigningMetadata> softTouchAccountSigningMetaFor(AccountID id) {
+		return accountSigMetaLookup.softTouchLookup(id);
+	}
 }

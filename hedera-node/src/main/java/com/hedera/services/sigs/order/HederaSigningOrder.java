@@ -25,8 +25,10 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
+import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -48,6 +50,10 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.NftTransferList;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -166,6 +172,11 @@ public class HederaSigningOrder {
 			return tokenOrder.get();
 		}
 
+		var nftOrder = forNft(txn, factory);
+		if (nftOrder.isPresent()) {
+			return nftOrder.get();
+		}
+
 		var scheduleOrder = forSchedule(txn, factory);
 		if (scheduleOrder.isPresent()) {
 			return scheduleOrder.get();
@@ -251,6 +262,19 @@ public class HederaSigningOrder {
 		} else if (txn.hasScheduleDelete()) {
 			return Optional.of(scheduleDelete(txn.getTransactionID(), txn.getScheduleDelete().getScheduleID(),
 					factory));
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	private <T> Optional<SigningOrderResult<T>> forNft(
+			TransactionBody txn,
+			SigningOrderResultFactory<T> factory
+	) {
+		if (txn.hasNftCreate()) {
+			return Optional.of(nftCreate(txn.getTransactionID(), txn.getNftCreate(), factory));
+		} else if (txn.hasNftAssociate()) {
+			return Optional.of(nftAssociate(txn.getTransactionID(), txn.getNftAssociate(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -573,6 +597,19 @@ public class HederaSigningOrder {
 			}
 		}
 
+		for (NftTransferList changes : op.getNftTransfersList()) {
+			for (NftTransfer acquisition : changes.getTransferList()) {
+				int nBefore = required.size();
+				if ((failure = includeThosePresentAndNecessary(acquisition, required)) != NONE) {
+					return accountFailure(
+							required.size() == nBefore ? acquisition.getFromAccount() : acquisition.getToAccount(),
+							txnId,
+							failure,
+							factory);
+				}
+			}
+		}
+
 		return factory.forValidOrder(required);
 	}
 
@@ -660,6 +697,31 @@ public class HederaSigningOrder {
 		}
 
 		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> nftCreate(
+			TransactionID txnId,
+			NftCreateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = new ArrayList<>();
+		var couldAddTreasury = addAccount(
+				op,
+				NftCreateTransactionBody::hasTreasury,
+				NftCreateTransactionBody::getTreasury,
+				required);
+		if (!couldAddTreasury) {
+			return accountFailure(op.getTreasury(), txnId, MISSING_ACCOUNT, factory);
+		}
+		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> nftAssociate(
+			TransactionID txnId,
+			NftAssociateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		return forSingleAccount(txnId, op.getAccount(), factory);
 	}
 
 	private <T> SigningOrderResult<T> tokenCreate(
@@ -967,6 +1029,21 @@ public class HederaSigningOrder {
 		}
 
 		return factory.forValidOrder(required);
+	}
+
+	private KeyOrderingFailure includeThosePresentAndNecessary(NftTransfer acquisition, List<JKey> required) {
+		var result = sigMetaLookup.softTouchAccountSigningMetaFor(acquisition.getFromAccount());
+		if (result.succeeded()) {
+			required.add(result.metadata().getKey());
+			result = sigMetaLookup.softTouchAccountSigningMetaFor(acquisition.getToAccount());
+			if (result.succeeded()) {
+				var meta = result.metadata();
+				if (meta.isReceiverSigRequired()) {
+					required.add(meta.getKey());
+				}
+			}
+		}
+		return result.failureIfAny();
 	}
 
 	private KeyOrderingFailure includeIfPresentAndNecessary(AccountAmount adjust, List<JKey> required) {

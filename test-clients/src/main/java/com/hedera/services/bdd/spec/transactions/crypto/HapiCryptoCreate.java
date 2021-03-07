@@ -113,6 +113,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		receiverSigRequired = Optional.of(isRequired);
 		return this;
 	}
+	public HapiCryptoCreate emptyBalance() {
+		initialBalance = Optional.of(0L);
+		return this;
+	}
 	public HapiCryptoCreate balance(Long amount) {
 		initialBalance = Optional.of(amount);
 		return this;

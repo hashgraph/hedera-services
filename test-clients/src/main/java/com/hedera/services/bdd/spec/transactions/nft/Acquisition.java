@@ -124,4 +124,8 @@ public class Acquisition {
 	public String getFromAccount() {
 		return fromAccount;
 	}
+
+	public String getToAccount() {
+		return toAccount;
+	}
 }

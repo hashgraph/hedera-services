@@ -68,4 +68,5 @@ public interface SigMetadataLookup {
 	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id);
 	SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(ScheduleID id);
 	SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(ContractID id);
+	SafeLookupResult<AccountSigningMetadata> softTouchAccountSigningMetaFor(AccountID id);
 }

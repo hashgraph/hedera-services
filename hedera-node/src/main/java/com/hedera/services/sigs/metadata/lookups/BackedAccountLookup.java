@@ -36,10 +36,19 @@ public class BackedAccountLookup implements AccountSigMetaLookup {
 
 	@Override
 	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+		return getResult(id, false);
+	}
+
+	@Override
+	public SafeLookupResult<AccountSigningMetadata> softTouchLookup(AccountID id) {
+		return getResult(id, true);
+	}
+
+	private SafeLookupResult<AccountSigningMetadata> getResult(AccountID id, boolean useUnsafe) {
 		if (!accounts.contains(id)) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		}
-		var account = accounts.getRef(id);
+		var account = useUnsafe ? accounts.getUnsafeRef(id)  : accounts.getRef(id);
 		return new SafeLookupResult<>(
 				new AccountSigningMetadata(
 						account.getKey(),
