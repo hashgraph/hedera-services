@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.nft;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
@@ -54,8 +55,34 @@ public class NftTransferSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				expectedSigsRequired(),
+//				expectedSigsRequired(),
+				nftHbarSwapWorks(),
 		});
+	}
+
+	private HapiApiSpec nftHbarSwapWorks() {
+		String nftType = "naturalHistory";
+
+		return defaultHapiSpec("NftHbarSwapWorks")
+				.given(
+						someCivilian(),
+						cryptoCreate("Smithsonian")
+								.emptyBalance(),
+						nftCreate(nftType)
+								.treasury("Smithsonian")
+								.initialSerialNos(2)
+				).when(
+						nftAssociate(CIVILIAN, nftType),
+						cryptoTransfer(tinyBarsFromTo(CIVILIAN, "Smithsonian", ONE_HBAR))
+								.changingOwnership(
+										ofNft(nftType).serialNo("SN1").from("Smithsonian").to(CIVILIAN)
+								).payingWith(CIVILIAN)
+								.memo("1 hbar for SN1")
+								.signedBy(CIVILIAN, "Smithsonian")
+								.via("swap")
+				).then(
+						getTxnRecord("swap").logged()
+				);
 	}
 
 	private HapiApiSpec expectedSigsRequired() {

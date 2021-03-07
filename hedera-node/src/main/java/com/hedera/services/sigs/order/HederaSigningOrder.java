@@ -596,7 +596,6 @@ public class HederaSigningOrder {
 				return accountFailure(adjust.getAccountID(), txnId, failure, factory);
 			}
 		}
-
 		for (NftTransferList changes : op.getNftTransfersList()) {
 			for (NftTransfer acquisition : changes.getTransferList()) {
 				int nBefore = required.size();

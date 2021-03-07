@@ -129,18 +129,11 @@ public class AcquisitionLogs {
 		toLog.getAcquisitionEvents().add(aEvent);
 		toLog.alterEstimatedSize(+1);
 		toLog.markUpdated(consensusTime);
-//
-//		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-//			log.info("Logged acquisition event {} for {}", aEvent, to.toAbbrevString());
-//		}
 	}
 
 	private void clean() {
 		var ss = signedStateView.get();
 		var ssTime = signedStateTime.get();
-//		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-//			log.info("Now cleaning {} account acquisition logs at signed state time {}", ss.accounts().size(), ssTime);
-//		}
 		long totalEstSize = 0L;
 		for (var entry : ss.accounts().entrySet()) {
 			var id = entry.getKey();
@@ -168,46 +161,29 @@ public class AcquisitionLogs {
 			return 0;
 		}
 
-//		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-//			log.info("  - {} log is {}", id.toAbbrevString(), aLog);
-//		}
 		if (!aLog.getLastUpdated().get().isAfter(aLog.getLastCleaned().get())) {
 			return aLog.curEstimatedSize();
 		}
 
 		seenNfts.clear();
-//		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-//			log.info("  - Cleaning {} acquisition events for {}", aLog.acquisitionEvents.size(), id.toAbbrevString());
-//		}
 		int numCleaned = 0;
 		for (var iter = aLog.getAcquisitionEvents().iterator(); iter.hasNext(); ) {
 			var event = iter.next();
-//			if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-//				var nft = Pair.of(event.getLeft(), event.getMiddle());
-//				log.info("    * {}? ({} now owns [{}, {}])",
-//						event,
-//						nftOwnerships.get(MerkleNftOwnership.fromPair(nft)).toAbbrevString(),
-//						nft.getLeft().getNftNum(), nft.getRight().toStringUtf8());
-//			}
 			if (event.getRight().isAfter(ssTime)) {
 				break;
 			}
 
 			var nft = Pair.of(event.getLeft(), event.getMiddle());
 			if (seenNfts.contains(nft)) {
+				/* Redundant acquisition event */
 				iter.remove();
 				numCleaned++;
-//				if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-//					log.info("Cleaning redundant event {} from {}'s acquisition log", event, id.toAbbrevString());
-//				}
 			} else {
 				var owner = nftOwnerships.get(MerkleNftOwnership.fromPair(nft));
 				if (owner != null) {
 					seenNfts.add(nft);
 					if (!id.equals(owner)) {
-//						if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-//							log.info("Cleaning outdated event {} from {}'s acquisition log", event, id.toAbbrevString());
-//						}
+						/* Misleading acquisition event */
 						iter.remove();
 						numCleaned++;
 					}

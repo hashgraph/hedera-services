@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.utilops;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
@@ -235,6 +236,18 @@ public class UtilVerbs {
 
 	public static ProviderRun runWithProvider(Function<HapiApiSpec, OpProvider> provider) {
 		return new ProviderRun(provider);
+	}
+
+	public static HapiSpecOperation resolvingUniquely(Supplier<HapiTxnOp<?>> attemptSource) {
+		return withOpContext((spec, opLog) -> {
+			for (;;) {
+				try {
+					var op = attemptSource.get().ensuringResolvedStatusIsntFromDuplicate();
+					allRunFor(spec, op);
+					break;
+				} catch (Throwable ignore) {}
+			}
+		});
 	}
 
 	public static HapiCryptoCreate someCivilian() {
