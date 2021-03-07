@@ -4,6 +4,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNftOwnership;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -18,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,14 +32,20 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static com.hedera.services.ledger.HederaLedger.NFT_ID_COMPARATOR;
+import static java.util.Comparator.comparing;
 
 public class AcquisitionLogs {
 	private static final Logger log = LogManager.getLogger(AcquisitionLogs.class);
 
 	private static final Instant THE_EPOCH = Instant.ofEpochSecond(0L);
+	private static final Comparator<Map.Entry<NftID, List<ByteString>>> OWNED_NFTS_CMP =
+			comparing(Map.Entry::getKey, NFT_ID_COMPARATOR);
 
 	private final Supplier<Instant> signedStateTime;
 	private final Supplier<StateView> signedStateView;
@@ -91,6 +99,7 @@ public class AcquisitionLogs {
 		}
 
 		return owned.entrySet().stream()
+				.sorted(OWNED_NFTS_CMP)
 				.map(entry -> {
 					var builder = OwnedNfts.newBuilder();
 					builder.setNftId(entry.getKey());
@@ -118,64 +127,68 @@ public class AcquisitionLogs {
 
 		var toLog = acquisitionLogs.computeIfAbsent(to, ignore -> new AcquisitionLog());
 		toLog.getAcquisitionEvents().add(aEvent);
+		toLog.alterEstimatedSize(+1);
 		toLog.markUpdated(consensusTime);
-
-		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-			log.info("Logged acquisition event {} for {}", aEvent, to.toAbbrevString());
-		}
+//
+//		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
+//			log.info("Logged acquisition event {} for {}", aEvent, to.toAbbrevString());
+//		}
 	}
 
 	private void clean() {
 		var ss = signedStateView.get();
 		var ssTime = signedStateTime.get();
-		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-			log.info("Now cleaning {} account acquisition logs at signed state time {}", ss.accounts().size(), ssTime);
-		}
+//		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
+//			log.info("Now cleaning {} account acquisition logs at signed state time {}", ss.accounts().size(), ssTime);
+//		}
+		long totalEstSize = 0L;
 		for (var entry : ss.accounts().entrySet()) {
 			var id = entry.getKey();
 			var account = entry.getValue();
 			if (account.isDeleted()) {
 				acquisitionLogs.remove(id);
 			} else {
-				cleanAccount(id, ssTime, ss.nftOwnerships());
+				totalEstSize += cleanAccount(id, ssTime, ss.nftOwnerships());
 			}
 		}
+		log.info("Estimated {} acquisition events in-memory @ consensus time {}", totalEstSize, ssTime);
 	}
 
-	private void cleanAccount(
+	private int cleanAccount(
 			MerkleEntityId id,
 			Instant ssTime,
 			FCMap<MerkleNftOwnership, MerkleEntityId> nftOwnerships
 	) {
 		if (ssTime == null) {
-			return;
+			return 0;
 		}
 
 		var aLog = acquisitionLogs.get(id);
 		if (aLog == null) {
-			return;
+			return 0;
 		}
 
-		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-			log.info("  - {} log is {}", id.toAbbrevString(), aLog);
-		}
+//		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
+//			log.info("  - {} log is {}", id.toAbbrevString(), aLog);
+//		}
 		if (!aLog.getLastUpdated().get().isAfter(aLog.getLastCleaned().get())) {
-			return;
+			return aLog.curEstimatedSize();
 		}
 
 		seenNfts.clear();
-		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-			log.info("  - Cleaning {} acquisition events for {}", aLog.acquisitionEvents.size(), id.toAbbrevString());
-		}
+//		if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
+//			log.info("  - Cleaning {} acquisition events for {}", aLog.acquisitionEvents.size(), id.toAbbrevString());
+//		}
+		int numCleaned = 0;
 		for (var iter = aLog.getAcquisitionEvents().iterator(); iter.hasNext(); ) {
 			var event = iter.next();
-			if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-				var nft = Pair.of(event.getLeft(), event.getMiddle());
-				log.info("    * {}? ({} now owns [{}, {}])",
-						event,
-						nftOwnerships.get(MerkleNftOwnership.fromPair(nft)).toAbbrevString(),
-						nft.getLeft().getNftNum(), nft.getRight().toStringUtf8());
-			}
+//			if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
+//				var nft = Pair.of(event.getLeft(), event.getMiddle());
+//				log.info("    * {}? ({} now owns [{}, {}])",
+//						event,
+//						nftOwnerships.get(MerkleNftOwnership.fromPair(nft)).toAbbrevString(),
+//						nft.getLeft().getNftNum(), nft.getRight().toStringUtf8());
+//			}
 			if (event.getRight().isAfter(ssTime)) {
 				break;
 			}
@@ -183,27 +196,31 @@ public class AcquisitionLogs {
 			var nft = Pair.of(event.getLeft(), event.getMiddle());
 			if (seenNfts.contains(nft)) {
 				iter.remove();
-				if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-					log.info("Cleaning redundant event {} from {}'s acquisition log", event, id.toAbbrevString());
-				}
+				numCleaned++;
+//				if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
+//					log.info("Cleaning redundant event {} from {}'s acquisition log", event, id.toAbbrevString());
+//				}
 			} else {
 				var owner = nftOwnerships.get(MerkleNftOwnership.fromPair(nft));
 				if (owner != null) {
 					seenNfts.add(nft);
 					if (!id.equals(owner)) {
-						if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
-							log.info("Cleaning outdated event {} from {}'s acquisition log", event, id.toAbbrevString());
-						}
+//						if (SingletonContextsManager.CONTEXTS.lookup(0L).acquisitionLogs() == this) {
+//							log.info("Cleaning outdated event {} from {}'s acquisition log", event, id.toAbbrevString());
+//						}
 						iter.remove();
+						numCleaned++;
 					}
 				}
 			}
 		}
 
 		aLog.markCleaned(ssTime);
+		return aLog.alterEstimatedSize(-numCleaned);
 	}
 
 	private static class AcquisitionLog {
+		final AtomicInteger estSize = new AtomicInteger(0);
 		final AtomicReference<Instant> lastCleaned = new AtomicReference<>(THE_EPOCH);
 		final AtomicReference<Instant> lastUpdated = new AtomicReference<>(THE_EPOCH);
 		final Queue<Triple<NftID, ByteString, Instant>> acquisitionEvents = new ConcurrentLinkedQueue<>();
@@ -228,12 +245,20 @@ public class AcquisitionLogs {
 			lastCleaned.set(at);
 		}
 
+		int curEstimatedSize() {
+			return estSize.get();
+		}
+
+		int alterEstimatedSize(int by) {
+			return estSize.addAndGet(by);
+		}
+
 		@Override
 		public String toString() {
 			return MoreObjects.toStringHelper(this)
 					.add("lastCleaned", lastCleaned.get())
 					.add("lastUpdated", lastUpdated.get())
-					.add("# of events", acquisitionEvents.size())
+					.add("estimated # of events", estSize.get())
 					.toString();
 		}
 	}

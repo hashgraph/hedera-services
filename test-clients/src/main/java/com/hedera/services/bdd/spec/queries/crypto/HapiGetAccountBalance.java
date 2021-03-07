@@ -58,6 +58,9 @@ import java.util.stream.Collectors;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiApiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static java.util.stream.Collectors.joining;
 
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
@@ -126,8 +129,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		long actual = response.getCryptogetAccountBalance().getBalance();
 		if (verboseLoggingOn) {
-			log.info("\n  FTs: " + response.getCryptogetAccountBalance().getTokenBalancesList());
-			log.info("\n  NFTs: {}", readableNftOwnership(response.getCryptogetAccountBalance().getOwnedNftsList()));
+			log.info("Assets for '{}' include,\n  ℏ: {}\n  FTs: {}\n  NFTs: {}",
+					entity,
+					readableHbar(actual),
+					response.getCryptogetAccountBalance().getTokenBalancesList(),
+					readableNftOwnership(response.getCryptogetAccountBalance().getOwnedNftsList()));
 		}
 		if (expectedCondition.isPresent()) {
 			Function<Long, Optional<String>> condition = expectedCondition.get().apply(spec);
@@ -143,10 +149,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			Pair<Long, Integer> defaultTb = Pair.of(0L, 0);
 			Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
 					response.getCryptogetAccountBalance().getTokenBalancesList()
-					.stream()
-					.collect(Collectors.toMap(
-							TokenBalance::getTokenId,
-							tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
+							.stream()
+							.collect(Collectors.toMap(
+									TokenBalance::getTokenId,
+									tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
 			for (Map.Entry<String, String> tokenBalance : expectedTokenBalances) {
 				var tokenId = asTokenId(tokenBalance.getKey(), spec);
 				String[] expectedParts = tokenBalance.getValue().split("-");
@@ -203,15 +209,12 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		ResponseCodeEnum status = response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
 		if (status == ResponseCodeEnum.ACCOUNT_DELETED) {
 			log.info(spec.logPrefix() + entity + " was actually deleted!");
-		} else {
-			long balance = response.getCryptogetAccountBalance().getBalance();
-			long TINYBARS_PER_HBAR = 100_000_000L;
-			double hBars = (1.0 * balance) / TINYBARS_PER_HBAR;
-			if (!loggingOff) {
-				log.info(spec.logPrefix() + "balance for '" + entity
-						+ "': " + balance + " tinyBars (" + CryptoTransferSuite.sdec(hBars, 4) + "ħ)");
-			}
 		}
+	}
+
+	private String readableHbar(long tinybars) {
+		return tinybars + "tℏ ("
+				+ sdec((1.0 * tinybars) / ONE_HBAR, 2) + "ħ)";
 	}
 
 	private Query getAccountBalanceQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {

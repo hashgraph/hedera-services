@@ -50,6 +50,7 @@ public class NftCreateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				simpleNftCreation(),
+				accountCanBeRepeatTreasury(),
 		});
 	}
 
@@ -66,6 +67,28 @@ public class NftCreateSpecs extends HapiApiSuite {
 								.logged()
 				).then(
 						getTxnRecord("creation").logged()
+				);
+	}
+
+	private HapiApiSpec accountCanBeRepeatTreasury() {
+		return defaultHapiSpec("AccountCanBeRepeatTreasury")
+				.given(
+						cryptoCreate("Smithsonian")
+				).when(
+						nftCreate("naturalHistory")
+								.memo("Natural history NFT")
+								.treasury("Smithsonian")
+								.initialSerialNos(3),
+						nftCreate("patronStatus")
+								.memo("Patron status NFT")
+								.treasury("Smithsonian")
+								.initialSerialNos(10),
+						nftCreate("annualMembership")
+								.memo("Annual membership NFT")
+								.treasury("Smithsonian")
+								.initialSerialNos(1)
+				).then(
+						getAccountBalance("Smithsonian").logged()
 				);
 	}
 
