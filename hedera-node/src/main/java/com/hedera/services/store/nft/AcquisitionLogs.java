@@ -6,7 +6,9 @@ import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNftOwnership;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.OwnedNfts;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -14,8 +16,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,9 +32,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class AcquisitionLogs {
 	private static final Logger log = LogManager.getLogger(AcquisitionLogs.class);
+
+	private static final Instant THE_EPOCH = Instant.ofEpochSecond(0L);
 
 	private final Supplier<Instant> signedStateTime;
 	private final Supplier<StateView> signedStateView;
@@ -48,6 +58,48 @@ public class AcquisitionLogs {
 		gcService.scheduleAtFixedRate(this::clean, gcPeriodSecs, gcPeriodSecs, TimeUnit.SECONDS);
 
 		Runtime.getRuntime().addShutdownHook(new Thread(gcService::shutdown));
+	}
+
+	public List<OwnedNfts> currentlyOwnedBy(AccountID aId) {
+		var key = MerkleEntityId.fromAccountId(aId);
+		var aLog = acquisitionLogs.get(key);
+		if (aLog == null) {
+			return Collections.emptyList();
+		}
+
+		var ssTime = Optional.ofNullable(signedStateTime.get()).orElse(THE_EPOCH);
+		var ssNftOwnerships = signedStateView.get().nftOwnerships();
+		Map<NftID, List<ByteString>> owned = new HashMap<>();
+		Set<Pair<NftID, ByteString>> traversedNfts = new HashSet<>();
+		for (var iter = aLog.getAcquisitionEvents().iterator(); iter.hasNext(); ) {
+			var event = iter.next();
+			if (event.getRight().isAfter(ssTime)) {
+				break;
+			}
+			var nftType = event.getLeft();
+			var nft = Pair.of(nftType, event.getMiddle());
+			if (traversedNfts.contains(nft)) {
+				continue;
+			}
+			var owner = ssNftOwnerships.get(MerkleNftOwnership.fromPair(nft));
+			if (owner != null) {
+				if (key.equals(owner)) {
+					owned.computeIfAbsent(nftType, ignore -> new ArrayList<>()).add(event.getMiddle());
+				}
+				traversedNfts.add(nft);
+			}
+		}
+
+		return owned.entrySet().stream()
+				.map(entry -> {
+					var builder = OwnedNfts.newBuilder();
+					builder.setNftId(entry.getKey());
+					entry.getValue().stream()
+							.sorted(ByteString.unsignedLexicographicalComparator())
+							.forEach(builder::addSerialNo);
+					return builder.build();
+				})
+				.collect(Collectors.toList());
 	}
 
 	public void logAcquisition(
@@ -152,8 +204,8 @@ public class AcquisitionLogs {
 	}
 
 	private static class AcquisitionLog {
-		final AtomicReference<Instant> lastCleaned = new AtomicReference<>(Instant.ofEpochSecond(0L));
-		final AtomicReference<Instant> lastUpdated = new AtomicReference<>(Instant.ofEpochSecond(0L));
+		final AtomicReference<Instant> lastCleaned = new AtomicReference<>(THE_EPOCH);
+		final AtomicReference<Instant> lastUpdated = new AtomicReference<>(THE_EPOCH);
 		final Queue<Triple<NftID, ByteString, Instant>> acquisitionEvents = new ConcurrentLinkedQueue<>();
 
 		Queue<Triple<NftID, ByteString, Instant>> getAcquisitionEvents() {
@@ -168,11 +220,11 @@ public class AcquisitionLogs {
 			return lastUpdated;
 		}
 
-		public void markUpdated(Instant at)	{
+		void markUpdated(Instant at)	{
 			lastUpdated.set(at);
 		}
 
-		public void markCleaned(Instant at)	{
+		void markCleaned(Instant at)	{
 			lastCleaned.set(at);
 		}
 

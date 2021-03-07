@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,11 +21,14 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.OwnedNfts;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
@@ -55,6 +58,7 @@ import java.util.stream.Collectors;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
+import static java.util.stream.Collectors.joining;
 
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
@@ -81,10 +85,12 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		expected = Optional.of(amount);
 		return this;
 	}
+
 	public HapiGetAccountBalance hasTinyBars(Function<HapiApiSpec, Function<Long, Optional<String>>> condition) {
 		expectedCondition = Optional.of(condition);
 		return this;
 	}
+
 	public HapiGetAccountBalance hasTokenBalance(String token, long amount) {
 		if (expectedTokenBalances.isEmpty()) {
 			expectedTokenBalances = new ArrayList<>();
@@ -92,6 +98,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount + "-G"));
 		return this;
 	}
+
 	public HapiGetAccountBalance hasTokenBalance(String token, long amount, int decimals) {
 		if (expectedTokenBalances.isEmpty()) {
 			expectedTokenBalances = new ArrayList<>();
@@ -119,7 +126,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		long actual = response.getCryptogetAccountBalance().getBalance();
 		if (verboseLoggingOn) {
-			log.info("Explicit token balances: " + response.getCryptogetAccountBalance().getTokenBalancesList());
+			log.info("\n  FTs: " + response.getCryptogetAccountBalance().getTokenBalancesList());
+			log.info("\n  NFTs: {}", readableNftOwnership(response.getCryptogetAccountBalance().getOwnedNftsList()));
 		}
 		if (expectedCondition.isPresent()) {
 			Function<Long, Optional<String>> condition = expectedCondition.get().apply(spec);
@@ -133,7 +141,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
 		if (expectedTokenBalances.size() > 0) {
 			Pair<Long, Integer> defaultTb = Pair.of(0L, 0);
-			Map<TokenID, Pair<Long, Integer>> actualTokenBalances = response.getCryptogetAccountBalance().getTokenBalancesList()
+			Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
+					response.getCryptogetAccountBalance().getTokenBalancesList()
 					.stream()
 					.collect(Collectors.toMap(
 							TokenBalance::getTokenId,
@@ -156,7 +165,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			}
 		}
 
-		if(exportAccount && accountID.isPresent()) {
+		if (exportAccount && accountID.isPresent()) {
 			SingleAccountBalances.Builder sab = SingleAccountBalances.newBuilder();
 			List<TokenUnitBalance> tokenUnitBalanceList = new ArrayList<>();
 			tokenUnitBalanceList = response.getCryptogetAccountBalance().getTokenBalancesList()
@@ -173,6 +182,20 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		}
 	}
 
+	private String readableNftOwnership(List<OwnedNfts> owned) {
+		var sb = new StringBuilder();
+		for (OwnedNfts ownedNfts : owned) {
+			sb.append("\n    * ")
+					.append(HapiPropertySource.asNftString(ownedNfts.getNftId()))
+					.append("{")
+					.append(ownedNfts.getSerialNoList().stream()
+							.map(bs -> bs.toStringUtf8().trim())
+							.collect(joining(", ")))
+					.append("}");
+		}
+		return sb.toString();
+	}
+
 	@Override
 	protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		Query query = getAccountBalanceQuery(spec, payment, false);
@@ -183,9 +206,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		} else {
 			long balance = response.getCryptogetAccountBalance().getBalance();
 			long TINYBARS_PER_HBAR = 100_000_000L;
-			long hBars = balance / TINYBARS_PER_HBAR;
+			double hBars = (1.0 * balance) / TINYBARS_PER_HBAR;
 			if (!loggingOff) {
-				log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance + " tinyBars (" + hBars + "ħ)");
+				log.info(spec.logPrefix() + "balance for '" + entity
+						+ "': " + balance + " tinyBars (" + CryptoTransferSuite.sdec(hBars, 4) + "ħ)");
 			}
 		}
 	}

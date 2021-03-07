@@ -652,7 +652,7 @@ public class ServicesContext {
 
 	public AcquisitionLogs acquisitionLogs() {
 		if (acquisitionLogs == null) {
-			acquisitionLogs = new AcquisitionLogs(2L, this::consensusTimeOfLastHandledTxn, stateViews());
+			acquisitionLogs = new AcquisitionLogs(2L, this::consensusTimeOfLastHandledTxn, this::currentView);
 		}
 		return acquisitionLogs;
 	}
@@ -878,7 +878,7 @@ public class ServicesContext {
 					new GetLiveHashAnswer(),
 					new GetStakersAnswer(),
 					new GetAccountInfoAnswer(validator()),
-					new GetAccountBalanceAnswer(validator()),
+					new GetAccountBalanceAnswer(validator(), acquisitionLogs()),
 					new GetAccountRecordsAnswer(answerFunctions(), validator())
 			);
 		}

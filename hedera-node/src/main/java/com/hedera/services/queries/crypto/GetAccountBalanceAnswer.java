@@ -22,6 +22,7 @@ package com.hedera.services.queries.crypto;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.nft.AcquisitionLogs;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -50,9 +51,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class GetAccountBalanceAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
+	private final AcquisitionLogs acquisitionLogs;
 
-	public GetAccountBalanceAnswer(OptionValidator optionValidator) {
+	public GetAccountBalanceAnswer(OptionValidator optionValidator, AcquisitionLogs acquisitionLogs) {
 		this.optionValidator = optionValidator;
+		this.acquisitionLogs = acquisitionLogs;
 	}
 
 	@Override
@@ -96,6 +99,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 						.setDecimals(decimals)
 						.build());
 			}
+			opAnswer.addAllOwnedNfts(acquisitionLogs.currentlyOwnedBy(id));
 		}
 
 		return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();

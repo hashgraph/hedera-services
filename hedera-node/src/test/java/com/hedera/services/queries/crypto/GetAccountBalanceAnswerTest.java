@@ -149,7 +149,7 @@ public class GetAccountBalanceAnswerTest {
 				StateView.EMPTY_NFT_OWNERSHIPS_SUPPLIER);
 
 		optionValidator = mock(OptionValidator.class);
-		subject = new GetAccountBalanceAnswer(optionValidator);
+		subject = new GetAccountBalanceAnswer(optionValidator, null);
 	}
 
 	@Test

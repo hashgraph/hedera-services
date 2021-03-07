@@ -87,7 +87,9 @@ public class NftManagementSpecs extends HapiApiSuite {
 								.changingOwnership(
 										ofNft(NATURAL_HISTORY).serialNo("SN1")
 												.from(TheSmithsonian).to(me)),
-						getTxnRecord("acquisition").logged()
+						getTxnRecord("acquisition").logged(),
+						getAccountBalance(TheSmithsonian).logged(),
+						getAccountBalance(me).logged()
 				);
 	}
 
