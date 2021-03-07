@@ -174,7 +174,9 @@ class GetAccountInfoAnswerTest {
 				StateView.EMPTY_STORAGE_SUPPLIER,
 				() -> tokenRels,
 				null,
-				nodeProps);
+				nodeProps,
+				StateView.EMPTY_NFT_TYPES_SUPPLIER,
+				StateView.EMPTY_NFT_OWNERSHIPS_SUPPLIER);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetAccountInfoAnswer(optionValidator);

@@ -100,6 +100,8 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 		FCMap<MerkleEntityId, MerkleNftType> nfts = new FCMap<>();
 		nftStore = new HederaNftStore(
 				ids,
+				null,
+				null,
 				() -> nfts,
 				nftOwnershipLedger);
 

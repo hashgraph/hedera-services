@@ -229,6 +229,7 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.RunningAvgFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.SpeedometerFactory;
+import com.hedera.services.store.nft.AcquisitionLogs;
 import com.hedera.services.store.nft.HederaNftStore;
 import com.hedera.services.store.nft.NftStore;
 import com.hedera.services.store.schedule.HederaScheduleStore;
@@ -314,6 +315,7 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
@@ -456,6 +458,7 @@ public class ServicesContext {
 	private EntityIdSource ids;
 	private FileController fileGrpc;
 	private HapiOpCounters opCounters;
+	private AcquisitionLogs acquisitionLogs;
 	private AnswerFunctions answerFunctions;
 	private ContractAnswers contractAnswers;
 	private OptionValidator validator;
@@ -525,9 +528,11 @@ public class ServicesContext {
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
+	private AtomicReference<FCMap<MerkleEntityId, MerkleNftType>> queryableNftTypes;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
+	private AtomicReference<FCMap<MerkleNftOwnership, MerkleEntityId>> queryableNftOwnerships;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 
 	/* Context-free infrastructure. */
@@ -564,6 +569,8 @@ public class ServicesContext {
 		queryableTokens().set(tokens());
 		queryableTokenAssociations().set(tokenAssociations());
 		queryableSchedules().set(schedules());
+		queryableNftTypes().set(nftTypes());
+		queryableNftOwnerships().set(nftOwnerships());
 	}
 
 	public void rebuildBackingStoresIfPresent() {
@@ -643,6 +650,13 @@ public class ServicesContext {
 		return statsManager;
 	}
 
+	public AcquisitionLogs acquisitionLogs() {
+		if (acquisitionLogs == null) {
+			acquisitionLogs = new AcquisitionLogs(2L, this::consensusTimeOfLastHandledTxn, stateViews());
+		}
+		return acquisitionLogs;
+	}
+
 	public CurrentPlatformStatus platformStatus() {
 		if (platformStatus == null) {
 			platformStatus = new ContextPlatformStatus();
@@ -691,7 +705,9 @@ public class ServicesContext {
 					() -> queryableStorage().get(),
 					() -> queryableTokenAssociations().get(),
 					this::diskFs,
-					nodeLocalProperties());
+					nodeLocalProperties(),
+					() -> queryableNftTypes().get(),
+					() -> queryableNftOwnerships.get());
 		}
 		return stateViews;
 	}
@@ -706,7 +722,9 @@ public class ServicesContext {
 					this::storage,
 					this::tokenAssociations,
 					this::diskFs,
-					nodeLocalProperties());
+					nodeLocalProperties(),
+					this::nftTypes,
+					this::nftOwnerships);
 		}
 		return currentView;
 	}
@@ -1390,6 +1408,8 @@ public class ServicesContext {
 			nftOwnershipsLedger.setKeyToString(BackingNftOwnerships::readableNftOwnership);
 			nftStore = new HederaNftStore(
 					ids(),
+					acquisitionLogs(),
+					txnCtx(),
 					this::nftTypes,
 					nftOwnershipsLedger);
 		}
@@ -1848,6 +1868,22 @@ public class ServicesContext {
 		}
 
 		return queryableSchedules;
+	}
+
+	public AtomicReference<FCMap<MerkleEntityId, MerkleNftType>> queryableNftTypes() {
+		if (queryableNftTypes == null) {
+			queryableNftTypes = new AtomicReference<>(nftTypes());
+		}
+
+		return queryableNftTypes;
+	}
+
+	public AtomicReference<FCMap<MerkleNftOwnership, MerkleEntityId>> queryableNftOwnerships() {
+		if (queryableNftOwnerships == null) {
+			queryableNftOwnerships = new AtomicReference<>(nftOwnerships());
+		}
+
+		return queryableNftOwnerships;
 	}
 
 	public UsagePricesProvider usagePrices() {

@@ -1,6 +1,7 @@
 package com.hedera.services.store.nft;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -25,6 +26,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.properties.NftOwningAccountProperty.OWNER;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromNftId;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccount;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcNftType;
@@ -45,17 +47,21 @@ public class HederaNftStore extends HederaStore implements NftStore {
 	static final NftID NO_PENDING_ID = NftID.getDefaultInstance();
 	public static final AccountID ZERO_ADDRESS = AccountID.getDefaultInstance();
 
-	private final Supplier<FCMap<MerkleEntityId, MerkleNftType>> nftTypes;
+	private final AcquisitionLogs acquisitionLogs;
+	private final TransactionContext txnCtx;
 	private final TransactionalLedger<
 			Pair<NftID, ByteString>,
 			NftOwningAccountProperty,
 			MerkleEntityId> nftOwnershipLedger;
+	private final Supplier<FCMap<MerkleEntityId, MerkleNftType>> nftTypes;
 
 	NftID pendingId = NO_PENDING_ID;
 	MerkleNftType pendingCreation;
 
 	public HederaNftStore(
 			EntityIdSource ids,
+			AcquisitionLogs acquisitionLogs,
+			TransactionContext txnCtx,
 			Supplier<FCMap<MerkleEntityId, MerkleNftType>> nftTypes,
 			TransactionalLedger<
 					Pair<NftID, ByteString>,
@@ -63,7 +69,9 @@ public class HederaNftStore extends HederaStore implements NftStore {
 					MerkleEntityId> nftOwnershipLedger
 	) {
 		super(ids);
+		this.txnCtx = txnCtx;
 		this.nftTypes = nftTypes;
+		this.acquisitionLogs = acquisitionLogs;
 		this.nftOwnershipLedger = nftOwnershipLedger;
 	}
 
@@ -111,6 +119,11 @@ public class HederaNftStore extends HederaStore implements NftStore {
 	private void doAcquisition(AccountID to, AccountID from, Pair<NftID, ByteString> nft) {
 		nftOwnershipLedger.set(nft, OWNER, to);
 		hederaLedger.updateNftXfers(nft.getLeft(), nft.getRight(), from, to);
+		acquisitionLogs.logAcquisition(
+				fromAccountId(from),
+				fromAccountId(to),
+				nft,
+				txnCtx.consensusTime());
 	}
 
 	@Override

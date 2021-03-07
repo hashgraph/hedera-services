@@ -34,6 +34,8 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNftOwnership;
+import com.hedera.services.state.merkle.MerkleNftType;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -116,6 +118,16 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_TOKEN_ASSOCIATIONS;
 
+	public static final FCMap<MerkleEntityId, MerkleNftType> EMPTY_NFT_TYPES =
+			new FCMap<>();
+	public static final Supplier<FCMap<MerkleEntityId, MerkleNftType>> EMPTY_NFT_TYPES_SUPPLIER =
+			() -> EMPTY_NFT_TYPES;
+
+	public static final FCMap<MerkleNftOwnership, MerkleEntityId> EMPTY_NFT_OWNERSHIPS =
+			new FCMap<>();
+	public static final Supplier<FCMap<MerkleNftOwnership, MerkleEntityId>> EMPTY_NFT_OWNERSHIPS_SUPPLIER =
+			() -> EMPTY_NFT_OWNERSHIPS;
+
 	public static final StateView EMPTY_VIEW = new StateView(
 			EMPTY_TOPICS_SUPPLIER,
 			EMPTY_ACCOUNTS_SUPPLIER,
@@ -130,6 +142,8 @@ public class StateView {
 	private final Supplier<MerkleDiskFs> diskFs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleNftType>> nftTypes;
+	private final Supplier<FCMap<MerkleNftOwnership, MerkleEntityId>> nftOwnerships;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
 	private final NodeLocalProperties properties;
@@ -140,8 +154,17 @@ public class StateView {
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(NOOP_TOKEN_STORE, NOOP_SCHEDULE_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER,
-				EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
+		this(
+				NOOP_TOKEN_STORE,
+				NOOP_SCHEDULE_STORE,
+				topics,
+				accounts,
+				EMPTY_STORAGE_SUPPLIER,
+				EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				diskFs,
+				properties,
+				EMPTY_NFT_TYPES_SUPPLIER,
+				EMPTY_NFT_OWNERSHIPS_SUPPLIER);
 	}
 
 	public StateView(
@@ -152,8 +175,17 @@ public class StateView {
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(tokenStore, scheduleStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs,
-				properties);
+		this(
+				tokenStore,
+				scheduleStore,
+				topics,
+				accounts,
+				EMPTY_STORAGE_SUPPLIER,
+				EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				diskFs,
+				properties,
+				EMPTY_NFT_TYPES_SUPPLIER,
+				EMPTY_NFT_OWNERSHIPS_SUPPLIER);
 	}
 
 	public StateView(
@@ -164,13 +196,17 @@ public class StateView {
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
 			Supplier<MerkleDiskFs> diskFs,
-			NodeLocalProperties properties
+			NodeLocalProperties properties,
+			Supplier<FCMap<MerkleEntityId, MerkleNftType>> nftTypes,
+			Supplier<FCMap<MerkleNftOwnership, MerkleEntityId>> nftOwnerships
 	) {
 		this.topics = topics;
 		this.accounts = accounts;
 		this.tokenStore = tokenStore;
 		this.tokenAssociations = tokenAssociations;
 		this.scheduleStore = scheduleStore;
+		this.nftOwnerships = nftOwnerships;
+		this.nftTypes= nftTypes;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
 
@@ -438,6 +474,10 @@ public class StateView {
 
 	public FCMap<MerkleEntityId, MerkleAccount> contracts() {
 		return accounts.get();
+	}
+
+	public FCMap<MerkleNftOwnership, MerkleEntityId> nftOwnerships() {
+		return nftOwnerships.get();
 	}
 
 	public Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations() {
