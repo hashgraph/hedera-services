@@ -30,26 +30,17 @@ networks:
   integration:
     bootstrap: 2
     defaultNode: 3
-    ensureScenarioPayerHbars: 25
+    ensureScenarioPayerHbars: 100000
     nodes:
-    - {account: 3, ipv4Addr: 35.196.146.2}
-    - {account: 4, ipv4Addr: 35.245.91.14}
-    - {account: 5, ipv4Addr: 34.67.95.76}
-    - {account: 6, ipv4Addr: 35.203.145.150}
-    - {account: 7, ipv4Addr: 34.94.112.161}
-    - {account: 8, ipv4Addr: 34.95.37.183}
-    - {account: 9, ipv4Addr: 34.76.213.6}
-    - {account: 10, ipv4Addr: 34.89.53.144}
-    - {account: 11, ipv4Addr: 35.198.144.75}
-    - {account: 12, ipv4Addr: 34.90.15.85}
-    - {account: 13, ipv4Addr: 34.92.29.237}
-    - {account: 14, ipv4Addr: 35.194.216.81}
-    - {account: 15, ipv4Addr: 34.84.108.224}
-    scenarioPayer: 7378
+    - {account: 3, ipv4Addr: 34.74.191.8}
+    scenarioPayer: 1293
     scenarios:
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [121]
+        numsToFetch: [122]
+      sysFilesUp:
+        updates:
+        - {num: 122, payer: 2}
   previewtestnet:
     bootstrap: 2
     defaultNode: 3

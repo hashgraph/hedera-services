@@ -69,6 +69,12 @@ public abstract class HapiApiSuite {
 
 	public static final long ONE_HBAR = 100_000_000L;
 	public static final long A_HUNDRED_HBARS = 100 * ONE_HBAR;
+	public static final long A_THOUSAND_HBARS = 10 * A_HUNDRED_HBARS;
+	public static final long TEN_THOUSAND_HBARS = 10 * A_THOUSAND_HBARS;
+	public static final long A_HUNDRED_THOUSAND_HBARS = 100 * A_THOUSAND_HBARS;
+	public static final long A_MILLION_HBARS = 10 * A_HUNDRED_THOUSAND_HBARS;
+	public static final long TEN_MILLION_HBARS = 10 * A_MILLION_HBARS;
+	public static final long A_BILLION_HBARS = 100 * TEN_MILLION_HBARS;
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	public static String TOKEN_TREASURY = "treasury";
 	public static String CIVILIAN = "civilian";
