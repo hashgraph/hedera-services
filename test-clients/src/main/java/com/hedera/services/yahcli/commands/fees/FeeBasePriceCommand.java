@@ -4,8 +4,6 @@ import com.hedera.services.yahcli.config.ConfigManager;
 import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
 import picocli.CommandLine;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;

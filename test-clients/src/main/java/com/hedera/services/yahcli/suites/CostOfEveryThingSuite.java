@@ -243,7 +243,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 								.entityMemo("")
 								.payingWith("payer")
 								.contents(next)
-								.extendingExpiryBy(THREE_MONTHS_IN_SECONDS)
+								.extendingExpiryBy(1L)
 								.via("canonicalFileUpdate"),
 						getFileContents("memorable")
 								.via("canonicalGetFileContents"),
@@ -447,20 +447,18 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 				)
 				.given(
 						newKeyNamed("key").shape(shape),
-						newKeyNamed("smallKey").shape(smallKey),
-						newKeyNamed("midsizeKey").shape(midsizeKey),
-						newKeyNamed("hugeKey").shape(hugeKey),
-						cryptoCreate("small").key("smallKey"),
-						cryptoCreate("midsize").key("midsizeKey"),
-						cryptoCreate("huge").key("hugeKey")
+						cryptoCreate("payer")
+								.key("key")
+								.balance(1_000 * ONE_HBAR)
 				)
 				.when(
 						cryptoCreate("canonicalAccount")
 								.key("key")
 								.blankMemo()
-								.balance(10_000_000L)
+								.balance(100 * ONE_HBAR)
 								.entityMemo("")
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.payingWith("payer")
 								.via("canonicalCryptoCreation"),
 						cryptoUpdate("canonicalAccount")
 								.payingWith("canonicalAccount")
@@ -482,6 +480,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 								.key("key"),
 						cryptoDelete("canonicalAccountTBD")
 								.blankMemo()
+								.payingWith("payer")
 								.via("canonicalCryptoDeletion")
 				)
 				.then(
