@@ -93,6 +93,7 @@ public class PermissionFileUtils {
 		permissionKeys.put(ScheduleSign, "scheduleSign");
 		permissionKeys.put(NftCreate, "nftCreate");
 		permissionKeys.put(NftAssociate, "nftAssociate");
+		permissionKeys.put(NftMint, "nftMint");
 		/* Queries */
 		permissionKeys.put(ConsensusGetTopicInfo, "getTopicInfo");
 		permissionKeys.put(GetBySolidityID, "getBySolidityID");

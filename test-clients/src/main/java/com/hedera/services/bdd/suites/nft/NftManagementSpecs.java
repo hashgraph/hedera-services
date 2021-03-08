@@ -39,12 +39,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nftAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nftCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nftMint;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.nft.Acquisition.ofNft;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_NOT_ASSOCIATED_TO_NFT_TYPE;
 
 public class NftManagementSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(NftManagementSpecs.class);
+
+	String me = "Jon Doe";
+	String TheSmithsonian = "Smithsonian";
+	String NATURAL_HISTORY = "naturallHistory";
 
 	public static void main(String... args) {
 		new NftManagementSpecs().runSuiteSync();
@@ -54,7 +59,25 @@ public class NftManagementSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				simpleNftAssociation(),
+				simpleMinting(),
 		});
+	}
+
+	private HapiApiSpec simpleMinting() {
+
+		return defaultHapiSpec("SimpleMinting")
+				.given(
+						cryptoCreate(TheSmithsonian),
+						nftCreate(NATURAL_HISTORY)
+								.memo("NFT with first run minting of three serial numbers.")
+								.treasury(TheSmithsonian)
+								.initialSerialNos(3),
+						getAccountBalance(TheSmithsonian).logged()
+				).when(
+						nftMint(NATURAL_HISTORY, 7)
+				).then(
+						getAccountBalance(TheSmithsonian).logged()
+				);
 	}
 
 	private HapiApiSpec simpleNftAssociation() {

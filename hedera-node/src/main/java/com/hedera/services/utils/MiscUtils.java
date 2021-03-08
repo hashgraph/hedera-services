@@ -140,6 +140,7 @@ public class MiscUtils {
 
 	static final String NFT_CREATE_METRIC = "nftCreate";
 	static final String NFT_ASSOCIATE_METRIC = "nftAssociate";
+	static final String NFT_MINT_METRIC = "nftMint";
 
 	private static final EnumMap<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
@@ -203,6 +204,7 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(ScheduleDelete, SCHEDULE_DELETE_METRIC);
 		BASE_STAT_NAMES.put(NftCreate, NFT_CREATE_METRIC);
 		BASE_STAT_NAMES.put(NftAssociate, NFT_ASSOCIATE_METRIC);
+		BASE_STAT_NAMES.put(NftMint, NFT_MINT_METRIC);
 		BASE_STAT_NAMES.put(UncheckedSubmit, UNCHECKED_SUBMIT_METRIC);
 		BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
 		BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
@@ -460,6 +462,8 @@ public class MiscUtils {
 			return NftCreate;
 		} else if (txn.hasNftAssociate()) {
 			return NftAssociate;
+		} else if (txn.hasNftMint()) {
+			return NftMint;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

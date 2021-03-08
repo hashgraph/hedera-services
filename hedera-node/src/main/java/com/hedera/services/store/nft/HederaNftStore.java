@@ -102,6 +102,9 @@ public class HederaNftStore extends HederaStore implements NftStore {
 			nftOwnershipLedger.create(nft);
 			doAcquisition(treasury, ZERO_ADDRESS, nft);
 		});
+		if (!isCreationPending()) {
+			apply(nId, type -> type.incSerialNoCount(serialNos.size()));
+		}
 
 		return result;
 	}

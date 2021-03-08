@@ -93,10 +93,7 @@ public class NftCreateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var origSerialNos = IntStream.range(0, op.getSerialNoCount())
-				.mapToObj(i -> "SN" + i)
-				.map(NftCreateTransitionLogic::asSerialNo)
-				.collect(Collectors.toList());
+		var origSerialNos = serialNosFrom(0, op.getSerialNoCount());
 		status = store.mint(created, origSerialNos);
 		if (status != OK) {
 			abortWith(status);
@@ -108,7 +105,14 @@ public class NftCreateTransitionLogic implements TransitionLogic {
 		txnCtx.setStatus(SUCCESS);
 	}
 
-	public static ByteString asSerialNo(String shortUtf8) {
+	static List<ByteString> serialNosFrom(int incl, int excl) {
+		return IntStream.range(incl, excl)
+				.mapToObj(i -> "SN" + i)
+				.map(NftCreateTransitionLogic::asSerialNo)
+				.collect(Collectors.toList());
+	}
+
+	private static ByteString asSerialNo(String shortUtf8) {
 		int used = shortUtf8.length();
 		byte[] bytes = new byte[NUM_NFT_SERIAL_NO_BYTES];
 		System.arraycopy(shortUtf8.getBytes(), 0, bytes, 0, used);

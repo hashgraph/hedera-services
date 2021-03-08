@@ -22,7 +22,6 @@ package com.hedera.services.grpc.controllers;
 
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.txns.submission.TxnResponseHelper;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.NftServiceGrpc;
@@ -32,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NftAssociate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NftCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NftMint;
 
 public class NftController extends NftServiceGrpc.NftServiceImplBase {
 	private static final Logger log = LogManager.getLogger(NftController.class);
@@ -55,5 +55,10 @@ public class NftController extends NftServiceGrpc.NftServiceImplBase {
 	@Override
 	public void associateNfts(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, NftAssociate);
+	}
+
+	@Override
+	public void mintNfts(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, NftMint);
 	}
 }

@@ -100,6 +100,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.fees.calculation.nft.txns.NftCreateResourceUsage;
 import com.hedera.services.fees.calculation.nft.txns.NftAssociateResourceUsage;
+import com.hedera.services.fees.calculation.nft.txns.NftMintResourceUsage;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.DataMapFactory;
@@ -247,6 +248,7 @@ import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
 import com.hedera.services.txns.nft.NftCreateTransitionLogic;
 import com.hedera.services.txns.nft.NftAssociateTransitionLogic;
+import com.hedera.services.txns.nft.NftMintTransitionLogic;
 import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
 import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
 import com.hedera.services.txns.consensus.TopicUpdateTransitionLogic;
@@ -385,6 +387,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NftCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NftAssociate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NftMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
@@ -970,6 +973,7 @@ public class ServicesContext {
 				/* Nft */
 				entry(NftCreate, List.of(new NftCreateResourceUsage())),
 				entry(NftAssociate, List.of(new NftAssociateResourceUsage())),
+				entry(NftMint, List.of(new NftMintResourceUsage())),
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
@@ -1276,6 +1280,8 @@ public class ServicesContext {
 						List.of(new NftCreateTransitionLogic(nftStore(), ledger(), validator(), txnCtx()))),
 				entry(NftAssociate,
 						List.of(new NftAssociateTransitionLogic(nftStore(), txnCtx()))),
+				entry(NftMint,
+						List.of(new NftMintTransitionLogic(nftStore(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(

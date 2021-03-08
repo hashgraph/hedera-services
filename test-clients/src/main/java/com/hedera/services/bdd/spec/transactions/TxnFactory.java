@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.NftAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.NftCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NftMintTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -356,6 +357,10 @@ public class TxnFactory {
 	}
 
 	public Consumer<NftAssociateTransactionBody.Builder> defaultDef_NftAssociateTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<NftMintTransactionBody.Builder> defaultDef_NftMintTransactionBody() {
 		return builder -> {};
 	}
 }

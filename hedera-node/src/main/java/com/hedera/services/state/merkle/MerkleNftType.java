@@ -126,6 +126,10 @@ public class MerkleNftType extends AbstractMerkleLeaf implements FCMValue {
 		return fc;
 	}
 
+	public void incSerialNoCount(int by) {
+		serialNoCount += by;
+	}
+
 	/* --- Bean --- */
 
 	public int getSerialNoCount() {

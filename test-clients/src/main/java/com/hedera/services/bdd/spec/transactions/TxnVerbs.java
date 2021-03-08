@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
+import com.hedera.services.bdd.spec.transactions.token.HapiNftMint;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenDissociate;
@@ -132,6 +133,9 @@ public class TxnVerbs {
 	}
 	public static HapiNftAssociate nftAssociate(String account, String... nftTypes) {
 		return new HapiNftAssociate(account, nftTypes);
+	}
+	public static HapiNftMint nftMint(String nftType, int newSerialNos) {
+		return new HapiNftMint(nftType, newSerialNos);
 	}
 
 	/* TOKEN */

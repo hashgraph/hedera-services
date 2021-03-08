@@ -143,8 +143,8 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 		public List<HapiSpecOperation> initializers() {
 			var init = new ArrayList<HapiSpecOperation>();
 			init.add(resolvingUniquely(() -> cryptoCreate(treasury)
-						.payingWith(GENESIS)
-						.balance(INITIAL_TINYBARS)));
+					.payingWith(GENESIS)
+					.balance(INITIAL_TINYBARS)));
 			init.add(resolvingUniquely(() -> cryptoCreate(civilian)
 					.payingWith(GENESIS)
 					.balance(INITIAL_TINYBARS)));
@@ -159,7 +159,7 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 			var sn = nextSerialNo.getAndUpdate(i -> (i + 1) % serialNos);
 			var ref = dirs.get(sn);
 
-			for (;;) {
+			for (; ; ) {
 				var witnessDir = ref.get();
 				var newDir = (witnessDir == Direction.COMING_FROM_TREASURY)
 						? Direction.GOING_TO_TREASURY
