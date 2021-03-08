@@ -39,6 +39,10 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_DURATION_TOKEN_TRANSFER;
+
+
 public class RunLoadTest extends UtilOp {
 	private static final Logger log = LogManager.getLogger(RunLoadTest.class);
 	private static final int DEFAULT_SECS_ALLOWED_BELOW_TOLERANCE = 0;
@@ -54,8 +58,10 @@ public class RunLoadTest extends UtilOp {
 	public static final int DEFAULT_TOTAL_TEST_TOKENS = 1;
 	public static final int DEFAULT_START_TEST_TREASURE_ACCT = 1001;
 	public static final int DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS = 2;
+	public static final int DEFAULT_MEMO_LENGTH = 25;
 
 	private DoubleSupplier targetTps = () -> DEFAULT_TPS_TARGET;
+	private IntSupplier memoLength = () -> DEFAULT_MEMO_LENGTH;
 	private IntSupplier tpsTolerancePercentage = () -> DEFAULT_TPS_TOLERANCE_PERCENTAGE;
 	private IntSupplier secsAllowedBelowTolerance = () -> DEFAULT_SECS_ALLOWED_BELOW_TOLERANCE;
 	private LongSupplier testDuration = () -> DEFAULT_DURATION;
@@ -68,6 +74,8 @@ public class RunLoadTest extends UtilOp {
 	private IntSupplier totalTestTokens = () -> DEFAULT_TOTAL_TEST_TOKENS;
 	private IntSupplier testTreasureStartAccount = () -> DEFAULT_START_TEST_TREASURE_ACCT;
 	private IntSupplier totalTestTokenAccounts = () -> DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
+	private IntSupplier durationCreateTokenAssociation = () -> DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION;
+	private IntSupplier durationTokenTransfer = () -> DEFAULT_DURATION_TOKEN_TRANSFER;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
 
@@ -75,6 +83,11 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest tps(DoubleSupplier targetTps) {
 		this.targetTps = targetTps;
+		return this;
+	}
+
+	public RunLoadTest setMemoLength(IntSupplier memoLength) {
+		this.memoLength = memoLength;
 		return this;
 	}
 
@@ -105,6 +118,16 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest setTotalTestTokens(IntSupplier totalTestTokens) {
 		this.totalTestTokens = totalTestTokens;
+		return this;
+	}
+
+	public RunLoadTest setDurationTokenTransfer(IntSupplier durationTokenTransfer) {
+		this.durationTokenTransfer = durationTokenTransfer;
+		return this;
+	}
+
+	public RunLoadTest setDurationCreateTokenAssociation(IntSupplier durationCreateTokenAssociation) {
+		this.durationCreateTokenAssociation = durationCreateTokenAssociation;
 		return this;
 	}
 

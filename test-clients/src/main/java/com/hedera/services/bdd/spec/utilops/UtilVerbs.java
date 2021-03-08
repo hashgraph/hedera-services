@@ -52,10 +52,10 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -86,6 +86,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -108,7 +109,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.SYSTEM_ADMIN;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.Assert.assertEquals;
 
@@ -239,6 +240,13 @@ public class UtilVerbs {
 				.payingWith(ADDRESS_BOOK_CONTROL)
 				.overridingProps(Map.of(property, "" + value));
 	}
+
+	public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
+		return new CustomSpecAssert((spec, log) -> {
+			spec.exportAccountBalances(acctBalanceFile);
+		});
+	}
+
 
 	/* Stream validation. */
 	public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
@@ -407,35 +415,53 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation makeFree(HederaFunctionality function) {
+		return reduceFeeFor(function, 0L, 0L, 0L);
+	}
+
+	public static HapiSpecOperation reduceFeeFor(HederaFunctionality function,
+			long tinyBarMaxNodeFee, long tinyBarMaxNetworkFee, long tinyBarMaxServiceFee) {
 		return withOpContext((spec, opLog) -> {
+			if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
+				opLog.info("Sleeping to wait for fee reduction...");
+				Thread.sleep(20000);
+				return;
+			}
+			opLog.info("Sleeping so not to spoil/fail the fee initializations on other clients...");
+			Thread.sleep(10000);
+			opLog.info("Reducing fee for {}...", function);
 			var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
-			var zeroTfs = zeroFor(function);
-			var schedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules);
-			var perturbedSchedules = CurrentAndNextFeeSchedule.newBuilder();
-			schedules.getCurrentFeeSchedule()
-					.getTransactionFeeScheduleList()
-					.stream()
-					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-					.forEach(perturbedSchedules.getCurrentFeeScheduleBuilder()::addTransactionFeeSchedule);
-			schedules.getNextFeeSchedule()
-					.getTransactionFeeScheduleList()
-					.stream()
-					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-					.forEach(perturbedSchedules.getNextFeeScheduleBuilder()::addTransactionFeeSchedule);
-			perturbedSchedules.getCurrentFeeScheduleBuilder()
-					.setExpiryTime(schedules.getCurrentFeeSchedule().getExpiryTime());
-			perturbedSchedules.getNextFeeScheduleBuilder()
-					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
+
+			// Convert from tinyBar to one-thousandth of a tinyCent, the unit of max field in FeeComponents
+			long centEquiv = spec.ratesProvider().rates().getCentEquiv();
+			long hbarEquiv = spec.ratesProvider().rates().getHbarEquiv();
+			long maxNodeFee = tinyBarMaxNodeFee * centEquiv * 1000L / hbarEquiv;
+			long maxNetworkFee = tinyBarMaxNetworkFee * centEquiv * 1000L / hbarEquiv;
+			long maxServiceFee = tinyBarMaxServiceFee * centEquiv * 1000L / hbarEquiv;
+
+			var perturbedSchedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
+			reduceFeeComponentsFor(perturbedSchedules.getCurrentFeeScheduleBuilder(), function,
+					maxNodeFee, maxNetworkFee, maxServiceFee);
+			reduceFeeComponentsFor(perturbedSchedules.getNextFeeScheduleBuilder(), function,
+					maxNodeFee, maxNetworkFee, maxServiceFee);
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
 	}
 
-	private static TransactionFeeSchedule zeroFor(HederaFunctionality function) {
-		return TransactionFeeSchedule.newBuilder().setHederaFunctionality(function).build();
+	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
+			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
+		var feeData = feeSchedule.getTransactionFeeScheduleBuilderList()
+				.stream()
+				.filter(tfs -> tfs.getHederaFunctionality() == function)
+				.findAny()
+				.get()
+				.getFeeDataBuilder();
+		feeData.getNodedataBuilder().setMax(maxNodeFee);
+		feeData.getNetworkdataBuilder().setMax(maxNetworkFee);
+		feeData.getServicedataBuilder().setMax(maxServiceFee);
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
@@ -571,23 +597,29 @@ public class UtilVerbs {
 	 * Validates that fee charged for a transaction is within +/- 0.0001$ of
 	 * expected fee (taken from pricing calculator)
 	 */
-	public static CustomSpecAssert validateFee(String forTxn, double expectedFeeInDollars) {
+	public static CustomSpecAssert validateChargedUsd(String txn, double expectedUsd) {
+		return validateChargedUsdWithin(txn, expectedUsd, 1.0);
+	}
+
+	public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
 		return assertionsHold((spec, assertLog) -> {
-			HapiGetTxnRecord subOp = getTxnRecord(forTxn);
+			var subOp = getTxnRecord(txn);
 			allRunFor(spec, subOp);
-			TransactionRecord record = subOp.getResponseRecord();
-			double actualFee = (1.0 * record.getTransactionFee() *  // transactionFee is in tinyhbars
-					record.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv())
-					/ 100 // cents per dollar
-					/ 100000000L; // tinybar per hbar
-			double feeLowerBound = expectedFeeInDollars - 0.0001;
-			double feeUpperBound = expectedFeeInDollars + 0.0001;
-			Assert.assertTrue(
-					"actual fee (" + actualFee + "$) much less than expected fee (" + expectedFeeInDollars + "$)",
-					feeLowerBound <= actualFee);
-			Assert.assertTrue(
-					"actual fee (" + actualFee + "$) much more than expected fee (" + expectedFeeInDollars + "$)",
-					actualFee <= feeUpperBound);
+
+			var record = subOp.getResponseRecord();
+			double actualUsdCharged = (1.0 * record.getTransactionFee())
+					/ ONE_HBAR
+					/ record.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+					* record.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+					/ 100;
+			assertEquals(
+					String.format(
+							"%s fee more than %.2f percent different than expected!",
+							txn,
+							allowedPercentDiff),
+					expectedUsd,
+					actualUsdCharged,
+					(allowedPercentDiff / 100.0) * expectedUsd);
 		});
 	}
 

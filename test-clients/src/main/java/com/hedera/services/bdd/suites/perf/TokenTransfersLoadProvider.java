@@ -21,15 +21,11 @@ package com.hedera.services.bdd.suites.perf;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.TxnFactory;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
@@ -49,8 +45,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_STATUSES;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -59,13 +55,21 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.Map.entry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -92,6 +96,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 	private HapiApiSpec runTokenTransfers() {
 		return HapiApiSpec.defaultHapiSpec("RunTokenTransfers")
 				.given(
+						getAccountBalance(DEFAULT_PAYER).logged(),
 						stdMgmtOf(duration, unit, maxOpsPerSec),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -102,11 +107,14 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						.lasting(duration::get, unit::get)
 						.maxOpsPerSec(maxOpsPerSec::get)
 				).then(
+						getAccountBalance(DEFAULT_PAYER).logged(),
 						// The freeze and long wait after freeze means to keep the server in MAINTAENANCE state till test
 						// end to prevent it from making new export files that may cause account balances validator to
 						// be inconsistent. The freeze shouldn't cause normal perf test any issue.
 						freeze().payingWith(GENESIS)
-								.startingIn(10).seconds()
+								.startingIn(30).seconds()
+								.hasKnownStatusFrom(SUCCESS,UNKNOWN)
+								.hasAnyPrecheck()
 								.andLasting(10).minutes(),
 						sleepFor(60_000)
 				);
@@ -153,7 +161,8 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						boolean hasKnownHtsFeeSchedules = false;
 						SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
 						while (!hasKnownHtsFeeSchedules) {
-							var query = QueryVerbs.getFileContents(FEE_SCHEDULE);
+							var query = QueryVerbs.getFileContents(FEE_SCHEDULE)
+									.fee(10_000_000_000L);
 							try {
 								allRunFor(spec, query);
 								var contents = query.getResponse().getFileGetContents().getFileContents().getContents();
@@ -170,6 +179,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						spec.tryReinitializingFees();
 					}));
 				}
+				initializers.add(reduceFeeFor(CryptoTransfer, 2L, 3L, 3L));
 				for (int i = 0; i < tokensPerTxn.get(); i++) {
 					var token = "token" + i;
 					var treasury = "treasury" + i;
@@ -225,8 +235,9 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						}
 					}
 					op = cryptoTransfer(xfers)
-							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+							.hasKnownStatusFrom(OK, DUPLICATE_TRANSACTION, SUCCESS, UNKNOWN, INSUFFICIENT_PAYER_BALANCE)
 							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+							.hasPrecheckFrom(OK, PLATFORM_NOT_ACTIVE)
 							.noLogging()
 							.deferStatusResolution();
 					firstDir.set(Boolean.FALSE);
@@ -244,8 +255,9 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						}
 					}
 					op = cryptoTransfer(xfers)
+							.hasKnownStatusFrom(OK, DUPLICATE_TRANSACTION, SUCCESS, UNKNOWN, INSUFFICIENT_PAYER_BALANCE)
 							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-							.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+							.hasPrecheckFrom(OK, PLATFORM_NOT_ACTIVE)
 							.noLogging()
 							.deferStatusResolution();
 					firstDir.set(Boolean.TRUE);

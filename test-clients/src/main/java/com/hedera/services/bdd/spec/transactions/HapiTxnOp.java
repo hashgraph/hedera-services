@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -202,17 +203,18 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 //							"{} {} Wrong actual precheck status {}, not one of {}!",spec.logPrefix(), this,
 //							actualPrecheck,
 //							permissiblePrechecks.get());
-					throw new HapiTxnPrecheckStateException(
-							String.format("Wrong actual precheck status %s, expected %s", actualStatus,
-									permissibleStatuses.get()));
+					throw new HapiTxnPrecheckStateException(String.format(
+							"Wrong precheck status! Expected one of %s, actual %s",
+							permissibleStatuses.get(), actualStatus));
 				}
 			} else {
 				if (getExpectedPrecheck() != actualPrecheck) {
 					// Change to an info until HapiClientValidator can be modified and can understand new errors
 					log.info("{} {} Wrong actual precheck status {}, expecting {}", spec.logPrefix(), this,
 							actualPrecheck, getExpectedPrecheck());
-//					throw new HapiTxnPrecheckStateException(String.format("Wrong precheck status! expected %s, actual
-//					%s", getExpectedPrecheck(), actualPrecheck));
+					throw new HapiTxnPrecheckStateException(String.format(
+							"Wrong precheck status! Expected %s, actual %s",
+							getExpectedPrecheck(), actualPrecheck));
 				}
 			}
 		}
@@ -262,16 +264,18 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 						"{} {} Wrong actual status {}, not one of {}!", spec.logPrefix(), this,
 						actualStatus,
 						permissibleStatuses.get());
-				throw new HapiTxnCheckStateException(
-						String.format("Wrong actual status %s, expected %s", actualStatus, permissibleStatuses.get()));
+				throw new HapiTxnCheckStateException(String.format(
+						"Wrong status! Expected one of %s, was %s",
+						permissibleStatuses.get(), actualStatus));
 			}
 		} else {
 			if (getExpectedStatus() != actualStatus) {
 				// Change to an info until HapiClientValidator can be modified and can understand new errors
 				log.info("{} {} Wrong actual status {}, expected {}", spec.logPrefix(), this, actualStatus,
 						getExpectedStatus());
-//				throw new HapiTxnCheckStateException(String.format("Wrong actual status %s, expected %s", actualStatus,
-//				getExpectedStatus()));
+				throw new HapiTxnCheckStateException(String.format(
+						"Wrong status! Expected %s, was %s",
+						getExpectedStatus(), actualStatus));
 			}
 		}
 		if (!deferStatusResolution) {
@@ -483,6 +487,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	}
 
 	/* Fluent builder methods to chain. */
+	public T blankMemo() {
+		memo = Optional.of("");
+		return self();
+	}
+
 	public T memo(String text) {
 		memo = Optional.of(text);
 		return self();
@@ -505,17 +514,15 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return self();
 	}
 
-	public T gas(long amount) {
-		if (amount > 0) {
-			gas = Optional.of(amount);
-		}
-		return self();
-	}
-
 	public T fee(long amount) {
 		if (amount >= 0) {
 			fee = Optional.of(amount);
 		}
+		return self();
+	}
+
+	public T feeUsd(double price) {
+		usdFee = OptionalDouble.of(price);
 		return self();
 	}
 
@@ -685,6 +692,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T asTxnWithSignedTxnBytesAndBodyBytes() {
 		asTxnWithSignedTxnBytesAndBodyBytes = true;
+		return self();
+	}
+
+	public T sansNodeAccount() {
+		omitNodeAccount = true;
 		return self();
 	}
 

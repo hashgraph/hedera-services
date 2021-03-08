@@ -88,8 +88,7 @@ public class ExpiryManager {
 	}
 
 	/**
-	 * Invites the expiry manager to build any auxiliary data structures
-	 * later needed to purge expired entities
+	 * Invites the expiry manager to build any auxiliary data structures later needed to purge expired entities.
 	 */
 	public void restartEntitiesTrackingFrom() {
 		entityExpiries.reset();
@@ -99,7 +98,6 @@ public class ExpiryManager {
 			var pair = new Pair<Long, Consumer<EntityId>>(id.getNum(), scheduleStore::expire);
 			expiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
 		});
-		// todo: add accounts, files, tokens, topics
 
 		var cmp = Comparator
 				.comparing(Map.Entry<Pair<Long, Consumer<EntityId>>, Long>::getValue)

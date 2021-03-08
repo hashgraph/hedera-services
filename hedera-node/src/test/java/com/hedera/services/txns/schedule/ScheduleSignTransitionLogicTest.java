@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -32,6 +33,7 @@ import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +60,11 @@ public class ScheduleSignTransitionLogicTest {
             .setMemo("Just this")
             .build()
             .toByteArray();
+    final TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .setNonce(ByteString.copyFromUtf8("Something something something"))
+            .setScheduled(true)
+            .build();
 
     private TransactionBody scheduleSignTxn;
 
@@ -128,19 +135,30 @@ public class ScheduleSignTransitionLogicTest {
 
     @Test
     public void followsHappyPath() throws InvalidProtocolBufferException {
+    	// setup:
+        MerkleSchedule entity = mock(MerkleSchedule.class);
+
         givenValidTxnCtx();
+        given(store.get(schedule)).willReturn(entity);
+        given(entity.scheduledTransactionId()).willReturn(scheduledTxnId);
 
         // when:
         subject.doStateTransition();
 
         // and:
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
 		verify(executor).doProcess(schedule);
         verify(txnCtx).setStatus(SUCCESS);
     }
 
     @Test
     public void execsOnlyIfReady() throws InvalidProtocolBufferException {
+        // setup:
+        MerkleSchedule entity = mock(MerkleSchedule.class);
+
         givenValidTxnCtx();
+        given(store.get(schedule)).willReturn(entity);
+        given(entity.scheduledTransactionId()).willReturn(scheduledTxnId);
         given(signingWitness.observeInScope(1, schedule, store, activationHelper))
                 .willReturn(Pair.of(OK, false));
 

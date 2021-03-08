@@ -1334,6 +1334,7 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
+          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -1357,6 +1358,7 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
+          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -1380,6 +1382,7 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
+          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -1857,10 +1860,17 @@ workflows:
             requires:
               - build-artifact
             workflow-name: "Continuous integration GCP"
-        - run-continuous-integration-gcp:
+        - javadoc-generation:
             context: Slack
             requires:
               - build-platform-and-services
+            pre-steps:
+              - attach_workspace:
+                  at: /
+        - run-continuous-integration-gcp:
+            context: Slack
+            requires:
+              - javadoc-generation
             pre-steps:
               - install-tools
               - attach_workspace:
@@ -1874,8 +1884,7 @@ workflows:
           filters:
             branches:
               ignore:
-                - /.*-PERF/
-                - /.*-REGRESSION/
+                - /.*/
 
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
@@ -2184,6 +2193,15 @@ jobs:
       - store_artifacts:
           path: /results.tar.gz
 
+  javadoc-generation:
+    executor:
+      name: build-executor
+    steps:
+      - run:
+          name: Generate javadocs
+          command: |
+            cd /repo; export JAVA_HOME="/usr/local/java/jdk-12.0.2"; mvn javadoc:javadoc
+
   build-platform-and-services:
     parameters:
       workflow-name:
@@ -2203,7 +2221,7 @@ jobs:
       - run:
           name: Build hedera-services repo
           command: |
-                mvn --no-transfer-progress clean install -DskipTests
+                mvn --no-transfer-progress clean install -DskipTests;
       - run:
           name: Checkout swirlds-platform repos and build
           command: |

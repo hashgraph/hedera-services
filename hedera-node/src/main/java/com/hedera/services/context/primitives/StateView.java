@@ -22,7 +22,6 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
@@ -47,7 +46,6 @@ import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
@@ -297,6 +295,7 @@ public class StateView {
 
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
+					.setScheduledTransactionID(schedule.scheduledTransactionId())
 					.setTransactionBody(ByteString.copyFrom(schedule.transactionBody()))
 					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
 					.setPayerAccountID(schedule.payer().toGrpcAccountId())

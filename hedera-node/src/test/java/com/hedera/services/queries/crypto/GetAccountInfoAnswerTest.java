@@ -126,8 +126,12 @@ class GetAccountInfoAnswerTest {
 		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("freeze".getBytes())));
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
+		given(token.decimals())
+				.willReturn(1).willReturn(2).willReturn(3)
+				.willReturn(1).willReturn(2).willReturn(3);
 		deletedToken = mock(MerkleToken.class);
 		given(deletedToken.isDeleted()).willReturn(true);
+		given(deletedToken.decimals()).willReturn(4);
 
 		tokenStore = mock(TokenStore.class);
 		given(tokenStore.exists(firstToken)).willReturn(true);

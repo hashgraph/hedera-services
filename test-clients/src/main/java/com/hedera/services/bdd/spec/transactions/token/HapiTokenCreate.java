@@ -21,9 +21,11 @@ package com.hedera.services.bdd.spec.transactions.token;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -82,6 +84,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	public HapiTokenCreate(String token) {
 		this.token = token;
 	}
+
+	public void setTokenPrefix(String prefix) {
+		token = prefix + token;
+        }
 
 	public HapiTokenCreate entityMemo(String memo) {
 		this.entityMemo = Optional.of(memo);
@@ -202,7 +208,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 						TokenCreateTransactionBody.class, b -> {
 							symbol.ifPresent(b::setSymbol);
 							name.ifPresent(b::setName);
-							memo.ifPresent(b::setMemo);
+							entityMemo.ifPresent(s -> b.setMemo(s));
 							initialSupply.ifPresent(b::setInitialSupply);
 							decimals.ifPresent(b::setDecimals);
 							freezeDefault.ifPresent(b::setFreezeDefault);
@@ -254,11 +260,25 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		registry.saveTokenId(token, lastReceipt.getTokenID());
 		registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
 
-		adminKey.ifPresent(k -> registry.saveAdminKey(token, registry.getKey(k)));
-		kycKey.ifPresent(k -> registry.saveKycKey(token, registry.getKey(k)));
-		wipeKey.ifPresent(k -> registry.saveWipeKey(token, registry.getKey(k)));
-		supplyKey.ifPresent(k -> registry.saveSupplyKey(token, registry.getKey(k)));
-		freezeKey.ifPresent(k -> registry.saveFreezeKey(token, registry.getKey(k)));
+		try {
+			var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);
+			var op = submittedBody.getTokenCreation();
+			if (op.hasKycKey()) {
+				registry.saveKycKey(token, op.getKycKey());
+			}
+			if (op.hasWipeKey()) {
+				registry.saveWipeKey(token, op.getWipeKey());
+			}
+			if (op.hasAdminKey()) {
+				registry.saveAdminKey(token, op.getAdminKey());
+			}
+			if (op.hasSupplyKey()) {
+				registry.saveSupplyKey(token, op.getSupplyKey());
+			}
+			if (op.hasFreezeKey()) {
+				registry.saveFreezeKey(token, op.getFreezeKey());
+			}
+		} catch (InvalidProtocolBufferException impossible) { }
 
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(

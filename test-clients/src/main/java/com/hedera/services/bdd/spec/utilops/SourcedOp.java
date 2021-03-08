@@ -39,4 +39,9 @@ public class SourcedOp extends UtilOp {
 		allRunFor(spec, source.get());
 		return false;
 	}
+
+	@Override
+	public String toString() {
+		return "SourcedOp";
+	}
 }

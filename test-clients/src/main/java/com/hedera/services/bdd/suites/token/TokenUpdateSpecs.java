@@ -75,7 +75,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						nameChanges(),
 						keysChange(),
 						validatesAlreadyDeletedToken(),
-						validatesMissingRef(),
 						treasuryEvolves(),
 						deletedAutoRenewAccountCheckHolds(),
 						renewalPeriodCheckHolds(),
@@ -85,6 +84,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokensCanBeMadeImmutableWithEmptyKeyList(),
 						updateHappyPath(),
 						validatesMissingAdminKey(),
+						validatesMissingRef(),
 				}
 		);
 	}
@@ -148,6 +148,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				.given(
 						cryptoCreate("payer")
 				).when().then(
+						tokenUpdate("0.0.0")
+								.payingWith("payer")
+								.signedBy("payer")
+								.hasKnownStatus(INVALID_TOKEN_ID),
 						tokenUpdate("1.2.3")
 								.payingWith("payer")
 								.signedBy("payer")
@@ -517,7 +521,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								),
 						getTokenInfo("primary")
 								.logged()
-								.hasRegisteredMemo()
+								.hasRegisteredMemo(updatedMemo)
 								.hasRegisteredId("primary")
 								.hasName(newSaltedName)
 								.hasTreasury("newTokenTreasury")

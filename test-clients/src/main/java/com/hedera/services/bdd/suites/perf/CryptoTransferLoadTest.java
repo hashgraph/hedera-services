@@ -31,18 +31,26 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 public class CryptoTransferLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(CryptoTransferLoadTest.class);
@@ -91,6 +99,8 @@ public class CryptoTransferLoadTest extends LoadTest {
 					.signedBy(GENESIS)
 					.suppressStats(true)
 					.fee(100_000_000L)
+					.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
+							,UNKNOWN,TRANSACTION_EXPIRED)
 					.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
 							INVALID_SIGNATURE,PAYER_ACCOUNT_NOT_FOUND)
 					.deferStatusResolution()
@@ -105,6 +115,7 @@ public class CryptoTransferLoadTest extends LoadTest {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "1300000.0")),
+						reduceFeeFor(CryptoTransfer, 2L, 3L, 3L),
 						cryptoCreate("sender")
 								.balance(initialBalance.getAsLong())
 								.withRecharging()
@@ -115,7 +126,8 @@ public class CryptoTransferLoadTest extends LoadTest {
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 						        .key(GENESIS)
 				).then(
-						defaultLoadTest(transferBurst, settings)
+						defaultLoadTest(transferBurst, settings),
+						getAccountBalance("sender").logged()
 				);
 	}
 

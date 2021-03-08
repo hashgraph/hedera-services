@@ -22,11 +22,9 @@ package com.hedera.services.bdd.suites.consensus;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -36,11 +34,20 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateFee;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 public class TopicUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TopicUpdateSuite.class);
@@ -62,8 +69,8 @@ public class TopicUpdateSuite extends HapiApiSuite {
 						expirationTimestampIsValidated(),
 						updateExpiryOnTopicWithNoAdminKey(),
 						updateSubmitKeyOnTopicWithNoAdminKeyFails(),
-						feeAsExpected(),
 						clearingAdminKeyWhenAutoRenewAccountPresent(),
+						feeAsExpected(),
 				}
 		);
 	}
@@ -313,24 +320,21 @@ public class TopicUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec feeAsExpected() {
 		return defaultHapiSpec("feeAsExpected")
 				.given(
-						newKeyNamed("adminKey"),
-						newKeyNamed("submitKey"),
 						cryptoCreate("autoRenewAccount"),
+						cryptoCreate("payer"),
 						createTopic("testTopic")
-								.adminKeyName("adminKey"),
-						cryptoCreate("payer")
+								.autoRenewAccountId("autoRenewAccount")
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS - 1)
+								.adminKeyName("payer")
 				)
 				.when(
 						updateTopic("testTopic")
-								.topicMemo("memo")
-								.submitKey("submitKey")
-								.autoRenewPeriod(10)
 								.payingWith("payer")
-								.autoRenewAccountId("autoRenewAccount")
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
 								.via("updateTopic")
 				)
 				.then(
-						validateFee("updateTopic", 0.0004)
+						validateChargedUsdWithin("updateTopic", 0.00022, 3.0)
 				);
 	}
 

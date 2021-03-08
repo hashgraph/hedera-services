@@ -33,12 +33,16 @@ import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hedera.services.stream.proto.AllAccountBalances;
+import com.hedera.services.stream.proto.SingleAccountBalances;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,6 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -108,6 +113,8 @@ public class HapiApiSpec implements Runnable {
 	EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
 	EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
 
+	List<SingleAccountBalances> accountBalances = new ArrayList<>();
+
 	public void adhocIncrement() {
 		adhoc.getAndIncrement();
 	}
@@ -131,6 +138,30 @@ public class HapiApiSpec implements Runnable {
 	public void incrementNumLedgerOps() {
 		int newNumLedgerOps = numLedgerOpsExecuted.incrementAndGet();
 		ledgerOpCountCallbacks.stream().forEach(c -> c.accept(newNumLedgerOps));
+	}
+
+	public synchronized void saveSingleAccountBalances(SingleAccountBalances sab) {
+		accountBalances.add(sab);
+	}
+
+
+	public void exportAccountBalances(Supplier<String> dir) {
+		Instant now = Instant.now();
+		Timestamp.Builder timeStamp = Timestamp.newBuilder();
+		timeStamp.setSeconds(now.getEpochSecond())
+				.setNanos(now.getNano());
+
+		AllAccountBalances.Builder allAccountBalancesBuilder = AllAccountBalances.newBuilder()
+				.addAllAllAccounts(accountBalances).setConsensusTimestamp(timeStamp);
+
+		try (FileOutputStream fout = new FileOutputStream(dir.get())) {
+			allAccountBalancesBuilder.build().writeTo(fout);
+		} catch (IOException e) {
+			log.error(String.format("Could not export to '%s'!", dir), e);
+			return;
+		}
+
+		log.info("Export {} account balances registered to file {}", accountBalances.size(), dir);
 	}
 
 	public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {

@@ -21,6 +21,7 @@ package com.hedera.services.sigs.factories;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -32,6 +33,7 @@ import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -40,8 +42,8 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
+
+import java.util.Base64;
 
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.pk;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.sig;
@@ -51,7 +53,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-@RunWith(JUnitPlatform.class)
 public class SigFactoryCreatorTest {
 	FCMap<MerkleEntityId, MerkleSchedule> scheduledTxns;
 

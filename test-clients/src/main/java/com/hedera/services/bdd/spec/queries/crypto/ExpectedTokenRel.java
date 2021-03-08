@@ -32,12 +32,14 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 public class ExpectedTokenRel {
 	private static final Logger log = LogManager.getLogger(ExpectedTokenRel.class);
 	private final String token;
 
+	private OptionalInt decimals = OptionalInt.empty();
 	private OptionalLong balance = OptionalLong.empty();
 	private Optional<TokenKycStatus> kycStatus = Optional.empty();
 	private Optional<TokenFreezeStatus> freezeStatus = Optional.empty();
@@ -81,6 +83,7 @@ public class ExpectedTokenRel {
 			for (TokenRelationship actualRel : actualRels) {
 				if (actualRel.getTokenId().equals(expectedId)) {
 					found = true;
+					rel.getDecimals().ifPresent(d -> Assert.assertEquals(d, actualRel.getDecimals()));
 					rel.getBalance().ifPresent(a -> Assert.assertEquals(a, actualRel.getBalance()));
 					rel.getKycStatus().ifPresent(s -> Assert.assertEquals(s, actualRel.getKycStatus()));
 					rel.getFreezeStatus().ifPresent(s -> Assert.assertEquals(s, actualRel.getFreezeStatus()));
@@ -93,6 +96,11 @@ public class ExpectedTokenRel {
 				throw new HapiQueryCheckStateException(errMsg);
 			}
 		}
+	}
+
+	public ExpectedTokenRel decimals(int expected) {
+		decimals = OptionalInt.of(expected);
+		return this;
 	}
 
 	public ExpectedTokenRel balance(long expected) {
@@ -112,6 +120,10 @@ public class ExpectedTokenRel {
 
 	public String getToken() {
 		return token;
+	}
+
+	public OptionalInt getDecimals() {
+		return decimals;
 	}
 
 	public OptionalLong getBalance() {

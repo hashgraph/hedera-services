@@ -28,7 +28,6 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,7 +56,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -96,15 +94,24 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						treasuryAssociationIsAutomatic(),
 						dissociateHasExpectedSemantics(),
-						accountInfoQueriesAsExpected(),
-						contractInfoQueriesAsExpected(),
 						associateHasExpectedSemantics(),
 						associatedContractsMustHaveAdminKeys(),
 						dissociateHasExpectedSemanticsForDeletedTokens(),
 						expiredAndDeletedTokensStillAppearInContractInfo(),
 						dissociationFromExpiredTokensAsExpected(),
+						accountInfoQueriesAsExpected(),
+						handlesUseOfDefaultTokenId(),
+						contractInfoQueriesAsExpected(),
 				}
 		);
+	}
+
+	public HapiApiSpec handlesUseOfDefaultTokenId() {
+		return defaultHapiSpec("HandlesUseOfDefaultTokenId")
+				.given( ).when( ).then(
+						tokenAssociate(DEFAULT_PAYER, "0.0.0")
+								.hasKnownStatus(INVALID_TOKEN_ID)
+				);
 	}
 
 	public HapiApiSpec associatedContractsMustHaveAdminKeys() {
@@ -153,26 +160,26 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		return defaultHapiSpec("InfoQueriesAsExpected")
 				.given(
 						newKeyNamed("simple"),
-						tokenCreate("a"),
-						tokenCreate("b"),
-						tokenCreate("c"),
-						tokenCreate("tbd").adminKey("simple"),
+						tokenCreate("a").decimals(1),
+						tokenCreate("b").decimals(2),
+						tokenCreate("c").decimals(3),
+						tokenCreate("tbd").adminKey("simple").decimals(4),
 						cryptoCreate("account").balance(0L)
 				).when(
 						tokenAssociate("account", "a", "b", "c", "tbd"),
 						getAccountInfo("account")
-								.hasToken(relationshipWith("a"))
-								.hasToken(relationshipWith("b"))
-								.hasToken(relationshipWith("c"))
-								.hasToken(relationshipWith("tbd")),
+								.hasToken(relationshipWith("a").decimals(1))
+								.hasToken(relationshipWith("b").decimals(2))
+								.hasToken(relationshipWith("c").decimals(3))
+								.hasToken(relationshipWith("tbd").decimals(4)),
 						tokenDissociate("account", "b"),
 						tokenDelete("tbd")
 				).then(
 						getAccountInfo("account")
-								.hasToken(relationshipWith("a"))
+								.hasToken(relationshipWith("a").decimals(1))
 								.hasNoTokenRelationship("b")
-								.hasToken(relationshipWith("c"))
-								.hasToken(relationshipWith("tbd"))
+								.hasToken(relationshipWith("c").decimals(3))
+								.hasToken(relationshipWith("tbd").decimals(4))
 								.logged()
 				);
 	}
@@ -198,6 +205,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						}),
 						sourcing(() ->
 								tokenCreate(expiringToken)
+										.decimals(666)
 										.adminKey("admin")
 										.treasury(treasury)
 										.expiry(now.get() + lifetimeSecs))
@@ -214,7 +222,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 										.freeze(FreezeNotApplicable)),
 						sleepFor(lifetimeSecs * 1_000L),
 						getAccountBalance(contract)
-								.hasTokenBalance(expiringToken, xfer),
+								.hasTokenBalance(expiringToken, xfer, 666),
 						getContractInfo(contract)
 								.hasToken(relationshipWith(expiringToken)
 										.freeze(FreezeNotApplicable)),
@@ -223,6 +231,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasTokenBalance(expiringToken, xfer),
 						getContractInfo(contract)
 								.hasToken(relationshipWith(expiringToken)
+										.decimals(666)
 										.freeze(FreezeNotApplicable))
 				);
 	}

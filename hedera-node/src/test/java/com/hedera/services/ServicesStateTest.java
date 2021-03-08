@@ -66,8 +66,8 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
@@ -92,6 +92,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.ServicesState.RELEASE_0100_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0110_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_0120_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_070_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
@@ -156,7 +157,6 @@ class ServicesStateTest {
 	SystemExits systemExits;
 	SystemFilesManager systemFilesManager;
 	RecordStreamManager recordStreamManager;
-	SigFactoryCreator sigFactoryCreator;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
 	ServicesState subject;
@@ -285,6 +285,8 @@ class ServicesStateTest {
 	public void hasExpectedMinChildCounts() {
 		// given:
 		subject = new ServicesState(ctx, self, Collections.emptyList());
+		// and:
+		int invalidVersion = ServicesState.MERKLE_VERSION + 1;
 
 		// expect:
 		assertEquals(ServicesState.ChildIndices.NUM_070_CHILDREN, subject.getMinimumChildCount(RELEASE_070_VERSION));
@@ -292,11 +294,12 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(RELEASE_090_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0100_CHILDREN, subject.getMinimumChildCount(RELEASE_0100_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0110_CHILDREN, subject.getMinimumChildCount(RELEASE_0110_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_0120_CHILDREN, subject.getMinimumChildCount(RELEASE_0120_VERSION));
 
 		Throwable throwable = assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(RELEASE_0110_VERSION + 1));
+				() -> subject.getMinimumChildCount(invalidVersion));
 		assertEquals(
-				String.format(ServicesState.UNSUPPORTED_VERSION_MSG_TPL, RELEASE_0110_VERSION + 1),
+				String.format(ServicesState.UNSUPPORTED_VERSION_MSG_TPL, invalidVersion),
 				throwable.getMessage());
 	}
 
@@ -365,6 +368,7 @@ class ServicesStateTest {
 		inOrder.verify(ctx).setRecordsInitialHash(EMPTY_HASH);
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
+		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
 		inOrder.verify(systemFilesManager).loadAllSystemFiles();
 	}

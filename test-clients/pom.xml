@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.11.1-SNAPSHOT</version>
+    <version>0.14.0-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -253,11 +253,6 @@
       <version>${picocli.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.github.novacrypto</groupId>
-      <artifactId>BIP39</artifactId>
-      <version>${BIP39.version}</version>
-    </dependency>
-    <dependency>
       <groupId>net.i2p.crypto</groupId>
       <artifactId>eddsa</artifactId>
     </dependency>
@@ -279,12 +274,12 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-utils</artifactId>
-      <version>0.11.1-SNAPSHOT</version>
+      <version>0.14.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.11.1-SNAPSHOT</version>
+      <version>0.14.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>

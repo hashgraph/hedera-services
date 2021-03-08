@@ -19,11 +19,14 @@ networks:
     ensureScenarioPayerHbars: 25
     nodes:
     - {account: 3, ipv4Addr: 34.74.82.254}
-    scenarioPayer: 1732
+    scenarioPayer: 1021
     scenarios:
       sysFilesDown:
         evalMode: snapshot
         numsToFetch: [121]
+      sysFilesUp:
+        updates:
+        - {num: 121, payer: 2}
   integration:
     bootstrap: 2
     defaultNode: 3
@@ -80,7 +83,7 @@ networks:
     scenarios:
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [121]
+        numsToFetch: [111]
   mainnet:
     bootstrap: 950
     defaultNode: 3
@@ -108,21 +111,21 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39283}
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [121]
+        numsToFetch: [111]
   localhost:
     bootstrap: 2
     defaultNode: 3
     ensureScenarioPayerHbars: 100000
     nodes:
-    - {account: 3, ipv4Addr: '127.0.0.1:50213'}
+    - {account: 3, ipv4Addr: '127.0.0.1:50211'}
     scenarioPayer: 1001
     scenarios:
-      consensus: {persistent: 1007}
+      consensus: {persistent: 1010}
       contract:
-        persistent: {bytecode: 1005, luckyNo: 42, num: 1006, source: Multipurpose.sol}
+        persistent: {bytecode: 1007, luckyNo: 42, num: 1008, source: Multipurpose.sol}
       crypto: {receiver: 1003, sender: 1002}
       file:
-        persistent: {contents: MrBleaney.txt, num: 1004}
+        persistent: {contents: MrBleaney.txt, num: 1005}
   staging:
     bootstrap: 2
     defaultNode: 3

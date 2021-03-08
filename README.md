@@ -3,14 +3,14 @@
 
 # Hedera Services 
 
-The child modules in this repository define and implement the API to the 
-services offered by the nodes in the Hedera public network, which is built 
-on the Platform.
+Implementation of the [services offered](https://github.com/hashgraph/hedera-protobufs) by 
+nodes in the Hedera public network, which is built on the Platform.
 
 ## Overview of child modules
-* _hapi-proto/_ - protobuf defining the Hedera API.
 * _hedera-node/_ - implementation of Hedera services on the Platform.
-* _test-clients/_ - client libraries for end-to-end testing of the Hedera network.
+* _test-clients/_ - clients and frameworks for end-to-end testing of Services.
+* _hapi-fees/_ - libraries to estimate resource usage of Services operations.
+* _hapi-utils/_ - deprecated libraries primarily involved in fee calculation.
 
 ## JVM
 OpenJDK12 is strongly recommended.

@@ -555,6 +555,15 @@ public class ServicesContext {
 		}
 	}
 
+	public void rebuildStoreViewsIfPresent() {
+		if (scheduleStore != null) {
+			scheduleStore.rebuildViews();
+		}
+		if (tokenStore != null) {
+			tokenStore.rebuildViews();
+		}
+	}
+
 	public SigFactoryCreator sigFactoryCreator() {
 		if (sigFactoryCreator == null) {
 			sigFactoryCreator = new SigFactoryCreator(this::schedules);
@@ -933,7 +942,7 @@ public class ServicesContext {
 				/* Schedule */
 				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(globalDynamicProperties()))),
 				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage())),
-				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage())),
+				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(globalDynamicProperties()))),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -1931,5 +1940,13 @@ public class ServicesContext {
 
 	void setBackingAccounts(FCMapBackingAccounts backingAccounts) {
 		this.backingAccounts = backingAccounts;
+	}
+
+	public void setTokenStore(TokenStore tokenStore) {
+		this.tokenStore = tokenStore;
+	}
+
+	public void setScheduleStore(ScheduleStore scheduleStore) {
+		this.scheduleStore = scheduleStore;
 	}
 }

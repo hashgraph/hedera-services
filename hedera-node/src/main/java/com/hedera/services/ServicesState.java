@@ -83,7 +83,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	static final int RELEASE_090_VERSION = 3;
 	static final int RELEASE_0100_VERSION = 4;
 	static final int RELEASE_0110_VERSION = 5;
-	static final int MERKLE_VERSION = RELEASE_0110_VERSION;
+	static final int RELEASE_0120_VERSION = 6;
+	static final int MERKLE_VERSION = RELEASE_0120_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static final String UNSUPPORTED_VERSION_MSG_TPL = "Argument 'version=%d' is invalid!";
@@ -112,6 +113,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int SCHEDULE_TXS = 8;
 		static final int RECORD_STREAM_RUNNING_HASH = 9;
 		static final int NUM_0110_CHILDREN = 10;
+		static final int NUM_0120_CHILDREN = 10;
 	}
 
 	ServicesContext ctx;
@@ -120,7 +122,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	public ServicesState(List<MerkleNode> children) {
-		super(ChildIndices.NUM_0110_CHILDREN);
+		super(ChildIndices.NUM_0120_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -147,6 +149,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public int getMinimumChildCount(int version) {
 		switch (version) {
+			case RELEASE_0120_VERSION:
+				return ChildIndices.NUM_0120_CHILDREN;
 			case RELEASE_0110_VERSION:
 				return ChildIndices.NUM_0110_CHILDREN;
 			case RELEASE_0100_VERSION:
@@ -278,14 +282,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		 * All the initialization that follows will be a function of the primitive state. */
 		ctx.update(this);
 		ctx.rebuildBackingStoresIfPresent();
+		ctx.rebuildStoreViewsIfPresent();
 
 		/* Use any payer records stored in state to rebuild the recent transaction
 		 * history. This history has two main uses: Purging expired records, and
 		 * classifying duplicate transactions. */
 		ctx.recordsHistorian().reviewExistingRecords();
 		/*
-		 * Use any entities stored in state to rebuild the history for expired entities.
-		 * This has one main use: purge expired entities.
+		 * Use any entities stored in state to rebuild queue of expired entities.
 		 */
 		ctx.expiries().restartEntitiesTrackingFrom();
 		if (!blobStoreSupplier.get().isInitializing()) {

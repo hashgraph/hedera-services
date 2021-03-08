@@ -24,7 +24,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -44,30 +43,9 @@ public abstract class ScheduleReadyForExecution {
         this.txnCtx = context;
     }
 
-    private Transaction prepareTransaction(MerkleSchedule schedule) throws InvalidProtocolBufferException {
-        var transactionBody = TransactionBody.parseFrom(schedule.transactionBody());
-        var transactionId = TransactionID.newBuilder()
-                .setAccountID(schedule.schedulingAccount().toGrpcAccountId())
-                .setTransactionValidStart(asTimestamp(schedule.schedulingTXValidStart().toJava()))
-                .setNonce(transactionBody.getTransactionID().getNonce())
-                .setScheduled(true)
-                .build();
-
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(
-                                        TransactionBody.newBuilder()
-                                                .mergeFrom(transactionBody)
-                                                .setTransactionID(transactionId)
-                                                .build().toByteString())
-                                .build().toByteString())
-                .build();
-    }
-
     ResponseCodeEnum processExecution(ScheduleID id) throws InvalidProtocolBufferException {
         var schedule = store.get(id);
-        var transaction = prepareTransaction(schedule);
+        var transaction = schedule.asScheduledTransaction();
 
         txnCtx.trigger(
                 new TriggeredTxnAccessor(

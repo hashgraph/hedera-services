@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -45,6 +46,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 	boolean requestDuplicates = false;
 	boolean useDefaultTxnId = false;
 	TransactionID defaultTxnId = TransactionID.getDefaultInstance();
+	Optional<String> expectedScheduledTxnId = Optional.empty();
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<ResponseCodeEnum> expectedPriorityStatus = Optional.empty();
 	Optional<ResponseCodeEnum[]> expectedDuplicateStatuses = Optional.empty();
@@ -91,6 +93,11 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 		return this;
 	}
 
+	public HapiGetReceipt hasScheduledTxnId(String name) {
+		expectedScheduledTxnId = Optional.of(HapiScheduleCreate.correspondingScheduledTxnId(name));
+		return this;
+	}
+
 	@Override
 	protected void submitWith(HapiApiSpec spec, Transaction payment) {
 		TransactionID txnId = explicitTxnId.orElseGet(() ->
@@ -117,6 +124,11 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 					.map(TransactionReceipt::getStatus)
 					.toArray(n -> new ResponseCodeEnum[n]);
 			Assert.assertArrayEquals(expectedDuplicateStatuses.get(), duplicates);
+		}
+		if (expectedScheduledTxnId.isPresent()) {
+			var expected = spec.registry().getTxnId(expectedScheduledTxnId.get());
+			var actual = response.getTransactionGetReceipt().getReceipt().getScheduledTransactionID();
+			Assert.assertEquals("Wrong scheduled transaction id!", expected, actual);
 		}
 	}
 

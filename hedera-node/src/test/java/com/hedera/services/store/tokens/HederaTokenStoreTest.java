@@ -32,9 +32,12 @@ import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.schedule.ContentAddressableSchedule;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -49,6 +52,7 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -59,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
@@ -66,6 +71,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
@@ -103,6 +109,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -114,6 +121,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 
 class HederaTokenStoreTest {
 	EntityIdSource ids;
@@ -222,6 +230,32 @@ class HederaTokenStoreTest {
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{ add(misc); }});
+	}
+
+	@Test
+	void rebuildsAsExpected() {
+		// setup:
+		ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleToken>> captor = forClass(BiConsumer.class);
+		// and:
+		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
+
+		// when:
+		subject.rebuildViews();
+
+		// then:
+		verify(tokens, times(2)).forEach(captor.capture());
+		// and:
+		BiConsumer<MerkleEntityId,  MerkleToken> visitor = captor.getAllValues().get(1);
+
+		// and when:
+		visitor.accept(fromTokenId(misc), token);
+
+		// then:
+		var extant = subject.getKnownTreasuries();
+		assertEquals(1, extant.size());
+		// and:
+		assertTrue(extant.containsKey(treasury));
+		assertEquals(extant.get(treasury), Set.of(misc));
 	}
 
 	@Test
@@ -359,6 +393,12 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertSame(token, subject.get(pending));
+	}
+
+	@Test
+	public void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
+		// expect:
+		assertFalse(subject.exists(HederaTokenStore.NO_PENDING_ID));
 	}
 
 	@Test

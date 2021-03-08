@@ -77,14 +77,18 @@ import com.hedera.services.bdd.suites.misc.CryptoQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.FileQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
+import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTest;
 import com.hedera.services.bdd.suites.perf.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.CreateTopicPerfSuite;
 import com.hedera.services.bdd.suites.perf.CryptoCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest;
+import com.hedera.services.bdd.suites.perf.FileContractMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.FileUpdateLoadTest;
 import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
+import com.hedera.services.bdd.suites.perf.MixedOpsMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
+import com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.TokenRelStatusChanges;
 import com.hedera.services.bdd.suites.perf.TokenTransferBasicLoadTest;
@@ -228,7 +232,9 @@ public class SuiteRunner {
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
 		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
+		put("AccountBalancesLoadTest", aof(new AccountBalancesClientSaveLoadTest()));
 		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
+		put("ReadyToRunScheduledXfersLoad", aof(new ReadyToRunScheduledXfersLoad()));
 		put("TokenRelChangesLoad", aof(new TokenRelStatusChanges()));
 		put("FileUpdateLoadTest", aof(new FileUpdateLoadTest()));
 		put("ContractCallLoadTest", aof(new ContractCallLoadTest()));
@@ -239,6 +245,8 @@ public class SuiteRunner {
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
 		put("CryptoCreatePerfSuite", aof(new CryptoCreatePerfSuite()));
 		put("CreateTopicPerfSuite", aof(new CreateTopicPerfSuite()));
+		put("MixedOpsMemoPerfSuite", aof(new MixedOpsMemoPerfSuite()));
+		put("FileContractMemoPerfSuite", aof(new FileContractMemoPerfSuite()));
 		/* Functional tests - RECONNECT */
 		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
