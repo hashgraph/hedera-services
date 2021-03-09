@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.nft.NftUseCase;
 import com.hedera.services.bdd.suites.nft.NftXchange;
@@ -166,6 +167,10 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 	}
 
 	private static void addCivilians(List<HapiSpecOperation> init, int n) {
+		final int numCivs = n;
+
+		init.add(UtilVerbs.withOpContext((spec, opLog) -> opLog.info("Initializing {} civilians...", numCivs)));
+
 		AtomicInteger soFar = new AtomicInteger(0);
 		while (n > 0) {
 			int nextParallelism = Math.min(n, MAX_OPS_IN_PARALLEL.get());

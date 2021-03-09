@@ -129,8 +129,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		long actual = response.getCryptogetAccountBalance().getBalance();
 		if (verboseLoggingOn) {
-			log.info("Assets for '{}' include,\n  ℏ: {}\n  FTs: {}\n  NFTs: {}",
+			log.info("Assets for '{}' (0.0.{}) include,\n  ℏ: {}\n  FTs: {}\n  NFTs: {}",
 					entity,
+					response.getCryptogetAccountBalance().getAccountID().getAccountNum(),
 					readableHbar(actual),
 					response.getCryptogetAccountBalance().getTokenBalancesList(),
 					readableNftOwnership(response.getCryptogetAccountBalance().getOwnedNftsList()));
