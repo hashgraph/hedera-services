@@ -23,13 +23,16 @@ package com.hedera.services.bdd.suites.perf;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.nft.NftUseCase;
 import com.hedera.services.bdd.suites.nft.NftXchange;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -37,22 +40,32 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.HapiSpecSetup.asStringMap;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.stream.Collectors.toList;
 
 public class NftXchangeLoadProvider extends HapiApiSuite {
+	public static final AtomicInteger SETUP_PAUSE_MS = new AtomicInteger();
+	public static final AtomicInteger POST_SETUP_PAUSE_SECS = new AtomicInteger();
+	public static final AtomicInteger MAX_OPS_IN_PARALLEL = new AtomicInteger();
+
 	private static final Logger log = LogManager.getLogger(NftXchangeLoadProvider.class);
 
 	private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
-	private AtomicInteger nftTypes = new AtomicInteger();
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
+	private AtomicReference<List<NftUseCase>> nftUseCases = new AtomicReference<>();
 
 	public static void main(String... args) {
 		new NftXchangeLoadProvider().runSuiteSync();
@@ -75,41 +88,44 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 						runWithProvider(nftXchangeFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)
+								.postSetupSleepSecs(SETUP_PAUSE_MS::get)
 				).then(
 						withOpContext((spec, opLog) -> {
-							for (int i = 0, n = nftTypes.get(); i < n; i++) {
-								allRunFor(
-										spec,
-										getAccountBalance(NftXchange.treasury(i)).logged());
+							for (NftUseCase useCase : nftUseCases.get()) {
+								for (NftXchange xchange : useCase.getXchanges()) {
+									allRunFor(
+											spec,
+											getAccountBalance(xchange.getTreasury()).logged());
+								}
 							}
 						})
 				);
 	}
 
 	private Function<HapiApiSpec, OpProvider> nftXchangeFactory() {
-		var serialNos = new AtomicInteger();
-		var nextNftType = new AtomicInteger(0);
-		List<NftXchange> xchanges = new ArrayList<>();
+		var numUseCases = new AtomicInteger(0);
+		var nextUseCase = new AtomicInteger(0);
 
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				var ciProps = spec.setup().ciPropertiesMap();
-				nftTypes.set(ciProps.getInteger("nftTypes"));
-				serialNos.set(ciProps.getInteger("serialNos"));
-				boolean swapHbar = ciProps.getBoolean("swapHbar");
 
+				SETUP_PAUSE_MS.set(ciProps.getInteger("setupPauseMs"));
+				MAX_OPS_IN_PARALLEL.set(ciProps.getInteger("setupParallelism"));
+				POST_SETUP_PAUSE_SECS.set(ciProps.getInteger("postSetupPauseSecs"));
+
+				nftUseCases.set(parseAllFrom(ciProps.get("nftUseCases")));
+				numUseCases.set(nftUseCases.get().size());
+
+				int usersNeeded = nftUseCases.get().stream().mapToInt(NftUseCase::getUsers).max().getAsInt();
 				List<HapiSpecOperation> initializers = new ArrayList<>();
-				for (int i = 0, n = nftTypes.get(); i < n; i++) {
-//					var xchange = new NftXchange(i, serialNos.get(), swapHbar);
-//					initializers.addAll(xchange.initializers());
-//					xchanges.add(xchange);
-				}
 
-				for (HapiSpecOperation op : initializers) {
-					if (op instanceof HapiTxnOp) {
-						((HapiTxnOp) op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
-					}
+				addCivilians(initializers, usersNeeded);
+
+				var nftTypeId = new AtomicInteger(0);
+				for (NftUseCase useCase : nftUseCases.get()) {
+					initializers.addAll(useCase.initializers(nftTypeId));
 				}
 
 				return initializers;
@@ -117,11 +133,51 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				var nftType = nextNftType.getAndUpdate(i -> (i + 1) % nftTypes.get());
-				var xchange = xchanges.get(nftType);
-				return Optional.of(xchange.nextOp());
+				var the = nextUseCase.getAndUpdate(i -> (i + 1) % numUseCases.get());
+				return Optional.of(nftUseCases.get()
+						.get(the)
+						.nextOp());
 			}
 		};
+	}
+
+	private List<NftUseCase> parseAllFrom(String configList) {
+		configList = configList.substring(1, configList.length() - 1);
+		String[] useCaseConfig = configList.split("[|]");
+		return Arrays.stream(useCaseConfig).map(this::parseFrom).collect(toList());
+	}
+
+	private NftUseCase parseFrom(String config) {
+		int openI = config.indexOf("{");
+		String useCase = config.substring(0, openI);
+		String props = config
+				.substring(openI + 1, config.indexOf("}"))
+				.replaceAll("_", "")
+				.replaceAll("@", "=")
+				.replaceAll(";", ",");
+
+		var propsMap = new MapPropertySource(asStringMap(props));
+		return new NftUseCase(
+				propsMap.getInteger("users"),
+				propsMap.getInteger("serialNos"),
+				propsMap.getInteger("frequency"),
+				useCase,
+				propsMap.getBoolean("swapHbar"));
+	}
+
+	private static void addCivilians(List<HapiSpecOperation> init, int n) {
+		AtomicInteger soFar = new AtomicInteger(0);
+		while (n > 0) {
+			int nextParallelism = Math.min(n, MAX_OPS_IN_PARALLEL.get());
+			init.add(inParallel(IntStream.range(0, nextParallelism)
+					.mapToObj(i -> cryptoCreate(NftXchange.civilianNo(soFar.get() + i))
+							.noLogging().deferStatusResolution()
+							.blankMemo()
+							.emptyBalance()).toArray(HapiSpecOperation[]::new)));
+			init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get()));
+			n -= nextParallelism;
+			soFar.getAndAdd(nextParallelism);
+		}
 	}
 
 	@Override

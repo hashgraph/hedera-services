@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.NftTransferList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -51,7 +53,6 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hederahashgraph.fee.SigValueObj;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.util.ByteUtil;
@@ -70,11 +71,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asNft;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asNftString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSchedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
@@ -375,8 +376,28 @@ public class TxnUtils {
 				.collect(joining(", "));
 	}
 
+	public static String readableNftTransfers(List<NftTransferList> nftTransfers) {
+		return nftTransfers.stream()
+				.map(scopedChanges -> String.format("%s(%s)",
+						asNftString(scopedChanges.getNft()),
+						readableNftTransferList(scopedChanges.getTransferList())))
+				.collect(joining(", "));
+	}
+
 	public static String readableTransferList(TransferList accountAmounts) {
 		return readableTransferList(accountAmounts.getAccountAmountsList());
+	}
+
+	public static String readableNftTransferList(List<NftTransfer> changes) {
+		return changes
+				.stream()
+				.map(change -> String.format(
+						"%s --%s-->> %s",
+						HapiPropertySource.asAccountString(change.getFromAccount()),
+						change.getSerialNo().toStringUtf8().trim(),
+						HapiPropertySource.asAccountString(change.getToAccount())))
+				.collect(toList())
+				.toString();
 	}
 
 	public static String readableTransferList(List<AccountAmount> adjustments) {

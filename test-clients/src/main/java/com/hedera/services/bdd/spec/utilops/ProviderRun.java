@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import jdk.jshell.execution.Util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,6 +45,7 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ProviderRun extends UtilOp {
@@ -52,6 +54,7 @@ public class ProviderRun extends UtilOp {
 	private static final int DEFAULT_MAX_OPS_PER_SEC = Integer.MAX_VALUE;
 	private static final int DEFAULT_MAX_PENDING_OPS = Integer.MAX_VALUE;
 	private static final int DEFAULT_BACKLOG_SLEEPOFF_SECS = 1;
+	private static final int DEFAULT_POST_SETUP_SLEEP_SECS = 1;
 	private static final long DEFAULT_DURATION = 30;
 	private static final TimeUnit DEFAULT_UNIT = TimeUnit.SECONDS;
 	private static final int DEFAULT_TOTAL_OPS_TO_SUBMIT = -1;
@@ -60,6 +63,7 @@ public class ProviderRun extends UtilOp {
 	private IntSupplier maxOpsPerSecSupplier = () -> DEFAULT_MAX_OPS_PER_SEC;
 	private IntSupplier maxPendingOpsSupplier = () -> DEFAULT_MAX_PENDING_OPS;
 	private IntSupplier backoffSleepSecsSupplier = () -> DEFAULT_BACKLOG_SLEEPOFF_SECS;
+	private IntSupplier postSetupSleepSecsSupplier = () -> DEFAULT_POST_SETUP_SLEEP_SECS;
 	private LongSupplier durationSupplier = () -> DEFAULT_DURATION;
 	private Supplier<TimeUnit> unitSupplier = () -> DEFAULT_UNIT;
 	private IntSupplier totalOpsToSubmit = () -> DEFAULT_TOTAL_OPS_TO_SUBMIT;
@@ -97,6 +101,11 @@ public class ProviderRun extends UtilOp {
 		return this;
 	}
 
+	public ProviderRun postSetupSleepSecs(IntSupplier postSetupSleepSecsSupplier) {
+		this.postSetupSleepSecsSupplier = postSetupSleepSecsSupplier;
+		return this;
+	}
+
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) {
 		int MAX_N = Runtime.getRuntime().availableProcessors();
@@ -108,12 +117,17 @@ public class ProviderRun extends UtilOp {
 
 		allRunFor(spec, provider.suggestedInitializers().toArray(new HapiSpecOperation[0]));
 		log.info("Finished initialization for provider run...");
+		int postSetupSleepSecs = postSetupSleepSecsSupplier.getAsInt();
+		if (postSetupSleepSecs > 0) {
+			allRunFor(spec, sleepFor(postSetupSleepSecs * 1_000));
+		}
+//		spec.resetStatusCounts();
 
 		TimeUnit unit = unitSupplier.get();
 		Stopwatch stopwatch = Stopwatch.createStarted();
 
 		final var remainingOpsToSubmit = new AtomicInteger(totalOpsToSubmit.getAsInt());
-		final boolean fixedOpSubmission = (remainingOpsToSubmit.get() < 0) ? false : true;
+		final boolean fixedOpSubmission = remainingOpsToSubmit.get() >= 0;
 		int submittedSoFar = 0;
 		long durationMs = unit.toMillis(duration);
 		long logIncrementMs = durationMs / 100;
@@ -190,5 +204,10 @@ public class ProviderRun extends UtilOp {
 
 
 		return false;
+	}
+
+	@Override
+	public String toString() {
+		return "ProviderRun";
 	}
 }

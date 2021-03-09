@@ -35,6 +35,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -140,12 +141,15 @@ public class HapiSpecSetup {
 	public CostSnapshotMode costSnapshotMode() { return props.getCostSnapshotMode("cost.snapshot.mode"); }
 	public HapiPropertySource ciPropertiesMap() {
 		if (null == ciPropertiesMap) {
-			ciPropertiesMap = new MapPropertySource(Stream.of(props.get("ci.properties.map").split(","))
-					.map(s -> List.of(s.split("=")))
-					.filter(l -> l.size() > 1)
-					.collect(toMap(l -> l.get(0), l -> l.get(1))));
+			ciPropertiesMap = new MapPropertySource(asStringMap(props.get("ci.properties.map")));
 		}
 		return ciPropertiesMap;
+	}
+	public static Map<String, String> asStringMap(String cskv) {
+		return Stream.of(cskv.split(","))
+				.map(s -> List.of(s.split("=")))
+				.filter(l -> l.size() > 1)
+				.collect(toMap(l -> l.get(0), l -> l.get(1)));
 	}
 	public Duration defaultAutoRenewPeriod() {
 		return props.getDurationFromSecs("default.autorenew.secs");

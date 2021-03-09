@@ -208,6 +208,7 @@ public abstract class HapiSpecOperation {
 				return Optional.empty();
 			}
 			if (!loggingOff) {
+				t.printStackTrace();
 				log.warn(spec.logPrefix() + this + " failed ({})!", t.getMessage());
 			}
 			return Optional.of(t);

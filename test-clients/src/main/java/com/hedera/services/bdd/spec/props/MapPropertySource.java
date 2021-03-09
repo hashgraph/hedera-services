@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.props;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,13 +34,14 @@ import static java.util.Map.*;
 public class MapPropertySource implements HapiPropertySource {
 	private static final Logger log = LogManager.getLogger(MapPropertySource.class);
 	private static final Set<String> KEYS_TO_CENSOR = Set.of(
-		"startupAccounts.literal", "default.payer.pemKeyPassphrase"
+			"startupAccounts.literal",
+			"default.payer.pemKeyPassphrase"
 	);
 
 	private final Map props;
 
 	public MapPropertySource(Map props) {
-		Map<String, Object> typedProps = (Map<String, Object>)props;
+		Map<String, Object> typedProps = (Map<String, Object>) props;
 		var filteredProps = typedProps.entrySet()
 				.stream()
 				.filter(entry -> !KEYS_TO_CENSOR.contains(entry.getKey()))
@@ -51,7 +52,7 @@ public class MapPropertySource implements HapiPropertySource {
 
 	@Override
 	public String get(String property) {
-		return (String)props.get(property);
+		return (String) props.get(property);
 	}
 
 	@Override

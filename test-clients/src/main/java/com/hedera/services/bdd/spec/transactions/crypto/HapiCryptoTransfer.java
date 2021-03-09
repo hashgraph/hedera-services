@@ -231,6 +231,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				helper.add(
 						"tokenTransfers",
 						TxnUtils.readableTokenTransfers(txn.getCryptoTransfer().getTokenTransfersList()));
+				helper.add(
+						"nftTransfers",
+						TxnUtils.readableNftTransfers(txn.getCryptoTransfer().getNftTransfersList()));
 			} catch (Exception ignore) { }
 		}
 		return helper;
