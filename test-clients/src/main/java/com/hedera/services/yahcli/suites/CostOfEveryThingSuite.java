@@ -7,6 +7,8 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -321,13 +323,14 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 						Map.of("cost.snapshot.mode", costSnapshotMode.toString())
 				)
 				.given(
-						newKeyNamed("adminKey").shape(SIMPLE),
+						newKeyNamed("key").shape(SIMPLE),
+						newKeyNamed("adminKey").shape(listOf(3)),
 						newKeyNamed("freezeKey"),
 						newKeyNamed("kycKey"),
 						newKeyNamed("supplyKey"),
 						newKeyNamed("wipeKey"),
 						cryptoCreate(TOKEN_TREASURY)
-								.key("adminKey")
+								.key("key")
 								.balance(1_000 * ONE_HBAR),
 						cryptoCreate("autoRenewAccount")
 								.key("adminKey")
@@ -339,8 +342,8 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 						tokenCreate("primary")
 								.entityMemo("")
 								.blankMemo()
-								.name("aStrOfSize12")
-								.symbol("smbl")
+								.name(new String(randomUtf8Bytes(12), StandardCharsets.UTF_8))
+								.symbol(new String(randomUtf8Bytes(4), StandardCharsets.UTF_8))
 								.treasury(TOKEN_TREASURY)
 								.autoRenewAccount("autoRenewAccount")
 								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS-1)
@@ -435,10 +438,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec canonicalCryptoOps() {
-		KeyShape shape = SIMPLE;
-		KeyShape smallKey = threshOf(1, 3);
-		KeyShape midsizeKey = listOf(SIMPLE, listOf(2), threshOf(1, 2));
-		KeyShape hugeKey = threshOf(4, SIMPLE, SIMPLE, listOf(4), listOf(3), listOf(2));
 
 		return HapiApiSpec.customHapiSpec(String.format("canonicalCryptoOps"))
 				.withProperties(
@@ -446,7 +445,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 						Map.of("cost.snapshot.mode", costSnapshotMode.toString())
 				)
 				.given(
-						newKeyNamed("key").shape(shape),
+						newKeyNamed("key").shape(SIMPLE),
 						cryptoCreate("payer")
 								.key("key")
 								.balance(1_000 * ONE_HBAR)
@@ -477,7 +476,9 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 						getAccountInfo("canonicalAccount")
 								.via("canonicalGetAccountInfo"),
 						cryptoCreate("canonicalAccountTBD")
-								.key("key"),
+								.blankMemo()
+								.entityMemo("")
+								.payingWith("payer"),
 						cryptoDelete("canonicalAccountTBD")
 								.blankMemo()
 								.payingWith("payer")
