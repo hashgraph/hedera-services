@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -50,6 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -77,7 +77,6 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
 		final String transactionFeeid = "authorizedTxn";
 		final String nonUpdatableFile = "nonUpdatableFile";
-		final long newFee = 159_588_904;
 
 		return customHapiSpec("UpdateAllProtectedFilesDuringReconnect")
 				.withProperties(Map.of(
@@ -164,7 +163,8 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 								.setNode("0.0.6"),
 						getTxnRecord(transactionFeeid)
 								.setNode("0.0.6")
-								.hasPriority(recordWith().fee(newFee)),
+								.fee(ONE_HBAR)
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE),
 
 						cryptoCreate("civilian")
 								.setNode("0.0.6"),
