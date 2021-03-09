@@ -159,12 +159,9 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
 
 						cryptoCreate("civilian")
-								.via(transactionFeeid)
-								.setNode("0.0.6"),
-						getTxnRecord(transactionFeeid)
 								.setNode("0.0.6")
 								.fee(ONE_HBAR)
-								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE),
+								.hasPrecheck(INSUFFICIENT_TX_FEE),
 
 						cryptoCreate("civilian")
 								.setNode("0.0.6"),
