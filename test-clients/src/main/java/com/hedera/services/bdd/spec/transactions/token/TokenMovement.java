@@ -108,7 +108,7 @@ public class TokenMovement {
 		var targets = receivers.get();
 		var perTarget = senderEntry.getValue() / targets.size();
 		for (String target : targets) {
-			all.add(new AbstractMap.SimpleEntry<>(target, -perTarget));
+			all.add(new AbstractMap.SimpleEntry<>(target, perTarget));
 		}
 		return all;
 	}

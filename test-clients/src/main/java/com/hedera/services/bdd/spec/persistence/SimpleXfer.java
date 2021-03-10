@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.validation.domain;
+package com.hedera.services.bdd.spec.persistence;
 
 /*-
  * ‌
@@ -20,16 +20,37 @@ package com.hedera.services.bdd.suites.validation.domain;
  * ‍
  */
 
-import java.util.Map;
+import static com.hedera.services.bdd.suites.HapiApiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
-public class PuvConfig {
-	private Map<String, NetworkInfo> networks;
+public class SimpleXfer {
+	static final long DEFAULT_TINYBARS = 1L;
 
-	public Map<String, NetworkInfo> getNetworks() {
-		return networks;
+	private long amount = DEFAULT_TINYBARS;
+	private String to = FUNDING;
+	private String from = GENESIS;
+
+	public long getAmount() {
+		return amount;
 	}
 
-	public void setNetworks(Map<String, NetworkInfo> networks) {
-		this.networks = networks;
+	public void setAmount(long amount) {
+		this.amount = amount;
+	}
+
+	public String getTo() {
+		return to;
+	}
+
+	public void setTo(String to) {
+		this.to = to;
+	}
+
+	public String getFrom() {
+		return from;
+	}
+
+	public void setFrom(String from) {
+		this.from = from;
 	}
 }

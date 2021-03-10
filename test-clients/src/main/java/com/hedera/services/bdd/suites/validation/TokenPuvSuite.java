@@ -23,14 +23,9 @@ package com.hedera.services.bdd.suites.validation;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.persistence.Account;
 import com.hedera.services.bdd.spec.persistence.Entity;
-import com.hedera.services.bdd.spec.persistence.PemKey;
+import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.persistence.Token;
-import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.validation.domain.NetworkInfo;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -59,9 +54,9 @@ public class TokenPuvSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenPuvSuite.class);
 
 	private final MiscConfig miscConfig;
-	private final NetworkInfo targetInfo;
+	private final NetworkConfig targetInfo;
 
-	public TokenPuvSuite(MiscConfig miscConfig, NetworkInfo targetInfo) {
+	public TokenPuvSuite(MiscConfig miscConfig, NetworkConfig targetInfo) {
 		this.miscConfig = miscConfig;
 		this.targetInfo = targetInfo;
 	}
@@ -162,42 +157,42 @@ public class TokenPuvSuite extends HapiApiSuite {
 
 	private Entity catToken() {
 		var token = new Token();
-		token.setName("PostUpdateValidation Cat Token");
-		token.setAdminKey(PemKey.prefixedAt(Names.CAT_TOKEN_ADMIN));
+		token.setTokenName("PostUpdateValidation Cat Token");
+		token.setAdminKey(SpecKey.prefixedAt(Names.CAT_TOKEN_ADMIN));
 		token.setSymbol("CAT");
 		token.setTreasury(Names.TREASURY);
-		return Entity.from(Names.CAT_TOKEN, token);
+		return Entity.newTokenEntity(Names.CAT_TOKEN, token);
 	}
 
 	private Entity tacoToken() {
 		var token = new Token();
-		token.setKycKey(PemKey.prefixedAt(Names.TACO_TOKEN_KYC));
-		token.setWipeKey(PemKey.prefixedAt(Names.TACO_TOKEN_WIPE));
-		token.setAdminKey(PemKey.prefixedAt(Names.TACO_TOKEN_ADMIN));
-		token.setSupplyKey(PemKey.prefixedAt(Names.TACO_TOKEN_SUPPLY));
-		token.setFreezeKey(PemKey.prefixedAt(Names.TACO_TOKEN_FREEZE));
-		token.setName("PostUpdateValidation Taco Token");
+		token.setKycKey(SpecKey.prefixedAt(Names.TACO_TOKEN_KYC));
+		token.setWipeKey(SpecKey.prefixedAt(Names.TACO_TOKEN_WIPE));
+		token.setAdminKey(SpecKey.prefixedAt(Names.TACO_TOKEN_ADMIN));
+		token.setSupplyKey(SpecKey.prefixedAt(Names.TACO_TOKEN_SUPPLY));
+		token.setFreezeKey(SpecKey.prefixedAt(Names.TACO_TOKEN_FREEZE));
+		token.setTokenName("PostUpdateValidation Taco Token");
 		token.setSymbol("TACO");
 		token.setTreasury(Names.TREASURY);
-		return Entity.from(Names.TACO_TOKEN, token);
+		return Entity.newTokenEntity(Names.TACO_TOKEN, token);
 	}
 
 	private Entity treasury() {
 		var treasury = new Account();
-		treasury.setKey(PemKey.prefixedAt(Names.TREASURY));
-		return Entity.from(Names.TREASURY, treasury);
+		treasury.setKey(SpecKey.prefixedAt(Names.TREASURY));
+		return Entity.newAccountEntity(Names.TREASURY, treasury);
 	}
 
 	private Entity catBeneficiary() {
 		var bene = new Account();
-		bene.setKey(PemKey.prefixedAt(Names.CAT_BENEFICIARY));
-		return Entity.from(Names.CAT_BENEFICIARY, bene);
+		bene.setKey(SpecKey.prefixedAt(Names.CAT_BENEFICIARY));
+		return Entity.newAccountEntity(Names.CAT_BENEFICIARY, bene);
 	}
 
 	private Entity tacoBeneficiary() {
 		var bene = new Account();
-		bene.setKey(PemKey.prefixedAt(Names.TACO_BENEFICIARY));
-		return Entity.from(Names.TACO_BENEFICIARY, bene);
+		bene.setKey(SpecKey.prefixedAt(Names.TACO_BENEFICIARY));
+		return Entity.newAccountEntity(Names.TACO_BENEFICIARY, bene);
 	}
 
 	static class Names {

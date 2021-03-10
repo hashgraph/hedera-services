@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -63,11 +64,37 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 //						reviewObjects(),
 //						checkTls(),
-						xfer(),
 //						doSomething(),
 //						oneOfEveryTokenTxn(),
+//						customPayerOp(),
+						previewnetCryptoCreatePrice(),
 				}
 		);
+	}
+
+	public HapiApiSpec previewnetCryptoCreatePrice() {
+		return customHapiSpec("cryptoCreatePrice")
+				.withProperties(Map.of(
+						"nodes", "35.231.208.148",
+						"default.payer.pemKeyLoc", "previewtestnet-account2.pem",
+						"default.payer.pemKeyPassphrase", "<secret>"
+				))
+				.given(
+						cryptoCreate("civilian")
+								.balance(A_HUNDRED_HBARS)
+				).when(
+						cryptoCreate("another")
+								.payingWith("civilian")
+//								.signedBy("civilian")
+								.balance(0L)
+								.receiverSigRequired(true)
+								.blankMemo()
+								.entityMemo("")
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.via("civilianCreate")
+				).then(
+						getTxnRecord("civilianCreate").logged()
+				);
 	}
 
 	private HapiApiSpec oneOfEveryTokenTxn() {
@@ -135,21 +162,28 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec xfer() {
+	private HapiApiSpec customPayerOp() {
 		final String MAINNET_NODES = "35.237.200.180:0.0.3";
+		final String payer = "0.0.107630";
+		final String payerWords = "<secret>";
+
 		final long ONE_HBAR = 100_000_000L;
+
 		return customHapiSpec("xfer")
 				.withProperties(Map.of(
 						"nodes", MAINNET_NODES,
-						"default.payer", "0.0.950",
-						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
-//						"startupAccounts.path", "src/main/resource/StableTestnetAccount50StartupAccount.txt"
+						"fees.fixedOffer", "" + ONE_HBAR,
+						"fees.useFixedOffer", "false",
+						"default.payer", payer,
+						"default.payer.mnemonic", payerWords
 				)).given(
+						getAccountBalance(payer).logged()
 				).when(
-//						cryptoTransfer(tinyBarsFromTo(GENESIS, FEE_SCHEDULE_CONTROL, 100 * ONE_HBAR))
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "0.0.950", 1))
+								.signedBy(DEFAULT_PAYER)
+								.logged()
 				).then(
-						getAccountBalance("0.0.950").logged(),
-						getAccountBalance("0.0.45385").logged()
+						getAccountBalance(payer).logged()
 				);
 	}
 

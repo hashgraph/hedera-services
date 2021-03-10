@@ -1,0 +1,5 @@
+name: ofGeneralInterest
+topic:
+  adminKey: {generateIfMissing: true, wordsLoc: admin.words}
+  autoRenewAccount: autoRenewAccount
+  submitKey: {generateIfMissing: true, wordsLoc: submit.words}
