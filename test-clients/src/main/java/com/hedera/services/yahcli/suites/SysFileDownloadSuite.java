@@ -25,42 +25,30 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
-import com.hedera.services.bdd.suites.utils.validation.ValidationScenarios;
-import com.hedera.services.bdd.suites.utils.validation.domain.SysFilesDownScenario;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.UnaryOperator;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
-import static com.hedera.services.bdd.suites.utils.validation.domain.Network.SCENARIO_PAYER_NAME;
-import static java.nio.file.Files.readString;
 
 public class SysFileDownloadSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SysFileDownloadSuite.class);
 
-	private static final Map<String, Long> NAMES_TO_NUMBERS = Map.ofEntries(
+	private final Map<String, Long> NAMES_TO_NUMBERS = Map.ofEntries(
 			Map.entry("book", 101L),
 			Map.entry("details", 102L),
 			Map.entry("rates", 112L),
 			Map.entry("fees", 111L),
 			Map.entry("props", 121L),
 			Map.entry("permissions", 122L));
-	private static final Set<Long> VALID_NUMBERS = new HashSet<>(NAMES_TO_NUMBERS.values());
+	private final Set<Long> VALID_NUMBERS = new HashSet<>(NAMES_TO_NUMBERS.values());
 
 	private final String destDir;
 	private final Map<String, String> specConfig;

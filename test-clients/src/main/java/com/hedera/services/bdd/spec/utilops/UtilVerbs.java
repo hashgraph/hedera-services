@@ -627,6 +627,22 @@ public class UtilVerbs {
 		});
 	}
 
+	public static CustomSpecAssert getTransactionFee(String txn, StringBuilder feeTableBuilder, String operation) {
+		return assertionsHold((spec, asertLog) -> {
+			var subOp = getTxnRecord(txn);
+			allRunFor(spec, subOp);
+
+			var record = subOp.getResponseRecord();
+			double actualUsdCharged = (1.0 * record.getTransactionFee())
+					/ ONE_HBAR
+					/ record.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+					* record.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+					/ 100;
+
+			feeTableBuilder.append(String.format("%30s | %1.5f \t |\n", operation, actualUsdCharged));
+		});
+	}
+
 	public static HapiSpecOperation[] takeBalanceSnapshots(String... entities) {
 		return HapiApiSuite.flattened(
 				cryptoTransfer(
