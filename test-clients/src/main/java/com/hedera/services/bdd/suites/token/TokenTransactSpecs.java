@@ -184,7 +184,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
 						cryptoTransfer(
 								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
-								movingHbar(A_HUNDRED_HBARS).between("firstTreasury", "beneficiary")
+								movingHbar(ONE_HUNDRED_HBARS).between("firstTreasury", "beneficiary")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury")
 								.hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE)

@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exportAccountBalances;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -208,7 +207,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 				var op =  cryptoCreate(String.format("%s%s",ACCT_NAME_PREFIX , next))
 						.balance((long)(r.nextInt((int)ONE_HBAR) * 1000 + MIN_ACCOUNT_BALANCE))
 						.key(GENESIS)
-						.fee(A_HUNDRED_HBARS)
+						.fee(ONE_HUNDRED_HBARS)
 						.withRecharging()
 						.rechargeWindow(30)
 						.noLogging()
@@ -240,7 +239,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 				var payingTreasury = String.format(ACCT_NAME_PREFIX + next);
 				var op = tokenCreate(TOKEN_NAME_PREFIX + next)
 						.signedBy(GENESIS)
-						.fee(A_HUNDRED_HBARS)
+						.fee(ONE_HUNDRED_HBARS)
 						.initialSupply(MIN_TOKEN_SUPPLY + r.nextInt(MAX_TOKEN_SUPPLY))
 						.treasury(payingTreasury)
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
@@ -280,7 +279,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 						.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,INVALID_SIGNATURE,
 								TRANSACTION_EXPIRED, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
-						.fee(A_HUNDRED_HBARS)
+						.fee(ONE_HUNDRED_HBARS)
 						.noLogging()
 						.suppressStats(true)
 						.deferStatusResolution()
@@ -317,7 +316,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						.noLogging()
 						.signedBy(GENESIS)
 						.suppressStats(true)
-						.fee(A_HUNDRED_HBARS)
+						.fee(ONE_HUNDRED_HBARS)
 						.deferStatusResolution()
 						;
 
