@@ -109,7 +109,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 										spec -> {
 											ByteString newRates = spec
 													.ratesProvider()
-													.rateSetWith(1, 1)
+													.rateSetWith(100, 1)
 													.toByteString();
 											spec.registry().saveBytes("newRates", newRates);
 											return newRates;
@@ -160,7 +160,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 
 						cryptoCreate("civilian")
 								.setNode("0.0.6")
-								.fee(ONE_HBAR)
+								.fee(A_HUNDRED_HBARS)
 								.hasPrecheck(INSUFFICIENT_TX_FEE),
 
 						cryptoCreate("civilian")
