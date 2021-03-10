@@ -54,7 +54,7 @@ public class AddWellKnownEntities extends HapiApiSuite {
 		return HapiApiSpec.customHapiSpec("AddWellKnownEntities")
 				.withProperties(Map.of(
 						"fees.useFixedOffer", "true",
-						"fees.fixedOffer", "" + A_HUNDRED_HBARS,
+						"fees.fixedOffer", "" + ONE_HUNDRED_HBARS,
 						"persistentEntities.dir.path", "src/main/resource/jrs-creations"
 				)).given(
 						expectedEntitiesExist()

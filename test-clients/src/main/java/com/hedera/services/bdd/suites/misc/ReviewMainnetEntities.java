@@ -32,7 +32,6 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -81,7 +80,7 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 				))
 				.given(
 						cryptoCreate("civilian")
-								.balance(A_HUNDRED_HBARS)
+								.balance(ONE_HUNDRED_HBARS)
 				).when(
 						cryptoCreate("another")
 								.payingWith("civilian")
