@@ -82,6 +82,7 @@ import com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.FileContractMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.FileUpdateLoadTest;
 import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
+import com.hedera.services.bdd.suites.perf.MixedOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedOpsMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
@@ -346,6 +347,7 @@ public class SuiteRunner {
 		/* Transfer then freeze */
 		put("CryptoTransferThenFreezeTest", aof(new CryptoTransferThenFreezeTest()));
 		put("MixedOpsTransactionsSuite", aof(new MixedOpsTransactionsSuite()));
+		put("MixedOpsLoadTest", aof(new MixedOpsLoadTest()));
 	}};
 
 	static boolean runAsync;
