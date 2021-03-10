@@ -37,7 +37,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -75,7 +74,6 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 
 	private HapiApiSpec updateAllProtectedFilesDuringReconnect() {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
-		final String transactionFeeid = "authorizedTxn";
 		final String nonUpdatableFile = "nonUpdatableFile";
 
 		return customHapiSpec("UpdateAllProtectedFilesDuringReconnect")
