@@ -159,7 +159,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 
 						cryptoCreate("civilian")
 								.setNode("0.0.6")
-								.fee(A_HUNDRED_HBARS)
+								.fee(ONE_HUNDRED_HBARS)
 								.hasPrecheck(INSUFFICIENT_TX_FEE),
 
 						cryptoCreate("civilian")

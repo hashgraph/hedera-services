@@ -74,7 +74,7 @@ public class MiscCryptoSuite extends HapiApiSuite {
 		final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
 		return defaultHapiSpec("ReduceTransferFee")
 				.given(
-						cryptoCreate("sender").balance(A_HUNDRED_HBARS),
+						cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver").balance(0L),
 						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
 								.payingWith("sender")
@@ -89,7 +89,7 @@ public class MiscCryptoSuite extends HapiApiSuite {
 								.payingWith("sender")
 								.fee(ONE_HBAR)
 								.hasPrecheck(OK),
-						getAccountBalance("sender").hasTinyBars(A_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE).logged()
+						getAccountBalance("sender").hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE).logged()
 				);
 	}
 

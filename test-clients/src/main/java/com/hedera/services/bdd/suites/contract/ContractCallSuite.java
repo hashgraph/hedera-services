@@ -123,7 +123,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						newKeyNamed("initialAdminKey").shape(initialKeyShape),
 						newKeyNamed("newAdminKey").shape(newKeyShape),
 						cryptoCreate("payer")
-								.balance(10 * A_HUNDRED_HBARS),
+								.balance(10 * ONE_HUNDRED_HBARS),
 						fileCreate("bytecode")
 								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH)
 								.payingWith("payer")

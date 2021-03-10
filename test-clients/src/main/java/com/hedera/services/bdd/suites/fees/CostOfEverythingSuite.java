@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.fees;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -104,7 +103,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
 				.given(
 						cryptoCreate("payingSender")
-								.balance(A_HUNDRED_HBARS),
+								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver")
 								.balance(0L)
 								.receiverSigRequired(true)
@@ -151,7 +150,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
 				.given(
 						cryptoCreate("civilian")
-								.balance(A_HUNDRED_HBARS),
+								.balance(ONE_HUNDRED_HBARS),
 						fileCreate("multiBytecode")
 								.payingWith("civilian")
 								.path(MULTIPURPOSE_BYTECODE_PATH),
