@@ -146,6 +146,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 
 						fileUpdate(nonUpdatableFile)
 								.setNode("0.0.6")
+								.fee(A_HUNDRED_HBARS)
 								.hasPrecheck(NOT_SUPPORTED),
 
 						fileCreate("contractFile")
