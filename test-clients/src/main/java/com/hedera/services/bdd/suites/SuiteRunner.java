@@ -512,6 +512,7 @@ public class SuiteRunner {
 				globalPassFlag &= result.failedSuites.isEmpty();
 			}
 		});
+		log.info("============== SuiteRunner finished ==============");
 	}
 
 	private static boolean categoryLeaksState(HapiApiSuite[] suites) {

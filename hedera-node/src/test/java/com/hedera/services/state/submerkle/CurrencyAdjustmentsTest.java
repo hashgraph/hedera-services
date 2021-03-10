@@ -42,11 +42,8 @@ import static org.mockito.BDDMockito.*;
 
 class CurrencyAdjustmentsTest {
 	AccountID a = IdUtils.asAccount("0.0.13257");
-	EntityId aEntity = EntityId.ofNullableAccountId(a);
 	AccountID b = IdUtils.asAccount("0.0.13258");
-	EntityId bEntity = EntityId.ofNullableAccountId(b);
 	AccountID c = IdUtils.asAccount("0.0.13259");
-	EntityId cEntity = EntityId.ofNullableAccountId(c);
 
 	long aAmount = 1L, bAmount = 2L, cAmount = -3L;
 
@@ -54,25 +51,16 @@ class CurrencyAdjustmentsTest {
 	TransferList otherGrpcAdjustments = TxnUtils.withAdjustments(a, aAmount * 2, b, bAmount * 2, c, cAmount * 2);
 
 	DataInputStream din;
-	EntityId.Provider idProvider;
 
 	CurrencyAdjustments subject;
 
 	@BeforeEach
 	public void setup() {
 		din = mock(DataInputStream.class);
-		idProvider = mock(EntityId.Provider.class);
-
-		CurrencyAdjustments.legacyIdProvider = idProvider;
 
 		subject = new CurrencyAdjustments();
 		subject.accountIds = List.of(ofNullableAccountId(a), ofNullableAccountId(b), ofNullableAccountId(c));
 		subject.hbars = new long[] { aAmount, bAmount, cAmount };
-	}
-
-	@AfterEach
-	public void cleanup() {
-		CurrencyAdjustments.legacyIdProvider = EntityId.LEGACY_PROVIDER;
 	}
 
 	@Test
@@ -99,26 +87,6 @@ class CurrencyAdjustmentsTest {
 		// and:
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(one.hashCode(), three.hashCode());
-	}
-
-	@Test
-	public void legacyProviderWorks() throws IOException {
-		given(din.readLong())
-				.willReturn(-1L).willReturn(-2L)
-				.willReturn(-1L).willReturn(-2L).willReturn(aAmount)
-				.willReturn(-1L).willReturn(-2L).willReturn(bAmount)
-				.willReturn(-1L).willReturn(-2L).willReturn(cAmount);
-		given(din.readInt()).willReturn(3);
-		given(idProvider.deserialize(din))
-				.willReturn(aEntity)
-				.willReturn(bEntity)
-				.willReturn(cEntity);
-
-		// when:
-		var subjectRead = CurrencyAdjustments.LEGACY_PROVIDER.deserialize(din);
-
-		// then:
-		assertEquals(subject, subjectRead);
 	}
 
 	@Test

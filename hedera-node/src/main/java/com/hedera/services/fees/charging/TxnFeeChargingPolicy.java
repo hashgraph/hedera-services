@@ -31,18 +31,20 @@ import static com.hedera.services.fees.TxnFeeType.SERVICE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NODE_FEE;
+import static com.hedera.services.fees.charging.ItemizableFeeCharging.SERVICE_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the transaction fee-charging policy for the processing
- * logic. The policy offers three basic entry points:
+ * logic. The policy offers four basic entry points:
  * <ol>
  *    <li>For a txn whose submitting node seemed to ignore due diligence
  *    (e.g. submitted a txn with an impermissible valid duration); and, </li>
  *    <li>For a txn that looks to have been submitted responsibly, but is
  *    a duplicate of a txn already submitted by a different node; and,</li>
+ *    <li>For a triggered txn; and,</li>
  *    <li>For a txn that was submitted responsibly, and is believed unique.</li>
  * </ol>
  *
@@ -62,6 +64,27 @@ public class TxnFeeChargingPolicy {
 	 */
 	public ResponseCodeEnum apply(ItemizableFeeCharging charging, FeeObject fee) {
 		return applyWithDiscount(charging, fee, NO_DISCOUNT);
+	}
+
+	/**
+	 * Apply the fee charging policy to a txn that was submitted responsibly, but
+	 * is a triggered txn rather than a parent txn requiring node precheck work.
+	 *
+	 * @param charging the charging facility to use
+	 * @param fee the fee to charge
+	 * @return the outcome of applying the policy
+	 */
+	public ResponseCodeEnum applyForTriggered(ItemizableFeeCharging charging, FeeObject fee) {
+		charging.setFor(SERVICE, fee.getServiceFee());
+
+		if (!charging.isPayerWillingToCover(SERVICE_FEE)) {
+			return INSUFFICIENT_TX_FEE;
+		} else if (!charging.canPayerAfford(SERVICE_FEE)) {
+			return INSUFFICIENT_PAYER_BALANCE;
+		} else {
+			charging.chargePayer(SERVICE_FEE);
+			return OK;
+		}
 	}
 
 	/**
@@ -112,6 +135,7 @@ public class TxnFeeChargingPolicy {
 			ItemizableFeeCharging charging,
 			Consumer<ItemizableFeeCharging> discount
 	) {
+		discount.accept(charging);
 		if (!charging.isPayerWillingToCover(NETWORK_NODE_SERVICE_FEES))	{
 			penalizePayer(charging);
 			return INSUFFICIENT_TX_FEE;
@@ -119,7 +143,6 @@ public class TxnFeeChargingPolicy {
 			penalizePayer(charging);
 			return INSUFFICIENT_PAYER_BALANCE;
 		} else {
-			discount.accept(charging);
 			charging.chargePayer(NETWORK_NODE_SERVICE_FEES);
 			return OK;
 		}

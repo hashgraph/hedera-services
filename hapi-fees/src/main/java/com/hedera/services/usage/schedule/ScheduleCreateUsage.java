@@ -20,6 +20,7 @@ package com.hedera.services.usage.schedule;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -27,6 +28,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
@@ -53,7 +56,7 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 	public FeeData get() {
 		var op = this.op.getScheduleCreate();
 
-		var txBytes = op.getTransactionBody().toByteArray().length + op.getMemoBytes().size();
+		var txBytes = op.getTransactionBody().size() + op.getMemoBytes().size();
 		var ramBytes = scheduleEntitySizes.bytesInBaseReprGiven(op.getTransactionBody().toByteArray(), op.getMemoBytes());
 		if (op.hasAdminKey()) {
 			long keySize = getAccountKeyStorageSize(op.getAdminKey());
@@ -75,7 +78,15 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 		usageEstimator.addBpt(txBytes);
 		usageEstimator.addRbs(ramBytes * this.expirationTimeSecs);
 		usageEstimator.addVpt(scheduledTxSigs);
-		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE); // The newly created ScheduleID that is set in the receipt
+
+		/* A ScheduleCreate record includes the created ScheduleID and the TransactionID
+		of the scheduled transaction (which always has scheduled = true). */
+		var nonceBytes = 0;
+		try {
+			var txn = TransactionBody.parseFrom(op.getTransactionBody());
+			nonceBytes = txn.getTransactionID().getNonce().size();
+		} catch (InvalidProtocolBufferException ignore) { }
+		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + BOOL_SIZE + nonceBytes);
 
 		return usageEstimator.get();
 	}

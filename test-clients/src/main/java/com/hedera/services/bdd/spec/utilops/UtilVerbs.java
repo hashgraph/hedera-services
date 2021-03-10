@@ -52,10 +52,10 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -86,6 +86,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -418,35 +419,53 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation makeFree(HederaFunctionality function) {
+		return reduceFeeFor(function, 0L, 0L, 0L);
+	}
+
+	public static HapiSpecOperation reduceFeeFor(HederaFunctionality function,
+			long tinyBarMaxNodeFee, long tinyBarMaxNetworkFee, long tinyBarMaxServiceFee) {
 		return withOpContext((spec, opLog) -> {
+			if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
+				opLog.info("Sleeping to wait for fee reduction...");
+				Thread.sleep(20000);
+				return;
+			}
+			opLog.info("Sleeping so not to spoil/fail the fee initializations on other clients...");
+			Thread.sleep(10000);
+			opLog.info("Reducing fee for {}...", function);
 			var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
-			var zeroTfs = zeroFor(function);
-			var schedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules);
-			var perturbedSchedules = CurrentAndNextFeeSchedule.newBuilder();
-			schedules.getCurrentFeeSchedule()
-					.getTransactionFeeScheduleList()
-					.stream()
-					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-					.forEach(perturbedSchedules.getCurrentFeeScheduleBuilder()::addTransactionFeeSchedule);
-			schedules.getNextFeeSchedule()
-					.getTransactionFeeScheduleList()
-					.stream()
-					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-					.forEach(perturbedSchedules.getNextFeeScheduleBuilder()::addTransactionFeeSchedule);
-			perturbedSchedules.getCurrentFeeScheduleBuilder()
-					.setExpiryTime(schedules.getCurrentFeeSchedule().getExpiryTime());
-			perturbedSchedules.getNextFeeScheduleBuilder()
-					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
+
+			// Convert from tinyBar to one-thousandth of a tinyCent, the unit of max field in FeeComponents
+			long centEquiv = spec.ratesProvider().rates().getCentEquiv();
+			long hbarEquiv = spec.ratesProvider().rates().getHbarEquiv();
+			long maxNodeFee = tinyBarMaxNodeFee * centEquiv * 1000L / hbarEquiv;
+			long maxNetworkFee = tinyBarMaxNetworkFee * centEquiv * 1000L / hbarEquiv;
+			long maxServiceFee = tinyBarMaxServiceFee * centEquiv * 1000L / hbarEquiv;
+
+			var perturbedSchedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
+			reduceFeeComponentsFor(perturbedSchedules.getCurrentFeeScheduleBuilder(), function,
+					maxNodeFee, maxNetworkFee, maxServiceFee);
+			reduceFeeComponentsFor(perturbedSchedules.getNextFeeScheduleBuilder(), function,
+					maxNodeFee, maxNetworkFee, maxServiceFee);
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
 	}
 
-	private static TransactionFeeSchedule zeroFor(HederaFunctionality function) {
-		return TransactionFeeSchedule.newBuilder().setHederaFunctionality(function).build();
+	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
+			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
+		var feeData = feeSchedule.getTransactionFeeScheduleBuilderList()
+				.stream()
+				.filter(tfs -> tfs.getHederaFunctionality() == function)
+				.findAny()
+				.get()
+				.getFeeDataBuilder();
+		feeData.getNodedataBuilder().setMax(maxNodeFee);
+		feeData.getNetworkdataBuilder().setMax(maxNetworkFee);
+		feeData.getServicedataBuilder().setMax(maxServiceFee);
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {

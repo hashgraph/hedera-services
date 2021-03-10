@@ -23,7 +23,6 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.TrieSigMapGenerator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -69,6 +68,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private boolean skipRegistryUpdate = false;
 	private boolean scheduleNoFunction = false;
 	private boolean inheritScheduledSigs = false;
+	private boolean saveExpectedScheduledTxnId = false;
 	private ByteString bytesSigned = ByteString.EMPTY;
 	private List<String> signatories = Collections.emptyList();
 
@@ -82,7 +82,12 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
 	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
 		this.entity = scheduled;
-		this.scheduled = txn.withLegacyProtoStructure().sansTxnId();
+		this.scheduled = txn.withLegacyProtoStructure().sansTxnId().sansNodeAccount();
+	}
+
+	public HapiScheduleCreate<T> savingExpectedScheduledTxnId() {
+		saveExpectedScheduledTxnId = true;
+		return this;
 	}
 
 	public HapiScheduleCreate<T> advertisingCreation() {
@@ -253,12 +258,22 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							lastReceipt.getScheduleID().getScheduleNum()));
 			log.info(banner);
 		}
+		if (saveExpectedScheduledTxnId) {
+			if (verboseLoggingOn) {
+				log.info("Returned receipt for scheduled txn is {}", lastReceipt.getScheduledTransactionID());
+			}
+			registry.saveTxnId(correspondingScheduledTxnId(entity), lastReceipt.getScheduledTransactionID());
+		}
+	}
+
+	public static String correspondingScheduledTxnId(String entity) {
+		return entity + "ScheduledTxnId";
 	}
 
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(List.of(
-				spec -> spec.registry().getKey(effectivePayer(spec))));
+		List<Function<HapiApiSpec, Key>> signers =
+				new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
 		adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
 		return signers;
 	}

@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -45,8 +46,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -55,6 +58,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 public class SubmitMessageLoadTest extends LoadTest {
 
@@ -141,6 +146,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "4000",
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0")),
+						reduceFeeFor(ConsensusSubmitMessage, 2L, 3L, 3L),
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
 								.withRecharging()
 								.rechargeWindow(3)
@@ -149,9 +155,10 @@ public class SubmitMessageLoadTest extends LoadTest {
 								.submitKeyName("submitKey")
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED):
 								sleepFor(100),
-						sleepFor(1000) //wait all other thread ready
+						sleepFor(10000) //wait all other thread ready
 				).then(
-						defaultLoadTest(submitBurst, settings)
+						defaultLoadTest(submitBurst, settings),
+						getAccountBalance("sender").logged()
 				);
 	}
 
@@ -195,7 +202,8 @@ public class SubmitMessageLoadTest extends LoadTest {
 						TOPIC_EXPIRED,
 						INVALID_TOPIC_ID,
 						INSUFFICIENT_PAYER_BALANCE)
-				.hasKnownStatusFrom(SUCCESS, OK, INVALID_TOPIC_ID)
+				.hasKnownStatusFrom(SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE
+						,UNKNOWN,TRANSACTION_EXPIRED)
 				.deferStatusResolution();
 		if (settings.getBooleanProperty("isChunk", false)) {
 			return () -> op.chunkInfo(1, 1).usePresetTimestamp();

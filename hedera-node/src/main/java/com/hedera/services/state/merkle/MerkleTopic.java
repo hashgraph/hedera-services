@@ -82,7 +82,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
 
 	static TopicSerde topicSerde = new TopicSerde();
 	static DomainSerdes serdes = new DomainSerdes();
-	static EntityId.Provider legacyIdProvider = EntityId.LEGACY_PROVIDER;
 
 	private String memo;
 	private JKey adminKey;

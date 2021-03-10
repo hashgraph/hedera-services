@@ -118,35 +118,36 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				scheduledTXCreatedAfterPreviousIdenticalIsExecuted(),
 				preservesRevocationServiceSemanticsForFileDelete(),
 				worksAsExpectedWithDefaultScheduleId(),
+				infoIncludesTxnIdFromCreationReceipt(),
 				suiteCleanup(),
 		});
 	}
 
 	private HapiApiSpec suiteSetup() {
 		return defaultHapiSpec("suiteSetup")
-				.given( ).when( ).then(
+				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);
 	}
 
 	private HapiApiSpec suiteCleanup() {
 		return defaultHapiSpec("suiteCleanup")
-				.given( ).when( ).then(
+				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
 				);
 	}
 
 	private HapiApiSpec worksAsExpectedWithDefaultScheduleId() {
 		return defaultHapiSpec("WorksAsExpectedWithDefaultScheduleId")
-				.given( ).when( ).then(
+				.given().when().then(
 						getScheduleInfo("0.0.0").hasCostAnswerPrecheck(INVALID_SCHEDULE_ID)
 				);
 	}
 
 	private HapiApiSpec bodyOnlyCreation() {
 		return defaultHapiSpec("BodyOnlyCreation")
-				.given( ).when(
-						scheduleCreate( "onlyBody",
+				.given().when(
+						scheduleCreate("onlyBody",
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).logged()
 				).then(
@@ -174,7 +175,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec onlyBodyAndMemoCreation() {
 		return defaultHapiSpec("OnlyBodyAndMemoCreation")
-				.given( ).when(
+				.given().when(
 						scheduleCreate("onlyBodyAndMemo",
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
 						).entityMemo("sample memo")
@@ -226,7 +227,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec failsWithNonExistingPayerAccountId() {
 		return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
-				.given( ).when(
+				.given().when(
 						scheduleCreate("invalidPayer", cryptoCreate("secondary"))
 								.designatingPayer("0.0.9999")
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
@@ -236,7 +237,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec failsWithTooLongMemo() {
 		return defaultHapiSpec("FailsWithTooLongMemo")
-				.given( ).when(
+				.given().when(
 						scheduleCreate("invalidMemo", cryptoCreate("secondary"))
 								.entityMemo(nAscii(101))
 								.hasPrecheck(MEMO_TOO_LONG)
@@ -246,6 +247,26 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private String nAscii(int n) {
 		return IntStream.range(0, n).mapToObj(ignore -> "A").collect(Collectors.joining());
+	}
+
+	private HapiApiSpec infoIncludesTxnIdFromCreationReceipt() {
+		var nonce = "0123456789".getBytes();
+
+		return defaultHapiSpec("InfoIncludesTxnIdFromCreationReceipt")
+				.given(
+						scheduleCreate("creation",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1))
+										.signedBy()
+						)
+								.withNonce(nonce)
+								.inheritingScheduledSigs()
+								.savingExpectedScheduledTxnId()
+				).when().then(
+						getScheduleInfo("creation")
+								.hasScheduleId("creation")
+								.hasScheduledIdSavedBy("creation")
+								.logged()
+				);
 	}
 
 	private HapiApiSpec allowsDoublingScheduledCreates() {
@@ -559,7 +580,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("PreservesRevocationServiceSemanticsForFileDelete")
 				.given(
-						overriding( "scheduling.whitelist", "FileDelete"),
+						overriding("scheduling.whitelist", "FileDelete"),
 						fileCreate(shouldBeInstaDeleted).waclShape(waclShape),
 						fileCreate(shouldBeDeletedEventually).waclShape(waclShape)
 				).when(
@@ -637,7 +658,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec requiresExtantPayer() {
 		return defaultHapiSpec("RequiresExtantPayer")
-				.given( ).when( ).then(
+				.given().when().then(
 						scheduleCreate(
 								"neverToBe",
 								cryptoCreate("nope")
@@ -700,7 +721,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec rejectsUnresolvableReqSigners() {
 		return defaultHapiSpec("RejectsUnresolvableReqSigners")
-				.given( ).when().then(
+				.given().when().then(
 						scheduleCreate(
 								"xferWithImaginaryAccount",
 								cryptoTransfer(
@@ -713,7 +734,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec rejectsUnparseableTxn() {
 		return defaultHapiSpec("RejectsUnparseableTxn")
-				.given( ).when().then(
+				.given().when().then(
 						scheduleCreateNonsense("absurd")
 								.hasKnownStatus(UNPARSEABLE_SCHEDULED_TRANSACTION)
 				);

@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation.schedule.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
@@ -32,8 +33,13 @@ import com.hederahashgraph.fee.SigValueObj;
 import java.util.function.BiFunction;
 
 public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
-
     static BiFunction<TransactionBody, SigUsage, ScheduleSignUsage> factory = ScheduleSignUsage::newEstimate;
+
+    private final GlobalDynamicProperties properties;
+
+    public ScheduleSignResourceUsage(GlobalDynamicProperties properties) {
+        this.properties = properties;
+    }
 
     @Override
     public boolean applicableTo(TransactionBody txn) {
@@ -49,10 +55,14 @@ public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
         var optionalInfo = view.infoForSchedule(op.getScheduleID());
         if (optionalInfo.isPresent()) {
             var info = optionalInfo.get();
-
-            return estimate.givenExpiry(info.getExpirationTime().getSeconds()).get();
+            return estimate
+                    .givenExpiry(info.getExpirationTime().getSeconds())
+                    .givenNonceBytes(info.getScheduledTransactionID().getNonce().size())
+                    .get();
+        } else {
+            return estimate
+                    .givenExpiry(properties.scheduledTxExpiryTimeSecs())
+                    .get();
         }
-
-        return FeeData.getDefaultInstance();
     }
 }

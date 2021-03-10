@@ -20,6 +20,8 @@ package com.hedera.services.fees.calculation.schedule.txns;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
@@ -30,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,12 +43,20 @@ import java.util.function.BiFunction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class ScheduleSignResourceUsageTest {
+	byte[] nonce = "Something something something".getBytes();
+    TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setScheduled(true)
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .setNonce(ByteString.copyFrom(nonce))
+            .build();
+
     ScheduleSignResourceUsage subject;
     StateView view;
     ScheduleSignUsage usage;
@@ -61,6 +72,7 @@ public class ScheduleSignResourceUsageTest {
     FeeData expected;
 
     ScheduleInfo info = ScheduleInfo.newBuilder()
+            .setScheduledTransactionID(scheduledTxnId)
             .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
             .build();
 
@@ -80,6 +92,7 @@ public class ScheduleSignResourceUsageTest {
 
         usage = mock(ScheduleSignUsage.class);
         given(usage.givenExpiry(anyLong())).willReturn(usage);
+        given(usage.givenNonceBytes(anyInt())).willReturn(usage);
         given(usage.get()).willReturn(expected);
 
         factory = (BiFunction<TransactionBody, SigUsage, ScheduleSignUsage>)mock(BiFunction.class);
@@ -88,7 +101,7 @@ public class ScheduleSignResourceUsageTest {
         given(view.infoForSchedule(target)).willReturn(Optional.of(info));
 
         ScheduleSignResourceUsage.factory = factory;
-        subject = new ScheduleSignResourceUsage();
+        subject = new ScheduleSignResourceUsage(new MockGlobalDynamicProps());
     }
 
     @Test
@@ -102,6 +115,8 @@ public class ScheduleSignResourceUsageTest {
     public void delegatesToCorrectEstimate() throws Exception {
         // expect:
         assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
+
+        verify(usage).givenNonceBytes(nonce.length);
     }
 
     @Test
@@ -109,12 +124,10 @@ public class ScheduleSignResourceUsageTest {
         given(view.infoForSchedule(target)).willReturn(Optional.empty());
 
         // expect:
-        assertEquals(
-                FeeData.getDefaultInstance(),
-                subject.usageGiven(scheduleSignTxn, obj, view));
-        // and:
+        assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
         verify(factory).apply(scheduleSignTxn, sigUsage);
         verify(scheduleSignTxn).getScheduleSign();
         verify(view).infoForSchedule(target);
+        verify(usage).givenExpiry(1800);
     }
 }

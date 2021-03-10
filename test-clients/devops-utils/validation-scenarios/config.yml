@@ -83,7 +83,7 @@ networks:
     scenarios:
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [121]
+        numsToFetch: [111]
   mainnet:
     bootstrap: 950
     defaultNode: 3
@@ -111,7 +111,7 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39283}
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [121]
+        numsToFetch: [111]
   localhost:
     bootstrap: 2
     defaultNode: 3

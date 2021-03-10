@@ -54,7 +54,6 @@ class SolidityLogTest {
 
 	DomainSerdes serdes;
 	DataInputStream din;
-	EntityId.Provider idProvider;
 	SerializableDataInputStream in;
 
 	SolidityLog subject;
@@ -64,18 +63,15 @@ class SolidityLogTest {
 		din = mock(DataInputStream.class);
 		in = mock(SerializableDataInputStream.class);
 		serdes = mock(DomainSerdes.class);
-		idProvider = mock(EntityId.Provider.class);
 
 		subject = new SolidityLog(contractId, bloom, topics, data);
 
 		SolidityLog.serdes = serdes;
-		SolidityLog.legacyIdProvider = idProvider;
 	}
 
 	@AfterEach
 	public void cleanup() {
 		SolidityLog.serdes = new DomainSerdes();
-		SolidityLog.legacyIdProvider = EntityId.LEGACY_PROVIDER;
 	}
 
 	@Test
@@ -118,49 +114,6 @@ class SolidityLogTest {
 						subject.getTopics(),
 						subject.getData())
 				, subject);
-	}
-
-	@Test
-	public void legacyProviderWorks() throws IOException {
-		// setup:
-		var readCount = new AtomicInteger(0);
-
-		given(din.readLong())
-				.willReturn(1L)
-				.willReturn(2L);
-		given(din.readBoolean())
-				.willReturn(true);
-		given(idProvider.deserialize(din)).willReturn(contractId);
-		given(din.readInt())
-				.willReturn(bloom.length)
-				.willReturn(data.length)
-				.willReturn(topics.size())
-				.willReturn(topics.get(0).length)
-				.willReturn(topics.get(1).length)
-				.willReturn(topics.get(2).length);
-
-		willAnswer(invoke -> {
-			byte[] arg = invoke.getArgument(0);
-			int whichRead = readCount.getAndIncrement();
-			if (whichRead == 0) {
-				System.arraycopy(bloom, 0, arg, 0, bloom.length);
-			} else if (whichRead == 1) {
-				System.arraycopy(data, 0, arg, 0, data.length);
-			} else if (whichRead == 2) {
-				System.arraycopy(topics.get(0), 0, arg, 0, topics.get(0).length);
-			} else if (whichRead == 3) {
-				System.arraycopy(topics.get(1), 0, arg, 0, topics.get(1).length);
-			} else {
-				System.arraycopy(topics.get(2), 0, arg, 0, topics.get(2).length);
-			}
-			return null;
-		}).given(din).readFully(any());
-
-		// when:
-		var readSubject = SolidityLog.LEGACY_PROVIDER.deserialize(din);
-
-		// then:
-		assertEquals(subject, readSubject);
 	}
 
 	@Test
