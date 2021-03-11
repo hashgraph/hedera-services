@@ -16,10 +16,10 @@ networks:
   perfnet:
     bootstrap: 2
     defaultNode: 3
-    ensureScenarioPayerHbars: 10000
+    ensureScenarioPayerHbars: 2500
     nodes:
     - {account: 3, ipv4Addr: 34.74.82.254}
-    scenarioPayer: 1035
+    scenarioPayer: 1026
     scenarios:
       sysFilesDown:
         evalMode: snapshot
