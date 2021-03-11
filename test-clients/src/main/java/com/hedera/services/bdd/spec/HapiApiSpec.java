@@ -146,13 +146,8 @@ public class HapiApiSpec implements Runnable {
 
 
 	public void exportAccountBalances(Supplier<String> dir) {
-		Instant now = Instant.now();
-		Timestamp.Builder timeStamp = Timestamp.newBuilder();
-		timeStamp.setSeconds(now.getEpochSecond())
-				.setNanos(now.getNano());
-
 		AllAccountBalances.Builder allAccountBalancesBuilder = AllAccountBalances.newBuilder()
-				.addAllAllAccounts(accountBalances).setConsensusTimestamp(timeStamp);
+				.addAllAllAccounts(accountBalances);
 
 		try (FileOutputStream fout = new FileOutputStream(dir.get())) {
 			allAccountBalancesBuilder.build().writeTo(fout);

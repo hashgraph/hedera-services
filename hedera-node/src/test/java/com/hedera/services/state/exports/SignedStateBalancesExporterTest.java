@@ -626,17 +626,14 @@ class SignedStateBalancesExporterTest {
 	public void initsAsExpected() {
 		// expect:
 		assertEquals(ledgerFloat, subject.expectedFloat);
-		assertEquals(SignedStateBalancesExporter.NEVER, subject.periodEnd);
 	}
 
 	@Test
 	public void exportsWhenPeriodSecsHaveElapsed() {
+		now = subject.periodEnd;
+		anEternityLater = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() * 2);
 		assertFalse(subject.isTimeToExport(now));
-		assertEquals(now.plusSeconds(dynamicProperties.balancesExportPeriodSecs()), subject.periodEnd);
-		assertFalse(subject.isTimeToExport(shortlyAfter));
-		assertEquals(now.plusSeconds(dynamicProperties.balancesExportPeriodSecs()), subject.periodEnd);
 		assertTrue(subject.isTimeToExport(anEternityLater));
-		assertEquals(anEternityLater.plusSeconds(dynamicProperties.balancesExportPeriodSecs()), subject.periodEnd);
 	}
 
 	@AfterAll
