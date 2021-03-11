@@ -538,23 +538,13 @@ public class HederaSigningOrder {
 		var result = sigMetaLookup.accountSigningMetaFor(target);
 		if (!result.succeeded()) {
 			return accountFailure(target, txnId, result.failureIfAny(), factory);
-		} else {
-			if (targetMustSign) {
+		} else if (targetMustSign) {
+			required = mutable(required);
+			required.add(result.metadata().getKey());
+			if (op.hasKey()) {
 				required = mutable(required);
-				required.add(result.metadata().getKey());
-				if (op.hasKey()) {
-					required = mutable(required);
-					var candidate = asUsableFcKey(op.getKey());
-					candidate.ifPresent(required::add);
-				}
-			} else {
-				if(!entityNums.isSystemAccount(target)) {
-					if (op.hasKey()) {
-						required = mutable(required);
-						var candidate = asUsableFcKey(op.getKey());
-						candidate.ifPresent(required::add);
-					}
-				}
+				var candidate = asUsableFcKey(op.getKey());
+				candidate.ifPresent(required::add);
 			}
 		}
 

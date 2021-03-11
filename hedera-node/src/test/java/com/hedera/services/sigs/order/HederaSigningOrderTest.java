@@ -392,9 +392,7 @@ public class HederaSigningOrderTest {
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(
-				sanityRestored(summary.getOrderedKeys()),
-				contains(NEW_ACCOUNT_KT.asKey()));
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
 		verify(updateSigReqs).test(txn);
 	}
 
