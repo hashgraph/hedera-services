@@ -30,6 +30,7 @@ public class HapiSpecSleep extends UtilOp {
 	static final Logger log = LogManager.getLogger(HapiSpecSleep.class);
 
 	private long timeMs;
+	private String reason = "some unspecified reason";
 
 	public HapiSpecSleep(long timeMs) {
 		this.timeMs = timeMs;
@@ -37,13 +38,16 @@ public class HapiSpecSleep extends UtilOp {
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		log.info("Sleeping for " + timeMs + "ms now...");
+		log.info("Sleeping for {}ms now for {}", timeMs, reason);
 		Thread.sleep(timeMs);
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(this).add("timeMs", timeMs).toString();
+		return MoreObjects.toStringHelper(this)
+				.add("reason", reason)
+				.add("timeMs", timeMs)
+				.toString();
 	}
 }

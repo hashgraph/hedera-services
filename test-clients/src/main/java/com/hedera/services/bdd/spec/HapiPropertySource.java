@@ -102,7 +102,7 @@ public interface HapiPropertySource {
 		return Double.parseDouble(get(property));
 	}
 	default long getLong(String property) {
-		return Long.parseLong(get(property));
+		return Long.parseLong(get(property).replaceAll("_", ""));
 	}
 	default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
 		return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
@@ -114,7 +114,7 @@ public interface HapiPropertySource {
 		return HapiSpecSetup.NodeSelection.valueOf(get(property).toUpperCase());
 	}
 	default int getInteger(String property) {
-		return Integer.parseInt(get(property));
+		return Integer.parseInt(get(property).replaceAll("_", ""));
 	}
 	default Duration getDurationFromSecs(String property) {
 		return Duration.newBuilder().setSeconds(getInteger(property)).build();

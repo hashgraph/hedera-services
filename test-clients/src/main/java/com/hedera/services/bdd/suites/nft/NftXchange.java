@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -28,6 +29,7 @@ import static com.hedera.services.bdd.spec.transactions.nft.Acquisition.ofNft;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resolvingUniquely;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.A_THOUSAND_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.TEN_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.TEN_THOUSAND_HBARS;
@@ -54,6 +56,8 @@ public class NftXchange {
 	private final List<String> explicitSerialNos;
 	private final List<AtomicReference<Direction>> dirs = new ArrayList<>();
 
+	private int numBnfs = 0;
+	private AtomicInteger nextBnf = new AtomicInteger(0);
 	private List<BackAndForth> bnfs;
 
 	public NftXchange(
@@ -104,7 +108,7 @@ public class NftXchange {
 		if (restSerialNos > 0) {
 			addMinting(init, restSerialNos);
 		}
-		init.add(QueryVerbs.getAccountBalance(treasury).logged());
+		init.add(getAccountBalance(treasury).logged());
 
 		addAssociations(init);
 		createBnfs(init);
@@ -114,11 +118,14 @@ public class NftXchange {
 	}
 
 	private void createBnfs(List<HapiSpecOperation> init) {
-		int numAssociated = 1 + users;
-		int maxAffordableBnfs = (int)(TREASURY_BALANCE / (2 * CIV_START_BALANCE));
-		int numBnfs = Math.min(
+		final int numAssociated = 1 + users;
+		final int maxAffordableBnfs = (int)(TREASURY_BALANCE / (2 * CIV_START_BALANCE));
+		numBnfs = Math.min(
 				Math.min(maxAffordableBnfs, Math.min(serialNos, MAX_NUM_BACK_AND_FORTHS)),
 				numAssociated * numAssociated);
+		init.add(withOpContext((spec, opLog) ->
+				opLog.info(" - Beginning bNf creation")
+		));
 		Set<BackAndForth> created = new HashSet<>();
 		int nextSn = 0;
 		while (created.size() < numBnfs) {
@@ -133,7 +140,7 @@ public class NftXchange {
 			created.add(cand);
 		}
 		bnfs = new ArrayList<>(created);
-		init.add(UtilVerbs.withOpContext((spec, opLog) ->
+		init.add(withOpContext((spec, opLog) ->
 				opLog.info(" - Finished creating {} bNfs", bnfs.size())
 		));
 	}
@@ -188,7 +195,7 @@ public class NftXchange {
 	}
 
 	private void addMinting(List<HapiSpecOperation> init, final int additional) {
-		init.add(UtilVerbs.withOpContext((spec, opLog) ->
+		init.add(withOpContext((spec, opLog) ->
 			opLog.info("  - Minting an additional {} serial nos for {}...", additional, nftType)
 		));
 		int n = additional;
@@ -196,13 +203,12 @@ public class NftXchange {
 			int done;
 			int nextParallelism = Math.max(1, Math.min(MAX_OPS_IN_PARALLEL.get(), n / MAX_PER_MINT));
 			if (nextParallelism == 1) {
-				init.add(nftMint("mintAlone", n));
+				init.add(nftMint(nftType, n));
 				done = n;
 			} else {
 				init.add(inParallel(IntStream.range(0, nextParallelism)
 						.mapToObj(i -> nftMint(nftType, MAX_PER_MINT)
 								.blankMemo()
-//								.logged())
 								.noLogging().deferStatusResolution())
 						.toArray(HapiSpecOperation[]::new)));
 				init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get()));
@@ -214,8 +220,8 @@ public class NftXchange {
 	}
 
 	public HapiSpecOperation nextOp() {
-		var nextBnf = r.nextInt(bnfs.size());
-		return bnfs.get(nextBnf).nextOp();
+		int ni = nextBnf.getAndUpdate(i -> (i + 1) % numBnfs);
+		return bnfs.get(ni).nextOp();
 	}
 
 	class BackAndForth {
@@ -269,7 +275,6 @@ public class NftXchange {
 					.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 					.hasKnownStatusFrom(SUCCESS, UNKNOWN, ACCOUNT_NOT_OWNER_OF_NFT)
 					.blankMemo()
-//					.logged();
 					.noLogging().deferStatusResolution();
 		}
 	}

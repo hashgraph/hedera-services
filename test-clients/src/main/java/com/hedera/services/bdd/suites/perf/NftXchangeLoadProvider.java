@@ -89,7 +89,7 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 						runWithProvider(nftXchangeFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)
-								.postSetupSleepSecs(SETUP_PAUSE_MS::get)
+								.postSetupSleepSecs(POST_SETUP_PAUSE_SECS::get)
 				).then(
 						withOpContext((spec, opLog) -> {
 							for (NftUseCase useCase : nftUseCases.get()) {
@@ -155,7 +155,7 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 				.substring(openI + 1, config.indexOf("}"))
 				.replaceAll("_", "")
 				.replaceAll("@", "=")
-				.replaceAll(";", ",");
+				.replaceAll("CC", ",");
 
 		var propsMap = new MapPropertySource(asStringMap(props));
 		return new NftUseCase(
@@ -183,6 +183,8 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 			n -= nextParallelism;
 			soFar.getAndAdd(nextParallelism);
 		}
+
+		init.add(UtilVerbs.withOpContext((spec, opLog) -> opLog.info("... finished initializing {}", numCivs)));
 	}
 
 	@Override
