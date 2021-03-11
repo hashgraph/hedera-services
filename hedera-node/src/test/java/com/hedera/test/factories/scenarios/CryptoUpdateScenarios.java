@@ -67,5 +67,21 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
 							.get()
 			));
 		}
+	},
+	CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoUpdate(SYS_ACCOUNT_ID)
+							.newAccountKt(SYS_ACCOUNT_KT)
+							.get()
+			));
+		}
+	},
+	CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoUpdate(SYS_ACCOUNT_ID).get()
+			));
+		}
 	}
 }
