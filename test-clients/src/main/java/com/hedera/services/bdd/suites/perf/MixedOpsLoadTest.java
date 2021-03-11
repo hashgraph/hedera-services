@@ -83,7 +83,7 @@ public class MixedOpsLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(MixedOpsLoadTest.class);
 	private static final int NUM_SUBMISSIONS = 100;
 	private final ResponseCodeEnum[] permissiblePrechecks = new ResponseCodeEnum[] {
-			BUSY, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN
+			BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN
 	};
 
 	private static String sender = "sender";
