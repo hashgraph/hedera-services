@@ -79,14 +79,7 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 		usageEstimator.addRbs(ramBytes * this.expirationTimeSecs);
 		usageEstimator.addVpt(scheduledTxSigs);
 
-		/* A ScheduleCreate record includes the created ScheduleID and the TransactionID
-		of the scheduled transaction (which always has scheduled = true). */
-		var nonceBytes = 0;
-		try {
-			var txn = TransactionBody.parseFrom(op.getTransactionBody());
-			nonceBytes = txn.getTransactionID().getNonce().size();
-		} catch (InvalidProtocolBufferException ignore) { }
-		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + BOOL_SIZE + nonceBytes);
+		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + BOOL_SIZE);
 
 		return usageEstimator.get();
 	}

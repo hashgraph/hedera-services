@@ -74,7 +74,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	Optional<String> saveTxnRecordToRegistry = Optional.empty();
 	Optional<String> registryEntry = Optional.empty();
 	Optional<String> topicToValidate = Optional.empty();
-	Optional<byte[]> nonce = Optional.empty();
 	Optional<byte[]> lastMessagedSubmitted = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 
@@ -109,11 +108,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		scheduled = true;
 		creationName = Optional.of(creation);
 		lookupScheduledFromRegistryId = true;
-		return this;
-	}
-
-	public HapiGetTxnRecord withNonce(byte[] nonce) {
-		this.nonce = Optional.of(nonce);
 		return this;
 	}
 
@@ -306,9 +300,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				txnId = txnId.toBuilder()
 						.setScheduled(true)
 						.build();
-			}
-			if (nonce.isPresent()) {
-				txnId = txnId.toBuilder().setNonce(ByteString.copyFrom(nonce.get())).build();
 			}
 		}
 		TransactionGetRecordQuery getRecordQuery = TransactionGetRecordQuery.newBuilder()

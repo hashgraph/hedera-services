@@ -54,7 +54,7 @@ public class BasicPrecheck {
 			return INVALID_TRANSACTION_ID;
 		}
 		var txnId = txn.getTransactionID();
-		if (txnId.getScheduled() || !txnId.getNonce().isEmpty()) {
+		if (txnId.getScheduled()) {
 			return TRANSACTION_ID_FIELD_NOT_ALLOWED;
 		}
 		if (!validator.isPlausibleTxnFee(txn.getTransactionFee())) {

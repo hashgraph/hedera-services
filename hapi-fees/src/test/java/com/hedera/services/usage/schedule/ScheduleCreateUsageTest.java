@@ -53,18 +53,16 @@ import static org.mockito.Mockito.verify;
 
 public class ScheduleCreateUsageTest {
 	Key adminKey = KeyUtils.A_THRESHOLD_KEY;
-	byte[] nonce = "abcdefghijklmnop".getBytes();
+	AccountID payer = IdUtils.asAccount("0.0.2");
 	byte[] transactionBody = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setNonce(ByteString.copyFrom(nonce)))
+			.setTransactionID(TransactionID.newBuilder().setAccountID(payer))
 			.build().toByteArray();
 
 	long now = 1_000L;
 	int scheduledTXExpiry = 1000;
-	AccountID payer = IdUtils.asAccount("0.0.2");
 	String memo = "Just some memo!";
 
-	int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE + nonce.length;
+	int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE;
 
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);

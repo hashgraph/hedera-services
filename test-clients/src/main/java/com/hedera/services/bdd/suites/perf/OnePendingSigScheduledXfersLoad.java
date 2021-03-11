@@ -167,7 +167,6 @@ public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
 						.exposingSuccessTo((createdId, bytes) ->
 								q.offer(new PendingSig(bytes, createdId, sender, r.nextDouble()))
 						).rememberingNothing()
-						.withNonce(TxnUtils.randomUtf8Bytes(8))
 						.designatingPayer(payer)
 						.logged()
 						.inheritingScheduledSigs()

@@ -82,7 +82,6 @@ public class ScheduleCreateTransitionLogicTest {
 			.toByteArray();
 	final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
-			.setNonce(ByteString.copyFromUtf8("Something something something"))
 			.setScheduled(true)
 			.build();
 

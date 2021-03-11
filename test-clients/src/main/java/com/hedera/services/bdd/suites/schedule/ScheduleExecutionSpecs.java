@@ -130,10 +130,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							Assert.assertTrue("Transaction not scheduled!",
 									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
 
-							Assert.assertEquals("Wrong triggered transaction nonce!",
-									ByteString.EMPTY,
-									triggeredTx.getResponseRecord().getTransactionID().getNonce());
-
 							Assert.assertEquals("Wrong schedule ID!",
 									createTx.getResponseRecord().getReceipt().getScheduleID(),
 									triggeredTx.getResponseRecord().getScheduleRef());
@@ -268,10 +264,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							Assert.assertTrue("Transaction not scheduled!",
 									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
-
-							Assert.assertEquals("Wrong triggered transaction nonce!",
-									ByteString.EMPTY,
-									triggeredTx.getResponseRecord().getTransactionID().getNonce());
 
 							Assert.assertEquals("Wrong schedule ID!",
 									createTx.getResponseRecord().getReceipt().getScheduleID(),

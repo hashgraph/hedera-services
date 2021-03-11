@@ -33,6 +33,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -122,7 +124,7 @@ class StateViewTest {
 	ScheduleStore scheduleStore;
 	byte[] scheduleBody = TransactionBody.newBuilder()
 					.setTransactionID(TransactionID.newBuilder()
-							.setNonce(ByteString.copyFromUtf8("Surely this isn't taken!")))
+							.setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(1L))))
 					.build()
 					.toByteArray();
 

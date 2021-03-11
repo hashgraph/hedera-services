@@ -250,15 +250,12 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec infoIncludesTxnIdFromCreationReceipt() {
-		var nonce = "0123456789".getBytes();
-
 		return defaultHapiSpec("InfoIncludesTxnIdFromCreationReceipt")
 				.given(
 						scheduleCreate("creation",
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1))
 										.signedBy()
 						)
-								.withNonce(nonce)
 								.inheritingScheduledSigs()
 								.savingExpectedScheduledTxnId()
 				).when().then(

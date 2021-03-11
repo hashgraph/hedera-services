@@ -128,7 +128,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		return TransactionID.newBuilder()
 				.setAccountID(schedulingAccount.toGrpcAccountId())
 				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-				.setNonce(structuredGrpcTxn.getTransactionID().getNonce())
 				.setScheduled(true)
 				.build();
 	}

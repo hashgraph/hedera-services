@@ -31,7 +31,6 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 
 public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
-	private int nonceBytes;
 	private long expiry;
 
 	private ScheduleSignUsage(TransactionBody scheduleSignOp, TxnUsageEstimator usageEstimator) {
@@ -44,11 +43,6 @@ public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 
 	public ScheduleSignUsage givenExpiry(long expiry) {
 		this.expiry = expiry;
-		return self();
-	}
-
-	public ScheduleSignUsage givenNonceBytes(int nonceBytes) {
-		this.nonceBytes = nonceBytes;
 		return self();
 	}
 
@@ -73,9 +67,7 @@ public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 		usageEstimator.addRbs(ramBytes * lifetime);
 		usageEstimator.addVpt(scheduledTxSigs);
 
-		/* A ScheduleSign record includes the TransactionID of the associated
-		scheduled transaction (which always has scheduled = true). */
-		addNetworkRecordRb(BASIC_TX_ID_SIZE + BOOL_SIZE + nonceBytes);
+		addNetworkRecordRb(BASIC_TX_ID_SIZE + BOOL_SIZE);
 		return usageEstimator.get();
 	}
 }

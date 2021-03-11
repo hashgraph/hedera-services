@@ -49,8 +49,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class ScheduleSignUsageTest {
-	int nonceBytes = 32;
-	int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE + nonceBytes;
+	int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE;
 	long now = 1_000L;
 	long scheduledTXExpiry = 2_700;
 	ScheduleID scheduleID = IdUtils.asSchedule("0.0.1");
@@ -90,7 +89,6 @@ public class ScheduleSignUsageTest {
 
 		// and:
 		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
-				.givenNonceBytes(nonceBytes)
 				.givenExpiry(scheduledTXExpiry);
 
 		// when:
@@ -114,7 +112,6 @@ public class ScheduleSignUsageTest {
 
 		// and:
 		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
-				.givenNonceBytes(nonceBytes)
 				.givenExpiry(scheduledTXExpiry);
 
 		// when:

@@ -56,7 +56,6 @@ public class GetScheduleInfoResourceUsageTest {
     TransactionID scheduledTxnId = TransactionID.newBuilder()
             .setScheduled(true)
             .setAccountID(IdUtils.asAccount("0.0.2"))
-            .setNonce(ByteString.copyFromUtf8("Something something something"))
             .build();
     ScheduleID target = IdUtils.asSchedule("0.0.123");
 

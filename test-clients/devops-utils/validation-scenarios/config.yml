@@ -37,10 +37,10 @@ networks:
     scenarios:
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [122]
+        numsToFetch: [121]
       sysFilesUp:
         updates:
-        - {num: 122, payer: 2}
+        - {num: 121, payer: 2}
   integration:
     bootstrap: 2
     defaultNode: 3

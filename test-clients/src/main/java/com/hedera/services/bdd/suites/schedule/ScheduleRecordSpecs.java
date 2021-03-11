@@ -73,9 +73,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						suiteSetup(),
 						allRecordsAreQueryable(),
-						returnedScheduledReceiptIncludesNonce(),
 						schedulingTxnIdFieldsNotAllowed(),
-						returnedScheduleSignReceiptIncludesNonce(),
 						suiteCleanup(),
 						canonicalScheduleOpsHaveExpectedUsdFees(),
 						canScheduleChunkedMessages(),
@@ -252,73 +250,11 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	public HapiApiSpec schedulingTxnIdFieldsNotAllowed() {
 		return defaultHapiSpec("SchedulingTxnIdFieldsNotAllowed")
 				.given(
-						usableTxnIdNamed("withNonce").usingNonceInappropriately(),
 						usableTxnIdNamed("withScheduled").settingScheduledInappropriately()
 				).when().then(
 						cryptoCreate("nope")
-								.txnId("withNonce")
-								.hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED),
-						cryptoCreate("nope")
 								.txnId("withScheduled")
 								.hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED)
-				);
-	}
-
-	public HapiApiSpec returnedScheduleSignReceiptIncludesNonce() {
-		var nonce = "abcdefgh".getBytes();
-
-		return defaultHapiSpec("ReturnedScheduleSignReceiptIncludesNonce")
-				.given(
-						cryptoCreate("payer"),
-						cryptoCreate("receiver").receiverSigRequired(true).balance(0L)
-				).when(
-						scheduleCreate(
-								"twoSigXfer",
-								cryptoTransfer(
-										tinyBarsFromTo("payer", "receiver", 1)
-								).fee(ONE_HBAR).signedBy("payer")
-						).inheritingScheduledSigs()
-								.withNonce(nonce)
-								.savingExpectedScheduledTxnId()
-								.payingWith("payer")
-								.via("creation"),
-						scheduleSign("twoSigXfer")
-								.via("trigger")
-								.withSignatories("receiver")
-				).then(
-						getAccountBalance("receiver").hasTinyBars(1L),
-						getTxnRecord("creation")
-								.withNonce(nonce)
-								.scheduled(),
-						getTxnRecord("creation").scheduledBy("twoSigXfer"),
-						getReceipt("trigger").hasScheduledTxnId("twoSigXfer")
-				);
-	}
-
-	public HapiApiSpec returnedScheduledReceiptIncludesNonce() {
-		var nonce = "abcdefgh".getBytes();
-		return defaultHapiSpec("ReturnedScheduledReceiptIncludesNonce")
-				.given(
-						cryptoCreate("payer"),
-						cryptoCreate("receiver").receiverSigRequired(true).balance(0L)
-				).when(
-						scheduleCreate(
-								"twoSigXfer",
-								cryptoTransfer(
-										tinyBarsFromTo("payer", "receiver", 1)
-								).fee(ONE_HBAR).signedBy("payer", "receiver")
-						).inheritingScheduledSigs()
-								.withNonce(nonce)
-								.logged()
-								.savingExpectedScheduledTxnId()
-								.payingWith("payer")
-								.via("creation")
-				).then(
-						getAccountBalance("receiver").hasTinyBars(1L),
-						getTxnRecord("creation")
-								.withNonce(nonce)
-								.scheduled(),
-						getTxnRecord("creation").scheduledBy("twoSigXfer").logged()
 				);
 	}
 

@@ -74,14 +74,12 @@ import static java.util.stream.Collectors.toList;
 public abstract class HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
 
-	private static final byte[] NO_NONCE = null;
 	protected static final FileOpsUsage fileOpsUsage = new FileOpsUsage();
 	protected static final CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
 
 	private Random r = new Random();
 
 	/* Note that an op may _be_ a txn; or just a query that submits a txn as payment. */
-	protected byte[] nonce = NO_NONCE;
 	protected String txnName = UUID.randomUUID().toString().substring(0, 8);
 	protected Transaction txnSubmitted;
 	protected TransactionRecord recordOfSubmission;
@@ -258,9 +256,6 @@ public abstract class HapiSpecOperation {
 					TransactionID id = spec.registry().getTxnId(name);
 					builder.setTransactionID(id);
 				});
-			}
-			if (nonce != NO_NONCE) {
-				builder.getTransactionIDBuilder().setNonce(ByteString.copyFrom(nonce));
 			}
 
 			if (omitNodeAccount) {

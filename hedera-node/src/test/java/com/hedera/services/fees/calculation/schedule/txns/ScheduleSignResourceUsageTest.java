@@ -20,7 +20,6 @@ package com.hedera.services.fees.calculation.schedule.txns;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
@@ -50,11 +49,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class ScheduleSignResourceUsageTest {
-	byte[] nonce = "Something something something".getBytes();
     TransactionID scheduledTxnId = TransactionID.newBuilder()
             .setScheduled(true)
             .setAccountID(IdUtils.asAccount("0.0.2"))
-            .setNonce(ByteString.copyFrom(nonce))
             .build();
 
     ScheduleSignResourceUsage subject;
@@ -92,7 +89,6 @@ public class ScheduleSignResourceUsageTest {
 
         usage = mock(ScheduleSignUsage.class);
         given(usage.givenExpiry(anyLong())).willReturn(usage);
-        given(usage.givenNonceBytes(anyInt())).willReturn(usage);
         given(usage.get()).willReturn(expected);
 
         factory = (BiFunction<TransactionBody, SigUsage, ScheduleSignUsage>)mock(BiFunction.class);
@@ -115,8 +111,6 @@ public class ScheduleSignResourceUsageTest {
     public void delegatesToCorrectEstimate() throws Exception {
         // expect:
         assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
-
-        verify(usage).givenNonceBytes(nonce.length);
     }
 
     @Test

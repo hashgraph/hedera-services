@@ -93,21 +93,6 @@ class BasicPrecheckTest {
 	}
 
 	@Test
-	void rejectsUseOfNonceField() {
-		// setup:
-		txn = txn.toBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setNonce(ByteString.copyFrom("anything".getBytes())).build())
-				.build();
-
-		// when:
-		var status = subject.validate(txn);
-
-		// then:
-		assertEquals(TRANSACTION_ID_FIELD_NOT_ALLOWED, status);
-	}
-
-	@Test
 	void rejectsUseOfScheduledField() {
 		// setup:
 		txn = txn.toBuilder()

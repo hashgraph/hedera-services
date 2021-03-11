@@ -29,6 +29,7 @@ import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -131,17 +133,15 @@ public class MerkleScheduleTest {
 	@Test
 	void constructsScheduledTxnAsExpected() throws InvalidProtocolBufferException {
 		// setup:
-		var nonce = ByteString.copyFromUtf8("Surely this isn't taken!");
 		transactionBody = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
-						.setNonce(nonce))
+						.setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(1L))))
 				.build()
 				.toByteArray();
 		// and:
 		var expectedId = TransactionID.newBuilder()
 				.setAccountID(schedulingAccount.toGrpcAccountId())
 				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-				.setNonce(nonce)
 				.setScheduled(true)
 				.build();
 		var expectedTxn = Transaction.newBuilder()
@@ -168,17 +168,14 @@ public class MerkleScheduleTest {
 	@Test
 	void constructsScheduledTxnIdAsExpected() {
 		// setup:
-		var nonce = ByteString.copyFromUtf8("Surely this isn't taken!");
 		transactionBody = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setNonce(nonce))
+				.setTransactionID(TransactionID.getDefaultInstance())
 				.build()
 				.toByteArray();
 		// and:
 		var expected = TransactionID.newBuilder()
 				.setAccountID(schedulingAccount.toGrpcAccountId())
 				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-				.setNonce(nonce)
 				.setScheduled(true)
 				.build();
 

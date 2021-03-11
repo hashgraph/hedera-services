@@ -57,7 +57,6 @@ public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
             var info = optionalInfo.get();
             return estimate
                     .givenExpiry(info.getExpirationTime().getSeconds())
-                    .givenNonceBytes(info.getScheduledTransactionID().getNonce().size())
                     .get();
         } else {
             return estimate
