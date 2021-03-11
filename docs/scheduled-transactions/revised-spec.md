@@ -1,0 +1,153 @@
+# Scheduled transactions 
+
+An ordinary transaction must be submitted to the network with the signatures 
+of enough Ed25519 keys to activate all the Hedera keys required to sign it. 
+Otherwise it will resolve to `INVALID_SIGNATURE`. 
+
+Here we describe a new kind of _scheduled_ transaction that is not directly 
+submitted to the network, but rather created as part of a _schedule entity_ in 
+the network's action queue. An Ed25519 key "signs" a scheduled transaction
+by signing an ordinary transaction that either creates or affirms the 
+schedule entity.
+
+Along with a scheduled transaction, a schedule entity (or simply _schedule_) also contains,
+  1. An optional memo. 
+  2. An optional admin key that can be used to delete the schedule.
+  3. An optional account to be charged the service fee for the scheduled transaction.
+  4. A list of the Ed25519 keys that the network deems to have signed the scheduled transaction.
+  5. A flag that says if the scheduled transaction may be executed as soon as the schedule has collected enough signing keys. 
+
+The schedule entity type is managed by four new HAPI operations,
+  1. The `ScheduleCreate` transaction creates a new schedule (possibly with a non-empty list of signing keys).
+  2. The `ScheduleSign` transaction adds one or more Ed25519 keys to a schedule's list of affirmed signers.
+  3. The `ScheduleDelete` transaction removes a schedule from the network state.
+  4. The `GetScheduleInfo` query gets the current state of a schedule.
+
+It is important to understand that the bytes of a scheduled transaction are never 
+directly signed by an Ed25519 key. Only `ScheduleCreate` or `ScheduleSign` bytes
+are ever signed, in the ordinary way. 
+
+## The `ScheduleCreate` transaction
+  
+The `ScheduleCreateTransactionBody` message is to be,
+  
+```  
+message ScheduleCreateTransactionBody {  
+  TransactionBody scheduledTransactionBody = 1; // The scheduled transaction; its TransactionID must not be set
+  string memo = 2; // An optional memo with a UTF-8 encoding of no more than 100 bytes
+  Key adminKey = 3; // An optional Hedera key which can be used to sign a `ScheduleDelete` and remove the schedule
+  bool executeImmediatelyOnValidSignatures = 4; // May the scheduled transaction be executed as soon as its schedule has enough signing keys? MUST be `true`.
+  AccountID scheduledPayerAccountID = 5; // The id of the account to be charged the service fee for the scheduled transaction at the consensus time that it executes (if ever).
+}  
+```  
+
+In release `0.13.0`, the fourth field has incomplete support, as stated in the comments above. That is, 
+ - Only schedules that permit immediate execution of their scheduled transaction given enough signing keys may be created. 
+
+As with all other entity types, a schedule remains in network state until it expires, even if its scheduled 
+transaction has already been executed.
+
+### Paying for scheduled transactions
+
+If the `ScheduleCreate` gives a `scheduledPayerAccountID`, the network will charge this payer the service fee 
+for the scheduled transaction at the consensus time that it executes (if ever). If no such payer is specified, 
+the network will charge the payer of the originating `ScheduleCreate`.
+
+### Receipts and duplicate creations
+
+When a `ScheduleCreate` resolves to `SUCCESS`, its receipt includes a new `ScheduleID` field
+with the id of the created schedule. Its receipt _also_ includes a new 
+`scheduledTransactionID` field with the `TransactionID` that can be used to query for the 
+record of the scheduled transaction's execution. 
+
+This `scheduledTransactionID` will be the `TransactionID` of the `ScheduleCreate`, 
+with a new additional field `scheduled=true`.  However, clients should always use the id 
+from the receipt instead of relying on this correspondence.
+
+#### Duplicate creations
+There is a special case in which a `ScheduleCreate` transaction tries to re-create a
+schedule that already exists in state. When this happens, the `ScheduleCreate` resolves 
+to a new status of `IDENTICAL_SCHEDULE_ALREADY_CREATED`, and the `ScheduleID` in its receipt points
+to the existing schedule. A client receiving `IDENTICAL_SCHEDULE_ALREADY_CREATED` can
+then submit a `ScheduleSign` (see below) with the given `ScheduleID`, signing with
+the same Ed25519 keys it used for its own create attempt. 
+
+Note the `scheduledPayerAccountID` field does not affect the identity of a schedule;
+that is, if two `ScheduleCreateTransactionBody` instances agree in their first four
+fields, they are considered identical.
+  
+### Enforced checks
+
+The only body-specific precheck enforced for a `ScheduleCreate` transaction is that the 
+`memo` field is valid. At consensus, the following checks are enforced:
+  1. The `memo` must be valid.
+  2. The type of the `scheduledTransactionBody` must be in the `scheduling.whitelist`; and it 
+     must reference only non-deleted entities that exist in state at the time the `ScheduleCreate` 
+     reaches consensus; and it must have an empty `TransactionID`. Its `nodeAccountID` 
+     may be left empty.
+  3. The `adminKey` must be valid, if present.
+  4. The `executeImmediatelyOnValidSignatures` field must be `true`.
+  
+## The `ScheduleSign` transaction
+  
+The `ScheduleSignTransactionBody` message is to be,
+  
+```  
+message ScheduleSignTransactionBody {  
+  ScheduleID scheduleID = 1; // The id of an existing schedule to affirm signing keys for
+}  
+```  
+
+Suppose we use the `scheduleID` field to point to schedule `0.0.12345`, which contains a 
+scheduled transaction `X`. If any of the Ed25519 keys required to sign `X` sign 
+our `ScheduleSign` ordinary transaction, then the network will update the state of 
+schedule `0.0.12345` with these keys.
+
+(It is permissible, though pointless, to sign the `ScheduleSign` with keys not 
+required for the execution of `X`.)
+
+### Receipts
+
+When a `ScheduleSign` resolves to `SUCCESS`, its receipt includes a new 
+`scheduledTransactionID` field which is the `TransactionID` that can be used to query 
+for the record of the execution of the scheduled transaction in the signed schedule.
+  
+## The `ScheduleDelete` transaction
+  
+The `ScheduleDeleteTransactionBody` message is to be,
+  
+```  
+message ScheduleDeleteTransactionBody {  
+  ScheduleID scheduleID = 1; // The id of an existing schedule to delete
+}  
+```  
+  
+## The `ScheduleGetInfo` query
+  
+The `ScheduleGetInfoQuery` message and its `ScheduleGetInfoResponse` message are to be,
+  
+```  
+message ScheduleGetInfoQuery {  
+  QueryHeader header = 1; // Standard query metadata, including payment
+  ScheduleID schedule = 2; // The id of an existing schedule
+}  
+  
+message ScheduleGetInfoResponse {  
+  ScheduleID scheduleID = 1; // The id of the schedule
+  TransactionBody scheduledTransactionBody = 2; // The scheduled transaction
+  string memo = 3; // The publicly visible memo of the schedule
+  Key adminKey = 4; // The key used to delete the schedule from state
+  bool executeImmediatelyOnValidSignatures = 5; // May the scheduled transaction be executed as soon as its schedule has enough affirming signers? 
+  KeyList signers = 6; // The Ed25519 keys the network deems to have signed the scheduled transaction
+  AccountID creatorAccountID = 7; // The id of the account that created the schedule
+  AccountID payerAccountID = 8; // The id of the account responsible for the service fee of the scheduled transaction
+}  
+```  
+  
+## Records of scheduled transactions
+
+Just as an ordinary transaction, a scheduled transaction that achieves execution has a unique consensus timestamp.
+It also has a record in the record stream. However, there _are_ two items that distinguish the record of a 
+scheduled transaction.
+  1. Its `TransactionID` will contain the new `scheduled=true` flag.
+  2. It will have a new `scheduleRef` field with the `ScheduleID` of the schedule that managed its execution.
