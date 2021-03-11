@@ -111,6 +111,8 @@ import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
+import com.hedera.services.bdd.suites.regression.AddWellKnownEntities;
+import com.hedera.services.bdd.suites.regression.JrsRestartTestTemplate;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
@@ -228,6 +230,10 @@ public class SuiteRunner {
 //				new RecordCreationSuite()));
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
+		/* Regression saved state management helpers */
+		put("AddWellKnownEntities", aof(new AddWellKnownEntities()));
+		/* JRS restart tests */
+		put("RestartWithScheduledEntities", aof(new JrsRestartTestTemplate()));
 		/* Load tests. */
 		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
 		put("AccountBalancesLoadTest", aof(new AccountBalancesClientSaveLoadTest()));
@@ -360,7 +366,7 @@ public class SuiteRunner {
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
 	/* Specify the network to run legacy SC tests instead of using suiterunner */
-	private static final String LEGACY_SMART_CONTRACT_TESTS = "SmartContractAggregatedTests";
+	private static final String LEGACY_SMART_CONTRACT_TESTS="SmartContractAggregatedTests";
 	private static String payerId = DEFAULT_PAYER_ID;
 
 	public static void main(String... args) throws Exception {
@@ -371,10 +377,10 @@ public class SuiteRunner {
 		log.info("Effective args :: " + List.of(effArgs));
 		if (Arrays.asList(effArgs).contains(LEGACY_SMART_CONTRACT_TESTS)) {
 			SmartContractAggregatedTests.main(
-					new String[] {
+					new String[]{
 							System.getenv("NODES").split(":")[0],
 							args[1],
-							"1" });
+							"1"});
 		} else if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
@@ -386,7 +392,7 @@ public class SuiteRunner {
 			// For HTS perf regression test, we need to know the number of clients to distribute
 			// the creation of the test tokens and token associations to each client.
 			// For current perf test setup, this number will be the size of test network.
-			if (!otherOverrides.containsKey("totalClients")) {
+			if(!otherOverrides.containsKey("totalClients")) {
 				otherOverrides.put("totalClients", "" + expectedNetworkSize);
 			}
 			createPayerAccount(System.getenv("NODES"), args[1]);
@@ -431,7 +437,7 @@ public class SuiteRunner {
 			Thread.sleep(r.nextInt(5000));
 			new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
 			Thread.sleep(2000);
-			if (!isIdLiteral(payerId)) {
+			if(!isIdLiteral(payerId)){
 				payerId = DEFAULT_PAYER_ID;
 			}
 		} catch (InterruptedException e) {
@@ -510,6 +516,7 @@ public class SuiteRunner {
 				globalPassFlag &= result.failedSuites.isEmpty();
 			}
 		});
+		log.info("============== SuiteRunner finished ==============");
 	}
 
 	private static boolean categoryLeaksState(HapiApiSuite[] suites) {

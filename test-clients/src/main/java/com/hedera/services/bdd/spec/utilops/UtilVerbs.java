@@ -155,6 +155,10 @@ public class UtilVerbs {
 		return new SpecKeyFromMnemonic(name, mnemonic);
 	}
 
+	public static HapiSpecOperation expectedEntitiesExist() {
+		return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
+	}
+
 	public static SpecKeyFromPem keyFromPem(String pemLoc) {
 		return new SpecKeyFromPem(pemLoc);
 	}
@@ -603,7 +607,7 @@ public class UtilVerbs {
 
 	public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
 		return assertionsHold((spec, assertLog) -> {
-			var subOp = getTxnRecord(txn);
+			var subOp = getTxnRecord(txn).logged();
 			allRunFor(spec, subOp);
 
 			var record = subOp.getResponseRecord();
@@ -620,6 +624,22 @@ public class UtilVerbs {
 					expectedUsd,
 					actualUsdCharged,
 					(allowedPercentDiff / 100.0) * expectedUsd);
+		});
+	}
+
+	public static CustomSpecAssert getTransactionFee(String txn, StringBuilder feeTableBuilder, String operation) {
+		return assertionsHold((spec, asertLog) -> {
+			var subOp = getTxnRecord(txn);
+			allRunFor(spec, subOp);
+
+			var record = subOp.getResponseRecord();
+			double actualUsdCharged = (1.0 * record.getTransactionFee())
+					/ ONE_HBAR
+					/ record.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+					* record.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+					/ 100;
+
+			feeTableBuilder.append(String.format("%30s | %1.5f \t |\n", operation, actualUsdCharged));
 		});
 	}
 

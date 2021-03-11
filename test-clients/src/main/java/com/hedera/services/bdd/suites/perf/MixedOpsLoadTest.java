@@ -166,7 +166,7 @@ public class MixedOpsLoadTest extends LoadTest {
 								.between(sender, receiver))
 						.payingWith(sender)
 						.signedBy(GENESIS)
-						.fee(A_HUNDRED_HBARS)
+						.fee(ONE_HUNDRED_HBARS)
 						.noLogging()
 						.suppressStats(true)
 						.hasPrecheckFrom(OK,
@@ -229,8 +229,8 @@ public class MixedOpsLoadTest extends LoadTest {
 										tokenCreate("token" + tokenId.getAndIncrement())
 												.payingWith(GENESIS)
 												.signedBy(GENESIS)
-												.fee(A_HUNDRED_HBARS)
-												.initialSupply(A_HUNDRED_HBARS)
+												.fee(ONE_HUNDRED_HBARS)
+												.initialSupply(ONE_HUNDRED_HBARS)
 												.treasury("treasury")
 												.hasRetryPrecheckFrom(permissiblePrechecks)
 												.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
@@ -248,7 +248,7 @@ public class MixedOpsLoadTest extends LoadTest {
 														.deferStatusResolution()
 										)
 												.signedBy(DEFAULT_PAYER)
-												.fee(A_HUNDRED_HBARS)
+												.fee(ONE_HUNDRED_HBARS)
 												.inheritingScheduledSigs()
 												.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 												.deferStatusResolution()
@@ -269,7 +269,7 @@ public class MixedOpsLoadTest extends LoadTest {
 												TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,
 												FAIL_INVALID,
 												OK)
-										.fee(A_HUNDRED_HBARS)
+										.fee(ONE_HUNDRED_HBARS)
 										.suppressStats(true)
 										.deferStatusResolution()
 										.noLogging())

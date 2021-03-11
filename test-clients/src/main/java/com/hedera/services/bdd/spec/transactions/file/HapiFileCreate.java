@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
@@ -55,6 +56,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -64,6 +66,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 	private Key waclKey;
 	private final String fileName;
 	private boolean immutable = false;
+	private boolean advertiseCreation = false;
 	OptionalLong expiry = OptionalLong.empty();
 	OptionalLong lifetime = OptionalLong.empty();
 	Optional<String> contentsPath = Optional.empty();
@@ -73,9 +76,15 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 	Optional<String> keyName = Optional.empty();
 	Optional<String> resourceName = Optional.empty();
 	AtomicReference<Timestamp> expiryUsed = new AtomicReference<>();
+	Optional<Function<HapiApiSpec, String>> contentsPathFn = Optional.empty();
 
 	public HapiFileCreate(String fileName) {
 		this.fileName = fileName;
+	}
+
+	public HapiFileCreate advertisingCreation() {
+		advertiseCreation = true;
+		return this;
 	}
 
 	@Override
@@ -152,6 +161,11 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		return this;
 	}
 
+	public HapiFileCreate path(Function<HapiApiSpec, String> pathFn) {
+		contentsPathFn = Optional.of(pathFn);
+		return this;
+	}
+
 	public HapiFileCreate path(String path) {
 		try {
 			contentsPath = Optional.of(path);
@@ -166,6 +180,10 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		if (!immutable) {
 			generateWaclKey(spec);
+		}
+		if (contentsPathFn.isPresent()) {
+			var loc = contentsPathFn.get().apply(spec);
+			contents = Optional.of(Files.toByteArray(new File(loc)));
 		}
 		FileCreateTransactionBody opBody = spec
 				.txns()
@@ -218,6 +236,15 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		spec.registry().saveTimestamp(fileName, expiryUsed.get());
 		if (verboseLoggingOn) {
 			log.info("Created file {} with ID {}.",  fileName , lastReceipt.getFileID());
+		}
+
+		if (advertiseCreation) {
+			String banner = "\n\n" + bannerWith(
+					String.format(
+							"Created file '%s' with id '0.0.%d'.",
+							fileName,
+							lastReceipt.getFileID().getFileNum()));
+			log.info(banner);
 		}
 	}
 

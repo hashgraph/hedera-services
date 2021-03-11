@@ -32,8 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.API_PERMISSIONS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.A_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
 import static java.util.Map.entry;
 
 public class PerfUtilOps {
@@ -58,7 +58,7 @@ public class PerfUtilOps {
 
 	public static HapiTxnOp tokenOpsEnablement() {
 		return fileUpdate(API_PERMISSIONS)
-				.fee(A_HUNDRED_HBARS)
+				.fee(ONE_HUNDRED_HBARS)
 				.payingWith(GENESIS)
 				.overridingProps(Map.ofEntries(
 						entry("tokenCreate", "0-*"),
@@ -79,7 +79,7 @@ public class PerfUtilOps {
 
 	public static HapiTxnOp scheduleOpsEnablement() {
 		return fileUpdate(API_PERMISSIONS)
-				.fee(A_HUNDRED_HBARS)
+				.fee(ONE_HUNDRED_HBARS)
 				.payingWith(GENESIS)
 				.overridingProps(Map.ofEntries(
 						entry("scheduleCreate", "0-*"),

@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.fees;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -101,17 +100,20 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 
 	HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
 		return customHapiSpec("CanonicalScheduleOps")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
+				.withProperties(Map.of(
+						"nodes", "35.231.208.148",
+						"default.payer.pemKeyLoc", "previewtestnet-account2.pem",
+						"default.payer.pemKeyPassphrase", "<secret>"
+				)).given(
 						cryptoCreate("payingSender")
-								.balance(A_HUNDRED_HBARS),
+								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver")
 								.balance(0L)
 								.receiverSigRequired(true)
 				).when(
 						scheduleCreate("canonical",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
-										.memo("")
+										.blankMemo()
 										.fee(ONE_HBAR)
 										.signedBy("payingSender")
 						)
@@ -127,8 +129,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 								.withSignatories("receiver"),
 						scheduleCreate("tbd",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
-										.memo("")
-										.fee(ONE_HBAR)
+										.blankMemo()
 										.signedBy("payingSender")
 						)
 								.payingWith("payingSender")
@@ -151,7 +152,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
 				.given(
 						cryptoCreate("civilian")
-								.balance(A_HUNDRED_HBARS),
+								.balance(ONE_HUNDRED_HBARS),
 						fileCreate("multiBytecode")
 								.payingWith("civilian")
 								.path(MULTIPURPOSE_BYTECODE_PATH),

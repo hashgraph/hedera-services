@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.fees;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,7 +57,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 public class CreateAndUpdateOps extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateAndUpdateOps.class);
 
-	long feeToOffer = A_HUNDRED_HBARS;
+	long feeToOffer = ONE_HUNDRED_HBARS;
 	long paymentToOffer = ONE_HBAR;
 	long payerBalance = feeToOffer * 1000;
 	CostSnapshotMode costSnapshotMode = TAKE;

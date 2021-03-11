@@ -21,23 +21,28 @@ package com.hedera.services.bdd.spec.persistence;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
+import static com.hedera.services.bdd.spec.persistence.Account.UNSPECIFIED_MEMO;
 import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
-import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.asAdminKeyFor;
-import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.asFreezeKeyFor;
-import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.asKycKeyFor;
-import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.asSupplyKeyFor;
-import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.asWipeKeyFor;
-import static com.hedera.services.bdd.spec.persistence.PemKey.adminKeyFor;
-import static com.hedera.services.bdd.spec.persistence.PemKey.freezeKeyFor;
-import static com.hedera.services.bdd.spec.persistence.PemKey.kycKeyFor;
-import static com.hedera.services.bdd.spec.persistence.PemKey.supplyKeyFor;
-import static com.hedera.services.bdd.spec.persistence.PemKey.wipeKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asAdminKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asFreezeKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asKycKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asSupplyKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.asWipeKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.adminKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.freezeKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.kycKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.supplyKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.wipeKeyFor;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 
 public class Token {
@@ -49,13 +54,14 @@ public class Token {
 
 	private boolean frozenByDefault = true;
 
-	private PemKey kycKey = UNUSED_KEY;
-	private PemKey wipeKey = UNUSED_KEY;
-	private PemKey adminKey = UNUSED_KEY;
-	private PemKey supplyKey = UNUSED_KEY;
-	private PemKey freezeKey = UNUSED_KEY;
+	private SpecKey kycKey = UNUSED_KEY;
+	private SpecKey wipeKey = UNUSED_KEY;
+	private SpecKey adminKey = UNUSED_KEY;
+	private SpecKey supplyKey = UNUSED_KEY;
+	private SpecKey freezeKey = UNUSED_KEY;
 
-	private String name = DEFAULT_HEDERA_NAME;
+	private String tokenName = DEFAULT_HEDERA_NAME;
+	private String memo = UNSPECIFIED_MEMO;
 	private String symbol = DEFAULT_SYMBOL;
 	private String treasury = UNSPECIFIED_TREASURY;
 
@@ -76,7 +82,7 @@ public class Token {
 			freezeKey.registerWith(spec, asFreezeKeyFor(name));
 		}
 		entityId.ifPresent(id -> {
-			spec.registry().saveName(name, this.name);
+			spec.registry().saveName(name, this.tokenName);
 			spec.registry().saveSymbol(name, symbol);
 			spec.registry().saveTokenId(name, id.asToken());
 			if (treasury != UNSPECIFIED_TREASURY) {
@@ -85,14 +91,21 @@ public class Token {
 		});
 	}
 
-	public HapiSpecOperation createOp(String name) {
+	public HapiQueryOp<?> existenceCheck(String name) {
+		return getTokenInfo(name);
+	}
+
+	HapiTxnOp<HapiTokenCreate> createOp(String name) {
 		var op = tokenCreate(name)
 				.advertisingCreation()
 				.symbol(symbol)
-				.name(this.name);
+				.name(this.tokenName);
 
 		if (treasury != UNSPECIFIED_TREASURY) {
 			op.treasury(treasury);
+		}
+		if (memo != UNSPECIFIED_MEMO) {
+			op.entityMemo(memo);
 		}
 
 		if (kycKey != UNUSED_KEY) {
@@ -125,52 +138,52 @@ public class Token {
 		this.treasury = treasury;
 	}
 
-	public PemKey getKycKey() {
+	public SpecKey getKycKey() {
 		return kycKey;
 	}
 
-	public void setKycKey(PemKey kycKey) {
+	public void setKycKey(SpecKey kycKey) {
 		this.kycKey = kycKey;
 	}
 
-	public PemKey getWipeKey() {
+	public SpecKey getWipeKey() {
 		return wipeKey;
 	}
 
-	public void setWipeKey(PemKey wipeKey) {
+	public void setWipeKey(SpecKey wipeKey) {
 		this.wipeKey = wipeKey;
 	}
 
-	public PemKey getAdminKey() {
+	public SpecKey getAdminKey() {
 		return adminKey;
 	}
 
-	public void setAdminKey(PemKey adminKey) {
+	public void setAdminKey(SpecKey adminKey) {
 		this.adminKey = adminKey;
 	}
 
-	public PemKey getSupplyKey() {
+	public SpecKey getSupplyKey() {
 		return supplyKey;
 	}
 
-	public void setSupplyKey(PemKey supplyKey) {
+	public void setSupplyKey(SpecKey supplyKey) {
 		this.supplyKey = supplyKey;
 	}
 
-	public PemKey getFreezeKey() {
+	public SpecKey getFreezeKey() {
 		return freezeKey;
 	}
 
-	public void setFreezeKey(PemKey freezeKey) {
+	public void setFreezeKey(SpecKey freezeKey) {
 		this.freezeKey = freezeKey;
 	}
 
-	public String getName() {
-		return name;
+	public String getTokenName() {
+		return tokenName;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setTokenName(String tokenName) {
+		this.tokenName = tokenName;
 	}
 
 	public String getSymbol() {
@@ -187,5 +200,13 @@ public class Token {
 
 	public void setFrozenByDefault(boolean frozenByDefault) {
 		this.frozenByDefault = frozenByDefault;
+	}
+
+	public String getMemo() {
+		return memo;
+	}
+
+	public void setMemo(String memo) {
+		this.memo = memo;
 	}
 }

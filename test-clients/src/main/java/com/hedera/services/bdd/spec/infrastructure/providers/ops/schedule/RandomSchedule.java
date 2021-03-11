@@ -40,11 +40,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.suites.HapiApiSuite.A_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static java.util.stream.Collectors.toList;
@@ -115,7 +114,7 @@ public class RandomSchedule implements OpProvider {
 						.hasKnownStatusFrom(outcomesForTransfer)
 		)
 				.signedBy(DEFAULT_PAYER)
-				.fee(A_HUNDRED_HBARS)
+				.fee(ONE_HUNDRED_HBARS)
 				.inheritingScheduledSigs()
 				.memo("randomlycreated" + id)
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)

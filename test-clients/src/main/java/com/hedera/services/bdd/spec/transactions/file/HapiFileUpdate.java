@@ -68,6 +68,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.EMPTY_SET;
 
@@ -375,12 +376,12 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			};
 			return spec.fees().forActivityBasedOp(HederaFunctionality.FileUpdate, metricsCalc, txn, numPayerKeys);
 		} catch (Throwable ignore) {
-			return HapiApiSuite.ONE_HBAR;
+			return ONE_HBAR;
 		}
 	}
 
 	private FileGetInfoResponse.FileInfo lookupInfo(HapiApiSpec spec) throws Throwable {
-		HapiGetFileInfo subOp = getFileInfo(file).noLogging();
+		HapiGetFileInfo subOp = getFileInfo(file).noLogging().fee(ONE_HBAR);
 		Optional<Throwable> error = subOp.execFor(spec);
 		if (error.isPresent()) {
 			if (!loggingOff) {

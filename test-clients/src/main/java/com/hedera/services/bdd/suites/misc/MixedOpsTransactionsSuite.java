@@ -116,10 +116,10 @@ public class MixedOpsTransactionsSuite extends HapiApiSuite {
 												.signedBy("sender")
 								)
 										.advertisingCreation()
-										.fee(A_HUNDRED_HBARS)
+										.fee(ONE_HUNDRED_HBARS)
 										.signedBy(DEFAULT_PAYER)
 										.inheritingScheduledSigs()
-										.withEntityMemo("This is the " + i + "th scheduled txn.")
+										.entityMemo("This is the " + i + "th scheduled txn.")
 										.withNonce(TxnUtils.randomUtf8Bytes(8))
 						).toArray(HapiSpecOperation[]::new)
 				).then(

@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -53,6 +54,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
 
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -65,6 +67,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 
 	private Key adminKey;
 	private boolean omitAdminKey = false;
+	private boolean advertiseCreation = false;
 	private boolean shouldAlsoRegisterAsAccount = true;
 	private boolean useDeprecatedAdminKey = false;
 	private final String contract;
@@ -80,6 +83,11 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	Optional<Consumer<HapiSpecRegistry>> successCb = Optional.empty();
 	Optional<String> abi = Optional.empty();
 	Optional<Object[]> args = Optional.empty();
+
+	public HapiContractCreate advertisingCreation() {
+		advertiseCreation = true;
+		return this;
+	}
 
 	public HapiContractCreate(String contract) {
 		this.contract = contract;
@@ -189,6 +197,14 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 				.build();
 		spec.registry().saveContractInfo(contract, otherInfo);
 		successCb.ifPresent(cb -> cb.accept(spec.registry()));
+		if (advertiseCreation) {
+			String banner = "\n\n" + bannerWith(
+					String.format(
+							"Created contract '%s' with id '0.0.%d'.",
+							contract,
+							lastReceipt.getContractID().getContractNum()));
+			log.info(banner);
+		}
 	}
 
 	@Override

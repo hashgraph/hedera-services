@@ -1,0 +1,3 @@
+account:
+  key: {generateIfMissing: true, wordsLoc: autoRenewAccount.words}
+  receiverSigRequired: false

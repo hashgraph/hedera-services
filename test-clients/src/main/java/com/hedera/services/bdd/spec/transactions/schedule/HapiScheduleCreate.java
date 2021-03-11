@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.TrieSigMapGenerator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -62,8 +63,8 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private static final int defaultScheduleTxnExpiry = HapiSpecSetup.getDefaultNodeProps()
 			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
-	private boolean scheduleNonsense = false;
 	private boolean advertiseCreation = false;
+	private boolean scheduleNonsense = false;
 	private boolean skipRegistryUpdate = false;
 	private boolean scheduleNoFunction = false;
 	private boolean inheritScheduledSigs = false;
@@ -85,13 +86,13 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		this.scheduled = txn.withLegacyProtoStructure().sansTxnId().sansNodeAccount();
 	}
 
-	public HapiScheduleCreate<T> advertisingCreation() {
-		advertiseCreation = true;
+	public HapiScheduleCreate<T> savingExpectedScheduledTxnId() {
+		saveExpectedScheduledTxnId = true;
 		return this;
 	}
 
-	public HapiScheduleCreate<T> savingExpectedScheduledTxnId() {
-		saveExpectedScheduledTxnId = true;
+	public HapiScheduleCreate<T> advertisingCreation() {
+		advertiseCreation = true;
 		return this;
 	}
 
@@ -140,7 +141,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
-	public HapiScheduleCreate<T> withEntityMemo(String entityMemo) {
+	public HapiScheduleCreate<T> entityMemo(String entityMemo) {
 		this.entityMemo = Optional.of(entityMemo);
 		return this;
 	}
@@ -253,12 +254,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(
 					String.format(
-							"Created scheduled txn '%s' with id '0.0.%d'.",
+							"Created schedule '%s' with id '0.0.%d'.",
 							entity,
 							lastReceipt.getScheduleID().getScheduleNum()));
 			log.info(banner);
 		}
-
 		if (saveExpectedScheduledTxnId) {
 			if (verboseLoggingOn) {
 				log.info("Returned receipt for scheduled txn is {}", lastReceipt.getScheduledTransactionID());
