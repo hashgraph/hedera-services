@@ -218,7 +218,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				);
 	}
 
-	private static String sdec(double d, int numDecimals) {
+	public static String sdec(double d, int numDecimals) {
 		var fmt = String.format(".0%df", numDecimals);
 		return String.format("%" + fmt, d);
 	}

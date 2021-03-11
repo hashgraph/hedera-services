@@ -34,9 +34,6 @@ import com.hedera.services.bdd.suites.contract.ChildStorageSpec;
 import com.hedera.services.bdd.suites.contract.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
-import com.hedera.services.bdd.suites.contract.ContractDeleteSuite;
-import com.hedera.services.bdd.suites.contract.ContractGetBytecodeSuite;
-import com.hedera.services.bdd.suites.contract.ContractUpdateSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.contract.OCTokenSpec;
@@ -106,13 +103,14 @@ import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringRec
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
-import com.hedera.services.bdd.suites.records.CharacterizationSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
+import com.hedera.services.bdd.suites.regression.AddWellKnownEntities;
+import com.hedera.services.bdd.suites.regression.JrsRestartTestTemplate;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
@@ -230,6 +228,10 @@ public class SuiteRunner {
 //				new RecordCreationSuite()));
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
+		/* Regression saved state management helpers */
+		put("AddWellKnownEntities", aof(new AddWellKnownEntities()));
+		/* JRS restart tests */
+		put("RestartWithScheduledEntities", aof(new JrsRestartTestTemplate()));
 		/* Load tests. */
 		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
 		put("AccountBalancesLoadTest", aof(new AccountBalancesClientSaveLoadTest()));
@@ -510,6 +512,7 @@ public class SuiteRunner {
 				globalPassFlag &= result.failedSuites.isEmpty();
 			}
 		});
+		log.info("============== SuiteRunner finished ==============");
 	}
 
 	private static boolean categoryLeaksState(HapiApiSuite[] suites) {

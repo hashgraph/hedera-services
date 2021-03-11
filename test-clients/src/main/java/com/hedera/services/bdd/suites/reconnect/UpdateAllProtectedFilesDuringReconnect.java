@@ -34,11 +34,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -50,6 +48,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -75,9 +74,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 
 	private HapiApiSpec updateAllProtectedFilesDuringReconnect() {
 		final String fileInfoRegistry = "apiPermissionsReconnect";
-		final String transactionFeeid = "authorizedTxn";
 		final String nonUpdatableFile = "nonUpdatableFile";
-		final long newFee = 159_588_904;
 
 		return customHapiSpec("UpdateAllProtectedFilesDuringReconnect")
 				.withProperties(Map.of(
@@ -110,7 +107,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 										spec -> {
 											ByteString newRates = spec
 													.ratesProvider()
-													.rateSetWith(1, 1)
+													.rateSetWith(100, 1)
 													.toByteString();
 											spec.registry().saveBytes("newRates", newRates);
 											return newRates;
@@ -147,6 +144,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 
 						fileUpdate(nonUpdatableFile)
 								.setNode("0.0.6")
+								.fee(ONE_MILLION_HBARS)
 								.hasPrecheck(NOT_SUPPORTED),
 
 						fileCreate("contractFile")
@@ -160,11 +158,9 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
 
 						cryptoCreate("civilian")
-								.via(transactionFeeid)
-								.setNode("0.0.6"),
-						getTxnRecord(transactionFeeid)
 								.setNode("0.0.6")
-								.hasPriority(recordWith().fee(newFee)),
+								.fee(ONE_HUNDRED_HBARS)
+								.hasPrecheck(INSUFFICIENT_TX_FEE),
 
 						cryptoCreate("civilian")
 								.setNode("0.0.6"),

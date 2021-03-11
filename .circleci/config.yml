@@ -1885,7 +1885,6 @@ workflows:
             branches:
               ignore:
                 - /.*/
-
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack

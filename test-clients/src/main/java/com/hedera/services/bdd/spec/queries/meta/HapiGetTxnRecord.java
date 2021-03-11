@@ -50,6 +50,7 @@ import java.util.function.BiConsumer;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -272,7 +273,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			if (format.isPresent()) {
 				format.get().accept(record, log);
 			} else {
-				log.info("Record: " + record);
+				var fee = record.getTransactionFee();
+				var rates = spec.ratesProvider();
+				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 4);
+				log.info("Record (charged ${}): {}", priceInUsd,  record);
 			}
 		}
 		if (registryEntry.isPresent()) {

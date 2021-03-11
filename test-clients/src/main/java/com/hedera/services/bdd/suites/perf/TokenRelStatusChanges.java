@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.perf;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -138,14 +137,14 @@ public class TokenRelStatusChanges extends HapiApiSuite {
 
 				if (nowAssociating.get()) {
 					op = tokenAssociate(accounts.get(account), tokens.get(token))
-							.fee(A_HUNDRED_HBARS)
+							.fee(ONE_HUNDRED_HBARS)
 							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 							.hasKnownStatusFrom(OK, SUCCESS, DUPLICATE_TRANSACTION, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
 							.noLogging()
 							.deferStatusResolution();
 				} else {
 					op = tokenDissociate(accounts.get(account), tokens.get(token))
-							.fee(A_HUNDRED_HBARS)
+							.fee(ONE_HUNDRED_HBARS)
 							.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 							.hasKnownStatusFrom(OK, SUCCESS, DUPLICATE_TRANSACTION, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 							.noLogging()

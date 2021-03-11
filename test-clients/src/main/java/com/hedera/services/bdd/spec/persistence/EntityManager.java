@@ -23,18 +23,20 @@ package com.hedera.services.bdd.spec.persistence;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.suites.validation.YamlHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
-import org.yaml.snakeyaml.nodes.Tag;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.bdd.spec.persistence.Entity.UNNEEDED_CREATE_OP;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static java.util.stream.Collectors.toList;
 
 public class EntityManager {
@@ -54,26 +56,40 @@ public class EntityManager {
 		this.spec = spec;
 	}
 
-	Map<String, EntityMeta> registeredEntityMeta = new HashMap<>();
-	List<Entity> entities = new ArrayList<>();
+	private List<Entity> entities = new ArrayList<>();
+	private Map<String, EntityMeta> registeredEntityMeta = new HashMap<>();
+
+	static final String KEYS_SUBDIR = "keys";
+	static final String FILES_SUBDIR = "files";
+	static final String TOKENS_SUBDIR = "tokens";
+	static final String TOPICS_SUBDIR = "topics";
+	static final String ACCOUNTS_SUBDIR = "accounts";
+	static final String SCHEDULES_SUBDIR = "schedules";
+	static final String CONTRACTS_SUBDIR = "contracts";
+	static final String[] ALL_SUBDIRS = {
+		KEYS_SUBDIR, TOKENS_SUBDIR, TOPICS_SUBDIR, ACCOUNTS_SUBDIR, SCHEDULES_SUBDIR, FILES_SUBDIR, CONTRACTS_SUBDIR
+	};
 
 	public boolean init() {
-		var entitiesDir = new File(spec.setup().persistentEntitiesDirPath());
-		if (!entitiesDir.exists() || !entitiesDir.isDirectory()) {
+		var parentEntitiesDir = spec.setup().persistentEntitiesDir();
+		log.info("Top-level entities @ {}", parentEntitiesDir);
+		if (canIgnoreDir(parentEntitiesDir)) {
 			return true;
 		}
-		File[] yaml = entitiesDir.listFiles(f -> f.getAbsolutePath().endsWith(".yaml"));
+
+		if (!parentEntitiesDir.endsWith(File.separator)) {
+			parentEntitiesDir += File.separator;
+		}
+
 		var yamlIn = new Yaml(new Constructor(Entity.class));
 		List<Entity> candEntities = new ArrayList<>();
-		for (File manifest : yaml) {
-			try {
-				log.info("Attempting to register an entity from '{}'", manifest.getPath());
-				Entity entity = yamlIn.load(Files.newInputStream(manifest.toPath()));
-				entity.setManifestAbsPath(manifest.getAbsolutePath());
-				candEntities.add(entity);
-			} catch (IOException e) {
-				log.error("Could not deserialize entity from '{}'!", manifest.getPath(), e);
-				return false;
+		for (String subDir : ALL_SUBDIRS) {
+			String entitiesDir = parentEntitiesDir + subDir;
+			if (!canIgnoreDir(entitiesDir))	{
+				var result = loadEntitiesFrom(entitiesDir, yamlIn, candEntities);
+				if (!result) {
+					return false;
+				}
 			}
 		}
 
@@ -93,6 +109,52 @@ public class EntityManager {
 		return true;
 	}
 
+	public void runExistenceChecks() {
+		var checks = entities.stream()
+				.map(Entity::existenceCheck)
+				.map(HapiQueryOp::logged)
+				.toArray(HapiSpecOperation[]::new);
+		allRunFor(spec, checks);
+	}
+
+	private boolean loadEntitiesFrom(
+			String entitiesLoc,
+			Yaml yamlIn,
+			List<Entity> candEntities
+	) {
+		var entitiesDir = new File(entitiesLoc);
+		if (!entitiesDir.exists() || !entitiesDir.isDirectory()) {
+			return true;
+		}
+		File[] manifests = entitiesDir.listFiles(f -> f.getAbsolutePath().endsWith(".yaml"));
+		for (File manifest : manifests) {
+			try {
+				log.info("Attempting to register an entity from '{}'", manifest.getPath());
+				Entity entity = yamlIn.load(Files.newInputStream(manifest.toPath()));
+				entity.setManifestAbsPath(manifest.getAbsolutePath());
+				if (entity.getName() == null) {
+					entity.setName(inferNameAt(manifest.getAbsolutePath()));
+				}
+				candEntities.add(entity);
+			} catch (IOException e) {
+				log.error("Could not deserialize entity from '{}'!", manifest.getPath(), e);
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private String inferNameAt(String absPath) {
+		int lastSlash = absPath.lastIndexOf(File.separator);
+		int lastDot = absPath.lastIndexOf('.');
+		return absPath.substring(lastSlash + 1, lastDot);
+	}
+
+	private boolean canIgnoreDir(String loc) {
+		var dir = new File(loc);
+		return !dir.exists() || !dir.isDirectory();
+	}
+
 	public void updateCreatedEntityManifests() {
 		registeredEntityMeta.entrySet().stream()
 				.map(Map.Entry::getValue)
@@ -102,13 +164,19 @@ public class EntityManager {
 					var optionalCreatedId = extractCreated(entity.getCreateOp());
 					optionalCreatedId.ifPresent(createdId -> {
 						entity.setId(createdId);
-						entity.setCreateOp(UNNEEDED_CREATE_OP);
+						entity.clearCreateOp();
 						YamlHelper.serializeEntity(entity, meta.getManifestLoc());
 					});
 				});
 	}
 
-	private Optional<EntityId> extractCreated(HapiTxnOp creationOp) {
+	private Optional<EntityId> extractCreated(HapiSpecOperation veiledCreationOp) {
+		HapiTxnOp<?> creationOp;
+		if (veiledCreationOp instanceof HapiTxnOp) {
+			creationOp = (HapiTxnOp<?>)	veiledCreationOp;
+		} else {
+			creationOp = (HapiTxnOp<?>)((InBlockingOrder)veiledCreationOp).last();
+		}
 		var receipt = creationOp.getLastReceipt();
 		EntityId createdEntityId = null;
 		if (receipt.hasAccountID()) {
@@ -121,6 +189,10 @@ public class EntityManager {
 			createdEntityId = new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
 		} else if (receipt.hasFileID()) {
 			createdEntityId = new EntityId(HapiPropertySource.asFileString(receipt.getFileID()));
+		} else if (receipt.hasScheduleID()) {
+			createdEntityId = new EntityId(HapiPropertySource.asScheduleString(receipt.getScheduleID()));
+		} else if (receipt.hasContractID()) {
+			createdEntityId = new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
 		}
 		return Optional.ofNullable(createdEntityId);
 	}

@@ -203,6 +203,12 @@ public class HapiSpecSetup {
 	public long defaultNodePaymentTinyBars() {
 		return props.getLong("default.nodePayment.tinyBars");
 	}
+	public String defaultPayerMnemonic() {
+		return props.get("default.payer.mnemonic");
+	}
+	public String defaultPayerMnemonicFile() {
+		return props.get("default.payer.mnemonicFile");
+	}
 	public String defaultPayerPemKeyLoc() {
 		return props.get("default.payer.pemKeyLoc");
 	}
@@ -284,9 +290,17 @@ public class HapiSpecSetup {
 	public FileID feeScheduleId() {
 		return props.getFile("fee.schedule.id");
 	}
-	public String feeScheduleName() { return props.get("fee.schedule.name"); }
+	public String feeScheduleName() {
+		return props.get("fee.schedule.name");
+	}
 	public int feesTokenTransferUsageMultiplier() {
 		return props.getInteger("fees.tokenTransferUsageMultiplier");
+	}
+	public Boolean useFixedFee() {
+		return props.getBoolean("fees.useFixedOffer");
+	}
+	public long fixedFee() {
+		return props.getLong("fees.fixedOffer");
 	}
 	public String freezeAdminName() {
 		return props.get("freeze.admin.name");
@@ -341,11 +355,11 @@ public class HapiSpecSetup {
 		return props.getNodeSelector("node.selector");
 	}
 	public Integer numOpFinisherThreads() { return props.getInteger("num.opFinisher.threads"); }
-	public String persistentEntitiesDirPath() {
+	public String persistentEntitiesDir() {
 		return props.get("persistentEntities.dir.path");
 	}
 	public boolean requiresPersistentEntities() {
-		return StringUtils.isNotEmpty(persistentEntitiesDirPath());
+		return StringUtils.isNotEmpty(persistentEntitiesDir());
 	}
 	public boolean updateManifestsForCreatedPersistentEntities() {
 		return props.getBoolean("persistentEntities.updateCreatedManifests");
