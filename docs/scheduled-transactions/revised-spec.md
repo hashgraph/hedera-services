@@ -33,13 +33,17 @@ The `ScheduleCreateTransactionBody` message is to be,
   
 ```  
 message ScheduleCreateTransactionBody {  
-  TransactionBody scheduledTransactionBody = 1; // The scheduled transaction; its TransactionID must not be set
+  SchedulableTransactionBody scheduledTransactionBody = 1; // The scheduled transaction; its TransactionID must not be set
   string memo = 2; // An optional memo with a UTF-8 encoding of no more than 100 bytes
   Key adminKey = 3; // An optional Hedera key which can be used to sign a `ScheduleDelete` and remove the schedule
   bool executeImmediatelyOnValidSignatures = 4; // May the scheduled transaction be executed as soon as its schedule has enough signing keys? MUST be `true`.
   AccountID scheduledPayerAccountID = 5; // The id of the account to be charged the service fee for the scheduled transaction at the consensus time that it executes (if ever).
 }  
 ```  
+
+The new `SchedulableTransactionBody` message is a strict subset of the `TransactionBody` message which omits the
+top-level `TransactionID`, `nodeAccountID`, and `transactionValidDuration` fields; and does not allow the `ScheduleCreateTransactionBody`
+and `ScheduleSignTransactionBody` messages in its `data` element.
 
 In release `0.13.0`, the fourth field has incomplete support, as stated in the comments above. That is, 
  - Only schedules that permit immediate execution of their scheduled transaction given enough signing keys may be created. 
@@ -134,7 +138,7 @@ message ScheduleGetInfoQuery {
   
 message ScheduleGetInfoResponse {  
   ScheduleID scheduleID = 1; // The id of the schedule
-  TransactionBody scheduledTransactionBody = 2; // The scheduled transaction
+  SchedulableTransactionBody scheduledTransactionBody = 2; // The scheduled transaction
   string memo = 3; // The publicly visible memo of the schedule
   Key adminKey = 4; // The key used to delete the schedule from state
   bool executeImmediatelyOnValidSignatures = 5; // May the scheduled transaction be executed as soon as its schedule has enough affirming signers? 

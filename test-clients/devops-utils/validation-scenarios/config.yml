@@ -27,6 +27,20 @@ networks:
       sysFilesUp:
         updates:
         - {num: 121, payer: 2}
+  devops:
+    bootstrap: 2
+    defaultNode: 3
+    ensureScenarioPayerHbars: 25000
+    nodes:
+    - {account: 3, ipv4Addr: 35.196.138.70}
+    scenarioPayer: 1052
+    scenarios:
+      sysFilesDown:
+        evalMode: snapshot
+        numsToFetch: [122]
+      sysFilesUp:
+        updates:
+        - {num: 122, payer: 2}
   integration:
     bootstrap: 2
     defaultNode: 3
