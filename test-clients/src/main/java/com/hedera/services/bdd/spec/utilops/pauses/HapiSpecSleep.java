@@ -36,9 +36,14 @@ public class HapiSpecSleep extends UtilOp {
 		this.timeMs = timeMs;
 	}
 
+	public HapiSpecSleep because(String reason) {
+		this.reason = reason;
+		return this;
+	}
+
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		log.info("Sleeping for {}ms now for {}", timeMs, reason);
+		log.info("Sleeping for {}ms now because {}", timeMs, reason);
 		Thread.sleep(timeMs);
 		return false;
 	}

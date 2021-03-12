@@ -56,6 +56,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	 * insufficient transaction fee precheck
 	 */
 	private boolean recharging = false;
+	private boolean recordingKey = true;
 	private boolean advertiseCreation = false;
 	/** The time window (unit of second) of not doing another recharge if just recharged recently */
 	private Optional<Integer> rechargeWindow = Optional.empty();
@@ -125,6 +126,12 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		balanceFn = Optional.of(fn);
 		return this;
 	}
+
+	public HapiCryptoCreate forgettingKey() {
+		recordingKey = false;
+		return this;
+	}
+
 	public HapiCryptoCreate key(String name) {
 		keyName = Optional.of(name);
 		return this;
@@ -207,9 +214,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 				spec.registry().setRechargingWindow(account, rechargeWindow.get());
 			}
 		}
-		spec.registry().saveKey(account, key);
 		spec.registry().saveAccountId(account, lastReceipt.getAccountID());
-		receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
+		if (recordingKey) {
+			spec.registry().saveKey(account, key);
+			receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
+		}
 
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(

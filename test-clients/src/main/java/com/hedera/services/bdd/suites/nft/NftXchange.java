@@ -1,9 +1,7 @@
 package com.hedera.services.bdd.suites.nft;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.perf.NftXchangeLoadProvider;
 
@@ -31,8 +29,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resolvingUniquely;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.A_THOUSAND_HBARS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.TEN_MILLION_HBARS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.TEN_THOUSAND_HBARS;
 import static com.hedera.services.bdd.suites.perf.NftXchangeLoadProvider.MAX_OPS_IN_PARALLEL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_NOT_OWNER_OF_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -87,6 +85,10 @@ public class NftXchange {
 		return "_" + i;
 	}
 
+	public static String civilianKeyNo(int i) {
+		return "CK_" + (i % NftXchangeLoadProvider.NUM_CIVILIAN_KEYS.get());
+	}
+
 	public static String nftType(String useCase, int id) {
 		return useCase + id;
 	}
@@ -118,25 +120,27 @@ public class NftXchange {
 	}
 
 	private void createBnfs(List<HapiSpecOperation> init) {
-		final int numAssociated = 1 + users;
-		final int maxAffordableBnfs = (int)(TREASURY_BALANCE / (2 * CIV_START_BALANCE));
+		int associations = 1 + users;
+		int maxAffordableBnfs = (int)(TREASURY_BALANCE / (2 * CIV_START_BALANCE));
+		int squaredAssociations = associations * associations;
+		if (squaredAssociations < 0) {
+			squaredAssociations = MAX_NUM_BACK_AND_FORTHS;
+		}
 		numBnfs = Math.min(
 				Math.min(maxAffordableBnfs, Math.min(serialNos, MAX_NUM_BACK_AND_FORTHS)),
-				numAssociated * numAssociated);
+				squaredAssociations);
 		init.add(withOpContext((spec, opLog) ->
 				opLog.info(" - Beginning bNf creation")
 		));
 		Set<BackAndForth> created = new HashSet<>();
 		int nextSn = 0;
 		while (created.size() < numBnfs) {
-			int an = r.nextInt(numAssociated);
+			int an = r.nextInt(associations);
 			int bn = an;
 			while (bn == an) {
-				bn = r.nextInt(numAssociated);
+				bn = r.nextInt(associations);
 			}
-			BackAndForth cand = new BackAndForth(
-					name(an),
-					name(bn), explicitSerialNos.get(nextSn++));
+			BackAndForth cand = new BackAndForth(an, bn, explicitSerialNos.get(nextSn++));
 			created.add(cand);
 		}
 		bnfs = new ArrayList<>(created);
@@ -152,16 +156,18 @@ public class NftXchange {
 	private void addSetupXfers(List<HapiSpecOperation> init) {
 		List<HapiSpecOperation> ops = new ArrayList<>();
 		for (BackAndForth bnf : bnfs) {
-			if (!treasury.equals(bnf.a)) {
-				var op = cryptoTransfer(tinyBarsFromTo(treasury, bnf.a, CIV_START_BALANCE))
-						.changingOwnership(ofNft(nftType).serialNo(bnf.sn).from(treasury).to(bnf.a))
+			if (!treasury.equals(bnf.aName())) {
+				var op = cryptoTransfer(tinyBarsFromTo(treasury, bnf.aName(), CIV_START_BALANCE))
+						.signedBy(DEFAULT_PAYER, treasury)
+						.changingOwnership(ofNft(nftType).serialNo(bnf.sn).from(treasury).to(bnf.aName()))
 						.noLogging().deferStatusResolution()
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 						.blankMemo();
 				ops.add(op);
 			}
-			if (!treasury.equals(bnf.b)) {
-				var op = cryptoTransfer(tinyBarsFromTo(treasury, bnf.b, CIV_START_BALANCE))
+			if (!treasury.equals(bnf.bName())) {
+				var op = cryptoTransfer(tinyBarsFromTo(treasury, bnf.bName(), CIV_START_BALANCE))
+						.signedBy(DEFAULT_PAYER, treasury)
 						.noLogging().deferStatusResolution()
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 						.blankMemo();
@@ -169,13 +175,15 @@ public class NftXchange {
 			}
 			if (ops.size() >= MAX_OPS_IN_PARALLEL.get()) {
 				init.add(inParallel(ops.toArray(HapiSpecOperation[]::new)));
-				init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get()));
+				init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get())
+						.because("can't set up bNf accounts too aggressively!"));
 				ops.clear();
 			}
 		}
 		if (!ops.isEmpty()) {
 			init.add(inParallel(ops.toArray(HapiSpecOperation[]::new)));
-			init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get()));
+			init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get())
+					.because("can't set up bNf accounts too aggressively!"));
 		}
 	}
 
@@ -186,9 +194,11 @@ public class NftXchange {
 			int nextParallelism = Math.min(n, MAX_OPS_IN_PARALLEL.get());
 			init.add(inParallel(IntStream.range(0, nextParallelism)
 					.mapToObj(i -> nftAssociate(civilianNo(soFar.get() + i), nftType)
+							.signedBy(DEFAULT_PAYER, civilianKeyNo(soFar.get() + i))
 							.noLogging().deferStatusResolution()
 							.blankMemo()).toArray(HapiSpecOperation[]::new)));
-			init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get()));
+			init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get())
+					.because("can't associate with NFTs too quickly!"));
 			n -= nextParallelism;
 			soFar.getAndAdd(nextParallelism);
 		}
@@ -211,12 +221,13 @@ public class NftXchange {
 								.blankMemo()
 								.noLogging().deferStatusResolution())
 						.toArray(HapiSpecOperation[]::new)));
-				init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get()));
+				init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get())
+						.because("can't mint NFTs too fast!"));
 				done = nextParallelism * MAX_PER_MINT;
 			}
 			n -= done;
 		}
-		init.add(sleepFor(additional));
+		init.add(sleepFor(additional).because("we like to mint safely!"));
 	}
 
 	public HapiSpecOperation nextOp() {
@@ -225,13 +236,22 @@ public class NftXchange {
 	}
 
 	class BackAndForth {
-		final String a, b, sn;
+		final int a, b;
+		final String sn;
 		final AtomicReference<Direction> dir = new AtomicReference<>(Direction.COMING);
 
-		public BackAndForth(String a, String b, String sn) {
+		public BackAndForth(int a, int b, String sn) {
 			this.a = a;
 			this.b = b;
 			this.sn = sn;
+		}
+
+		public String aName() {
+			return name(a);
+		}
+
+		public String bName() {
+			return name(a);
 		}
 
 		@Override
@@ -248,7 +268,7 @@ public class NftXchange {
 				return false;
 			}
 			BackAndForth that = (BackAndForth) o;
-			return this.a.equals(that.a) && this.b.equals(that.b) && this.sn.equals(that.sn);
+			return this.a == that.a && this.b == that.b && this.sn.equals(that.sn);
 		}
 
 		public HapiSpecOperation nextOp() {
@@ -264,11 +284,14 @@ public class NftXchange {
 		}
 
 		private HapiCryptoTransfer xferFor(Direction dir) {
-			var payer = dir == Direction.COMING ? a : b;
-			var acquirer = dir == Direction.GOING ? a : b;
+			var payer = name(dir == Direction.COMING ? a : b);
+			var acquirer = name(dir == Direction.GOING ? a : b);
+			var payerKey = keyName(dir == Direction.COMING ? a : b);
+			var acquirerKey = keyName(dir == Direction.GOING ? a : b);
+
 			var op = swapHbar
-					? cryptoTransfer(tinyBarsFromTo(acquirer, payer, 1L)).signedBy(payer, acquirer)
-					: cryptoTransfer().signedBy(payer);
+					? cryptoTransfer(tinyBarsFromTo(acquirer, payer, 1L)).signedBy(payerKey, acquirerKey)
+					: cryptoTransfer().signedBy(payerKey);
 			return op
 					.changingOwnership(ofNft(nftType).serialNo(sn).from(payer).to(acquirer))
 					.payingWith(payer)
@@ -276,6 +299,10 @@ public class NftXchange {
 					.hasKnownStatusFrom(SUCCESS, UNKNOWN, ACCOUNT_NOT_OWNER_OF_NFT)
 					.blankMemo()
 					.noLogging().deferStatusResolution();
+		}
+
+		private String keyName(int i) {
+			return i == 0 ? treasury : civilianKeyNo(i - 1);
 		}
 	}
 
