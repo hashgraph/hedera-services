@@ -20,7 +20,6 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -36,7 +35,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
-import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 import com.swirlds.common.Address;
@@ -56,8 +54,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Base64.Decoder;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.UnaryOperator;
@@ -630,10 +626,25 @@ class SignedStateBalancesExporterTest {
 
 	@Test
 	public void exportsWhenPeriodSecsHaveElapsed() {
-		now = subject.periodEnd;
-		anEternityLater = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() * 2);
-		assertFalse(subject.isTimeToExport(now));
+		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
+		Instant startTime = Instant.parse("2021-03-11T10:59:59.0Z");
+		assertFalse(subject.isTimeToExport(startTime));
+		assertEquals(startTime, subject.periodBegin);
+		assertTrue(subject.isTimeToExport(startTime.plusSeconds(1)));
+		assertEquals(startTime.plusSeconds(1), subject.periodBegin);
+
+		shortlyAfter = startTime.plusSeconds(dynamicProperties.balancesExportPeriodSecs() / 2);
+		assertFalse(subject.isTimeToExport(shortlyAfter));
+		assertEquals(shortlyAfter, subject.periodBegin);
+
+		Instant nextPeriod  = startTime.plusSeconds(dynamicProperties.balancesExportPeriodSecs() + 1);
+
+		assertTrue(subject.isTimeToExport(nextPeriod));
+		assertEquals(nextPeriod, subject.periodBegin );
+
+		anEternityLater = startTime.plusSeconds(dynamicProperties.balancesExportPeriodSecs() * 2 + 1);
 		assertTrue(subject.isTimeToExport(anEternityLater));
+		assertEquals(anEternityLater, subject.periodBegin);
 	}
 
 	@AfterAll
