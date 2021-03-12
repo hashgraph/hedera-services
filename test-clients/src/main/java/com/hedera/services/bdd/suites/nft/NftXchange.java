@@ -1,5 +1,6 @@
 package com.hedera.services.bdd.suites.nft;
 
+import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -30,6 +31,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.A_THOUSAND_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiApiSuite.TEN_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.perf.NftXchangeLoadProvider.MAX_OPS_IN_PARALLEL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_NOT_OWNER_OF_NFT;
@@ -48,6 +50,7 @@ public class NftXchange {
 
 	private final int users;
 	private final int serialNos;
+	private final int nftTypeId;
 	private final String nftType;
 	private final String treasury;
 	private final boolean swapHbar;
@@ -66,6 +69,7 @@ public class NftXchange {
 			boolean swapHbar
 	) {
 		this.users = users;
+		this.nftTypeId = nftTypeId;
 		this.serialNos = serialNos;
 		this.swapHbar = swapHbar;
 
@@ -97,6 +101,14 @@ public class NftXchange {
 		return nftType(useCase, id) + "Treasury";
 	}
 
+	private String myCivilianNo(int i) {
+		return civilianNo(i * nftTypeId);
+	}
+
+	private String myCivilianKeyNo(int i) {
+		return civilianKeyNo(i * nftTypeId);
+	}
+
 	public List<HapiSpecOperation> initializers() {
 		var init = new ArrayList<HapiSpecOperation>();
 
@@ -110,11 +122,12 @@ public class NftXchange {
 		if (restSerialNos > 0) {
 			addMinting(init, restSerialNos);
 		}
-		init.add(getAccountBalance(treasury).logged());
 
 		addAssociations(init);
 		createBnfs(init);
 		addSetupXfers(init);
+
+		init.add(getAccountBalance(treasury).logged());
 
 		return init;
 	}
@@ -150,7 +163,7 @@ public class NftXchange {
 	}
 
 	private String name(int treasuryOrCivilian) {
-		return treasuryOrCivilian == 0 ? treasury : civilianNo(treasuryOrCivilian - 1);
+		return treasuryOrCivilian == 0 ? treasury : myCivilianNo(treasuryOrCivilian - 1);
 	}
 
 	private void addSetupXfers(List<HapiSpecOperation> init) {
@@ -193,8 +206,8 @@ public class NftXchange {
 		while (n > 0) {
 			int nextParallelism = Math.min(n, MAX_OPS_IN_PARALLEL.get());
 			init.add(inParallel(IntStream.range(0, nextParallelism)
-					.mapToObj(i -> nftAssociate(civilianNo(soFar.get() + i), nftType)
-							.signedBy(DEFAULT_PAYER, civilianKeyNo(soFar.get() + i))
+					.mapToObj(i -> nftAssociate(myCivilianNo(soFar.get() + i), nftType)
+							.signedBy(DEFAULT_PAYER, myCivilianKeyNo(soFar.get() + i))
 							.noLogging().deferStatusResolution()
 							.blankMemo()).toArray(HapiSpecOperation[]::new)));
 			init.add(sleepFor(NftXchangeLoadProvider.SETUP_PAUSE_MS.get())
@@ -251,7 +264,18 @@ public class NftXchange {
 		}
 
 		public String bName() {
-			return name(a);
+			return name(b);
+		}
+
+		@Override
+		public String toString() {
+			return MoreObjects.toStringHelper(this)
+					.add("a#", a)
+					.add("aName", aName())
+					.add("b#", b)
+					.add("bName", bName())
+					.add("sn", sn)
+					.toString();
 		}
 
 		@Override
@@ -292,17 +316,19 @@ public class NftXchange {
 			var op = swapHbar
 					? cryptoTransfer(tinyBarsFromTo(acquirer, payer, 1L)).signedBy(payerKey, acquirerKey)
 					: cryptoTransfer().signedBy(payerKey);
-			return op
+			op
 					.changingOwnership(ofNft(nftType).serialNo(sn).from(payer).to(acquirer))
 					.payingWith(payer)
+					.fee(ONE_HBAR)
 					.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 					.hasKnownStatusFrom(SUCCESS, UNKNOWN, ACCOUNT_NOT_OWNER_OF_NFT)
 					.blankMemo()
 					.noLogging().deferStatusResolution();
+			return op;
 		}
 
 		private String keyName(int i) {
-			return i == 0 ? treasury : civilianKeyNo(i - 1);
+			return i == 0 ? treasury : myCivilianKeyNo(i - 1);
 		}
 	}
 

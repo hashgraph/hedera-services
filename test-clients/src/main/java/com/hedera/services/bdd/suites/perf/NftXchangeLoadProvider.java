@@ -129,7 +129,7 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 
 				addCivilians(initializers, numCivilians.get());
 
-				var nftTypeId = new AtomicInteger(0);
+				var nftTypeId = new AtomicInteger(1);
 				for (NftUseCase useCase : nftUseCases.get()) {
 					initializers.addAll(useCase.initializers(nftTypeId));
 				}
