@@ -1308,7 +1308,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1399,7 +1399,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1424,7 +1424,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - build-platform-and-services
       - update-start-up-key:
@@ -1473,7 +1473,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1496,7 +1496,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1519,7 +1519,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1542,7 +1542,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1565,7 +1565,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1588,7 +1588,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - master
+                  - disable-release/0.12
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1653,7 +1653,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - master
+                  - disable-release/0.12
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1725,7 +1725,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1801,7 +1801,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - aws-summary:
           context: Slack
@@ -1813,7 +1813,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - disable-release/0.12
     jobs:
       - fast-build-artifact:
           context: Slack
