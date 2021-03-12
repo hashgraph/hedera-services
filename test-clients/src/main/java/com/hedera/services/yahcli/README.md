@@ -2,10 +2,10 @@
 A command line interface that is able to perform the following actions against a specified network.
 
 1. Account Operations
-    1. Get Balance
+    1. Get Balance.
 2. System File Operations
-    1. Download all/specific file
-    2. Upload a System File.
+    1. Download all/specific file.
+    2. Upload a System file.
 3. Fees Operations
     1. List Basic Transaction and Query fees of all/specific service.
 
@@ -27,6 +27,9 @@ networks:
 You can add details of mulitple networks to this config file with appropriate ipv4Addresses.
 
 _SmartContract.bin_ could be any smartContract bytecode that you want calculate transaction and query fees for.
+
+
+### Executing commands
 
 Run the following command:
 ```
