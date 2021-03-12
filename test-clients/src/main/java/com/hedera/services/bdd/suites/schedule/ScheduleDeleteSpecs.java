@@ -103,10 +103,10 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 								"twoSigXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", 1)
-								).signedBy("sender")
+								)
 						).adminKey("admin")
 								.signedBy(DEFAULT_PAYER, "admin")
-								.inheritingScheduledSigs(),
+								.alsoSigningWith("sender"),
 						getAccountBalance("receiver").hasTinyBars(0L)
 				).then(
 						scheduleDelete("twoSigXfer")

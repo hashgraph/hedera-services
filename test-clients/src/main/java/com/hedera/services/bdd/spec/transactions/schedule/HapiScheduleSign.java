@@ -94,16 +94,10 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var registry = spec.registry();
-		byte[] bytesToSign;
+		byte[] bytesToSign = new byte[0];
 
 		if (explicitBytes.isPresent()) {
 			bytesToSign = explicitBytes.get();
-		} else {
-			try {
-				bytesToSign = registry.getBytes(HapiScheduleCreate.registryBytesTag(schedule));
-			} catch (RegistryNotFound rnf) {
-				bytesToSign = new byte[] {};
-			}
 		}
 
 		var signingKeys = signatories.stream().map(k -> registry.getKey(k)).collect(toList());

@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
@@ -43,7 +42,6 @@ import java.util.function.BiFunction;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
-import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.registryBytesTag;
 
 public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetScheduleInfo.class);
@@ -54,7 +52,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 		this.schedule = schedule;
 	}
 
-	boolean expectValidTxBytes = false;
+	boolean hasExpectedScheduledTxn = false;
 	Optional<String> expectedScheduleId = Optional.empty();
 	Optional<String> expectedCreatorAccountID = Optional.empty();
 	Optional<String> expectedPayerAccountID = Optional.empty();
@@ -84,8 +82,8 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 		return this;
 	}
 
-	public HapiGetScheduleInfo hasValidTxBytes() {
-		expectValidTxBytes = true;
+	public HapiGetScheduleInfo hasExpectedScheduledTxn() {
+		hasExpectedScheduledTxn = true;
 		return this;
 	}
 
@@ -153,12 +151,6 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 					actualInfo.getSignatories().getKeysList().toArray());
 		});
 
-		if (expectValidTxBytes) {
-			Assert.assertArrayEquals(
-					"Wrong transaction bytes!",
-					registry.getBytes(registryBytesTag(schedule)),
-					actualInfo.getTransactionBody().toByteArray());
-		}
 		assertFor(
 				actualInfo.getScheduleID(),
 				expectedScheduleId,

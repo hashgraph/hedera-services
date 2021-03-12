@@ -161,15 +161,14 @@ public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
 					receiver = inertReceiver(r.nextInt(numInertReceivers.get()));
 				}
 				var innerOp = cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
-						.fee(ONE_HBAR)
-						.signedBy(payer);
+						.fee(ONE_HBAR);
 				var op = scheduleCreate("wrapper", innerOp)
 						.exposingSuccessTo((createdId, bytes) ->
 								q.offer(new PendingSig(bytes, createdId, sender, r.nextDouble()))
 						).rememberingNothing()
 						.designatingPayer(payer)
 						.logged()
-						.inheritingScheduledSigs()
+						.alsoSigningWith(payer)
 						.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 //						.noLogging()

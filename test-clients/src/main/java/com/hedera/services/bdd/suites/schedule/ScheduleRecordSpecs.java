@@ -109,12 +109,10 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")
 										.fee(ONE_HBAR)
-										.signedBy("payingSender")
 						)
 								.via("canonicalCreation")
 								.payingWith("payingSender")
-								.adminKey("payingSender")
-								.inheritingScheduledSigs(),
+								.adminKey("payingSender"),
 						scheduleSign("canonical")
 								.via("canonicalSigning")
 								.payingWith("payingSender")
@@ -123,11 +121,9 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")
 										.fee(ONE_HBAR)
-										.signedBy("payingSender")
 						)
 								.payingWith("payingSender")
-								.adminKey("payingSender")
-								.inheritingScheduledSigs(),
+								.adminKey("payingSender"),
 						scheduleDelete("tbd")
 								.via("canonicalDeletion")
 								.payingWith("payingSender")
@@ -146,8 +142,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						scheduleCreate("schedule",
 								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
 										.fee(1L)
-										.signedBy(GENESIS, "unwillingPayer")
-						).inheritingScheduledSigs()
+						)
+								.alsoSigningWith(GENESIS, "unwillingPayer")
 								.via("simpleXferSchedule")
 								.designatingPayer("unwillingPayer")
 								.savingExpectedScheduledTxnId()
@@ -168,8 +164,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 				).when(
 						scheduleCreate("schedule",
 								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
-										.signedBy(GENESIS, "insolventPayer")
-						).inheritingScheduledSigs()
+						)
+								.alsoSigningWith(GENESIS, "insolventPayer")
 								.via("simpleXferSchedule")
 								.designatingPayer("insolventPayer")
 								.savingExpectedScheduledTxnId()
@@ -203,12 +199,10 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 												3,
 												1,
 												scheduledVersionOf(initialTxnId.get()))
-										.signedBy("payingSender")
 								)
 										.txnId("begin")
 										.logged()
 										.signedBy("payingSender")
-										.inheritingScheduledSigs()
 						),
 						getTxnRecord("begin").hasPriority(recordWith()
 								.status(SUCCESS)
@@ -227,12 +221,10 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						scheduleCreate("secondChunk",
 								submitMessageTo(ofGeneralInterest)
 										.chunkInfo(3, 2, "payingSender")
-										.signedBy("payingSender")
 						)
 								.via("end")
 								.logged()
-								.payingWith("payingSender")
-								.inheritingScheduledSigs(),
+								.payingWith("payingSender"),
 						getTxnRecord("end").scheduled().hasPriority(recordWith()
 								.status(SUCCESS)
 								.transfers(exactParticipants(spec -> List.of(
@@ -268,8 +260,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								"twoSigXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("payer", "receiver", 1)
-								).fee(ONE_HBAR).signedBy("payer")
-						).inheritingScheduledSigs()
+								).fee(ONE_HBAR)
+						)
 								.logged()
 								.savingExpectedScheduledTxnId()
 								.payingWith("payer")

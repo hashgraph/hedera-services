@@ -153,11 +153,10 @@ public class ReadyToRunScheduledXfersLoad extends HapiApiSuite {
 				}
 				var innerOp = cryptoTransfer(tinyBarsFromTo(sendingPayer, receiver, 1L))
 						.payingWith(sendingPayer)
-						.signedBy(sendingPayer)
 						.noLogging();
 				var op = scheduleCreate("wrapper", innerOp)
 						.rememberingNothing()
-						.inheritingScheduledSigs()
+						.alsoSigningWith(sendingPayer)
 						.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 						.noLogging()

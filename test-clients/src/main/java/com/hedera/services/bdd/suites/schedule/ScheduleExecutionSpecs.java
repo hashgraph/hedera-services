@@ -102,8 +102,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								"basicXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", transferAmount)
-								).signedBy()
-						).inheritingScheduledSigs().payingWith("payingAccount").via("createTx")
+								)
+						)
+								.payingWith("payingAccount")
+								.via("createTx")
 				).when(
 						scheduleSign("basicXfer")
 								.withSignatories("sender")
@@ -155,8 +157,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								"basicXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", transferAmount)
-								).signedBy()
-						).inheritingScheduledSigs()
+								)
+						)
 								.payingWith("payingAccount")
 								.via("createTx"),
 						recordFeeAmount("createTx", "scheduleCreateFee")
@@ -200,8 +202,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								"basicXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", transferAmount)
-								).signedBy()
-						).inheritingScheduledSigs().designatingPayer("payingAccount").via("createTx")
+								)
+						)
+								.designatingPayer("payingAccount")
+								.via("createTx")
 				).when(
 						scheduleSign("basicXfer")
 								.withSignatories("sender", "payingAccount")
@@ -231,8 +235,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								"basicXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", transferAmount)
-								).signedBy()
-						).inheritingScheduledSigs()
+								)
+						)
 								.designatingPayer("payingAccount")
 								.via("createTx")
 				).when(
