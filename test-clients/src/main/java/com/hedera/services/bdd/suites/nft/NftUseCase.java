@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class NftUseCase {
 	enum Usage { COLLECTING, TRADING }
 
-	private static final SplittableRandom r = new SplittableRandom();
+	private AtomicInteger nextXchange = new AtomicInteger(0);
 
 	private final int users;
 	private final int serialNos;
@@ -52,8 +52,9 @@ public class NftUseCase {
 	}
 
 	public HapiSpecOperation nextOp() {
-		int choice = r.nextInt(frequency);
-		return xchanges.get(choice).nextOp();
+		return xchanges
+				.get(nextXchange.getAndUpdate(i -> (i + 1) % xchanges.size()))
+				.nextOp();
 	}
 
 	public List<NftXchange> getXchanges() {
