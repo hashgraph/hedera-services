@@ -7,7 +7,7 @@ A command line interface that is able to perform the following actions against a
     1. Download all/specific file
     2. Upload a System File.
 3. Fees Operations
-    1. List Basic Transaction and Query fees
+    1. List Basic Transaction and Query fees of all/specific service.
 
 ## Getting Started
 ### Setting up your environment
