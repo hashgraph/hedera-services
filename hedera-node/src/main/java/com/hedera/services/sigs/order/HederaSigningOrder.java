@@ -542,7 +542,6 @@ public class HederaSigningOrder {
 			required = mutable(required);
 			required.add(result.metadata().getKey());
 			if (op.hasKey()) {
-				required = mutable(required);
 				var candidate = asUsableFcKey(op.getKey());
 				candidate.ifPresent(required::add);
 			}

@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -39,6 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -79,16 +81,49 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						updateWithUniqueSigs(),
-						updateWithOverlappingSigs(),
-						updateWithOneEffectiveSig(),
-						canUpdateMemo(),
-						updateFailsWithInsufficientSigs(),
-						cannotSetThresholdNegative(),
-						updateWithEmptyKeyFails(),
-						updateFailsIfMissingSigs(),
+//						updateWithUniqueSigs(),
+//						updateWithOverlappingSigs(),
+//						updateWithOneEffectiveSig(),
+//						canUpdateMemo(),
+//						updateFailsWithInsufficientSigs(),
+//						cannotSetThresholdNegative(),
+//						updateWithEmptyKeyFails(),
+//						updateFailsIfMissingSigs(),
+						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign()
 				}
 		);
+	}
+
+
+
+	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(){
+		String sysAccount = "0.0.977";
+		String randomAccount = "randomAccount";
+		String firstKey = "firstKey";
+		String secondKey = "secondKey";
+
+		return defaultHapiSpec("sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign")
+				.given(
+						newKeyNamed(firstKey).shape(SIMPLE),
+						newKeyNamed(secondKey).shape(SIMPLE)
+				)
+				.when(
+						cryptoCreate(randomAccount)
+								.key(firstKey)
+				)
+				.then(
+						cryptoUpdate(sysAccount)
+								.key(secondKey)
+								.signedBy(GENESIS)
+								.payingWith(GENESIS)
+								.hasKnownStatus(SUCCESS)
+								.logged(),
+						cryptoUpdate(randomAccount)
+								.key(secondKey)
+								.signedBy(firstKey)
+								.payingWith(GENESIS)
+								.hasPrecheck(INVALID_SIGNATURE)
+				);
 	}
 
 	private HapiApiSpec canUpdateMemo() {
