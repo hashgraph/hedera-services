@@ -81,14 +81,14 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						updateWithUniqueSigs(),
-//						updateWithOverlappingSigs(),
-//						updateWithOneEffectiveSig(),
-//						canUpdateMemo(),
-//						updateFailsWithInsufficientSigs(),
-//						cannotSetThresholdNegative(),
-//						updateWithEmptyKeyFails(),
-//						updateFailsIfMissingSigs(),
+						updateWithUniqueSigs(),
+						updateWithOverlappingSigs(),
+						updateWithOneEffectiveSig(),
+						canUpdateMemo(),
+						updateFailsWithInsufficientSigs(),
+						cannotSetThresholdNegative(),
+						updateWithEmptyKeyFails(),
+						updateFailsIfMissingSigs(),
 						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign()
 				}
 		);
