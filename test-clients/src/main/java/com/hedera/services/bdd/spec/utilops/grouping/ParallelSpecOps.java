@@ -41,6 +41,9 @@ public class ParallelSpecOps extends UtilOp {
 
 	private final HapiSpecOperation[] subs;
 
+	private boolean shouldCurrentlySuppressRnf = true;
+	private HapiApiSpec currentSpec = null;
+
 	public ParallelSpecOps(HapiSpecOperation... subs) {
 		this.subs = subs;
 	}
@@ -60,7 +63,7 @@ public class ParallelSpecOps extends UtilOp {
 		if (subErrors.size() > 0) {
 			String errMessages = subErrors.entrySet()
 					.stream()
-					.filter(e -> !(e.getValue() instanceof RegistryNotFound))
+					.filter(e -> !(e.getValue() instanceof RegistryNotFound) || !shouldSuppressRnf(spec))
 					.peek(e -> e.getValue().printStackTrace())
 					.map(e -> e.getKey() + " :: " + e.getValue().getMessage())
 					.collect(joining(", "));
@@ -70,6 +73,14 @@ public class ParallelSpecOps extends UtilOp {
 		}
 
 		return false;
+	}
+
+	private boolean shouldSuppressRnf(HapiApiSpec spec) {
+		if (spec != currentSpec) {
+			shouldCurrentlySuppressRnf = spec.setup().suppressRegistryNotFound();
+			currentSpec = spec;
+		}
+		return shouldCurrentlySuppressRnf;
 	}
 
 	@Override

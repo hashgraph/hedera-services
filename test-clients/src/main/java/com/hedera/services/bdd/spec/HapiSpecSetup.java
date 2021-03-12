@@ -363,6 +363,9 @@ public class HapiSpecSetup {
 	public long recordTtlMs() {
 		return props.getLong("record.ttl.ms");
 	}
+	public boolean suppressRegistryNotFound() {
+		return props.getBoolean("spec.parallelOps.suppressRegistryNotFound");
+	}
 	public String startupAccountsLiteral() {
 		return props.get("startupAccounts.literal");
 	}

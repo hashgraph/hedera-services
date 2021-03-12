@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.nft.NftUseCase;
 import com.hedera.services.bdd.suites.nft.NftXchange;
@@ -63,6 +62,7 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 	public static final AtomicInteger POST_SETUP_PAUSE_SECS = new AtomicInteger();
 	public static final AtomicInteger MAX_OPS_IN_PARALLEL = new AtomicInteger();
 	public static final AtomicInteger NUM_CIVILIAN_KEYS = new AtomicInteger();
+	public static final AtomicInteger NUM_CIVILIANS = new AtomicInteger();
 
 	private static final Logger log = LogManager.getLogger(NftXchangeLoadProvider.class);
 
@@ -70,7 +70,6 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 	private AtomicReference<List<NftUseCase>> nftUseCases = new AtomicReference<>();
-	private AtomicInteger numCivilians = new AtomicInteger();
 
 	public static void main(String... args) {
 		new NftXchangeLoadProvider().runSuiteSync();
@@ -123,11 +122,11 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 
 				nftUseCases.set(parseAllFrom(ciProps.get("nftUseCases")));
 				numUseCases.set(nftUseCases.get().size());
-				numCivilians.set(ciProps.getInteger("numCivilians"));
+				NUM_CIVILIANS.set(ciProps.getInteger("numCivilians"));
 
 				List<HapiSpecOperation> initializers = new ArrayList<>();
 
-				addCivilians(initializers, numCivilians.get());
+				addCivilians(initializers, NUM_CIVILIANS.get());
 
 				var nftTypeId = new AtomicInteger(1);
 				for (NftUseCase useCase : nftUseCases.get()) {

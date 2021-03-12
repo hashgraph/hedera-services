@@ -172,11 +172,6 @@ public class HapiApiSpec implements Runnable {
 		finalizedStatusCounts.computeIfAbsent(finalStatus, ignore -> new AtomicInteger(0)).incrementAndGet();
 	}
 
-	public void resetStatusCounts() {
-		precheckStatusCounts.clear();
-		finalizedStatusCounts.clear();
-	}
-
 	public EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts() {
 		return finalizedStatusCounts;
 	}

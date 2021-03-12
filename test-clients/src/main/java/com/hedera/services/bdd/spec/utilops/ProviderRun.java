@@ -121,7 +121,6 @@ public class ProviderRun extends UtilOp {
 		if (postSetupSleepSecs > 0) {
 			allRunFor(spec, sleepFor(postSetupSleepSecs * 1_000));
 		}
-//		spec.resetStatusCounts();
 
 		TimeUnit unit = unitSupplier.get();
 		Stopwatch stopwatch = Stopwatch.createStarted();
@@ -131,6 +130,7 @@ public class ProviderRun extends UtilOp {
 		int submittedSoFar = 0;
 		long durationMs = unit.toMillis(duration);
 		long logIncrementMs = durationMs / 100;
+		log.info("Beginning provider run, logging every {}ms", logIncrementMs);
 		long nextLogTargetMs = logIncrementMs;
 		long lastDeltaLogged = -1;
 		final var opsThisSecond = new AtomicInteger(0);

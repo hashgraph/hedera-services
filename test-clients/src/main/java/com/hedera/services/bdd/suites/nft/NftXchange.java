@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiApiSuite.TEN_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.perf.NftXchangeLoadProvider.MAX_OPS_IN_PARALLEL;
+import static com.hedera.services.bdd.suites.perf.NftXchangeLoadProvider.NUM_CIVILIANS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_NOT_OWNER_OF_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
@@ -86,7 +87,7 @@ public class NftXchange {
 	}
 
 	public static String civilianNo(int i) {
-		return "_" + i;
+		return "_" + (i % NUM_CIVILIANS.get());
 	}
 
 	public static String civilianKeyNo(int i) {
@@ -150,7 +151,7 @@ public class NftXchange {
 		while (created.size() < numBnfs) {
 			int an = r.nextInt(associations);
 			int bn = an;
-			while (bn == an) {
+			while (bnfIdsCollide(an, bn)) {
 				bn = r.nextInt(associations);
 			}
 			BackAndForth cand = new BackAndForth(an, bn, explicitSerialNos.get(nextSn++));
@@ -160,6 +161,17 @@ public class NftXchange {
 		init.add(withOpContext((spec, opLog) ->
 				opLog.info(" - Finished creating {} bNfs", bnfs.size())
 		));
+	}
+
+	private boolean bnfIdsCollide(int i, int j) {
+		if (i == j) {
+			return true;
+		} else if (i == 0 || j == 0) {
+			return false;
+		} else {
+			int modulus = NUM_CIVILIANS.get();
+			return ((i - 1) * nftTypeId) % modulus == ((j - 1) * nftTypeId) % modulus;
+		}
 	}
 
 	private String name(int treasuryOrCivilian) {
