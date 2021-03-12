@@ -39,11 +39,13 @@ message ScheduleCreateTransactionBody {
 ```  
 
 The new `SchedulableTransactionBody` message is a strict subset of the `TransactionBody` message which omits the
-top-level `TransactionID`, `nodeAccountID`, and `transactionValidDuration` fields; and does not allow the `ScheduleCreateTransactionBody`
-and `ScheduleSignTransactionBody` messages in its `data` element.
+top-level `TransactionID`, `nodeAccountID`, and `transactionValidDuration` fields; and does not allow the 
+`ScheduleCreateTransactionBody` and `ScheduleSignTransactionBody` messages in its `data` element. Any 
+unknown fields in the submitted `SchedulableTransactionBody` will be ignored, although they _will_ affect
+the "identity" of the schedule (see [below](#receipts-and-duplicate-creations)).
 
 As with all other entity types, a schedule remains in network state until it expires, even if its scheduled 
-transaction has already been executed.
+transaction has already been executed or it has been marked deleted.
 
 ### Paying for scheduled transactions
 
@@ -70,9 +72,11 @@ to the existing schedule. A client receiving `IDENTICAL_SCHEDULE_ALREADY_CREATED
 then submit a `ScheduleSign` (see below) with the given `ScheduleID`, signing with
 the same Ed25519 keys it used for its own create attempt. 
 
-Note the `payerAccountID` field does not affect the identity of a schedule;
-that is, if two `ScheduleCreateTransactionBody` instances agree in their first four
-fields, they are considered identical.
+Two <tt>ScheduleCreate</tt> transactions are <i>identical</i> if they are equal in all their fields 
+other than, possibly, <tt>payerAccountID</tt>. (Here "equal" should be understood in the sense of 
+gRPC object equality in the network software runtime. In particular, a gRPC object with 
+[unknown fields](https://developers.google.com/protocol-buffers/docs/proto3#unknowns)
+is not equal to a gRPC object without unknown fields, even if they agree on all known fields.)
   
 ### Enforced checks
 
@@ -124,12 +128,15 @@ message ScheduleGetInfoQuery {
   
 message ScheduleGetInfoResponse {  
   ScheduleID scheduleID = 1; // The id of the schedule
-  SchedulableTransactionBody scheduledTransactionBody = 2; // The scheduled transaction
-  string memo = 3; // The publicly visible memo of the schedule
-  Key adminKey = 4; // The key used to delete the schedule from state
-  KeyList signers = 5; // The Ed25519 keys the network deems to have signed the scheduled transaction
-  AccountID creatorAccountID = 6; // The id of the account that created the schedule
-  AccountID payerAccountID = 7; // The id of the account responsible for the service fee of the scheduled transaction
+  bool deleted = 2; // Has the schedule been deleted? 
+  bool executed = 3; // Has the schedule been executed? 
+  SchedulableTransactionBody scheduledTransactionBody = 4; // The scheduled transaction
+  string memo = 5; // The publicly visible memo of the schedule
+  Key adminKey = 6; // The key used to delete the schedule from state
+  KeyList signers = 7; // The Ed25519 keys the network deems to have signed the scheduled transaction
+  AccountID creatorAccountID = 8; // The id of the account that created the schedule
+  AccountID payerAccountID = 9; // The id of the account responsible for the service fee of the scheduled transaction
+  TransactionID scheduledTransactionID = 10; // The transaction id that will be used in the record of the scheduled transaction (if it executes)
 }  
 ```  
   
