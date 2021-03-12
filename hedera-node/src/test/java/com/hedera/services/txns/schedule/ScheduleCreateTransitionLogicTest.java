@@ -399,6 +399,7 @@ public class ScheduleCreateTransitionLogicTest {
 				SignaturePair.newBuilder()
 						.setPubKeyPrefix(ByteString.copyFrom(pubKey))
 		).build();
+		given(accessor.getSigMap()).willReturn(sigMap);
 
 		jAdminKey = asUsableFcKey(key);
 
@@ -411,7 +412,6 @@ public class ScheduleCreateTransitionLogicTest {
 
 		var builder = TransactionBody.newBuilder();
 		var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
-				.setSigMap(sigMap)
 				.setAdminKey(key)
 				.setPayerAccountID(payer)
 				.setMemo(entityMemo)

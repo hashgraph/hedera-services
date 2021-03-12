@@ -32,6 +32,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,7 +78,8 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	@Override
 	public void doStateTransition() {
 		try {
-			transitionFor(txnCtx.accessor().getTxn().getScheduleCreate());
+			var accessor = txnCtx.accessor();
+			transitionFor(accessor.getSigMap(), accessor.getTxn().getScheduleCreate());
 		} catch (Exception e) {
 			e.printStackTrace();
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
@@ -85,7 +87,10 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 		}
 	}
 
-	private void transitionFor(ScheduleCreateTransactionBody op) throws InvalidProtocolBufferException {
+	private void transitionFor(
+			SignatureMap sigMap,
+			ScheduleCreateTransactionBody op
+	) throws InvalidProtocolBufferException {
 		var scheduleId = NOT_YET_RESOLVED;
 		byte[] txBytes = op.getTransactionBody().toByteArray();
 		var scheduledPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
@@ -109,7 +114,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			scheduleId = result.getCreated().get();
 		}
 
-		int numSigs = op.getSigMap().getSigPairCount();
+		int numSigs = sigMap.getSigPairCount();
 		var signingOutcome = signingsWitness.observeInScope(numSigs, scheduleId, store, activationHelper);
 		if (signingOutcome.getLeft() != OK) {
 			abortWith(signingOutcome.getLeft());

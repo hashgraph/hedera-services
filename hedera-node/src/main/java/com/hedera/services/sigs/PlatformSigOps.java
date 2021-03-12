@@ -72,17 +72,11 @@ public class PlatformSigOps {
 		}
 
 		try {
-			var sigBytes = ed25519Key.isForScheduledTxn()
-					? sigBytesFn.sigBytesForScheduled(ed25519Key.getEd25519())
-					: sigBytesFn.sigBytesFor(ed25519Key.getEd25519());
+			var sigBytes = sigBytesFn.sigBytesFor(ed25519Key.getEd25519());
 			if (sigBytes.length > 0) {
 				var sig = copyFrom(sigBytes);
 				var cryptoKey = copyFrom(ed25519Key.getEd25519());
-				if (ed25519Key.isForScheduledTxn()) {
-					result.getPlatformSigs().add(factory.createForScheduled(cryptoKey, sig));
-				} else {
-					result.getPlatformSigs().add(factory.create(cryptoKey, sig));
-				}
+				result.getPlatformSigs().add(factory.create(cryptoKey, sig));
 			}
 		} catch (Exception e) {
 			result.setTerminatingEx(e);

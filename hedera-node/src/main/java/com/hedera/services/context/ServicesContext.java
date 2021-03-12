@@ -566,7 +566,7 @@ public class ServicesContext {
 
 	public SigFactoryCreator sigFactoryCreator() {
 		if (sigFactoryCreator == null) {
-			sigFactoryCreator = new SigFactoryCreator(this::schedules);
+			sigFactoryCreator = new SigFactoryCreator();
 		}
 		return sigFactoryCreator;
 	}
