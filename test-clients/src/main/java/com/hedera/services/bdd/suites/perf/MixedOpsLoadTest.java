@@ -64,7 +64,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -135,7 +134,6 @@ public class MixedOpsLoadTest extends LoadTest {
 								DUPLICATE_TRANSACTION,
 								PLATFORM_TRANSACTION_NOT_CREATED,
 								PAYER_ACCOUNT_NOT_FOUND)
-						.hasPrecheckFrom(INVALID_SIGNATURE)
 						.deferStatusResolution(),
 
 				submitMessageTo(topic)
