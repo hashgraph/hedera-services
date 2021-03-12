@@ -1346,6 +1346,29 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
+  GCP-Weekly-Services-MixedOps-Restart-Performance-20N-20C:
+    triggers:
+      - schedule:
+          cron: "0 2 * * 3"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          runtime: build-executor
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/20N_20C/
+          config_type: "weekly"
+          workflow-name: "GCP-Weekly-Services-MixedOps-Restart-Performance-20N-20C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
 
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:

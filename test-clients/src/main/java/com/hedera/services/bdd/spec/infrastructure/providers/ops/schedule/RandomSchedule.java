@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
+package com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule;
 
 /*-
  * ‌
@@ -24,97 +24,102 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.LookupUtils;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.SplittableRandom;
-import java.util.stream.IntStream;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
-import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.SEND_THRESHOLD;
+import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomTransfer.stableAccounts;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
-public class RandomTransfer implements OpProvider {
-	private static final Logger log = LogManager.getLogger(RandomTransfer.class);
+public class RandomSchedule implements OpProvider {
+	private final AtomicInteger opNo = new AtomicInteger();
+	private final RegistrySourcedNameProvider<ScheduleID> schedules;
+	private final EntityNameProvider<AccountID> accounts;
+	public final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+			UNSCHEDULABLE_TRANSACTION,
+			UNRESOLVABLE_REQUIRED_SIGNERS);
 
-	public static final int DEFAULT_NUM_STABLE_ACCOUNTS = 200;
-	public static final double DEFAULT_RECORD_PROBABILITY = 0.0;
-
-	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+	private final ResponseCodeEnum[] outcomesForTransfer = standardOutcomesAnd(
 			ACCOUNT_DELETED,
 			INSUFFICIENT_ACCOUNT_BALANCE
 	);
 
-	private int numStableAccounts = DEFAULT_NUM_STABLE_ACCOUNTS;
-	public double recordProb = DEFAULT_RECORD_PROBABILITY;
-	private final SplittableRandom r = new SplittableRandom();
-	private final EntityNameProvider<AccountID> accounts;
+	public static final int DEFAULT_CEILING_NUM = 100;
+	private int ceilingNum = DEFAULT_CEILING_NUM;
+	static final String ADMIN_KEY = DEFAULT_PAYER;
+	static final String STABLE_RECEIVER = "stable-receiver";
 
-	public RandomTransfer(EntityNameProvider<AccountID> accounts) {
+	public RandomSchedule(
+			RegistrySourcedNameProvider<ScheduleID> schedules,
+			EntityNameProvider<AccountID> accounts
+	) {
+		this.schedules = schedules;
 		this.accounts = accounts;
 	}
 
-	public RandomTransfer numStableAccounts(int n) {
-		numStableAccounts = n;
+	public RandomSchedule ceiling(int n) {
+		ceilingNum = n;
 		return this;
-	}
-
-	public RandomTransfer recordProbability(double p) {
-		recordProb = p;
-		return this;
-	}
-
-	private String my(String opName) {
-		return unique(opName, RandomTransfer.class);
-	}
-
-	public static Set<String> stableAccounts(int n) {
-		return IntStream.range(0, n)
-				.mapToObj(i -> String.format("stable-account%d", i)).collect(toSet());
 	}
 
 	@Override
 	public List<HapiSpecOperation> suggestedInitializers() {
-		return stableAccounts(numStableAccounts).stream()
+		return stableAccounts(1).stream()
 				.map(account ->
-						cryptoCreate(my(account))
+						cryptoCreate(STABLE_RECEIVER)
 								.noLogging()
 								.balance(INITIAL_BALANCE)
 								.deferStatusResolution()
 								.payingWith(UNIQUE_PAYER_ACCOUNT)
-								.rechargeWindow(3)
+								.receiverSigRequired(true)
 				)
 				.collect(toList());
 	}
 
 	@Override
 	public Optional<HapiSpecOperation> get() {
+		if (schedules.numPresent() >= ceilingNum) {
+			return Optional.empty();
+		}
 		final var involved = LookupUtils.twoDistinct(accounts);
 		if (involved.isEmpty()) {
 			return Optional.empty();
 		}
+		int id = opNo.getAndIncrement();
 
-		boolean shouldCreateRecord = r.nextDouble() < recordProb;
-		long amount = shouldCreateRecord ? (SEND_THRESHOLD + 1) : 1;
 		String from = involved.get().getKey(), to = involved.get().getValue();
 
-		HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromTo(from, to, amount))
+		HapiScheduleCreate op = scheduleCreate("schedule" + id,
+				cryptoTransfer(tinyBarsFromTo(from, STABLE_RECEIVER, 1))
+						.signedBy(from)
+						.payingWith(DEFAULT_PAYER)
+						.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+						.hasKnownStatusFrom(outcomesForTransfer)
+		)
+				.signedBy(DEFAULT_PAYER)
+				.fee(ONE_HUNDRED_HBARS)
+				.inheritingScheduledSigs()
+				.memo("randomlycreated" + id)
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 				.hasKnownStatusFrom(permissibleOutcomes)
-				.payingWith(UNIQUE_PAYER_ACCOUNT);
-
+				.adminKey(ADMIN_KEY);
 		return Optional.of(op);
 	}
 }

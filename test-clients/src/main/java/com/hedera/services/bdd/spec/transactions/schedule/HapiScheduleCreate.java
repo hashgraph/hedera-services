@@ -72,6 +72,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private ByteString bytesSigned = ByteString.EMPTY;
 	private List<String> signatories = Collections.emptyList();
 
+
 	private final String entity;
 	private final HapiTxnOp<T> scheduled;
 	private Optional<byte[]> nonce = Optional.empty();
