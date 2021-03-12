@@ -61,7 +61,6 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -135,8 +134,8 @@ public class MixedOpsLoadTest extends LoadTest {
 						.hasRetryPrecheckFrom(BUSY,
 								DUPLICATE_TRANSACTION,
 								PLATFORM_TRANSACTION_NOT_CREATED,
-								INVALID_SIGNATURE,
 								PAYER_ACCOUNT_NOT_FOUND)
+						.hasPrecheckFrom(INVALID_SIGNATURE)
 						.deferStatusResolution(),
 
 				submitMessageTo(topic)
@@ -267,7 +266,6 @@ public class MixedOpsLoadTest extends LoadTest {
 												INVALID_TOKEN_ID,
 												TRANSACTION_EXPIRED,
 												TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,
-												FAIL_INVALID,
 												OK)
 										.fee(ONE_HUNDRED_HBARS)
 										.suppressStats(true)
