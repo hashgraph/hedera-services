@@ -90,6 +90,10 @@ public class InHandleActivationHelper {
 		}
 	}
 
+	public Function<byte[], TransactionSignature> currentSigsFn() {
+		return sigsFn;
+	}
+
 	private boolean arePartiesActive(
 			boolean useScheduleKeys,
 			TransactionBody txn,

@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
@@ -39,22 +40,21 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -94,7 +94,7 @@ public class ScheduleCreateTransitionLogicTest {
 	private ScheduleStore store;
 	private PlatformTxnAccessor accessor;
 	private TransactionContext txnCtx;
-	private SignatoryUtils.SigningsWitness signingsWitness;
+	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
 	private ScheduleReadyForExecution.ExecutionProcessor executor;
 
 	private AccountID payer = IdUtils.asAccount("1.2.3");
@@ -104,7 +104,12 @@ public class ScheduleCreateTransitionLogicTest {
 	private TransactionID txnId;
 	private TransactionBody scheduleCreateTxn;
 	private InHandleActivationHelper activationHelper;
-	private SignatureMap sigMap;
+	private SignatureMap sigMap = SigMapScheduleClassifierTest.sigMap;
+
+	private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
+	private SigMapScheduleClassifier classifier;
+	private Optional<List<JKey>> validScheduleKeys = Optional.of(
+			List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
 
 	private ScheduleCreateTransitionLogic subject;
 
@@ -114,19 +119,25 @@ public class ScheduleCreateTransitionLogicTest {
 		store = mock(ScheduleStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		activationHelper = mock(InHandleActivationHelper.class);
-		signingsWitness = mock(SignatoryUtils.SigningsWitness.class);
+		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
 		executor = mock(ScheduleReadyForExecution.ExecutionProcessor.class);
 
-		given(signingsWitness.observeInScope(1, schedule, store, activationHelper))
+		classifier = mock(SigMapScheduleClassifier.class);
+
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
 				.willReturn(Pair.of(OK, true));
+
 		given(executor.doProcess(schedule)).willReturn(OK);
 
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.activePayer()).willReturn(payer);
+		given(txnCtx.activePayerKey()).willReturn(payerKey);
 
 		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper, validator);
-		subject.signingsWitness = signingsWitness;
+
+		subject.signingsWitness = replSigningWitness;
 		subject.executor = executor;
+		subject.classifier = classifier;
 	}
 
 	@Test
@@ -193,7 +204,7 @@ public class ScheduleCreateTransitionLogicTest {
 				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
 				argThat((Optional<String> memo) -> memo.get().equals(entityMemo)));
 		// and:
-		verify(signingsWitness).observeInScope(1, schedule, store, activationHelper);
+		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
 		// and:
 		verify(store).commitCreation();
 		verify(txnCtx).addExpiringEntities(any());
@@ -248,7 +259,7 @@ public class ScheduleCreateTransitionLogicTest {
 		// given:
 		givenValidTxnCtx();
 		// and:
-		given(signingsWitness.observeInScope(1, schedule, store, activationHelper))
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
 				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
 		// when:
@@ -346,22 +357,20 @@ public class ScheduleCreateTransitionLogicTest {
 	public void failsOnInvalidAdminKey() {
 		givenCtx(
 				true,
-				false,
 				false);
 
 		// expect:
-		assertEquals(INVALID_ADMIN_KEY, subject.validate(scheduleCreateTxn));
+		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
 	public void failsOnInvalidMemo() {
 		givenCtx(
 				false,
-				false,
 				true);
 
 		// expect:
-		assertEquals(MEMO_TOO_LONG, subject.validate(scheduleCreateTxn));
+		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
@@ -371,35 +380,18 @@ public class ScheduleCreateTransitionLogicTest {
 		assertEquals(OK, subject.syntaxCheck().apply(scheduleCreateTxn));
 	}
 
-	@Test
-	public void rejectsInvalidAdminKey() {
-		givenCtx(true, false, false);
-
-		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
-	}
-
 	private void givenValidTxnCtx() {
 		givenCtx(
-				false,
 				false,
 				false);
 	}
 
 	private void givenCtx(
 			boolean invalidAdminKey,
-			boolean invalidPubKey,
 			boolean invalidMemo
 	) {
-		var pair = new KeyPairGenerator().generateKeyPair();
-		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-		if (invalidPubKey) {
-			pubKey = "asd".getBytes();
-		}
-		sigMap = SignatureMap.newBuilder().addSigPair(
-				SignaturePair.newBuilder()
-						.setPubKeyPrefix(ByteString.copyFrom(pubKey))
-		).build();
 		given(accessor.getSigMap()).willReturn(sigMap);
+		given(classifier.validScheduleKeys(eq(payerKey), eq(sigMap), any(), any())).willReturn(validScheduleKeys);
 
 		jAdminKey = asUsableFcKey(key);
 

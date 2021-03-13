@@ -62,7 +62,8 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	private final InHandleActivationHelper activationHelper;
 
 	ExecutionProcessor executor = this::processExecution;
-	SignatoryUtils.SigningsWitness signingsWitness = SignatoryUtils::witnessInScope;
+	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
+	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
 
 	public ScheduleCreateTransitionLogic(
 			ScheduleStore store,
@@ -81,7 +82,6 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			var accessor = txnCtx.accessor();
 			transitionFor(accessor.getSigMap(), accessor.getTxn().getScheduleCreate());
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
 			abortWith(FAIL_INVALID);
 		}
@@ -114,8 +114,12 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			scheduleId = result.getCreated().get();
 		}
 
-		int numSigs = sigMap.getSigPairCount();
-		var signingOutcome = signingsWitness.observeInScope(numSigs, scheduleId, store, activationHelper);
+		var validScheduleKeys = classifier.validScheduleKeys(
+				txnCtx.activePayerKey(),
+				sigMap,
+				activationHelper.currentSigsFn(),
+				activationHelper::visitScheduledCryptoSigs);
+		var signingOutcome = signingsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
 		if (signingOutcome.getLeft() != OK) {
 			abortWith(signingOutcome.getLeft());
 			return;

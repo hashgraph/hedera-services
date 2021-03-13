@@ -99,7 +99,6 @@ class InHandleActivationHelperTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getPlatformTxn()).willReturn(platformTxn);
 		given(accessor.getTxnBytes()).willReturn(scopedTxnBytes);
-		given(accessor.getFunction()).willReturn(CryptoTransfer);
 
 		sig = mock(TransactionSignature.class);
 
@@ -135,23 +134,10 @@ class InHandleActivationHelperTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void throwsIfScheduleActivationTestedForNonSchedTxn() {
-		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
-
-		// expect:
-		Assertions.assertThrows(
-				IllegalStateException.class,
-				() -> subject.areScheduledPartiesActive(TransactionBody.getDefaultInstance(), tests));
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
 	public void usesExpectedSigsFnForOthers() {
 		// setup:
 		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
-		given(accessor.getFunction()).willReturn(ScheduleSign);
 		given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(false);
 
 		// when:
@@ -165,7 +151,7 @@ class InHandleActivationHelperTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void usesExpectedKeysForOthers() {
+	public void usesExpectedKeysForOtherPartiesActive() {
 		// setup:
 		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
@@ -189,7 +175,7 @@ class InHandleActivationHelperTest {
 		// setup:
 		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
-		given(accessor.getFunction()).willReturn(ScheduleSign);
+		given(sigsFnSource.apply(any())).willReturn(sigsFn);
 		given(activation.test(scheduled, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
 
 		// when:
@@ -201,11 +187,11 @@ class InHandleActivationHelperTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void countsKeysAsExpected() {
+	public void countsScheduledKeysAsExpected() {
 		// setup:
 		BiConsumer<JKey, TransactionSignature> visitor = (BiConsumer<JKey, TransactionSignature>) mock(BiConsumer.class);
 
-		given(accessor.getFunction()).willReturn(ScheduleSign);
+		given(sigsFnSource.apply(any())).willReturn(sigsFn);
 		given(sigsFn.apply(scheduled.getEd25519())).willReturn(sig);
 
 		// when:

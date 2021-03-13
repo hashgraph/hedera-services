@@ -72,7 +72,7 @@ public class SigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 		}
 	}
 
-	private boolean beginsWith(byte[] pubKey, byte[] prefix) {
+	public static boolean beginsWith(byte[] pubKey, byte[] prefix) {
 		int n = prefix.length;
 		return Arrays.equals(prefix, 0, n, pubKey, 0, n);
 	}

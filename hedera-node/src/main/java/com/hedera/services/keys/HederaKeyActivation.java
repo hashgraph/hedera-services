@@ -57,7 +57,7 @@ public class HederaKeyActivation {
 	static BiFunction<byte[], List<TransactionSignature>, Function<byte[], TransactionSignature>> scheduleFactory =
 			HederaKeyActivation::scopedPkToSigMapFrom;
 
-	public static final TransactionSignature INVALID_SIG = new InvalidSignature();
+	public static final TransactionSignature INVALID_MISSING_SIG = new InvalidSignature();
 
 	public static final BiPredicate<JKey, TransactionSignature> ONLY_IF_SIG_IS_VALID =
 			(ignoredKey, sig) -> VALID.equals( sig.getSignatureStatus() );
@@ -152,7 +152,7 @@ public class HederaKeyActivation {
 				.stream()
 				.collect(toMap(s -> ByteString.copyFrom(s.getExpandedPublicKeyDirect()), s -> s, (a, b) -> a));
 
-		return ed25519 -> pkSigs.getOrDefault(ByteString.copyFrom(ed25519), INVALID_SIG);
+		return ed25519 -> pkSigs.getOrDefault(ByteString.copyFrom(ed25519), INVALID_MISSING_SIG);
 	}
 
 	/**
@@ -188,7 +188,7 @@ public class HederaKeyActivation {
 					return sig;
 				}
 			}
-			return INVALID_SIG;
+			return INVALID_MISSING_SIG;
 		};
 	}
 

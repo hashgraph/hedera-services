@@ -149,7 +149,7 @@ public class HederaKeyActivationTest {
 		Function<byte[], TransactionSignature> scopedSigsFn = scopedPkToSigMapFrom(correct, sigs);
 
 		// then:
-		Assertions.assertSame(HederaKeyActivation.INVALID_SIG, scopedSigsFn.apply(overlapKey));
+		Assertions.assertSame(HederaKeyActivation.INVALID_MISSING_SIG, scopedSigsFn.apply(overlapKey));
 		Assertions.assertSame(sigs.get(1), scopedSigsFn.apply(uniqueKey));
 	}
 
@@ -213,7 +213,7 @@ public class HederaKeyActivationTest {
 		assertEquals(presentSigs.get(0), present0);
 		assertEquals(presentSigs.get(1), present1);
 		// and:
-		assertEquals(HederaKeyActivation.INVALID_SIG, missing);
+		assertEquals(HederaKeyActivation.INVALID_MISSING_SIG, missing);
 	}
 
 	@Test

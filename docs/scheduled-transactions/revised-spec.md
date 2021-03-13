@@ -130,13 +130,14 @@ message ScheduleGetInfoResponse {
   ScheduleID scheduleID = 1; // The id of the schedule
   bool deleted = 2; // Has the schedule been deleted? 
   bool executed = 3; // Has the schedule been executed? 
-  SchedulableTransactionBody scheduledTransactionBody = 4; // The scheduled transaction
-  string memo = 5; // The publicly visible memo of the schedule
-  Key adminKey = 6; // The key used to delete the schedule from state
-  KeyList signers = 7; // The Ed25519 keys the network deems to have signed the scheduled transaction
-  AccountID creatorAccountID = 8; // The id of the account that created the schedule
-  AccountID payerAccountID = 9; // The id of the account responsible for the service fee of the scheduled transaction
-  TransactionID scheduledTransactionID = 10; // The transaction id that will be used in the record of the scheduled transaction (if it executes)
+  Timestamp expirationTime = 4; // The time at which the schedule will expire
+  SchedulableTransactionBody scheduledTransactionBody = 5; // The scheduled transaction
+  string memo = 6; // The publicly visible memo of the schedule
+  Key adminKey = 7; // The key used to delete the schedule from state
+  KeyList signers = 8; // The Ed25519 keys the network deems to have signed the scheduled transaction
+  AccountID creatorAccountID = 9; // The id of the account that created the schedule
+  AccountID payerAccountID = 10; // The id of the account responsible for the service fee of the scheduled transaction
+  TransactionID scheduledTransactionID = 11; // The transaction id that will be used in the record of the scheduled transaction (if it executes)
 }  
 ```  
   
