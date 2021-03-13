@@ -28,8 +28,10 @@ import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.schedule.ScheduleSignUsage;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -39,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -59,25 +62,13 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	private final String schedule;
 	private List<String> signatories = Collections.emptyList();
-	private Optional<String> savedScheduledTxnId = Optional.empty();
-	private Optional<byte[]> explicitBytes = Optional.empty();
 
 	public HapiScheduleSign(String schedule) {
 		this.schedule = schedule;
 	}
 
-	public HapiScheduleSign withSignatories(String... keys)	 {
+	public HapiScheduleSign alsoSigningWith(String... keys)	 {
 		signatories = List.of(keys);
-		return this;
-	}
-
-	public HapiScheduleSign signingExplicit(byte[] bytes) {
-		explicitBytes = Optional.of(bytes);
-		return this;
-	}
-
-	public HapiScheduleSign receiptHasScheduledTxnId(String creation) {
-		savedScheduledTxnId = Optional.of(correspondingScheduledTxnId(creation));
 		return this;
 	}
 
@@ -93,23 +84,11 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		var registry = spec.registry();
-		byte[] bytesToSign = new byte[0];
-
-		if (explicitBytes.isPresent()) {
-			bytesToSign = explicitBytes.get();
-		}
-
-		var signingKeys = signatories.stream().map(k -> registry.getKey(k)).collect(toList());
-		var authors = spec.keys().authorsFor(signingKeys, Collections.emptyMap());
-		var ceremony = spec.keys().new Ed25519Signing(bytesToSign, authors);
-		var sigs = ceremony.completed();
 		ScheduleSignTransactionBody opBody = spec
 				.txns()
 				.<ScheduleSignTransactionBody, ScheduleSignTransactionBody.Builder>body(
 						ScheduleSignTransactionBody.class, b -> {
 							b.setScheduleID(asScheduleId(schedule, spec));
-							b.setSigMap(withNature(SigMapGenerator.Nature.UNIQUE).forEd25519Sigs(sigs));
 						}
 				);
 		return b -> b.setScheduleSign(opBody);
@@ -130,7 +109,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 			return spec.fees().forActivityBasedOp(
 					HederaFunctionality.ScheduleSign, metricsCalc, txn, numPayerKeys);
 		} catch (Throwable ignore) {
-			return 100_000_000L;
+			return HapiApiSuite.ONE_HBAR;
 		}
 	}
 
@@ -150,9 +129,20 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	}
 
 	@Override
+	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+		List<Function<HapiApiSpec, Key>> signers =
+				new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
+		for (String added : signatories) {
+			signers.add(spec -> spec.registry().getKey(added));
+		}
+		return signers;
+	}
+
+	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
-				.add("schedule", schedule);
+				.add("schedule", schedule)
+				.add("signers", signatories);
 		return helper;
 	}
 }

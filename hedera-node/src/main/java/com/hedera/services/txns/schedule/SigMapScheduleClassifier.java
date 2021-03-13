@@ -1,5 +1,6 @@
 package com.hedera.services.txns.schedule;
 
+import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -93,6 +94,13 @@ public class SigMapScheduleClassifier {
 			if (candidate.compareTo(current) > 0) {
 				current = candidate;
 			}
+		}
+
+		@Override
+		public String toString() {
+			return MoreObjects.toStringHelper(MutableSigClassification.class)
+					.add("current", current)
+					.toString();
 		}
 	}
 }

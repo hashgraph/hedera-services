@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.schedule;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -108,7 +107,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.via("createTx")
 				).when(
 						scheduleSign("basicXfer")
-								.withSignatories("sender")
+								.alsoSigningWith("sender")
 								.via("signTx")
 				).then(
 						withOpContext((spec, opLog) -> {
@@ -173,7 +172,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 										}))),
 						getAccountBalance("payingAccount").hasTinyBars(noBalance),
 						scheduleSign("basicXfer")
-								.withSignatories("sender")
+								.alsoSigningWith("sender")
 								.hasKnownStatus(SUCCESS)
 				).then(
 						getAccountBalance("sender").hasTinyBars(transferAmount),
@@ -208,7 +207,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.via("createTx")
 				).when(
 						scheduleSign("basicXfer")
-								.withSignatories("sender", "payingAccount")
+								.alsoSigningWith("sender", "payingAccount")
 								.via("signTx")
 								.hasKnownStatus(SUCCESS)
 				).then(
@@ -241,7 +240,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.via("createTx")
 				).when(
 						scheduleSign("basicXfer")
-								.withSignatories("sender", "payingAccount")
+								.alsoSigningWith("sender", "payingAccount")
 								.via("signTx")
 								.hasKnownStatus(SUCCESS)
 				).then(

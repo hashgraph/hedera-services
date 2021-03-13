@@ -29,6 +29,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -38,6 +39,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -48,6 +50,7 @@ import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -55,6 +58,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
 	private static final ScheduleID NOT_YET_RESOLVED = null;
+	private static final EnumSet<ResponseCodeEnum> ACCEPTABLE_SIGNING_OUTCOMES = EnumSet.of(OK, NO_NEW_VALID_SIGNATURES);
 
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
@@ -120,7 +124,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);
 		var signingOutcome = signingsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
-		if (signingOutcome.getLeft() != OK) {
+		if (!ACCEPTABLE_SIGNING_OUTCOMES.contains(signingOutcome.getLeft())) {
 			abortWith(signingOutcome.getLeft());
 			return;
 		}

@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.fees;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -122,7 +121,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 						scheduleSign("canonical")
 								.via("canonicalSigning")
 								.payingWith("payingSender")
-								.withSignatories("receiver"),
+								.alsoSigningWith("receiver"),
 						scheduleCreate("tbd",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")

@@ -71,14 +71,14 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						suiteSetup(),
-						allRecordsAreQueryable(),
-						schedulingTxnIdFieldsNotAllowed(),
-						suiteCleanup(),
+//						suiteSetup(),
+//						allRecordsAreQueryable(),
+//						schedulingTxnIdFieldsNotAllowed(),
 						canonicalScheduleOpsHaveExpectedUsdFees(),
-						canScheduleChunkedMessages(),
-						noFeesChargedIfTriggeredPayerIsInsolvent(),
-						noFeesChargedIfTriggeredPayerIsUnwilling(),
+//						canScheduleChunkedMessages(),
+//						noFeesChargedIfTriggeredPayerIsInsolvent(),
+//						noFeesChargedIfTriggeredPayerIsUnwilling(),
+//						suiteCleanup(),
 				}
 		);
 	}
@@ -98,7 +98,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	}
 
 	HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
-		return defaultHapiSpec("canonicalScheduleOpsHaveExpectedUsdFees")
+		return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
 				.given(
 						cryptoCreate("payingSender"),
 						cryptoCreate("receiver")
@@ -116,7 +116,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						scheduleSign("canonical")
 								.via("canonicalSigning")
 								.payingWith("payingSender")
-								.withSignatories("receiver"),
+								.alsoSigningWith("receiver"),
 						scheduleCreate("tbd",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")
@@ -270,7 +270,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 				).then(
 						scheduleSign("twoSigXfer")
 								.via("trigger")
-								.withSignatories("receiver"),
+								.alsoSigningWith("receiver"),
 						getAccountBalance("receiver").hasTinyBars(1L),
 						getTxnRecord("trigger"),
 						getTxnRecord("creation"),

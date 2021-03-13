@@ -136,4 +136,17 @@ class ReplSignatoryUtilsTest {
 		// then:
 		assertEquals(Pair.of(OK, true), outcome);
 	}
+
+	@Test
+	void respondsToNonActivatingWithNoNewSignersCorrectly() {
+		given(store.get(id)).willReturn(schedule);
+		given(schedule.transactionBody()).willReturn(scheduledTxn);
+		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(false);
+
+		// when:
+		var outcome = SignatoryUtils.witnessScoped(id, store, noValidNoInvalid, activationHelper);
+
+		// then:
+		assertEquals(Pair.of(OK, false), outcome);
+	}
 }

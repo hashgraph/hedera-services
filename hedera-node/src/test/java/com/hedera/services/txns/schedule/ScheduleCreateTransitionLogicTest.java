@@ -49,6 +49,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -59,6 +60,7 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -206,6 +208,30 @@ public class ScheduleCreateTransitionLogicTest {
 		// and:
 		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
 		// and:
+		verify(store).commitCreation();
+		verify(txnCtx).addExpiringEntities(any());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+	}
+
+	@Test
+	public void followsHappyPathEvenIfNoNewValidSignatures() {
+		// setup:
+		MerkleSchedule created = mock(MerkleSchedule.class);
+		given(created.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(created.transactionBody()).willReturn(transactionBody);
+		given(created.expiry()).willReturn(now.getEpochSecond());
+
+		givenValidTxnCtx();
+		// and:
+		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
+				.willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
+		given(store.get(schedule)).willReturn(created);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
 		verify(store).commitCreation();
 		verify(txnCtx).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);

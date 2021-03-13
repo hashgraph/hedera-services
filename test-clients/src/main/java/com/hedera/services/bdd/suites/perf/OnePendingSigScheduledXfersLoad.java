@@ -24,7 +24,6 @@ import com.google.common.util.concurrent.AtomicDouble;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -136,8 +135,7 @@ public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
 					return Optional.empty();
 				}
 				var op = scheduleSign(nextSig.getScheduleId())
-						.signingExplicit(nextSig.getScheduledTxnBytes())
-						.withSignatories(nextSig.getSignatory())
+						.alsoSigningWith(nextSig.getSignatory())
 						.hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
 						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 //						.noLogging()

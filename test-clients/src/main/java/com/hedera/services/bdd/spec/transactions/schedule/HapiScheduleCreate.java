@@ -226,6 +226,9 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		List<Function<HapiApiSpec, Key>> signers =
 				new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
 		adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
+		for (String added : initialSigners) {
+			signers.add(spec -> spec.registry().getKey(added));
+		}
 		return signers;
 	}
 

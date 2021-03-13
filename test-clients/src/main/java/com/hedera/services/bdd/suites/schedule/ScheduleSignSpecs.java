@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
@@ -112,7 +111,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleCreate("basicXfer", txnBody)
 				)
 				.when(
-						scheduleSign("basicXfer").withSignatories("receiver")
+						scheduleSign("basicXfer").alsoSigningWith("receiver")
 				)
 				.then(
 						getScheduleInfo("basicXfer")
@@ -132,7 +131,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				)
 				.when()
 				.then(
-						scheduleSign("basicXfer").withSignatories("somebodyelse").hasKnownStatus(
+						scheduleSign("basicXfer").alsoSigningWith("somebodyelse").hasKnownStatus(
 								SOME_SIGNATURES_WERE_INVALID)
 				);
 	}
@@ -154,7 +153,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				).when(
 						tokenUpdate("tokenA").supplyKey("newMint")
 				).then(
-						scheduleSign("tokenMintScheduled").withSignatories("mint").hasKnownStatus(
+						scheduleSign("tokenMintScheduled").alsoSigningWith("mint").hasKnownStatus(
 								SOME_SIGNATURES_WERE_INVALID),
 						overriding("scheduling.whitelist", defaultWhitelist)
 				);
@@ -167,7 +166,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						newKeyNamed("somebody")
 				).when().then(
 						scheduleSign("0.0.123321")
-								.withSignatories("somebody", "sender")
+								.alsoSigningWith("somebody", "sender")
 								.hasKnownStatus(INVALID_SCHEDULE_ID)
 				);
 	}
@@ -181,7 +180,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleCreate("basicCryptoCreate", txnBody)
 				).when().then(
 						scheduleSign("basicCryptoCreate")
-								.withSignatories("somesigner")
+								.alsoSigningWith("somesigner")
 								.hasKnownStatus(INVALID_SCHEDULE_ID)
 								.noLogging()
 				);
@@ -202,7 +201,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						).designatingPayer("payer")
 								.alsoSigningWith("sender", "receiver"),
 						getAccountBalance("receiver").hasTinyBars(0L),
-						scheduleSign("threeSigXfer").withSignatories("payer")
+						scheduleSign("threeSigXfer").alsoSigningWith("payer")
 				).then(
 						getAccountBalance("receiver").hasTinyBars(1L)
 				);
@@ -221,7 +220,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								).fee(ONE_HBAR)
 						).alsoSigningWith("sender"),
 						getAccountBalance("receiver").hasTinyBars(0L),
-						scheduleSign("twoSigXfer").withSignatories("receiver")
+						scheduleSign("twoSigXfer").alsoSigningWith("receiver")
 				).then(
 						getAccountBalance("receiver").hasTinyBars(1L)
 				);
@@ -249,7 +248,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								.hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)
 				).then(
 						scheduleSign("deferredCreation")
-								.withSignatories("sharedKey")
+								.alsoSigningWith("sharedKey")
 								.via("deferredCreation"),
 						getTxnRecord("creation").scheduled().logged()
 				);
@@ -275,15 +274,15 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						)
 				).then(
 						scheduleSign("deferredXfer")
-								.withSignatories("aKey"),
+								.alsoSigningWith("aKey"),
 						scheduleSign("deferredXfer")
-								.withSignatories("aKey")
+								.alsoSigningWith("aKey")
 								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						scheduleSign("deferredXfer")
-								.withSignatories("aKey", "bKey")
+								.alsoSigningWith("aKey", "bKey")
 								.hasKnownStatus(SOME_SIGNATURES_WERE_INVALID),
 						scheduleSign("deferredXfer")
-								.withSignatories("aKey", "cKey"),
+								.alsoSigningWith("aKey", "cKey"),
 						getAccountBalance(ADDRESS_BOOK_CONTROL)
 								.hasTinyBars(changeFromSnapshot("before", +2))
 				);
@@ -307,7 +306,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						getAccountBalance("sender").hasTinyBars(667L),
 						cryptoUpdate("sender").key("a")
 				).then(
-						scheduleSign("deferredFall").withSignatories(),
+						scheduleSign("deferredFall").alsoSigningWith(),
 						getAccountBalance("sender").hasTinyBars(666L)
 				);
 	}
@@ -330,7 +329,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								.alsoSigningWith("sender"),
 						getAccountBalance("receiver").hasTinyBars(0L)
 				).then(
-						scheduleSign("twoSigXfer").withSignatories("receiver")
+						scheduleSign("twoSigXfer").alsoSigningWith("receiver")
 								.hasKnownStatus(INVALID_SCHEDULE_ID),
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);
