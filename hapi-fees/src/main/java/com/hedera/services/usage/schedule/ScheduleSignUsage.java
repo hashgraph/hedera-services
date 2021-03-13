@@ -51,21 +51,22 @@ public class ScheduleSignUsage extends ScheduleTxnUsage<ScheduleSignUsage> {
 		return this;
 	}
 
+	/**
+	 * Use a sensible estimate for how much signing activity was related to the scheduled transaction.
+	 *
+	 * At least one signing key is assumed to be added to the schedule; if the {@code SignatureMap} contains
+	 * signatures in excess of the payer's key count, they are all assumed to result in new signing keys.
+	 *
+	 * @return the estimated usage for the {@code ScheduleSign}
+	 */
 	public FeeData get() {
-		var op = this.op.getScheduleSign();
+		var sigUsage = usageEstimator.getSigUsage();
 
-		var txnBytes = BASIC_ENTITY_ID_SIZE;
-		var ramBytes = 0;
-		var scheduledTxSigs = 0;
-		if (op.hasSigMap()) {
-			txnBytes += scheduleEntitySizes.bptScheduleReprGiven(op.getSigMap());
-			ramBytes += scheduleEntitySizes.sigBytesInScheduleReprGiven(op.getSigMap());
-			scheduledTxSigs += op.getSigMap().getSigPairCount();
-		}
+		var estNewSigners = scheduleEntitySizes.estimatedScheduleSigs(sigUsage);
 		long lifetime = ESTIMATOR_UTILS.relativeLifetime(this.op, this.expiry);
-		usageEstimator.addBpt(txnBytes);
-		usageEstimator.addRbs(ramBytes * lifetime);
-		usageEstimator.addVpt(scheduledTxSigs);
+		usageEstimator.addRbs(scheduleEntitySizes.sigBytesForAddingSigningKeys(estNewSigners) * lifetime);
+
+		usageEstimator.addBpt(BASIC_ENTITY_ID_SIZE);
 
 		addNetworkRecordRb(BASIC_TX_ID_SIZE + BOOL_SIZE);
 		return usageEstimator.get();

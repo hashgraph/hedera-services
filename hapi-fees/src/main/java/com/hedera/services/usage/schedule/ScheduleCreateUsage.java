@@ -20,7 +20,6 @@ package com.hedera.services.usage.schedule;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -33,6 +32,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
+	private int numBodyBytes;
 	private int expirationTimeSecs;
 
 	private ScheduleCreateUsage(TransactionBody scheduleCreationOp, TxnUsageEstimator usageEstimator) {
@@ -41,6 +41,11 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 
 	public static ScheduleCreateUsage newEstimate(TransactionBody scheduleCreationOp, SigUsage sigUsage) {
 		return new ScheduleCreateUsage(scheduleCreationOp, estimatorFactory.get(sigUsage, scheduleCreationOp, ESTIMATOR_UTILS));
+	}
+
+	public ScheduleCreateUsage givenBodyBytes(int numBodyBytes) {
+		this.numBodyBytes = numBodyBytes;
+		return self();
 	}
 
 	public ScheduleCreateUsage givenScheduledTxExpirationTimeSecs(int scheduledTxExpirationTimeSecs) {

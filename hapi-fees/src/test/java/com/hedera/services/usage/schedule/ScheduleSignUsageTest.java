@@ -20,16 +20,14 @@ package com.hedera.services.usage.schedule;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.schedule.entities.ScheduleEntitySizes;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -38,7 +36,6 @@ import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
@@ -49,19 +46,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class ScheduleSignUsageTest {
-	int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE;
-	long now = 1_000L;
-	long scheduledTXExpiry = 2_700;
-	ScheduleID scheduleID = IdUtils.asSchedule("0.0.1");
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	SignatureMap sigMap = SignatureMap.newBuilder()
-			.addSigPair(
-					SignaturePair.newBuilder()
-							.setPubKeyPrefix(ByteString.copyFrom(new byte[]{0x01}))
-							.setECDSA384(ByteString.copyFrom(new byte[]{0x01, 0x02}))
-							.build()
-			).build();
+	private int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE;
+	private long now = 1_000L;
+	private long scheduledTXExpiry = 2_700;
+	private ScheduleID scheduleID = IdUtils.asSchedule("0.0.1");
 
 	ScheduleSignTransactionBody op;
 	TransactionBody txn;
@@ -82,10 +70,14 @@ public class ScheduleSignUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForTXExpiry() {
+	public void usesAtLeastOne() {
 		// setup:
-		var expectedTxBytes = BASIC_ENTITY_ID_SIZE;
+		int numSigs = 1, sigSize = 144, numPayerKeys = 1;
+		SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+
 		givenBaseOp();
+		// and:
+		given(base.getSigUsage()).willReturn(sigUsage);
 
 		// and:
 		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
@@ -97,18 +89,22 @@ public class ScheduleSignUsageTest {
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
-		verify(base).addBpt(expectedTxBytes);
-		verify(base).addRbs(0L);
-		verify(base).addVpt(0);
+		verify(base).addBpt(BASIC_ENTITY_ID_SIZE);
+		verify(base).addRbs(
+				ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES.sigBytesForAddingSigningKeys(1) *
+						(scheduledTXExpiry - now));
 		verify(base).addNetworkRbs(scheduledTxnIdSize * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	@Test
-	public void createsExpectedDeltaForSigMap() {
+	public void usesNumSigsMinusPayerKeysAsDefaultEstimate() {
 		// setup:
-		var expectedTxBytes = BASIC_ENTITY_ID_SIZE + SCHEDULE_ENTITY_SIZES.bptScheduleReprGiven(sigMap);
-		var expectedRamBytes = SCHEDULE_ENTITY_SIZES.sigBytesInScheduleReprGiven(sigMap);
-		givenOpWithSigMap();
+		int numSigs = 3, sigSize = 144, numPayerKeys = 1;
+		SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+
+		givenBaseOp();
+		// and:
+		given(base.getSigUsage()).willReturn(sigUsage);
 
 		// and:
 		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
@@ -120,22 +116,43 @@ public class ScheduleSignUsageTest {
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
-		verify(base).addBpt(expectedTxBytes);
-		verify(base).addRbs(expectedRamBytes * (scheduledTXExpiry - now));
-		verify(base).addVpt(sigMap.getSigPairCount());
+		verify(base).addBpt(BASIC_ENTITY_ID_SIZE);
+		verify(base).addRbs(
+				ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES.sigBytesForAddingSigningKeys(2) *
+						(scheduledTXExpiry - now));
 		verify(base).addNetworkRbs(scheduledTxnIdSize * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
+
+	@Test
+	public void createsExpectedDeltaForTXExpiry() {
+		// setup:
+		int numSigs = 1, sigSize = 48, numPayerKeys = 1;
+		SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+
+		givenBaseOp();
+		given(base.getSigUsage()).willReturn(sigUsage);
+
+		// and:
+		subject = ScheduleSignUsage.newEstimate(txn, sigUsage)
+				.givenExpiry(scheduledTXExpiry);
+
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, actual);
+		// and:
+		verify(base).addBpt(BASIC_ENTITY_ID_SIZE);
+		verify(base).addRbs(
+				ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES.sigBytesForAddingSigningKeys(1) *
+						(scheduledTXExpiry - now));
+		verify(base).addNetworkRbs(scheduledTxnIdSize * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
 
 	private void givenBaseOp() {
 		op = ScheduleSignTransactionBody.newBuilder()
 				.setScheduleID(scheduleID)
-				.build();
-		setTxn();
-	}
-
-	private void givenOpWithSigMap() {
-		op = ScheduleSignTransactionBody.newBuilder()
-				.setSigMap(sigMap)
 				.build();
 		setTxn();
 	}

@@ -24,15 +24,16 @@ import com.google.protobuf.ByteString;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
+import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.Assert.assertEquals;
 
 public class ScheduleEntitySizesTest {
-
 	ScheduleEntitySizes subject = ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 
 	@Test
@@ -40,7 +41,8 @@ public class ScheduleEntitySizesTest {
 		// setup:
 		long expected = NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
+				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE
+				+ NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE;
 
 		// given:
 		long actual = subject.fixedBytesInScheduleRepr();
