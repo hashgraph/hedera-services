@@ -22,44 +22,46 @@ package com.hedera.services.sigs.metadata;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.hedera.services.utils.MiscUtils.asOrdinary;
+
 public class ScheduleSigningMetadata {
-    private final byte[] txnBytes;
     private final Optional<JKey> adminKey;
     private final Optional<AccountID> designatedPayer;
+    private final TransactionBody scheduledTxn;
 
     public ScheduleSigningMetadata(
-            byte[] txnBytes,
             Optional<JKey> adminKey,
+            TransactionBody scheduledTxn,
             Optional<AccountID> designatedPayer
     ) {
-        this.txnBytes = txnBytes;
         this.adminKey = adminKey;
+        this.scheduledTxn = scheduledTxn;
         this.designatedPayer = designatedPayer;
     }
 
     public static ScheduleSigningMetadata from(MerkleSchedule schedule) {
         return new ScheduleSigningMetadata(
-                schedule.transactionBody(),
                 schedule.adminKey(),
-                Objects.equals(schedule.payer(), schedule.schedulingAccount())
-                        ? Optional.empty()
-                        : Optional.of(schedule.payer().toGrpcAccountId()));
+                asOrdinary(schedule.scheduledTxn()),
+                schedule.hasExplicitPayer() ? Optional.of(schedule.payer().toGrpcAccountId()) : Optional.empty());
     }
 
     public Optional<JKey> adminKey() {
         return adminKey;
     }
 
-    public byte[] txnBytes() {
-        return txnBytes;
-    }
-
     public Optional<AccountID> overridePayer() {
         return designatedPayer;
+    }
+
+    public TransactionBody scheduledTxn() {
+        return scheduledTxn;
     }
 }

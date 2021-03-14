@@ -119,7 +119,24 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	@Override
 	public CreationResult<ScheduleID> replCreateProvisionally(byte[] bodyBytes, RichInstant consensusTime) {
-		throw new AssertionError("Not implemented!");
+		var expiry = consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs();
+		var schedule = MerkleSchedule.from(bodyBytes, expiry);
+
+		var validity = OK;
+		if (schedule.hasExplicitPayer()) {
+			validity = accountCheck(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID);
+		}
+		if (validity == OK) {
+			validity = accountCheck(schedule.schedulingAccount().toGrpcAccountId(), INVALID_SCHEDULE_ACCOUNT_ID);
+		}
+		if (validity != OK) {
+			return failure(validity);
+		}
+
+		pendingId = ids.newScheduleId(schedule.schedulingAccount().toGrpcAccountId());
+		pendingCreation = schedule;
+
+		return success(pendingId);
 	}
 
 	@Override
@@ -132,26 +149,28 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			Optional<JKey> adminKey,
 			Optional<String> entityMemo
 	) {
-		var validity = accountCheck(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
-		if (validity != OK) {
-			return failure(validity);
-		}
-		validity = accountCheck(payer, INVALID_SCHEDULE_PAYER_ID);
-		if (validity != OK) {
-			return failure(validity);
-		}
+//		var validity = accountCheck(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
+//		if (validity != OK) {
+//			return failure(validity);
+//		}
+//		validity = accountCheck(payer, INVALID_SCHEDULE_PAYER_ID);
+//		if (validity != OK) {
+//			return failure(validity);
+//		}
+//
+//		pendingId = ids.newScheduleId(schedulingAccount);
+//		pendingCreation = new MerkleSchedule(
+//				bodyBytes,
+//				ofNullableAccountId(schedulingAccount),
+//				schedulingTXValidStart);
+//		adminKey.ifPresent(pendingCreation::setAdminKey);
+//		entityMemo.ifPresent(pendingCreation::setMemo);
+//		pendingCreation.setPayer(ofNullableAccountId(payer));
+//		pendingCreation.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
+//
+//		return success(pendingId);
 
-		pendingId = ids.newScheduleId(schedulingAccount);
-		pendingCreation = new MerkleSchedule(
-				bodyBytes,
-				ofNullableAccountId(schedulingAccount),
-				schedulingTXValidStart);
-		adminKey.ifPresent(pendingCreation::setAdminKey);
-		entityMemo.ifPresent(pendingCreation::setMemo);
-		pendingCreation.setPayer(ofNullableAccountId(payer));
-		pendingCreation.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
-
-		return success(pendingId);
+		throw new AssertionError("Not implemented!");
 	}
 
 	@Override

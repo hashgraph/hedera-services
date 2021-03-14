@@ -1672,32 +1672,6 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
-	public void getsNestedScheduleSign() throws Throwable {
-		// given:
-		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_SIGN);
-
-		// when:
-		var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(summary.hasErrorReport());
-		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
-	}
-
-	@Test
-	public void getsNestedScheduleCreates() throws Throwable {
-		// given:
-		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_CREATE);
-
-		// when:
-		var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(summary.hasErrorReport());
-		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
-	}
-
-	@Test
 	public void getsScheduleCreateNonsense() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_CREATE_NONSENSE);

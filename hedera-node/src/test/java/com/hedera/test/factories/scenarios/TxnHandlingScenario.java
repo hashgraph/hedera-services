@@ -22,6 +22,7 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.legacy.unit.serialization.HFileMetaSerdeTest;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
@@ -29,6 +30,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -38,6 +40,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,6 +49,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
 
 import java.time.Instant;
@@ -246,8 +250,15 @@ public interface TxnHandlingScenario {
 		return tokenStore;
 	}
 
-	default byte[] extantScheduleTxnBytes() throws Throwable {
-		return new byte[0];
+	default byte[] extantSchedulingBodyBytes() throws Throwable {
+		return MerkleScheduleTest.scheduleCreateTxnWith(
+				Key.getDefaultInstance(),
+				"",
+				MISC_ACCOUNT,
+				MISC_ACCOUNT,
+				MiscUtils.asTimestamp(Instant.ofEpochSecond(1L))
+		)
+				.toByteArray();
 	}
 
 	default ScheduleStore scheduleStore() {
@@ -257,11 +268,8 @@ public interface TxnHandlingScenario {
 				.willReturn(KNOWN_SCHEDULE_IMMUTABLE);
 		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE))
 				.willAnswer(inv -> {
-					var entity = new MerkleSchedule(
-							extantScheduleTxnBytes(),
-							EntityId.ofNullableAccountId(MISC_ACCOUNT),
-							RichInstant.fromJava(Instant.now()));
-					entity.setPayer(EntityId.ofNullableAccountId(MISC_ACCOUNT));
+					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
+					entity.setPayer(MerkleSchedule.UNUSED_PAYER);
 					return entity;
 				});
 
@@ -270,11 +278,8 @@ public interface TxnHandlingScenario {
 		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_ADMIN))
 				.willAnswer(inv -> {
 					var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
-					var entity = new MerkleSchedule(
-							extantScheduleTxnBytes(),
-							EntityId.ofNullableAccountId(MISC_ACCOUNT),
-							RichInstant.fromJava(Instant.now()));
-					entity.setPayer(EntityId.ofNullableAccountId(MISC_ACCOUNT));
+					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
+					entity.setPayer(MerkleSchedule.UNUSED_PAYER);
 					entity.setAdminKey(adminKey);
 					return entity;
 				});
@@ -283,10 +288,7 @@ public interface TxnHandlingScenario {
 				.willReturn(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER);
 		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER))
 				.willAnswer(inv -> {
-					var entity = new MerkleSchedule(
-							extantScheduleTxnBytes(),
-							EntityId.ofNullableAccountId(MISC_ACCOUNT),
-							RichInstant.fromJava(Instant.now()));
+					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
 					entity.setPayer(EntityId.ofNullableAccountId(DILIGENT_SIGNING_PAYER));
 					return entity;
 				});
@@ -295,10 +297,7 @@ public interface TxnHandlingScenario {
 				.willReturn(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER);
 		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER))
 				.willAnswer(inv -> {
-					var entity = new MerkleSchedule(
-							extantScheduleTxnBytes(),
-							EntityId.ofNullableAccountId(MISC_ACCOUNT),
-							RichInstant.fromJava(Instant.now()));
+					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
 					entity.setPayer(EntityId.ofNullableAccountId(MISSING_ACCOUNT));
 					return entity;
 				});
@@ -345,7 +344,6 @@ public interface TxnHandlingScenario {
 									ed25519(), ed25519(), ed25519()))));
 
 	String FROM_OVERLAP_PAYER_ID = "0.0.1343";
-	AccountID FROM_OVERLAP_PAYER = asAccount(FROM_OVERLAP_PAYER_ID);
 	KeyTree FROM_OVERLAP_PAYER_KT = withRoot(threshold(2, ed25519(true), ed25519(true), ed25519(false)));
 
 	KeyTree NEW_ACCOUNT_KT = withRoot(list(ed25519(), threshold(1, ed25519(), ed25519())));
@@ -379,7 +377,6 @@ public interface TxnHandlingScenario {
 	KeyTree SIMPLE_NEW_WACL_KT = withRoot(list(ed25519()));
 
 	String MISSING_CONTRACT_ID = "1.2.3";
-	ContractID MISSING_CONTRACT = asContract(MISSING_CONTRACT_ID);
 
 	String MISC_RECIEVER_SIG_CONTRACT_ID = "0.0.7337";
 	ContractID MISC_RECIEVER_SIG_CONTRACT = asContract(MISC_RECIEVER_SIG_CONTRACT_ID);
@@ -454,6 +451,4 @@ public interface TxnHandlingScenario {
 	ScheduleID UNKNOWN_SCHEDULE = asSchedule(UNKNOWN_SCHEDULE_ID);
 
 	KeyTree SCHEDULE_ADMIN_KT = withRoot(ed25519());
-	KeyTree SCHEDULE_SIGNER_ONE_KT = withRoot(ed25519());
-	KeyTree SCHEDULE_SIGNER_TWO_KT = withRoot(ed25519());
 }

@@ -27,10 +27,13 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -387,9 +390,9 @@ public class MerkleScheduleTest {
 		return signatories.stream().map(Hex::encodeHexString).collect(Collectors.joining(", "));
 	}
 
-	private final long fee = 123L;
-	private final String scheduledTxnMemo = "Wait for me!";
-	SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+	private static final long fee = 123L;
+	private static final String scheduledTxnMemo = "Wait for me!";
+	private static final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
 			.setTransactionFee(fee)
 			.setMemo(scheduledTxnMemo)
 			.setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
@@ -427,6 +430,28 @@ public class MerkleScheduleTest {
 												.setTransactionID(expectedId)
 												.build().toByteString())
 								.build().toByteString())
+				.build();
+	}
+
+	public static TransactionBody scheduleCreateTxnWith(
+			Key scheduleAdminKey,
+			String scheduleMemo,
+			AccountID payer,
+			AccountID scheduler,
+			Timestamp validStart
+	) {
+		ReplScheduleCreateTransactionBody creation = ReplScheduleCreateTransactionBody.newBuilder()
+				.setAdminKey(scheduleAdminKey)
+				.setPayerAccountID(payer)
+				.setMemo(scheduleMemo)
+				.setScheduledTransactionBody(scheduledTxn)
+				.build();
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(validStart)
+						.setAccountID(scheduler)
+						.build())
+				.setReplScheduleCreate(creation)
 				.build();
 	}
 }

@@ -295,8 +295,8 @@ public class StateView {
 
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
+					.setScheduledTransactionBody(schedule.scheduledTxn())
 					.setScheduledTransactionID(schedule.scheduledTransactionId())
-					.setTransactionBody(ByteString.copyFrom(schedule.transactionBody()))
 					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
 					.setPayerAccountID(schedule.payer().toGrpcAccountId())
 					.setSignatories(signatoriesList)

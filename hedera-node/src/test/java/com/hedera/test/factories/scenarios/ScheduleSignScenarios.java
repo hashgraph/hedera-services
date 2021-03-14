@@ -21,81 +21,83 @@ package com.hedera.test.factories.scenarios;
  */
 
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.test.factories.txns.ScheduleUtils;
+import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
-import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 public enum ScheduleSignScenarios implements TxnHandlingScenario {
-    SCHEDULE_SIGN_MISSING_SCHEDULE {
-        @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return new PlatformTxnAccessor(from(
-                    newSignedScheduleSign()
-                            .signing(UNKNOWN_SCHEDULE)
-                            .get()
-            ));
-        }
-    },
-    SCHEDULE_SIGN_KNOWN_SCHEDULE {
-        @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return new PlatformTxnAccessor(from(
-                    newSignedScheduleSign()
-                            .signing(KNOWN_SCHEDULE_WITH_ADMIN)
-                            .get()
-            ));
-        }
+	SCHEDULE_SIGN_MISSING_SCHEDULE {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedScheduleSign()
+							.signing(UNKNOWN_SCHEDULE)
+							.get()
+			));
+		}
+	},
+	SCHEDULE_SIGN_KNOWN_SCHEDULE {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedScheduleSign()
+							.signing(KNOWN_SCHEDULE_WITH_ADMIN)
+							.get()
+			));
+		}
 
-        @Override
-        public byte[] extantScheduleTxnBytes() throws Throwable {
-            return newSignedCryptoTransfer()
+		@Override
+		public byte[] extantSchedulingBodyBytes() throws Throwable {
+			var accessor = new SignedTxnAccessor(newSignedCryptoTransfer()
 					.sansTxnId()
-                    .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
-                    .get()
-                    .getBodyBytes()
-                    .toByteArray();
-        }
-    },
-    SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER {
-        @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return new PlatformTxnAccessor(from(
-                    newSignedScheduleSign()
-                            .signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER)
-                            .get()
-            ));
-        }
+					.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
+					.get());
+			var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+			return TransactionBody.newBuilder()
+					.setReplScheduleCreate(ReplScheduleCreateTransactionBody.newBuilder()
+							.setScheduledTransactionBody(scheduled))
+					.build()
+					.toByteArray();
+		}
+	},
+	SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedScheduleSign()
+							.signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER)
+							.get()
+			));
+		}
 
-        @Override
-        public byte[] extantScheduleTxnBytes() throws Throwable {
-            return newSignedCryptoTransfer()
-                    .sansTxnId()
-                    .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
-                    .get()
-                    .getBodyBytes()
-                    .toByteArray();
-        }
-    },
-    SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER {
-        @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return new PlatformTxnAccessor(from(
-                    newSignedScheduleSign()
-                            .signing(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER)
-                            .get()
-            ));
-        }
-
-        @Override
-        public byte[] extantScheduleTxnBytes() throws Throwable {
-            return newSignedCryptoTransfer()
-                    .sansTxnId()
-                    .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
-                    .get()
-                    .getBodyBytes()
-                    .toByteArray();
-        }
-    }
+		@Override
+		public byte[] extantSchedulingBodyBytes() throws Throwable {
+			var accessor = new SignedTxnAccessor(newSignedCryptoTransfer()
+					.sansTxnId()
+					.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
+					.get());
+			var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+			return TransactionBody.newBuilder()
+					.setReplScheduleCreate(ReplScheduleCreateTransactionBody.newBuilder()
+							.setScheduledTransactionBody(scheduled))
+					.build()
+					.toByteArray();
+		}
+	},
+	SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedScheduleSign()
+							.signing(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER)
+							.get()
+			));
+		}
+	}
 }

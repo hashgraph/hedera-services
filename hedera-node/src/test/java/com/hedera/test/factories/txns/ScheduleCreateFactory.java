@@ -24,6 +24,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -77,21 +79,21 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        var op = ScheduleCreateTransactionBody.newBuilder();
+        var op = ReplScheduleCreateTransactionBody.newBuilder();
         if (!omitAdmin) {
             op.setAdminKey(TxnHandlingScenario.SCHEDULE_ADMIN_KT.asKey());
         }
         payer.ifPresent(op::setPayerAccountID);
         try {
             var accessor = new SignedTxnAccessor(scheduled);
-            op.setSigMap(accessor.getSigMap());
-            op.setTransactionBody(copyFrom(accessor.getTxnBytes()));
+            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+            op.setScheduledTransactionBody(scheduled);
         } catch (InvalidProtocolBufferException e) {
         	if (!intentionalNonsense) {
         	    throw new IllegalStateException("ScheduleCreate unintentionally configured with nonsense!", e);
             }
-        	op.setTransactionBody(scheduled.getBodyBytes());
+        	op.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
         }
-        txn.setScheduleCreate(op);
+        txn.setReplScheduleCreate(op);
     }
 }

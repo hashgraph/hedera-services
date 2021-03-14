@@ -149,7 +149,7 @@ public class ScheduleCreateTransitionLogicTest {
 		// and:
 		MerkleSchedule created = mock(MerkleSchedule.class);
 		given(created.payer()).willReturn(EntityId.ofNullableAccountId(payer));
-		given(created.asScheduledTransaction()).willReturn(Transaction.getDefaultInstance());
+		given(created.replAsScheduledTransaction()).willReturn(Transaction.getDefaultInstance());
 		given(store.get(schedule)).willReturn(created);
 		// and:
 		given(store.markAsExecuted(schedule)).willReturn(OK);

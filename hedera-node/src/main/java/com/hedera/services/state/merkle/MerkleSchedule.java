@@ -62,7 +62,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	static final int MERKLE_VERSION = 1;
 
 	static final int NUM_ED25519_PUBKEY_BYTES = 32;
-	static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d2b7d9e673285fcL;
 	static DomainSerdes serdes = new DomainSerdes();
@@ -163,37 +162,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 				.build();
 	}
 
-	public Transaction asScheduledTransaction() {
-		var structuredGrpcTxn = uncheckedGrpcTxn();
-		var scheduledTxnId = scheduledTransactionId();
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(
-						SignedTransaction.newBuilder()
-								.setBodyBytes(
-										TransactionBody.newBuilder()
-												.mergeFrom(structuredGrpcTxn)
-												.setTransactionID(scheduledTxnId)
-												.build()
-												.toByteString())
-								.build()
-								.toByteString())
-				.build();
-	}
-
 	public TransactionID scheduledTransactionId() {
 		return TransactionID.newBuilder()
 				.setAccountID(schedulingAccount.toGrpcAccountId())
 				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
 				.setScheduled(true)
 				.build();
-	}
-
-	private TransactionBody uncheckedGrpcTxn() {
-		try {
-			return TransactionBody.parseFrom(grpcTxn);
-		} catch (InvalidProtocolBufferException invariantFailure) {
-			throw new IllegalStateException(this + " contained unparseable transaction bytes!", invariantFailure);
-		}
 	}
 
 	public boolean hasValidEd25519Signature(byte[] key) {
@@ -323,10 +297,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		this.adminKey = adminKey;
 	}
 
-	public void setGrpcAdminKey(Key grpcAdminKey) {
-		this.grpcAdminKey = grpcAdminKey;
-	}
-
 	public void setPayer(EntityId payer) {
 		this.payer = payer;
 	}
@@ -335,7 +305,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		return this.payer;
 	}
 
-	public boolean hasPayer() {
+	public boolean hasExplicitPayer() {
 		return payer != UNUSED_PAYER;
 	}
 
