@@ -196,7 +196,7 @@ message ScheduleGetInfoQuery {
 message ScheduleGetInfoResponse {  
   ScheduleID scheduleID = 1; // The id of the schedule
   Timestamp deletionTime = 2; // If the schedule has been deleted, the consensus time when this occurred
-  Timestamp executed = 3; // If the schedule has been executed, the consensus time when this occurred
+  Timestamp executionTime = 3; // If the schedule has been executed, the consensus time when this occurred
   Timestamp expirationTime = 4; // The time at which the schedule will expire
   SchedulableTransactionBody scheduledTransactionBody = 5; // The scheduled transaction
   string memo = 6; // The publicly visible memo of the schedule
