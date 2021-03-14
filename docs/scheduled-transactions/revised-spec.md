@@ -30,8 +30,8 @@ are ever signed, in the ordinary way.
 
 A scheduled transaction is _ready-to-execute_ if its schedule has a list of 
 Ed25519 signing keys which, taken together, meet the _signing requirements_ of all the
-Hedera keys _prequisite_ to the scheduled transaction. (See the 
-[next section](#prequisite-signing-keys) for more discussion on prerequisite keys.)
+Hedera keys _prerequisite_ to the scheduled transaction. (See the 
+[next section](#prerequisite-signing-keys) for more discussion on prerequisite keys.)
 
 Because Hedera keys can include key lists and threshold keys, sometimes there are 
 many different lists of Ed25519 signing keys which could meet a Hedera key's signing 
@@ -45,14 +45,14 @@ the signing requirement for the Hedera key on Alice's account is met.
 have signed to meet the Hedera key's signing requirements; but notice this is 
 a bit imprecise---only Ed25519 keys ever "sign" in the cryptographic sense.)
 
-### Prequisite signing keys
+### Prerequisite signing keys
 
 First, if a schedule lists an account to be charged the service fee for
 its scheduled transaction, the Hedera key of that account is prerequisite 
 to the scheduled transaction.
 
 Second, if some non-payer Hedera key would need to sign a scheduled transaction 
-if it was submitted directly to the network, that non-payer key is prequisite
+if it was submitted directly to the network, that non-payer key is prerequisite
 to the scheduled transaction. Consider three examples.
   1. A scheduled `CryptoTransfer` of 1ℏ from account `0.0.X` to account `0.0.Y`,
      which has `receiverSigRequired=true`. The keys on accounts `0.0.X` and
@@ -60,7 +60,7 @@ to the scheduled transaction. Consider three examples.
   2. A scheduled `SubmitMessage` to a topic `0.0.Z` which has a submit key. The
      submit key on topic `0.0.Z` is prerequisite.
   3. A scheduled `TokenMint` for a token `0.0.T` with a supply key. The supply
-     key on token `0.0.T` is prequisite. (Although `TokenMint` is 
+     key on token `0.0.T` is prerequisite. (Although `TokenMint` is 
      not currently in the [scheduling whitelist](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/resources/bootstrap.properties#L64),
      eventually all transaction types will be.)
 
@@ -79,7 +79,7 @@ how changes to Hedera keys may impact the ready-to-execute status of
 existing scheduled transactions.
  
 For example, suppose the Hedera key on account `0.0.X` is a key list of two
-Ed25519 keys `A` and `B`; and is the sole prequisite to a scheduled transaction 
+Ed25519 keys `A` and `B`; and is the sole prerequisite to a scheduled transaction 
 whose schedule `0.0.S` already lists `A` as a signer. Say we now update account 
 `0.0.X` to remove `B` from its key. Schedule `0.0.S` is **not** automatically
 triggered! We need to submit a `ScheduleSign` for `0.0.S` to trigger it. (This
