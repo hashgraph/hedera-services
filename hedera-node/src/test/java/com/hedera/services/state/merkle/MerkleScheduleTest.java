@@ -20,18 +20,13 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.IoReadingFunction;
-import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -54,8 +49,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.state.merkle.MerkleSchedule.UPPER_BOUND_MEMO_UTF8_BYTES;
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
@@ -68,9 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -80,17 +71,15 @@ public class MerkleScheduleTest {
 	byte[] spk = "secondPretendKey".getBytes();
 	byte[] tpk = "thirdPretendKey".getBytes();
 
-	final int TX_BYTES = 64;
 	long expiry = 1_234_567L, otherExpiry = 1_567_234L;
 	byte[] transactionBody, otherTransactionBody;
 	String entityMemo = "Just some memo again", otherEntityMemo = "Yet another memo";
 	EntityId payer = new EntityId(4, 5, 6), otherPayer = new EntityId(4, 5, 5);
 	EntityId schedulingAccount = new EntityId(1, 2, 3);
-	EntityId otherSchedulingAccount = new EntityId(1, 2, 2);
 	RichInstant schedulingTXValidStart = new RichInstant(123, 456);
 	RichInstant otherSchedulingTXValidStart = new RichInstant(456, 789);
-	JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked(), otherKey;
-	JKey signatory1, signatory2;
+	JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
+	JKey otherAdminKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 	List<byte[]> signatories;
 
 	MerkleSchedule subject;
@@ -98,16 +87,16 @@ public class MerkleScheduleTest {
 
 	@BeforeEach
 	public void setup() {
-		transactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES * 2);
-		otherTransactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES);
-
-		otherKey = new JEd25519Key("not-a-real-other-key".getBytes());
+		otherTransactionBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(2L))))
+				.build()
+				.toByteArray();
 
 		signatories = new ArrayList<>();
 		signatories.addAll(List.of(fpk, spk, tpk));
 
-		subject = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-		this.setOptionalElements(subject);
+		subject = MerkleSchedule.from(bodyBytes, expiry);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleSchedule.serdes = serdes;
@@ -120,20 +109,18 @@ public class MerkleScheduleTest {
 
 	@Test
 	public void factoryWorks() {
-		// given:
-		var factorySubject = MerkleSchedule.from(bodyBytes, expiry);
-
 		// expect:
-		assertFalse(factorySubject.isDeleted());
-		assertFalse(factorySubject.isExecuted());
-		assertEquals(payer, factorySubject.payer());
-		assertEquals(expiry, factorySubject.expiry());
-		assertEquals(schedulingAccount, factorySubject.schedulingAccount());
-		assertEquals(entityMemo, factorySubject.memo().get());
-		assertEquals(adminKey.toString(), factorySubject.adminKey().get().toString());
-		assertEquals(schedulingTXValidStart, factorySubject.schedulingTXValidStart());
-		assertEquals(scheduledTxn, factorySubject.scheduledTxn());
-		assertArrayEquals(bodyBytes, factorySubject.bodyBytes());
+		assertFalse(subject.isDeleted());
+		assertFalse(subject.isExecuted());
+		assertEquals(payer, subject.payer());
+		assertEquals(expiry, subject.expiry());
+		assertEquals(schedulingAccount, subject.schedulingAccount());
+		assertEquals(entityMemo, subject.memo().get());
+		assertEquals(adminKey.toString(), subject.adminKey().get().toString());
+		assertEquals(schedulingTXValidStart, subject.schedulingTXValidStart());
+		assertEquals(scheduledTxn, subject.scheduledTxn());
+		assertEquals(expectedSignedTxn(), subject.replAsScheduledTransaction());
+		assertArrayEquals(bodyBytes, subject.bodyBytes());
 	}
 
 	@Test
@@ -145,65 +132,6 @@ public class MerkleScheduleTest {
 	@Test
 	void translatesInvariantFailure() {
 		assertThrows(IllegalStateException.class, subject::scheduledTransactionId);
-	}
-
-	@Test
-	void constructsScheduledTxnAsExpected() throws InvalidProtocolBufferException {
-		// setup:
-		transactionBody = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(1L))))
-				.build()
-				.toByteArray();
-		// and:
-		var expectedId = TransactionID.newBuilder()
-				.setAccountID(schedulingAccount.toGrpcAccountId())
-				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-				.setScheduled(true)
-				.build();
-		var expectedTxn = Transaction.newBuilder()
-				.setSignedTransactionBytes(
-						SignedTransaction.newBuilder()
-								.setBodyBytes(
-										TransactionBody.newBuilder()
-												.mergeFrom(transactionBody)
-												.setTransactionID(expectedId)
-												.build().toByteString())
-								.build().toByteString())
-				.build();
-
-		// given:
-		subject = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-
-		// when:
-		var actual = subject.asScheduledTransaction();
-
-		// then:
-		assertEquals(expectedTxn, actual);
-	}
-
-	@Test
-	void constructsScheduledTxnIdAsExpected() {
-		// setup:
-		transactionBody = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.getDefaultInstance())
-				.build()
-				.toByteArray();
-		// and:
-		var expected = TransactionID.newBuilder()
-				.setAccountID(schedulingAccount.toGrpcAccountId())
-				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-				.setScheduled(true)
-				.build();
-
-		// given:
-		subject = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-
-		// when:
-		var actual = subject.scheduledTransactionId();
-
-		// then:
-		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -231,29 +159,20 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void deleteIsNoop() {
+	public void releaseIsNoop() {
 		// expect:
 		assertDoesNotThrow(subject::release);
 	}
 
 	@Test
-	public void validGetters() {
+	public void signatoriesArePublished() {
 		// given:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
 		subject.witnessValidEd25519Signature(tpk);
 
 		// expect:
-		assertEquals(transactionBody, subject.transactionBody());
-		assertEquals(entityMemo, subject.memo().get());
-		assertEquals(expiry, subject.expiry());
-		assertEquals(payer, subject.payer());
-		assertEquals(schedulingAccount, subject.schedulingAccount());
-		assertEquals(schedulingTXValidStart, subject.schedulingTXValidStart());
-		assertTrue(subject.hasAdminKey());
-		assertTrue(equalUpToDecodability(adminKey, subject.adminKey().get()));
 		assertTrue(subject.signatories().containsAll(signatories));
-		assertTrue(subject.hasPayer());
 	}
 
 	@Test
@@ -273,20 +192,12 @@ public class MerkleScheduleTest {
 
 		// then:
 		inOrder.verify(out).writeLong(expiry);
-		inOrder.verify(out).writeInt(transactionBody.length);
-		inOrder.verify(out).writeByteArray(transactionBody);
-		inOrder.verify(serdes).writeNullableSerializable(payer, out);
-		inOrder.verify(out).writeSerializable(schedulingAccount, true);
-		inOrder.verify(out).writeLong(schedulingTXValidStart.getSeconds());
-		inOrder.verify(out).writeInt(schedulingTXValidStart.getNanos());
-		inOrder.verify(serdes).writeNullable(
-				argThat(adminKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(out).writeByteArray(bodyBytes);
+		inOrder.verify(out).writeBoolean(false);
+		inOrder.verify(out).writeBoolean(true);
 		inOrder.verify(out).writeInt(2);
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, fpk)));
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, spk)));
-		inOrder.verify(serdes).writeNullableString(entityMemo, out);
-		inOrder.verify(out).writeBoolean(false);
-		inOrder.verify(out).writeBoolean(true);
 	}
 
 	@Test
@@ -298,32 +209,12 @@ public class MerkleScheduleTest {
 		subject.witnessValidEd25519Signature(spk);
 		subject.markExecuted();
 
-		given(serdes.deserializeKey(fin))
-				.willReturn(adminKey);
-		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
-				.willReturn(adminKey);
-		given(fin.readLong())
-				.willReturn(subject.expiry())
-				.willReturn(schedulingTXValidStart.getSeconds());
-		given(fin.readInt())
-				.willReturn(transactionBody.length)
-				.willReturn(schedulingTXValidStart.getNanos())
-				.willReturn(signatories.size())
-				.willReturn(2);
-		given(fin.readByteArray(transactionBody.length))
-				.willReturn(transactionBody);
+		given(fin.readLong()).willReturn(subject.expiry());
+		given(fin.readInt()).willReturn(2);
+		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
 		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
 				.willReturn(fpk)
 				.willReturn(spk);
-		given(serdes.deserializeKey(fin))
-				.willReturn(signatory1)
-				.willReturn(signatory2);
-		given(serdes.readNullableSerializable(any()))
-				.willReturn(payer);
-		given(fin.readSerializable())
-				.willReturn(schedulingAccount);
-		given(serdes.readNullableString(any(), eq(UPPER_BOUND_MEMO_UTF8_BYTES)))
-				.willReturn(entityMemo);
 		given(fin.readBoolean())
 				.willReturn(true)
 				.willReturn(false);
@@ -338,24 +229,36 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void failDifferentExecution() {
+	public void nonessentialFieldsDontAffectIdentity() {
 		// given:
-		other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-		setOptionalElements(other);
+		var diffBodyBytes = parentTxn.toBuilder()
+				.setTransactionID(parentTxn.getTransactionID().toBuilder()
+						.setAccountID(otherPayer.toGrpcAccountId())
+						.setTransactionValidStart(MiscUtils.asTimestamp(otherSchedulingTXValidStart.toJava())))
+				.setReplScheduleCreate(parentTxn.getReplScheduleCreate().toBuilder()
+						.setPayerAccountID(otherPayer.toGrpcAccountId()))
+				.build().toByteArray();
+		other = MerkleSchedule.from(diffBodyBytes, expiry + 1);
 		other.markExecuted();
-
-		// expect:
-		assertNotEquals(subject, other);
-		// and:
-		assertNotEquals(subject.hashCode(), other.hashCode());
-	}
-
-	@Test
-	public void failDifferentDeletion() {
-		// given:
-		other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-		setOptionalElements(other);
 		other.markDeleted();
+		other.witnessValidEd25519Signature(fpk);
+
+		// expect:
+		assertEquals(subject, other);
+		// and:
+		assertEquals(subject.hashCode(), other.hashCode());
+	}
+
+	@Test
+	public void differentAdminKeysNotIdentical() {
+		// setup:
+		var bodyBytesDiffAdminKey = parentTxn.toBuilder()
+				.setReplScheduleCreate(parentTxn.getReplScheduleCreate().toBuilder()
+						.setAdminKey(MiscUtils.asKeyUnchecked(otherAdminKey)))
+				.build().toByteArray();
+
+		// given:
+		other = MerkleSchedule.from(bodyBytesDiffAdminKey, expiry);
 
 		// expect:
 		assertNotEquals(subject, other);
@@ -364,10 +267,15 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void failDifferentTransactionBody() {
+	public void differentMemosNotIdentical() {
+		// setup:
+		var bodyBytesDiffMemo = parentTxn.toBuilder()
+				.setReplScheduleCreate(parentTxn.getReplScheduleCreate().toBuilder()
+						.setMemo(otherEntityMemo))
+				.build().toByteArray();
+
 		// given:
-		other = new MerkleSchedule(otherTransactionBody, schedulingAccount, schedulingTXValidStart);
-		setOptionalElements(other);
+		other = MerkleSchedule.from(bodyBytesDiffMemo, expiry);
 
 		// expect:
 		assertNotEquals(subject, other);
@@ -376,80 +284,15 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void failDifferentSchedulingAccount() {
+	public void differentScheduledTxnNotIdentical() {
+		// setup:
+		var bodyBytesDiffScheduledTxn = parentTxn.toBuilder()
+				.setReplScheduleCreate(parentTxn.getReplScheduleCreate().toBuilder()
+						.setScheduledTransactionBody(scheduledTxn.toBuilder().setMemo("Slightly different!")))
+				.build().toByteArray();
+
 		// given:
-		other = new MerkleSchedule(transactionBody, otherSchedulingAccount, schedulingTXValidStart);
-		setOptionalElements(other);
-
-		// expect:
-		assertNotEquals(subject, other);
-		// and:
-		assertNotEquals(subject.hashCode(), other.hashCode());
-	}
-
-	@Test
-	public void failDifferentSchedulingTxValidStart() {
-		// given:
-		other = new MerkleSchedule(transactionBody, schedulingAccount, otherSchedulingTXValidStart);
-		setOptionalElements(other);
-
-		// expect:
-		assertNotEquals(subject, other);
-		// and:
-		assertNotEquals(subject.hashCode(), other.hashCode());
-	}
-
-	@Test
-	public void failDifferentAdminKey() {
-		// given:
-		other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-		setOptionalElements(other);
-
-		// when:
-		other.setAdminKey(otherKey);
-
-		// expect:
-		assertNotEquals(subject, other);
-		// and:
-		assertNotEquals(subject.hashCode(), other.hashCode());
-	}
-
-	@Test
-	public void failDifferentPayer() {
-		// given:
-		other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-		setOptionalElements(other);
-
-		// when:
-		other.setPayer(otherPayer);
-
-		// expect:
-		assertNotEquals(subject, other);
-		// and:
-		assertNotEquals(subject.hashCode(), other.hashCode());
-	}
-
-	@Test
-	public void failDifferentExpiry() {
-		// given:
-		other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-		setOptionalElements(other);
-
-		// when:
-		other.setExpiry(otherExpiry);
-
-		// expect:
-		assertNotEquals(subject, other);
-		// and:
-		assertNotEquals(subject.hashCode(), other.hashCode());
-	}
-
-	@Test
-	public void failDifferentMemo() {
-		// given:
-		other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-		setOptionalElements(other);
-		other.setMemo(otherEntityMemo);
+		other = MerkleSchedule.from(bodyBytesDiffScheduledTxn, expiry);
 
 		// expect:
 		assertNotEquals(subject, other);
@@ -484,23 +327,6 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void validHashCode() {
-		// given:
-		var defaultSubject = new MerkleAccountState();
-		// and:
-		var identicalSubject = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-		setOptionalElements(identicalSubject);
-
-		// and:
-		other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
-
-		// expect:
-		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
-		assertNotEquals(subject.hashCode(), other.hashCode());
-		assertEquals(subject.hashCode(), identicalSubject.hashCode());
-	}
-
-	@Test
 	public void validEqualityChecks() {
 		// expect:
 		assertEquals(subject, subject);
@@ -529,23 +355,32 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
-	public void validCopy() {
+	public void copyWorks() {
 		// setup:
-
+		subject.markDeleted();
 		subject.markExecuted();
+		subject.witnessValidEd25519Signature(tpk);
+
 		// given:
 		var copySubject = subject.copy();
 
 		// expect:
-		assertNotSame(copySubject, subject);
-		assertEquals(subject, copySubject);
-	}
-
-	private void setOptionalElements(MerkleSchedule schedule) {
-		schedule.setMemo(entityMemo);
-		schedule.setPayer(payer);
-		schedule.setExpiry(expiry);
-		schedule.setAdminKey(adminKey);
+		assertTrue(copySubject.isDeleted());
+		assertTrue(copySubject.isExecuted());
+		assertTrue(copySubject.hasValidEd25519Signature(tpk));
+		// and:
+		assertEquals(subject.toString(), copySubject.toString());
+		assertNotSame(subject.signatories(), copySubject.signatories());
+		// and:
+		assertEquals(payer, copySubject.payer());
+		assertEquals(expiry, copySubject.expiry());
+		assertEquals(schedulingAccount, copySubject.schedulingAccount());
+		assertEquals(entityMemo, copySubject.memo().get());
+		assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
+		assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
+		assertEquals(scheduledTxn, copySubject.scheduledTxn());
+		assertEquals(expectedSignedTxn(), copySubject.replAsScheduledTransaction());
+		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
 	}
 
 	private String signatoriesToString() {
@@ -576,4 +411,22 @@ public class MerkleScheduleTest {
 			.setReplScheduleCreate(creation)
 			.build();
 	private final byte[] bodyBytes = parentTxn.toByteArray();
+
+	private Transaction expectedSignedTxn() {
+		TransactionID expectedId = TransactionID.newBuilder()
+				.setAccountID(schedulingAccount.toGrpcAccountId())
+				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
+				.setScheduled(true)
+				.build();
+		return Transaction.newBuilder()
+				.setSignedTransactionBytes(
+						SignedTransaction.newBuilder()
+								.setBodyBytes(
+										TransactionBody.newBuilder()
+												.mergeFrom(MiscUtils.asOrdinary(scheduledTxn))
+												.setTransactionID(expectedId)
+												.build().toByteString())
+								.build().toByteString())
+				.build();
+	}
 }
