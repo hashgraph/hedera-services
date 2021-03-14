@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 public class ScheduleSignSpecs extends HapiApiSuite {
@@ -73,13 +72,13 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						suiteSetup(),
 						signFailsDueToDeletedExpiration(),
 						triggersUponAdditionalNeededSig(),
-						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
+						sharedKeyWorksAsExpected(),
 						overlappingKeysTreatedAsExpected(),
 						retestsActivationOnSignWithEmptySigMap(),
 						basicSignatureCollectionWorks(),
 						addingSignaturesToNonExistingTxFails(),
-						addingSignatureByNonRequiredSignerFails(),
-						addingSignatureByNonRequiredSignerFails2(),
+						signalsIrrelevantSig(),
+						signalsIrrelevantSigEvenAfterLinkedEntityUpdate(),
 						triggersUponFinishingPayerSig(),
 						addingSignaturesToExecutedTxFails(),
 						suiteCleanup(),
@@ -119,10 +118,10 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec addingSignatureByNonRequiredSignerFails() {
+	private HapiApiSpec signalsIrrelevantSig() {
 		var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
-		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFails")
+		return defaultHapiSpec("SignalsIrrelevantSig")
 				.given(
 						cryptoCreate("sender"),
 						cryptoCreate("receiver"),
@@ -131,20 +130,18 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				)
 				.when()
 				.then(
-						scheduleSign("basicXfer").alsoSigningWith("somebodyelse").hasKnownStatus(
-								SOME_SIGNATURES_WERE_INVALID)
+						scheduleSign("basicXfer")
+								.alsoSigningWith("somebodyelse")
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES)
 				);
 	}
 
-	private HapiApiSpec addingSignatureByNonRequiredSignerFails2() {
+	private HapiApiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
 		var txnBody = mintToken("tokenA", 50000000L);
 
-		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFails2")
+		return defaultHapiSpec("SignalsIrrelevantSigEvenAfterLinkedEntityUpdate")
 				.given(
 						overriding("scheduling.whitelist", "TokenMint"),
-						cryptoCreate("sender"),
-						cryptoCreate("receiver"),
-						newKeyNamed("somebody"),
 						newKeyNamed("admin"),
 						newKeyNamed("mint"),
 						newKeyNamed("newMint"),
@@ -153,8 +150,9 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				).when(
 						tokenUpdate("tokenA").supplyKey("newMint")
 				).then(
-						scheduleSign("tokenMintScheduled").alsoSigningWith("mint").hasKnownStatus(
-								SOME_SIGNATURES_WERE_INVALID),
+						scheduleSign("tokenMintScheduled")
+								.alsoSigningWith("mint")
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						overriding("scheduling.whitelist", defaultWhitelist)
 				);
 	}
@@ -226,7 +224,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec requiresSharedKeyToSignBothSchedulingAndScheduledTxns() {
+	public HapiApiSpec sharedKeyWorksAsExpected() {
 		return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxns")
 				.given(
 						newKeyNamed("sharedKey"),
@@ -242,15 +240,9 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 										.fee(ONE_HBAR)
 						)
 								.payingWith("payerWithSharedKey")
-								.via("creation"),
-						getTxnRecord("creation")
-								.scheduled()
-								.hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)
+								.via("creation")
 				).then(
-						scheduleSign("deferredCreation")
-								.alsoSigningWith("sharedKey")
-								.via("deferredCreation"),
-						getTxnRecord("creation").scheduled().logged()
+						getTxnRecord("creation").scheduled()
 				);
 	}
 
@@ -280,9 +272,20 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						scheduleSign("deferredXfer")
 								.alsoSigningWith("aKey", "bKey")
-								.hasKnownStatus(SOME_SIGNATURES_WERE_INVALID),
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
 						scheduleSign("deferredXfer")
-								.alsoSigningWith("aKey", "cKey"),
+								.alsoSigningWith("bKey")
+								/* In the rare, but possible, case that the overlapping byte shared by aKey
+								* and bKey is _also_ shared by the DEFAULT_PAYER, the bKey prefix in the sig
+								* map will probably not collide with aKey any more, and we will get
+								* NO_NEW_VALID_SIGNATURES instead of SOME_SIGNATURES_WERE_INVALID.
+								*
+								* So we need this to stabilize CI. But if just testing locally, you may
+								* only use .hasKnownStatus(SOME_SIGNATURES_WERE_INVALID) and it will pass
+								* >99.99% of the time. */
+								.hasKnownStatusFrom(SOME_SIGNATURES_WERE_INVALID, NO_NEW_VALID_SIGNATURES),
+						scheduleSign("deferredXfer")
+								.alsoSigningWith("aKey", "bKey", "cKey"),
 						getAccountBalance(ADDRESS_BOOK_CONTROL)
 								.hasTinyBars(changeFromSnapshot("before", +2))
 				);
