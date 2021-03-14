@@ -15,17 +15,77 @@ Along with a scheduled transaction, a schedule entity (or simply _schedule_) als
   2. An optional admin key that can be used to delete the schedule.
   3. An optional account to be charged the service fee for the scheduled transaction.
   4. A list of the Ed25519 keys that the network deems to have signed the scheduled transaction.
-  5. A flag that says if the scheduled transaction may be executed as soon as the schedule has collected enough signing keys. 
 
 The schedule entity type is managed by four new HAPI operations,
   1. The `ScheduleCreate` transaction creates a new schedule (possibly with a non-empty list of signing keys).
   2. The `ScheduleSign` transaction adds one or more Ed25519 keys to a schedule's list of affirmed signers.
-  3. The `ScheduleDelete` transaction removes a schedule from the network state.
+  3. The `ScheduleDelete` transaction marks a schedule as deleted; its transaction will not be executed.
   4. The `GetScheduleInfo` query gets the current state of a schedule.
 
 It is important to understand that the bytes of the inner scheduled transaction are never 
 directly signed by an Ed25519 key. Only `ScheduleCreate` or `ScheduleSign` bytes
 are ever signed, in the ordinary way. 
+
+## Ready-to-execute status
+
+A scheduled transaction is _ready-to-execute_ if its schedule has a list of 
+Ed25519 signing keys which, taken together, meet the _signing requirements_ of all the
+Hedera keys _prequisite_ to the scheduled transaction. (See the 
+[next section](#prequisite-signing-keys) for more discussion on prerequisite keys.)
+
+Because Hedera keys can include key lists and threshold keys, sometimes there are 
+many different lists of Ed25519 signing keys which could meet a Hedera key's signing 
+requirements. 
+
+For example, suppose Alice has an account whose key is a 1-of-3 threshold made up of 
+Ed25519 keys `A`, `B`, and `C`.  As long as any of `A`, `B`, or `C` have signed, 
+the signing requirement for the Hedera key on Alice's account is met.
+
+(We often say a Hedera key has "signed a transaction" when enough Ed25519 keys
+have signed to meet the Hedera key's signing requirements; but notice this is 
+a bit imprecise---only Ed25519 keys ever "sign" in the cryptographic sense.)
+
+### Prequisite signing keys
+
+First, if a schedule lists an account to be charged the service fee for
+its scheduled transaction, the Hedera key of that account is prerequisite 
+to the scheduled transaction.
+
+Second, if some non-payer Hedera key would need to sign a scheduled transaction 
+if it was submitted directly to the network, that non-payer key is prequisite
+to the scheduled transaction. Consider three examples.
+  1. A scheduled `CryptoTransfer` of 1ℏ from account `0.0.X` to account `0.0.Y`,
+     which has `receiverSigRequired=true`. The keys on accounts `0.0.X` and
+     `0.0.Y` are both prerequisite.
+  2. A scheduled `SubmitMessage` to a topic `0.0.Z` which has a submit key. The
+     submit key on topic `0.0.Z` is prerequisite.
+  3. A scheduled `TokenMint` for a token `0.0.T` with a supply key. The supply
+     key on token `0.0.T` is prequisite. (Although `TokenMint` is 
+     not currently in the [scheduling whitelist](https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/resources/bootstrap.properties#L64),
+     eventually all transaction types will be.)
+
+## Triggered execution
+
+A schedule is _triggered_ when the network handles a `ScheduleCreate` 
+or `ScheduleSign` that adds enough signing keys to make its scheduled
+transaction ready-to-execute. (You may create a schedule whose initial 
+signing keys are already triggering.) A scheduled transaction executes 
+immediately after its schedule is triggered. 
+
+It is crucial to understand that in Hedera Services 0.13.0, a scheduled 
+transaction **only** executes when its schedule is triggered by a 
+`ScheduleCreate` or `ScheduleSign`! The network does not proactively monitor 
+how changes to Hedera keys may impact the ready-to-execute status of 
+existing scheduled transactions.
+ 
+For example, suppose the Hedera key on account `0.0.X` is a key list of two
+Ed25519 keys `A` and `B`; and is the sole prequisite to a scheduled transaction 
+whose schedule `0.0.S` already lists `A` as a signer. Say we now update account 
+`0.0.X` to remove `B` from its key. Schedule `0.0.S` is **not** automatically
+triggered! We need to submit a `ScheduleSign` for `0.0.S` to trigger it. (This
+`ScheduleSign` can be signed by just a payer key, since we made the scheduled
+transaction ready-to-execute by weakining the signing requirement for the key
+on account `0.0.X`.)
 
 ## The `ScheduleCreate` transaction
   
@@ -33,7 +93,7 @@ are ever signed, in the ordinary way.
 message ScheduleCreateTransactionBody {  
   SchedulableTransactionBody scheduledTransactionBody = 1; // The scheduled transaction
   string memo = 2; // An optional memo with a UTF-8 encoding of no more than 100 bytes
-  Key adminKey = 3; // An optional Hedera key which can be used to sign a `ScheduleDelete` and remove the schedule
+  Key adminKey = 3; // An optional Hedera key which can be used to sign a `ScheduleDelete` and make the schedule un-triggerable
   AccountID payerAccountID = 4; // An optional id of the account to be charged the service fee for the scheduled transaction at the consensus time that it executes (if ever); defaults to the `ScheduleCreate` payer if not given
 }  
 ```  
@@ -68,8 +128,9 @@ from the receipt instead of relying on this correspondence.
 There is a special case in which a `ScheduleCreate` transaction tries to re-create a
 schedule that already exists in state. When this happens, the `ScheduleCreate` resolves 
 to a new status of `IDENTICAL_SCHEDULE_ALREADY_CREATED`, and the `ScheduleID` in its receipt points
-to the existing schedule. A client receiving `IDENTICAL_SCHEDULE_ALREADY_CREATED` can
-then submit a `ScheduleSign` (see below) with the given `ScheduleID`, signing with
+to the existing schedule. (It also contains the `TransactionID` used to query for the
+record of the existing scheduled transaction.) A client receiving `IDENTICAL_SCHEDULE_ALREADY_CREATED` 
+can then submit a `ScheduleSign` (see below) with the given `ScheduleID`, signing with
 the same Ed25519 keys it used for its own create attempt. 
 
 Two <tt>ScheduleCreate</tt> transactions are <i>identical</i> if they are equal in all their fields 
@@ -78,7 +139,7 @@ gRPC object equality in the network software runtime. In particular, a gRPC obje
 [unknown fields](https://developers.google.com/protocol-buffers/docs/proto3#unknowns)
 is not equal to a gRPC object without unknown fields, even if they agree on all known fields.)
   
-### Enforced checks
+### Enforced checks and the scheduling whitelist
 
 The only body-specific precheck enforced for a `ScheduleCreate` transaction is that the 
 `memo` field is valid. At consensus, the following checks are enforced:
@@ -117,6 +178,12 @@ message ScheduleDeleteTransactionBody {
   ScheduleID scheduleID = 1; // The id of an existing schedule to delete
 }  
 ```  
+
+When a `ScheduleDelete` resolves to `SUCCESS`, its target schedule is marked as 
+as deleted. Any future attempts to trigger this schedule will result in `SCHEDULE_WAS_DELETED`.
+However, the schedule will remain in network state until it expires. (Note that if we try 
+to delete a schedule that already executed, our `ScheduleDelete` will resolve
+to `SCHEDULE_WAS_EXECUTED` and have no effect.)
   
 ## The `ScheduleGetInfo` query
   
@@ -128,8 +195,8 @@ message ScheduleGetInfoQuery {
   
 message ScheduleGetInfoResponse {  
   ScheduleID scheduleID = 1; // The id of the schedule
-  bool deleted = 2; // Has the schedule been deleted? 
-  bool executed = 3; // Has the schedule been executed? 
+  Timestamp deletionTime = 2; // If the schedule has been deleted, the consensus time when this occurred
+  Timestamp executed = 3; // If the schedule has been executed, the consensus time when this occurred
   Timestamp expirationTime = 4; // The time at which the schedule will expire
   SchedulableTransactionBody scheduledTransactionBody = 5; // The scheduled transaction
   string memo = 6; // The publicly visible memo of the schedule
