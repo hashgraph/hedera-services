@@ -25,6 +25,7 @@ import com.hedera.services.usage.QueryUsage;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 
@@ -49,8 +50,8 @@ public class ScheduleGetInfoUsage extends QueryUsage {
 		return this;
 	}
 
-	public ScheduleGetInfoUsage givenTransaction(byte[] transactionBody) {
-		this.updateRb(transactionBody.length);
+	public ScheduleGetInfoUsage givenScheduledTxn(SchedulableTransactionBody schedulableTxn) {
+		this.updateRb(schedulableTxn.getSerializedSize());
 		return this;
 	}
 

@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,7 @@ import java.util.function.BiFunction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -62,12 +64,14 @@ public class ScheduleCreateResourceUsageTest {
         view = mock(StateView.class);
         scheduleCreateTxn = mock(TransactionBody.class);
         given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
+        given(scheduleCreateTxn.getScheduleCreate()).willReturn(ScheduleCreateTransactionBody.getDefaultInstance());
 
         nonScheduleCreateTxn = mock(TransactionBody.class);
         given(nonScheduleCreateTxn.hasScheduleCreate()).willReturn(false);
 
         usage = mock(ScheduleCreateUsage.class);
         given(usage.givenScheduledTxExpirationTimeSecs(anyInt())).willReturn(usage);
+        given(usage.givenScheduledTxn(any())).willReturn(usage);
         given(usage.get()).willReturn(expected);
 
         factory = (BiFunction<TransactionBody, SigUsage, ScheduleCreateUsage>)mock(BiFunction.class);

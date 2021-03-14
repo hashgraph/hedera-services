@@ -23,9 +23,12 @@ package com.hedera.services.usage.schedule;
 import com.google.protobuf.ByteString;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -49,9 +52,14 @@ public class ScheduleGetInfoUsageTest {
 	Optional<Key> adminKey = Optional.of(KeyUtils.A_COMPLEX_KEY);
 	Optional<KeyList> signers = Optional.of(KeyUtils.DUMMY_KEY_LIST);
 	ScheduleID id = IdUtils.asSchedule("0.0.1");
-	byte[] transactionBody = new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
 	ScheduleGetInfoUsage subject;
 	ByteString memo = ByteString.copyFromUtf8("This is just a memo?");
+	AccountID payer = IdUtils.asAccount("0.0.2");
+	SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+			.setTransactionFee(1_234_567L)
+			.setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+					.setDeleteAccountID(payer))
+			.build();
 
 	@BeforeEach
 	public void setup() {
@@ -63,7 +71,7 @@ public class ScheduleGetInfoUsageTest {
 		// given:
 		subject.givenCurrentAdminKey(adminKey)
 				.givenSignatories(signers)
-				.givenTransaction(transactionBody)
+				.givenScheduledTxn(scheduledTxn)
 				.givenMemo(memo)
 				.givenScheduledTxnId(scheduledTxnId);
 
@@ -74,7 +82,7 @@ public class ScheduleGetInfoUsageTest {
 				+ scheduledTxnId.toByteArray().length
 				+ expectedAdminBytes
 				+ signersBytes
-				+ SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, memo);
+				+ SCHEDULE_ENTITY_SIZES.bytesInReprGiven(scheduledTxn, memo.size());
 
 		// when:
 		var usage = subject.get();

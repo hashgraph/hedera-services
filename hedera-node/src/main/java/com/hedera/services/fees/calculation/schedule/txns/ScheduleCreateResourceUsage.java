@@ -66,7 +66,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 		return usageEstimate;
 	}
 
-	private TransactionBody parseUnchecked(ByteString txnBytes) {
+	public static TransactionBody parseUnchecked(ByteString txnBytes) {
 		try {
 			return TransactionBody.parseFrom(txnBytes);
 		} catch (InvalidProtocolBufferException e) {
@@ -74,7 +74,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 		}
 	}
 
-	private SchedulableTransactionBody fromOrdinary(TransactionBody txn) {
+	public static SchedulableTransactionBody fromOrdinary(TransactionBody txn) {
 		var scheduleBuilder = SchedulableTransactionBody.newBuilder();
 
 		scheduleBuilder.setTransactionFee(txn.getTransactionFee());

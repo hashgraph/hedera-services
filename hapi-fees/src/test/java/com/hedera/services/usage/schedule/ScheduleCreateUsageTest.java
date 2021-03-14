@@ -71,23 +71,6 @@ public class ScheduleCreateUsageTest {
 
 	int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE;
 
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	SignatureMap sigMap = SignatureMap.newBuilder()
-			.addSigPair(
-					SignaturePair.newBuilder()
-							.setPubKeyPrefix(ByteString.copyFrom(new byte[] { 0x01 }))
-							.setECDSA384(ByteString.copyFrom(new byte[] { 0x01, 0x02 }))
-							.build()
-			)
-			.addSigPair(
-					SignaturePair.newBuilder()
-							.setPubKeyPrefix(ByteString.copyFrom(new byte[] { 0x02 }))
-							.setECDSA384(ByteString.copyFrom(new byte[] { 0x01, 0x02 }))
-							.build()
-			)
-			.build();
-
 	ScheduleCreateTransactionBody op;
 	TransactionBody txn;
 

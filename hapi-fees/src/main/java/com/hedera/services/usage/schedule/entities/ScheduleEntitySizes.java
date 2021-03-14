@@ -49,12 +49,8 @@ public enum ScheduleEntitySizes {
 				+ NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE;
 	}
 
-	public int bytesInBaseReprGiven(byte[] transactionBody, ByteString memo) {
-		return fixedBytesInScheduleRepr() + transactionBody.length + memo.size();
-	}
-
 	public int bytesInReprGiven(SchedulableTransactionBody scheduledTxn, int memoLength) {
-		return scheduledTxn.getSerializedSize() + memoLength;
+		return fixedBytesInScheduleRepr() + scheduledTxn.getSerializedSize() + memoLength;
 	}
 
 	public int sigBytesForAddingSigningKeys(int n) {

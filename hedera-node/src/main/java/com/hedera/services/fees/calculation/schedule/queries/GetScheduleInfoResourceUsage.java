@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.schedule.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
 import com.hedera.services.usage.schedule.ScheduleGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -35,6 +36,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage.fromOrdinary;
+import static com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage.parseUnchecked;
 import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
 
@@ -74,7 +77,7 @@ public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator
 			queryCtx.ifPresent(ctx -> ctx.put(SCHEDULE_INFO_CTX_KEY, info));
 			var estimate = factory.apply(query)
 					.givenScheduledTxnId(info.getScheduledTransactionID())
-					.givenTransaction(info.getTransactionBody().toByteArray())
+					.givenScheduledTxn(fromOrdinary(parseUnchecked(info.getTransactionBody())))
 					.givenMemo(info.getMemoBytes())
 					.givenSignatories(ifPresent(info, ScheduleInfo::hasSignatories, ScheduleInfo::getSignatories))
 					.givenCurrentAdminKey(ifPresent(info, ScheduleInfo::hasAdminKey, ScheduleInfo::getAdminKey));

@@ -21,6 +21,10 @@ package com.hedera.services.usage.schedule.entities;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.test.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
@@ -54,16 +58,22 @@ public class ScheduleEntitySizesTest {
 	@Test
 	public void bytesInBaseReprGivenAsExpected() {
 		// setup:
-		var transactionBody = new byte[]{0x00, 0x01, 0x02, 0x03};
+		AccountID payer = IdUtils.asAccount("0.0.2");
+		SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+				.setTransactionFee(1_234_567L)
+				.setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+						.setDeleteAccountID(payer))
+				.build();
 		var memo = "memo";
 		long expected = NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
 				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE
-				+ transactionBody.length
+				+ NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE
+				+ scheduledTxn.getSerializedSize()
 				+ memo.length();
 
 		// given:
-		long actual = subject.bytesInBaseReprGiven(transactionBody, ByteString.copyFromUtf8(memo));
+		long actual = subject.bytesInReprGiven(scheduledTxn, memo.length());
 
 		// expect:
 		assertEquals(expected, actual);

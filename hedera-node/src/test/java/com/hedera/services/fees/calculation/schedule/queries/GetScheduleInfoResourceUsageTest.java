@@ -85,7 +85,7 @@ public class GetScheduleInfoResourceUsageTest {
 
         expected = mock(FeeData.class);
 
-        given(estimator.givenTransaction(info.getTransactionBody().toByteArray())).willReturn(estimator);
+        given(estimator.givenScheduledTxn(any())).willReturn(estimator);
         given(estimator.givenMemo(info.getMemoBytes())).willReturn(estimator);
         given(estimator.givenCurrentAdminKey(any())).willReturn(estimator);
         given(estimator.givenSignatories(any())).willReturn(estimator);
@@ -114,7 +114,7 @@ public class GetScheduleInfoResourceUsageTest {
 
         // then
         verify(view).infoForSchedule(target);
-        verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
+        verify(estimator).givenScheduledTxn(any());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
         verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
         verify(estimator).givenScheduledTxnId(scheduledTxnId);
@@ -130,7 +130,7 @@ public class GetScheduleInfoResourceUsageTest {
 
         // then
         verify(view).infoForSchedule(target);
-        verify(estimator, never()).givenTransaction(any());
+        verify(estimator, never()).givenScheduledTxn(any());
         verify(estimator, never()).givenCurrentAdminKey(any());
         verify(estimator, never()).givenSignatories(any());
         assertSame(FeeData.getDefaultInstance(), usage);
@@ -143,7 +143,7 @@ public class GetScheduleInfoResourceUsageTest {
 
         // then
         verify(view).infoForSchedule(target);
-        verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
+        verify(estimator).givenScheduledTxn(any());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
         verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
         assertSame(expected, usage);
@@ -161,7 +161,7 @@ public class GetScheduleInfoResourceUsageTest {
         assertSame(info, queryCtx.get(GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY));
         assertSame(expected, usage);
         verify(view).infoForSchedule(target);
-        verify(estimator).givenTransaction(info.getTransactionBody().toByteArray());
+        verify(estimator).givenScheduledTxn(any());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
         verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
     }

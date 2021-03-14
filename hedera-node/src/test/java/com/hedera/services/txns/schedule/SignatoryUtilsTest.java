@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ReplSignatoryUtilsTest {
+class SignatoryUtilsTest {
 	private JKey goodKey = new JEd25519Key("angelic".getBytes());
 	private byte[] scheduledTxn = TransactionBody.getDefaultInstance().toByteArray();
 	private ScheduleID id = IdUtils.asSchedule("0.0.75231");
@@ -50,7 +50,7 @@ class ReplSignatoryUtilsTest {
 		var outcome = SignatoryUtils.witnessScoped(id, store, noValidNoInvalid, activationHelper);
 
 		// then:
-		assertEquals(Pair.of(OK, false), outcome);
+		assertEquals(Pair.of(NO_NEW_VALID_SIGNATURES, false), outcome);
 	}
 
 	@Test
@@ -135,18 +135,5 @@ class ReplSignatoryUtilsTest {
 
 		// then:
 		assertEquals(Pair.of(OK, true), outcome);
-	}
-
-	@Test
-	void respondsToNonActivatingWithNoNewSignersCorrectly() {
-		given(store.get(id)).willReturn(schedule);
-		given(schedule.transactionBody()).willReturn(scheduledTxn);
-		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(false);
-
-		// when:
-		var outcome = SignatoryUtils.witnessScoped(id, store, noValidNoInvalid, activationHelper);
-
-		// then:
-		assertEquals(Pair.of(OK, false), outcome);
 	}
 }
