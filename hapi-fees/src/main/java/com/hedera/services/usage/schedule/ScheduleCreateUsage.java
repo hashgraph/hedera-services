@@ -23,6 +23,7 @@ package com.hedera.services.usage.schedule;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -32,8 +33,8 @@ import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
-	private int numBodyBytes;
 	private int expirationTimeSecs;
+	private SchedulableTransactionBody scheduledTxn;
 
 	private ScheduleCreateUsage(TransactionBody scheduleCreationOp, TxnUsageEstimator usageEstimator) {
 		super(scheduleCreationOp, usageEstimator);
@@ -43,8 +44,8 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 		return new ScheduleCreateUsage(scheduleCreationOp, estimatorFactory.get(sigUsage, scheduleCreationOp, ESTIMATOR_UTILS));
 	}
 
-	public ScheduleCreateUsage givenBodyBytes(int numBodyBytes) {
-		this.numBodyBytes = numBodyBytes;
+	public ScheduleCreateUsage givenScheduledTxn(SchedulableTransactionBody scheduledTxn) {
+		this.scheduledTxn = scheduledTxn;
 		return self();
 	}
 
@@ -59,30 +60,25 @@ public class ScheduleCreateUsage extends ScheduleTxnUsage<ScheduleCreateUsage> {
 	}
 
 	public FeeData get() {
-		var op = this.op.getScheduleCreate();
+		var creationOp = op.getScheduleCreate();
 
-		var txBytes = op.getTransactionBody().size() + op.getMemoBytes().size();
-		var ramBytes = scheduleEntitySizes.bytesInBaseReprGiven(op.getTransactionBody().toByteArray(), op.getMemoBytes());
-		if (op.hasAdminKey()) {
-			long keySize = getAccountKeyStorageSize(op.getAdminKey());
+		var txBytes = scheduledTxn.getSerializedSize() + creationOp.getMemoBytes().size();
+		var ramBytes = scheduleEntitySizes.bytesInReprGiven(scheduledTxn, creationOp.getMemoBytes().size());
+		if (creationOp.hasAdminKey()) {
+			long keySize = getAccountKeyStorageSize(creationOp.getAdminKey());
 			txBytes += keySize;
 			ramBytes += keySize;
 		}
-
-		if (op.hasPayerAccountID()) {
+		if (creationOp.hasPayerAccountID()) {
 			txBytes += BASIC_ENTITY_ID_SIZE;
 		}
 
-		var scheduledTxSigs = 0;
-		if (op.hasSigMap()) {
-			txBytes += scheduleEntitySizes.bptScheduleReprGiven(op.getSigMap());
-			ramBytes += scheduleEntitySizes.sigBytesInScheduleReprGiven(op.getSigMap());
-			scheduledTxSigs = op.getSigMap().getSigPairCount();
-		}
+		var sigUsage = usageEstimator.getSigUsage();
+		var estNewSigners = scheduleEntitySizes.estimatedScheduleSigs(sigUsage);
+		ramBytes += scheduleEntitySizes.sigBytesForAddingSigningKeys(estNewSigners);
 
 		usageEstimator.addBpt(txBytes);
 		usageEstimator.addRbs(ramBytes * this.expirationTimeSecs);
-		usageEstimator.addVpt(scheduledTxSigs);
 
 		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + BOOL_SIZE);
 

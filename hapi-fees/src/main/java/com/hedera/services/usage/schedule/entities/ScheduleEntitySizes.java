@@ -22,7 +22,7 @@ package com.hedera.services.usage.schedule.entities;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.usage.SigUsage;
-import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
@@ -53,18 +53,8 @@ public enum ScheduleEntitySizes {
 		return fixedBytesInScheduleRepr() + transactionBody.length + memo.size();
 	}
 
-	/**
-	 * Signature map is not stored in state, we only need it for bpt
-	 */
-	public int bptScheduleReprGiven(SignatureMap sigMap) {
-		return sigMap.toByteArray().length;
-	}
-
-	/**
-	 * For a given Scheduled Entity, a set of simple JKEYs are stored
-	 */
-	public int sigBytesInScheduleReprGiven(SignatureMap sigMap) {
-		return sigMap.getSigPairCount() * KEY_SIZE;
+	public int bytesInReprGiven(SchedulableTransactionBody scheduledTxn, int memoLength) {
+		return scheduledTxn.getSerializedSize() + memoLength;
 	}
 
 	public int sigBytesForAddingSigningKeys(int n) {

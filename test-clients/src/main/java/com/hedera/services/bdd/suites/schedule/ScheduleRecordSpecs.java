@@ -71,14 +71,14 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						suiteSetup(),
-//						allRecordsAreQueryable(),
-//						schedulingTxnIdFieldsNotAllowed(),
+						suiteSetup(),
+						allRecordsAreQueryable(),
+						schedulingTxnIdFieldsNotAllowed(),
 						canonicalScheduleOpsHaveExpectedUsdFees(),
-//						canScheduleChunkedMessages(),
-//						noFeesChargedIfTriggeredPayerIsInsolvent(),
-//						noFeesChargedIfTriggeredPayerIsUnwilling(),
-//						suiteCleanup(),
+						canScheduleChunkedMessages(),
+						noFeesChargedIfTriggeredPayerIsInsolvent(),
+						noFeesChargedIfTriggeredPayerIsUnwilling(),
+						suiteCleanup(),
 				}
 		);
 	}
@@ -100,9 +100,9 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
 		return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
 				.given(
+						cryptoCreate("otherPayer"),
 						cryptoCreate("payingSender"),
 						cryptoCreate("receiver")
-								.balance(0L)
 								.receiverSigRequired(true)
 				).when(
 						scheduleCreate("canonical",
@@ -110,9 +110,10 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 										.memo("")
 										.fee(ONE_HBAR)
 						)
+								.payingWith("otherPayer")
 								.via("canonicalCreation")
-								.payingWith("payingSender")
-								.adminKey("payingSender"),
+								.alsoSigningWith("payingSender")
+								.adminKey("otherPayer"),
 						scheduleSign("canonical")
 								.via("canonicalSigning")
 								.payingWith("payingSender")

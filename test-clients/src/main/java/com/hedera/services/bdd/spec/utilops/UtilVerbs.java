@@ -44,6 +44,7 @@ import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
+import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
@@ -603,7 +604,7 @@ public class UtilVerbs {
 
 	public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
 		return assertionsHold((spec, assertLog) -> {
-			var subOp = getTxnRecord(txn);
+			var subOp = getTxnRecord(txn).logged();
 			allRunFor(spec, subOp);
 
 			var record = subOp.getResponseRecord();
@@ -614,7 +615,8 @@ public class UtilVerbs {
 					/ 100;
 			assertEquals(
 					String.format(
-							"%s fee more than %.2f percent different than expected!",
+							"%s fee (%s) more than %.2f percent different than expected!",
+							CryptoTransferSuite.sdec(actualUsdCharged, 4),
 							txn,
 							allowedPercentDiff),
 					expectedUsd,

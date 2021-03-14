@@ -28,7 +28,9 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -57,6 +59,11 @@ public class ScheduleCreateUsageTest {
 	byte[] transactionBody = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder().setAccountID(payer))
 			.build().toByteArray();
+	SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+			.setTransactionFee(1_234_567L)
+			.setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+					.setDeleteAccountID(payer))
+			.build();
 
 	long now = 1_000L;
 	int scheduledTXExpiry = 1000;
@@ -69,14 +76,14 @@ public class ScheduleCreateUsageTest {
 	SignatureMap sigMap = SignatureMap.newBuilder()
 			.addSigPair(
 					SignaturePair.newBuilder()
-							.setPubKeyPrefix(ByteString.copyFrom(new byte[]{0x01}))
-							.setECDSA384(ByteString.copyFrom(new byte[]{0x01, 0x02}))
+							.setPubKeyPrefix(ByteString.copyFrom(new byte[] { 0x01 }))
+							.setECDSA384(ByteString.copyFrom(new byte[] { 0x01, 0x02 }))
 							.build()
 			)
 			.addSigPair(
 					SignaturePair.newBuilder()
-							.setPubKeyPrefix(ByteString.copyFrom(new byte[]{0x02}))
-							.setECDSA384(ByteString.copyFrom(new byte[]{0x01, 0x02}))
+							.setPubKeyPrefix(ByteString.copyFrom(new byte[] { 0x02 }))
+							.setECDSA384(ByteString.copyFrom(new byte[] { 0x01, 0x02 }))
 							.build()
 			)
 			.build();
@@ -102,13 +109,19 @@ public class ScheduleCreateUsageTest {
 	@Test
 	public void createsExpectedDeltaForTXExpiry() {
 		// setup:
-		var expectedTxBytes = transactionBody.length;
-		var expectedRamBytes = baseRamBytes();
+		int numSigs = 3, sigSize = 144, numPayerKeys = 1;
+		SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+
 		givenBaseOp();
+		given(base.getSigUsage()).willReturn(sigUsage);
+
+		var expectedTxBytes = scheduledTxn.getSerializedSize();
+		var expectedRamBytes = baseRamBytes() + SCHEDULE_ENTITY_SIZES.sigBytesForAddingSigningKeys(2);
 
 		// and:
 		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
-			.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
+				.givenScheduledTxn(scheduledTxn)
+				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
 		var actual = subject.get();
@@ -118,7 +131,6 @@ public class ScheduleCreateUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
-		verify(base).addVpt(0);
 		verify(base).addNetworkRbs(
 				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
@@ -126,12 +138,19 @@ public class ScheduleCreateUsageTest {
 	@Test
 	public void createsExpectedDeltaForAdminKey() {
 		// setup:
-		var expectedTxBytes = transactionBody.length + FeeBuilder.getAccountKeyStorageSize(adminKey);
-		var expectedRamBytes = baseRamBytes() + FeeBuilder.getAccountKeyStorageSize(adminKey);
+		int numSigs = 3, sigSize = 144, numPayerKeys = 1;
+		SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+		int adminKeySize = FeeBuilder.getAccountKeyStorageSize(adminKey);
+
+		var expectedTxBytes = scheduledTxn.getSerializedSize() + adminKeySize;
+		var expectedRamBytes = baseRamBytes() + adminKeySize + SCHEDULE_ENTITY_SIZES.sigBytesForAddingSigningKeys(2);
+
 		givenOpWithAdminKey();
+		given(base.getSigUsage()).willReturn(sigUsage);
 
 		// and:
 		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
+				.givenScheduledTxn(scheduledTxn)
 				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
@@ -142,7 +161,6 @@ public class ScheduleCreateUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
-		verify(base).addVpt(0);
 		verify(base).addNetworkRbs(
 				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
@@ -150,12 +168,18 @@ public class ScheduleCreateUsageTest {
 	@Test
 	public void createsExpectedDeltaForPayer() {
 		// setup:
-		var expectedTxBytes = transactionBody.length + BASIC_ENTITY_ID_SIZE;
-		var expectedRamBytes = baseRamBytes();
+		int numSigs = 3, sigSize = 144, numPayerKeys = 1;
+		SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+
+		var expectedTxBytes = scheduledTxn.getSerializedSize() + BASIC_ENTITY_ID_SIZE;
+		var expectedRamBytes = baseRamBytes() + SCHEDULE_ENTITY_SIZES.sigBytesForAddingSigningKeys(2);
+
 		givenOpWithPayer();
+		given(base.getSigUsage()).willReturn(sigUsage);
 
 		// and:
 		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
+				.givenScheduledTxn(scheduledTxn)
 				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
@@ -166,7 +190,6 @@ public class ScheduleCreateUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
-		verify(base).addVpt(0);
 		verify(base).addNetworkRbs(
 				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
@@ -174,12 +197,18 @@ public class ScheduleCreateUsageTest {
 	@Test
 	public void createsExpectedDeltaForMemo() {
 		// setup:
-		var expectedTxBytes = transactionBody.length + memo.length();
-		var expectedRamBytes = baseRamBytesWithMemo();
+		int numSigs = 3, sigSize = 144, numPayerKeys = 1;
+		SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+
+		var expectedTxBytes = scheduledTxn.getSerializedSize() + memo.length();
+		var expectedRamBytes = baseRamBytesWithMemo() + SCHEDULE_ENTITY_SIZES.sigBytesForAddingSigningKeys(2);
+
 		givenOpWithMemo();
+		given(base.getSigUsage()).willReturn(sigUsage);
 
 		// and:
 		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
+				.givenScheduledTxn(scheduledTxn)
 				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
 
 		// when:
@@ -190,41 +219,16 @@ public class ScheduleCreateUsageTest {
 		// and:
 		verify(base).addBpt(expectedTxBytes);
 		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
-		verify(base).addVpt(0);
-		verify(base).addNetworkRbs(
-				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-	}
-
-	@Test
-	public void createsExpectedDeltaForSigMap() {
-		// setup:
-		var expectedTxBytes = transactionBody.length + SCHEDULE_ENTITY_SIZES.bptScheduleReprGiven(sigMap);
-		var expectedRamBytes = baseRamBytes() + SCHEDULE_ENTITY_SIZES.sigBytesInScheduleReprGiven(sigMap);
-		givenOpWithSigMap();
-
-		// and:
-		subject = ScheduleCreateUsage.newEstimate(txn, sigUsage)
-				.givenScheduledTxExpirationTimeSecs(scheduledTXExpiry);
-
-		// when:
-		var actual = subject.get();
-
-		// then:
-		assertEquals(A_USAGES_MATRIX, actual);
-		// and:
-		verify(base).addBpt(expectedTxBytes);
-		verify(base).addRbs(expectedRamBytes * scheduledTXExpiry);
-		verify(base).addVpt(sigMap.getSigPairCount());
 		verify(base).addNetworkRbs(
 				(BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	private long baseRamBytes() {
-		return SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, ByteString.EMPTY);
+		return SCHEDULE_ENTITY_SIZES.bytesInReprGiven(scheduledTxn, 0);
 	}
 
 	private long baseRamBytesWithMemo() {
-		return SCHEDULE_ENTITY_SIZES.bytesInBaseReprGiven(transactionBody, ByteString.copyFromUtf8(memo));
+		return SCHEDULE_ENTITY_SIZES.bytesInReprGiven(scheduledTxn, ByteString.copyFromUtf8(memo).size());
 	}
 
 	private void givenBaseOp() {
@@ -246,14 +250,6 @@ public class ScheduleCreateUsageTest {
 		op = ScheduleCreateTransactionBody.newBuilder()
 				.setTransactionBody(ByteString.copyFrom(transactionBody))
 				.setPayerAccountID(payer)
-				.build();
-		setTxn();
-	}
-
-	private void givenOpWithSigMap() {
-		op = ScheduleCreateTransactionBody.newBuilder()
-				.setTransactionBody(ByteString.copyFrom(transactionBody))
-				.setSigMap(sigMap)
 				.build();
 		setTxn();
 	}

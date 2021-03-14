@@ -22,11 +22,13 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.TrieSigMapGenerator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.schedule.ScheduleUtils;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -51,6 +53,7 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.fromOrdinary;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toList;
@@ -178,9 +181,19 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return ScheduleCreateUsage.newEstimate(txn, suFrom(svo))
+		var estimate = ScheduleCreateUsage.newEstimate(txn, suFrom(svo))
 				.givenScheduledTxExpirationTimeSecs(defaultScheduleTxnExpiry)
+				.givenScheduledTxn(fromOrdinary(parseUnchecked(txn.getScheduleCreate().getTransactionBody())))
 				.get();
+		return estimate;
+	}
+
+	private TransactionBody parseUnchecked(ByteString txnBytes) {
+		try {
+			return TransactionBody.parseFrom(txnBytes);
+		} catch (InvalidProtocolBufferException e) {
+			return TransactionBody.getDefaultInstance();
+		}
 	}
 
 	@Override
