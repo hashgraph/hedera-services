@@ -80,77 +80,77 @@ public class ScheduleUtils {
 	}
 
 	public static TransactionBody fromScheduled(SchedulableTransactionBody scheduledTxn) {
-		var builder = TransactionBody.newBuilder();
+		var ordinary = TransactionBody.newBuilder();
 
-		builder.setTransactionFee(scheduledTxn.getTransactionFee());
-		builder.setMemo(scheduledTxn.getMemo());
+		ordinary.setTransactionFee(scheduledTxn.getTransactionFee());
+		ordinary.setMemo(scheduledTxn.getMemo());
 
 		if (scheduledTxn.hasContractCall()) {
-			builder.setContractCall(scheduledTxn.getContractCall());
+			ordinary.setContractCall(scheduledTxn.getContractCall());
 		} else if (scheduledTxn.hasContractCreateInstance()) {
-			builder.setContractCreateInstance(scheduledTxn.getContractCreateInstance());
+			ordinary.setContractCreateInstance(scheduledTxn.getContractCreateInstance());
 		} else if (scheduledTxn.hasContractUpdateInstance()) {
-			builder.setContractUpdateInstance(scheduledTxn.getContractUpdateInstance());
+			ordinary.setContractUpdateInstance(scheduledTxn.getContractUpdateInstance());
 		} else if (scheduledTxn.hasContractDeleteInstance()) {
-			builder.setContractDeleteInstance(scheduledTxn.getContractDeleteInstance());
+			ordinary.setContractDeleteInstance(scheduledTxn.getContractDeleteInstance());
 		} else if (scheduledTxn.hasCryptoCreateAccount()) {
-			builder.setCryptoCreateAccount(scheduledTxn.getCryptoCreateAccount());
+			ordinary.setCryptoCreateAccount(scheduledTxn.getCryptoCreateAccount());
 		} else if (scheduledTxn.hasCryptoDelete()) {
-			builder.setCryptoDelete(scheduledTxn.getCryptoDelete());
+			ordinary.setCryptoDelete(scheduledTxn.getCryptoDelete());
 		} else if (scheduledTxn.hasCryptoTransfer()) {
-			builder.setCryptoTransfer(scheduledTxn.getCryptoTransfer());
+			ordinary.setCryptoTransfer(scheduledTxn.getCryptoTransfer());
 		} else if (scheduledTxn.hasCryptoUpdateAccount()) {
-			builder.setCryptoUpdateAccount(scheduledTxn.getCryptoUpdateAccount());
+			ordinary.setCryptoUpdateAccount(scheduledTxn.getCryptoUpdateAccount());
 		} else if (scheduledTxn.hasFileAppend()) {
-			builder.setFileAppend(scheduledTxn.getFileAppend());
+			ordinary.setFileAppend(scheduledTxn.getFileAppend());
 		} else if (scheduledTxn.hasFileCreate()) {
-			builder.setFileCreate(scheduledTxn.getFileCreate());
+			ordinary.setFileCreate(scheduledTxn.getFileCreate());
 		} else if (scheduledTxn.hasFileDelete()) {
-			builder.setFileDelete(scheduledTxn.getFileDelete());
+			ordinary.setFileDelete(scheduledTxn.getFileDelete());
 		} else if (scheduledTxn.hasFileUpdate()) {
-			builder.setFileUpdate(scheduledTxn.getFileUpdate());
+			ordinary.setFileUpdate(scheduledTxn.getFileUpdate());
 		} else if (scheduledTxn.hasSystemDelete()) {
-			builder.setSystemDelete(scheduledTxn.getSystemDelete());
+			ordinary.setSystemDelete(scheduledTxn.getSystemDelete());
 		} else if (scheduledTxn.hasSystemUndelete()) {
-			builder.setSystemUndelete(scheduledTxn.getSystemUndelete());
+			ordinary.setSystemUndelete(scheduledTxn.getSystemUndelete());
 		} else if (scheduledTxn.hasFreeze()) {
-			builder.setFreeze(scheduledTxn.getFreeze());
+			ordinary.setFreeze(scheduledTxn.getFreeze());
 		} else if (scheduledTxn.hasConsensusCreateTopic()) {
-			builder.setConsensusCreateTopic(scheduledTxn.getConsensusCreateTopic());
+			ordinary.setConsensusCreateTopic(scheduledTxn.getConsensusCreateTopic());
 		} else if (scheduledTxn.hasConsensusUpdateTopic()) {
-			builder.setConsensusUpdateTopic(scheduledTxn.getConsensusUpdateTopic());
+			ordinary.setConsensusUpdateTopic(scheduledTxn.getConsensusUpdateTopic());
 		} else if (scheduledTxn.hasConsensusDeleteTopic()) {
-			builder.setConsensusDeleteTopic(scheduledTxn.getConsensusDeleteTopic());
+			ordinary.setConsensusDeleteTopic(scheduledTxn.getConsensusDeleteTopic());
 		} else if (scheduledTxn.hasConsensusSubmitMessage()) {
-			builder.setConsensusSubmitMessage(scheduledTxn.getConsensusSubmitMessage());
+			ordinary.setConsensusSubmitMessage(scheduledTxn.getConsensusSubmitMessage());
 		} else if (scheduledTxn.hasTokenCreation()) {
-			builder.setTokenCreation(scheduledTxn.getTokenCreation());
+			ordinary.setTokenCreation(scheduledTxn.getTokenCreation());
 		} else if (scheduledTxn.hasTokenFreeze()) {
-			builder.setTokenFreeze(scheduledTxn.getTokenFreeze());
+			ordinary.setTokenFreeze(scheduledTxn.getTokenFreeze());
 		} else if (scheduledTxn.hasTokenUnfreeze()) {
-			builder.setTokenUnfreeze(scheduledTxn.getTokenUnfreeze());
+			ordinary.setTokenUnfreeze(scheduledTxn.getTokenUnfreeze());
 		} else if (scheduledTxn.hasTokenGrantKyc()) {
-			builder.setTokenGrantKyc(scheduledTxn.getTokenGrantKyc());
+			ordinary.setTokenGrantKyc(scheduledTxn.getTokenGrantKyc());
 		} else if (scheduledTxn.hasTokenRevokeKyc()) {
-			builder.setTokenRevokeKyc(scheduledTxn.getTokenRevokeKyc());
+			ordinary.setTokenRevokeKyc(scheduledTxn.getTokenRevokeKyc());
 		} else if (scheduledTxn.hasTokenDeletion()) {
-			builder.setTokenDeletion(scheduledTxn.getTokenDeletion());
+			ordinary.setTokenDeletion(scheduledTxn.getTokenDeletion());
 		} else if (scheduledTxn.hasTokenUpdate()) {
-			builder.setTokenUpdate(scheduledTxn.getTokenUpdate());
+			ordinary.setTokenUpdate(scheduledTxn.getTokenUpdate());
 		} else if (scheduledTxn.hasTokenMint()) {
-			builder.setTokenMint(scheduledTxn.getTokenMint());
+			ordinary.setTokenMint(scheduledTxn.getTokenMint());
 		} else if (scheduledTxn.hasTokenBurn()) {
-			builder.setTokenBurn(scheduledTxn.getTokenBurn());
+			ordinary.setTokenBurn(scheduledTxn.getTokenBurn());
 		} else if (scheduledTxn.hasTokenWipe()) {
-			builder.setTokenWipe(scheduledTxn.getTokenWipe());
+			ordinary.setTokenWipe(scheduledTxn.getTokenWipe());
 		} else if (scheduledTxn.hasTokenAssociate()) {
-			builder.setTokenAssociate(scheduledTxn.getTokenAssociate());
+			ordinary.setTokenAssociate(scheduledTxn.getTokenAssociate());
 		} else if (scheduledTxn.hasTokenDissociate()) {
-			builder.setTokenDissociate(scheduledTxn.getTokenDissociate());
+			ordinary.setTokenDissociate(scheduledTxn.getTokenDissociate());
 		} else if (scheduledTxn.hasScheduleDelete()) {
-			builder.setScheduleDelete(scheduledTxn.getScheduleDelete());
+			ordinary.setScheduleDelete(scheduledTxn.getScheduleDelete());
 		}
 
-		return builder.build();
+		return ordinary.build();
 	}
 }

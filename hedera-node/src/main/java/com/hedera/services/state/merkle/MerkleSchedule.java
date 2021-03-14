@@ -27,6 +27,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -76,9 +78,11 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	private RichInstant schedulingTXValidStart;
 	private long expiry;
 
+	private byte[] bodyBytes;
+	private SchedulableTransactionBody scheduledTxn;
+
 	private Set<ByteString> notary = ConcurrentHashMap.newKeySet();
 	private List<byte[]> signatories = new ArrayList<>();
-
 
 	public MerkleSchedule() {
 	}
@@ -91,6 +95,34 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		this.grpcTxn = transactionBody;
 		this.schedulingAccount = schedulingAccount;
 		this.schedulingTXValidStart = schedulingTXValidStart;
+	}
+
+	public static MerkleSchedule from(byte[] bodyBytes, long consensusExpiry) {
+		try {
+			var to = new MerkleSchedule();
+			var parentTxn = TransactionBody.parseFrom(bodyBytes);
+			var creationOp = parentTxn.getReplScheduleCreate();
+
+			if (!creationOp.getMemo().isEmpty()) {
+				to.memo = creationOp.getMemo();
+			}
+			if (creationOp.hasPayerAccountID()) {
+				to.payer = EntityId.ofNullableAccountId(creationOp.getPayerAccountID());
+			}
+			if (creationOp.hasAdminKey()) {
+				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(to::setAdminKey);
+			}
+			to.expiry = consensusExpiry;
+			to.bodyBytes = bodyBytes;
+			to.scheduledTxn = parentTxn.getReplScheduleCreate().getScheduledTransactionBody();
+			to.schedulingAccount = EntityId.ofNullableAccountId(parentTxn.getTransactionID().getAccountID());
+			to.schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
+
+			return to;
+		} catch (InvalidProtocolBufferException e) {
+			throw new IllegalArgumentException(String.format(
+					"Argument bodyBytes=0x%s was not a TransactionBody!", Hex.encodeHexString(bodyBytes)));
+		}
 	}
 
 	/* Notary functions */
@@ -357,5 +389,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 	public boolean isDeleted() {
 		return deleted;
+	}
+
+	public SchedulableTransactionBody scheduledTxn() {
+		return scheduledTxn;
+	}
+
+	public byte[] bodyBytes() {
+		return bodyBytes;
 	}
 }

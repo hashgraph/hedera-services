@@ -68,6 +68,11 @@ public enum ExceptionalScheduleStore implements ScheduleStore {
 	}
 
 	@Override
+	public CreationResult<ScheduleID> replCreateProvisionally(byte[] bodyBytes, RichInstant consensusTime) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Key adminKey, String entityMemo) {
 		throw new UnsupportedOperationException();
 	}

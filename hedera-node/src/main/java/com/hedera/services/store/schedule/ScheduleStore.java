@@ -46,6 +46,7 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	ResponseCodeEnum delete(ScheduleID id);
 
 	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, RichInstant consensusTime, Optional<JKey> adminKey, Optional<String> entityMemo);
+	CreationResult<ScheduleID> replCreateProvisionally(byte[] bodyBytes, RichInstant consensusTime);
 
 	Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Key adminKey, String entityMemo);
 	ResponseCodeEnum markAsExecuted(ScheduleID id);

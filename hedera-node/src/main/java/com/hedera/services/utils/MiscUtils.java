@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -476,7 +477,75 @@ public class MiscUtils {
 				.collect(toSet());
 	}
 
-	public static Set<Long> getNodeAccountNums(AddressBook addressBook) {
-		return getNodeAccounts(addressBook).stream().map(AccountID::getAccountNum).collect(toSet());
+	public static TransactionBody asOrdinary(SchedulableTransactionBody scheduledTxn) {
+		var ordinary = TransactionBody.newBuilder();
+		ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
+				.setMemo(scheduledTxn.getMemo());
+		if (scheduledTxn.hasContractCall()) {
+			ordinary.setContractCall(scheduledTxn.getContractCall());
+		} else if (scheduledTxn.hasContractCreateInstance()) {
+			ordinary.setContractCreateInstance(scheduledTxn.getContractCreateInstance());
+		} else if (scheduledTxn.hasContractUpdateInstance()) {
+			ordinary.setContractUpdateInstance(scheduledTxn.getContractUpdateInstance());
+		} else if (scheduledTxn.hasContractDeleteInstance()) {
+			ordinary.setContractDeleteInstance(scheduledTxn.getContractDeleteInstance());
+		} else if (scheduledTxn.hasCryptoCreateAccount()) {
+			ordinary.setCryptoCreateAccount(scheduledTxn.getCryptoCreateAccount());
+		} else if (scheduledTxn.hasCryptoDelete()) {
+			ordinary.setCryptoDelete(scheduledTxn.getCryptoDelete());
+		} else if (scheduledTxn.hasCryptoTransfer()) {
+			ordinary.setCryptoTransfer(scheduledTxn.getCryptoTransfer());
+		} else if (scheduledTxn.hasCryptoUpdateAccount()) {
+			ordinary.setCryptoUpdateAccount(scheduledTxn.getCryptoUpdateAccount());
+		} else if (scheduledTxn.hasFileAppend()) {
+			ordinary.setFileAppend(scheduledTxn.getFileAppend());
+		} else if (scheduledTxn.hasFileCreate()) {
+			ordinary.setFileCreate(scheduledTxn.getFileCreate());
+		} else if (scheduledTxn.hasFileDelete()) {
+			ordinary.setFileDelete(scheduledTxn.getFileDelete());
+		} else if (scheduledTxn.hasFileUpdate()) {
+			ordinary.setFileUpdate(scheduledTxn.getFileUpdate());
+		} else if (scheduledTxn.hasSystemDelete()) {
+			ordinary.setSystemDelete(scheduledTxn.getSystemDelete());
+		} else if (scheduledTxn.hasSystemUndelete()) {
+			ordinary.setSystemUndelete(scheduledTxn.getSystemUndelete());
+		} else if (scheduledTxn.hasFreeze()) {
+			ordinary.setFreeze(scheduledTxn.getFreeze());
+		} else if (scheduledTxn.hasConsensusCreateTopic()) {
+			ordinary.setConsensusCreateTopic(scheduledTxn.getConsensusCreateTopic());
+		} else if (scheduledTxn.hasConsensusUpdateTopic()) {
+			ordinary.setConsensusUpdateTopic(scheduledTxn.getConsensusUpdateTopic());
+		} else if (scheduledTxn.hasConsensusDeleteTopic()) {
+			ordinary.setConsensusDeleteTopic(scheduledTxn.getConsensusDeleteTopic());
+		} else if (scheduledTxn.hasConsensusSubmitMessage()) {
+			ordinary.setConsensusSubmitMessage(scheduledTxn.getConsensusSubmitMessage());
+		} else if (scheduledTxn.hasTokenCreation()) {
+			ordinary.setTokenCreation(scheduledTxn.getTokenCreation());
+		} else if (scheduledTxn.hasTokenFreeze()) {
+			ordinary.setTokenFreeze(scheduledTxn.getTokenFreeze());
+		} else if (scheduledTxn.hasTokenUnfreeze()) {
+			ordinary.setTokenUnfreeze(scheduledTxn.getTokenUnfreeze());
+		} else if (scheduledTxn.hasTokenGrantKyc()) {
+			ordinary.setTokenGrantKyc(scheduledTxn.getTokenGrantKyc());
+		} else if (scheduledTxn.hasTokenRevokeKyc()) {
+			ordinary.setTokenRevokeKyc(scheduledTxn.getTokenRevokeKyc());
+		} else if (scheduledTxn.hasTokenDeletion()) {
+			ordinary.setTokenDeletion(scheduledTxn.getTokenDeletion());
+		} else if (scheduledTxn.hasTokenUpdate()) {
+			ordinary.setTokenUpdate(scheduledTxn.getTokenUpdate());
+		} else if (scheduledTxn.hasTokenMint()) {
+			ordinary.setTokenMint(scheduledTxn.getTokenMint());
+		} else if (scheduledTxn.hasTokenBurn()) {
+			ordinary.setTokenBurn(scheduledTxn.getTokenBurn());
+		} else if (scheduledTxn.hasTokenWipe()) {
+			ordinary.setTokenWipe(scheduledTxn.getTokenWipe());
+		} else if (scheduledTxn.hasTokenAssociate()) {
+			ordinary.setTokenAssociate(scheduledTxn.getTokenAssociate());
+		} else if (scheduledTxn.hasTokenDissociate()) {
+			ordinary.setTokenDissociate(scheduledTxn.getTokenDissociate());
+		} else if (scheduledTxn.hasScheduleDelete()) {
+			ordinary.setScheduleDelete(scheduledTxn.getScheduleDelete());
+		}
+		return ordinary.build();
 	}
 }

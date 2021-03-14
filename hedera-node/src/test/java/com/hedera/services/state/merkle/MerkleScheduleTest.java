@@ -29,7 +29,12 @@ import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -55,6 +60,7 @@ import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.swirlds.common.CommonUtils.hex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -75,16 +81,17 @@ public class MerkleScheduleTest {
 	byte[] tpk = "thirdPretendKey".getBytes();
 
 	final int TX_BYTES = 64;
-	byte[] transactionBody, otherTransactionBody;
-	String entityMemo, otherEntityMemo;
-	EntityId payer, otherPayer;
-	EntityId schedulingAccount, otherSchedulingAccount;
-	RichInstant schedulingTXValidStart, otherSchedulingTXValidStart;
-	JKey adminKey, otherKey;
-	JKey signatory1, signatory2, signatory3;
-	List<byte[]> signatories;
-
 	long expiry = 1_234_567L, otherExpiry = 1_567_234L;
+	byte[] transactionBody, otherTransactionBody;
+	String entityMemo = "Just some memo again", otherEntityMemo = "Yet another memo";
+	EntityId payer = new EntityId(4, 5, 6), otherPayer = new EntityId(4, 5, 5);
+	EntityId schedulingAccount = new EntityId(1, 2, 3);
+	EntityId otherSchedulingAccount = new EntityId(1, 2, 2);
+	RichInstant schedulingTXValidStart = new RichInstant(123, 456);
+	RichInstant otherSchedulingTXValidStart = new RichInstant(456, 789);
+	JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked(), otherKey;
+	JKey signatory1, signatory2;
+	List<byte[]> signatories;
 
 	MerkleSchedule subject;
 	MerkleSchedule other;
@@ -94,19 +101,6 @@ public class MerkleScheduleTest {
 		transactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES * 2);
 		otherTransactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES);
 
-		entityMemo = "Just some memo again";
-		otherEntityMemo = "Yet another memo";
-
-		payer = new EntityId(4, 5, 6);
-		otherPayer = new EntityId(4, 5, 5);
-
-		schedulingAccount = new EntityId(1, 2, 3);
-		otherSchedulingAccount = new EntityId(1, 2, 2);
-
-		schedulingTXValidStart = new RichInstant(123, 456);
-		otherSchedulingTXValidStart = new RichInstant(456, 789);
-
-		adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
 		otherKey = new JEd25519Key("not-a-real-other-key".getBytes());
 
 		signatories = new ArrayList<>();
@@ -122,6 +116,30 @@ public class MerkleScheduleTest {
 	@AfterEach
 	public void cleanup() {
 		MerkleSchedule.serdes = new DomainSerdes();
+	}
+
+	@Test
+	public void factoryWorks() {
+		// given:
+		var factorySubject = MerkleSchedule.from(bodyBytes, expiry);
+
+		// expect:
+		assertFalse(factorySubject.isDeleted());
+		assertFalse(factorySubject.isExecuted());
+		assertEquals(payer, factorySubject.payer());
+		assertEquals(expiry, factorySubject.expiry());
+		assertEquals(schedulingAccount, factorySubject.schedulingAccount());
+		assertEquals(entityMemo, factorySubject.memo().get());
+		assertEquals(adminKey.toString(), factorySubject.adminKey().get().toString());
+		assertEquals(schedulingTXValidStart, factorySubject.schedulingTXValidStart());
+		assertEquals(scheduledTxn, factorySubject.scheduledTxn());
+		assertArrayEquals(bodyBytes, factorySubject.bodyBytes());
+	}
+
+	@Test
+	public void factoryTranslatesImpossibleParseError() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> MerkleSchedule.from("NONSENSE".getBytes(), 0L));
 	}
 
 	@Test
@@ -533,4 +551,29 @@ public class MerkleScheduleTest {
 	private String signatoriesToString() {
 		return signatories.stream().map(Hex::encodeHexString).collect(Collectors.joining(", "));
 	}
+
+	private final long fee = 123L;
+	private final String scheduledTxnMemo = "Wait for me!";
+	SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+			.setTransactionFee(fee)
+			.setMemo(scheduledTxnMemo)
+			.setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+					.setDeleteAccountID(IdUtils.asAccount("0.0.2"))
+					.setTransferAccountID(IdUtils.asAccount("0.0.75231")))
+			.build();
+
+	ReplScheduleCreateTransactionBody creation = ReplScheduleCreateTransactionBody.newBuilder()
+			.setAdminKey(MiscUtils.asKeyUnchecked(adminKey))
+			.setPayerAccountID(payer.toGrpcAccountId())
+			.setMemo(entityMemo)
+			.setScheduledTransactionBody(scheduledTxn)
+			.build();
+	TransactionBody parentTxn = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder()
+					.setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
+					.setAccountID(schedulingAccount.toGrpcAccountId())
+					.build())
+			.setReplScheduleCreate(creation)
+			.build();
+	private final byte[] bodyBytes = parentTxn.toByteArray();
 }

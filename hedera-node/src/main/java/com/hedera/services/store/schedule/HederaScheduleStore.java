@@ -20,7 +20,6 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -42,7 +41,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.hedera.services.files.TieredHederaFs.log;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.store.CreationResult.failure;
@@ -117,6 +115,11 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	private void applyProvisionally(Consumer<MerkleSchedule> change) {
 		change.accept(pendingCreation);
+	}
+
+	@Override
+	public CreationResult<ScheduleID> replCreateProvisionally(byte[] bodyBytes, RichInstant consensusTime) {
+		throw new AssertionError("Not implemented!");
 	}
 
 	@Override
@@ -284,17 +287,6 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		return OK;
-	}
-
-	private void remove(ScheduleID id) {
-		throwIfMissing(id);
-
-		if (id.equals(pendingId)) {
-			return;
-		}
-
-		var key = fromScheduleId(id);
-		schedules.get().remove(key);
 	}
 
 	private void throwIfMissing(ScheduleID id) {
