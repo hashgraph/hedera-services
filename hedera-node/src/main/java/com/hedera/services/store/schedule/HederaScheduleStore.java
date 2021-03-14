@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -41,6 +42,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static com.hedera.services.files.TieredHederaFs.log;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.store.CreationResult.failure;
@@ -52,6 +54,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_EXECUTED;
 
 /**
  * Provides a managing store for Scheduled Entities.
@@ -148,18 +152,13 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public ResponseCodeEnum delete(ScheduleID id){
-		var idRes = resolve(id);
-		if (idRes == MISSING_SCHEDULE) {
-			return INVALID_SCHEDULE_ID;
+	public ResponseCodeEnum delete(ScheduleID id) {
+		var status = usabilityCheck(id, true);
+		if (status != OK) {
+			return status;
 		}
 
-		var schedule = get(id);
-		if (schedule.adminKey().isEmpty()) {
-			return SCHEDULE_IS_IMMUTABLE;
-		}
-
-		delete(id, schedule);
+		apply(id, MerkleSchedule::markDeleted);
 		return OK;
 	}
 
@@ -237,29 +236,54 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	@Override
 	public ResponseCodeEnum markAsExecuted(ScheduleID id) {
-		var idRes = resolve(id);
-		if (idRes == MISSING_SCHEDULE) {
-			return INVALID_SCHEDULE_ID;
+		var status = usabilityCheck(id, false);
+		if (status != OK) {
+			return status;
 		}
-
-		var schedule = get(id);
-
-		delete(id, schedule);
+		apply(id, MerkleSchedule::markExecuted);
 		return OK;
 	}
 
 	@Override
 	public void expire(EntityId entityId) {
-		markAsExecuted(entityId.toGrpcScheduleId());
+		var id = entityId.toGrpcScheduleId();
+		if (id.equals(pendingId)) {
+			throw new IllegalArgumentException(String.format(
+					"Argument 'id=%s' refers to a pending creation!",
+					readableId(id)));
+		}
+		var schedule = get(id);
+		schedules.get().remove(entityId.asMerkle());
+		existingSchedules.remove(fromMerkleSchedule(schedule));
 	}
 
 	Map<ContentAddressableSchedule, MerkleEntityId> getExistingSchedules() {
 		return existingSchedules;
 	}
 
-	private void delete(ScheduleID id, MerkleSchedule schedule) {
-		remove(id);
-		existingSchedules.remove(fromMerkleSchedule(schedule));
+	private ResponseCodeEnum usabilityCheck(
+			ScheduleID id,
+			boolean requiresMutability
+	) {
+		var idRes = resolve(id);
+		if (idRes == MISSING_SCHEDULE) {
+			return INVALID_SCHEDULE_ID;
+		}
+
+		var schedule = get(id);
+		if (schedule.isDeleted()) {
+			return SCHEDULE_WAS_DELETED;
+		}
+		if (schedule.isExecuted()) {
+			return SCHEDULE_WAS_EXECUTED;
+		}
+		if (requiresMutability) {
+			if (schedule.adminKey().isEmpty()) {
+				return SCHEDULE_IS_IMMUTABLE;
+			}
+		}
+
+		return OK;
 	}
 
 	private void remove(ScheduleID id) {
@@ -276,7 +300,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	private void throwIfMissing(ScheduleID id) {
 		if (!exists(id)) {
 			throw new IllegalArgumentException(String.format(
-					"Argument 'id=%s' does refer to an extant scheduled entity!",
+					"Argument 'id=%s' does not refer to an extant scheduled entity!",
 					readableId(id)));
 		}
 	}

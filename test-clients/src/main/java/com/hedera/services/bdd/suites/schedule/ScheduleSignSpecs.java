@@ -50,7 +50,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleSignSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
@@ -171,16 +173,21 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 
 	private HapiApiSpec addingSignaturesToExecutedTxFails() {
 		var txnBody = cryptoCreate("somebody");
+		var creation = "basicCryptoCreate";
 
 		return defaultHapiSpec("AddingSignaturesToExecutedTxFails")
 				.given(
 						cryptoCreate("somesigner"),
-						scheduleCreate("basicCryptoCreate", txnBody)
-				).when().then(
-						scheduleSign("basicCryptoCreate")
+						scheduleCreate(creation, txnBody)
+				).when(
+						getScheduleInfo(creation)
+								.isExecuted()
+								.logged()
+				).then(
+						scheduleSign(creation)
+								.via("signing")
 								.alsoSigningWith("somesigner")
-								.hasKnownStatus(INVALID_SCHEDULE_ID)
-								.noLogging()
+								.hasKnownStatus(SCHEDULE_WAS_EXECUTED)
 				);
 	}
 

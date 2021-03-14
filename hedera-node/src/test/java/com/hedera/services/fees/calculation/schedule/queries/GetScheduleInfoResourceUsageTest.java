@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -67,6 +68,8 @@ public class GetScheduleInfoResourceUsageTest {
             .setPayerAccountID(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT)
             .setSignatories(KeyList.newBuilder().addKeys(randomKey))
 			.setScheduledTransactionID(scheduledTxnId)
+            .setExecuted(true)
+            .setDeleted(false)
             .build();
 
     StateView view;
@@ -90,6 +93,8 @@ public class GetScheduleInfoResourceUsageTest {
         given(estimator.givenCurrentAdminKey(any())).willReturn(estimator);
         given(estimator.givenSignatories(any())).willReturn(estimator);
         given(estimator.givenScheduledTxnId(any())).willReturn(estimator);
+        given(estimator.givenDeleted(anyBoolean())).willReturn(estimator);
+        given(estimator.givenExecuted(anyBoolean())).willReturn(estimator);
         given(estimator.get()).willReturn(expected);
 
         GetScheduleInfoResourceUsage.factory = factory;
@@ -118,6 +123,8 @@ public class GetScheduleInfoResourceUsageTest {
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
         verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
         verify(estimator).givenScheduledTxnId(scheduledTxnId);
+        verify(estimator).givenDeleted(false);
+        verify(estimator).givenExecuted(true);
         assertSame(expected, usage);
     }
 

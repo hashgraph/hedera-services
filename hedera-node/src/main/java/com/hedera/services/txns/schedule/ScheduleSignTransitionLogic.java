@@ -66,7 +66,6 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
         	var accessor = txnCtx.accessor();
             transitionFor(accessor.getSigMap(), accessor.getTxn().getScheduleSign());
         } catch (Exception e) {
-            e.printStackTrace();
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
             txnCtx.setStatus(FAIL_INVALID);
         }

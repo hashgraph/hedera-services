@@ -54,6 +54,8 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 		this.schedule = schedule;
 	}
 
+	boolean shouldBeExecuted = false;
+	boolean shouldBeDeleted = false;
 	boolean hasExpectedScheduledTxn = false;
 	Optional<String> expectedScheduleId = Optional.empty();
 	Optional<String> expectedCreatorAccountID = Optional.empty();
@@ -66,6 +68,16 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
 	public HapiGetScheduleInfo hasScheduledIdSavedBy(String creation) {
 		expectedScheduledTxnId = Optional.of(creation);
+		return this;
+	}
+
+	public HapiGetScheduleInfo isExecuted() {
+		shouldBeExecuted = true;
+		return this;
+	}
+
+	public HapiGetScheduleInfo isDeleted() {
+		shouldBeDeleted = true;
 		return this;
 	}
 
@@ -132,6 +144,12 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 				"Wrong memo!",
 				s,
 				actualInfo.getMemo()));
+		if (shouldBeExecuted) {
+			Assert.assertTrue("Wasn't already executed!", actualInfo.getExecuted());
+		}
+		if (shouldBeDeleted) {
+			Assert.assertTrue("Wasn't deleted!", actualInfo.getDeleted());
+		}
 
 		assertFor(
 				actualInfo.getExpirationTime(),

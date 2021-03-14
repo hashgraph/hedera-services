@@ -69,6 +69,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	private byte[] grpcTxn;
 	private String memo;
 	private JKey adminKey = UNUSED_KEY;
+	private boolean deleted = false;
+	private boolean executed = false;
 	private EntityId payer = UNUSED_PAYER;
 	private EntityId schedulingAccount;
 	private RichInstant schedulingTXValidStart;
@@ -156,6 +158,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 		var that = (MerkleSchedule) o;
 		return this.expiry == that.expiry &&
+				this.executed == that.executed &&
+				this.deleted == that.deleted &&
 				Arrays.areEqual(this.grpcTxn, that.grpcTxn) &&
 				Objects.equals(this.memo, that.memo) &&
 				Objects.equals(this.payer, that.payer) &&
@@ -187,13 +191,17 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 				payer,
 				schedulingAccount,
 				schedulingTXValidStart,
-				adminKey);
+				adminKey,
+				deleted,
+				executed);
 	}
 
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleSchedule.class)
 				.add("expiry", expiry)
+				.add("executed", executed)
+				.add("deleted", deleted)
 				.add("transactionBody", hex(grpcTxn))
 				.add("memo", memo)
 				.add("payer", readablePayer())
@@ -222,6 +230,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 			witnessValidEd25519Signature(in.readByteArray(NUM_ED25519_PUBKEY_BYTES));
 		}
 		memo = serdes.readNullableString(in, UPPER_BOUND_MEMO_UTF8_BYTES);
+		executed = in.readBoolean();
+		deleted = in.readBoolean();
 	}
 
 	@Override
@@ -238,6 +248,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 			out.writeByteArray(key);
 		}
 		serdes.writeNullableString(memo, out);
+		out.writeBoolean(executed);
+		out.writeBoolean(deleted);
 	}
 
 	@Override
@@ -256,6 +268,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 		fc.setMemo(memo);
 		fc.setExpiry(expiry);
+		if (executed) {
+			fc.markExecuted();
+		}
+		if (deleted) {
+			fc.markDeleted();
+		}
 		if (payer != UNUSED_PAYER) {
 			fc.setPayer(payer);
 		}
@@ -323,5 +341,21 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 	public long expiry() {
 		return expiry;
+	}
+
+	public void markDeleted() {
+		deleted = true;
+	}
+
+	public void markExecuted() {
+		executed = true;
+	}
+
+	public boolean isExecuted() {
+		return executed;
+	}
+
+	public boolean isDeleted() {
+		return deleted;
 	}
 }

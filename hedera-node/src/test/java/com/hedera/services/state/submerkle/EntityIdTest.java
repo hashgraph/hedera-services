@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -41,6 +42,8 @@ public class EntityIdTest {
 
 	SerializableDataInputStream in;
 	SerializableDataOutputStream out;
+
+	MerkleEntityId merkleId = new MerkleEntityId(shard, realm, num);
 
 	FileID fileId = FileID.newBuilder()
 			.setShardNum(shard)
@@ -189,5 +192,6 @@ public class EntityIdTest {
 		assertEquals(contractId, subject.toGrpcContractId());
 		assertEquals(tokenId, subject.toGrpcTokenId());
 		assertEquals(scheduleId, subject.toGrpcScheduleId());
+		assertEquals(merkleId, subject.asMerkle());
 	}
 }

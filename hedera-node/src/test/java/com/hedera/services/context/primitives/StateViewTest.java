@@ -211,6 +211,8 @@ class StateViewTest {
 		schedule.witnessValidEd25519Signature("firstPretendKey".getBytes());
 		schedule.witnessValidEd25519Signature("secondPretendKey".getBytes());
 		schedule.witnessValidEd25519Signature("thirdPretendKey".getBytes());
+		schedule.markExecuted();
+		schedule.markDeleted();
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
 		given(scheduleStore.get(scheduleId)).willReturn(schedule);
@@ -315,6 +317,8 @@ class StateViewTest {
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(ByteString.copyFrom(schedule.transactionBody()), info.getTransactionBody());
 		assertEquals(schedule.scheduledTransactionId(), info.getScheduledTransactionID());
+		assertTrue(info.getExecuted());
+		assertTrue(info.getDeleted());
 	}
 
 	@Test

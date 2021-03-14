@@ -33,6 +33,7 @@ import java.util.Optional;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 
 public class ScheduleGetInfoUsage extends QueryUsage {
 	private ScheduleGetInfoUsage(Query query) {
@@ -52,6 +53,20 @@ public class ScheduleGetInfoUsage extends QueryUsage {
 
 	public ScheduleGetInfoUsage givenScheduledTxn(SchedulableTransactionBody schedulableTxn) {
 		this.updateRb(schedulableTxn.getSerializedSize());
+		return this;
+	}
+
+	public ScheduleGetInfoUsage givenDeleted(boolean flag) {
+		if (flag) {
+			this.updateRb(BOOL_SIZE);
+		}
+		return this;
+	}
+
+	public ScheduleGetInfoUsage givenExecuted(boolean flag) {
+		if (flag) {
+			this.updateRb(BOOL_SIZE);
+		}
 		return this;
 	}
 

@@ -49,6 +49,7 @@ import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -57,13 +58,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
-	private static final ScheduleID NOT_YET_RESOLVED = null;
 	private static final EnumSet<ResponseCodeEnum> ACCEPTABLE_SIGNING_OUTCOMES = EnumSet.of(OK, NO_NEW_VALID_SIGNATURES);
-
-	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	private final OptionValidator validator;
 	private final InHandleActivationHelper activationHelper;
+	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	ExecutionProcessor executor = this::processExecution;
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
@@ -95,29 +94,29 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			SignatureMap sigMap,
 			ScheduleCreateTransactionBody op
 	) throws InvalidProtocolBufferException {
-		var scheduleId = NOT_YET_RESOLVED;
 		byte[] txBytes = op.getTransactionBody().toByteArray();
 		var scheduledPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
 
 		var extantId = store.lookupScheduleId(txBytes, scheduledPayer, op.getAdminKey(), op.getMemo());
 		if (extantId.isPresent()) {
-			scheduleId = extantId.get();
-		} else {
-			var result = store.createProvisionally(
-					txBytes,
-					scheduledPayer,
-					txnCtx.activePayer(),
-					fromGrpc(txnCtx.accessor().getTxnId().getTransactionValidStart()),
-					fromJava(txnCtx.consensusTime()),
-					adminKeyFor(op),
-					Optional.of(op.getMemo()));
-			if (result.getCreated().isEmpty()) {
-				abortWith(result.getStatus());
-				return;
-			}
-			scheduleId = result.getCreated().get();
+			completeContextWith(extantId.get(), store, IDENTICAL_SCHEDULE_ALREADY_CREATED);
+			return;
 		}
 
+		var result = store.createProvisionally(
+				txBytes,
+				scheduledPayer,
+				txnCtx.activePayer(),
+				fromGrpc(txnCtx.accessor().getTxnId().getTransactionValidStart()),
+				fromJava(txnCtx.consensusTime()),
+				adminKeyFor(op),
+				Optional.of(op.getMemo()));
+		if (result.getCreated().isEmpty()) {
+			abortWith(result.getStatus());
+			return;
+		}
+
+		var scheduleId = result.getCreated().get();
 		var validScheduleKeys = classifier.validScheduleKeys(
 				txnCtx.activePayerKey(),
 				sigMap,
@@ -139,13 +138,19 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			txnCtx.addExpiringEntities(Collections.singletonList(expiringEntity));
 		}
 
-		txnCtx.setCreated(scheduleId);
-		txnCtx.setScheduledTxnId(schedule.scheduledTransactionId());
 		var finalOutcome = OK;
 		if (signingOutcome.getRight()) {
 			finalOutcome = executor.doProcess(scheduleId);
 		}
-		txnCtx.setStatus(finalOutcome == OK ? SUCCESS : finalOutcome);
+		completeContextWith(scheduleId, store, finalOutcome == OK ? SUCCESS : finalOutcome);
+	}
+
+	private void completeContextWith(ScheduleID scheduleID, ScheduleStore store, ResponseCodeEnum finalOutcome) {
+		var schedule = store.get(scheduleID);
+
+		txnCtx.setCreated(scheduleID);
+		txnCtx.setScheduledTxnId(schedule.scheduledTransactionId());
+		txnCtx.setStatus(finalOutcome);
 	}
 
 	private Optional<JKey> adminKeyFor(ScheduleCreateTransactionBody op) {

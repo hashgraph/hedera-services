@@ -41,6 +41,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_EXECUTED;
 
 public class ScheduleDeleteSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
@@ -66,9 +68,9 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 						suiteSetup(),
 						deleteWithNoAdminKeyFails(),
 						unauthorizedDeletionFails(),
-						deletingADeletedTxnFails(),
+						deletingAlreadyDeletedIsObvious(),
 						deletingNonExistingFails(),
-						deletingExecutedFails(),
+						deletingExecutedIsPointless(),
 						expiredBeforeDeletion(),
 						suiteCleanup(),
 				}
@@ -145,7 +147,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec deletingADeletedTxnFails() {
+	private HapiApiSpec deletingAlreadyDeletedIsObvious() {
 		return defaultHapiSpec("DeletingADeletedTxnFails")
 				.given(
 						cryptoCreate("sender"),
@@ -159,7 +161,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				.when().then(
 						scheduleDelete("validScheduledTxn")
 								.signedBy("admin", DEFAULT_PAYER)
-								.hasKnownStatus(INVALID_SCHEDULE_ID)
+								.hasKnownStatus(SCHEDULE_WAS_DELETED)
 				);
 	}
 
@@ -173,17 +175,18 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec deletingExecutedFails() {
+	private HapiApiSpec deletingExecutedIsPointless() {
 		return defaultHapiSpec("DeletingExpiredFails")
 				.given(
 						newKeyNamed("admin"),
 						scheduleCreate("validScheduledTxn",
-								cryptoCreate("newImmediate"))
+								cryptoCreate("newImmediate")
+						)
 								.adminKey("admin")
 				).when().then(
 						scheduleDelete("validScheduledTxn")
 								.signedBy("admin", DEFAULT_PAYER)
-								.hasKnownStatus(INVALID_SCHEDULE_ID)
+								.hasKnownStatus(SCHEDULE_WAS_EXECUTED)
 				);
 	}
 }

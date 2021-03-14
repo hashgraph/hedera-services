@@ -41,6 +41,7 @@ import java.util.Optional;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static org.junit.Assert.assertEquals;
 
 public class ScheduleGetInfoUsageTest {
@@ -73,6 +74,8 @@ public class ScheduleGetInfoUsageTest {
 				.givenSignatories(signers)
 				.givenScheduledTxn(scheduledTxn)
 				.givenMemo(memo)
+				.givenDeleted(true)
+				.givenExecuted(true)
 				.givenScheduledTxnId(scheduledTxnId);
 
 		// and:
@@ -82,6 +85,7 @@ public class ScheduleGetInfoUsageTest {
 				+ scheduledTxnId.toByteArray().length
 				+ expectedAdminBytes
 				+ signersBytes
+				+ 2 * BOOL_SIZE
 				+ SCHEDULE_ENTITY_SIZES.bytesInReprGiven(scheduledTxn, memo.size());
 
 		// when:

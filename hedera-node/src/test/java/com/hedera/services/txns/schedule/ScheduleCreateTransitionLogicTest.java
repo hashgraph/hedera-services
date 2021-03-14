@@ -49,7 +49,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,6 +57,7 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
@@ -239,12 +239,12 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesPendingScheduledTransaction() {
+	public void rejectsRecreationOfExistingSchedule() {
 		// given:
 		givenValidTxnCtx();
 
 		MerkleSchedule created = mock(MerkleSchedule.class);
-		given(created.transactionBody()).willReturn(transactionBody);
+		given(created.scheduledTransactionId()).willReturn(scheduledTxnId);
 
 		// and:
 		given(store.lookupScheduleId(
@@ -253,31 +253,20 @@ public class ScheduleCreateTransitionLogicTest {
 				eq(key),
 				argThat((String m) -> m.equals(entityMemo))))
 				.willReturn(Optional.of(schedule));
+		// and:
 		given(store.get(schedule)).willReturn(created);
-		given(store.isCreationPending()).willReturn(false);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(store).lookupScheduleId(
-				eq(transactionBody),
-				eq(payer),
-				eq(key),
-				argThat((String memo) -> Objects.equals(memo, entityMemo)));
-
-		// and:
-		verify(store, never()).createProvisionally(eq(transactionBody),
-				eq(payer),
-				eq(payer),
-				eq(RichInstant.fromJava(now)),
-				eq(RichInstant.fromJava(now)),
-				argThat(jKey -> true),
-				argThat(memo -> true));
+		verify(store, never()).createProvisionally(any(), any(), any(), any(), any(), any(), any());
 		// and:
 		verify(store, never()).commitCreation();
 		verify(txnCtx, never()).addExpiringEntities(any());
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED);
+		verify(txnCtx).setCreated(schedule);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
 	}
 
 	@Test

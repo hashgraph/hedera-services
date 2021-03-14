@@ -20,7 +20,6 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -249,6 +248,7 @@ public class MerkleScheduleTest {
 		// given:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
+		subject.markDeleted();
 
 		// when:
 		subject.serialize(out);
@@ -267,6 +267,8 @@ public class MerkleScheduleTest {
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, fpk)));
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, spk)));
 		inOrder.verify(serdes).writeNullableString(entityMemo, out);
+		inOrder.verify(out).writeBoolean(false);
+		inOrder.verify(out).writeBoolean(true);
 	}
 
 	@Test
@@ -276,6 +278,7 @@ public class MerkleScheduleTest {
 		// and:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
+		subject.markExecuted();
 
 		given(serdes.deserializeKey(fin))
 				.willReturn(adminKey);
@@ -303,7 +306,9 @@ public class MerkleScheduleTest {
 				.willReturn(schedulingAccount);
 		given(serdes.readNullableString(any(), eq(UPPER_BOUND_MEMO_UTF8_BYTES)))
 				.willReturn(entityMemo);
-
+		given(fin.readBoolean())
+				.willReturn(true)
+				.willReturn(false);
 		// and:
 		var read = new MerkleSchedule();
 
@@ -312,6 +317,32 @@ public class MerkleScheduleTest {
 
 		// then:
 		assertEquals(subject, read);
+	}
+
+	@Test
+	public void failDifferentExecution() {
+		// given:
+		other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
+		setOptionalElements(other);
+		other.markExecuted();
+
+		// expect:
+		assertNotEquals(subject, other);
+		// and:
+		assertNotEquals(subject.hashCode(), other.hashCode());
+	}
+
+	@Test
+	public void failDifferentDeletion() {
+		// given:
+		other = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
+		setOptionalElements(other);
+		other.markDeleted();
+
+		// expect:
+		assertNotEquals(subject, other);
+		// and:
+		assertNotEquals(subject.hashCode(), other.hashCode());
 	}
 
 	@Test
@@ -414,10 +445,14 @@ public class MerkleScheduleTest {
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
 		subject.witnessValidEd25519Signature(tpk);
+		subject.markDeleted();
+		subject.markExecuted();
 
 		// and:
 		var expected = "MerkleSchedule{"
 				+ "expiry=" + expiry + ", "
+				+ "executed=" + true + ", "
+				+ "deleted=" + true + ", "
 				+ "transactionBody=" + hex(transactionBody) + ", "
 				+ "memo=" + entityMemo + ", "
 				+ "payer=" + payer.toAbbrevString() + ", "
@@ -477,6 +512,9 @@ public class MerkleScheduleTest {
 
 	@Test
 	public void validCopy() {
+		// setup:
+
+		subject.markExecuted();
 		// given:
 		var copySubject = subject.copy();
 

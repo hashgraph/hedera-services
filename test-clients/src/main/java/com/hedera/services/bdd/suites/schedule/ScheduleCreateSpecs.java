@@ -103,7 +103,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				failsWithNonExistingPayerAccountId(),
 				failsWithTooLongMemo(),
 				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				retestsActivationOnCreateWithEmptySigMap(),
 				doesntTriggerUntilPayerSigns(),
 				requiresExtantPayer(),
 				rejectsFunctionlessTxn(),
@@ -230,7 +229,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
 				.given().when(
 						scheduleCreate("invalidPayer", cryptoCreate("secondary"))
-								.designatingPayer("0.0.9999")
+								.designatingPayer("1.2.3")
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				)
 				.then();
@@ -326,10 +325,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.alsoSigningWith(shouldBeDeletedEventually)
 								.sigControl(forKey(shouldBeDeletedEventually, inadequateSigs)),
 						getFileInfo(shouldBeDeletedEventually).hasDeleted(false),
-						scheduleCreate(
-								"nowValidRevocation",
-								fileDelete(shouldBeDeletedEventually)
-						)
+						scheduleSign( "notYetValidRevocation")
 								.alsoSigningWith(shouldBeDeletedEventually)
 								.sigControl(forKey(shouldBeDeletedEventually, compensatorySigs)),
 						sleepFor(1_000L),
@@ -415,13 +411,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				).then(
 						getAccountBalance("sender").hasTinyBars(1L),
 						getAccountBalance("receiver").hasTinyBars(0L),
-						scheduleCreate(
-								"basicXferWithPayerNow",
-								cryptoTransfer(
-										tinyBarsFromTo("sender", "receiver", 1L)
-								).fee(ONE_HBAR)
-						)
-								.designatingPayer("payer")
+						scheduleSign( "basicXfer")
 								.alsoSigningWith("payer"),
 						getAccountBalance("sender").hasTinyBars(0L),
 						getAccountBalance("receiver").hasTinyBars(1L)
@@ -490,33 +480,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						scheduleCreate("ok", createTopic("neverToBe"))
 				).then(
 						overriding("scheduling.whitelist", defaultWhitelist)
-				);
-	}
-
-	public HapiApiSpec retestsActivationOnCreateWithEmptySigMap() {
-		return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
-				.given(
-						newKeyNamed("a"),
-						newKeyNamed("b"),
-						newKeyListNamed("ab", List.of("a", "b"))
-				).when(
-						cryptoCreate("sender").key("ab").balance(667L),
-						scheduleCreate(
-								"deferredFall",
-								cryptoTransfer(
-										tinyBarsFromTo("sender", FUNDING, 1)
-								).fee(ONE_HBAR)
-						).alsoSigningWith("a"),
-						getAccountBalance("sender").hasTinyBars(667L),
-						cryptoUpdate("sender").key("a")
-				).then(
-						scheduleCreate(
-								"triggeredFall",
-								cryptoTransfer(
-										tinyBarsFromTo("sender", FUNDING, 1)
-								).fee(ONE_HBAR).signedBy()
-						),
-						getAccountBalance("sender").hasTinyBars(666L)
 				);
 	}
 

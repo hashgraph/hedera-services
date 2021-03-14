@@ -138,10 +138,24 @@ public class ScheduleSignTransitionLogicTest {
     @Test
     public void acceptsValidTxn() {
         givenValidTxnCtx();
-        given(store.exists(scheduleId)).willReturn(true);
 
         // expect:
         assertEquals(OK, subject.syntaxCheck().apply(scheduleSignTxn));
+    }
+
+    @Test
+    public void relaysAlreadyExecuted() throws InvalidProtocolBufferException {
+        givenValidTxnCtx();
+        given(store.get(scheduleId)).willReturn(schedule);
+        given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+
+        // when:
+        subject.doStateTransition();
+
+        // and:
+        verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+        verify(executor).doProcess(scheduleId);
+        verify(txnCtx).setStatus(SUCCESS);
     }
 
     @Test

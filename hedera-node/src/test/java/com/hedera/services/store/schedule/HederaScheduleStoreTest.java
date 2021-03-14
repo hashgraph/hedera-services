@@ -53,12 +53,15 @@ import java.util.function.Consumer;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
+import static com.hedera.services.store.schedule.ContentAddressableSchedule.fromMerkleSchedule;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_EXECUTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -162,7 +165,7 @@ public class HederaScheduleStoreTest {
                 RichInstant.MISSING_INSTANT);
         reconnectSchedule.setMemo(reconnectMemo);
         // and:
-        var expectedKey = ContentAddressableSchedule.fromMerkleSchedule(reconnectSchedule);
+        var expectedKey = fromMerkleSchedule(reconnectSchedule);
 
         // when:
         subject.rebuildViews();
@@ -469,7 +472,7 @@ public class HederaScheduleStoreTest {
                 entityMemo,
                 ofNullableAccountId(payerId),
                 transactionBody);
-        subject.existingSchedules.put(txKey, fromScheduleId(created));
+        subject.getExistingSchedules().put(txKey, fromScheduleId(created));
 
         // when:
         var scheduleId = subject.lookupScheduleId(transactionBody, payerId, adminKey, entityMemo);
@@ -489,7 +492,7 @@ public class HederaScheduleStoreTest {
                 entityMemo,
                 ofNullableAccountId(payerId),
                 extant);
-        subject.existingSchedules.put(extantKey, fromScheduleId(created));
+        subject.getExistingSchedules().put(extantKey, fromScheduleId(created));
         // and:
         given(schedule.transactionBody()).willReturn(extant);
 
@@ -529,8 +532,8 @@ public class HederaScheduleStoreTest {
         var outcome = subject.delete(created);
 
         // then:
-        verify(schedules, times(3)).containsKey(fromScheduleId(created));
-        verify(schedules).remove(fromScheduleId(created));
+        verify(schedule).markDeleted();
+        verify(schedules).replace(fromScheduleId(created), schedule);
         // and:
         assertEquals(OK, outcome);
     }
@@ -547,6 +550,42 @@ public class HederaScheduleStoreTest {
         verify(schedules, never()).remove(fromScheduleId(created));
         // and:
         assertEquals(SCHEDULE_IS_IMMUTABLE, outcome);
+    }
+
+    @Test
+    public void rejectsDeletionAlreadyDeleted() {
+        // given:
+        given(schedule.isDeleted()).willReturn(true);
+
+        // when:
+        var outcome = subject.delete(created);
+
+        // then:
+        assertEquals(SCHEDULE_WAS_DELETED, outcome);
+    }
+
+    @Test
+    public void rejectsExecutionWhenDeleted() {
+        // given:
+        given(schedule.isDeleted()).willReturn(true);
+
+        // when:
+        var outcome = subject.markAsExecuted(created);
+
+        // then:
+        assertEquals(SCHEDULE_WAS_DELETED, outcome);
+    }
+
+    @Test
+    public void rejectsExecutionWhenExecuted() {
+        // given:
+        given(schedule.isExecuted()).willReturn(true);
+
+        // when:
+        var outcome = subject.markAsExecuted(created);
+
+        // then:
+        assertEquals(SCHEDULE_WAS_EXECUTED, outcome);
     }
 
     @Test
@@ -572,33 +611,61 @@ public class HederaScheduleStoreTest {
         var outcome = subject.markAsExecuted(created);
 
         // then:
-        verify(schedules, never()).remove(fromScheduleId(created));
-        // and:
         assertEquals(INVALID_SCHEDULE_ID, outcome);
     }
 
     @Test
-    public void executesAsExpected() {
-        // given:
+    public void marksExecutedAsExpected() {
         given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
 
         // when:
-        var outcome = subject.markAsExecuted(created);
+        subject.markAsExecuted(created);
 
         // then:
-        verify(schedules, times(3)).containsKey(fromScheduleId(created));
-        verify(schedules).remove(fromScheduleId(created));
-        // and:
-        assertEquals(OK, outcome);
+        verify(schedule).markExecuted();
+        verify(schedules, never()).remove(fromScheduleId(created));
     }
 
     @Test
-    public void expiresAsExpected() {
+    void expiresAsExpected() {
+    	// setup:
+        var cas = fromMerkleSchedule(schedule);
+        // given:
+        subject.getExistingSchedules().put(cas, fromScheduleId(created));
+
         // when:
         subject.expire(EntityId.ofNullableScheduleId(created));
 
         // then:
-        verify(schedules, times(3)).containsKey(fromScheduleId(created));
         verify(schedules).remove(fromScheduleId(created));
+        // and:
+        assertFalse(subject.getExistingSchedules().containsKey(cas));
+    }
+
+    @Test
+    public void throwsOnExpiringMissingSchedule() {
+        // given:
+        given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
+
+        // when:
+        assertThrows(IllegalArgumentException.class, () -> subject.expire(EntityId.ofNullableScheduleId(created)));
+    }
+
+    @Test
+    public void throwsOnExpringPending() {
+        // setup:
+        subject
+                .createProvisionally(
+                        transactionBody,
+                        payerId,
+                        schedulingAccount,
+                        schedulingTXValidStart,
+                        consensusTime,
+                        Optional.of(adminJKey),
+                        Optional.of(entityMemo));
+
+        // when:
+        assertThrows(IllegalArgumentException.class,
+                () -> subject.expire(EntityId.ofNullableScheduleId(subject.pendingId)));
     }
 }
