@@ -84,24 +84,24 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				suiteSetup(),
-				bodyOnlyCreation(),
-				onlyBodyAndAdminCreation(),
-				onlyBodyAndMemoCreation(),
-				bodyAndSignatoriesCreation(),
-				bodyAndPayerCreation(),
-				rejectsUnresolvableReqSigners(),
+//				bodyOnlyCreation(),
+//				onlyBodyAndAdminCreation(),
+//				onlyBodyAndMemoCreation(),
+//				bodyAndSignatoriesCreation(),
+//				bodyAndPayerCreation(),
+//				rejectsUnresolvableReqSigners(),
 				triggersImmediatelyWithBothReqSimpleSigs(),
-				onlySchedulesWithMissingReqSimpleSigs(),
-				failsWithNonExistingPayerAccountId(),
-				failsWithTooLongMemo(),
-				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				doesntTriggerUntilPayerSigns(),
-				requiresExtantPayer(),
-				rejectsFunctionlessTxn(),
-				whitelistWorks(),
-				preservesRevocationServiceSemanticsForFileDelete(),
-				worksAsExpectedWithDefaultScheduleId(),
-				infoIncludesTxnIdFromCreationReceipt(),
+//				onlySchedulesWithMissingReqSimpleSigs(),
+//				failsWithNonExistingPayerAccountId(),
+//				failsWithTooLongMemo(),
+//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+//				doesntTriggerUntilPayerSigns(),
+//				requiresExtantPayer(),
+//				rejectsFunctionlessTxn(),
+//				whitelistWorks(),
+//				preservesRevocationServiceSemanticsForFileDelete(),
+//				worksAsExpectedWithDefaultScheduleId(),
+//				infoIncludesTxnIdFromCreationReceipt(),
 				suiteCleanup(),
 		});
 	}
@@ -412,6 +412,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 										.memo("Shocked, I tell you!")
 						)
 								.alsoSigningWith("sender", "receiver")
+								.via("basicXfer")
 								.recordingScheduledTxn()
 				).then(
 						getAccountBalance("sender").hasTinyBars(initialBalance - transferAmount),
