@@ -103,11 +103,15 @@ public class NftXchange {
 	}
 
 	private String myCivilianNo(int i) {
-		return civilianNo(i * nftTypeId);
+		/* If users=1000, then
+				- nftTypeId=1 starts associating with civilians _0, _1, ..., _999
+			 	- nftTypeId=2 starts associating with civilians _1000, _1001, ..., _1999
+		 */
+		return civilianNo(i + ((nftTypeId - 1) * users));
 	}
 
 	private String myCivilianKeyNo(int i) {
-		return civilianKeyNo(i * nftTypeId);
+		return civilianKeyNo(i + ((nftTypeId - 1) * users));
 	}
 
 	public List<HapiSpecOperation> initializers() {
@@ -125,7 +129,8 @@ public class NftXchange {
 		}
 
 		addAssociations(init);
-		createBnfs(init);
+//		createBnfs(init);
+		createFixedBnfs(init);
 		addSetupXfers(init);
 
 		init.add(getAccountBalance(treasury).logged());
@@ -133,9 +138,31 @@ public class NftXchange {
 		return init;
 	}
 
+	private void createFixedBnfs(List<HapiSpecOperation> init) {
+		numBnfs = users / 2;
+		if (numBnfs > serialNos) {
+			throw new IllegalStateException(String.format(
+					"Using fixed bnf creation with %d users, but not enough serial numbers (%d)!", users, serialNos));
+		}
+		init.add(withOpContext((spec, opLog) ->
+				opLog.info(" - Beginning bNf creation")
+		));
+
+		int nextSn = 0;
+		bnfs = new ArrayList<>();
+		for (int i = 0; i < users / 2; i++) {
+			int from = 2 * i, to = from + 1;
+			/* Since the treasury is actually id 0, we add 1 to from and to ids */
+			bnfs.add(new BackAndForth(from + 1, to + 1, explicitSerialNos.get(nextSn++)));
+		}
+		init.add(withOpContext((spec, opLog) ->
+				opLog.info(" - Finished creating {} bNfs that involve {} accounts", bnfs.size(), users)
+		));
+	}
+
 	private void createBnfs(List<HapiSpecOperation> init) {
 		int associations = 1 + users;
-		int maxAffordableBnfs = (int)(TREASURY_BALANCE / (2 * CIV_START_BALANCE));
+		int maxAffordableBnfs = (int) (TREASURY_BALANCE / (2 * CIV_START_BALANCE));
 		int squaredAssociations = associations * associations;
 		if (squaredAssociations < 0) {
 			squaredAssociations = MAX_NUM_BACK_AND_FORTHS;
@@ -231,7 +258,7 @@ public class NftXchange {
 
 	private void addMinting(List<HapiSpecOperation> init, final int additional) {
 		init.add(withOpContext((spec, opLog) ->
-			opLog.info("  - Minting an additional {} serial nos for {}...", additional, nftType)
+				opLog.info("  - Minting an additional {} serial nos for {}...", additional, nftType)
 		));
 		int n = additional;
 		while (n > 0) {
@@ -256,6 +283,13 @@ public class NftXchange {
 	}
 
 	public HapiSpecOperation nextOp() {
+		/* This is the worst case for G4M reuse! We wait as long as possible to reuse
+		each payer/acquirer pair, minimizing the probability G4M will help us in a given
+		round.
+
+		Compare to the best case in which there is even "traffic" within each bnf, but
+		we cluster it---so we do 10k nextOps from bnfs.get(0); then 10k nextOps from
+		bnfs.get(1), and so on. If we did this, then G4M reuse would be very high. */
 		int ni = nextBnf.getAndUpdate(i -> (i + 1) % numBnfs);
 		return bnfs.get(ni).nextOp();
 	}
