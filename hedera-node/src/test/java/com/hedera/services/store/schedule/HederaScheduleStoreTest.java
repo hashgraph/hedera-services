@@ -122,7 +122,6 @@ public class HederaScheduleStoreTest {
 		schedule = mock(MerkleSchedule.class);
 		anotherSchedule = mock(MerkleSchedule.class);
 
-		given(schedule.transactionBody()).willReturn(transactionBody);
 		given(schedule.hasAdminKey()).willReturn(true);
 		given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
 		given(schedule.payer()).willReturn(ofNullableAccountId(payerId));

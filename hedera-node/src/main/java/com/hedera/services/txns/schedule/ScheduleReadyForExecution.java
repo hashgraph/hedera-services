@@ -38,7 +38,7 @@ public abstract class ScheduleReadyForExecution {
 
     ResponseCodeEnum processExecution(ScheduleID id) throws InvalidProtocolBufferException {
         var schedule = store.get(id);
-        var transaction = schedule.asScheduledTransaction();
+        var transaction = schedule.asSignedTxn();
 
         txnCtx.trigger(
                 new TriggeredTxnAccessor(

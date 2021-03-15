@@ -123,7 +123,8 @@ public class MerkleScheduleTest {
 		assertEquals(adminKey.toString(), subject.adminKey().get().toString());
 		assertEquals(schedulingTXValidStart, subject.schedulingTXValidStart());
 		assertEquals(scheduledTxn, subject.scheduledTxn());
-		assertEquals(expectedSignedTxn(), subject.asScheduledTransaction());
+		assertEquals(ordinaryVersionOfScheduledTxn, subject.ordinaryViewOfScheduledTxn());
+		assertEquals(expectedSignedTxn(), subject.asSignedTxn());
 		assertArrayEquals(bodyBytes, subject.bodyBytes());
 	}
 
@@ -244,6 +245,11 @@ public class MerkleScheduleTest {
 
 		// then:
 		assertEquals(subject, read);
+		assertTrue(subject.signatories().contains(fpk));
+		assertTrue(subject.signatories().contains(spk));
+		assertTrue(subject.isExecuted());
+		assertFalse(subject.isDeleted());
+		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
 	}
 
 	@Test
@@ -397,7 +403,7 @@ public class MerkleScheduleTest {
 		assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
 		assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
 		assertEquals(scheduledTxn, copySubject.scheduledTxn());
-		assertEquals(expectedSignedTxn(), copySubject.asScheduledTransaction());
+		assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
 		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
 	}
 
@@ -442,6 +448,8 @@ public class MerkleScheduleTest {
 					.setDeleteAccountID(IdUtils.asAccount("0.0.2"))
 					.setTransferAccountID(IdUtils.asAccount("0.0.75231")))
 			.build();
+
+	private static final TransactionBody ordinaryVersionOfScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 
 	ReplScheduleCreateTransactionBody creation = ReplScheduleCreateTransactionBody.newBuilder()
 			.setAdminKey(MiscUtils.asKeyUnchecked(adminKey))

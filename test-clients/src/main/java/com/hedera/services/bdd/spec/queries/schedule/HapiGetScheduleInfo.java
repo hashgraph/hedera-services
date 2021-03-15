@@ -24,8 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
-import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
@@ -56,7 +54,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
 	boolean shouldBeExecuted = false;
 	boolean shouldBeDeleted = false;
-	boolean hasExpectedScheduledTxn = false;
+	boolean checkForRecordedScheduledTxn = false;
 	Optional<String> expectedScheduleId = Optional.empty();
 	Optional<String> expectedCreatorAccountID = Optional.empty();
 	Optional<String> expectedPayerAccountID = Optional.empty();
@@ -96,8 +94,8 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 		return this;
 	}
 
-	public HapiGetScheduleInfo hasExpectedScheduledTxn() {
-		hasExpectedScheduledTxn = true;
+	public HapiGetScheduleInfo hasRecordedScheduledTxn() {
+		checkForRecordedScheduledTxn = true;
 		return this;
 	}
 
@@ -144,6 +142,15 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 				"Wrong memo!",
 				s,
 				actualInfo.getMemo()));
+
+		if (checkForRecordedScheduledTxn) {
+			Assert.assertEquals("Wrong scheduled txn!",
+					spec.registry().getScheduledTxn(schedule),
+					actualInfo.getScheduledTransactionBody());
+		}
+
+
+		/* TODO - convert to timestamp assertions */
 		if (shouldBeExecuted) {
 			Assert.assertTrue("Wasn't already executed!", actualInfo.getExecuted());
 		}

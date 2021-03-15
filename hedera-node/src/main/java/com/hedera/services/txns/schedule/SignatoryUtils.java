@@ -90,9 +90,8 @@ public class SignatoryUtils {
 	}
 
 	private static boolean isReady(MerkleSchedule schedule, InHandleActivationHelper activationHelper) {
-		var scheduledTxn = uncheckedParse(schedule.transactionBody());
 		return activationHelper.areScheduledPartiesActive(
-				scheduledTxn,
+				schedule.ordinaryViewOfScheduledTxn(),
 				(key, sig) -> schedule.hasValidEd25519Signature(key.getEd25519()));
 	}
 
@@ -106,13 +105,5 @@ public class SignatoryUtils {
 			}
 		});
 		return witnessedNew.get();
-	}
-
-	private static TransactionBody uncheckedParse(byte[] rawScheduledTxn) {
-		try {
-			return TransactionBody.parseFrom(rawScheduledTxn);
-		} catch (InvalidProtocolBufferException e) {
-			throw new IllegalArgumentException(e);
-		}
 	}
 }

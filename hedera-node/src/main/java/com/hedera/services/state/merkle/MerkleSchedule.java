@@ -39,7 +39,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.codec.binary.Hex;
-import org.bouncycastle.util.Arrays;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,7 +49,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.protobuf.ByteString.copyFrom;
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.asOrdinary;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
@@ -82,6 +80,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	private long expiry;
 
 	private byte[] bodyBytes;
+	private TransactionBody ordinaryScheduledTxn;
 	private SchedulableTransactionBody scheduledTxn;
 
 	private Set<ByteString> notary = ConcurrentHashMap.newKeySet();
@@ -121,13 +120,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		}
 	}
 
-	public Transaction asScheduledTransaction() {
+	public Transaction asSignedTxn() {
 		return Transaction.newBuilder()
 				.setSignedTransactionBytes(
 						SignedTransaction.newBuilder()
 								.setBodyBytes(
 										TransactionBody.newBuilder()
-												.mergeFrom(asOrdinary(scheduledTxn))
+												.mergeFrom(ordinaryScheduledTxn)
 												.setTransactionID(scheduledTransactionId())
 												.build()
 												.toByteString())
@@ -232,6 +231,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	public MerkleSchedule copy() {
 		var fc = new MerkleSchedule();
 
+		/* These fields are all immutable or effectively immutable, we can share them between copies */
 		fc.grpcAdminKey = grpcAdminKey;
 		fc.adminKey = adminKey;
 		fc.memo = memo;
@@ -243,6 +243,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		fc.expiry = expiry;
 		fc.bodyBytes = bodyBytes;
 		fc.scheduledTxn = scheduledTxn;
+		fc.ordinaryScheduledTxn = ordinaryScheduledTxn;
+
+		/* Signatories are decidedly mutable */
 		for (byte[] signatory : signatories) {
 			fc.witnessValidEd25519Signature(signatory);
 		}
@@ -336,6 +339,10 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		return deleted;
 	}
 
+	public TransactionBody ordinaryViewOfScheduledTxn() {
+		return ordinaryScheduledTxn;
+	}
+
 	public SchedulableTransactionBody scheduledTxn() {
 		return scheduledTxn;
 	}
@@ -367,6 +374,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 			}
 			scheduledTxn = parentTxn.getReplScheduleCreate().getScheduledTransactionBody();
 			schedulingAccount = EntityId.ofNullableAccountId(parentTxn.getTransactionID().getAccountID());
+			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
 		} catch (InvalidProtocolBufferException e) {
 			throw new IllegalArgumentException(String.format(

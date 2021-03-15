@@ -148,7 +148,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasScheduleCreate;
+		return TransactionBody::hasReplScheduleCreate;
 	}
 
 	@Override
@@ -158,7 +158,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		var validity = OK;
-		ScheduleCreateTransactionBody op = txnBody.getScheduleCreate();
+		var op = txnBody.getReplScheduleCreate();
 		validity = checkAdminKey(op.hasAdminKey(), op.getAdminKey());
 		if (validity != OK) {
 			return validity;

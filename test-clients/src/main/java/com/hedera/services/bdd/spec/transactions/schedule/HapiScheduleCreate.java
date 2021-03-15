@@ -25,7 +25,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.keys.TrieSigMapGenerator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.schedule.ScheduleUtils;
@@ -33,8 +32,8 @@ import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -46,17 +45,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
-import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.fromOrdinary;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.util.stream.Collectors.toList;
 
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
 	private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
@@ -64,21 +62,23 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private static final int defaultScheduleTxnExpiry = HapiSpecSetup.getDefaultNodeProps()
 			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
-	private boolean scheduleNonsense = false;
+	private boolean recordScheduledTxn = false;
 	private boolean skipRegistryUpdate = false;
 	private boolean scheduleNoFunction = false;
 	private boolean saveExpectedScheduledTxnId = false;
 	private ByteString bytesSigned = ByteString.EMPTY;
 	private List<String> initialSigners = Collections.emptyList();
-	private final String entity;
-	private final HapiTxnOp<T> scheduled;
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<String> payerAccountID = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
 	private Optional<BiConsumer<String, byte[]>> successCb = Optional.empty();
+	private AtomicReference<SchedulableTransactionBody> scheduledTxn = new AtomicReference<>();
+
+	private final String scheduleEntity;
+	private final HapiTxnOp<T> scheduled;
 
 	public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
-		this.entity = scheduled;
+		this.scheduleEntity = scheduled;
 		this.scheduled = txn
 				.withLegacyProtoStructure()
 				.sansTxnId()
@@ -91,13 +91,13 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
-	public HapiScheduleCreate<T> rememberingNothing() {
-		skipRegistryUpdate = true;
+	public HapiScheduleCreate<T> recordingScheduledTxn() {
+		recordScheduledTxn = true;
 		return this;
 	}
 
-	public HapiScheduleCreate<T> garbled() {
-		scheduleNonsense = true;
+	public HapiScheduleCreate<T> rememberingNothing() {
+		skipRegistryUpdate = true;
 		return this;
 	}
 
@@ -145,17 +145,20 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var subOp = scheduled.signedTxnFor(spec);
 
-		ScheduleCreateTransactionBody opBody = spec
+		ReplScheduleCreateTransactionBody opBody = spec
 				.txns()
-				.<ScheduleCreateTransactionBody, ScheduleCreateTransactionBody.Builder>body(
-						ScheduleCreateTransactionBody.class, b -> {
-							if (scheduleNonsense) {
-								b.setTransactionBody(ByteString.copyFromUtf8("NONSENSE"));
-							} else if (scheduleNoFunction) {
-								b.setTransactionBody(ByteString.copyFrom(
-										TransactionBody.getDefaultInstance().toByteArray()));
+				.<ReplScheduleCreateTransactionBody, ReplScheduleCreateTransactionBody.Builder>body(
+						ReplScheduleCreateTransactionBody.class, b -> {
+							if (scheduleNoFunction) {
+								b.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
 							} else {
-								b.setTransactionBody(subOp.getBodyBytes());
+								try {
+									var deserializedTxn = TransactionBody.parseFrom(subOp.getBodyBytes());
+									scheduledTxn.set(ScheduleUtils.fromOrdinary(deserializedTxn));
+									b.setScheduledTransactionBody(scheduledTxn.get());
+								} catch (InvalidProtocolBufferException fatal) {
+									throw new IllegalStateException("Couldn't deserialize serialized TransactionBody!");
+								}
 							}
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							entityMemo.ifPresent(b::setMemo);
@@ -165,7 +168,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							});
 						}
 				);
-		return b -> b.setScheduleCreate(opBody);
+		return b -> b.setReplScheduleCreate(opBody);
 	}
 
 
@@ -199,7 +202,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
-				.add("entity", entity);
+				.add("entity", scheduleEntity);
 		helper.add("id", createdSchedule().orElse("<N/A>"));
 		return helper;
 	}
@@ -210,7 +213,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 			return;
 		}
 		if (verboseLoggingOn) {
-			log.info("Created schedule '{}' as {}", entity, createdSchedule().get());
+			log.info("Created schedule '{}' as {}", scheduleEntity, createdSchedule().get());
 		}
 		successCb.ifPresent(cb -> cb.accept(
 				asScheduleString(lastReceipt.getScheduleID()),
@@ -219,14 +222,20 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 			return;
 		}
 		var registry = spec.registry();
-		registry.saveScheduleId(entity, lastReceipt.getScheduleID());
-		registry.saveExpiry(entity, (long)defaultScheduleTxnExpiry);
-		adminKey.ifPresent(k -> registry.saveAdminKey(entity, spec.registry().getKey(k)));
+		registry.saveScheduleId(scheduleEntity, lastReceipt.getScheduleID());
+		registry.saveExpiry(scheduleEntity, (long) defaultScheduleTxnExpiry);
+		adminKey.ifPresent(k -> registry.saveAdminKey(scheduleEntity, spec.registry().getKey(k)));
 		if (saveExpectedScheduledTxnId) {
 			if (verboseLoggingOn) {
 				log.info("Returned receipt for scheduled txn is {}", lastReceipt.getScheduledTransactionID());
 			}
-			registry.saveTxnId(correspondingScheduledTxnId(entity), lastReceipt.getScheduledTransactionID());
+			registry.saveTxnId(correspondingScheduledTxnId(scheduleEntity), lastReceipt.getScheduledTransactionID());
+		}
+		if (recordScheduledTxn) {
+			if (verboseLoggingOn) {
+				log.info("Created scheduled txn {}", scheduledTxn.get());
+			}
+			registry.saveScheduledTxn(scheduleEntity, scheduledTxn.get());
 		}
 	}
 

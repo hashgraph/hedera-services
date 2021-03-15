@@ -26,7 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,11 +63,12 @@ public class ScheduleCreateResourceUsageTest {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleCreateTxn = mock(TransactionBody.class);
-        given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
-        given(scheduleCreateTxn.getScheduleCreate()).willReturn(ScheduleCreateTransactionBody.getDefaultInstance());
+        given(scheduleCreateTxn.hasReplScheduleCreate()).willReturn(true);
+        given(scheduleCreateTxn.getReplScheduleCreate())
+                .willReturn(ReplScheduleCreateTransactionBody.getDefaultInstance());
 
         nonScheduleCreateTxn = mock(TransactionBody.class);
-        given(nonScheduleCreateTxn.hasScheduleCreate()).willReturn(false);
+        given(nonScheduleCreateTxn.hasReplScheduleCreate()).willReturn(false);
 
         usage = mock(ScheduleCreateUsage.class);
         given(usage.givenScheduledTxExpirationTimeSecs(anyInt())).willReturn(usage);

@@ -636,14 +636,6 @@ public class UtilVerbs {
 				).toArray(n -> new HapiSpecOperation[n]));
 	}
 
-	public static HapiSpecOperation[] takeBalanceSnapshotsWithGenesis(String... entities) {
-		return HapiApiSuite.flattened(
-				Stream.of(entities).map(account ->
-						balanceSnapshot(
-								spec -> asAccountString(spec.registry().getAccountID(account)) + "Snapshot", account)
-				).toArray(n -> new HapiSpecOperation[n]));
-	}
-
 	public static HapiSpecOperation validateRecordTransactionFees(String txn) {
 		return validateRecordTransactionFees(txn,
 				Set.of(
@@ -751,44 +743,5 @@ public class UtilVerbs {
 	public static boolean isNotThrottleProp(Setting setting) {
 		var name = setting.getName();
 		return !name.startsWith("hapi.throttling");
-	}
-
-	public static HapiSpecOperation ensureIdempotentlyCreated(String txId, String otherTxId) {
-		return withOpContext((spec, opLog) -> {
-			var firstTx = getTxnRecord(txId);
-			var secondTx = getTxnRecord(otherTxId);
-			allRunFor(spec, firstTx, secondTx);
-			assertEquals(
-					firstTx.getResponseRecord().getReceipt().getScheduleID(),
-					secondTx.getResponseRecord().getReceipt().getScheduleID());
-		});
-	}
-
-	public static HapiSpecOperation ensureDifferentScheduledTXCreated(String txId, String otherTxId) {
-		return withOpContext((spec, opLog) -> {
-			var txRecord = getTxnRecord(txId);
-			var otherTxRecord = getTxnRecord(otherTxId);
-
-			allRunFor(spec, txRecord, otherTxRecord);
-
-			Assert.assertNotEquals(
-					"Schedule Ids should not be the same!",
-					txRecord.getResponseRecord().getReceipt().getScheduleID(),
-					otherTxRecord.getResponseRecord().getReceipt().getScheduleID());
-		});
-	}
-
-	public static HapiSpecOperation saveExpirations(String txId, String otherTxId, long afterConsensusTime) {
-		return withOpContext((spec, opLog) -> {
-			var txRecord = getTxnRecord(txId);
-			var otherTxRecord = getTxnRecord(otherTxId);
-
-			allRunFor(spec, txRecord, otherTxRecord);
-
-			var timestampFirst = txRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
-			var timestampSecond = otherTxRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
-			spec.registry().saveExpiry("first", timestampFirst + afterConsensusTime);
-			spec.registry().saveExpiry("second", timestampSecond + afterConsensusTime);
-		});
 	}
 }

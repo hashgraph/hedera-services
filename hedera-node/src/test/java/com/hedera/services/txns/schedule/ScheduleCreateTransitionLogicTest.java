@@ -20,7 +20,6 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
@@ -37,7 +36,8 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -152,8 +152,8 @@ public class ScheduleCreateTransitionLogicTest {
 		// setup:
 		givenValidTxnCtx();
 		// and:
-		given(merkleSchedule.payer()).willReturn(EntityId.ofNullableAccountId(payer));
-		given(merkleSchedule.asScheduledTransaction()).willReturn(Transaction.getDefaultInstance());
+		given(merkleSchedule.effectivePayer()).willReturn(EntityId.ofNullableAccountId(payer));
+		given(merkleSchedule.asSignedTxn()).willReturn(Transaction.getDefaultInstance());
 		given(store.get(schedule)).willReturn(merkleSchedule);
 		// and:
 		given(store.markAsExecuted(schedule)).willReturn(OK);
@@ -182,7 +182,6 @@ public class ScheduleCreateTransitionLogicTest {
 	public void followsHappyPath() {
 		// setup:
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(merkleSchedule.transactionBody()).willReturn(bodyBytes);
 		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
 
 		givenValidTxnCtx();
@@ -208,7 +207,6 @@ public class ScheduleCreateTransitionLogicTest {
 	public void followsHappyPathEvenIfNoNewValidSignatures() {
 		// setup:
 		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(merkleSchedule.transactionBody()).willReturn(bodyBytes);
 		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
 
 		givenValidTxnCtx();
@@ -351,17 +349,17 @@ public class ScheduleCreateTransitionLogicTest {
 				).build();
 
 		var builder = TransactionBody.newBuilder();
-		var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
+		var scheduleCreate = ReplScheduleCreateTransactionBody.newBuilder()
 				.setAdminKey(key)
 				.setPayerAccountID(payer)
 				.setMemo(entityMemo)
-				.setTransactionBody(ByteString.copyFrom(bodyBytes));
+				.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
 
 		if (invalidAdminKey) {
 			scheduleCreate.setAdminKey(invalidKey);
 		}
 		builder.setTransactionID(txnId);
-		builder.setScheduleCreate(scheduleCreate);
+		builder.setReplScheduleCreate(scheduleCreate);
 
 		scheduleCreateTxn = builder.build();
 

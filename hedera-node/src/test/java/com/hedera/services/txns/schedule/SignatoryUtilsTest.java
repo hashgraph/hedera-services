@@ -28,7 +28,7 @@ import static org.mockito.BDDMockito.*;
 @ExtendWith(MockitoExtension.class)
 class SignatoryUtilsTest {
 	private JKey goodKey = new JEd25519Key("angelic".getBytes());
-	private byte[] scheduledTxn = TransactionBody.getDefaultInstance().toByteArray();
+	private TransactionBody scheduledTxn = TransactionBody.getDefaultInstance();
 	private ScheduleID id = IdUtils.asSchedule("0.0.75231");
 	private Optional<List<JKey>> noValidNoInvalid = Optional.of(Collections.emptyList());
 	private Optional<List<JKey>> goodValidNoInvalid = Optional.of(List.of(goodKey));
@@ -43,7 +43,7 @@ class SignatoryUtilsTest {
 	@Test
 	void respondsToNoAttemptsCorrectly() {
 		given(store.get(id)).willReturn(schedule);
-		given(schedule.transactionBody()).willReturn(scheduledTxn);
+		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(false);
 
 		// when:
@@ -56,7 +56,7 @@ class SignatoryUtilsTest {
 	@Test
 	void respondsToNoAttemptsButNowActiveCorrectly() {
 		given(store.get(id)).willReturn(schedule);
-		given(schedule.transactionBody()).willReturn(scheduledTxn);
+		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 
 		// when:
@@ -80,7 +80,7 @@ class SignatoryUtilsTest {
 	@Test
 	void respondsToRepeatedCorrectlyIfNotActive() {
 		given(store.get(id)).willReturn(schedule);
-		given(schedule.transactionBody()).willReturn(scheduledTxn);
+		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(false);
 		// and:
 		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(false);
@@ -100,7 +100,7 @@ class SignatoryUtilsTest {
 	@Test
 	void respondsToRepeatedCorrectlyIfActive() {
 		given(store.get(id)).willReturn(schedule);
-		given(schedule.transactionBody()).willReturn(scheduledTxn);
+		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
 		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(false);
@@ -120,7 +120,7 @@ class SignatoryUtilsTest {
 	@Test
 	void respondsToActivatingCorrectly() {
 		given(store.get(id)).willReturn(schedule);
-		given(schedule.transactionBody()).willReturn(scheduledTxn);
+		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
 		given(activationHelper.areScheduledPartiesActive(any(), any())).willReturn(true);
 		// and:
 		given(schedule.witnessValidEd25519Signature(eq(goodKey.getEd25519()))).willReturn(true);

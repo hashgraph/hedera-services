@@ -135,7 +135,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public boolean canTriggerTxn() {
-		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
+		return getTxn().hasReplScheduleCreate() || getTxn().hasScheduleSign();
 	}
 
 	public boolean isTriggeredTxn() { return false; }

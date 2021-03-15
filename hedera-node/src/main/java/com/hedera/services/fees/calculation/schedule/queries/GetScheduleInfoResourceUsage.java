@@ -36,8 +36,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage.fromOrdinary;
-import static com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage.parseUnchecked;
 import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
 
@@ -77,7 +75,7 @@ public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator
 			queryCtx.ifPresent(ctx -> ctx.put(SCHEDULE_INFO_CTX_KEY, info));
 			var estimate = factory.apply(query)
 					.givenScheduledTxnId(info.getScheduledTransactionID())
-					.givenScheduledTxn(fromOrdinary(parseUnchecked(info.getTransactionBody())))
+					.givenScheduledTxn(info.getScheduledTransactionBody())
 					.givenDeleted(info.getDeleted())
 					.givenExecuted(info.getExecuted())
 					.givenMemo(info.getMemoBytes())
@@ -92,5 +90,4 @@ public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator
 	private static <T, K> Optional<T> ifPresent(K info, Predicate<K> check, Function<K, T> getter) {
 		return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
 	}
-
 }

@@ -22,14 +22,10 @@ package com.hedera.services.sigs.metadata;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import java.util.Objects;
 import java.util.Optional;
-
-import static com.hedera.services.utils.MiscUtils.asOrdinary;
 
 public class ScheduleSigningMetadata {
     private final Optional<JKey> adminKey;
@@ -49,7 +45,7 @@ public class ScheduleSigningMetadata {
     public static ScheduleSigningMetadata from(MerkleSchedule schedule) {
         return new ScheduleSigningMetadata(
                 schedule.adminKey(),
-                asOrdinary(schedule.scheduledTxn()),
+                schedule.ordinaryViewOfScheduledTxn(),
                 schedule.hasExplicitPayer() ? Optional.of(schedule.payer().toGrpcAccountId()) : Optional.empty());
     }
 
