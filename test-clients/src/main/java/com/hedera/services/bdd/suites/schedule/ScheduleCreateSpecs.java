@@ -61,7 +61,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
@@ -84,26 +83,26 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				suiteSetup(),
-//				bodyOnlyCreation(),
-//				onlyBodyAndAdminCreation(),
-//				onlyBodyAndMemoCreation(),
-//				bodyAndSignatoriesCreation(),
-//				bodyAndPayerCreation(),
-//				rejectsUnresolvableReqSigners(),
-//				triggersImmediatelyWithBothReqSimpleSigs(),
-//				onlySchedulesWithMissingReqSimpleSigs(),
-//				failsWithNonExistingPayerAccountId(),
-//				failsWithTooLongMemo(),
-//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-//				doesntTriggerUntilPayerSigns(),
-//				requiresExtantPayer(),
-//				rejectsFunctionlessTxn(),
-//				whitelistWorks(),
+				suiteSetup(),
+				bodyOnlyCreation(),
+				onlyBodyAndAdminCreation(),
+				onlyBodyAndMemoCreation(),
+				bodyAndSignatoriesCreation(),
+				bodyAndPayerCreation(),
+				rejectsUnresolvableReqSigners(),
+				triggersImmediatelyWithBothReqSimpleSigs(),
+				onlySchedulesWithMissingReqSimpleSigs(),
+				failsWithNonExistingPayerAccountId(),
+				failsWithTooLongMemo(),
+				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+				doesntTriggerUntilPayerSigns(),
+				requiresExtantPayer(),
+				rejectsFunctionlessTxn(),
+				whitelistWorks(),
 				preservesRevocationServiceSemanticsForFileDelete(),
-//				worksAsExpectedWithDefaultScheduleId(),
-//				infoIncludesTxnIdFromCreationReceipt(),
-//				suiteCleanup(),
+				worksAsExpectedWithDefaultScheduleId(),
+				infoIncludesTxnIdFromCreationReceipt(),
+				suiteCleanup(),
 		});
 	}
 
@@ -259,7 +258,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				).when().then(
 						getScheduleInfo("creation")
 								.hasScheduleId("creation")
-								.hasScheduledIdSavedBy("creation")
+								.hasScheduledTxnIdSavedBy("creation")
 								.logged()
 				);
 	}

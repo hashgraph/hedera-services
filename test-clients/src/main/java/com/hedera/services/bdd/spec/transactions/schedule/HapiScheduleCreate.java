@@ -186,7 +186,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
 		var estimate = ScheduleCreateUsage.newEstimate(txn, suFrom(svo))
 				.givenScheduledTxExpirationTimeSecs(defaultScheduleTxnExpiry)
-				.givenScheduledTxn(fromOrdinary(parseUnchecked(txn.getScheduleCreate().getTransactionBody())))
+				.givenScheduledTxn(txn.getReplScheduleCreate().getScheduledTransactionBody())
 				.get();
 		return estimate;
 	}

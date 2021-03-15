@@ -64,7 +64,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	Optional<List<String>> expectedSignatories = Optional.empty();
 	Optional<Boolean> expectedExpiry = Optional.empty();
 
-	public HapiGetScheduleInfo hasScheduledIdSavedBy(String creation) {
+	public HapiGetScheduleInfo hasScheduledTxnIdSavedBy(String creation) {
 		expectedScheduledTxnId = Optional.of(creation);
 		return this;
 	}
