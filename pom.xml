@@ -26,6 +26,12 @@
 
   <developers>
     <developer>
+      <name>Abhishek Pandey</name>
+      <email>abhishek.pandey@hedera.com</email>
+      <organization>Hedera Hashgraph, LLC</organization>
+      <organizationUrl>https://www.hedera.com</organizationUrl>
+    </developer>
+    <developer>
       <name>Anirudh Ghanta</name>
       <email>Anirudh.Ghanta@hedera.com</email>
       <organization>Hedera Hashgraph, LLC</organization>
