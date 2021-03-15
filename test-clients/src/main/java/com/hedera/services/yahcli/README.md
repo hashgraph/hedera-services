@@ -63,3 +63,33 @@ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -p 2 -n preview
 
 If you dont specify a destination directory, by default the file will be downloaded to `previewnet/sysfiles/`
 
+## More Examples
+### Scenario 1 : Updating Throttles
+To update throttles put on services.
+
+Run the following command to download the `application.properties` file.
+```
+docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -p 2 -n previewnet sysfiles download props
+```
+
+Human Readable `applicaiton.properties` file will be downloaded to `previewnet/sysfiles/` folder.
+Update the required throttles in the properties file and perform a sysfile upload operation.
+
+```
+docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -p 2 -n previewnet sysfiles upload props
+```
+
+### Scenario 2 : Enable/Disable a Service
+To Enable/Disable permission for an operation.
+
+Run the following command to download the `api-permission.properties` file.
+```
+docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -p 2 -n previewnet sysfiles download permissions
+```
+
+Human Readable `api-permission.properties` file will be downloaded to `previewnet/sysfiles/` folder.
+Update the file by Enabling or Disabling a service and perform a sysfile upload operation. 
+
+```
+docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -p 2 -n previewnet sysfiles upload permissions
+```
