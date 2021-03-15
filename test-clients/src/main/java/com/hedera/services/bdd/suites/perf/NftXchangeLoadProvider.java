@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.nft.NftXchange.civilianKeyNo;
 import static com.hedera.services.bdd.suites.nft.NftXchange.civilianNo;
+import static com.hedera.services.bdd.suites.perf.PerfUtilOps.nftOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
@@ -87,7 +88,8 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 	private HapiApiSpec runNftXchange() {
 		return HapiApiSpec.defaultHapiSpec("RunNftXchange")
 				.given(
-						stdMgmtOf(duration, unit, maxOpsPerSec)
+						stdMgmtOf(duration, unit, maxOpsPerSec),
+						nftOpsEnablement()
 				).when(
 						runWithProvider(nftXchangeFactory())
 								.lasting(duration::get, unit::get)

@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRE
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.A_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static java.util.Map.entry;
 
@@ -59,7 +60,7 @@ public class PerfUtilOps {
 
 	public static HapiTxnOp tokenOpsEnablement() {
 		return fileUpdate(API_PERMISSIONS)
-				.fee(9_999_999_999L)
+				.fee(A_HUNDRED_HBARS)
 				.payingWith(GENESIS)
 				.overridingProps(Map.ofEntries(
 						entry("tokenCreate", "0-*"),
@@ -75,6 +76,17 @@ public class PerfUtilOps {
 						entry("tokenGetInfo", "0-*"),
 						entry("tokenAssociateToAccount", "0-*"),
 						entry("tokenDissociateFromAccount", "0-*")
+				));
+	}
+
+	public static HapiTxnOp nftOpsEnablement() {
+		return fileUpdate(API_PERMISSIONS)
+				.fee(A_HUNDRED_HBARS)
+				.payingWith(GENESIS)
+				.overridingProps(Map.ofEntries(
+						entry("nftMint", "0-*"),
+						entry("nftCreate", "0-*"),
+						entry("nftAssociate", "0-*")
 				));
 	}
 }
