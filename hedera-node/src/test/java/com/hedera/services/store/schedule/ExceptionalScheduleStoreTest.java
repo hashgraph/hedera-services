@@ -39,7 +39,6 @@ class ExceptionalScheduleStoreTest {
         assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::commitCreation);
         assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::rollbackCreation);
         assertThrows(UnsupportedOperationException.class, NOOP_SCHEDULE_STORE::isCreationPending);
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_SCHEDULE_STORE.lookupScheduleId(null, null, null, null));
         // and:
         assertDoesNotThrow(() -> NOOP_SCHEDULE_STORE.setAccountsLedger(null));
         assertDoesNotThrow(() -> NOOP_SCHEDULE_STORE.setHederaLedger(null));

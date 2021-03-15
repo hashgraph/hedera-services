@@ -23,13 +23,12 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -40,14 +39,11 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.state.submerkle.RichInstant.fromGrpc;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -59,12 +55,14 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
 	private static final EnumSet<ResponseCodeEnum> ACCEPTABLE_SIGNING_OUTCOMES = EnumSet.of(OK, NO_NEW_VALID_SIGNATURES);
+	static final long UNKNOWN_EXPIRY = 0L;
 
 	private final OptionValidator validator;
 	private final InHandleActivationHelper activationHelper;
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	ExecutionProcessor executor = this::processExecution;
+	MerkleScheduleFactory scheduleFactory = MerkleSchedule::from;
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
 
@@ -83,34 +81,25 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	public void doStateTransition() {
 		try {
 			var accessor = txnCtx.accessor();
-			transitionFor(accessor.getSigMap(), accessor.getTxn().getScheduleCreate());
+			transitionFor(accessor.getTxnBytes(), accessor.getSigMap());
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
 			abortWith(FAIL_INVALID);
 		}
 	}
 
-	private void transitionFor(
-			SignatureMap sigMap,
-			ScheduleCreateTransactionBody op
-	) throws InvalidProtocolBufferException {
-		byte[] txBytes = op.getTransactionBody().toByteArray();
-		var scheduledPayer = op.hasPayerAccountID() ? op.getPayerAccountID() : txnCtx.activePayer();
-
-		var extantId = store.lookupScheduleId(txBytes, scheduledPayer, op.getAdminKey(), op.getMemo());
-		if (extantId.isPresent()) {
-			completeContextWith(extantId.get(), store, IDENTICAL_SCHEDULE_ALREADY_CREATED);
+	private void transitionFor(byte[] bodyBytes, SignatureMap sigMap) throws InvalidProtocolBufferException {
+		var query = store.lookupSchedule(bodyBytes);
+		if (query.getLeft().isPresent()) {
+			completeContextWith(
+					query.getLeft().get(),
+					query.getRight(),
+					IDENTICAL_SCHEDULE_ALREADY_CREATED);
 			return;
 		}
 
-		var result = store.createProvisionally(
-				txBytes,
-				scheduledPayer,
-				txnCtx.activePayer(),
-				fromGrpc(txnCtx.accessor().getTxnId().getTransactionValidStart()),
-				fromJava(txnCtx.consensusTime()),
-				adminKeyFor(op),
-				Optional.of(op.getMemo()));
+		var schedule = query.getRight();
+		var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
 		if (result.getCreated().isEmpty()) {
 			abortWith(result.getStatus());
 			return;
@@ -128,7 +117,6 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			return;
 		}
 
-		var schedule = store.get(scheduleId);
 		if (store.isCreationPending()) {
 			store.commitCreation();
 			var expiringEntity = new ExpiringEntity(
@@ -142,19 +130,13 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 		if (signingOutcome.getRight()) {
 			finalOutcome = executor.doProcess(scheduleId);
 		}
-		completeContextWith(scheduleId, store, finalOutcome == OK ? SUCCESS : finalOutcome);
+		completeContextWith(scheduleId, schedule, finalOutcome == OK ? SUCCESS : finalOutcome);
 	}
 
-	private void completeContextWith(ScheduleID scheduleID, ScheduleStore store, ResponseCodeEnum finalOutcome) {
-		var schedule = store.get(scheduleID);
-
+	private void completeContextWith(ScheduleID scheduleID, MerkleSchedule schedule, ResponseCodeEnum finalOutcome) {
 		txnCtx.setCreated(scheduleID);
 		txnCtx.setScheduledTxnId(schedule.scheduledTransactionId());
 		txnCtx.setStatus(finalOutcome);
-	}
-
-	private Optional<JKey> adminKeyFor(ScheduleCreateTransactionBody op) {
-		return op.hasAdminKey() ? asUsableFcKey(op.getAdminKey()) : Optional.empty();
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {
@@ -186,5 +168,10 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			return MEMO_TOO_LONG;
 		}
 		return validity;
+	}
+
+	@FunctionalInterface
+	interface MerkleScheduleFactory {
+		MerkleSchedule createFrom(byte[] bodyBytes, long expiry);
 	}
 }

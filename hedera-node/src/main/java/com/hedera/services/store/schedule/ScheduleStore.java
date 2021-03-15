@@ -20,16 +20,14 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -38,6 +36,7 @@ import java.util.function.Consumer;
  * Defines a type able to manage Scheduled entities.
  *
  * @author Daniel Ivanov
+ * @author Michael Tinker
  */
 public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
@@ -45,10 +44,9 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	void apply(ScheduleID id, Consumer<MerkleSchedule> change);
 	ResponseCodeEnum delete(ScheduleID id);
 
-	CreationResult<ScheduleID> createProvisionally(byte[] bodyBytes, AccountID payer, AccountID schedulingAccount, RichInstant schedulingTXValidStart, RichInstant consensusTime, Optional<JKey> adminKey, Optional<String> entityMemo);
-	CreationResult<ScheduleID> replCreateProvisionally(byte[] bodyBytes, RichInstant consensusTime);
+	CreationResult<ScheduleID> createProvisionally(MerkleSchedule candidate, RichInstant consensusTime);
 
-	Optional<ScheduleID> lookupScheduleId(byte[] bodyBytes, AccountID scheduledTxPayer, Key adminKey, String entityMemo);
+	Pair<Optional<ScheduleID>, MerkleSchedule> lookupSchedule(byte[] bodyBytes);
 	ResponseCodeEnum markAsExecuted(ScheduleID id);
 	void expire(EntityId id);
 

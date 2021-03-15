@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -74,7 +75,7 @@ public class MerkleScheduleTest {
 	byte[] spk = "secondPretendKey".getBytes();
 	byte[] tpk = "thirdPretendKey".getBytes();
 
-	long expiry = 1_234_567L, otherExpiry = 1_567_234L;
+	long expiry = 1_234_567L;
 	byte[] transactionBody, otherTransactionBody;
 	String entityMemo = "Just some memo again", otherEntityMemo = "Yet another memo";
 	EntityId payer = new EntityId(4, 5, 6), otherPayer = new EntityId(4, 5, 5);
@@ -122,7 +123,7 @@ public class MerkleScheduleTest {
 		assertEquals(adminKey.toString(), subject.adminKey().get().toString());
 		assertEquals(schedulingTXValidStart, subject.schedulingTXValidStart());
 		assertEquals(scheduledTxn, subject.scheduledTxn());
-		assertEquals(expectedSignedTxn(), subject.replAsScheduledTransaction());
+		assertEquals(expectedSignedTxn(), subject.asScheduledTransaction());
 		assertArrayEquals(bodyBytes, subject.bodyBytes());
 	}
 
@@ -134,7 +135,21 @@ public class MerkleScheduleTest {
 
 	@Test
 	void translatesInvariantFailure() {
+		subject = new MerkleSchedule();
+
 		assertThrows(IllegalStateException.class, subject::scheduledTransactionId);
+	}
+
+	@Test
+	void understandsSchedulerIsFallbackPayer() {
+		// expect:
+		assertEquals(subject.payer(), subject.effectivePayer());
+
+		// and when:
+		subject.setPayer(null);
+
+		// expect:
+		assertEquals(subject.schedulingAccount(), subject.effectivePayer());
 	}
 
 	@Test
@@ -382,8 +397,36 @@ public class MerkleScheduleTest {
 		assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
 		assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
 		assertEquals(scheduledTxn, copySubject.scheduledTxn());
-		assertEquals(expectedSignedTxn(), copySubject.replAsScheduledTransaction());
+		assertEquals(expectedSignedTxn(), copySubject.asScheduledTransaction());
 		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
+	}
+
+	@Test
+	public void cavWorks() {
+		// setup:
+		subject.markDeleted();
+		subject.markExecuted();
+		subject.witnessValidEd25519Signature(tpk);
+
+		// given:
+		var cavSubject = subject.toContentAddressableView();
+
+		// expect:
+		assertFalse(cavSubject.isDeleted());
+		assertFalse(cavSubject.isExecuted());
+		assertFalse(cavSubject.hasValidEd25519Signature(tpk));
+		// and:
+		assertNotEquals(subject.toString(), cavSubject.toString());
+		assertTrue(cavSubject.signatories().isEmpty());
+		// and:
+		assertNull(cavSubject.payer());
+		assertEquals(0L, cavSubject.expiry());
+		assertNull(cavSubject.schedulingAccount());
+		assertEquals(entityMemo, cavSubject.memo().get());
+		assertEquals(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(), cavSubject.grpcAdminKey());
+		assertNull(cavSubject.schedulingTXValidStart());
+		assertEquals(scheduledTxn, cavSubject.scheduledTxn());
+		assertNull(cavSubject.bodyBytes());
 	}
 
 	private String signatoriesToString() {

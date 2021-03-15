@@ -50,10 +50,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -68,8 +66,8 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -78,7 +76,7 @@ import static org.mockito.Mockito.verify;
 public class ScheduleCreateTransitionLogicTest {
 	long thisSecond = 1_234_567L;
 	private Instant now = Instant.ofEpochSecond(thisSecond);
-	private byte[] transactionBody = TransactionBody.newBuilder()
+	private byte[] bodyBytes = TransactionBody.newBuilder()
 			.setMemo("Just this")
 			.build()
 			.toByteArray();
@@ -94,10 +92,12 @@ public class ScheduleCreateTransitionLogicTest {
 
 	private OptionValidator validator;
 	private ScheduleStore store;
+	private MerkleSchedule merkleSchedule;
 	private PlatformTxnAccessor accessor;
 	private TransactionContext txnCtx;
 	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
 	private ScheduleReadyForExecution.ExecutionProcessor executor;
+	private ScheduleCreateTransitionLogic.MerkleScheduleFactory scheduleFactory;
 
 	private AccountID payer = IdUtils.asAccount("1.2.3");
 	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
@@ -123,6 +123,10 @@ public class ScheduleCreateTransitionLogicTest {
 		activationHelper = mock(InHandleActivationHelper.class);
 		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
 		executor = mock(ScheduleReadyForExecution.ExecutionProcessor.class);
+		scheduleFactory = mock(ScheduleCreateTransitionLogic.MerkleScheduleFactory.class);
+		merkleSchedule = mock(MerkleSchedule.class);
+
+		given(accessor.getTxnBytes()).willReturn(bodyBytes);
 
 		classifier = mock(SigMapScheduleClassifier.class);
 
@@ -140,6 +144,7 @@ public class ScheduleCreateTransitionLogicTest {
 		subject.signingsWitness = replSigningWitness;
 		subject.executor = executor;
 		subject.classifier = classifier;
+		subject.scheduleFactory = scheduleFactory;
 	}
 
 	@Test
@@ -147,10 +152,9 @@ public class ScheduleCreateTransitionLogicTest {
 		// setup:
 		givenValidTxnCtx();
 		// and:
-		MerkleSchedule created = mock(MerkleSchedule.class);
-		given(created.payer()).willReturn(EntityId.ofNullableAccountId(payer));
-		given(created.replAsScheduledTransaction()).willReturn(Transaction.getDefaultInstance());
-		given(store.get(schedule)).willReturn(created);
+		given(merkleSchedule.payer()).willReturn(EntityId.ofNullableAccountId(payer));
+		given(merkleSchedule.asScheduledTransaction()).willReturn(Transaction.getDefaultInstance());
+		given(store.get(schedule)).willReturn(merkleSchedule);
 		// and:
 		given(store.markAsExecuted(schedule)).willReturn(OK);
 
@@ -177,34 +181,20 @@ public class ScheduleCreateTransitionLogicTest {
 	@Test
 	public void followsHappyPath() {
 		// setup:
-		MerkleSchedule created = mock(MerkleSchedule.class);
-		given(created.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(created.transactionBody()).willReturn(transactionBody);
-		given(created.expiry()).willReturn(now.getEpochSecond());
+		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(merkleSchedule.transactionBody()).willReturn(bodyBytes);
+		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
 
 		givenValidTxnCtx();
-		// and:
-		given(store.get(schedule)).willReturn(created);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(store).lookupScheduleId(
-				eq(transactionBody),
-				eq(payer),
-				eq(key),
-				argThat((String memo) -> Objects.equals(memo, entityMemo)));
+		verify(store).lookupSchedule(bodyBytes);
 
 		// and:
-		verify(store).createProvisionally(
-				eq(transactionBody),
-				eq(payer),
-				eq(payer),
-				eq(RichInstant.fromJava(now)),
-				eq(RichInstant.fromJava(now)),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
-				argThat((Optional<String> memo) -> memo.get().equals(entityMemo)));
+		verify(store).createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now)));
 		// and:
 		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
 		// and:
@@ -217,16 +207,14 @@ public class ScheduleCreateTransitionLogicTest {
 	@Test
 	public void followsHappyPathEvenIfNoNewValidSignatures() {
 		// setup:
-		MerkleSchedule created = mock(MerkleSchedule.class);
-		given(created.scheduledTransactionId()).willReturn(scheduledTxnId);
-		given(created.transactionBody()).willReturn(transactionBody);
-		given(created.expiry()).willReturn(now.getEpochSecond());
+		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(merkleSchedule.transactionBody()).willReturn(bodyBytes);
+		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
 
 		givenValidTxnCtx();
 		// and:
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
 				.willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
-		given(store.get(schedule)).willReturn(created);
 
 		// when:
 		subject.doStateTransition();
@@ -243,24 +231,16 @@ public class ScheduleCreateTransitionLogicTest {
 		// given:
 		givenValidTxnCtx();
 
-		MerkleSchedule created = mock(MerkleSchedule.class);
-		given(created.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(merkleSchedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 
 		// and:
-		given(store.lookupScheduleId(
-				eq(transactionBody),
-				eq(payer),
-				eq(key),
-				argThat((String m) -> m.equals(entityMemo))))
-				.willReturn(Optional.of(schedule));
-		// and:
-		given(store.get(schedule)).willReturn(created);
+		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(Optional.of(schedule), merkleSchedule));
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(store, never()).createProvisionally(any(), any(), any(), any(), any(), any(), any());
+		verify(store, never()).createProvisionally(any(), any());
 		// and:
 		verify(store, never()).commitCreation();
 		verify(txnCtx, never()).addExpiringEntities(any());
@@ -280,22 +260,8 @@ public class ScheduleCreateTransitionLogicTest {
 		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(store).lookupScheduleId(
-				eq(transactionBody),
-				eq(payer),
-				eq(key),
-				argThat((String memo) -> Objects.equals(memo, entityMemo)));
-
 		// and:
-		verify(store).createProvisionally(
-				eq(transactionBody),
-				eq(payer),
-				eq(payer),
-				eq(RichInstant.fromJava(now)),
-				eq(RichInstant.fromJava(now)),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
-				argThat((Optional<String> m) -> m.get().equals(entityMemo)));
+		verify(store).createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now)));
 		verify(store, never()).commitCreation();
 		verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
 		verify(executor, never()).doProcess(any());
@@ -307,39 +273,14 @@ public class ScheduleCreateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// and:
-		given(store.lookupScheduleId(
-				eq(transactionBody),
-				eq(payer),
-				eq(key),
-				argThat((String m) -> m.equals(entityMemo)))).willReturn(EMPTY_SCHEDULE);
-		given(store.createProvisionally(
-				eq(transactionBody),
-				eq(payer),
-				eq(payer),
-				eq(RichInstant.fromJava(now)),
-				eq(RichInstant.fromJava(now)),
-				argThat(jKey -> true),
-				argThat(memo -> true))).willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
+		given(store.lookupSchedule(eq(bodyBytes))).willReturn(Pair.of(Optional.empty(), merkleSchedule));
+		given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
+				.willReturn(CreationResult.failure(INVALID_ADMIN_KEY));
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(store).lookupScheduleId(
-				eq(transactionBody),
-				eq(payer),
-				eq(key),
-				argThat((String memo) -> Objects.equals(memo, entityMemo)));
-
-		// and:
-		verify(store).createProvisionally(
-				eq(transactionBody),
-				eq(payer),
-				eq(payer),
-				eq(RichInstant.fromJava(now)),
-				eq(RichInstant.fromJava(now)),
-				argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())),
-				argThat((Optional<String> m) -> m.get().equals(entityMemo)));
 		verify(store, never()).commitCreation();
 		verify(txnCtx, never()).setStatus(SUCCESS);
 	}
@@ -348,23 +289,12 @@ public class ScheduleCreateTransitionLogicTest {
 	public void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
 		// and:
-		given(store.lookupScheduleId(
-				eq(transactionBody),
-				eq(payer),
-				eq(key),
-				argThat((String m) -> m.equals(entityMemo))))
-				.willThrow(IllegalArgumentException.class);
+		given(store.lookupSchedule(eq(bodyBytes))).willThrow(IllegalArgumentException.class);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(store).lookupScheduleId(
-				eq(transactionBody),
-				eq(payer),
-				eq(key),
-				argThat((String memo) -> Objects.equals(memo, entityMemo)));
-		// and:
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
@@ -407,6 +337,9 @@ public class ScheduleCreateTransitionLogicTest {
 	) {
 		given(accessor.getSigMap()).willReturn(sigMap);
 		given(classifier.validScheduleKeys(eq(payerKey), eq(sigMap), any(), any())).willReturn(validScheduleKeys);
+		given(scheduleFactory.createFrom(
+				eq(bodyBytes),
+				longThat(l -> l == ScheduleCreateTransitionLogic.UNKNOWN_EXPIRY))).willReturn(merkleSchedule);
 
 		jAdminKey = asUsableFcKey(key);
 
@@ -422,7 +355,7 @@ public class ScheduleCreateTransitionLogicTest {
 				.setAdminKey(key)
 				.setPayerAccountID(payer)
 				.setMemo(entityMemo)
-				.setTransactionBody(ByteString.copyFrom(transactionBody));
+				.setTransactionBody(ByteString.copyFrom(bodyBytes));
 
 		if (invalidAdminKey) {
 			scheduleCreate.setAdminKey(invalidKey);
@@ -439,14 +372,8 @@ public class ScheduleCreateTransitionLogicTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(store.isCreationPending()).willReturn(true);
-		given(store.lookupScheduleId(transactionBody, payer, key, entityMemo)).willReturn(EMPTY_SCHEDULE);
-		given(store.createProvisionally(
-				eq(transactionBody),
-				eq(payer),
-				eq(payer),
-				eq(RichInstant.fromJava(now)),
-				eq(RichInstant.fromJava(now)),
-				argThat(jKey -> true),
-				argThat(memo -> true))).willReturn(CreationResult.success(schedule));
+		given(store.lookupSchedule(bodyBytes)).willReturn(Pair.of(Optional.empty(), merkleSchedule));
+		given(store.createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now))))
+				.willReturn(CreationResult.success(schedule));
 	}
 }

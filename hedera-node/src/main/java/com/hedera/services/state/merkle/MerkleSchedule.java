@@ -109,32 +109,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		return to;
 	}
 
-	private void initFromBodyBytes() {
-		try {
-			var parentTxn = TransactionBody.parseFrom(bodyBytes);
-			var creationOp = parentTxn.getReplScheduleCreate();
-
-			if (!creationOp.getMemo().isEmpty()) {
-				memo = creationOp.getMemo();
-			}
-			if (creationOp.hasPayerAccountID()) {
-				payer = EntityId.ofNullableAccountId(creationOp.getPayerAccountID());
-			}
-			if (creationOp.hasAdminKey()) {
-				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(this::setAdminKey);
-				if (adminKey != UNUSED_KEY) {
-					grpcAdminKey = creationOp.getAdminKey();
-				}
-			}
-			scheduledTxn = parentTxn.getReplScheduleCreate().getScheduledTransactionBody();
-			schedulingAccount = EntityId.ofNullableAccountId(parentTxn.getTransactionID().getAccountID());
-			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
-		} catch (InvalidProtocolBufferException e) {
-			throw new IllegalArgumentException(String.format(
-					"Argument bodyBytes=0x%s was not a TransactionBody!", Hex.encodeHexString(bodyBytes)));
-		}
-	}
-
 	/* Notary functions */
 	public boolean witnessValidEd25519Signature(byte[] key) {
 		var usableKey = copyFrom(key);
@@ -147,7 +121,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		}
 	}
 
-	public Transaction replAsScheduledTransaction() {
+	public Transaction asScheduledTransaction() {
 		return Transaction.newBuilder()
 				.setSignedTransactionBytes(
 						SignedTransaction.newBuilder()
@@ -163,6 +137,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	}
 
 	public TransactionID scheduledTransactionId() {
+		if (schedulingAccount == null || schedulingTXValidStart == null) {
+			throw new IllegalStateException("Cannot invoke scheduledTransactionId on a content-addressable view!");
+		}
 		return TransactionID.newBuilder()
 				.setAccountID(schedulingAccount.toGrpcAccountId())
 				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
@@ -273,6 +250,16 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		return fc;
 	}
 
+	public MerkleSchedule toContentAddressableView() {
+		var cav = new MerkleSchedule();
+
+		cav.memo = memo;
+		cav.grpcAdminKey = grpcAdminKey;
+		cav.scheduledTxn = scheduledTxn;
+
+		return cav;
+	}
+
 	public byte[] transactionBody() {
 		return this.grpcTxn;
 	}
@@ -302,7 +289,11 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	}
 
 	public EntityId payer() {
-		return this.payer;
+		return payer;
+	}
+
+	public EntityId effectivePayer() {
+		return hasExplicitPayer() ? payer : schedulingAccount;
 	}
 
 	public boolean hasExplicitPayer() {
@@ -310,7 +301,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	}
 
 	public EntityId schedulingAccount() {
-		return this.schedulingAccount;
+		return schedulingAccount;
 	}
 
 	public RichInstant schedulingTXValidStart() {
@@ -351,5 +342,35 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 	public byte[] bodyBytes() {
 		return bodyBytes;
+	}
+
+	public Key grpcAdminKey() {
+		return grpcAdminKey;
+	}
+
+	private void initFromBodyBytes() {
+		try {
+			var parentTxn = TransactionBody.parseFrom(bodyBytes);
+			var creationOp = parentTxn.getReplScheduleCreate();
+
+			if (!creationOp.getMemo().isEmpty()) {
+				memo = creationOp.getMemo();
+			}
+			if (creationOp.hasPayerAccountID()) {
+				payer = EntityId.ofNullableAccountId(creationOp.getPayerAccountID());
+			}
+			if (creationOp.hasAdminKey()) {
+				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(this::setAdminKey);
+				if (adminKey != UNUSED_KEY) {
+					grpcAdminKey = creationOp.getAdminKey();
+				}
+			}
+			scheduledTxn = parentTxn.getReplScheduleCreate().getScheduledTransactionBody();
+			schedulingAccount = EntityId.ofNullableAccountId(parentTxn.getTransactionID().getAccountID());
+			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
+		} catch (InvalidProtocolBufferException e) {
+			throw new IllegalArgumentException(String.format(
+					"Argument bodyBytes=0x%s was not a TransactionBody!", Hex.encodeHexString(bodyBytes)));
+		}
 	}
 }
