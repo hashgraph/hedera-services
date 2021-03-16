@@ -86,24 +86,24 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 				suiteSetup(),
 				rejectsMalformedScheduledTxnMemo(),
-//				bodyOnlyCreation(),
-//				onlyBodyAndAdminCreation(),
-//				onlyBodyAndMemoCreation(),
-//				bodyAndSignatoriesCreation(),
-//				bodyAndPayerCreation(),
-//				rejectsUnresolvableReqSigners(),
-//				triggersImmediatelyWithBothReqSimpleSigs(),
-//				onlySchedulesWithMissingReqSimpleSigs(),
-//				failsWithNonExistingPayerAccountId(),
-//				failsWithTooLongMemo(),
-//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-//				doesntTriggerUntilPayerSigns(),
-//				requiresExtantPayer(),
-//				rejectsFunctionlessTxn(),
-//				whitelistWorks(),
-//				preservesRevocationServiceSemanticsForFileDelete(),
-//				worksAsExpectedWithDefaultScheduleId(),
-//				infoIncludesTxnIdFromCreationReceipt(),
+				bodyOnlyCreation(),
+				onlyBodyAndAdminCreation(),
+				onlyBodyAndMemoCreation(),
+				bodyAndSignatoriesCreation(),
+				bodyAndPayerCreation(),
+				rejectsUnresolvableReqSigners(),
+				triggersImmediatelyWithBothReqSimpleSigs(),
+				onlySchedulesWithMissingReqSimpleSigs(),
+				failsWithNonExistingPayerAccountId(),
+				failsWithTooLongMemo(),
+				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+				doesntTriggerUntilPayerSigns(),
+				requiresExtantPayer(),
+				rejectsFunctionlessTxn(),
+				whitelistWorks(),
+				preservesRevocationServiceSemanticsForFileDelete(),
+				worksAsExpectedWithDefaultScheduleId(),
+				infoIncludesTxnIdFromCreationReceipt(),
 				suiteCleanup(),
 		});
 	}
@@ -253,11 +253,11 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						scheduleCreate("creation",
 								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
 										.memo(nAscii(101))
-						).hasPrecheck(MEMO_TOO_LONG),
-						scheduleCreate("creationPartDeux",
-								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
-										.memo("Here's s\u0000 to chew on!")
-						).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
+						).hasPrecheck(MEMO_TOO_LONG)
+//						scheduleCreate("creationPartDeux",
+//								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+//										.memo("Here's s\u0000 to chew on!")
+//						).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
 				);
 	}
 

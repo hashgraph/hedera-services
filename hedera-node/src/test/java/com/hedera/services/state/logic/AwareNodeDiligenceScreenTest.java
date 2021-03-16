@@ -202,6 +202,7 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		given(validator.memoCheck(pretendMemo)).willReturn(OK);
 
 		// then:
 		assertFalse(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
