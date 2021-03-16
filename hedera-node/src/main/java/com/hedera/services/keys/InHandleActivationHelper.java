@@ -20,7 +20,6 @@ package com.hedera.services.keys;
  * ‍
  */
 
-import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.utils.TxnAccessor;

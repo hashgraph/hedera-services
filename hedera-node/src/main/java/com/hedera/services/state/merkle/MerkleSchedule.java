@@ -57,7 +57,6 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static com.swirlds.common.CommonUtils.hex;
 import static java.util.stream.Collectors.toList;
 
-
 public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	static final int MERKLE_VERSION = 1;
 
@@ -73,7 +72,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 	private Key grpcAdminKey = UNUSED_GRPC_KEY;
 	private JKey adminKey = UNUSED_KEY;
-	private byte[] grpcTxn;
 	private String memo;
 	private boolean deleted = false;
 	private boolean executed = false;
@@ -91,16 +89,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	private List<byte[]> signatories = new ArrayList<>();
 
 	public MerkleSchedule() {
-	}
-
-	public MerkleSchedule(
-			byte[] transactionBody,
-			EntityId schedulingAccount,
-			RichInstant schedulingTXValidStart
-	) {
-		this.grpcTxn = transactionBody;
-		this.schedulingAccount = schedulingAccount;
-		this.schedulingTXValidStart = schedulingTXValidStart;
 	}
 
 	public static MerkleSchedule from(byte[] bodyBytes, long consensusExpiry) {
@@ -280,10 +268,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		cav.scheduledTxn = scheduledTxn;
 
 		return cav;
-	}
-
-	public byte[] transactionBody() {
-		return this.grpcTxn;
 	}
 
 	public Optional<String> memo() {

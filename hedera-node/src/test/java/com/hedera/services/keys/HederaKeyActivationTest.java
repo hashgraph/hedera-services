@@ -20,38 +20,32 @@ package com.hedera.services.keys;
  * ‍
  */
 
-import com.hedera.services.utils.SignedTxnAccessor;
-import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.test.factories.sigs.SigWrappers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.test.factories.sigs.SigWrappers;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static com.hedera.services.keys.HederaKeyActivation.aproposPkToSigMapFrom;
-import static com.hedera.services.keys.HederaKeyActivation.scopedPkToSigMapFrom;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
-import static com.hedera.test.factories.keys.NodeFactory.*;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd25519;
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
+import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd25519;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.keys.NodeFactory.threshold;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 public class HederaKeyActivationTest {
 	static JKey complexKey;
@@ -85,81 +79,6 @@ public class HederaKeyActivationTest {
 	public void setup() {
 		sigsFn = (Function<byte[], TransactionSignature>) mock(Function.class);
 		tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
-	}
-
-	@AfterEach
-	void cleanup() {
-		HederaKeyActivation.scheduleFactory = HederaKeyActivation::scopedPkToSigMapFrom;
-		HederaKeyActivation.nonScheduleFactory = HederaKeyActivation::pkToSigMapFrom;
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	void usesAproposFactory() {
-		// setup:
-		Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> nonScheduleFactory =
-				(Function<List<TransactionSignature>, Function<byte[], TransactionSignature>>)
-						mock(Function.class);
-		BiFunction<byte[], List<TransactionSignature>, Function<byte[], TransactionSignature>> scheduleFactory =
-				(BiFunction<byte[], List<TransactionSignature>, Function<byte[], TransactionSignature>>)
-						mock(BiFunction.class);
-		// and:
-		HederaKeyActivation.scheduleFactory = scheduleFactory;
-		HederaKeyActivation.nonScheduleFactory = nonScheduleFactory;
-		// and:
-		byte[] body = "ANYTHING".getBytes();
-		List<TransactionSignature> sigs = new ArrayList<>();
-		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
-		given(accessor.getTxnBytes()).willReturn(body);
-
-		given(accessor.getFunction()).willReturn(HederaFunctionality.ScheduleCreate);
-		// when:
-		aproposPkToSigMapFrom(accessor, sigs);
-		// and:
-		given(accessor.getFunction()).willReturn(HederaFunctionality.ScheduleSign);
-		// when:
-		aproposPkToSigMapFrom(accessor, sigs);
-		// then:
-		verify(scheduleFactory, times(2)).apply(body, sigs);
-
-		given(accessor.getFunction()).willReturn(HederaFunctionality.CryptoTransfer);
-		// when:
-		aproposPkToSigMapFrom(accessor, sigs);
-		// then:
-		verify(nonScheduleFactory).apply(sigs);
-	}
-
-	@Test
-	void scopedMapCreationDetectsMatter() {
-		// setup:
-		byte[] correct = data;
-		byte[] incorrect = "BADDATA".getBytes();
-		// and:
-		byte[] irrelevantKey = "IRRELEVANTKEY".getBytes();
-		byte[] uniqueKey = "UNIQUEKEY".getBytes();
-		byte[] overlapKey = "SHAREDKEY".getBytes();
-		// and:
-		List<TransactionSignature> sigs = List.of(
-				mocked(irrelevantKey, correct, VerificationStatus.VALID),
-				mocked(uniqueKey, correct, VerificationStatus.VALID),
-				mocked(overlapKey, incorrect, VerificationStatus.VALID)
-		);
-
-		// when:
-		Function<byte[], TransactionSignature> scopedSigsFn = scopedPkToSigMapFrom(correct, sigs);
-
-		// then:
-		Assertions.assertSame(HederaKeyActivation.INVALID_MISSING_SIG, scopedSigsFn.apply(overlapKey));
-		Assertions.assertSame(sigs.get(1), scopedSigsFn.apply(uniqueKey));
-	}
-
-	private TransactionSignature mocked(byte[] pk, byte[] data, VerificationStatus status) {
-		TransactionSignature tsig = mock(TransactionSignature.class);
-		given(tsig.getContentsDirect()).willReturn(data);
-		given(tsig.getExpandedPublicKeyDirect()).willReturn(pk);
-		given(tsig.getMessageLength()).willReturn(data.length);
-		given(tsig.getSignatureStatus()).willReturn(status);
-		return tsig;
 	}
 
 	@Test

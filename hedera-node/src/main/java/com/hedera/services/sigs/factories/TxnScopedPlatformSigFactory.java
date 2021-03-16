@@ -40,19 +40,4 @@ public interface TxnScopedPlatformSigFactory {
 	 * @return a platform sig for the scoped transaction.
 	 */
 	TransactionSignature create(ByteString publicKey, ByteString sigBytes);
-
-	/**
-	 * Returns a {@link com.swirlds.common.crypto.TransactionSignature} for the scheduled transaction
-	 * linked to the scoped transaction.
-	 *
-	 * @param publicKey
-	 * 		the public key to use in creating the platform sig.
-	 * @param sigBytes
-	 * 		the cryptographic signature to use in creating the platform sig.
-	 * @return a platform sig for the linked scheduled transaction.
-	 * @throws IllegalStateException if the scoped transaction has no linked scheduled transaction.
-	 */
-	default TransactionSignature createForScheduled(ByteString publicKey, ByteString sigBytes) {
-		throw new UnsupportedOperationException();
-	}
 }
