@@ -28,7 +28,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -37,17 +36,13 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -55,7 +50,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,6 +88,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class StateViewTest {
+	Instant resolutionTime = Instant.ofEpochSecond(123L);
 	RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
 	long expiry = 2_000_000L;
 	byte[] data = "SOMETHING".getBytes();
@@ -215,8 +210,6 @@ class StateViewTest {
 		schedule.witnessValidEd25519Signature("firstPretendKey".getBytes());
 		schedule.witnessValidEd25519Signature("secondPretendKey".getBytes());
 		schedule.witnessValidEd25519Signature("thirdPretendKey".getBytes());
-		schedule.markExecuted();
-		schedule.markDeleted();
 
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
@@ -306,11 +299,12 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsScheduleInfo() {
+	public void getsScheduleInfoForDeleted() {
 		// setup:
 		var expectedScheduledTxn = parentScheduleCreate.getReplScheduleCreate().getScheduledTransactionBody();
 
 		// when:
+		schedule.markDeleted(resolutionTime);
 		var gotten = subject.infoForSchedule(scheduleId);
 		var info = gotten.get();
 
@@ -328,8 +322,18 @@ class StateViewTest {
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(expectedScheduledTxn, info.getScheduledTransactionBody());
 		assertEquals(schedule.scheduledTransactionId(), info.getScheduledTransactionID());
-		assertTrue(info.getExecuted());
-		assertTrue(info.getDeleted());
+		assertEquals(RichInstant.fromJava(resolutionTime).toGrpc(), info.getDeletionTime());
+	}
+
+	@Test
+	public void getsScheduleInfoForExecuted() {
+		// when:
+		schedule.markExecuted(resolutionTime);
+		var gotten = subject.infoForSchedule(scheduleId);
+		var info = gotten.get();
+
+		// then:
+		assertEquals(RichInstant.fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
 	}
 
 	@Test

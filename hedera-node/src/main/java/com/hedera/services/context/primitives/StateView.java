@@ -302,11 +302,10 @@ public class StateView {
 					.setSignatories(signatoriesList)
 					.setExpirationTime(Timestamp.newBuilder().setSeconds(schedule.expiry()));
 			schedule.memo().ifPresent(info::setMemo);
-			if (schedule.isExecuted()) {
-				info.setExecuted(true);
-			}
 			if (schedule.isDeleted()) {
-				info.setDeleted(true);
+				info.setDeletionTime(schedule.deletionTime());
+			} else if (schedule.isExecuted()) {
+				info.setExecutionTime(schedule.executionTime());
 			}
 
 			var adminCandidate = schedule.adminKey();

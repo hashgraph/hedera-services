@@ -80,6 +80,8 @@ public class MerkleScheduleTest {
 	String entityMemo = "Just some memo again", otherEntityMemo = "Yet another memo";
 	EntityId payer = new EntityId(4, 5, 6), otherPayer = new EntityId(4, 5, 5);
 	EntityId schedulingAccount = new EntityId(1, 2, 3);
+	Instant resolutionTime = Instant.ofEpochSecond(1_234_567L);
+	Timestamp grpcResolutionTime = RichInstant.fromJava(resolutionTime).toGrpc();
 	RichInstant schedulingTXValidStart = new RichInstant(123, 456);
 	RichInstant otherSchedulingTXValidStart = new RichInstant(456, 789);
 	JKey adminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asJKeyUnchecked();
@@ -154,6 +156,25 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
+	void checksResolutionAsExpected() {
+		// expect:
+		assertThrows(IllegalStateException.class, subject::deletionTime);
+		assertThrows(IllegalStateException.class, subject::executionTime);
+
+		// when:
+		subject.markExecuted(resolutionTime);
+
+		// then:
+		assertEquals(grpcResolutionTime, subject.executionTime());
+
+		// and when:
+		subject.markDeleted(resolutionTime);
+
+		// then:
+		assertEquals(grpcResolutionTime, subject.deletionTime());
+	}
+
+	@Test
 	void notaryWorks() {
 		// given:
 		assertFalse(subject.hasValidEd25519Signature(fpk));
@@ -204,7 +225,7 @@ public class MerkleScheduleTest {
 		// given:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
-		subject.markDeleted();
+		subject.markDeleted(resolutionTime);
 
 		// when:
 		subject.serialize(out);
@@ -214,6 +235,7 @@ public class MerkleScheduleTest {
 		inOrder.verify(out).writeByteArray(bodyBytes);
 		inOrder.verify(out).writeBoolean(false);
 		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(serdes).writeNullableInstant(RichInstant.fromJava(resolutionTime), out);
 		inOrder.verify(out).writeInt(2);
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, fpk)));
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, spk)));
@@ -226,7 +248,7 @@ public class MerkleScheduleTest {
 		// and:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
-		subject.markExecuted();
+		subject.markExecuted(resolutionTime);
 
 		given(fin.readLong()).willReturn(subject.expiry());
 		given(fin.readInt()).willReturn(2);
@@ -234,6 +256,7 @@ public class MerkleScheduleTest {
 		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
 				.willReturn(fpk)
 				.willReturn(spk);
+		given(serdes.readNullableInstant(fin)).willReturn(RichInstant.fromJava(resolutionTime));
 		given(fin.readBoolean())
 				.willReturn(true)
 				.willReturn(false);
@@ -245,10 +268,11 @@ public class MerkleScheduleTest {
 
 		// then:
 		assertEquals(subject, read);
-		assertTrue(subject.signatories().contains(fpk));
-		assertTrue(subject.signatories().contains(spk));
-		assertTrue(subject.isExecuted());
-		assertFalse(subject.isDeleted());
+		assertTrue(read.signatories().contains(fpk));
+		assertTrue(read.signatories().contains(spk));
+		assertTrue(read.isExecuted());
+		assertFalse(read.isDeleted());
+		assertEquals(grpcResolutionTime, read.executionTime());
 		assertEquals(subject.ordinaryViewOfScheduledTxn(), read.ordinaryViewOfScheduledTxn());
 	}
 
@@ -263,8 +287,8 @@ public class MerkleScheduleTest {
 						.setPayerAccountID(otherPayer.toGrpcAccountId()))
 				.build().toByteArray();
 		other = MerkleSchedule.from(diffBodyBytes, expiry + 1);
-		other.markExecuted();
-		other.markDeleted();
+		other.markExecuted(resolutionTime);
+		other.markDeleted(resolutionTime);
 		other.witnessValidEd25519Signature(fpk);
 
 		// expect:
@@ -330,21 +354,22 @@ public class MerkleScheduleTest {
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
 		subject.witnessValidEd25519Signature(tpk);
-		subject.markDeleted();
-		subject.markExecuted();
+		subject.markDeleted(resolutionTime);
 
 		// and:
 		var expected = "MerkleSchedule{"
+				+ "scheduledTxn=" + scheduledTxn + ", "
 				+ "expiry=" + expiry + ", "
-				+ "executed=" + true + ", "
+				+ "executed=" + false + ", "
 				+ "deleted=" + true + ", "
-				+ "transactionBody=" + hex(transactionBody) + ", "
 				+ "memo=" + entityMemo + ", "
 				+ "payer=" + payer.toAbbrevString() + ", "
 				+ "schedulingAccount=" + schedulingAccount + ", "
 				+ "schedulingTXValidStart=" + schedulingTXValidStart
 				+ ", " + "signatories=[" + signatoriesToString() + "], "
-				+ "adminKey=" + describe(adminKey) + "}";
+				+ "adminKey=" + describe(adminKey) + ", "
+				+ "resolutionTime=" + RichInstant.fromJava(resolutionTime).toString()
+				+ "}";
 
 		// expect:
 		assertEquals(expected, subject.toString());
@@ -381,8 +406,7 @@ public class MerkleScheduleTest {
 	@Test
 	public void copyWorks() {
 		// setup:
-		subject.markDeleted();
-		subject.markExecuted();
+		subject.markDeleted(resolutionTime);
 		subject.witnessValidEd25519Signature(tpk);
 
 		// given:
@@ -390,12 +414,13 @@ public class MerkleScheduleTest {
 
 		// expect:
 		assertTrue(copySubject.isDeleted());
-		assertTrue(copySubject.isExecuted());
+		assertFalse(copySubject.isExecuted());
 		assertTrue(copySubject.hasValidEd25519Signature(tpk));
 		// and:
 		assertEquals(subject.toString(), copySubject.toString());
 		assertNotSame(subject.signatories(), copySubject.signatories());
 		// and:
+		assertEquals(grpcResolutionTime, copySubject.deletionTime());
 		assertEquals(payer, copySubject.payer());
 		assertEquals(expiry, copySubject.expiry());
 		assertEquals(schedulingAccount, copySubject.schedulingAccount());
@@ -410,8 +435,8 @@ public class MerkleScheduleTest {
 	@Test
 	public void cavWorks() {
 		// setup:
-		subject.markDeleted();
-		subject.markExecuted();
+		subject.markDeleted(resolutionTime);
+		subject.markExecuted(resolutionTime);
 		subject.witnessValidEd25519Signature(tpk);
 
 		// given:

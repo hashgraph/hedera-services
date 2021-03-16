@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -65,14 +66,17 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	ScheduleID pendingId = NO_PENDING_ID;
 	MerkleSchedule pendingCreation;
+	TransactionContext txnCtx;
 	Map<MerkleSchedule, MerkleEntityId> extantSchedules = new HashMap<>();
 
 	public HederaScheduleStore(
 			GlobalDynamicProperties properties,
 			EntityIdSource ids,
+			TransactionContext txnCtx,
 			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
 		super(ids);
+		this.txnCtx = txnCtx;
 		this.schedules = schedules;
 		this.properties = properties;
 		buildContentAddressableViewOfExtantSchedules();
@@ -142,7 +146,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			return status;
 		}
 
-		apply(id, MerkleSchedule::markDeleted);
+		apply(id, schedule -> schedule.markDeleted(txnCtx.consensusTime()));
 		return OK;
 	}
 
@@ -212,7 +216,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		if (status != OK) {
 			return status;
 		}
-		apply(id, MerkleSchedule::markExecuted);
+		apply(id, schedule -> schedule.markExecuted(txnCtx.consensusTime().plusNanos(1L)));
 		return OK;
 	}
 

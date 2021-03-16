@@ -23,7 +23,9 @@ package com.hedera.services.bdd.spec.queries.schedule;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
@@ -41,7 +43,9 @@ import java.util.function.BiFunction;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetScheduleInfo.class);
@@ -55,6 +59,8 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	boolean shouldBeExecuted = false;
 	boolean shouldBeDeleted = false;
 	boolean checkForRecordedScheduledTxn = false;
+	Optional<String> deletionTxn = Optional.empty();
+	Optional<String> executionTxn = Optional.empty();
 	Optional<String> expectedScheduleId = Optional.empty();
 	Optional<String> expectedCreatorAccountID = Optional.empty();
 	Optional<String> expectedPayerAccountID = Optional.empty();
@@ -74,8 +80,13 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 		return this;
 	}
 
-	public HapiGetScheduleInfo isDeleted() {
-		shouldBeDeleted = true;
+	public HapiGetScheduleInfo wasDeletedAtConsensusTimeOf(String txn) {
+		deletionTxn = Optional.of(txn);
+		return this;
+	}
+
+	public HapiGetScheduleInfo wasExecutedBy(String txn) {
+		executionTxn = Optional.of(txn);
 		return this;
 	}
 
@@ -149,13 +160,25 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 					actualInfo.getScheduledTransactionBody());
 		}
 
-
-		/* TODO - convert to timestamp assertions */
 		if (shouldBeExecuted) {
-			Assert.assertTrue("Wasn't already executed!", actualInfo.getExecuted());
+			Assert.assertTrue("Wasn't already executed!", actualInfo.hasExecutionTime());
 		}
-		if (shouldBeDeleted) {
-			Assert.assertTrue("Wasn't deleted!", actualInfo.getDeleted());
+
+		if (deletionTxn.isPresent()) {
+			assertTimestampMatches(
+					deletionTxn.get(),
+					0,
+					actualInfo.getDeletionTime(),
+					"Wrong consensus deletion time!",
+					spec);
+		}
+		if (executionTxn.isPresent()) {
+			assertTimestampMatches(
+					executionTxn.get(),
+					1,
+					actualInfo.getExecutionTime(),
+					"Wrong consensus execution time!",
+					spec);
 		}
 
 		assertFor(
@@ -190,6 +213,23 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 				(n, r) -> r.getAdminKey(schedule),
 				"Wrong schedule admin key!",
 				registry);
+	}
+
+	private void assertTimestampMatches(
+			String txn,
+			int nanoOffset,
+			Timestamp actual,
+			String errMsg,
+			HapiApiSpec spec
+	) {
+		var subOp = getTxnRecord(txn);
+		allRunFor(spec, subOp);
+		var consensusTime = subOp.getResponseRecord().getConsensusTimestamp();
+		var expected = Timestamp.newBuilder()
+				.setSeconds(actual.getSeconds())
+				.setNanos(consensusTime.getNanos() + nanoOffset)
+				.build();
+		Assert.assertEquals(errMsg, expected, actual);
 	}
 
 	private <T, R> void assertFor(

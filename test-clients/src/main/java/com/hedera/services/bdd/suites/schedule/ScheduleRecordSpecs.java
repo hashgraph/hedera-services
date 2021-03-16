@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.exactParticipants;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -47,6 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -72,6 +74,8 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						suiteSetup(),
+						executionTimeIsAvailable(),
+						deletionTimeIsAvailable(),
 						allRecordsAreQueryable(),
 						schedulingTxnIdFieldsNotAllowed(),
 						canonicalScheduleOpsHaveExpectedUsdFees(),
@@ -248,6 +252,56 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 						cryptoCreate("nope")
 								.txnId("withScheduled")
 								.hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED)
+				);
+	}
+
+	public HapiApiSpec executionTimeIsAvailable() {
+		return defaultHapiSpec("ExecutionTimeIsAvailable")
+				.given(
+						cryptoCreate("payer"),
+						cryptoCreate("receiver").receiverSigRequired(true).balance(0L)
+				).when(
+						scheduleCreate(
+								"tb",
+								cryptoTransfer(
+										tinyBarsFromTo("payer", "receiver", 1)
+								).fee(ONE_HBAR)
+						)
+								.savingExpectedScheduledTxnId()
+								.payingWith("payer")
+								.via("creation"),
+						scheduleSign("tb")
+								.via("trigger")
+								.alsoSigningWith("receiver")
+				).then(
+						getScheduleInfo("tb")
+								.logged()
+								.wasExecutedBy("trigger")
+				);
+	}
+
+	public HapiApiSpec deletionTimeIsAvailable() {
+		return defaultHapiSpec("DeletionTimeIsAvailable")
+				.given(
+						newKeyNamed("admin"),
+						cryptoCreate("payer"),
+						cryptoCreate("receiver").receiverSigRequired(true).balance(0L)
+				).when(
+						scheduleCreate(
+								"ntb",
+								cryptoTransfer(
+										tinyBarsFromTo("payer", "receiver", 1)
+								).fee(ONE_HBAR)
+						)
+								.payingWith("payer")
+								.adminKey("admin")
+								.via("creation"),
+						scheduleDelete("ntb")
+								.via("deletion")
+								.signedBy(DEFAULT_PAYER, "admin")
+				).then(
+						getScheduleInfo("ntb")
+								.wasDeletedAtConsensusTimeOf("deletion")
 				);
 	}
 

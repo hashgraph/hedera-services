@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -88,6 +89,7 @@ public class HederaScheduleStoreTest {
 	MerkleSchedule schedule;
 	MerkleSchedule anotherSchedule;
 	MerkleAccount account;
+	TransactionContext txnCtx;
 
 	byte[] transactionBody;
 	String entityMemo;
@@ -135,7 +137,7 @@ public class HederaScheduleStoreTest {
 		account = mock(MerkleAccount.class);
 
 		hederaLedger = mock(HederaLedger.class);
-
+		txnCtx = mock(TransactionContext.class);
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(
@@ -149,7 +151,7 @@ public class HederaScheduleStoreTest {
 		given(schedules.get(fromScheduleId(created))).willReturn(schedule);
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(true);
 
-		subject = new HederaScheduleStore(globalDynamicProperties, ids, () -> schedules);
+		subject = new HederaScheduleStore(globalDynamicProperties, ids, txnCtx, () -> schedules);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 	}
@@ -516,14 +518,18 @@ public class HederaScheduleStoreTest {
 
 	@Test
 	public void deletesAsExpected() {
+		// setup:
+		var now = schedulingTXValidStart.toJava();
+
 		// given:
 		given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
+		given(txnCtx.consensusTime()).willReturn(now);
 
 		// when:
 		var outcome = subject.delete(created);
 
 		// then:
-		verify(schedule).markDeleted();
+		verify(schedule).markDeleted(now);
 		verify(schedules).replace(fromScheduleId(created), schedule);
 		// and:
 		assertEquals(OK, outcome);
@@ -607,13 +613,18 @@ public class HederaScheduleStoreTest {
 
 	@Test
 	public void marksExecutedAsExpected() {
+		// setup:
+		var now = schedulingTXValidStart.toJava();
+
+		// given:
+		given(txnCtx.consensusTime()).willReturn(now);
 		given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
 
 		// when:
 		subject.markAsExecuted(created);
 
 		// then:
-		verify(schedule).markExecuted();
+		verify(schedule).markExecuted(now.plusNanos(1L));
 		verify(schedules, never()).remove(fromScheduleId(created));
 	}
 

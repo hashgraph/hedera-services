@@ -31,6 +31,7 @@ import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -41,6 +42,7 @@ import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.codec.binary.Hex;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -67,6 +69,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	public static final Key UNUSED_GRPC_KEY = null;
 	public static final JKey UNUSED_KEY = null;
 	public static final EntityId UNUSED_PAYER = null;
+	public static final RichInstant UNRESOLVED_TIME = null;
 
 	private Key grpcAdminKey = UNUSED_GRPC_KEY;
 	private JKey adminKey = UNUSED_KEY;
@@ -78,6 +81,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	private EntityId schedulingAccount;
 	private RichInstant schedulingTXValidStart;
 	private long expiry;
+	private RichInstant resolutionTime = UNRESOLVED_TIME;
 
 	private byte[] bodyBytes;
 	private TransactionBody ordinaryScheduledTxn;
@@ -151,6 +155,15 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	}
 
 	/* Object */
+
+	/**
+	 * Two {@code MerkleSchedule}s are identical as long as they agree on
+	 * the transaction being scheduled, the admin key used to manage it,
+	 * and the memo to accompany it.
+	 *
+	 * @param o the object to check for equality
+	 * @return whether {@code this} and {@code o} are identical
+	 */
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -173,22 +186,25 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(MerkleSchedule.class)
+		var helper = MoreObjects.toStringHelper(MerkleSchedule.class)
+				.add("scheduledTxn", scheduledTxn)
 				.add("expiry", expiry)
 				.add("executed", executed)
 				.add("deleted", deleted)
-				.add("transactionBody", hex(grpcTxn))
 				.add("memo", memo)
 				.add("payer", readablePayer())
 				.add("schedulingAccount", schedulingAccount)
 				.add("schedulingTXValidStart", schedulingTXValidStart)
 				.add("signatories", signatories.stream().map(Hex::encodeHexString).collect(toList()))
-				.add("adminKey", describe(adminKey))
-				.toString();
+				.add("adminKey", describe(adminKey));
+		if (resolutionTime != null) {
+			helper.add("resolutionTime", resolutionTime);
+		}
+		return helper.toString();
 	}
 
 	private String readablePayer() {
-		return Optional.ofNullable(payer).map(EntityId::toAbbrevString).orElse("<N/A>");
+		return Optional.ofNullable(effectivePayer()).map(EntityId::toAbbrevString).orElse("<N/A>");
 	}
 
 	@Override
@@ -197,6 +213,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		bodyBytes = in.readByteArray(Integer.MAX_VALUE);
 		executed = in.readBoolean();
 		deleted = in.readBoolean();
+		resolutionTime = serdes.readNullableInstant(in);
 		int numSignatories = in.readInt();
 		while (numSignatories-- > 0) {
 			witnessValidEd25519Signature(in.readByteArray(NUM_ED25519_PUBKEY_BYTES));
@@ -211,6 +228,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		out.writeByteArray(bodyBytes);
 		out.writeBoolean(executed);
 		out.writeBoolean(deleted);
+		serdes.writeNullableInstant(resolutionTime, out);
 		out.writeInt(signatories.size());
 		for (byte[] key : signatories) {
 			out.writeByteArray(key);
@@ -244,8 +262,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		fc.bodyBytes = bodyBytes;
 		fc.scheduledTxn = scheduledTxn;
 		fc.ordinaryScheduledTxn = ordinaryScheduledTxn;
+		fc.resolutionTime = resolutionTime;
 
-		/* Signatories are decidedly mutable */
+		/* Signatories are mutable */
 		for (byte[] signatory : signatories) {
 			fc.witnessValidEd25519Signature(signatory);
 		}
@@ -323,11 +342,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		return expiry;
 	}
 
-	public void markDeleted() {
+	public void markDeleted(Instant at) {
+		resolutionTime = RichInstant.fromJava(at);
 		deleted = true;
 	}
 
-	public void markExecuted() {
+	public void markExecuted(Instant at) {
+		resolutionTime = RichInstant.fromJava(at);
 		executed = true;
 	}
 
@@ -337,6 +358,20 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 	public boolean isDeleted() {
 		return deleted;
+	}
+
+	public Timestamp deletionTime() {
+		if (!deleted) {
+			throw new IllegalStateException("Schedule not deleted, cannot return deletion time!");
+		}
+		return resolutionTime.toGrpc();
+	}
+
+	public Timestamp executionTime() {
+		if (!executed) {
+			throw new IllegalStateException("Schedule not executed, cannot return execution time!");
+		}
+		return resolutionTime.toGrpc();
 	}
 
 	public TransactionBody ordinaryViewOfScheduledTxn() {

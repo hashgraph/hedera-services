@@ -1359,7 +1359,7 @@ public class ServicesContext {
 
 	public ScheduleStore scheduleStore() {
 		if (scheduleStore == null) {
-			scheduleStore = new HederaScheduleStore(globalDynamicProperties(), ids(), this::schedules);
+			scheduleStore = new HederaScheduleStore(globalDynamicProperties(), ids(), txnCtx(), this::schedules);
 		}
 		return scheduleStore;
 	}
