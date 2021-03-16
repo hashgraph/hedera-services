@@ -509,18 +509,16 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")
 										.fee(ONE_HBAR)
-										.signedBy("payingSender")
 						)
 								.via("canonicalScheduleCreation")
 								.payingWith("payingSender")
-								.adminKey("payingSender")
-								.inheritingScheduledSigs(),
+								.adminKey("payingSender"),
 						getScheduleInfo("canonicalSchedule")
 								.payingWith("payingSender"),
 						scheduleSign("canonicalSchedule")
 								.via("canonicalScheduleSigning")
 								.payingWith("payingSender")
-								.withSignatories("receiver"),
+								.alsoSigningWith("receiver"),
 						scheduleCreate("tbd",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")
@@ -528,8 +526,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 										.signedBy("payingSender")
 						)
 								.payingWith("payingSender")
-								.adminKey("payingSender")
-								.inheritingScheduledSigs(),
+								.adminKey("payingSender"),
 						scheduleDelete("tbd")
 								.via("canonicalScheduleDeletion")
 								.payingWith("payingSender")

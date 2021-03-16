@@ -1877,7 +1877,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                    # - 01155-D-ReviseScheduleProtobufs
             workflow-name: "Continuous integration"
         - build-platform-and-services:
             context: SonarCloud
