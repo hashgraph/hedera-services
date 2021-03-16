@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
@@ -53,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.nft.NftXchange.civilianKeyNo;
 import static com.hedera.services.bdd.suites.nft.NftXchange.civilianNo;
+import static com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTest.SECOND;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.nftOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -80,7 +82,7 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						runNftXchange(),
+						runNftXchange()
 				}
 		);
 	}
@@ -104,7 +106,9 @@ public class NftXchangeLoadProvider extends HapiApiSuite {
 											getAccountBalance(xchange.getTreasury()).logged());
 								}
 							}
-						})
+						}),
+						sleepFor(10 * SECOND),
+						freeze().startingIn(2).minutes().andLasting(2).minutes().payingWith(GENESIS)
 				);
 	}
 
