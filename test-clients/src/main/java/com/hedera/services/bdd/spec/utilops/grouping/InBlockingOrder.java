@@ -38,4 +38,13 @@ public class InBlockingOrder extends UtilOp {
 		allRunFor(spec, ops);
 		return false;
 	}
+
+	public HapiSpecOperation last() {
+		return ops[ops.length - 1];
+	}
+
+	@Override
+	public String toString() {
+		return "InBlockingOrder";
+	}
 }

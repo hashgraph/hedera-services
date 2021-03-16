@@ -25,34 +25,50 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
+import com.hedera.services.bdd.spec.keys.deterministic.Bip0039;
+import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hederahashgraph.api.proto.java.Key;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.crypto.ShortBufferException;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.SplittableRandom;
 import java.util.function.BiConsumer;
 
 import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
-public class PemKey {
-	static final Logger log = LogManager.getLogger(PemKey.class);
+public class SpecKey {
+	static final Logger log = LogManager.getLogger(SpecKey.class);
 
 	private static final String DEFAULT_PASSPHRASE = "swirlds";
+	private static final String MISSING_LOC = null;
 	private static final boolean GENERATE_IF_MISSING = true;
 
-	String pemLoc = "";
-	String passphrase = DEFAULT_PASSPHRASE;
 	boolean generateIfMissing = GENERATE_IF_MISSING;
 
-	public PemKey() {
+	String pemLoc = MISSING_LOC;
+	String passphrase = DEFAULT_PASSPHRASE;
+	String wordsLoc = MISSING_LOC;
+
+	public SpecKey() {
 	}
 
-	public static PemKey prefixedAt(String pemLoc) {
-		var key = new PemKey();
+	public static SpecKey prefixedAt(String pemLoc) {
+		var key = new SpecKey();
 		key.setPemLoc(pemLoc + ".pem");
 		return key;
 	}
@@ -81,8 +97,73 @@ public class PemKey {
 		this.pemLoc = pemLoc;
 	}
 
+	public String getWordsLoc() {
+		return wordsLoc;
+	}
+
+	public void setWordsLoc(String wordsLoc) {
+		this.wordsLoc = wordsLoc;
+	}
+
 	public void registerWith(HapiApiSpec spec, RegistryForms forms) {
-		var qPemLoc = qualifiedPemLoc(pemLoc, spec);
+		if (pemLoc != MISSING_LOC) {
+			registerPemWith(spec, forms);
+		} else if (wordsLoc != MISSING_LOC) {
+			passphrase = null;
+			registerMnemonicWith(spec, forms);
+		} else {
+			throw new IllegalStateException("Both PEM and mnemonic locations are missing!");
+		}
+	}
+
+	private void registerMnemonicWith(HapiApiSpec spec, RegistryForms forms) {
+		var qWordsLoc = qualifiedKeyLoc(wordsLoc, spec);
+		var words = new File(qWordsLoc);
+		String mnemonic;
+		if (!words.exists()) {
+			if (!generateIfMissing) {
+				throw new IllegalStateException(String.format("File missing at mnemonic loc '%s'!", qWordsLoc));
+			}
+			mnemonic = randomMnemonic();
+			try {
+				Files.write(Paths.get(qWordsLoc), List.of(mnemonic));
+				log.info("Created new simple key at mnemonic loc '{}'.", qWordsLoc);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		} else {
+			mnemonic = KeyFactory.mnemonicFromFile(qWordsLoc);
+		}
+		var cryptoKey = mnemonicToEd25519Key(mnemonic);
+		var grpcKey = Ed25519Factory.populatedFrom(cryptoKey.getAbyte());
+		forms.completeIntake(spec.registry(), grpcKey);
+		spec.keys().incorporate(
+				forms.name(),
+				encodeHexString(cryptoKey.getAbyte()),
+				cryptoKey,
+				SigControl.ON);
+	}
+
+	public static String randomMnemonic() {
+		byte[] entropy = new byte[32];
+		new SplittableRandom().nextBytes(entropy);
+		try {
+			return Bip0039.mnemonicFrom(entropy);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	public static EdDSAPrivateKey mnemonicToEd25519Key(String mnemonic) {
+		try {
+			return Ed25519Factory.ed25519From(Bip0032.privateKeyFrom(Bip0032.seedFrom(mnemonic)));
+		} catch (NoSuchAlgorithmException | InvalidKeyException | ShortBufferException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void registerPemWith(HapiApiSpec spec, RegistryForms forms) {
+		var qPemLoc = qualifiedKeyLoc(pemLoc, spec);
 		var aes256EncryptedPkcs8Pem = new File(qPemLoc);
 		if (!aes256EncryptedPkcs8Pem.exists()) {
 			if (!generateIfMissing) {
@@ -99,7 +180,7 @@ public class PemKey {
 			return;
 		}
 
-		var keyPair = readFirstKp(aes256EncryptedPkcs8Pem, passphrase);
+		var keyPair = readFirstKpFromPem(aes256EncryptedPkcs8Pem, passphrase);
 		var publicKey = (EdDSAPublicKey) keyPair.getPublic();
 		var hederaKey = asSimpleHederaKey(publicKey.getAbyte());
 		forms.completeIntake(spec.registry(), hederaKey);
@@ -113,17 +194,21 @@ public class PemKey {
 				SigControl.ON);
 	}
 
-	private String qualifiedPemLoc(String loc, HapiApiSpec spec) {
-		return String.format("%s/keys/%s", spec.setup().persistentEntitiesDirPath(), loc);
+	private String qualifiedKeyLoc(String loc, HapiApiSpec spec) {
+		return String.format(
+				"%s/%s/%s",
+				spec.setup().persistentEntitiesDir(),
+				EntityManager.KEYS_SUBDIR,
+				loc);
 	}
 
-	public static KeyPair readFirstKp(File pem, String passphrase) {
+	public static KeyPair readFirstKpFromPem(File store, String passphrase) {
 		try {
-			var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), pem);
+			var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), store);
 			return keyStore.get(0);
 		} catch (KeyStoreException kse) {
 			throw new IllegalStateException(
-					String.format("Unusable key at alleged PEM loc '%s'!", pem.getPath()), kse);
+					String.format("Unusable key at alleged PEM loc '%s'!", store.getPath()), kse);
 		}
 	}
 

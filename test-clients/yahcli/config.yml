@@ -1,0 +1,11 @@
+defaultNetwork: localhost
+networks:
+  localhost:
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: host.docker.internal }
+  previewnet:
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 35.231.208.148 }
+  stabletestnet:
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 34.94.106.61 }

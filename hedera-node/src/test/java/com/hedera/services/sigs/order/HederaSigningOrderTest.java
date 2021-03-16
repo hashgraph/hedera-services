@@ -390,9 +390,24 @@ public class HederaSigningOrderTest {
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(
-				sanityRestored(summary.getOrderedKeys()),
-				contains(NEW_ACCOUNT_KT.asKey()));
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+		verify(updateSigReqs).test(txn);
+	}
+
+	@Test
+	public void getsCryptoUpdateProtectedSysAccountNewKey() throws Throwable {
+		// given:
+		@SuppressWarnings("unchecked")
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO, updateSigReqs);
+		// and:
+		given(updateSigReqs.test(txn)).willReturn(false);
+
+		// when:
+		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
 		verify(updateSigReqs).test(txn);
 	}
 
@@ -402,6 +417,23 @@ public class HederaSigningOrderTest {
 		@SuppressWarnings("unchecked")
 		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, updateSigReqs);
+		// and:
+		given(updateSigReqs.test(txn)).willReturn(false);
+
+		// when:
+		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+		verify(updateSigReqs).test(txn);
+	}
+
+	@Test
+	public void getsCryptoUpdateProtectedSysAccountNoNewKey() throws Throwable {
+		// given:
+		@SuppressWarnings("unchecked")
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(false);
 

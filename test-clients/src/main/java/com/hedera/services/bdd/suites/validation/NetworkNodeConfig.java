@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.validation.domain;
+package com.hedera.services.bdd.suites.validation;
 
 /*-
  * ‌
@@ -20,7 +20,7 @@ package com.hedera.services.bdd.suites.validation.domain;
  * ‍
  */
 
-public class Node {
+public class NetworkNodeConfig {
 	private long account;
 	private String ipv4Addr;
 

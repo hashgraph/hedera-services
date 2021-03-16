@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -112,7 +111,7 @@ public class ReadyToRunScheduledXfersLoad extends HapiApiSuite {
 		for (int i = 0; i < nonDefaultSenders; i++) {
 			initializers.add(
 					cryptoCreate(payingSender(i))
-							.balance(A_HUNDRED_HBARS)
+							.balance(ONE_HUNDRED_HBARS)
 			);
 		}
 		for (int i = 0; i < inertReceivers; i++) {

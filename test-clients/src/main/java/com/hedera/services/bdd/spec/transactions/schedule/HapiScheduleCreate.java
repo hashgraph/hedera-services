@@ -51,6 +51,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.fromOrdinary;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
@@ -62,6 +63,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private static final int defaultScheduleTxnExpiry = HapiSpecSetup.getDefaultNodeProps()
 			.getInteger("ledger.schedule.txExpiryTimeSecs");
 
+	private boolean advertiseCreation = false;
 	private boolean recordScheduledTxn = false;
 	private boolean skipRegistryUpdate = false;
 	private boolean scheduleNoFunction = false;
@@ -84,6 +86,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 				.sansTxnId()
 				.sansNodeAccount()
 				.signedBy();
+	}
+
+	public HapiScheduleCreate<T> advertisingCreation() {
+		advertiseCreation = true;
+		return this;
 	}
 
 	public HapiScheduleCreate<T> savingExpectedScheduledTxnId() {
@@ -191,14 +198,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return estimate;
 	}
 
-	private TransactionBody parseUnchecked(ByteString txnBytes) {
-		try {
-			return TransactionBody.parseFrom(txnBytes);
-		} catch (InvalidProtocolBufferException e) {
-			return TransactionBody.getDefaultInstance();
-		}
-	}
-
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
@@ -236,6 +235,14 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 				log.info("Created scheduled txn {}", scheduledTxn.get());
 			}
 			registry.saveScheduledTxn(scheduleEntity, scheduledTxn.get());
+		}
+		if (advertiseCreation) {
+			String banner = "\n\n" + bannerWith(
+					String.format(
+							"Created schedule '%s' with id '0.0.%d'.",
+							scheduleEntity,
+							lastReceipt.getScheduleID().getScheduleNum()));
+			log.info(banner);
 		}
 	}
 

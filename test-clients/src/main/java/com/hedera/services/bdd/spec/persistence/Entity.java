@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.persistence;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 
 import java.util.Optional;
@@ -30,32 +31,40 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
 public class Entity implements Comparable<Entity> {
 	enum Type {
-		ACCOUNT, TOKEN, UNKNOWN
+		ACCOUNT, TOKEN, SCHEDULE, TOPIC, FILE, CONTRACT, UNKNOWN
 	}
+
+	private static final File UNSPECIFIED_FILE = null;
 	private static final Token UNSPECIFIED_TOKEN = null;
 	private static final Topic UNSPECIFIED_TOPIC = null;
 	private static final Account UNSPECIFIED_ACCOUNT = null;
+	private static final Contract UNSPECIFIED_CONTRACT = null;
+	private static final Schedule UNSPECIFIED_SCHEDULE = null;
 	private static final EntityId UNCREATED_ENTITY_ID = null;
 
-	public static final PemKey UNUSED_KEY = null;
-	public static final HapiSpecOperation UNNEEDED_CREATE_OP = null;
+	static final SpecKey UNUSED_KEY = null;
+	static final SpecKeyList UNUSED_KEY_LIST = null;
+	private static final HapiTxnOp<?> UNNEEDED_CREATE_OP = null;
 
 	private String name;
 	private String manifestAbsPath = "<N/A>";
 	private EntityId id = UNCREATED_ENTITY_ID;
+	private File file = UNSPECIFIED_FILE;
 	private Topic topic = UNSPECIFIED_TOPIC;
 	private Token token = UNSPECIFIED_TOKEN;
 	private Account account = UNSPECIFIED_ACCOUNT;
+	private Contract contract = UNSPECIFIED_CONTRACT;
+	private Schedule schedule = UNSPECIFIED_SCHEDULE;
 	private HapiSpecOperation createOp = UNNEEDED_CREATE_OP;
 
-	public static Entity from(String name, Token token) {
+	public static Entity newTokenEntity(String name, Token token) {
 		var it = new Entity();
 		it.setName(name);
 		it.setToken(token);
 		return it;
 	}
 
-	public static Entity from(String name, Account account) {
+	public static Entity newAccountEntity(String name, Account account) {
 		var it = new Entity();
 		it.setName(name);
 		it.setAccount(account);
@@ -67,6 +76,24 @@ public class Entity implements Comparable<Entity> {
 		return Integer.compare(this.specifiedEntityPriority(), that.specifiedEntityPriority());
 	}
 
+	public HapiQueryOp<?> existenceCheck() {
+		if (token != UNSPECIFIED_TOKEN) {
+			return token.existenceCheck(name);
+		} else if (account != UNSPECIFIED_ACCOUNT) {
+			return account.existenceCheck(name);
+		} else if (schedule != UNSPECIFIED_SCHEDULE) {
+			return schedule.existenceCheck(name);
+		} else if (topic != UNSPECIFIED_TOPIC) {
+			return topic.existenceCheck(name);
+		} else if (file != UNSPECIFIED_FILE) {
+			return file.existenceCheck(name);
+		} else if (contract != UNSPECIFIED_CONTRACT) {
+			return contract.existenceCheck(name);
+		} else {
+			throw new IllegalStateException("Unsupported type!");
+		}
+	}
+
 	private int specifiedEntityPriority() {
 		return specified().ordinal();
 	}
@@ -76,6 +103,14 @@ public class Entity implements Comparable<Entity> {
 			return Type.TOKEN;
 		} else if (account != UNSPECIFIED_ACCOUNT) {
 			return Type.ACCOUNT;
+		} else if (schedule != UNSPECIFIED_SCHEDULE) {
+			return Type.SCHEDULE;
+		} else if (topic != UNSPECIFIED_TOPIC) {
+			return Type.TOPIC;
+		} else if (file != UNSPECIFIED_FILE) {
+			return Type.FILE;
+		} else if (contract != UNSPECIFIED_CONTRACT) {
+			return Type.CONTRACT;
 		} else {
 			return Type.UNKNOWN;
 		}
@@ -89,32 +124,43 @@ public class Entity implements Comparable<Entity> {
 		return manifestAbsPath;
 	}
 
-	public void registerWhatIsKnown(HapiApiSpec spec) {
+	void registerWhatIsKnown(HapiApiSpec spec) {
 		if (token != UNSPECIFIED_TOKEN) {
 			token.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
-		}
-		if (topic != UNSPECIFIED_TOPIC) {
+		} else if (topic != UNSPECIFIED_TOPIC) {
 			topic.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
-		}
-		if (account != UNSPECIFIED_ACCOUNT) {
+		} else if (schedule != UNSPECIFIED_SCHEDULE) {
+			schedule.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		} else if (account != UNSPECIFIED_ACCOUNT) {
 			account.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		} else if (file != UNSPECIFIED_FILE) {
+			file.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		} else if (contract != UNSPECIFIED_CONTRACT) {
+			contract.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
+		} else {
+			throw new IllegalStateException("Unsupported type!");
 		}
 	}
 
-	public HapiSpecOperation createOp() {
+	HapiSpecOperation createOp() {
 		if (token != UNSPECIFIED_TOKEN) {
 			return (createOp = token.createOp(name));
-		}
-		if (topic != UNSPECIFIED_TOPIC) {
+		} else if (topic != UNSPECIFIED_TOPIC) {
 			return (createOp = topic.createOp(name));
-		}
-		if (account != UNSPECIFIED_ACCOUNT) {
+		} else if (account != UNSPECIFIED_ACCOUNT) {
 			return (createOp = account.createOp(name));
+		} else if (schedule != UNSPECIFIED_SCHEDULE) {
+			return (createOp = schedule.createOp(name));
+		} else if (file != UNSPECIFIED_FILE) {
+			return (createOp = file.createOp(name));
+		} else if (contract != UNSPECIFIED_CONTRACT) {
+			return (createOp = contract.createOp(name));
+		} else {
+			throw new IllegalStateException("Unsupported type!");
 		}
-		return assertionsHold((spec, opLog) -> {});
 	}
 
-	public boolean needsCreation() {
+	boolean needsCreation() {
 		return id == UNCREATED_ENTITY_ID;
 	}
 
@@ -158,12 +204,35 @@ public class Entity implements Comparable<Entity> {
 		this.account = account;
 	}
 
-	@SuppressWarnings("unchecked")
-	public HapiTxnOp getCreateOp() {
-		return (HapiTxnOp)createOp;
+	HapiSpecOperation getCreateOp() {
+		return createOp;
 	}
 
-	public void setCreateOp(HapiSpecOperation createOp) {
-		this.createOp = createOp;
+	public Schedule getSchedule() {
+		return schedule;
+	}
+
+	public void setSchedule(Schedule schedule) {
+		this.schedule = schedule;
+	}
+
+	void clearCreateOp() {
+		this.createOp = UNNEEDED_CREATE_OP;
+	}
+
+	public File getFile() {
+		return file;
+	}
+
+	public void setFile(File file) {
+		this.file = file;
+	}
+
+	public Contract getContract() {
+		return contract;
+	}
+
+	public void setContract(Contract contract) {
+		this.contract = contract;
 	}
 }

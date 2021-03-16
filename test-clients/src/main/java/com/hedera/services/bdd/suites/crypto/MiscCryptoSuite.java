@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class MiscCryptoSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MiscCryptoSuite.class);
@@ -58,13 +60,50 @@ public class MiscCryptoSuite extends HapiApiSuite {
 		return Arrays.asList(
 //				transferChangesBalance()
 //				getsGenesisBalance()
-				reduceTransferFee()
+//				reduceTransferFee(),
+				sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign()
 		);
 	}
 	private List<HapiApiSpec> negativeTests() {
 		return List.of(
 				updateWithOutOfDateKeyFails()
 		);
+	}
+
+	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(){
+		String sysAccount = "0.0.977";
+		String randomAccountA = "randomAccountA";
+		String randomAccountB = "randomAccountB";
+		String firstKey = "firstKey";
+		String secondKey = "secondKey";
+
+		return defaultHapiSpec("sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign")
+				.given(
+						withOpContext((spec, opLog) -> {
+							spec.registry().saveKey(sysAccount, spec.registry().getKey(GENESIS));
+						}),
+						newKeyNamed(firstKey).shape(SIMPLE),
+						newKeyNamed(secondKey).shape(SIMPLE)
+				)
+				.when(
+						cryptoCreate(randomAccountA)
+								.key(firstKey),
+						cryptoCreate(randomAccountB)
+								.key(firstKey)
+								.balance(ONE_HUNDRED_HBARS)
+				)
+				.then(
+						cryptoUpdate(sysAccount)
+								.key(secondKey)
+								.payingWith(GENESIS)
+								.hasKnownStatus(SUCCESS)
+								.logged(),
+						cryptoUpdate(randomAccountA)
+								.key(secondKey)
+								.signedBy(firstKey)
+								.payingWith(randomAccountB)
+								.hasKnownStatus(INVALID_SIGNATURE)
+				);
 	}
 
 	private HapiApiSpec reduceTransferFee() {
@@ -74,7 +113,7 @@ public class MiscCryptoSuite extends HapiApiSuite {
 		final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
 		return defaultHapiSpec("ReduceTransferFee")
 				.given(
-						cryptoCreate("sender").balance(A_HUNDRED_HBARS),
+						cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver").balance(0L),
 						cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
 								.payingWith("sender")
@@ -89,7 +128,7 @@ public class MiscCryptoSuite extends HapiApiSuite {
 								.payingWith("sender")
 								.fee(ONE_HBAR)
 								.hasPrecheck(OK),
-						getAccountBalance("sender").hasTinyBars(A_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE).logged()
+						getAccountBalance("sender").hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE).logged()
 				);
 	}
 

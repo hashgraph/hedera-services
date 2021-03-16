@@ -540,12 +540,10 @@ public class HederaSigningOrder {
 		} else if (targetMustSign) {
 			required = mutable(required);
 			required.add(result.metadata().getKey());
-		}
-
-		if (op.hasKey()) {
-			required = mutable(required);
-			var candidate = asUsableFcKey(op.getKey());
-			candidate.ifPresent(required::add);
+			if (op.hasKey()) {
+				var candidate = asUsableFcKey(op.getKey());
+				candidate.ifPresent(required::add);
+			}
 		}
 
 		return factory.forValidOrder(required);

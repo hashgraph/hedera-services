@@ -190,7 +190,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("CanScheduleChunkedMessages")
 				.given(
-						cryptoCreate("payingSender").balance(A_HUNDRED_HBARS),
+						cryptoCreate("payingSender").balance(ONE_HUNDRED_HBARS),
 						createTopic(ofGeneralInterest)
 				).when(
 						withOpContext((spec, opLog) -> {

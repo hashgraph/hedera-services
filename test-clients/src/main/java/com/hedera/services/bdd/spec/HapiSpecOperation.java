@@ -205,8 +205,10 @@ public abstract class HapiSpecOperation {
 				log.info("Node {} is unavailable as expected!", HapiPropertySource.asAccountString(node.get()));
 				return Optional.empty();
 			}
-			if (!loggingOff) {
-				log.warn(spec.logPrefix() + this + " failed ({})!", t.getMessage());
+			if (verboseLoggingOn) {
+				log.warn(spec.logPrefix() + this + " failed - {}", t);
+			} else if (!loggingOff) {
+				log.warn(spec.logPrefix() + this + " failed {}!", t.getMessage());
 			}
 			return Optional.of(t);
 		}

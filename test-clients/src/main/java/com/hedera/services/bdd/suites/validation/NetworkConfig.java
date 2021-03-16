@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.validation.domain;
+package com.hedera.services.bdd.suites.validation;
 
 /*-
  * ‌
@@ -20,15 +20,13 @@ package com.hedera.services.bdd.suites.validation.domain;
  * ‍
  */
 
-import com.hedera.services.bdd.suites.validation.MiscConfig;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.joining;
 
-public class NetworkInfo {
+public class NetworkConfig {
 	private static final Long DEFAULT_BOOTSTRAP_ACCOUNT = 2L;
 	private static final Long DEFAULT_STARTUP_NODE_ACCOUNT = 3L;
 	private static final String DEFAULT_NAME = "default";
@@ -42,9 +40,9 @@ public class NetworkInfo {
 	private String bootstrapPemKeyLoc;
 	private String persistentEntitiesDir;
 	private String bootstrapPemKeyPassphrase = DEFAULT_BOOTSTRAP_PEM_KEY_PASSPHRASE;
-	private List<Node> nodes;
+	private List<NetworkNodeConfig> nodes;
 
-	public NetworkInfo named(String name) {
+	public NetworkConfig named(String name) {
 		this.name = name;
 		return this;
 	}
@@ -89,11 +87,11 @@ public class NetworkInfo {
 		this.persistentEntitiesDir = persistentEntitiesDir;
 	}
 
-	public List<Node> getNodes() {
+	public List<NetworkNodeConfig> getNodes() {
 		return nodes;
 	}
 
-	public void setNodes(List<Node> nodes) {
+	public void setNodes(List<NetworkNodeConfig> nodes) {
 		this.nodes = nodes;
 	}
 
