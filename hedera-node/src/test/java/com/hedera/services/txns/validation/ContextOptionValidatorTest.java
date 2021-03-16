@@ -50,10 +50,13 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.codec.binary.Hex;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,6 +71,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -414,9 +419,9 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void acceptsNullEntityMemo() {
+	public void doesntAcceptNullEntityMemo() {
 		// expect:
-		assertTrue(subject.isValidEntityMemo(null));
+		Assertions.assertThrows(NullPointerException.class, () -> subject.isValidEntityMemo(null));
 	}
 
 	@Test
@@ -606,5 +611,16 @@ public class ContextOptionValidatorTest {
 
 		// expect:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.isAcceptableTokenTransfersLength(wrapper));
+	}
+
+	@Test
+	void memoCheckWorks() {
+		char[] aaa = new char[101];
+		Arrays.fill(aaa, 'a');
+
+		// expect:
+		assertEquals(OK, subject.memoCheck("OK"));
+		assertEquals(MEMO_TOO_LONG, subject.memoCheck(new String(aaa)));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.memoCheck("Not s\u0000 ok!"));
 	}
 }

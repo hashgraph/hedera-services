@@ -196,6 +196,7 @@ import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -495,6 +496,7 @@ public class ServicesContext {
 	private CharacteristicsFactory characteristics;
 	private AccountRecordsHistorian recordsHistorian;
 	private GlobalDynamicProperties globalDynamicProperties;
+	private AwareNodeDiligenceScreen nodeDiligenceScreen;
 	private InHandleActivationHelper activationHelper;
 	private PlatformSubmissionManager submissionManager;
 	private SmartContractRequestHandler contracts;
@@ -593,6 +595,13 @@ public class ServicesContext {
 			}, nodeLocalProperties());
 		}
 		return speedometers;
+	}
+
+	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
+		if (nodeDiligenceScreen == null) {
+			nodeDiligenceScreen = new AwareNodeDiligenceScreen(validator(), txnCtx(), backingAccounts());
+		}
+		return nodeDiligenceScreen;
 	}
 
 	public SemanticVersions semVers() {

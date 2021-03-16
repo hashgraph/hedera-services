@@ -20,9 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.TransactionBody;

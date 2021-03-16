@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.nAscii;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -60,6 +61,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -83,24 +85,25 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				suiteSetup(),
-				bodyOnlyCreation(),
-				onlyBodyAndAdminCreation(),
-				onlyBodyAndMemoCreation(),
-				bodyAndSignatoriesCreation(),
-				bodyAndPayerCreation(),
-				rejectsUnresolvableReqSigners(),
-				triggersImmediatelyWithBothReqSimpleSigs(),
-				onlySchedulesWithMissingReqSimpleSigs(),
-				failsWithNonExistingPayerAccountId(),
-				failsWithTooLongMemo(),
-				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				doesntTriggerUntilPayerSigns(),
-				requiresExtantPayer(),
-				rejectsFunctionlessTxn(),
-				whitelistWorks(),
-				preservesRevocationServiceSemanticsForFileDelete(),
-				worksAsExpectedWithDefaultScheduleId(),
-				infoIncludesTxnIdFromCreationReceipt(),
+				rejectsMalformedScheduledTxnMemo(),
+//				bodyOnlyCreation(),
+//				onlyBodyAndAdminCreation(),
+//				onlyBodyAndMemoCreation(),
+//				bodyAndSignatoriesCreation(),
+//				bodyAndPayerCreation(),
+//				rejectsUnresolvableReqSigners(),
+//				triggersImmediatelyWithBothReqSimpleSigs(),
+//				onlySchedulesWithMissingReqSimpleSigs(),
+//				failsWithNonExistingPayerAccountId(),
+//				failsWithTooLongMemo(),
+//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+//				doesntTriggerUntilPayerSigns(),
+//				requiresExtantPayer(),
+//				rejectsFunctionlessTxn(),
+//				whitelistWorks(),
+//				preservesRevocationServiceSemanticsForFileDelete(),
+//				worksAsExpectedWithDefaultScheduleId(),
+//				infoIncludesTxnIdFromCreationReceipt(),
 				suiteCleanup(),
 		});
 	}
@@ -242,8 +245,20 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.then();
 	}
 
-	private String nAscii(int n) {
-		return IntStream.range(0, n).mapToObj(ignore -> "A").collect(Collectors.joining());
+	private HapiApiSpec rejectsMalformedScheduledTxnMemo() {
+		return defaultHapiSpec("RejectsMalformedScheduledTxnMemo")
+				.given(
+						cryptoCreate("sender")
+				).when().then(
+						scheduleCreate("creation",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.memo(nAscii(101))
+						).hasPrecheck(MEMO_TOO_LONG),
+						scheduleCreate("creationPartDeux",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.memo("Here's s\u0000 to chew on!")
+						).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
+				);
 	}
 
 	private HapiApiSpec infoIncludesTxnIdFromCreationReceipt() {

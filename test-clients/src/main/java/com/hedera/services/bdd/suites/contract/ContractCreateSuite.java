@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +43,9 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.*;
 
@@ -68,6 +72,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> negativeTests() {
 		return Arrays.asList(
+				rejectsInvalidMemo(),
 				rejectsInsufficientFee(),
 				rejectsInvalidBytecode(),
 				revertsNonzeroBalance(),
@@ -79,10 +84,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec createsVanillaContract() {
 		return defaultHapiSpec("CreatesVanillaContract")
 				.given(
-						TxnVerbs.fileCreate("contractFile")
+						fileCreate("contractFile")
 								.path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
-						TxnVerbs.contractCreate("testContract")
+						contractCreate("testContract")
 								.bytecode("contractFile")
 								.hasKnownStatus(SUCCESS)
 				);
@@ -95,15 +100,15 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CreateFailsIfMissingSigs")
 				.given(
-						TxnVerbs.fileCreate("contractFile")
+						fileCreate("contractFile")
 								.path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
-						TxnVerbs.contractCreate("testContract")
+						contractCreate("testContract")
 								.adminKeyShape(shape)
 								.bytecode("contractFile")
 								.sigControl(forKey("testContract", invalidSig))
 								.hasKnownStatus(INVALID_SIGNATURE),
-						TxnVerbs.contractCreate("testContract")
+						contractCreate("testContract")
 								.adminKeyShape(shape)
 								.bytecode("contractFile")
 								.sigControl(forKey("testContract", validSig))
@@ -113,24 +118,34 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec rejectsInsufficientGas() {
 		return defaultHapiSpec("RejectsInsufficientGas")
 				.given(
-						TxnVerbs.fileCreate("simpleStorageBytecode")
+						fileCreate("simpleStorageBytecode")
 								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH)
 				).when().then(
-						TxnVerbs.contractCreate("simpleStorage")
+						contractCreate("simpleStorage")
 								.bytecode("simpleStorageBytecode")
 								.gas(0L)
 								.hasKnownStatus(INSUFFICIENT_GAS)
 				);
 	}
 
+	private HapiApiSpec rejectsInvalidMemo() {
+		return defaultHapiSpec("RejectsInvalidMemo")
+				.given( ).when().then(
+						contractCreate("testContract")
+								.entityMemo(TxnUtils.nAscii(101))
+								.fee(1L)
+								.hasPrecheck(INSUFFICIENT_TX_FEE)
+				);
+	}
+
 	private HapiApiSpec rejectsInsufficientFee() {
 		return defaultHapiSpec("RejectsInsufficientFee")
 				.given(
-						TxnVerbs.cryptoCreate("payer"),
-						TxnVerbs.fileCreate("contractFile")
+						cryptoCreate("payer"),
+						fileCreate("contractFile")
 								.path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
-						TxnVerbs.contractCreate("testContract")
+						contractCreate("testContract")
 								.bytecode("contractFile")
 								.payingWith("payer")
 								.fee(1L)
@@ -141,10 +156,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec rejectsInvalidBytecode() {
 		return defaultHapiSpec("RejectsInvalidBytecode")
 				.given(
-						TxnVerbs.fileCreate("contractFile")
+						fileCreate("contractFile")
 								.path(ContractResources.INVALID_BYTECODE_PATH)
 				).when().then(
-						TxnVerbs.contractCreate("testContract")
+						contractCreate("testContract")
 								.bytecode("contractFile")
 								.hasKnownStatus(ERROR_DECODING_BYTESTRING)
 				);
@@ -153,10 +168,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec revertsNonzeroBalance() {
 		return defaultHapiSpec("RevertsNonzeroBalance")
 				.given(
-						TxnVerbs.fileCreate("contractFile")
+						fileCreate("contractFile")
 								.path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
-						TxnVerbs.contractCreate("testContract")
+						contractCreate("testContract")
 								.balance(1L)
 								.bytecode("contractFile")
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)

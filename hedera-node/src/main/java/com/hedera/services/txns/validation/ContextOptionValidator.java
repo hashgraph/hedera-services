@@ -45,6 +45,8 @@ import java.util.Optional;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -132,8 +134,8 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isValidEntityMemo(@Nullable String memo) {
-		return (null == memo) || (StringUtils.getBytesUtf8(memo).length <= properties.maxMemoUtf8Bytes());
+	public boolean isValidEntityMemo(String memo) {
+		return StringUtils.getBytesUtf8(memo).length <= properties.maxMemoUtf8Bytes();
 	}
 
 	@Override
@@ -167,6 +169,17 @@ public class ContextOptionValidator implements OptionValidator {
 			return TOKEN_NAME_TOO_LONG;
 		}
 		return OK;
+	}
+
+	@Override
+	public ResponseCodeEnum memoCheck(String cand) {
+		if (StringUtils.getBytesUtf8(cand).length > properties.maxMemoUtf8Bytes()) {
+			return MEMO_TOO_LONG;
+		} else if (cand.contains("\u0000")) {
+			return INVALID_ZERO_BYTE_IN_STRING;
+		} else {
+			return OK;
+		}
 	}
 
 	/* Not applicable until auto-renew is implemented. */

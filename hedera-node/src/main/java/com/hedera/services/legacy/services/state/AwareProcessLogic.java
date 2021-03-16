@@ -225,7 +225,8 @@ public class AwareProcessLogic implements ProcessLogic {
 		var duplicity = (recentHistory == null)
 				? BELIEVED_UNIQUE
 				: recentHistory.currentDuplicityFor(ctx.txnCtx().submittingSwirldsMember());
-		if (nodeIgnoredDueDiligence(duplicity)) {
+
+		if (ctx.nodeDiligenceScreen().nodeIgnoredDueDiligence(duplicity)) {
 			ctx.txnChargingPolicy().applyForIgnoredDueDiligence(ctx.charging(), fee);
 			return;
 		}
@@ -284,49 +285,6 @@ public class AwareProcessLogic implements ProcessLogic {
 		} catch (Exception edgeCase) {
 			log.warn("Almost inconceivably, when testing payer sig activation:", edgeCase);
 		}
-		return false;
-	}
-
-	private boolean nodeIgnoredDueDiligence(DuplicateClassification duplicity) {
-		Instant consensusTime = ctx.txnCtx().consensusTime();
-		TxnAccessor accessor = ctx.txnCtx().accessor();
-
-		var swirldsMemberAccount = ctx.txnCtx().submittingNodeAccount();
-		var designatedNodeAccount = accessor.getTxn().getNodeAccountID();
-		boolean designatedNodeExists = ctx.backingAccounts().contains(designatedNodeAccount);
-		if (!designatedNodeExists || !swirldsMemberAccount.equals(designatedNodeAccount)) {
-			log.warn("Node {} (Member #{}) submitted a txn designated for {} node {} :: {}",
-					readableId(swirldsMemberAccount),
-					ctx.txnCtx().submittingSwirldsMember(),
-					designatedNodeExists ? "other" : "nonexistent",
-					readableId(designatedNodeAccount),
-					accessor.getSignedTxn4Log());
-			ctx.txnCtx().setStatus(INVALID_NODE_ACCOUNT);
-			return true;
-		}
-
-		if (!ctx.txnCtx().isPayerSigKnownActive()) {
-			ctx.txnCtx().setStatus(INVALID_PAYER_SIGNATURE);
-			return true;
-		}
-
-		if (duplicity == NODE_DUPLICATE) {
-			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
-			return true;
-		}
-
-		long txnDuration = accessor.getTxn().getTransactionValidDuration().getSeconds();
-		if (!ctx.validator().isValidTxnDuration(txnDuration)) {
-			ctx.txnCtx().setStatus(INVALID_TRANSACTION_DURATION);
-			return true;
-		}
-
-		var cronStatus = ctx.validator().chronologyStatus(accessor, consensusTime);
-		if (cronStatus != OK) {
-			ctx.txnCtx().setStatus(cronStatus);
-			return true;
-		}
-
 		return false;
 	}
 
