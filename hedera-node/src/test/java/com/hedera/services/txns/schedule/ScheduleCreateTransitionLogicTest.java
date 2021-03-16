@@ -36,7 +36,7 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -349,7 +349,7 @@ public class ScheduleCreateTransitionLogicTest {
 				).build();
 
 		var builder = TransactionBody.newBuilder();
-		var scheduleCreate = ReplScheduleCreateTransactionBody.newBuilder()
+		var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
 				.setAdminKey(key)
 				.setPayerAccountID(payer)
 				.setMemo(entityMemo)
@@ -359,7 +359,7 @@ public class ScheduleCreateTransitionLogicTest {
 			scheduleCreate.setAdminKey(invalidKey);
 		}
 		builder.setTransactionID(txnId);
-		builder.setReplScheduleCreate(scheduleCreate);
+		builder.setScheduleCreate(scheduleCreate);
 
 		scheduleCreateTxn = builder.build();
 

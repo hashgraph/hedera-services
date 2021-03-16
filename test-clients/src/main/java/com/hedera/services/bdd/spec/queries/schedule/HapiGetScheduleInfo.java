@@ -198,7 +198,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 			}
 			Assert.assertArrayEquals("Wrong signatories!",
 					expect.build().getKeysList().toArray(),
-					actualInfo.getSignatories().getKeysList().toArray());
+					actualInfo.getSigners().getKeysList().toArray());
 		});
 
 		assertFor(

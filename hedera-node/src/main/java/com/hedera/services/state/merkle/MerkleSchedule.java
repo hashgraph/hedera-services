@@ -377,7 +377,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	private void initFromBodyBytes() {
 		try {
 			var parentTxn = TransactionBody.parseFrom(bodyBytes);
-			var creationOp = parentTxn.getReplScheduleCreate();
+			var creationOp = parentTxn.getScheduleCreate();
 
 			if (!creationOp.getMemo().isEmpty()) {
 				memo = creationOp.getMemo();
@@ -391,7 +391,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 					grpcAdminKey = creationOp.getAdminKey();
 				}
 			}
-			scheduledTxn = parentTxn.getReplScheduleCreate().getScheduledTransactionBody();
+			scheduledTxn = parentTxn.getScheduleCreate().getScheduledTransactionBody();
 			schedulingAccount = EntityId.ofNullableAccountId(parentTxn.getTransactionID().getAccountID());
 			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());

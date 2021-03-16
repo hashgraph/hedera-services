@@ -63,9 +63,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 
 public class ScheduleCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
@@ -441,7 +440,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("RejectsFunctionlessTxn")
 				.given().when().then(
 						scheduleCreateFunctionless("unknown")
-								.hasKnownStatus(UNPARSEABLE_SCHEDULED_TRANSACTION)
+								.hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST)
 				);
 	}
 
@@ -451,7 +450,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						scheduleCreate(
 								"nope",
 								createTopic("neverToBe").signedBy()
-						).hasKnownStatus(UNSCHEDULABLE_TRANSACTION)
+						).hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST)
 				).when(
 						overriding("scheduling.whitelist", "ConsensusCreateTopic"),
 						scheduleCreate("ok", createTopic("neverToBe"))

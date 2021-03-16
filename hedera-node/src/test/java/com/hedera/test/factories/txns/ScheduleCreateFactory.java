@@ -24,7 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -36,7 +36,6 @@ import static com.google.protobuf.ByteString.copyFrom;
 
 public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactory> {
     private boolean omitAdmin = false;
-    private boolean intentionalNonsense = false;
     private Optional<AccountID> payer = Optional.empty();
     private Transaction scheduled = Transaction.getDefaultInstance();
 
@@ -61,12 +60,6 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
         return this;
     }
 
-    public ScheduleCreateFactory creatingNonsense(Transaction scheduled) {
-        this.scheduled = scheduled;
-        intentionalNonsense = true;
-        return this;
-    }
-
     @Override
     protected ScheduleCreateFactory self() {
         return this;
@@ -79,7 +72,7 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        var op = ReplScheduleCreateTransactionBody.newBuilder();
+        var op = ScheduleCreateTransactionBody.newBuilder();
         if (!omitAdmin) {
             op.setAdminKey(TxnHandlingScenario.SCHEDULE_ADMIN_KT.asKey());
         }
@@ -89,11 +82,8 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
             var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
             op.setScheduledTransactionBody(scheduled);
         } catch (InvalidProtocolBufferException e) {
-        	if (!intentionalNonsense) {
-        	    throw new IllegalStateException("ScheduleCreate unintentionally configured with nonsense!", e);
-            }
-        	op.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
+            throw new IllegalStateException("ScheduleCreate test used unparseable transaction!", e);
         }
-        txn.setReplScheduleCreate(op);
+        txn.setScheduleCreate(op);
     }
 }

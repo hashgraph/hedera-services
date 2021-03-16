@@ -47,7 +47,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public boolean applicableTo(TransactionBody txn) {
-		return txn.hasReplScheduleCreate();
+		return txn.hasScheduleCreate();
 	}
 
 	@Override
@@ -55,7 +55,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 		var usageEstimate = factory.apply(txn, sigUsage)
 				.givenScheduledTxExpirationTimeSecs(dynamicProperties.scheduledTxExpiryTimeSecs())
-				.givenScheduledTxn(txn.getReplScheduleCreate().getScheduledTransactionBody())
+				.givenScheduledTxn(txn.getScheduleCreate().getScheduledTransactionBody())
 				.get();
 		return usageEstimate;
 	}

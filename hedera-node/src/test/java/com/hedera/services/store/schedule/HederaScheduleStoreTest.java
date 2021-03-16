@@ -61,8 +61,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -558,7 +558,7 @@ public class HederaScheduleStoreTest {
 		var outcome = subject.delete(created);
 
 		// then:
-		assertEquals(SCHEDULE_WAS_DELETED, outcome);
+		assertEquals(SCHEDULE_ALREADY_DELETED, outcome);
 	}
 
 	@Test
@@ -570,7 +570,7 @@ public class HederaScheduleStoreTest {
 		var outcome = subject.markAsExecuted(created);
 
 		// then:
-		assertEquals(SCHEDULE_WAS_DELETED, outcome);
+		assertEquals(SCHEDULE_ALREADY_DELETED, outcome);
 	}
 
 	@Test
@@ -582,7 +582,7 @@ public class HederaScheduleStoreTest {
 		var outcome = subject.markAsExecuted(created);
 
 		// then:
-		assertEquals(SCHEDULE_WAS_EXECUTED, outcome);
+		assertEquals(SCHEDULE_ALREADY_EXECUTED, outcome);
 	}
 
 	@Test

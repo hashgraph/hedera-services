@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.schedule.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
 import com.hedera.services.usage.schedule.ScheduleGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -76,10 +75,10 @@ public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator
 			var estimate = factory.apply(query)
 					.givenScheduledTxnId(info.getScheduledTransactionID())
 					.givenScheduledTxn(info.getScheduledTransactionBody())
-					.givenDeleted(info.getDeleted())
-					.givenExecuted(info.getExecuted())
+					.givenDeleted(info.hasDeletionTime())
+					.givenExecuted(info.hasExpirationTime())
 					.givenMemo(info.getMemoBytes())
-					.givenSignatories(ifPresent(info, ScheduleInfo::hasSignatories, ScheduleInfo::getSignatories))
+					.givenSignatories(ifPresent(info, ScheduleInfo::hasSigners, ScheduleInfo::getSigners))
 					.givenCurrentAdminKey(ifPresent(info, ScheduleInfo::hasAdminKey, ScheduleInfo::getAdminKey));
 			return estimate.get();
 		} else {

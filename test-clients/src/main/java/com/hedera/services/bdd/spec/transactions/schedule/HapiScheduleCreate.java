@@ -32,7 +32,7 @@ import com.hedera.services.usage.schedule.ScheduleCreateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -145,10 +145,10 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var subOp = scheduled.signedTxnFor(spec);
 
-		ReplScheduleCreateTransactionBody opBody = spec
+		ScheduleCreateTransactionBody opBody = spec
 				.txns()
-				.<ReplScheduleCreateTransactionBody, ReplScheduleCreateTransactionBody.Builder>body(
-						ReplScheduleCreateTransactionBody.class, b -> {
+				.<ScheduleCreateTransactionBody, ScheduleCreateTransactionBody.Builder>body(
+						ScheduleCreateTransactionBody.class, b -> {
 							if (scheduleNoFunction) {
 								b.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
 							} else {
@@ -168,7 +168,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							});
 						}
 				);
-		return b -> b.setReplScheduleCreate(opBody);
+		return b -> b.setScheduleCreate(opBody);
 	}
 
 
@@ -186,7 +186,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
 		var estimate = ScheduleCreateUsage.newEstimate(txn, suFrom(svo))
 				.givenScheduledTxExpirationTimeSecs(defaultScheduleTxnExpiry)
-				.givenScheduledTxn(txn.getReplScheduleCreate().getScheduledTransactionBody())
+				.givenScheduledTxn(txn.getScheduleCreate().getScheduledTransactionBody())
 				.get();
 		return estimate;
 	}

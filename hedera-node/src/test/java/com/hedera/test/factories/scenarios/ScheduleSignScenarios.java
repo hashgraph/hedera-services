@@ -23,7 +23,7 @@ package com.hedera.test.factories.scenarios;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.txns.ScheduleUtils;
-import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
@@ -60,7 +60,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 					.get());
 			var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
 			return TransactionBody.newBuilder()
-					.setReplScheduleCreate(ReplScheduleCreateTransactionBody.newBuilder()
+					.setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
 							.setScheduledTransactionBody(scheduled))
 					.build()
 					.toByteArray();
@@ -84,7 +84,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 					.get());
 			var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
 			return TransactionBody.newBuilder()
-					.setReplScheduleCreate(ReplScheduleCreateTransactionBody.newBuilder()
+					.setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
 							.setScheduledTransactionBody(scheduled))
 					.build()
 					.toByteArray();

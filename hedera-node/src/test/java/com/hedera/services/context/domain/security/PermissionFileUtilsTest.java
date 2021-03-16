@@ -55,7 +55,7 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
@@ -86,9 +86,9 @@ class PermissionFileUtilsTest {
 
 	@Test
 	public void worksForScheduleCreate() {
-		var op = ReplScheduleCreateTransactionBody.getDefaultInstance();
+		var op = ScheduleCreateTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
-				.setReplScheduleCreate(op)
+				.setScheduleCreate(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
 	}
@@ -552,7 +552,7 @@ class PermissionFileUtilsTest {
 			key = "updateTopic";
 		} else if (txn.hasConsensusDeleteTopic()) {
 			key = "deleteTopic";
-		} else if (txn.hasReplScheduleCreate()) {
+		} else if (txn.hasScheduleCreate()) {
 			key = "scheduleCreate";
 		} else if (txn.hasScheduleDelete()) {
 			key = "scheduleDelete";

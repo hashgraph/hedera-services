@@ -20,9 +20,9 @@ package com.hedera.services.fees.calculation.schedule.queries;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.usage.schedule.ScheduleGetInfoUsage;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Function;
@@ -60,16 +61,15 @@ public class GetScheduleInfoResourceUsageTest {
             .build();
     ScheduleID target = IdUtils.asSchedule("0.0.123");
 
+    Instant resolutionTime = Instant.ofEpochSecond(123L);
     Key randomKey = new KeyFactory().newEd25519();
     ScheduleInfo info = ScheduleInfo.newBuilder()
-            .setTransactionBody(ByteString.copyFrom(new byte[]{0x01, 0x02, 0x03, 0x04}))
             .setMemo("some memo here")
             .setAdminKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
             .setPayerAccountID(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT)
-            .setSignatories(KeyList.newBuilder().addKeys(randomKey))
+            .setSigners(KeyList.newBuilder().addKeys(randomKey))
 			.setScheduledTransactionID(scheduledTxnId)
-            .setExecuted(true)
-            .setDeleted(false)
+            .setDeletionTime(RichInstant.fromJava(resolutionTime).toGrpc())
             .build();
 
     StateView view;
@@ -121,10 +121,10 @@ public class GetScheduleInfoResourceUsageTest {
         verify(view).infoForSchedule(target);
         verify(estimator).givenScheduledTxn(any());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-        verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
+        verify(estimator).givenSignatories(Optional.of(info.getSigners()));
         verify(estimator).givenScheduledTxnId(scheduledTxnId);
-        verify(estimator).givenDeleted(false);
-        verify(estimator).givenExecuted(true);
+        verify(estimator).givenDeleted(true);
+        verify(estimator).givenExecuted(false);
         assertSame(expected, usage);
     }
 
@@ -152,7 +152,7 @@ public class GetScheduleInfoResourceUsageTest {
         verify(view).infoForSchedule(target);
         verify(estimator).givenScheduledTxn(any());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-        verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
+        verify(estimator).givenSignatories(Optional.of(info.getSigners()));
         assertSame(expected, usage);
     }
 
@@ -170,7 +170,7 @@ public class GetScheduleInfoResourceUsageTest {
         verify(view).infoForSchedule(target);
         verify(estimator).givenScheduledTxn(any());
         verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-        verify(estimator).givenSignatories(Optional.of(info.getSignatories()));
+        verify(estimator).givenSignatories(Optional.of(info.getSigners()));
     }
 
     @Test

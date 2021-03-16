@@ -49,8 +49,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 
 /**
  * Provides a managing store for Scheduled Entities.
@@ -248,10 +248,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 		var schedule = get(id);
 		if (schedule.isDeleted()) {
-			return SCHEDULE_WAS_DELETED;
+			return SCHEDULE_ALREADY_DELETED;
 		}
 		if (schedule.isExecuted()) {
-			return SCHEDULE_WAS_EXECUTED;
+			return SCHEDULE_ALREADY_EXECUTED;
 		}
 		if (requiresMutability) {
 			if (schedule.adminKey().isEmpty()) {

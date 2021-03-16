@@ -433,7 +433,7 @@ public class MiscUtils {
 			return TokenAssociateToAccount;
 		} else if (txn.hasTokenDissociate()) {
 			return TokenDissociateFromAccount;
-		} else if (txn.hasReplScheduleCreate()) {
+		} else if (txn.hasScheduleCreate()) {
 			return ScheduleCreate;
 		} else if (txn.hasScheduleSign()) {
 			return ScheduleSign;

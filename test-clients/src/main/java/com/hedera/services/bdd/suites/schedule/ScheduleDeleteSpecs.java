@@ -41,8 +41,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_WAS_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 
 public class ScheduleDeleteSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
@@ -161,7 +161,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				.when().then(
 						scheduleDelete("validScheduledTxn")
 								.signedBy("admin", DEFAULT_PAYER)
-								.hasKnownStatus(SCHEDULE_WAS_DELETED)
+								.hasKnownStatus(SCHEDULE_ALREADY_DELETED)
 				);
 	}
 
@@ -186,7 +186,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				).when().then(
 						scheduleDelete("validScheduledTxn")
 								.signedBy("admin", DEFAULT_PAYER)
-								.hasKnownStatus(SCHEDULE_WAS_EXECUTED)
+								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED)
 				);
 	}
 }

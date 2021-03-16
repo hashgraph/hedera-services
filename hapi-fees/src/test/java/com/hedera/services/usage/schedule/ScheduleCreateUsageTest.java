@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -216,14 +214,12 @@ public class ScheduleCreateUsageTest {
 
 	private void givenBaseOp() {
 		op = ScheduleCreateTransactionBody.newBuilder()
-				.setTransactionBody(ByteString.copyFrom(transactionBody))
 				.build();
 		setTxn();
 	}
 
 	private void givenOpWithAdminKey() {
 		op = ScheduleCreateTransactionBody.newBuilder()
-				.setTransactionBody(ByteString.copyFrom(transactionBody))
 				.setAdminKey(adminKey)
 				.build();
 		setTxn();
@@ -231,7 +227,6 @@ public class ScheduleCreateUsageTest {
 
 	private void givenOpWithPayer() {
 		op = ScheduleCreateTransactionBody.newBuilder()
-				.setTransactionBody(ByteString.copyFrom(transactionBody))
 				.setPayerAccountID(payer)
 				.build();
 		setTxn();
@@ -239,7 +234,6 @@ public class ScheduleCreateUsageTest {
 
 	private void givenOpWithMemo() {
 		op = ScheduleCreateTransactionBody.newBuilder()
-				.setTransactionBody(ByteString.copyFrom(transactionBody))
 				.setMemo(memo)
 				.build();
 		setTxn();

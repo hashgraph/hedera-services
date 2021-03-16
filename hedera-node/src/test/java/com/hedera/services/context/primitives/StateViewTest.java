@@ -301,7 +301,7 @@ class StateViewTest {
 	@Test
 	public void getsScheduleInfoForDeleted() {
 		// setup:
-		var expectedScheduledTxn = parentScheduleCreate.getReplScheduleCreate().getScheduledTransactionBody();
+		var expectedScheduledTxn = parentScheduleCreate.getScheduleCreate().getScheduledTransactionBody();
 
 		// when:
 		schedule.markDeleted(resolutionTime);
@@ -318,7 +318,7 @@ class StateViewTest {
 				.forEach(a -> expectedSignatoryList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
 		assertArrayEquals(
 				expectedSignatoryList.build().getKeysList().toArray(),
-				info.getSignatories().getKeysList().toArray());
+				info.getSigners().getKeysList().toArray());
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(expectedScheduledTxn, info.getScheduledTransactionBody());
 		assertEquals(schedule.scheduledTransactionId(), info.getScheduledTransactionID());

@@ -47,7 +47,7 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -243,8 +243,8 @@ public class HederaSigningOrder {
 			TransactionBody txn,
 			SigningOrderResultFactory<T> factory
 	) {
-		if (txn.hasReplScheduleCreate()) {
-			return Optional.of(scheduleCreate(txn.getTransactionID(), txn.getReplScheduleCreate(), factory));
+		if (txn.hasScheduleCreate()) {
+			return Optional.of(scheduleCreate(txn.getTransactionID(), txn.getScheduleCreate(), factory));
 		} else if (txn.hasScheduleSign()) {
 			return Optional.of(scheduleSign(txn.getTransactionID(), txn.getScheduleSign().getScheduleID(), factory));
 		} else if (txn.hasScheduleDelete()) {
@@ -840,22 +840,22 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> scheduleCreate(
 			TransactionID txnId,
-			ReplScheduleCreateTransactionBody op,
+			ScheduleCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
 		List<JKey> required = new ArrayList<>();
 
 		addToMutableReqIfPresent(
 				op,
-				ReplScheduleCreateTransactionBody::hasAdminKey,
-				ReplScheduleCreateTransactionBody::getAdminKey,
+				ScheduleCreateTransactionBody::hasAdminKey,
+				ScheduleCreateTransactionBody::getAdminKey,
 				required);
 
 		int before = required.size();
 		var couldAddPayer = addAccount(
 				op,
-				ReplScheduleCreateTransactionBody::hasPayerAccountID,
-				ReplScheduleCreateTransactionBody::getPayerAccountID,
+				ScheduleCreateTransactionBody::hasPayerAccountID,
+				ScheduleCreateTransactionBody::getPayerAccountID,
 				required);
 		if (!couldAddPayer) {
 			return accountFailure(op.getPayerAccountID(), txnId, INVALID_ACCOUNT, factory);
@@ -925,7 +925,7 @@ public class HederaSigningOrder {
 				}
 			}
 		} catch (UnknownHederaFunctionality e) {
-			return Optional.of(factory.forUnparseableScheduledTxn(txnId));
+			return Optional.of(factory.forUnschedulableTxn(txnId));
 		}
 		return Optional.empty();
 	}

@@ -30,7 +30,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ReplScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -283,7 +283,7 @@ public class MerkleScheduleTest {
 				.setTransactionID(parentTxn.getTransactionID().toBuilder()
 						.setAccountID(otherPayer.toGrpcAccountId())
 						.setTransactionValidStart(MiscUtils.asTimestamp(otherSchedulingTXValidStart.toJava())))
-				.setReplScheduleCreate(parentTxn.getReplScheduleCreate().toBuilder()
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setPayerAccountID(otherPayer.toGrpcAccountId()))
 				.build().toByteArray();
 		other = MerkleSchedule.from(diffBodyBytes, expiry + 1);
@@ -301,7 +301,7 @@ public class MerkleScheduleTest {
 	public void differentAdminKeysNotIdentical() {
 		// setup:
 		var bodyBytesDiffAdminKey = parentTxn.toBuilder()
-				.setReplScheduleCreate(parentTxn.getReplScheduleCreate().toBuilder()
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setAdminKey(MiscUtils.asKeyUnchecked(otherAdminKey)))
 				.build().toByteArray();
 
@@ -318,7 +318,7 @@ public class MerkleScheduleTest {
 	public void differentMemosNotIdentical() {
 		// setup:
 		var bodyBytesDiffMemo = parentTxn.toBuilder()
-				.setReplScheduleCreate(parentTxn.getReplScheduleCreate().toBuilder()
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setMemo(otherEntityMemo))
 				.build().toByteArray();
 
@@ -335,7 +335,7 @@ public class MerkleScheduleTest {
 	public void differentScheduledTxnNotIdentical() {
 		// setup:
 		var bodyBytesDiffScheduledTxn = parentTxn.toBuilder()
-				.setReplScheduleCreate(parentTxn.getReplScheduleCreate().toBuilder()
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
 						.setScheduledTransactionBody(scheduledTxn.toBuilder().setMemo("Slightly different!")))
 				.build().toByteArray();
 
@@ -476,7 +476,7 @@ public class MerkleScheduleTest {
 
 	private static final TransactionBody ordinaryVersionOfScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 
-	ReplScheduleCreateTransactionBody creation = ReplScheduleCreateTransactionBody.newBuilder()
+	ScheduleCreateTransactionBody creation = ScheduleCreateTransactionBody.newBuilder()
 			.setAdminKey(MiscUtils.asKeyUnchecked(adminKey))
 			.setPayerAccountID(payer.toGrpcAccountId())
 			.setMemo(entityMemo)
@@ -487,7 +487,7 @@ public class MerkleScheduleTest {
 					.setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
 					.setAccountID(schedulingAccount.toGrpcAccountId())
 					.build())
-			.setReplScheduleCreate(creation)
+			.setScheduleCreate(creation)
 			.build();
 	private final byte[] bodyBytes = parentTxn.toByteArray();
 
@@ -516,7 +516,7 @@ public class MerkleScheduleTest {
 			AccountID scheduler,
 			Timestamp validStart
 	) {
-		ReplScheduleCreateTransactionBody creation = ReplScheduleCreateTransactionBody.newBuilder()
+		ScheduleCreateTransactionBody creation = ScheduleCreateTransactionBody.newBuilder()
 				.setAdminKey(scheduleAdminKey)
 				.setPayerAccountID(payer)
 				.setMemo(scheduleMemo)
@@ -527,7 +527,7 @@ public class MerkleScheduleTest {
 						.setTransactionValidStart(validStart)
 						.setAccountID(scheduler)
 						.build())
-				.setReplScheduleCreate(creation)
+				.setScheduleCreate(creation)
 				.build();
 	}
 }

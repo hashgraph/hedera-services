@@ -299,7 +299,7 @@ public class StateView {
 					.setScheduledTransactionID(schedule.scheduledTransactionId())
 					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
 					.setPayerAccountID(schedule.effectivePayer().toGrpcAccountId())
-					.setSignatories(signatoriesList)
+					.setSigners(signatoriesList)
 					.setExpirationTime(Timestamp.newBuilder().setSeconds(schedule.expiry()));
 			schedule.memo().ifPresent(info::setMemo);
 			if (schedule.isDeleted()) {

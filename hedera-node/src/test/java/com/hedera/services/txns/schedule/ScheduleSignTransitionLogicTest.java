@@ -226,7 +226,6 @@ public class ScheduleSignTransitionLogicTest {
 
         var builder = TransactionBody.newBuilder();
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()
-                .setSigMap(sigMap)
                 .setScheduleID(scheduleId);
         if (invalidScheduleId) {
             scheduleSign.clearScheduleID();

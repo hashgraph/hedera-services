@@ -66,9 +66,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -86,8 +85,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			MODIFYING_IMMUTABLE_CONTRACT,
 			INVALID_CONTRACT_ID,
 			UNRESOLVABLE_REQUIRED_SIGNERS,
-			UNPARSEABLE_SCHEDULED_TRANSACTION,
-			UNSCHEDULABLE_TRANSACTION);
+			SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
 
 	private final ServicesTxnManager txnManager = new ServicesTxnManager(
 			this::processTxnInCtx,
