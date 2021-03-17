@@ -36,6 +36,9 @@ import org.apache.commons.codec.binary.StringUtils;
 
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 public enum TestContextValidator implements OptionValidator {
 	TEST_VALIDATOR;
 
@@ -98,6 +101,6 @@ public enum TestContextValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum memoCheck(String cand) {
-		throw new UnsupportedOperationException();
+		return cand.length() <= 100 ? OK : MEMO_TOO_LONG;
 	}
 }
