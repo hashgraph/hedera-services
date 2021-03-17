@@ -36,7 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ChunkingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ChunkingSuite.class);
-	private static final int CHUNK_SIZE = 5800;
+	private static final int CHUNK_SIZE = 1024;
 
 	public static void main(String... args) {
 		new ChunkingSuite().runSuiteSync();
