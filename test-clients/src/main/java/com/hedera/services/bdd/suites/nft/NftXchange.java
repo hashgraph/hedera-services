@@ -128,14 +128,30 @@ public class NftXchange {
 			addMinting(init, restSerialNos);
 		}
 
+		init.add(getAccountBalance(treasury).logged());
+
 		addAssociations(init);
 //		createBnfs(init);
 		createFixedBnfs(init);
 		addSetupXfers(init);
 
 		init.add(getAccountBalance(treasury).logged());
+		getAccountBalanceForAllUsers(init);
 
 		return init;
+	}
+
+	private void getAccountBalanceForAllUsers(List<HapiSpecOperation> init) {
+		final AtomicInteger usersSoFar = new AtomicInteger(0);
+		int n = users;
+		while (n > 0) {
+			int nextParallelism = Math.min(n, MAX_OPS_IN_PARALLEL.get());
+			init.add(inParallel(IntStream.range(0, nextParallelism)
+					.mapToObj(i -> getAccountBalance(myCivilianNo(usersSoFar.get() + i)))
+							.toArray(HapiSpecOperation[]::new)));
+			n -= nextParallelism;
+			usersSoFar.getAndAdd(nextParallelism);
+		}
 	}
 
 	private void createFixedBnfs(List<HapiSpecOperation> init) {
