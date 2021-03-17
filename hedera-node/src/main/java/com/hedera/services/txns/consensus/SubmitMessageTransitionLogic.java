@@ -38,7 +38,15 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+//import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 
 public class SubmitMessageTransitionLogic implements TransitionLogic {
 	protected static final Logger log = LogManager.getLogger(SubmitMessageTransitionLogic.class);
@@ -73,7 +81,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		}
 
 		if(op.getMessage().size() > globalDynamicProperties.messageMaxAllowedSize() ) {
-			transactionContext.setStatus(INVALID_TOPIC_MESSAGE);
+			transactionContext.setStatus(MESSAGE_SIZE_TOO_LARGE);
 			return;
 		}
 

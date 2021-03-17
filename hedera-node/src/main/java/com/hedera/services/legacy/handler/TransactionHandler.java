@@ -26,7 +26,6 @@ import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.legacy.config.PropertiesLoader;
@@ -80,7 +79,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
 import static com.swirlds.common.PlatformStatus.ACTIVE;
@@ -108,7 +106,6 @@ public class TransactionHandler {
   private AccountNumbers accountNums;
   private SystemOpPolicies systemOpPolicies;
   private CurrentPlatformStatus platformStatus;
-  private GlobalDynamicProperties globalDynamicProperties;
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -135,8 +132,7 @@ public class TransactionHandler {
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
           FeeExemptions exemptions,
-          CurrentPlatformStatus platformStatus,
-          GlobalDynamicProperties globalDynamicProperties
+          CurrentPlatformStatus platformStatus
   ) {
   	this.fees = fees;
   	this.stateView = stateView;
@@ -152,7 +148,6 @@ public class TransactionHandler {
     this.platformStatus = platformStatus;
     throttling = function -> false;
     txnThrottling = new TransactionThrottling(throttling);
-    this.globalDynamicProperties = globalDynamicProperties;
   }
 
   public TransactionHandler(
@@ -163,13 +158,12 @@ public class TransactionHandler {
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
           FeeExemptions exemptions,
-          CurrentPlatformStatus platformStatus,
-          GlobalDynamicProperties globalDynamicProperties
+          CurrentPlatformStatus platformStatus
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null,
             null, null, null, null,
-            accountNums, systemOpPolicies, exemptions, platformStatus,globalDynamicProperties);
+            accountNums, systemOpPolicies, exemptions, platformStatus);
   }
 
   public TransactionHandler(
@@ -186,8 +180,7 @@ public class TransactionHandler {
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
           FeeExemptions exemptions,
-          CurrentPlatformStatus platformStatus,
-          GlobalDynamicProperties globalDynamicProperties
+          CurrentPlatformStatus platformStatus
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -203,7 +196,6 @@ public class TransactionHandler {
     this.systemOpPolicies = systemOpPolicies;
     this.exemptions = exemptions;
     this.platformStatus = platformStatus;
-    this.globalDynamicProperties = globalDynamicProperties;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long queryFee) {
@@ -260,25 +252,12 @@ public class TransactionHandler {
       } else {
         PermissionedAccountsRange accountRange = PropertiesLoader.getApiPermission().get(permissionKey);
         if (accountRange != null) {
-          return accountRange.contains(payer.getAccountNum()) ? OK : NOT_SUPPORTED;
+        	return accountRange.contains(payer.getAccountNum()) ? OK : NOT_SUPPORTED;
         }
       }
     }
     return NOT_SUPPORTED;
   }
-
-  /**
-   * For now, only check if message size is too large or not
-   *
-   * @return MESSAGE_SIZE_TOO_LARGE if message size is larger than defined, OK otherwise
-   */
-  private ResponseCodeEnum validateSubmitMessage(TransactionBody txn) {
-    if(txn.getConsensusSubmitMessage().getMessage().size() > globalDynamicProperties.messageMaxAllowedSize()) {
-      return MESSAGE_SIZE_TOO_LARGE;
-    }
-    return OK;
-  }
-
 
   private TxnValidityAndFeeReq validateTransactionFeeCoverage(
           TransactionBody txn,
@@ -353,7 +332,6 @@ public class TransactionHandler {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.TRANSACTION_OVERSIZE);
     }
 
-
     if (!TransactionValidationUtils.validateTxDepth(transaction)) {
       log.debug("Request transaction has too many layers.");
       return new TxnValidityAndFeeReq(ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS);
@@ -371,10 +349,6 @@ public class TransactionHandler {
 
     if (returnCode == OK && !TransactionValidationUtils.validateTxBodyDepth(txn)) {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS);
-    }
-
-    if (returnCode == OK && !(txn.hasConsensusSubmitMessage())) {
-      returnCode = validateSubmitMessage(txn);
     }
 
     if (returnCode == OK && !(isQueryPayment && txn.hasCryptoTransfer())) {

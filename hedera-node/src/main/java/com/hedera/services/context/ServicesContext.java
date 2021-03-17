@@ -1708,8 +1708,7 @@ public class ServicesContext {
 					accountNums(),
 					systemOpPolicies(),
 					exemptions(),
-					platformStatus(),
-					globalDynamicProperties());
+					platformStatus());
 		}
 		return txns;
 	}
