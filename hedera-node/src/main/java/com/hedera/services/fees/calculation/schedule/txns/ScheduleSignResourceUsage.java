@@ -24,20 +24,22 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleSignUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
-import java.util.function.BiFunction;
 
 public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
-    static BiFunction<TransactionBody, SigUsage, ScheduleSignUsage> factory = ScheduleSignUsage::newEstimate;
-
+    private final ScheduleOpsUsage scheduleOpsUsage;
     private final GlobalDynamicProperties properties;
 
-    public ScheduleSignResourceUsage(GlobalDynamicProperties properties) {
+    public ScheduleSignResourceUsage(
+            ScheduleOpsUsage scheduleOpsUsage,
+            GlobalDynamicProperties properties
+    ) {
+        this.scheduleOpsUsage = scheduleOpsUsage;
         this.properties = properties;
     }
 
@@ -48,20 +50,17 @@ public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
 
     @Override
     public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-        var op = txn.getScheduleSign();
+    	var op = txn.getScheduleSign();
         var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-        var estimate = factory.apply(txn, sigUsage);
 
         var optionalInfo = view.infoForSchedule(op.getScheduleID());
         if (optionalInfo.isPresent()) {
             var info = optionalInfo.get();
-            return estimate
-                    .givenExpiry(info.getExpirationTime().getSeconds())
-                    .get();
+            return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, info.getExpirationTime().getSeconds());
         } else {
-            return estimate
-                    .givenExpiry(properties.scheduledTxExpiryTimeSecs())
-                    .get();
+            long latestExpiry = txn.getTransactionID().getTransactionValidStart().getSeconds()
+                    + properties.scheduledTxExpiryTimeSecs();
+            return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, latestExpiry);
         }
     }
 }

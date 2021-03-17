@@ -22,7 +22,7 @@ package com.hedera.services.fees.calculation.schedule.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleDeleteUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
@@ -41,9 +41,9 @@ public class ScheduleDeleteResourceUsageTest {
     ScheduleDeleteResourceUsage subject;
 
     StateView view;
-    ScheduleDeleteUsage usage;
-    BiFunction<TransactionBody, SigUsage, ScheduleDeleteUsage> factory;
+    ScheduleOpsUsage scheduleOpsUsage;
 
+    long expiry = 1_234_567L;
     int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
     SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
@@ -62,14 +62,10 @@ public class ScheduleDeleteResourceUsageTest {
         nonScheduleDeleteTxn = mock(TransactionBody.class);
         given(nonScheduleDeleteTxn.hasScheduleDelete()).willReturn(false);
 
-        usage = mock(ScheduleDeleteUsage.class);
-        given(usage.get()).willReturn(expected);
+        scheduleOpsUsage = mock(ScheduleOpsUsage.class);
+        given(scheduleOpsUsage.scheduleDeleteUsage(scheduleDeleteTxn, sigUsage, expiry)).willReturn(expected);
 
-        factory = (BiFunction<TransactionBody, SigUsage, ScheduleDeleteUsage>)mock(BiFunction.class);
-        given(factory.apply(scheduleDeleteTxn, sigUsage)).willReturn(usage);
-
-        ScheduleDeleteResourceUsage.factory = factory;
-        subject = new ScheduleDeleteResourceUsage();
+        subject = new ScheduleDeleteResourceUsage(scheduleOpsUsage);
     }
 
     @Test

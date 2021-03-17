@@ -22,17 +22,16 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.schedule.ScheduleDeleteUsage;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,6 +43,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
     static final Logger log = LogManager.getLogger(HapiScheduleDelete.class);
+
+    private static final int defaultScheduleTxnExpiry = HapiSpecSetup.getDefaultNodeProps()
+            .getInteger("ledger.schedule.txExpiryTimeSecs");
 
     private String schedule;
 
@@ -63,12 +65,10 @@ public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
 
     @Override
     protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-        return spec.fees().forActivityBasedOp(
-                HederaFunctionality.ScheduleDelete, this::usageEstimate, txn, numPayerKeys);
-    }
+        FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) ->
+                scheduleOpsUsage.scheduleDeleteUsage(_txn, suFrom(svo), defaultScheduleTxnExpiry);
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-        return ScheduleDeleteUsage.newEstimate(txn, suFrom(svo)).get();
+        return spec.fees().forActivityBasedOp(HederaFunctionality.ScheduleDelete, metricsCalc, txn, numPayerKeys);
     }
 
     @Override

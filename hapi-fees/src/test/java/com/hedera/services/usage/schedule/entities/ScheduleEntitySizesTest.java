@@ -20,20 +20,15 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.test.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hedera.services.usage.SigUsage;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.Assert.assertEquals;
 
@@ -45,8 +40,7 @@ public class ScheduleEntitySizesTest {
 		// setup:
 		long expected = NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE
-				+ NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE;
+				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
 
 		// given:
 		long actual = subject.fixedBytesInScheduleRepr();
@@ -56,27 +50,17 @@ public class ScheduleEntitySizesTest {
 	}
 
 	@Test
-	public void bytesInBaseReprGivenAsExpected() {
-		// setup:
-		AccountID payer = IdUtils.asAccount("0.0.2");
-		SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
-				.setTransactionFee(1_234_567L)
-				.setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
-						.setDeleteAccountID(payer))
-				.build();
-		var memo = "memo";
-		long expected = NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
-				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE
-				+ NUM_FLAGS_IN_BASE_SCHEDULE_REPRESENTATION * BOOL_SIZE
-				+ scheduledTxn.getSerializedSize()
-				+ memo.length();
-
-		// given:
-		long actual = subject.bytesInReprGiven(scheduledTxn, memo.length());
-
+	void estimatesSigsAsExpected() {
 		// expect:
-		assertEquals(expected, actual);
+		assertEquals(2,
+				subject.estimatedScheduleSigs(new SigUsage(3, 100, 1)));
+		assertEquals(1,
+				subject.estimatedScheduleSigs(new SigUsage(3, 100, 10)));
 	}
 
+	@Test
+	void estimatesSig() {
+		// expect:
+		assertEquals(7 * KEY_SIZE, subject.bytesUsedForSigningKeys(7));
+	}
 }

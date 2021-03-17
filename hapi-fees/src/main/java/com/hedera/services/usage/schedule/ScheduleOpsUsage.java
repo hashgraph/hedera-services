@@ -24,128 +24,95 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.crypto.ExtantCryptoContext;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
-import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
-import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleOpsUsage {
+	/* Scheduled transaction ids have the scheduled=true flag set */
+	private static final long SCHEDULED_TXN_ID_SIZE = BASIC_TX_ID_SIZE + BOOL_SIZE;
+
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
-	public FeeData scheduleInfoUsage(Query scheduleInfo, ExtantCryptoContext ctx) {
-//		var op = cryptoInfoReq.getCryptoGetInfo();
-//
-//		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
-//		estimate.updateTb(BASIC_ENTITY_ID_SIZE);
-//		long extraRb = 0;
-//		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
-//		extraRb += getAccountKeyStorageSize(ctx.currentKey());
-//		if (ctx.currentlyHasProxy()) {
-//			extraRb += BASIC_ENTITY_ID_SIZE;
-//		}
-//		extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
-//		estimate.updateRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
-//
-//		return estimate.get();
-		throw new AssertionError("Not implemented!");
-	}
+	public FeeData scheduleInfoUsage(Query scheduleInfo, ExtantScheduleContext ctx) {
+		var op = scheduleInfo.getScheduleGetInfo();
 
-	public FeeData scheduleCreateUsage(TransactionBody scheduleCreate, SigUsage sigUsage, ExtantCryptoContext ctx) {
-/*
-		var op = cryptoUpdate.getCryptoUpdateAccount();
-
-		long keyBytesUsed = op.hasKey() ? getAccountKeyStorageSize(op.getKey()) : 0;
-		long msgBytesUsed = BASIC_ENTITY_ID_SIZE
-				+ op.getMemo().getValueBytes().size()
-				+ keyBytesUsed
-				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
-				+ (op.hasAutoRenewPeriod() ? LONG_SIZE : 0)
-				+ (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0);
-		var estimate = txnEstimateFactory.get(sigUsage, cryptoUpdate, ESTIMATOR_UTILS);
-		estimate.addBpt(msgBytesUsed);
-
-		long newVariableBytes = 0;
-		newVariableBytes += !op.hasMemo()
-				? ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length
-				: op.getMemo().getValueBytes().size();
-		newVariableBytes += !op.hasKey() ? getAccountKeyStorageSize(ctx.currentKey()) : keyBytesUsed;
-		newVariableBytes += (op.hasProxyAccountID() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
-
-		long oldVariableBytes = ctx.currentNonBaseRb();
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, op.getExpirationTime().getSeconds());
-		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, ctx.currentExpiry());
-		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(oldVariableBytes, oldLifetime, newVariableBytes, newLifetime);
-		if (rbsDelta > 0) {
-			estimate.addRbs(rbsDelta);
-		}
+		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
+		estimate.updateTb(BASIC_ENTITY_ID_SIZE);
+		estimate.updateRb(SCHEDULE_ENTITY_SIZES.fixedBytesInScheduleRepr() + ctx.nonBaseRb());
 
 		return estimate.get();
-*/
-
-		throw new AssertionError("Not implemented!");
 	}
 
-	public FeeData scheduleSignUsage(TransactionBody scheduleSign, SigUsage sigUsage) {
-//		var op = cryptoCreation.getCryptoCreateAccount();
-//
-//		int variableBytes = 0;
-//		variableBytes += op.getMemoBytes().size();
-//		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
-//		if (op.hasProxyAccountID()) {
-//			variableBytes += BASIC_ENTITY_ID_SIZE;
-//		}
-//
-//		var lifetime = op.getAutoRenewPeriod().getSeconds();
-//
-//		var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
-//		/* Variable bytes plus two additional longs for balance and auto-renew period;
-//		   plus a boolean for receiver sig required. */
-//		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
-//		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
-//		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-//
-//		return estimate.get();
+	public FeeData scheduleCreateUsage(TransactionBody scheduleCreate, SigUsage sigUsage, long lifetimeSecs) {
+		var op = scheduleCreate.getScheduleCreate();
 
-		throw new AssertionError("Not implemented!");
+		var scheduledTxn = op.getScheduledTransactionBody();
+		long msgBytesUsed = scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
+		if (op.hasPayerAccountID()) {
+			msgBytesUsed += BASIC_ENTITY_ID_SIZE;
+		}
+
+		var creationCtx = ExtantScheduleContext.newBuilder()
+				.setScheduledTxn(scheduledTxn)
+				.setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
+				.setMemo(op.getMemo())
+				.setResolved(false);
+		if (op.hasAdminKey()) {
+			var adminKey = op.getAdminKey();
+			msgBytesUsed += getAccountKeyStorageSize(adminKey);
+			creationCtx.setAdminKey(adminKey);
+		} else {
+			creationCtx.setNoAdminKey();
+		}
+
+		var estimate = txnEstimateFactory.get(sigUsage, scheduleCreate, ESTIMATOR_UTILS);
+		estimate.addBpt(msgBytesUsed);
+		estimate.addRbs(creationCtx.build().nonBaseRb() * lifetimeSecs);
+
+		/* The receipt of a schedule create includes both the id of the created schedule
+		and the transaction id to use for querying the record of the scheduled txn. */
+		estimate.addNetworkRbs((BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
+				* USAGE_PROPERTIES.legacyReceiptStorageSecs());
+
+		return estimate.get();
 	}
 
-	public FeeData scheduleDeleteUsage(TransactionBody scheduleDelete, SigUsage sigUsage) {
-//		var op = cryptoCreation.getCryptoCreateAccount();
-//
-//		int variableBytes = 0;
-//		variableBytes += op.getMemoBytes().size();
-//		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
-//		if (op.hasProxyAccountID()) {
-//			variableBytes += BASIC_ENTITY_ID_SIZE;
-//		}
-//
-//		var lifetime = op.getAutoRenewPeriod().getSeconds();
-//
-//		var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
-//		/* Variable bytes plus two additional longs for balance and auto-renew period;
-//		   plus a boolean for receiver sig required. */
-//		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
-//		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
-//		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-//
-//		return estimate.get();
+	public FeeData scheduleSignUsage(TransactionBody scheduleSign, SigUsage sigUsage, long scheduleExpiry) {
+		var estimate = txnEstimateFactory.get(sigUsage, scheduleSign, ESTIMATOR_UTILS);
 
-		throw new AssertionError("Not implemented!");
+		estimate.addBpt(BASIC_ENTITY_ID_SIZE);
+
+		int estNewSigners = SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage);
+		long lifetime = ESTIMATOR_UTILS.relativeLifetime(scheduleSign, scheduleExpiry);
+		estimate.addRbs(SCHEDULE_ENTITY_SIZES.bytesUsedForSigningKeys(estNewSigners) * lifetime);
+
+		estimate.addNetworkRbs(SCHEDULED_TXN_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+
+		return estimate.get();
+	}
+
+	public FeeData scheduleDeleteUsage(TransactionBody scheduleDelete, SigUsage sigUsage, long scheduleExpiry) {
+		var estimate = txnEstimateFactory.get(sigUsage, scheduleDelete, ESTIMATOR_UTILS);
+
+		estimate.addBpt(BASIC_ENTITY_ID_SIZE);
+
+		long lifetime = ESTIMATOR_UTILS.relativeLifetime(scheduleDelete, scheduleExpiry);
+		estimate.addRbs(BASIC_RICH_INSTANT_SIZE * lifetime);
+
+		return estimate.get();
 	}
 }

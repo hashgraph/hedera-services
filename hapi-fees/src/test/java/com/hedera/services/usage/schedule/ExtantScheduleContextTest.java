@@ -8,10 +8,14 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.ADMIN_KEY;
+import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.MEMO;
+import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.NO_ADMIN_KEY;
+import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.NUM_SIGNERS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,14 +26,14 @@ class ExtantScheduleContextTest {
 	String memo = "Not since life began";
 	SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder().setTransactionFee(123).build();
 
-	enum SettableField { NUM_SIGNERS, ADMIN_KEY, MEMO, SCHEDULED_TXN, IS_RESOLVED }
+	enum SettableField { NUM_SIGNERS, NO_ADMIN_KEY, ADMIN_KEY, MEMO, SCHEDULED_TXN, IS_RESOLVED }
 
 	@Test
-	void buildsAsExpected() {
+	void buildsAsExpectedWithAllPresent() {
 		// given:
 		var ctx = builderWith(EnumSet.allOf(SettableField.class)).build();
 		// and:
-		long expectedNonBaseRb = BASIC_ENTITY_ID_SIZE
+		long expectedNonBaseRb = ExtantScheduleContext.METADATA_SIZE
 				+ BASIC_RICH_INSTANT_SIZE
 				+ memo.getBytes().length
 				+ getAccountKeyStorageSize(adminKey)
@@ -46,14 +50,35 @@ class ExtantScheduleContextTest {
 	}
 
 	@Test
+	void buildsAsExpected() {
+		// given:
+		var ctx = builderWith(EnumSet.complementOf(EnumSet.of(ADMIN_KEY))).build();
+		// and:
+		long expectedNonBaseRb = ExtantScheduleContext.METADATA_SIZE
+				+ BASIC_RICH_INSTANT_SIZE
+				+ memo.getBytes().length
+				+ scheduledTxn.getSerializedSize();
+
+		// then:
+		assertTrue(ctx.isResolved());
+		assertNull(ctx.adminKey());
+		assertEquals(memo, ctx.memo());
+		assertSame(scheduledTxn, ctx.scheduledTxn());
+		assertEquals(numSigners, ctx.numSigners());
+		// and:
+		assertEquals(expectedNonBaseRb, ctx.nonBaseRb());
+	}
+
+	@Test
 	void requiresAllFieldsSet() {
 		// expect:
 		Assertions.assertThrows(IllegalStateException.class,
-				() -> builderWith(EnumSet.complementOf(EnumSet.of(SettableField.NUM_SIGNERS))).build());
+				() -> builderWith(EnumSet.complementOf(EnumSet.of(NUM_SIGNERS))).build());
 		Assertions.assertThrows(IllegalStateException.class,
-				() -> builderWith(EnumSet.complementOf(EnumSet.of(SettableField.ADMIN_KEY))).build());
+				() -> builderWith(EnumSet.complementOf(
+						EnumSet.of(SettableField.ADMIN_KEY, NO_ADMIN_KEY))).build());
 		Assertions.assertThrows(IllegalStateException.class,
-				() -> builderWith(EnumSet.complementOf(EnumSet.of(SettableField.MEMO))).build());
+				() -> builderWith(EnumSet.of(SettableField.MEMO)).build());
 		Assertions.assertThrows(IllegalStateException.class,
 				() -> builderWith(EnumSet.complementOf(EnumSet.of(SettableField.SCHEDULED_TXN))).build());
 		Assertions.assertThrows(IllegalStateException.class,
@@ -68,6 +93,9 @@ class ExtantScheduleContextTest {
 			switch (field) {
 				case NUM_SIGNERS:
 					builder.setNumSigners(numSigners);
+					break;
+				case NO_ADMIN_KEY:
+					builder.setNoAdminKey();
 					break;
 				case ADMIN_KEY:
 					builder.setAdminKey(adminKey);

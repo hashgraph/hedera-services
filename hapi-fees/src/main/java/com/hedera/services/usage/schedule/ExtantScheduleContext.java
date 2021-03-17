@@ -27,9 +27,19 @@ import java.nio.charset.StandardCharsets;
 
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ExtantScheduleContext {
+	static final int METADATA_SIZE =
+			/* The schedule id, the scheduling account, and the responsible payer */
+			3 * BASIC_ENTITY_ID_SIZE +
+					/* The expiration time */
+					BASIC_RICH_INSTANT_SIZE +
+					/* The scheduled transaction id */
+					BASIC_TX_ID_SIZE + BOOL_SIZE;
+
 	private final int numSigners;
 	private final Key adminKey;
 	private final String memo;
@@ -45,7 +55,7 @@ public class ExtantScheduleContext {
 	}
 
 	public long nonBaseRb() {
-		return BASIC_ENTITY_ID_SIZE
+		return METADATA_SIZE
 				+ (resolved ? BASIC_RICH_INSTANT_SIZE : 0)
 				+ memo.getBytes(StandardCharsets.UTF_8).length
 				+ getAccountKeyStorageSize(adminKey)
@@ -96,7 +106,8 @@ public class ExtantScheduleContext {
 		private boolean resolved;
 		private SchedulableTransactionBody scheduledTxn;
 
-		private Builder() {}
+		private Builder() {
+		}
 
 		public ExtantScheduleContext build() {
 			if (mask != ALL_FIELDS_MASK) {
@@ -125,6 +136,12 @@ public class ExtantScheduleContext {
 
 		public ExtantScheduleContext.Builder setAdminKey(Key adminKey) {
 			this.adminKey = adminKey;
+			mask |= ADMIN_KEY_MASK;
+			return this;
+		}
+
+		public ExtantScheduleContext.Builder setNoAdminKey() {
+			this.adminKey = null;
 			mask |= ADMIN_KEY_MASK;
 			return this;
 		}

@@ -34,6 +34,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -76,6 +77,7 @@ public abstract class HapiSpecOperation {
 
 	protected static final FileOpsUsage fileOpsUsage = new FileOpsUsage();
 	protected static final CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
+	protected static final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
 	private Random r = new Random();
 

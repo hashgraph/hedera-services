@@ -24,7 +24,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleCreateUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,8 +47,7 @@ public class ScheduleCreateResourceUsageTest {
     ScheduleCreateResourceUsage subject;
 
     StateView view;
-    ScheduleCreateUsage usage;
-    BiFunction<TransactionBody, SigUsage, ScheduleCreateUsage> factory;
+    ScheduleOpsUsage scheduleOpsUsage;
     TransactionBody nonScheduleCreateTxn;
     TransactionBody scheduleCreateTxn;
 
@@ -63,23 +62,17 @@ public class ScheduleCreateResourceUsageTest {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleCreateTxn = mock(TransactionBody.class);
+        scheduleOpsUsage = mock(ScheduleOpsUsage.class);
         given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
         given(scheduleCreateTxn.getScheduleCreate())
                 .willReturn(ScheduleCreateTransactionBody.getDefaultInstance());
 
         nonScheduleCreateTxn = mock(TransactionBody.class);
-        given(nonScheduleCreateTxn.hasScheduleCreate()).willReturn(false);
 
-        usage = mock(ScheduleCreateUsage.class);
-        given(usage.givenScheduledTxExpirationTimeSecs(anyInt())).willReturn(usage);
-        given(usage.givenScheduledTxn(any())).willReturn(usage);
-        given(usage.get()).willReturn(expected);
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, props.scheduledTxExpiryTimeSecs()))
+                .willReturn(expected);
 
-        factory = (BiFunction<TransactionBody, SigUsage, ScheduleCreateUsage>)mock(BiFunction.class);
-        given(factory.apply(scheduleCreateTxn, sigUsage)).willReturn(usage);
-
-        ScheduleCreateResourceUsage.factory = factory;
-        subject = new ScheduleCreateResourceUsage(props);
+        subject = new ScheduleCreateResourceUsage(props, scheduleOpsUsage);
     }
 
     @Test

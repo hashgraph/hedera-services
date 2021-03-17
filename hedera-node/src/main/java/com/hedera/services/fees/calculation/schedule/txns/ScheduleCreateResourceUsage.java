@@ -24,7 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleCreateUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
@@ -32,16 +32,15 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.function.BiFunction;
 
 public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateResourceUsage.class);
 
-	static BiFunction<TransactionBody, SigUsage, ScheduleCreateUsage> factory = ScheduleCreateUsage::newEstimate;
-
+	private final ScheduleOpsUsage scheduleOpsUsage;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	public ScheduleCreateResourceUsage(GlobalDynamicProperties dynamicProperties) {
+	public ScheduleCreateResourceUsage(GlobalDynamicProperties dynamicProperties, ScheduleOpsUsage scheduleOpsUsage) {
+		this.scheduleOpsUsage = scheduleOpsUsage;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -52,11 +51,12 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		var usageEstimate = factory.apply(txn, sigUsage)
-				.givenScheduledTxExpirationTimeSecs(dynamicProperties.scheduledTxExpiryTimeSecs())
-				.givenScheduledTxn(txn.getScheduleCreate().getScheduledTransactionBody())
-				.get();
-		return usageEstimate;
+		throw new AssertionError("Not implemented!");
+//		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+//		var usageEstimate = factory.apply(txn, sigUsage)
+//				.givenScheduledTxExpirationTimeSecs(dynamicProperties.scheduledTxExpiryTimeSecs())
+//				.givenScheduledTxn(txn.getScheduleCreate().getScheduledTransactionBody())
+//				.get();
+//		return usageEstimate;
 	}
 }

@@ -23,13 +23,12 @@ package com.hedera.services.fees.calculation.schedule.queries;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.usage.schedule.ScheduleGetInfoUsage;
-import com.hedera.test.factories.keys.KeyFactory;
+import com.hedera.services.usage.schedule.ExtantScheduleContext;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
@@ -38,20 +37,18 @@ import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class GetScheduleInfoResourceUsageTest {
@@ -62,43 +59,33 @@ public class GetScheduleInfoResourceUsageTest {
     ScheduleID target = IdUtils.asSchedule("0.0.123");
 
     Instant resolutionTime = Instant.ofEpochSecond(123L);
-    Key randomKey = new KeyFactory().newEd25519();
+    Key signersList = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
+    String memo = "some memo here";
+    Key adminKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
     ScheduleInfo info = ScheduleInfo.newBuilder()
-            .setMemo("some memo here")
-            .setAdminKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
+            .setMemo(memo)
+            .setAdminKey(adminKey)
             .setPayerAccountID(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT)
-            .setSigners(KeyList.newBuilder().addKeys(randomKey))
+            .setSigners(signersList.getKeyList())
 			.setScheduledTransactionID(scheduledTxnId)
             .setDeletionTime(RichInstant.fromJava(resolutionTime).toGrpc())
             .build();
 
     StateView view;
     GetScheduleInfoResourceUsage subject;
-    ScheduleGetInfoUsage estimator;
-    Function<Query, ScheduleGetInfoUsage> factory;
+    ScheduleOpsUsage scheduleOpsUsage;
     FeeData expected;
 
     @BeforeEach
     private void setup() throws Throwable {
         view = mock(StateView.class);
-        estimator = mock(ScheduleGetInfoUsage.class);
-        factory = mock(Function.class);
-        given(factory.apply(any())).willReturn(estimator);
         given(view.infoForSchedule(target)).willReturn(Optional.of(info));
+
+        scheduleOpsUsage = mock(ScheduleOpsUsage.class);
 
         expected = mock(FeeData.class);
 
-        given(estimator.givenScheduledTxn(any())).willReturn(estimator);
-        given(estimator.givenMemo(info.getMemoBytes())).willReturn(estimator);
-        given(estimator.givenCurrentAdminKey(any())).willReturn(estimator);
-        given(estimator.givenSignatories(any())).willReturn(estimator);
-        given(estimator.givenScheduledTxnId(any())).willReturn(estimator);
-        given(estimator.givenDeleted(anyBoolean())).willReturn(estimator);
-        given(estimator.givenExecuted(anyBoolean())).willReturn(estimator);
-        given(estimator.get()).willReturn(expected);
-
-        GetScheduleInfoResourceUsage.factory = factory;
-        subject = new GetScheduleInfoResourceUsage();
+        subject = new GetScheduleInfoResourceUsage(scheduleOpsUsage);
     }
 
     @Test
@@ -114,18 +101,21 @@ public class GetScheduleInfoResourceUsageTest {
 
     @Test
     public void calculatesFeeData() {
-        // when
-        var usage = subject.usageGiven(scheduleInfoQuery(target), view);
+        ArgumentCaptor<ExtantScheduleContext> captor = ArgumentCaptor.forClass(ExtantScheduleContext.class);
 
-        // then
+        // setup:
+        var query = scheduleInfoQuery(target);
+
+        given(scheduleOpsUsage.scheduleInfoUsage(eq(query), captor.capture())).willReturn(expected);
+
+        // when:
+        var usage = subject.usageGiven(query, view);
+
+        // then:
         verify(view).infoForSchedule(target);
-        verify(estimator).givenScheduledTxn(any());
-        verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-        verify(estimator).givenSignatories(Optional.of(info.getSigners()));
-        verify(estimator).givenScheduledTxnId(scheduledTxnId);
-        verify(estimator).givenDeleted(true);
-        verify(estimator).givenExecuted(false);
         assertSame(expected, usage);
+        // and:
+        var ctx = captor.getValue();
     }
 
     @Test
@@ -137,9 +127,6 @@ public class GetScheduleInfoResourceUsageTest {
 
         // then
         verify(view).infoForSchedule(target);
-        verify(estimator, never()).givenScheduledTxn(any());
-        verify(estimator, never()).givenCurrentAdminKey(any());
-        verify(estimator, never()).givenSignatories(any());
         assertSame(FeeData.getDefaultInstance(), usage);
     }
 
@@ -150,9 +137,6 @@ public class GetScheduleInfoResourceUsageTest {
 
         // then
         verify(view).infoForSchedule(target);
-        verify(estimator).givenScheduledTxn(any());
-        verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-        verify(estimator).givenSignatories(Optional.of(info.getSigners()));
         assertSame(expected, usage);
     }
 
@@ -168,9 +152,6 @@ public class GetScheduleInfoResourceUsageTest {
         assertSame(info, queryCtx.get(GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY));
         assertSame(expected, usage);
         verify(view).infoForSchedule(target);
-        verify(estimator).givenScheduledTxn(any());
-        verify(estimator).givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-        verify(estimator).givenSignatories(Optional.of(info.getSigners()));
     }
 
     @Test

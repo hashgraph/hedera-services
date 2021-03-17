@@ -23,7 +23,7 @@ package com.hedera.services.fees.calculation.schedule.txns;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleSignUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -37,13 +37,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -56,8 +53,7 @@ public class ScheduleSignResourceUsageTest {
 
     ScheduleSignResourceUsage subject;
     StateView view;
-    ScheduleSignUsage usage;
-    BiFunction<TransactionBody, SigUsage, ScheduleSignUsage> factory;
+    ScheduleOpsUsage scheduleOpsUsage;
     TransactionBody nonScheduleSignTxn;
     TransactionBody scheduleSignTxn;
     long expiry = 2_345_678L;
@@ -87,17 +83,13 @@ public class ScheduleSignResourceUsageTest {
         nonScheduleSignTxn = mock(TransactionBody.class);
         given(nonScheduleSignTxn.hasScheduleSign()).willReturn(false);
 
-        usage = mock(ScheduleSignUsage.class);
-        given(usage.givenExpiry(anyLong())).willReturn(usage);
-        given(usage.get()).willReturn(expected);
-
-        factory = (BiFunction<TransactionBody, SigUsage, ScheduleSignUsage>)mock(BiFunction.class);
-        given(factory.apply(scheduleSignTxn, sigUsage)).willReturn(usage);
+        scheduleOpsUsage = mock(ScheduleOpsUsage.class);
+        given(scheduleOpsUsage.scheduleSignUsage(scheduleSignTxn, sigUsage, expiry))
+                .willReturn(expected);
 
         given(view.infoForSchedule(target)).willReturn(Optional.of(info));
 
-        ScheduleSignResourceUsage.factory = factory;
-        subject = new ScheduleSignResourceUsage(new MockGlobalDynamicProps());
+        subject = new ScheduleSignResourceUsage(scheduleOpsUsage, new MockGlobalDynamicProps());
     }
 
     @Test
@@ -115,13 +107,20 @@ public class ScheduleSignResourceUsageTest {
 
     @Test
     public void returnsDefaultIfInfoMissing() throws Exception {
+    	// setup:
+		long start = 1_234_567L;
+        TransactionID txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder()
+                        .setSeconds(start))
+                .build();
+        given(scheduleSignTxn.getTransactionID()).willReturn(txnId);
         given(view.infoForSchedule(target)).willReturn(Optional.empty());
+        given(scheduleOpsUsage.scheduleSignUsage(scheduleSignTxn, sigUsage, start + 1800))
+                .willReturn(expected);
 
         // expect:
         assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
-        verify(factory).apply(scheduleSignTxn, sigUsage);
-        verify(scheduleSignTxn).getScheduleSign();
+        // and:
         verify(view).infoForSchedule(target);
-        verify(usage).givenExpiry(1800);
     }
 }
