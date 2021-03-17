@@ -65,7 +65,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						creationValidatesMemo(),
+						creationValidatesMemo(),
 						creationValidatesName(),
 						creationValidatesSymbol(),
 						treasuryHasCorrectBalance(),
@@ -305,10 +305,10 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.name("")
 								.logged()
 								.hasPrecheck(MISSING_TOKEN_NAME),
-//						tokenCreate("primary")
-//								.name("T\u0000ken")
-//								.logged()
-//								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						tokenCreate("primary")
+								.name("T\u0000ken")
+								.logged()
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
 						sourcing(() -> tokenCreate("tooLong")
 								.name(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
 								.hasPrecheck(TOKEN_NAME_TOO_LONG)),
@@ -362,10 +362,10 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("missingSymbol")
 								.symbol("")
 								.hasPrecheck(MISSING_TOKEN_SYMBOL),
-//						tokenCreate("primary")
-//								.name("T\u0000ken")
-//								.logged()
-//								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						tokenCreate("primary")
+								.name("T\u0000ken")
+								.logged()
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
 						sourcing(() -> tokenCreate("tooLong")
 								.symbol(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
 								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG)),

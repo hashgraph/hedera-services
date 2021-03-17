@@ -42,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 
 public class TopicCreateSuite extends HapiApiSuite {
@@ -60,7 +61,7 @@ public class TopicCreateSuite extends HapiApiSuite {
 				submitKeyIsValidated(),
 				adminKeyIsValidated(),
 				autoRenewAccountIsValidated(),
-				memoTooLong(),
+				memoValidations(),
 				noAutoRenewPeriod(),
 				allFieldsSetHappyCase(),
 				feeAsExpected()
@@ -134,17 +135,18 @@ public class TopicCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec memoTooLong() {
+	private HapiApiSpec memoValidations() {
 		byte[] longBytes = new byte[1000];
 		Arrays.fill(longBytes, (byte) 33);
 		String longMemo = new String(longBytes, StandardCharsets.UTF_8);
-		return defaultHapiSpec("memoTooLong")
-				.given()
-				.when()
-				.then(
+		return defaultHapiSpec("MemoValidations")
+				.given().when().then(
 						createTopic("testTopic")
 								.topicMemo(longMemo)
-								.hasKnownStatus(MEMO_TOO_LONG)
+								.hasKnownStatus(MEMO_TOO_LONG),
+						createTopic("alsoTestTopic")
+								.topicMemo(longMemo)
+								.hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING)
 				);
 	}
 

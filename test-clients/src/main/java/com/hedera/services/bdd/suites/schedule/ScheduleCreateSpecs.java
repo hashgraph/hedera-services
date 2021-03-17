@@ -85,7 +85,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				suiteSetup(),
-//				rejectsMalformedScheduledTxnMemo(),
+				rejectsMalformedScheduledTxnMemo(),
 				bodyOnlyCreation(),
 				onlyBodyAndAdminCreation(),
 				onlyBodyAndMemoCreation(),
@@ -248,16 +248,19 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec rejectsMalformedScheduledTxnMemo() {
 		return defaultHapiSpec("RejectsMalformedScheduledTxnMemo")
 				.given(
+						cryptoCreate("ntb")
+								.memo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
 						cryptoCreate("sender")
 				).when().then(
 						scheduleCreate("creation",
 								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
 										.memo(nAscii(101))
-						).hasPrecheck(MEMO_TOO_LONG)
-//						scheduleCreate("creationPartDeux",
-//								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
-//										.memo("Here's s\u0000 to chew on!")
-//						).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
+						).hasPrecheck(MEMO_TOO_LONG),
+						scheduleCreate("creationPartDeux",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.memo("Here's s\u0000 to chew on!")
+						).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
 				);
 	}
 

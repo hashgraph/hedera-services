@@ -133,8 +133,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given( ).when().then(
 						contractCreate("testContract")
 								.entityMemo(TxnUtils.nAscii(101))
-								.fee(1L)
-								.hasPrecheck(INSUFFICIENT_TX_FEE)
+								.hasPrecheck(MEMO_TOO_LONG),
+						contractCreate("testContract")
+								.entityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
 				);
 	}
 
