@@ -22,6 +22,8 @@ package com.hedera.services.txns.consensus;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -67,6 +69,7 @@ class SubmitMessageTransitionLogicTest {
 	private OptionValidator validator;
 	private SubmitMessageTransitionLogic subject;
 	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>();
+	private GlobalDynamicProperties globalDynamicProperties;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
 	@BeforeEach
@@ -78,8 +81,8 @@ class SubmitMessageTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		topics.clear();
-
-		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext);
+		globalDynamicProperties = mock(GlobalDynamicProperties.class);
+		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext, globalDynamicProperties);
 	}
 
 	@Test

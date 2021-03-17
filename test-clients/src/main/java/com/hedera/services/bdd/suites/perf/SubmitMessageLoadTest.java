@@ -132,19 +132,20 @@ public class SubmitMessageLoadTest extends LoadTest {
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						// if no pem file defined then create a new submitKey
-						pemFile == null ? newKeyNamed("submitKey") :
-								keyFromPem(pemFile)
-								.name("submitKey")
-								.simpleWacl()
-								.passphrase(KeyFactory.PEM_PASSPHRASE),
-						// if just created a new key then export spec for later reuse
-						pemFile == null ? withOpContext((spec, ignore) ->spec.keys().exportSimpleKey("topicSubmitKey.pem", "submitKey")):
-								sleepFor(100),
-						logIt(ignore -> settings.toString())
+						newKeyNamed("submitKey")
+//						pemFile == null ? newKeyNamed("submitKey") :
+//								keyFromPem(pemFile)
+//								.name("submitKey")
+//								.simpleWacl()
+//								.passphrase(KeyFactory.PEM_PASSPHRASE),
+//						// if just created a new key then export spec for later reuse
+//						pemFile == null ? withOpContext((spec, ignore) ->spec.keys().exportSimpleKey("topicSubmitKey.pem", "submitKey")):
+//								sleepFor(100),
+//						logIt(ignore -> settings.toString())
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "4000",
+								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "10",
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0")),
 						reduceFeeFor(ConsensusSubmitMessage, 2L, 3L, 3L),
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
@@ -173,7 +174,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 		String topicId = "topic";
 		String senderKey= "sender";
 		String submitKey = "submitKey";
-		if(settings.getTotalAccounts() > 1) {
+		if(settings.getTotalAccounts() > 2) {
 			int s =  r.nextInt(settings.getTotalAccounts());
 			int re = 0;
 			do {

@@ -21,6 +21,8 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -46,15 +48,18 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+	private final GlobalDynamicProperties globalDynamicProperties;
 
 	public SubmitMessageTransitionLogic(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			OptionValidator validator,
-			TransactionContext transactionContext
+			TransactionContext transactionContext,
+			GlobalDynamicProperties globalDynamicProperties
 	) {
 		this.topics = topics;
 		this.validator = validator;
 		this.transactionContext = transactionContext;
+		this.globalDynamicProperties = globalDynamicProperties;
 	}
 
 	@Override
@@ -63,6 +68,11 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		var op = transactionBody.getConsensusSubmitMessage();
 
 		if (op.getMessage().isEmpty()) {
+			transactionContext.setStatus(INVALID_TOPIC_MESSAGE);
+			return;
+		}
+
+		if(op.getMessage().size() > globalDynamicProperties.messageMaxAllowedSize() ) {
 			transactionContext.setStatus(INVALID_TOPIC_MESSAGE);
 			return;
 		}

@@ -157,6 +157,30 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.hasKnownStatus(SUCCESS)
 				);
 	}
+//
+//	private HapiApiSpec messageSubmissionWithMessageSize() {
+//		KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
+//
+//		SigControl validSig = submitKeyShape.signedWith(sigs(ON, OFF, sigs(ON, ON)));
+//		SigControl invalidSig = submitKeyShape.signedWith(sigs(ON, OFF, sigs(ON, OFF)));
+//
+//		return defaultHapiSpec("messageSubmissionWithSubmitKey")
+//				.given(
+//						newKeyNamed("submitKey").shape(submitKeyShape),
+//						createTopic("testTopic")
+//								.submitKeyName("submitKey")
+//				)
+//				.when()
+//				.then(
+//						submitMessageTo("testTopic")
+//								.sigControl(forKey("testTopicSubmit", invalidSig))
+//								.hasKnownStatus(INVALID_SIGNATURE),
+//						submitMessageTo("testTopic")
+//								.sigControl(forKey("testTopicSubmit", validSig))
+//								.hasKnownStatus(MESSAGE_SIZE_TOO_LARGE)
+//				);
+//	}
+
 
 	private HapiApiSpec messageSubmissionMultiple() {
 		final int numMessages = 10;

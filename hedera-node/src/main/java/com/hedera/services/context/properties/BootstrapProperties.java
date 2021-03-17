@@ -210,7 +210,8 @@ public class BootstrapProperties implements PropertySource {
 			"scheduling.whitelist",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolUtf8Bytes",
-			"tokens.maxTokenNameUtf8Bytes"
+			"tokens.maxTokenNameUtf8Bytes",
+			"consensus.message.maxSizeAllowed"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -305,6 +306,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("scheduling.whitelist", AS_FUNCTIONS),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", AS_LONG),
 			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
-			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE)
+			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
+			entry("consensus.message.maxSizeAllowed", AS_INT)
 	);
 }

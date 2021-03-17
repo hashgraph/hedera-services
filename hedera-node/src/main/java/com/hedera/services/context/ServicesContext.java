@@ -1188,7 +1188,7 @@ public class ServicesContext {
 								this::topics, validator(), txnCtx()))),
 				entry(ConsensusSubmitMessage,
 						List.of(new SubmitMessageTransitionLogic(
-								this::topics, validator(), txnCtx()))),
+								this::topics, validator(), txnCtx(), globalDynamicProperties()))),
 				/* Token */
 				entry(TokenCreate,
 						List.of(new TokenCreateTransitionLogic(validator(), tokenStore(), ledger(), txnCtx()))),
@@ -1708,7 +1708,8 @@ public class ServicesContext {
 					accountNums(),
 					systemOpPolicies(),
 					exemptions(),
-					platformStatus());
+					platformStatus(),
+					globalDynamicProperties());
 		}
 		return txns;
 	}

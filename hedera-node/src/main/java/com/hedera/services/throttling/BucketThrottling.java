@@ -80,10 +80,16 @@ public class BucketThrottling implements FunctionalityThrottling {
 	@Override
 	public boolean shouldThrottle(HederaFunctionality function) {
 		var capacity = capacities.get(function);
-		if (capacity != null) {
-			var answer = !capacity.isAvailable();
-			log.debug("Should throttle {}? {} says, '{}'.", function, capacity, answer);
-			return answer;
+		if (capacity != null ) {
+			if (function == ConsensusSubmitMessage) {
+				var answer = !capacity.isAvailable();
+				log.info("Should throttle {}? {} says, '{}'.", function, capacity, answer);
+				return answer;
+			} else { // if (capacity != null ) {
+				var answer = !capacity.isAvailable();
+				log.debug("Should throttle {}? {} says, '{}'.", function, capacity, answer);
+				return answer;
+			}
 		} else {
 			log.warn("No capacity test was available for {}, so throttling it!", function);
 			return true;
