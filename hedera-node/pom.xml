@@ -368,7 +368,7 @@
       <name>Staging repo</name>
       <url>https://oss.sonatype.org/content/repositories/comswirlds-1077</url>
     </repository>
-    <repository>AcquisitionLogs.java
+    <repository>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
