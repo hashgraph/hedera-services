@@ -52,12 +52,6 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isValidEntityMemo(String memo) {
-		var maxUtf8Bytes = 100;
-		return (null == memo) || (StringUtils.getBytesUtf8(memo).length <= maxUtf8Bytes);
-	}
-
-	@Override
 	public boolean isValidTxnDuration(long duration) {
 		long minDuration = 15;
 		long maxDuration = 180;

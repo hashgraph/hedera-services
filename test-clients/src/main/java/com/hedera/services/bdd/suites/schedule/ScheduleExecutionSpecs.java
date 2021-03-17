@@ -297,9 +297,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 		boolean payerHasPaid = accountAmountList.stream().anyMatch(
 				a -> a.getAccountID().equals(payingAccountID) && a.getAmount() < 0);
-		boolean amountHasBeenTransfered = accountAmountList.contains(givingAmount) &&
+		boolean amountHasBeenTransferred = accountAmountList.contains(givingAmount) &&
 				accountAmountList.contains(receivingAmount);
 
-		return amountHasBeenTransfered && payerHasPaid;
+		return amountHasBeenTransferred && payerHasPaid;
 	}
 }

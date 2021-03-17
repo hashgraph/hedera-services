@@ -160,7 +160,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec addingSignaturesToNonExistingTxFails() {
-		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFailsAddingSignaturesToNonExistingTxFails")
+		return defaultHapiSpec("AddingSignaturesToNonExistingTxFails")
 				.given(
 						cryptoCreate("sender"),
 						newKeyNamed("somebody")

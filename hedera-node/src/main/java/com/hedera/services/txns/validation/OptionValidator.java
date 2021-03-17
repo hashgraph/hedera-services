@@ -50,7 +50,6 @@ import java.util.List;
 public interface OptionValidator {
 	boolean hasGoodEncoding(Key key);
 	boolean isValidExpiry(Timestamp expiry);
-	boolean isValidEntityMemo(String memo);
 	boolean isValidTxnDuration(long duration);
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);

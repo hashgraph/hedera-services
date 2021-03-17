@@ -47,8 +47,6 @@ public enum SignatureStatusCode {
   INVALID_SCHEDULE_ID("Invalid Schedule ID [ source = '%s', transactionId = '%s', scheduleId = '%s' ]"),
   UNRESOLVABLE_REQUIRED_SIGNERS(
           "Cannot resolve required signers for scheduled txn [ source = '%s', scheduled = '%s', error = '%s' ]"),
-  UNPARSEABLE_SCHEDULED_TRANSACTION(
-          "Cannot parse scheduled txn [ source = '%s', transactionId = '%s' ]"),
   SCHEDULED_TRANSACTION_NOT_IN_WHITELIST(
           "Specified txn cannot be scheduled [ source = '%s', transactionId = '%s' ]");
 

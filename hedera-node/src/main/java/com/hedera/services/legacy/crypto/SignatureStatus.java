@@ -160,7 +160,6 @@ public class SignatureStatus {
 		formatArguments.add(scheduled.toString());
 		formatArguments.add(errorReport.getResponseCode().toString());
 		break;
-      case UNPARSEABLE_SCHEDULED_TRANSACTION:
       case SCHEDULED_TRANSACTION_NOT_IN_WHITELIST:
       case GENERAL_PAYER_ERROR:
       case GENERAL_TRANSACTION_ERROR:

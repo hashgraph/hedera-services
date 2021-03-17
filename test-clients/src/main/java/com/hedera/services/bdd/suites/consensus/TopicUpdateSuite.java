@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
@@ -96,6 +97,9 @@ public class TopicUpdateSuite extends HapiApiSuite {
 						updateTopic("testTopic")
 								.topicMemo(longMemo)
 								.hasKnownStatus(MEMO_TOO_LONG),
+						updateTopic("testTopic")
+								.topicMemo(ZERO_BYTE_MEMO)
+								.hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
 						updateTopic("testTopic")
 								.autoRenewPeriod(0)
 								.hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE),

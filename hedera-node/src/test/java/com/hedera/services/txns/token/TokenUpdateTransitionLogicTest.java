@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -412,10 +412,10 @@ class TokenUpdateTransitionLogicTest {
 	@Test
 	public void rejectsInvalidMemo() {
 		givenValidTxnCtx();
-		given(validator.isValidEntityMemo(any())).willReturn(false);
+		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// expect:
-		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.syntaxCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -509,6 +509,6 @@ class TokenUpdateTransitionLogicTest {
 	private void withAlwaysValidValidator() {
 		given(validator.tokenNameCheck(any())).willReturn(OK);
 		given(validator.tokenSymbolCheck(any())).willReturn(OK);
-		given(validator.isValidEntityMemo(any())).willReturn(true);
+		given(validator.memoCheck(any())).willReturn(OK);
 	}
 }

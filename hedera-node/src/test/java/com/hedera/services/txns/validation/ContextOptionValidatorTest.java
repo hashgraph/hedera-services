@@ -407,24 +407,6 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsLongEntityMemo() {
-		// expect:
-		assertFalse(subject.isValidEntityMemo(new String(new char[101])));
-	}
-
-	@Test
-	public void accepts100ByteEntityMemo() {
-		// expect:
-		assertTrue(subject.isValidEntityMemo(new String(new char[100])));
-	}
-
-	@Test
-	public void doesntAcceptNullEntityMemo() {
-		// expect:
-		Assertions.assertThrows(NullPointerException.class, () -> subject.isValidEntityMemo(null));
-	}
-
-	@Test
 	public void recognizesExpiredCondition() {
 		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
 
@@ -545,9 +527,12 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsMissingTokenSymbol() {
+	public void rejectsMalformedTokenSymbol() {
+		given(dynamicProperties.maxTokenSymbolUtf8Bytes()).willReturn(100);
+
 		// expect:
 		assertEquals(MISSING_TOKEN_SYMBOL, subject.tokenSymbolCheck(""));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.tokenSymbolCheck("\u0000"));
 	}
 
 	@Test
@@ -573,11 +558,12 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsTooLongTokenName() {
+	public void rejectsMalformedTokenName() {
 		given(dynamicProperties.maxTokenNameUtf8Bytes()).willReturn(3);
 
 		// expect:
 		assertEquals(TOKEN_NAME_TOO_LONG, subject.tokenNameCheck("A€"));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.tokenNameCheck("\u0000"));
 	}
 
 	@Test

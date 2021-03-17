@@ -37,7 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
@@ -76,7 +76,7 @@ class BasicPrecheckTest {
 		given(validator.isPlausibleTxnFee(anyLong())).willReturn(true);
 		given(validator.isPlausibleAccount(node)).willReturn(true);
 		given(validator.isPlausibleAccount(payer)).willReturn(true);
-		given(validator.isValidEntityMemo(memo)).willReturn(true);
+		given(validator.memoCheck(memo)).willReturn(OK);
 		given(validator.chronologyStatusForTxn(any(), anyLong(), any())).willReturn(OK);
 		given(dynamicProperties.minValidityBuffer()).willReturn(validityBufferOverride);
 
@@ -174,12 +174,12 @@ class BasicPrecheckTest {
 
 	@Test
 	public void assertsValidMemo() {
-		given(validator.isValidEntityMemo(memo)).willReturn(false);
+		given(validator.memoCheck(memo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// when:
 		var status = subject.validate(txn);
 
 		// then:
-		assertEquals(MEMO_TOO_LONG, status);
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, status);
 	}
 }

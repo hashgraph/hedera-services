@@ -113,8 +113,9 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		if (!validator.isValidEntityMemo(op.getMemo())) {
-			return MEMO_TOO_LONG;
+		var newMemoIfAny = op.hasMemoWrapper() ? op.getMemoWrapper().getValue() : op.getMemo();
+		if ((status = validator.memoCheck(newMemoIfAny)) != OK) {
+			return status;
 		}
 
 		return OK;

@@ -30,7 +30,6 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -55,14 +54,12 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
 	private static final EnumSet<ResponseCodeEnum> ACCEPTABLE_SIGNING_OUTCOMES = EnumSet.of(OK, NO_NEW_VALID_SIGNATURES);
-	static final long UNKNOWN_EXPIRY = 0L;
 
 	private final OptionValidator validator;
 	private final InHandleActivationHelper activationHelper;
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	ExecutionProcessor executor = this::processExecution;
-	MerkleScheduleFactory scheduleFactory = MerkleSchedule::from;
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
 
@@ -89,16 +86,16 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	}
 
 	private void transitionFor(byte[] bodyBytes, SignatureMap sigMap) throws InvalidProtocolBufferException {
-		var query = store.lookupSchedule(bodyBytes);
-		if (query.getLeft().isPresent()) {
+		var idSchedulePair = store.lookupSchedule(bodyBytes);
+		if (idSchedulePair.getLeft().isPresent()) {
 			completeContextWith(
-					query.getLeft().get(),
-					query.getRight(),
+					idSchedulePair.getLeft().get(),
+					idSchedulePair.getRight(),
 					IDENTICAL_SCHEDULE_ALREADY_CREATED);
 			return;
 		}
 
-		var schedule = query.getRight();
+		var schedule = idSchedulePair.getRight();
 		var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
 		if (result.getCreated().isEmpty()) {
 			abortWith(result.getStatus());
@@ -164,14 +161,15 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			return validity;
 		}
 
-		if (!validator.isValidEntityMemo(op.getMemo())) {
-			return MEMO_TOO_LONG;
+		validity = validator.memoCheck(op.getMemo());
+		if (validity != OK) {
+			return validity;
 		}
-		return validity;
-	}
+		validity = validator.memoCheck(op.getScheduledTransactionBody().getMemo());
+		if (validity != OK) {
+			return validity;
+		}
 
-	@FunctionalInterface
-	interface MerkleScheduleFactory {
-		MerkleSchedule createFrom(byte[] bodyBytes, long expiry);
+		return OK;
 	}
 }

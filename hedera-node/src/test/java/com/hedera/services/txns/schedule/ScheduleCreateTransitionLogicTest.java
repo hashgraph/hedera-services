@@ -57,7 +57,7 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
@@ -67,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -85,7 +84,6 @@ public class ScheduleCreateTransitionLogicTest {
 			.setScheduled(true)
 			.build();
 
-	private final Optional<ScheduleID> EMPTY_SCHEDULE = Optional.empty();
 	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	private final Key invalidKey = Key.newBuilder().build();
 	private Optional<JKey> jAdminKey;
@@ -97,11 +95,11 @@ public class ScheduleCreateTransitionLogicTest {
 	private TransactionContext txnCtx;
 	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
 	private ScheduleReadyForExecution.ExecutionProcessor executor;
-	private ScheduleCreateTransitionLogic.MerkleScheduleFactory scheduleFactory;
 
 	private AccountID payer = IdUtils.asAccount("1.2.3");
 	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
 	private String entityMemo = "some cool memo?";
+	private String innerMemo = "Strictly business now";
 
 	private TransactionID txnId;
 	private TransactionBody scheduleCreateTxn;
@@ -123,7 +121,6 @@ public class ScheduleCreateTransitionLogicTest {
 		activationHelper = mock(InHandleActivationHelper.class);
 		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
 		executor = mock(ScheduleReadyForExecution.ExecutionProcessor.class);
-		scheduleFactory = mock(ScheduleCreateTransitionLogic.MerkleScheduleFactory.class);
 		merkleSchedule = mock(MerkleSchedule.class);
 
 		given(accessor.getTxnBytes()).willReturn(bodyBytes);
@@ -144,7 +141,6 @@ public class ScheduleCreateTransitionLogicTest {
 		subject.signingsWitness = replSigningWitness;
 		subject.executor = executor;
 		subject.classifier = classifier;
-		subject.scheduleFactory = scheduleFactory;
 	}
 
 	@Test
@@ -298,22 +294,26 @@ public class ScheduleCreateTransitionLogicTest {
 
 	@Test
 	public void failsOnInvalidAdminKey() {
-		givenCtx(
-				true,
-				false);
+		givenCtx(true, false, false);
 
 		// expect:
 		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
-	public void failsOnInvalidMemo() {
-		givenCtx(
-				false,
-				true);
+	public void failsOnInvalidEntityMemo() {
+		givenCtx(false, true, false);
 
 		// expect:
-		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(scheduleCreateTxn));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.syntaxCheck().apply(scheduleCreateTxn));
+	}
+
+	@Test
+	public void failsOnInvalidInnerMemo() {
+		givenCtx(false, false, true);
+
+		// expect:
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.syntaxCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
@@ -324,20 +324,16 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenCtx(
-				false,
-				false);
+		givenCtx(false, false, false);
 	}
 
 	private void givenCtx(
 			boolean invalidAdminKey,
-			boolean invalidMemo
+			boolean invalidEntityMemo,
+			boolean invalidInnerMemo
 	) {
 		given(accessor.getSigMap()).willReturn(sigMap);
 		given(classifier.validScheduleKeys(eq(payerKey), eq(sigMap), any(), any())).willReturn(validScheduleKeys);
-		given(scheduleFactory.createFrom(
-				eq(bodyBytes),
-				longThat(l -> l == ScheduleCreateTransitionLogic.UNKNOWN_EXPIRY))).willReturn(merkleSchedule);
 
 		jAdminKey = asUsableFcKey(key);
 
@@ -353,7 +349,8 @@ public class ScheduleCreateTransitionLogicTest {
 				.setAdminKey(key)
 				.setPayerAccountID(payer)
 				.setMemo(entityMemo)
-				.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
+				.setScheduledTransactionBody(
+						SchedulableTransactionBody.newBuilder().setMemo(innerMemo));
 
 		if (invalidAdminKey) {
 			scheduleCreate.setAdminKey(invalidKey);
@@ -363,7 +360,8 @@ public class ScheduleCreateTransitionLogicTest {
 
 		scheduleCreateTxn = builder.build();
 
-		given(validator.isValidEntityMemo(entityMemo)).willReturn(!invalidMemo);
+		given(validator.memoCheck(entityMemo)).willReturn(invalidEntityMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
+		given(validator.memoCheck(innerMemo)).willReturn(invalidInnerMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(scheduleCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
