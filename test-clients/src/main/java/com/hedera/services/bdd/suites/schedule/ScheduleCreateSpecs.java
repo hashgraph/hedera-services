@@ -85,7 +85,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				suiteSetup(),
-				rejectsMalformedScheduledTxnMemo(),
+//				rejectsMalformedScheduledTxnMemo(),
 				bodyOnlyCreation(),
 				onlyBodyAndAdminCreation(),
 				onlyBodyAndMemoCreation(),
