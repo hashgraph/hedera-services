@@ -1,4 +1,4 @@
-package com.hedera.services.usage.crypto;
+package com.hedera.services.usage.schedule;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.usage.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -43,28 +44,30 @@ import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
-public class CryptoOpsUsage {
+public class ScheduleOpsUsage {
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
-	public FeeData cryptoInfoUsage(Query cryptoInfoReq, ExtantCryptoContext ctx) {
-		var op = cryptoInfoReq.getCryptoGetInfo();
-
-		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
-		estimate.updateTb(BASIC_ENTITY_ID_SIZE);
-		long extraRb = 0;
-		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
-		extraRb += getAccountKeyStorageSize(ctx.currentKey());
-		if (ctx.currentlyHasProxy()) {
-			extraRb += BASIC_ENTITY_ID_SIZE;
-		}
-		extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
-		estimate.updateRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
-
-		return estimate.get();
+	public FeeData scheduleInfoUsage(Query scheduleInfo, ExtantCryptoContext ctx) {
+//		var op = cryptoInfoReq.getCryptoGetInfo();
+//
+//		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
+//		estimate.updateTb(BASIC_ENTITY_ID_SIZE);
+//		long extraRb = 0;
+//		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
+//		extraRb += getAccountKeyStorageSize(ctx.currentKey());
+//		if (ctx.currentlyHasProxy()) {
+//			extraRb += BASIC_ENTITY_ID_SIZE;
+//		}
+//		extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
+//		estimate.updateRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
+//
+//		return estimate.get();
+		throw new AssertionError("Not implemented!");
 	}
 
-	public FeeData cryptoUpdateUsage(TransactionBody cryptoUpdate, SigUsage sigUsage, ExtantCryptoContext ctx) {
+	public FeeData scheduleCreateUsage(TransactionBody scheduleCreate, SigUsage sigUsage, ExtantCryptoContext ctx) {
+/*
 		var op = cryptoUpdate.getCryptoUpdateAccount();
 
 		long keyBytesUsed = op.hasKey() ? getAccountKeyStorageSize(op.getKey()) : 0;
@@ -93,27 +96,56 @@ public class CryptoOpsUsage {
 		}
 
 		return estimate.get();
+*/
+
+		throw new AssertionError("Not implemented!");
 	}
 
-	public FeeData cryptoCreateUsage(TransactionBody cryptoCreation, SigUsage sigUsage) {
-		var op = cryptoCreation.getCryptoCreateAccount();
+	public FeeData scheduleSignUsage(TransactionBody scheduleSign, SigUsage sigUsage) {
+//		var op = cryptoCreation.getCryptoCreateAccount();
+//
+//		int variableBytes = 0;
+//		variableBytes += op.getMemoBytes().size();
+//		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
+//		if (op.hasProxyAccountID()) {
+//			variableBytes += BASIC_ENTITY_ID_SIZE;
+//		}
+//
+//		var lifetime = op.getAutoRenewPeriod().getSeconds();
+//
+//		var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
+//		/* Variable bytes plus two additional longs for balance and auto-renew period;
+//		   plus a boolean for receiver sig required. */
+//		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
+//		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
+//		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+//
+//		return estimate.get();
 
-		int variableBytes = 0;
-		variableBytes += op.getMemoBytes().size();
-		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
-		if (op.hasProxyAccountID()) {
-			variableBytes += BASIC_ENTITY_ID_SIZE;
-		}
+		throw new AssertionError("Not implemented!");
+	}
 
-		var lifetime = op.getAutoRenewPeriod().getSeconds();
+	public FeeData scheduleDeleteUsage(TransactionBody scheduleDelete, SigUsage sigUsage) {
+//		var op = cryptoCreation.getCryptoCreateAccount();
+//
+//		int variableBytes = 0;
+//		variableBytes += op.getMemoBytes().size();
+//		variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
+//		if (op.hasProxyAccountID()) {
+//			variableBytes += BASIC_ENTITY_ID_SIZE;
+//		}
+//
+//		var lifetime = op.getAutoRenewPeriod().getSeconds();
+//
+//		var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
+//		/* Variable bytes plus two additional longs for balance and auto-renew period;
+//		   plus a boolean for receiver sig required. */
+//		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
+//		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
+//		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+//
+//		return estimate.get();
 
-		var estimate = txnEstimateFactory.get(sigUsage, cryptoCreation, ESTIMATOR_UTILS);
-		/* Variable bytes plus two additional longs for balance and auto-renew period;
-		   plus a boolean for receiver sig required. */
-		estimate.addBpt(variableBytes + 2 * LONG_SIZE + BOOL_SIZE);
-		estimate.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + variableBytes) * lifetime);
-		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-
-		return estimate.get();
+		throw new AssertionError("Not implemented!");
 	}
 }

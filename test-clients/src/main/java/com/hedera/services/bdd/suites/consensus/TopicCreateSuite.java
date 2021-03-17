@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
@@ -61,10 +60,10 @@ public class TopicCreateSuite extends HapiApiSuite {
 				submitKeyIsValidated(),
 				adminKeyIsValidated(),
 				autoRenewAccountIsValidated(),
-				memoValidations(),
 				noAutoRenewPeriod(),
 				allFieldsSetHappyCase(),
-				feeAsExpected()
+				feeAsExpected(),
+				memoValidations()
 		);
 	}
 
@@ -145,7 +144,7 @@ public class TopicCreateSuite extends HapiApiSuite {
 								.topicMemo(longMemo)
 								.hasKnownStatus(MEMO_TOO_LONG),
 						createTopic("alsoTestTopic")
-								.topicMemo(longMemo)
+								.topicMemo(ZERO_BYTE_MEMO)
 								.hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING)
 				);
 	}

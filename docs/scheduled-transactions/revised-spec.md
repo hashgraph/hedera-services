@@ -38,7 +38,7 @@ many different lists of Ed25519 signing keys which could meet a Hedera key's sig
 requirements. 
 
 For example, suppose Alice has an account whose key is a 1-of-3 threshold made up of 
-Ed25519 keys `A`, `B`, and `C`.  As long as any of `A`, `B`, or `C` have signed, 
+Ed25519 keys `KeyA`, `KeyB`, and `KeyC`.  As long as any of `KeyA`, `KeyB`, or `KeyC` have signed, 
 the signing requirement for the Hedera key on Alice's account is met.
 
 (We often say a Hedera key has "signed a transaction" when enough Ed25519 keys
@@ -79,12 +79,12 @@ how changes to Hedera keys may impact the ready-to-execute status of
 existing scheduled transactions.
  
 For example, suppose the Hedera key on account `0.0.X` is a key list of two
-Ed25519 keys `A` and `B`; and is the sole prerequisite to a scheduled transaction 
+Ed25519 keys `KeyA` and `KeyB`; and is the sole prerequisite to a scheduled transaction 
 whose schedule `0.0.S` already lists `A` as a signer. Say we now update account 
-`0.0.X` to remove `B` from its key. Schedule `0.0.S` is **not** automatically
+`0.0.X` to remove `KeyB` from its key. Schedule `0.0.S` is **not** automatically
 triggered! We need to submit a `ScheduleSign` for `0.0.S` to trigger it. (This
 `ScheduleSign` can be signed by just a payer key, since we made the scheduled
-transaction ready-to-execute by weakining the signing requirement for the key
+transaction ready-to-execute by weakening the signing requirement for the key
 on account `0.0.X`.)
 
 ## The `ScheduleCreate` transaction
