@@ -15,5 +15,10 @@
 - After handling a transaction, Hedera Services will search within the next `autorenew.numberOfEntitiesToCheck` for entities that are about to expire. For each of such entities:
   * If the entity was marked `deleted`, do nothing.
   * Otherwise, try to renew this entity.
-    + Calculate the fee to extend the entity's `expirationTime` for another `autoRenewPeriod`.
-    + If the `autoRenewAccount` of the entity
+
+## Implementation
+When trying to renew an entity:
+1. Calculate the fee to extend the entity's `expirationTime` for another `autoRenewPeriod`.
+2. If the `autoRenewAccount` of the entity has enough balance to cover this fee:
+  - extend the entity's `expirationTime` for another `autoRenewPeriod`.
+  - otherwise, translate the remaining balance of the `autoRenewAccount` into an extension, preferably proportional to the fee calculated in step 1, then extend accordingly.
