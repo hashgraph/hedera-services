@@ -46,9 +46,9 @@ public class BucketThrottle {
 	}
 
 	public boolean hasAvailableCapacity(double amount) {
-		if (amount > primary.getCapacity()) {
-			double targetTps = amount / primary.getBurstPeriod();
-			double networkSizeRatio = amount / primary.getCapacity();
+		if (amount > primary.getCapacity() && amount < EFFECTIVELY_UNLIMITED_CAPACITY) {
+			double targetTps = primary.getBurstPeriod() <= 0.0 ? amount / 1.0 : amount / primary.getBurstPeriod();
+			double networkSizeRatio = primary.getCapacity() <= 0.0 ? amount / 1.0 : amount / primary.getCapacity();
 			double rescaledTargetTps = targetTps / networkSizeRatio;
 			primary = new Throttle(rescaledTargetTps, amount / rescaledTargetTps + RESCALE_BUFFER);
 		}
