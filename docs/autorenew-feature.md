@@ -5,5 +5,5 @@
 
 ## Design
 - Each Hedera entity has an `expirationTime` which is the effective consensus timestamp at (and after) which the entity is set to expire.
-- Introduce `entity.aboutToExpireInSecs` setting in `application.properties`.
-- A Hedera entity is `about` to expire when the current  timestamp plus `entity.aboutToExpireInSecs` >= its `expirationTime`.
+- Introduce `entity.secondsTillExpire` setting in `application.properties`.
+- A Hedera entity is `about` to expire when the current timestamp plus `entity.secondsTillExpire` >= its `expirationTime`.
