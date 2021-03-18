@@ -94,7 +94,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	private String lastUsedExportDir = UNKNOWN_EXPORT_DIR;
 	private BalancesSummary summary;
 
-	Instant periodEnd = NEVER;
+	Instant periodBegin = NEVER;
+	private final int exportPeriod;
 
 	static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
 			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
@@ -107,20 +108,20 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		this.signer = signer;
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 		this.dynamicProperties = dynamicProperties;
+		exportPeriod = dynamicProperties.balancesExportPeriodSecs();
 	}
 
 	@Override
 	public boolean isTimeToExport(Instant now) {
-		if (periodEnd == NEVER) {
-			periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());
-		} else {
-			if (now.isAfter(periodEnd)) {
-				periodEnd = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs());
-				return true;
-			}
+		if (periodBegin != NEVER
+				&& now.getEpochSecond() / exportPeriod != periodBegin.getEpochSecond() / exportPeriod) {
+			periodBegin = now;
+			return true;
 		}
+		periodBegin = now;
 		return false;
 	}
+
 
 	@Override
 	public void exportBalancesFrom(ServicesState signedState, Instant when) {
@@ -136,11 +137,13 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 					when, summary.getTotalFloat(), expectedFloat)); }
 		log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
 
-		if (exportCsv) {
-			toCsvFile(when);
-		}
+		// .pb account balances file is our focus, process it first to let its timestamp to stay close to
+		// epoch export period boundary
 		if (exportProto) {
 			toProtoFile(when);
+		}
+		if (exportCsv) {
+			toCsvFile(when);
 		}
 	}
 

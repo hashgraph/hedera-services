@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -30,11 +29,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.API_PERMISSIONS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
 import static java.util.Map.entry;
 
 public class PerfUtilOps {
@@ -59,7 +58,7 @@ public class PerfUtilOps {
 
 	public static HapiTxnOp tokenOpsEnablement() {
 		return fileUpdate(API_PERMISSIONS)
-				.fee(9_999_999_999L)
+				.fee(ONE_HUNDRED_HBARS)
 				.payingWith(GENESIS)
 				.overridingProps(Map.ofEntries(
 						entry("tokenCreate", "0-*"),
@@ -75,6 +74,18 @@ public class PerfUtilOps {
 						entry("tokenGetInfo", "0-*"),
 						entry("tokenAssociateToAccount", "0-*"),
 						entry("tokenDissociateFromAccount", "0-*")
+				));
+	}
+
+	public static HapiTxnOp scheduleOpsEnablement() {
+		return fileUpdate(API_PERMISSIONS)
+				.fee(ONE_HUNDRED_HBARS)
+				.payingWith(GENESIS)
+				.overridingProps(Map.ofEntries(
+						entry("scheduleCreate", "0-*"),
+						entry("scheduleDelete", "0-*"),
+						entry("scheduleSign", "0-*"),
+						entry("scheduleGetInfo", "0-*")
 				));
 	}
 }
