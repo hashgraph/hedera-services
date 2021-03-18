@@ -17,6 +17,7 @@
   * If the entity was marked `deleted`, do nothing.
   * Otherwise, try to renew this entity.
 - At the time of this writing, there is an AUTORENEW_GRACE_PERIOD of 7 days being mentioned in the HAPI document. Propose to use `autorenew.gracePeriod` in `application.properties` instead.
+- After the grace period, if the `expirationTime` of an entity is not extended, it will be deleted from the system.
 
 ## Implementation
 When trying to renew an entity:
