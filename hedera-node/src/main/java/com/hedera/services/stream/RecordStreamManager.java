@@ -130,6 +130,7 @@ public class RecordStreamManager {
 					.setThreadName("writeQueueThread")
 					.setNodeId(platform.getSelfId().getId())
 					.setForwardTo(streamFileWriter)
+					.setComponent("record-stream")
 					.build();
 			writeQueueThread.start();
 		}
@@ -145,6 +146,7 @@ public class RecordStreamManager {
 				.setThreadName("hashQueueThread")
 				.setNodeId(platform.getSelfId().getId())
 				.setForwardTo(hashCalculator)
+				.setComponent("record-stream")
 				.build();
 		hashQueueThread.start();
 
