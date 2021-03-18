@@ -32,7 +32,7 @@ import java.util.Objects;
  * @author Akshay
  * @Date : 9/19/2018
  */
-public class SolidityAddress implements FastCopyable<SolidityAddress> {
+public class SolidityAddress implements FastCopyable {
 	private static final long CURRENT_VERSION = 2;
 	private static final long OBJECT_ID = 15486041;
 	private String solidityAddress;
