@@ -20,6 +20,8 @@
 - After the grace period, if the `expirationTime` of an entity is not extended, it will be deleted from the system.
 
 ## Implementation
+Hedera Services will perform a circular scanning of entities, meaning after we reach the last entity in the system, we will go back scanning from the first entity in the system.
+
 When trying to renew an entity:
 1. Calculate the fee to extend the entity's `expirationTime` for another `autoRenewPeriod`.
 2. If the `autoRenewAccount` of the entity has enough balance to cover this fee:
