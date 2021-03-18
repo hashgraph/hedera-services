@@ -31,3 +31,5 @@ When trying to renew an entity:
 When scanning for entities, if an entity has expired:
 - If the grace period also passes, delete the entity from the system.
 - If the grace period does not pass yet, try to renew the entity as above. The entity could have been up for autorenewal when its `autoRenewAccount` ran out of balance. Then its `autoRenewAccount` get refilled when the system has moved the scanning to subsequent entities.
+
+For restart: Hedera Services might want to perform a full scan of all entities for auto renewal and removal.
