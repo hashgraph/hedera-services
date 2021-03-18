@@ -27,6 +27,7 @@ When trying to renew an entity:
 2. If the `autoRenewAccount` of the entity has enough balance to cover this fee:
   - extend the entity's `expirationTime` for another `autoRenewPeriod`.
   - otherwise, translate the remaining balance of the `autoRenewAccount` into an extension, preferably proportional to the fee calculated in step 1, then extend accordingly.
+3. Need to discuss the structure of the request (as an action) to `autoRenew` an entity.
 
 When scanning for entities, if an entity has expired:
 - If the grace period also passes, delete the entity from the system.
