@@ -1,6 +1,6 @@
-# Design of the autorenew feature
+# The autorenew feature
 
-## Goals
+## Goal
 -	Allow Hedera Services to automatically search for entities such as accounts, files, smart contracts, topics, tokens... that are about to expire and renew them.
 
 ## Design
