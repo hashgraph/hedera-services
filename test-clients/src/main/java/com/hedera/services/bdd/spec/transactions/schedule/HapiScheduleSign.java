@@ -94,29 +94,14 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		try {
-			final ScheduleInfo info = lookupInfo(spec);
+			final ScheduleInfo info = ScheduleFeeUtils.lookupInfo(spec, schedule, loggingOff);
 			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) ->
-					scheduleOpsUsage.scheduleDeleteUsage(_txn, suFrom(svo), info.getExpirationTime().getSeconds());
+					scheduleOpsUsage.scheduleSignUsage(_txn, suFrom(svo), info.getExpirationTime().getSeconds());
 			return spec.fees().forActivityBasedOp(
 					HederaFunctionality.ScheduleSign, metricsCalc, txn, numPayerKeys);
 		} catch (Throwable ignore) {
 			return HapiApiSuite.ONE_HBAR;
 		}
-	}
-
-	private ScheduleInfo lookupInfo(HapiApiSpec spec) throws Throwable {
-		HapiGetScheduleInfo subOp = getScheduleInfo(schedule).noLogging();
-		Optional<Throwable> error = subOp.execFor(spec);
-		if (error.isPresent()) {
-			if (!loggingOff) {
-				log.warn(
-						"Unable to look up current info for "
-								+ HapiPropertySource.asScheduleString(spec.registry().getScheduleId(schedule)),
-						error.get());
-			}
-			throw error.get();
-		}
-		return subOp.getResponse().getScheduleGetInfo().getScheduleInfo();
 	}
 
 	@Override

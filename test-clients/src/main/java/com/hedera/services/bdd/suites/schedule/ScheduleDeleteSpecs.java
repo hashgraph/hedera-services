@@ -97,7 +97,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				.given(
 						sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any scheduled expiring entity to expire
 						newKeyNamed("admin"),
-						cryptoCreate("sender").balance(1L),
+						cryptoCreate("sender"),
 						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
 				).when(
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + FAST_EXPIRATION),
@@ -112,6 +112,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 						getAccountBalance("receiver").hasTinyBars(0L)
 				).then(
 						scheduleDelete("twoSigXfer")
+								.payingWith("sender")
 								.hasKnownStatus(INVALID_SCHEDULE_ID),
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);

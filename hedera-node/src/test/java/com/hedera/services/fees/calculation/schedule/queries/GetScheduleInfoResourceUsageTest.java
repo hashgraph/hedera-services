@@ -30,7 +30,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
@@ -43,9 +42,11 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -116,34 +117,31 @@ public class GetScheduleInfoResourceUsageTest {
         assertSame(expected, usage);
         // and:
         var ctx = captor.getValue();
+        assertEquals(adminKey, ctx.adminKey());
+        assertEquals(info.getSigners().getKeysCount(), ctx.numSigners());
+        assertTrue(ctx.isResolved());
+        assertEquals(info.getScheduledTransactionBody(), ctx.scheduledTxn());
+        assertEquals(info.getMemo(), ctx.memo());
     }
 
     @Test
     public void calculatesFeeDataScheduleNotPresent() {
-        // given
+        // given:
         given(view.infoForSchedule(target)).willReturn(Optional.empty());
-        // when
+        // when:
         var usage = subject.usageGiven(scheduleInfoQuery(target), view);
 
-        // then
+        // then:
         verify(view).infoForSchedule(target);
         assertSame(FeeData.getDefaultInstance(), usage);
-    }
-
-    @Test
-    public void calculatesFeeDataWithType() {
-        // when
-        var usage = subject.usageGivenType(scheduleInfoQuery(target), view, ResponseType.ANSWER_STATE_PROOF);
-
-        // then
-        verify(view).infoForSchedule(target);
-        assertSame(expected, usage);
     }
 
     @Test
     public void calculatesFeeDataWithContext() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
+
+        given(scheduleOpsUsage.scheduleInfoUsage(any(), any())).willReturn(expected);
 
         // when
         var usage = subject.usageGiven(scheduleInfoQuery(target), view, queryCtx);

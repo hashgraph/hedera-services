@@ -51,12 +51,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		throw new AssertionError("Not implemented!");
-//		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-//		var usageEstimate = factory.apply(txn, sigUsage)
-//				.givenScheduledTxExpirationTimeSecs(dynamicProperties.scheduledTxExpiryTimeSecs())
-//				.givenScheduledTxn(txn.getScheduleCreate().getScheduledTransactionBody())
-//				.get();
-//		return usageEstimate;
+		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+		return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, dynamicProperties.scheduledTxExpiryTimeSecs());
 	}
 }

@@ -956,7 +956,7 @@ public class ServicesContext {
 				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
 				/* Schedule */
 				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(props, scheduleOpsUsage))),
-				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage(scheduleOpsUsage))),
+				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage(scheduleOpsUsage, props))),
 				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(scheduleOpsUsage, props))),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
