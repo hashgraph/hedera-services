@@ -9,6 +9,7 @@
   * `autorenew.secondsTillEntityExpires`
   * `autorenew.numberOfEntitiesToCheck`
 - Each Hedera entity has an `expirationTime` which is the effective consensus timestamp at (and after) which the entity is set to expire.
+- Each Hedera entity also has an `autoRenewAccount` which is the account to pay for the fee at renewal. This `autoRenewAccount` could be itself if the entity is a crypto account or an account associated with the entity when it was created.
 - A Hedera entity is `about` to expire when the current timestamp plus `autorenew.secondsTillEntityExpires` >= its `expirationTime`.
 - After handling a transaction, Hedera Services will search within the next `autorenew.numberOfEntitiesToCheck` for entities that are about to expire. For each of such entities:
   * If the entity was marked `deleted`, do nothing.
