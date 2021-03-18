@@ -36,3 +36,6 @@ When scanning for entities, if an entity has expired:
 For restart: Hedera Services might want to perform a full scan of all entities for auto renewal and removal.
 
 For reconnect: The last scanned entity should be recorded and sent over together with (could also be part of) the signed save state in synchronization.
+
+## Special notes
+- At the time of this writing, a file is not associated with an `autoRenewAccount` so a file can only be renewed by a fileUpdate transaction.
