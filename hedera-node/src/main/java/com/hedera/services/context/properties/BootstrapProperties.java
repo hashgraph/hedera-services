@@ -211,7 +211,7 @@ public class BootstrapProperties implements PropertySource {
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolUtf8Bytes",
 			"tokens.maxTokenNameUtf8Bytes",
-			"consensus.message.maxSizeAllowed"
+			"consensus.message.maxBytesAllowed"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -307,6 +307,6 @@ public class BootstrapProperties implements PropertySource {
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", AS_LONG),
 			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
-			entry("consensus.message.maxSizeAllowed", AS_INT)
+			entry("consensus.message.maxBytesAllowed", AS_INT)
 	);
 }

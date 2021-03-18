@@ -22,7 +22,6 @@ package com.hedera.services.txns.consensus;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -38,7 +37,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-//import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -80,7 +78,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		if(op.getMessage().size() > globalDynamicProperties.messageMaxAllowedSize() ) {
+		if(op.getMessage().size() > globalDynamicProperties.messageMaxBytesAllowed() ) {
 			transactionContext.setStatus(MESSAGE_SIZE_TOO_LARGE);
 			return;
 		}

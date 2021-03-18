@@ -21,16 +21,13 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -83,7 +80,6 @@ class SubmitMessageTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		topics.clear();
-//		globalDynamicProperties = new MockGlobalDynamicProps();
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext, globalDynamicProperties);
 	}
@@ -98,7 +94,7 @@ class SubmitMessageTransitionLogicTest {
 	public void hasCorrectApplicability() {
 		// given:
 		givenValidTransactionContext();
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(1024);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
 
 		// expect:
 		assertTrue(subject.applicability().test(transactionBody));
@@ -109,7 +105,7 @@ class SubmitMessageTransitionLogicTest {
 	public void followsHappyPath() {
 		// given:
 		givenValidTransactionContext();
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(1024);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
 
 		// when:
 		subject.doStateTransition();
@@ -131,7 +127,7 @@ class SubmitMessageTransitionLogicTest {
 	public void failsWithEmptyMessage() {
 		// given:
 		givenTransactionContextNoMessage();
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(1024);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
 
 		// when:
 		subject.doStateTransition();
@@ -145,7 +141,7 @@ class SubmitMessageTransitionLogicTest {
 	public void failsForLargeMessage() {
 		// given:
 		givenValidTransactionContext();
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(5);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(5);
 
 		// when:
 		subject.doStateTransition();
@@ -161,7 +157,7 @@ class SubmitMessageTransitionLogicTest {
 	public void failsForInvalidTopic() {
 		// given:
 		givenTransactionContextInvalidTopic();
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(1024);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
 
 		// when:
 		subject.doStateTransition();
@@ -175,7 +171,7 @@ class SubmitMessageTransitionLogicTest {
 	public void failsForInvalidChunkNumber() {
 		// given:
 		givenChunkMessage(2, 3, defaultTxnId());
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(1024);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
 
 		// when:
 		subject.doStateTransition();
@@ -192,7 +188,7 @@ class SubmitMessageTransitionLogicTest {
 				.setAccountNum(payer.getAccountNum() + 1)
 				.build();
 		givenChunkMessage(3, 2, txnId(initialTransactionPayer, EPOCH_SECOND));
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(1024);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
 
 		// when:
 		subject.doStateTransition();
@@ -205,7 +201,7 @@ class SubmitMessageTransitionLogicTest {
 	public void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart() {
 		// given:
 		givenChunkMessage(5, 5, txnId(payer, EPOCH_SECOND - 30));
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(1024);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
 
 		// when:
 		subject.doStateTransition();
@@ -218,7 +214,7 @@ class SubmitMessageTransitionLogicTest {
 	public void failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID() {
 		// given:
 		givenChunkMessage(4, 1, txnId(payer, EPOCH_SECOND - 30));
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(1024);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
 
 		// when:
 		subject.doStateTransition();
@@ -231,7 +227,7 @@ class SubmitMessageTransitionLogicTest {
 	public void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID() {
 		// given:
 		givenChunkMessage(1, 1, defaultTxnId());
-		given(globalDynamicProperties.messageMaxAllowedSize()).willReturn(1024);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
 
 		// when:
 		subject.doStateTransition();

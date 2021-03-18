@@ -54,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -132,20 +133,19 @@ public class SubmitMessageLoadTest extends LoadTest {
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						// if no pem file defined then create a new submitKey
-						newKeyNamed("submitKey")
-//						pemFile == null ? newKeyNamed("submitKey") :
-//								keyFromPem(pemFile)
-//								.name("submitKey")
-//								.simpleWacl()
-//								.passphrase(KeyFactory.PEM_PASSPHRASE),
-//						// if just created a new key then export spec for later reuse
-//						pemFile == null ? withOpContext((spec, ignore) ->spec.keys().exportSimpleKey("topicSubmitKey.pem", "submitKey")):
-//								sleepFor(100),
-//						logIt(ignore -> settings.toString())
+						pemFile == null ? newKeyNamed("submitKey") :
+								keyFromPem(pemFile)
+								.name("submitKey")
+								.simpleWacl()
+								.passphrase(KeyFactory.PEM_PASSPHRASE),
+						// if just created a new key then export spec for later reuse
+						pemFile == null ? withOpContext((spec, ignore) ->spec.keys().exportSimpleKey("topicSubmitKey.pem", "submitKey")):
+								sleepFor(100),
+						logIt(ignore -> settings.toString())
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "10",
+								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "4000",
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0")),
 						reduceFeeFor(ConsensusSubmitMessage, 2L, 3L, 3L),
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
@@ -174,7 +174,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 		String topicId = "topic";
 		String senderKey= "sender";
 		String submitKey = "submitKey";
-		if(settings.getTotalAccounts() > 2) {
+		if(settings.getTotalAccounts() > 1) {
 			int s =  r.nextInt(settings.getTotalAccounts());
 			int re = 0;
 			do {
@@ -204,7 +204,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 						INVALID_TOPIC_ID,
 						INSUFFICIENT_PAYER_BALANCE)
 				.hasKnownStatusFrom(SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE
-						,UNKNOWN,TRANSACTION_EXPIRED)
+						,UNKNOWN,TRANSACTION_EXPIRED, MESSAGE_SIZE_TOO_LARGE)
 				.deferStatusResolution();
 		if (settings.getBooleanProperty("isChunk", false)) {
 			return () -> op.chunkInfo(1, 1).usePresetTimestamp();

@@ -161,7 +161,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public int messageMaxAllowedSize() {
+	public int messageMaxBytesAllowed() {
 		return 1024;
 	}
 
