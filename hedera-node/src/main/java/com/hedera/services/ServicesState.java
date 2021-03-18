@@ -177,7 +177,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@Override
-	public void initialize(MerkleInternal previous) {
+	public void initialize() {
 		if (tokens() == null) {
 			setChild(ChildIndices.TOKENS,
 					new FCMap<>());

@@ -282,7 +282,7 @@ public class MerkleAccountTest {
 				MerkleAccount.RELEASE_090_ALPHA_VERSION);
 
 		// when:
-		subject.initialize(null);
+		subject.initialize();
 
 		// then:
 		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));
@@ -301,7 +301,7 @@ public class MerkleAccountTest {
 				MerkleAccount.RELEASE_081_VERSION);
 
 		// when:
-		subject.initialize(null);
+		subject.initialize();
 
 		// then:
 		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));

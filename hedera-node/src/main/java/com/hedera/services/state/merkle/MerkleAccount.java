@@ -112,9 +112,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 			return ChildIndices.NUM_0140_CHILDREN;
 		}
 	}
-
 	@Override
-	public void initialize(MerkleInternal previous) {
+	public void initialize() {
 		if (getNumberOfChildren() == ChildIndices.NUM_090_ALPHA_CHILDREN) {
 			addDeserializedChildren(List.of(
 					getChild(ChildIndices.STATE),

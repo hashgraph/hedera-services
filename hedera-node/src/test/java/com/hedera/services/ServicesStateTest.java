@@ -270,7 +270,7 @@ class ServicesStateTest {
 	@Test
 	void ensuresNonNullTokenFcmsAfterReadingFromLegacySavedState() {
 		// when:
-		subject.initialize(null);
+		subject.initialize();
 
 		// then:
 		assertNotNull(subject.tokens());

@@ -26,7 +26,7 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.MultiStream;
-import com.swirlds.common.stream.QueueThread;
+import com.swirlds.common.stream.QueueThreadObjectStream;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
@@ -65,7 +65,7 @@ public class RecordStreamManagerTest {
 	public static final Hash INITIAL_RANDOM_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 
 	private static final MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
-	private static final QueueThread<RecordStreamObject> writeQueueThreadMock = mock(QueueThread.class);
+	private static final QueueThreadObjectStream<RecordStreamObject> writeQueueThreadMock = mock(QueueThreadObjectStream.class);
 	private static final RecordStreamManager RECORD_STREAM_MANAGER = new RecordStreamManager(
 			multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
@@ -134,9 +134,9 @@ public class RecordStreamManagerTest {
 		final int recordsNum = 10;
 		for (int i = 0; i < recordsNum; i++) {
 			RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
-			when(writeQueueThreadMock.getQueueSize()).thenReturn(i);
+			when(writeQueueThreadMock.getQueue().size()).thenReturn(i);
 			recordStreamManager.addRecordStreamObject(recordStreamObject);
-			verify(multiStreamMock).add(recordStreamObject);
+			verify(multiStreamMock).addObject(recordStreamObject);
 			verify(runningAvgsMock).writeQueueSizeRecordStream(i);
 			// multiStream should not be closed after adding it
 			verify(multiStreamMock, never()).close();
@@ -150,11 +150,11 @@ public class RecordStreamManagerTest {
 		// add an object after inFreeze is true
 		RecordStreamObject objectAfterFreeze = mock(RecordStreamObject.class);
 
-		when(writeQueueThreadMock.getQueueSize()).thenReturn(recordsNum);
+		when(writeQueueThreadMock.getQueue().size()).thenReturn(recordsNum);
 
 		recordStreamManager.addRecordStreamObject(objectAfterFreeze);
 		// after frozen, when adding object to the RecordStreamManager, multiStream.add(object) should not be called
-		verify(multiStreamMock, never()).add(objectAfterFreeze);
+		verify(multiStreamMock, never()).addObject(objectAfterFreeze);
 		// multiStreamMock should be closed when inFreeze is set to be true
 		verify(multiStreamMock).close();
 		// should get recordStream queue size and set to runningAvgs
