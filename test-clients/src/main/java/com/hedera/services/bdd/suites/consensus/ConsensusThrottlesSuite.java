@@ -51,10 +51,10 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[] {
 						throttlesCreateTopicAsExpected(),
-						throttlesSubmitMessageAsExpected()
-						//throttlesUpdateTopicAsExpected(),
-						//throttlesDeleteTopicAsExpected(),
-						//throttlesGetTopicInfoAsExpected(),
+						throttlesSubmitMessageAsExpected(),
+						throttlesUpdateTopicAsExpected(),
+						throttlesDeleteTopicAsExpected(),
+						throttlesGetTopicInfoAsExpected(),
 				}
 		);
 	}
