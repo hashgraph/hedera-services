@@ -41,6 +41,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 
 public class ScheduleDeleteSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
@@ -66,9 +68,9 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 						suiteSetup(),
 						deleteWithNoAdminKeyFails(),
 						unauthorizedDeletionFails(),
-						deletingADeletedTxnFails(),
+						deletingAlreadyDeletedIsObvious(),
 						deletingNonExistingFails(),
-						deletingExecutedFails(),
+						deletingExecutedIsPointless(),
 						expiredBeforeDeletion(),
 						suiteCleanup(),
 				}
@@ -95,7 +97,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				.given(
 						sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any scheduled expiring entity to expire
 						newKeyNamed("admin"),
-						cryptoCreate("sender").balance(1L),
+						cryptoCreate("sender"),
 						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
 				).when(
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + FAST_EXPIRATION),
@@ -103,13 +105,14 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 								"twoSigXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", 1)
-								).signedBy("sender")
+								)
 						).adminKey("admin")
 								.signedBy(DEFAULT_PAYER, "admin")
-								.inheritingScheduledSigs(),
+								.alsoSigningWith("sender"),
 						getAccountBalance("receiver").hasTinyBars(0L)
 				).then(
 						scheduleDelete("twoSigXfer")
+								.payingWith("sender")
 								.hasKnownStatus(INVALID_SCHEDULE_ID),
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);
@@ -145,7 +148,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec deletingADeletedTxnFails() {
+	private HapiApiSpec deletingAlreadyDeletedIsObvious() {
 		return defaultHapiSpec("DeletingADeletedTxnFails")
 				.given(
 						cryptoCreate("sender"),
@@ -159,7 +162,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				.when().then(
 						scheduleDelete("validScheduledTxn")
 								.signedBy("admin", DEFAULT_PAYER)
-								.hasKnownStatus(INVALID_SCHEDULE_ID)
+								.hasKnownStatus(SCHEDULE_ALREADY_DELETED)
 				);
 	}
 
@@ -173,17 +176,18 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec deletingExecutedFails() {
+	private HapiApiSpec deletingExecutedIsPointless() {
 		return defaultHapiSpec("DeletingExpiredFails")
 				.given(
 						newKeyNamed("admin"),
 						scheduleCreate("validScheduledTxn",
-								cryptoCreate("newImmediate"))
+								cryptoCreate("newImmediate")
+						)
 								.adminKey("admin")
 				).when().then(
 						scheduleDelete("validScheduledTxn")
 								.signedBy("admin", DEFAULT_PAYER)
-								.hasKnownStatus(INVALID_SCHEDULE_ID)
+								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED)
 				);
 	}
 }

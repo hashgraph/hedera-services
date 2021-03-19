@@ -196,6 +196,7 @@ import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -278,6 +279,7 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
@@ -495,6 +497,7 @@ public class ServicesContext {
 	private CharacteristicsFactory characteristics;
 	private AccountRecordsHistorian recordsHistorian;
 	private GlobalDynamicProperties globalDynamicProperties;
+	private AwareNodeDiligenceScreen nodeDiligenceScreen;
 	private InHandleActivationHelper activationHelper;
 	private PlatformSubmissionManager submissionManager;
 	private SmartContractRequestHandler contracts;
@@ -566,7 +569,7 @@ public class ServicesContext {
 
 	public SigFactoryCreator sigFactoryCreator() {
 		if (sigFactoryCreator == null) {
-			sigFactoryCreator = new SigFactoryCreator(this::schedules);
+			sigFactoryCreator = new SigFactoryCreator();
 		}
 		return sigFactoryCreator;
 	}
@@ -593,6 +596,13 @@ public class ServicesContext {
 			}, nodeLocalProperties());
 		}
 		return speedometers;
+	}
+
+	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
+		if (nodeDiligenceScreen == null) {
+			nodeDiligenceScreen = new AwareNodeDiligenceScreen(validator(), txnCtx(), backingAccounts());
+		}
+		return nodeDiligenceScreen;
 	}
 
 	public SemanticVersions semVers() {
@@ -864,6 +874,7 @@ public class ServicesContext {
 			CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
 			FileFeeBuilder fileFees = new FileFeeBuilder();
 			CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
+			ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 			SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
 
 			fees = new UsageBasedFeeCalculator(
@@ -890,9 +901,10 @@ public class ServicesContext {
 							/* Token */
 							new GetTokenInfoResourceUsage(),
 							/* Schedule */
-							new GetScheduleInfoResourceUsage()
+							new GetScheduleInfoResourceUsage(scheduleOpsUsage)
 					),
-					txnUsageEstimators(cryptoOpsUsage, fileOpsUsage, fileFees, cryptoFees, contractFees)
+					txnUsageEstimators(
+							cryptoOpsUsage, fileOpsUsage, fileFees, cryptoFees, contractFees, scheduleOpsUsage)
 			);
 		}
 		return fees;
@@ -903,8 +915,11 @@ public class ServicesContext {
 			FileOpsUsage fileOpsUsage,
 			FileFeeBuilder fileFees,
 			CryptoFeeBuilder cryptoFees,
-			SmartContractFeeBuilder contractFees
+			SmartContractFeeBuilder contractFees,
+			ScheduleOpsUsage scheduleOpsUsage
 	) {
+		var props = globalDynamicProperties();
+
 		Map<HederaFunctionality, List<TxnResourceUsageEstimator>> estimatorsMap = Map.ofEntries(
 				/* Crypto */
 				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoOpsUsage))),
@@ -940,14 +955,15 @@ public class ServicesContext {
 				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
 				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
 				/* Schedule */
-				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(globalDynamicProperties()))),
-				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage())),
-				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(globalDynamicProperties()))),
+				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(props, scheduleOpsUsage))),
+				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage(scheduleOpsUsage, props))),
+				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(scheduleOpsUsage, props))),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
 				entry(SystemUndelete, List.of(new SystemUndeleteFileResourceUsage(fileFees)))
 		);
+
 		return estimatorsMap::get;
 	}
 
@@ -1359,7 +1375,7 @@ public class ServicesContext {
 
 	public ScheduleStore scheduleStore() {
 		if (scheduleStore == null) {
-			scheduleStore = new HederaScheduleStore(globalDynamicProperties(), ids(), this::schedules);
+			scheduleStore = new HederaScheduleStore(globalDynamicProperties(), ids(), txnCtx(), this::schedules);
 		}
 		return scheduleStore;
 	}

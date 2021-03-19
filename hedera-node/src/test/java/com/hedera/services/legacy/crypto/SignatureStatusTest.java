@@ -60,24 +60,6 @@ class SignatureStatusTest {
 	}
 
 	@Test
-	public void formatsUnparseableTransaction() {
-		// setup:
-		var txnId = TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.75231")).build();
-		// given:
-		String expMsg = String.format("Cannot parse scheduled txn " +
-				"[ source = 'handleTransaction', transactionId = '%s' ]", SignatureStatus.format(txnId));
-		// and:
-		var subject = new SignatureStatus(
-				SignatureStatusCode.UNPARSEABLE_SCHEDULED_TRANSACTION,
-				ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION,
-				true,
-				txnId);
-
-		// expect:
-		assertEquals(expMsg, subject.toLogMessage());
-	}
-
-	@Test
 	public void formatsNestedScheduleCreate() {
 		// setup:
 		var txnId = TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.75231")).build();
@@ -86,8 +68,8 @@ class SignatureStatusTest {
 				"[ source = 'handleTransaction', transactionId = '%s' ]", SignatureStatus.format(txnId));
 		// and:
 		var subject = new SignatureStatus(
-				SignatureStatusCode.UNSCHEDULABLE_TRANSACTION,
-				ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION,
+				SignatureStatusCode.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST,
+				ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST,
 				true,
 				txnId);
 

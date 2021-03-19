@@ -55,7 +55,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -103,7 +105,7 @@ class FileCreateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(true);
 		given(validator.hasGoodEncoding(wacl)).willReturn(true);
-		given(validator.isValidEntityMemo(any())).willReturn(true);
+		given(validator.memoCheck(any())).willReturn(OK);
 
 		subject = new FileCreateTransitionLogic(hfs, validator, txnCtx);
 	}
@@ -145,14 +147,14 @@ class FileCreateTransitionLogicTest {
 	@Test
 	public void syntaxCheckTestsMemo() {
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
-		given(validator.isValidEntityMemo(memo)).willReturn(false);
+		given(validator.memoCheck(memo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// when:
 		var syntaxCheck = subject.syntaxCheck();
 		var status = syntaxCheck.apply(fileCreateTxn);
 
 		// expect:
-		assertEquals(MEMO_TOO_LONG, status);
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, status);
 	}
 
 	@Test

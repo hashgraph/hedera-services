@@ -20,6 +20,7 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -44,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -99,10 +101,10 @@ public class ContractUpdateTransitionLogicTest {
 	public void rejectsInvalidMemoInSyntaxCheck() {
 		givenValidTxnCtx();
 		// and:
-		given(validator.isValidEntityMemo(any())).willReturn(false);
+		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// expect:
-		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(contractUpdateTxn));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.syntaxCheck().apply(contractUpdateTxn));
 	}
 
 	@Test
@@ -220,6 +222,7 @@ public class ContractUpdateTransitionLogicTest {
 								.setProxyAccountID(proxy));
 		if (useAutoRenew) {
 			op.getContractUpdateInstanceBuilder().setAutoRenewPeriod(autoRenewDuration);
+			op.getContractUpdateInstanceBuilder().setMemoWrapper(StringValue.newBuilder().setValue(memo));
 		}
 		contractUpdateTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractUpdateTxn);
@@ -238,6 +241,6 @@ public class ContractUpdateTransitionLogicTest {
 		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
 		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
 		given(validator.isValidAutoRenewPeriod(autoRenewDuration)).willReturn(true);
-		given(validator.isValidEntityMemo(memo)).willReturn(true);
+		given(validator.memoCheck(memo)).willReturn(OK);
 	}
 }

@@ -24,19 +24,17 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleCreateUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.BiFunction;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -45,8 +43,7 @@ public class ScheduleCreateResourceUsageTest {
     ScheduleCreateResourceUsage subject;
 
     StateView view;
-    ScheduleCreateUsage usage;
-    BiFunction<TransactionBody, SigUsage, ScheduleCreateUsage> factory;
+    ScheduleOpsUsage scheduleOpsUsage;
     TransactionBody nonScheduleCreateTxn;
     TransactionBody scheduleCreateTxn;
 
@@ -61,20 +58,17 @@ public class ScheduleCreateResourceUsageTest {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleCreateTxn = mock(TransactionBody.class);
+        scheduleOpsUsage = mock(ScheduleOpsUsage.class);
         given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
+        given(scheduleCreateTxn.getScheduleCreate())
+                .willReturn(ScheduleCreateTransactionBody.getDefaultInstance());
 
         nonScheduleCreateTxn = mock(TransactionBody.class);
-        given(nonScheduleCreateTxn.hasScheduleCreate()).willReturn(false);
 
-        usage = mock(ScheduleCreateUsage.class);
-        given(usage.givenScheduledTxExpirationTimeSecs(anyInt())).willReturn(usage);
-        given(usage.get()).willReturn(expected);
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, props.scheduledTxExpiryTimeSecs()))
+                .willReturn(expected);
 
-        factory = (BiFunction<TransactionBody, SigUsage, ScheduleCreateUsage>)mock(BiFunction.class);
-        given(factory.apply(scheduleCreateTxn, sigUsage)).willReturn(usage);
-
-        ScheduleCreateResourceUsage.factory = factory;
-        subject = new ScheduleCreateResourceUsage(props);
+        subject = new ScheduleCreateResourceUsage(props, scheduleOpsUsage);
     }
 
     @Test

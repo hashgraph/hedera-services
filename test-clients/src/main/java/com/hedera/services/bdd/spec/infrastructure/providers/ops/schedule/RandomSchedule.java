@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static java.util.stream.Collectors.toList;
 
 public class RandomSchedule implements OpProvider {
@@ -53,7 +52,6 @@ public class RandomSchedule implements OpProvider {
 	private final RegistrySourcedNameProvider<ScheduleID> schedules;
 	private final EntityNameProvider<AccountID> accounts;
 	public final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
-			UNSCHEDULABLE_TRANSACTION,
 			UNRESOLVABLE_REQUIRED_SIGNERS);
 
 	private final ResponseCodeEnum[] outcomesForTransfer = standardOutcomesAnd(
@@ -108,14 +106,11 @@ public class RandomSchedule implements OpProvider {
 
 		HapiScheduleCreate op = scheduleCreate("schedule" + id,
 				cryptoTransfer(tinyBarsFromTo(from, STABLE_RECEIVER, 1))
-						.signedBy(from)
-						.payingWith(DEFAULT_PAYER)
 						.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-						.hasKnownStatusFrom(outcomesForTransfer)
 		)
 				.signedBy(DEFAULT_PAYER)
 				.fee(ONE_HUNDRED_HBARS)
-				.inheritingScheduledSigs()
+				.alsoSigningWith(from)
 				.memo("randomlycreated" + id)
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 				.hasKnownStatusFrom(permissibleOutcomes)

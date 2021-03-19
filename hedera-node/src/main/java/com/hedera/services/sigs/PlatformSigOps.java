@@ -20,6 +20,7 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -72,17 +73,16 @@ public class PlatformSigOps {
 		}
 
 		try {
-			var sigBytes = ed25519Key.isForScheduledTxn()
-					? sigBytesFn.sigBytesForScheduled(ed25519Key.getEd25519())
-					: sigBytesFn.sigBytesFor(ed25519Key.getEd25519());
+			var sigBytes = sigBytesFn.sigBytesFor(ed25519Key.getEd25519());
 			if (sigBytes.length > 0) {
 				var sig = copyFrom(sigBytes);
 				var cryptoKey = copyFrom(ed25519Key.getEd25519());
-				if (ed25519Key.isForScheduledTxn()) {
-					result.getPlatformSigs().add(factory.createForScheduled(cryptoKey, sig));
-				} else {
-					result.getPlatformSigs().add(factory.create(cryptoKey, sig));
-				}
+				result.getPlatformSigs().add(factory.create(cryptoKey, sig));
+			}
+		} catch (KeyPrefixMismatchException kmpe) {
+			/* Nbd if a signature map is ambiguous for a key linked to a scheduled transaction. */
+			if (!ed25519Key.isForScheduledTxn())	{
+				result.setTerminatingEx(kmpe);
 			}
 		} catch (Exception e) {
 			result.setTerminatingEx(e);

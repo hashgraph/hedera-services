@@ -92,4 +92,8 @@ public class TxnUsageEstimator {
 		this.networkRbs += networkRbs;
 		return this;
 	}
+
+	public SigUsage getSigUsage() {
+		return sigUsage;
+	}
 }

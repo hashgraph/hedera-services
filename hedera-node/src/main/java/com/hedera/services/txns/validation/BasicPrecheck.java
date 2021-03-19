@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
@@ -54,7 +55,7 @@ public class BasicPrecheck {
 			return INVALID_TRANSACTION_ID;
 		}
 		var txnId = txn.getTransactionID();
-		if (txnId.getScheduled() || !txnId.getNonce().isEmpty()) {
+		if (txnId.getScheduled()) {
 			return TRANSACTION_ID_FIELD_NOT_ALLOWED;
 		}
 		if (!validator.isPlausibleTxnFee(txn.getTransactionFee())) {
@@ -66,8 +67,10 @@ public class BasicPrecheck {
 		if (!validator.isPlausibleAccount(txn.getNodeAccountID())) {
 			return INVALID_NODE_ACCOUNT;
 		}
-		if (!validator.isValidEntityMemo(txn.getMemo())) {
-			return MEMO_TOO_LONG;
+
+		ResponseCodeEnum memoValidity = validator.memoCheck(txn.getMemo());
+		if (memoValidity != OK) {
+			return memoValidity;
 		}
 
 		var validForSecs = txn.getTransactionValidDuration().getSeconds();
