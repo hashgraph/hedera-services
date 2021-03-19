@@ -13,7 +13,6 @@
 - Each Hedera entity also has an `autoRenewAccount` which is the account to pay for the fee at renewal. This `autoRenewAccount` could be itself if the entity is a crypto account or an account associated with the entity when it was created.
 - When a Hedera entity is created, its initial lifetime is defined by its `autoRenewPeriod`. At its `expirationTime`, Hedera Services will try to extend an entity's lifetime by another `autoRenewPeriod` if the `autoRenewAccount` has enough balance to do so, or as much extension as the remaining balance permits.
 - After handling a transaction, Hedera Services will search within the next `autorenew.numberOfEntitiesToCheck` for upto `autorenew.maxNumberOfEntitiesToRenew` entities that expired then try to renew these entities.
-- At the time of this writing, there is an AUTORENEW_GRACE_PERIOD of 7 days being mentioned in the HAPI document. Propose to use `autorenew.gracePeriod` in `application.properties` instead.
 - After the grace period, if the `expirationTime` of an entity is not extended, it will be deleted from the system.
 
 ## Implementation
@@ -31,3 +30,4 @@ For restart and reconnect: The last scanned entity must be in the state for sync
 ## Special notes
 - At the time of this writing, a file is not associated with an `autoRenewAccount` so a file can only be renewed by a fileUpdate transaction.
 - Because cryptoDelete transfers all remaining balance of an account to another account, all accounts that are marked `deleted` will have zero balance. In other words, an account with a non-zero balance will never be marked `deleted`. Step 2 of the implementation does not need to worry about the `autoRenewAccount` being marked `deleted` before.
+- At the time of this writing, __only topics__ have an AUTORENEW_GRACE_PERIOD of 7 days being mentioned in the HAPI document. Propose to either __remove__ this grace period or introduce `autorenew.gracePeriod` in `application.properties` to specify the autorenew grace period for __all entities__.
