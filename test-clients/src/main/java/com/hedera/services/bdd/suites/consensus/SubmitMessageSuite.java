@@ -133,8 +133,8 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.payingWith("civilian")
 								.hasKnownStatus(SUCCESS),
 						fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "20")
-								)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "20"))
 				)
 				.then(
 						submitMessageTo("testTopic")
@@ -142,8 +142,8 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.payingWith("civilian")
 								.hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
 						fileUpdate(APP_PROPERTIES)
-								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "1024")
-								)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "1024"))
 				);
 	}
 
