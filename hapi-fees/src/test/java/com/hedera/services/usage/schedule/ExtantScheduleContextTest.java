@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumSet;
 
 import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.ADMIN_KEY;
-import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.MEMO;
 import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.NO_ADMIN_KEY;
 import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.NUM_SIGNERS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -37,7 +37,8 @@ class ExtantScheduleContextTest {
 				+ BASIC_RICH_INSTANT_SIZE
 				+ memo.getBytes().length
 				+ getAccountKeyStorageSize(adminKey)
-				+ scheduledTxn.getSerializedSize();
+				+ scheduledTxn.getSerializedSize()
+				+ numSigners * KEY_SIZE;
 
 		// then:
 		assertTrue(ctx.isResolved());
@@ -57,7 +58,8 @@ class ExtantScheduleContextTest {
 		long expectedNonBaseRb = ExtantScheduleContext.METADATA_SIZE
 				+ BASIC_RICH_INSTANT_SIZE
 				+ memo.getBytes().length
-				+ scheduledTxn.getSerializedSize();
+				+ scheduledTxn.getSerializedSize()
+				+ ctx.numSigners() * KEY_SIZE;
 
 		// then:
 		assertTrue(ctx.isResolved());

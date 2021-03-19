@@ -20,15 +20,18 @@ package com.hedera.services.usage.schedule;
  * ‍
  */
 
+import com.hedera.services.usage.schedule.entities.ScheduleEntitySizes;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ExtantScheduleContext {
@@ -61,7 +64,8 @@ public class ExtantScheduleContext {
 				+ (resolved ? BASIC_RICH_INSTANT_SIZE : 0)
 				+ memo.getBytes(StandardCharsets.UTF_8).length
 				+ getAccountKeyStorageSize(adminKey)
-				+ scheduledTxn.getSerializedSize();
+				+ scheduledTxn.getSerializedSize()
+				+ SCHEDULE_ENTITY_SIZES.bytesUsedForSigningKeys(numSigners);
 	}
 
 	public Key adminKey() {

@@ -23,31 +23,11 @@ package com.hedera.services.usage.schedule.entities;
 import com.hedera.services.usage.SigUsage;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.Assert.assertEquals;
 
 public class ScheduleEntitySizesTest {
 	ScheduleEntitySizes subject = ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
-
-	@Test
-	public void fixedSizesAsExpected() {
-		// setup:
-		long expected = NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
-				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
-
-		// given:
-		long actual = subject.fixedBytesInScheduleRepr();
-
-		// expect:
-		assertEquals(expected, actual);
-	}
 
 	@Test
 	void estimatesSigsAsExpected() {

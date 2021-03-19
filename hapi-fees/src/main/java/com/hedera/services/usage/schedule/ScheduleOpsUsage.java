@@ -52,7 +52,7 @@ public class ScheduleOpsUsage {
 
 		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
 		estimate.updateTb(BASIC_ENTITY_ID_SIZE);
-		estimate.updateRb(SCHEDULE_ENTITY_SIZES.fixedBytesInScheduleRepr() + ctx.nonBaseRb());
+		estimate.updateRb(ctx.nonBaseRb());
 
 		return estimate.get();
 	}

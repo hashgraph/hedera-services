@@ -42,7 +42,43 @@ import static com.hedera.services.txns.schedule.SigClassification.PAYER_MATCH;
 import static com.hedera.services.txns.schedule.SigClassification.VALID_SCHEDULED_TXN_MATCH;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
+/**
+ * Provides a best-effort attempt to classify the signing outcomes of the
+ * Ed25519 keys linked to the active schedule. (That is, the Ed25519 keys that
+ * compose the Hedera keys prerequisite to the active scheduled transaction.)
+ *
+ * Note that if a linked Ed25519 key did provide a valid signature, it will
+ * never cause the {@code validScheduleKeys} method to return an empty
+ * {@code Optional}. And in general, a valid signature with an unrelated Ed25519
+ * key will <i>also</i> not cause the {@code validScheduleKeys} method to return
+ * an empty {@code Optional}.
+ *
+ * But it <i>is</i> possible for collisions in public key prefixes to make
+ * it appear that a valid signature with an unrelated Ed25519 key was
+ * actually an invalid signature with a linked key. See for example the
+ * {@code ScheduleSignSpecs.overlappingKeysTreatedAsExpected()} in
+ * the <tt>test-clients</tt> module.
+ *
+ * @author Michael Tinker
+ */
 public class SigMapScheduleClassifier {
+	/**
+	 * Returns the list of Ed25519 keys linked to the active schedule that
+	 * had valid signatures on the active transaction. If a linked Ed25519
+	 * key was expanded to an invalid signature, returns an empty {@code Optional}
+	 * to indicate some signatures were invalid.
+	 *
+	 * Makes a best-effort attempt to return an empty optional <i>only</i>
+	 * if a {@code SignaturePair} in the active {@code SignatureMap}
+	 * expanded to exclusively invalid signatures; and seems linked to the active
+	 * schedule; and cannot be "explained" as an invalid payer signature.
+	 *
+	 * @param payerKey the Hedera key for the active payer
+	 * @param sigMap the active transaction's signature map
+	 * @param sigsFn the active mapping from Ed25519 keys to expanded signatures
+	 * @param scheduleCryptoSigs a traversal accepting a visitor to the Ed25519 keys linked to the active schedule
+	 * @return the list of linked Ed25519 with valid signatures, if none appears to have given an invalid signature
+	 */
 	Optional<List<JKey>> validScheduleKeys(
 			JKey payerKey,
 			SignatureMap sigMap,

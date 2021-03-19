@@ -38,6 +38,16 @@ import java.util.function.Supplier;
 import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 
+/**
+ * Provides information about the Ed25519 keys that compose the Hedera keys
+ * linked to the active transaction (and the schedule it references, if
+ * applicable).
+ *
+ * In particular, lets a visitor traverse these Ed25519 keys along with
+ * their expanded {@code TransactionSignature}s (if present).
+ *
+ * @author Michael Tinker
+ */
 public class InHandleActivationHelper {
 	private static final Logger log = LogManager.getLogger(InHandleActivationHelper.class);
 
@@ -68,11 +78,26 @@ public class InHandleActivationHelper {
 		this.accessorSource = accessorSource;
 	}
 
+
+	/**
+	 * Returns true if the set of Ed25519 signing keys for the active transaction
+	 * suffice to meet the signing requirements of all Hedera keys prerequisite
+	 * to the active transaction.
+	 *
+	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 */
 	public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> tests) {
 		ensureUpToDate();
 		return arePartiesActive(false, accessor.getTxn(), tests);
 	}
 
+	/**
+	 * Returns true if the set of Ed25519 signing keys for the active transaction
+	 * suffice to meet the signing requirements of all Hedera keys prerequisite
+	 * to the schedule referenced by the active transaction.
+	 *
+	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 */
 	public boolean areScheduledPartiesActive(
 			TransactionBody scheduledTxn,
 			BiPredicate<JKey, TransactionSignature> tests
@@ -81,6 +106,13 @@ public class InHandleActivationHelper {
 		return arePartiesActive(true, scheduledTxn, tests);
 	}
 
+	/**
+	 * Permits a visitor to traverse the Ed25519 keys, and their expanded signatures,
+	 * that constitute the Hedera keys prerequisite to the schedule referenced by
+	 * the active transaction.
+	 *
+	 * @param visitor the consumer to give the tour to
+	 */
 	public void visitScheduledCryptoSigs(BiConsumer<JKey, TransactionSignature> visitor) {
 		ensureUpToDate();
 		for (JKey req : otherParties) {
@@ -90,6 +122,10 @@ public class InHandleActivationHelper {
 		}
 	}
 
+	/**
+	 * Returns the canonical mapping between Ed25519 public keys and expanded
+	 * signatures for the active transaction.
+	 */
 	public Function<byte[], TransactionSignature> currentSigsFn() {
 		return sigsFn;
 	}

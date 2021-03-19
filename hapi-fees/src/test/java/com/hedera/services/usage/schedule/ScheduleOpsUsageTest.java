@@ -164,7 +164,7 @@ class ScheduleOpsUsageTest {
 		assertSame(A_USAGES_MATRIX, estimate);
 		// and:
 		verify(queryBase).updateTb(BASIC_ENTITY_ID_SIZE);
-		verify(queryBase).updateRb(SCHEDULE_ENTITY_SIZES.fixedBytesInScheduleRepr() + ctx.nonBaseRb());
+		verify(queryBase).updateRb(ctx.nonBaseRb());
 	}
 
 	private Query scheduleQuery() {

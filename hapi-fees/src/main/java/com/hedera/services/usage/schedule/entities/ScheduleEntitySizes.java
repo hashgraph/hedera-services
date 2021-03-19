@@ -22,26 +22,10 @@ package com.hedera.services.usage.schedule.entities;
 
 import com.hedera.services.usage.SigUsage;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum ScheduleEntitySizes {
 	SCHEDULE_ENTITY_SIZES;
-
-	/* { expiry } */
-	static int NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
-	/* { payer, schedulingAccount } */
-	static int NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 2;
-	/* { schedulingTXValidStart } */
-	static int NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
-
-	public int fixedBytesInScheduleRepr() {
-		return NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
-				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
-	}
 
 	public int bytesUsedForSigningKeys(int n) {
 		return n * KEY_SIZE;
