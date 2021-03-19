@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 
 import java.util.List;
@@ -68,6 +69,9 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				).when(
 						contractUpdate("target")
 								.newMemo(secondMemo),
+						contractUpdate("target")
+								.newMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
 						getContractInfo("target").has(contractWith().memo(secondMemo))
 				).then(
 						contractUpdate("target")

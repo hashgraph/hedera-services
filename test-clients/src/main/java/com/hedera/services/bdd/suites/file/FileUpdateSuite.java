@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 /**
@@ -152,6 +153,10 @@ public class FileUpdateSuite extends HapiApiSuite {
 								.entityMemo(firstMemo)
 								.contents(old4K)
 				).when(
+						fileUpdate("test")
+								.entityMemo(ZERO_BYTE_MEMO)
+								.contents(new4k)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
 						fileUpdate("test")
 								.entityMemo(secondMemo)
 								.contents(new4k)

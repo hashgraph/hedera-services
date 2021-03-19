@@ -93,6 +93,7 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
+import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -515,6 +516,7 @@ public class ServicesContextTest {
 		assertThat(ctx.sigFactoryCreator(), instanceOf(SigFactoryCreator.class));
 		assertThat(ctx.activationHelper(), instanceOf(InHandleActivationHelper.class));
 		assertThat(ctx.characteristics(), instanceOf(CharacteristicsFactory.class));
+		assertThat(ctx.nodeDiligenceScreen(), instanceOf(AwareNodeDiligenceScreen.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

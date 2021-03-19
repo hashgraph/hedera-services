@@ -78,6 +78,9 @@ public class FileCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("createWithMemoWorks")
 				.given(
+						fileCreate("ntb")
+								.entityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
 						fileCreate("memorable").entityMemo(memo)
 				).when().then(
 						getFileInfo("memorable").hasMemo(memo)

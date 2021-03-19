@@ -139,11 +139,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		TokenCreateTransactionBody op = txnBody.getTokenCreation();
 
-		if (!validator.isValidEntityMemo(op.getMemo())) {
-			return MEMO_TOO_LONG;
+		var validity = validator.memoCheck(op.getMemo());
+		if (validity != OK) {
+			return validity;
 		}
 
-		var validity = validator.tokenSymbolCheck(op.getSymbol());
+		validity = validator.tokenSymbolCheck(op.getSymbol());
 		if (validity != OK) {
 			return validity;
 		}

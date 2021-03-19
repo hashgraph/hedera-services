@@ -20,9 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -39,7 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
@@ -78,7 +76,7 @@ class BasicPrecheckTest {
 		given(validator.isPlausibleTxnFee(anyLong())).willReturn(true);
 		given(validator.isPlausibleAccount(node)).willReturn(true);
 		given(validator.isPlausibleAccount(payer)).willReturn(true);
-		given(validator.isValidEntityMemo(memo)).willReturn(true);
+		given(validator.memoCheck(memo)).willReturn(OK);
 		given(validator.chronologyStatusForTxn(any(), anyLong(), any())).willReturn(OK);
 		given(dynamicProperties.minValidityBuffer()).willReturn(validityBufferOverride);
 
@@ -90,21 +88,6 @@ class BasicPrecheckTest {
 				.setNodeAccountID(node)
 				.setMemo(memo)
 				.build();
-	}
-
-	@Test
-	void rejectsUseOfNonceField() {
-		// setup:
-		txn = txn.toBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setNonce(ByteString.copyFrom("anything".getBytes())).build())
-				.build();
-
-		// when:
-		var status = subject.validate(txn);
-
-		// then:
-		assertEquals(TRANSACTION_ID_FIELD_NOT_ALLOWED, status);
 	}
 
 	@Test
@@ -191,12 +174,12 @@ class BasicPrecheckTest {
 
 	@Test
 	public void assertsValidMemo() {
-		given(validator.isValidEntityMemo(memo)).willReturn(false);
+		given(validator.memoCheck(memo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// when:
 		var status = subject.validate(txn);
 
 		// then:
-		assertEquals(MEMO_TOO_LONG, status);
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, status);
 	}
 }

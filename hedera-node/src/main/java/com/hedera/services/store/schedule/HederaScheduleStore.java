@@ -20,20 +20,19 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,21 +41,22 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
-import static com.hedera.services.store.schedule.ContentAddressableSchedule.fromMerkleSchedule;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 
 /**
  * Provides a managing store for Scheduled Entities.
  *
  * @author Daniel Ivanov
+ * @author Michael Tinker
  */
 public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
@@ -66,14 +66,17 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 	ScheduleID pendingId = NO_PENDING_ID;
 	MerkleSchedule pendingCreation;
-	Map<ContentAddressableSchedule, MerkleEntityId> existingSchedules = new HashMap<>();
+	TransactionContext txnCtx;
+	Map<MerkleSchedule, MerkleEntityId> extantSchedules = new HashMap<>();
 
 	public HederaScheduleStore(
 			GlobalDynamicProperties properties,
 			EntityIdSource ids,
+			TransactionContext txnCtx,
 			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
 		super(ids);
+		this.txnCtx = txnCtx;
 		this.schedules = schedules;
 		this.properties = properties;
 		buildContentAddressableViewOfExtantSchedules();
@@ -116,50 +119,34 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(
-			byte[] bodyBytes,
-			AccountID payer,
-			AccountID schedulingAccount,
-			RichInstant schedulingTXValidStart,
-			RichInstant consensusTime,
-			Optional<JKey> adminKey,
-			Optional<String> entityMemo
-	) {
-		var validity = accountCheck(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
-		if (validity != OK) {
-			return failure(validity);
+	public CreationResult<ScheduleID> createProvisionally(MerkleSchedule schedule, RichInstant consensusTime) {
+		schedule.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
+
+		var validity = OK;
+		if (schedule.hasExplicitPayer()) {
+			validity = accountCheck(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID);
 		}
-		validity = accountCheck(payer, INVALID_SCHEDULE_PAYER_ID);
+		if (validity == OK) {
+			validity = accountCheck(schedule.schedulingAccount().toGrpcAccountId(), INVALID_SCHEDULE_ACCOUNT_ID);
+		}
 		if (validity != OK) {
 			return failure(validity);
 		}
 
-		pendingId = ids.newScheduleId(schedulingAccount);
-		pendingCreation = new MerkleSchedule(
-				bodyBytes,
-				ofNullableAccountId(schedulingAccount),
-				schedulingTXValidStart);
-		adminKey.ifPresent(pendingCreation::setAdminKey);
-		entityMemo.ifPresent(pendingCreation::setMemo);
-		pendingCreation.setPayer(ofNullableAccountId(payer));
-		pendingCreation.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
+		pendingId = ids.newScheduleId(schedule.schedulingAccount().toGrpcAccountId());
+		pendingCreation = schedule;
 
 		return success(pendingId);
 	}
 
 	@Override
-	public ResponseCodeEnum delete(ScheduleID id){
-		var idRes = resolve(id);
-		if (idRes == MISSING_SCHEDULE) {
-			return INVALID_SCHEDULE_ID;
+	public ResponseCodeEnum delete(ScheduleID id) {
+		var status = usabilityCheck(id, true);
+		if (status != OK) {
+			return status;
 		}
 
-		var schedule = get(id);
-		if (schedule.adminKey().isEmpty()) {
-			return SCHEDULE_IS_IMMUTABLE;
-		}
-
-		delete(id, schedule);
+		apply(id, schedule -> schedule.markDeleted(txnCtx.consensusTime()));
 		return OK;
 	}
 
@@ -169,8 +156,7 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 		var id = fromScheduleId(pendingId);
 		schedules.get().put(id, pendingCreation);
-		var key = fromMerkleSchedule(pendingCreation);
-		existingSchedules.put(key, id);
+		extantSchedules.put(pendingCreation.toContentAddressableView(), id);
 		resetPendingCreation();
 	}
 
@@ -198,85 +184,88 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 	}
 
 	private void buildContentAddressableViewOfExtantSchedules() {
-		schedules.get().forEach((key, value) -> existingSchedules.put(fromMerkleSchedule(value), key));
+		schedules.get().forEach((key, value) -> extantSchedules.put(value.toContentAddressableView(), key));
 	}
 
 	@Override
 	public void rebuildViews() {
-		existingSchedules.clear();
+		extantSchedules.clear();
 		buildContentAddressableViewOfExtantSchedules();
 	}
 
 	@Override
-	public Optional<ScheduleID> lookupScheduleId(
-			byte[] bodyBytes,
-			AccountID scheduledTxPayer,
-			Key adminKey,
-			String memo
-	) {
-		var contentKey = new ContentAddressableSchedule(
-				adminKey,
-				memo,
-				ofNullableAccountId(scheduledTxPayer),
-				bodyBytes);
+	public Pair<Optional<ScheduleID>, MerkleSchedule> lookupSchedule(byte[] bodyBytes) {
+		var schedule = MerkleSchedule.from(bodyBytes, 0L);
 
 		if (isCreationPending()) {
-			var pendingContentKey = fromMerkleSchedule(pendingCreation);
-			if (contentKey.equals(pendingContentKey)) {
-				return Optional.of(pendingId);
+			if (schedule.equals(pendingCreation)) {
+				return Pair.of(Optional.of(pendingId), pendingCreation);
 			}
 		}
-
-		if (existingSchedules.containsKey(contentKey)) {
-			var extantId = existingSchedules.get(contentKey);
-			return Optional.of(extantId.toScheduleId());
+		if (extantSchedules.containsKey(schedule)) {
+			var extantId = extantSchedules.get(schedule);
+			return Pair.of(Optional.of(extantId.toScheduleId()), schedules.get().get(extantId));
 		}
 
-		return Optional.empty();
+		return Pair.of(Optional.empty(), schedule);
 	}
 
 	@Override
 	public ResponseCodeEnum markAsExecuted(ScheduleID id) {
+		var status = usabilityCheck(id, false);
+		if (status != OK) {
+			return status;
+		}
+		apply(id, schedule -> schedule.markExecuted(txnCtx.consensusTime().plusNanos(1L)));
+		return OK;
+	}
+
+	@Override
+	public void expire(EntityId entityId) {
+		var id = entityId.toGrpcScheduleId();
+		if (id.equals(pendingId)) {
+			throw new IllegalArgumentException(String.format(
+					"Argument 'id=%s' refers to a pending creation!",
+					readableId(id)));
+		}
+		var schedule = get(id);
+		schedules.get().remove(entityId.asMerkle());
+		extantSchedules.remove(schedule);
+	}
+
+	public Map<MerkleSchedule, MerkleEntityId> getExtantSchedules() {
+		return extantSchedules;
+	}
+
+	private ResponseCodeEnum usabilityCheck(
+			ScheduleID id,
+			boolean requiresMutability
+	) {
 		var idRes = resolve(id);
 		if (idRes == MISSING_SCHEDULE) {
 			return INVALID_SCHEDULE_ID;
 		}
 
 		var schedule = get(id);
-
-		delete(id, schedule);
-		return OK;
-	}
-
-	@Override
-	public void expire(EntityId entityId) {
-		markAsExecuted(entityId.toGrpcScheduleId());
-	}
-
-	Map<ContentAddressableSchedule, MerkleEntityId> getExistingSchedules() {
-		return existingSchedules;
-	}
-
-	private void delete(ScheduleID id, MerkleSchedule schedule) {
-		remove(id);
-		existingSchedules.remove(fromMerkleSchedule(schedule));
-	}
-
-	private void remove(ScheduleID id) {
-		throwIfMissing(id);
-
-		if (id.equals(pendingId)) {
-			return;
+		if (schedule.isDeleted()) {
+			return SCHEDULE_ALREADY_DELETED;
+		}
+		if (schedule.isExecuted()) {
+			return SCHEDULE_ALREADY_EXECUTED;
+		}
+		if (requiresMutability) {
+			if (schedule.adminKey().isEmpty()) {
+				return SCHEDULE_IS_IMMUTABLE;
+			}
 		}
 
-		var key = fromScheduleId(id);
-		schedules.get().remove(key);
+		return OK;
 	}
 
 	private void throwIfMissing(ScheduleID id) {
 		if (!exists(id)) {
 			throw new IllegalArgumentException(String.format(
-					"Argument 'id=%s' does refer to an extant scheduled entity!",
+					"Argument 'id=%s' does not refer to an extant scheduled entity!",
 					readableId(id)));
 		}
 	}

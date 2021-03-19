@@ -21,6 +21,7 @@ package com.hedera.services.sigs;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.test.factories.keys.KeyTree;
@@ -31,12 +32,13 @@ import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.hedera.test.factories.keys.NodeFactory.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -74,27 +76,6 @@ public class PlatformSigOpsTest {
 		for (KeyTree kt : kts) {
 			pubKeys.add(kt.asJKey());
 		}
-	}
-
-	@Test
-	public void usesScheduledOpsWhenApropos() throws Throwable {
-		// setup:
-		for (JKey key : pubKeys) {
-			key.setForScheduledTxn(true);
-		}
-
-		given(sigBytes.sigBytesForScheduled(any())).willReturn(MOCK_SIG, MORE_EMPTY_SIGS);
-
-		// when:
-		createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
-
-		// then:
-		verify(sigBytes, never()).sigBytesFor(any());
-		verify(sigFactory, never()).create(any(), any());
-		// and:
-		verify(sigFactory).createForScheduled(
-				ByteString.copyFrom(pubKeys.get(0).getEd25519()),
-				ByteString.copyFrom(MOCK_SIG));
 	}
 
 	@Test
@@ -143,6 +124,39 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
+	public void ignoresAmbiguousScheduledSig() throws Throwable {
+		// setup:
+		JKey scheduledKey = new JEd25519Key("01234578901234578901234578901".getBytes());
+		// and:
+		scheduledKey.setForScheduledTxn(true);
+
+		given(sigBytes.sigBytesFor(any())).willThrow(KeyPrefixMismatchException.class);
+
+		// when:
+		PlatformSigsCreationResult result = createEd25519PlatformSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
+
+		// then:
+		assertFalse(result.hasFailed());
+		assertTrue(result.getPlatformSigs().isEmpty());
+	}
+
+	@Test
+	public void doesntIgnoreUnrecognizedProblemForScheduledSig() throws Throwable {
+		// setup:
+		JKey scheduledKey = new JEd25519Key("01234578901234578901234578901".getBytes());
+		// and:
+		scheduledKey.setForScheduledTxn(true);
+
+		given(sigBytes.sigBytesFor(any())).willThrow(IllegalStateException.class);
+
+		// when:
+		PlatformSigsCreationResult result = createEd25519PlatformSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
+
+		// then:
+		assertTrue(result.hasFailed());
+	}
+
+	@Test
 	public void failsOnInsufficientSigs() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG).willThrow(Exception.class);
 
@@ -151,7 +165,7 @@ public class PlatformSigOpsTest {
 
 		// then:
 		assertEquals(1, result.getPlatformSigs().size());
-		Assertions.assertTrue(result.hasFailed());
+		assertTrue(result.hasFailed());
 	}
 
 	@Test

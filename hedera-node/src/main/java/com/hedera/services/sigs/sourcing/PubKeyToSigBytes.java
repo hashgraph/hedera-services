@@ -20,7 +20,6 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -63,18 +62,6 @@ public interface PubKeyToSigBytes {
 	 * @throws Exception if the desired cryptographic signature is unavailable.
 	 */
 	byte[] sigBytesFor(byte[] pubKey) throws Exception;
-
-	/**
-	 * Return the cryptographic signature associated to a given public key relative
-	 * to a scheduled transaction linked to some context (presumably the creation of
-	 * a {@link com.swirlds.common.crypto.Signature}).
-	 *
-	 * @param pubKey a public key whose private key was used to sign some data.
-	 * @return the cryptographic signature that resulted.
-	 */
-	default byte[] sigBytesForScheduled(byte[] pubKey) {
-		throw new UnsupportedOperationException();
-	}
 
 	/**
 	 * Create a {@code PubKeyToSigBytes} implementation backed by the given map.

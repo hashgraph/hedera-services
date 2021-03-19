@@ -70,6 +70,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
@@ -491,5 +492,9 @@ public class TxnUtils {
 			log.warn("Transaction's body can't be parsed: {}", txnToString(txn), e);
 		}
 		return null;
+	}
+
+	public static String nAscii(int n) {
+		return IntStream.range(0, n).mapToObj(ignore -> "A").collect(joining());
 	}
 }

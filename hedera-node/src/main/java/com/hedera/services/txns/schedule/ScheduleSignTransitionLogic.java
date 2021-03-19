@@ -27,6 +27,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,8 +47,9 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
 
     private final InHandleActivationHelper activationHelper;
 
-    SignatoryUtils.SigningsWitness signingsWitness = SignatoryUtils::witnessInScope;
     ExecutionProcessor executor = this::processExecution;
+    SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
+    SignatoryUtils.ScheduledSigningsWitness replSigningsWitness = SignatoryUtils::witnessScoped;
 
     public ScheduleSignTransitionLogic(
             ScheduleStore store,
@@ -61,22 +63,30 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
     @Override
     public void doStateTransition() {
         try {
-            transitionFor(txnCtx.accessor().getTxn().getScheduleSign());
+        	var accessor = txnCtx.accessor();
+            transitionFor(accessor.getSigMap(), accessor.getTxn().getScheduleSign());
         } catch (Exception e) {
             log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
             txnCtx.setStatus(FAIL_INVALID);
         }
     }
 
-    private void transitionFor(ScheduleSignTransactionBody op) throws InvalidProtocolBufferException {
-        int numSigs = op.getSigMap().getSigPairCount();
+    private void transitionFor(
+            SignatureMap sigMap,
+            ScheduleSignTransactionBody op
+    ) throws InvalidProtocolBufferException {
+        var validScheduleKeys = classifier.validScheduleKeys(
+                txnCtx.activePayerKey(),
+                sigMap,
+                activationHelper.currentSigsFn(),
+                activationHelper::visitScheduledCryptoSigs);
         var scheduleId = op.getScheduleID();
-        var signingOutcome = signingsWitness.observeInScope(numSigs, scheduleId, store, activationHelper);
+        var signingOutcome = replSigningsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
 
         var outcome = signingOutcome.getLeft();
         if (outcome == OK) {
-            var schedule = store.get(scheduleId);
-            txnCtx.setScheduledTxnId(schedule.scheduledTransactionId());
+            var updatedSchedule = store.get(scheduleId);
+            txnCtx.setScheduledTxnId(updatedSchedule.scheduledTransactionId());
             if (signingOutcome.getRight()) {
                 outcome = executor.doProcess(scheduleId);
             }

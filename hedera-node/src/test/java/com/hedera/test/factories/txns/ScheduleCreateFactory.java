@@ -25,6 +25,8 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -34,7 +36,6 @@ import static com.google.protobuf.ByteString.copyFrom;
 
 public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactory> {
     private boolean omitAdmin = false;
-    private boolean intentionalNonsense = false;
     private Optional<AccountID> payer = Optional.empty();
     private Transaction scheduled = Transaction.getDefaultInstance();
 
@@ -59,12 +60,6 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
         return this;
     }
 
-    public ScheduleCreateFactory creatingNonsense(Transaction scheduled) {
-        this.scheduled = scheduled;
-        intentionalNonsense = true;
-        return this;
-    }
-
     @Override
     protected ScheduleCreateFactory self() {
         return this;
@@ -84,13 +79,10 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
         payer.ifPresent(op::setPayerAccountID);
         try {
             var accessor = new SignedTxnAccessor(scheduled);
-            op.setSigMap(accessor.getSigMap());
-            op.setTransactionBody(copyFrom(accessor.getTxnBytes()));
+            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+            op.setScheduledTransactionBody(scheduled);
         } catch (InvalidProtocolBufferException e) {
-        	if (!intentionalNonsense) {
-        	    throw new IllegalStateException("ScheduleCreate unintentionally configured with nonsense!", e);
-            }
-        	op.setTransactionBody(scheduled.getBodyBytes());
+            throw new IllegalStateException("ScheduleCreate test used unparseable transaction!", e);
         }
         txn.setScheduleCreate(op);
     }

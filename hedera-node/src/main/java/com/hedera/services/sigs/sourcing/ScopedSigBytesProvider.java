@@ -31,22 +31,7 @@ public class ScopedSigBytesProvider implements PubKeyToSigBytesProvider {
 	final PubKeyToSigBytes delegate;
 
 	public ScopedSigBytesProvider(TxnAccessor accessor) {
-		switch (accessor.getFunction()) {
-			case ScheduleSign:
-				var scheduleSignSigMap = accessor.getTxn().getScheduleSign().getSigMap();
-				delegate = new ScheduledPubKeyToSigBytes(
-						new SigMapPubKeyToSigBytes(accessor.getSigMap()),
-						new SigMapPubKeyToSigBytes(scheduleSignSigMap));
-				break;
-			case ScheduleCreate:
-				var scheduleCreateSigMap = accessor.getTxn().getScheduleCreate().getSigMap();
-				delegate = new ScheduledPubKeyToSigBytes(
-						new SigMapPubKeyToSigBytes(accessor.getSigMap()),
-						new SigMapPubKeyToSigBytes(scheduleCreateSigMap));
-				break;
-			default:
-				delegate = new SigMapPubKeyToSigBytes(accessor.getSigMap());
-		}
+		delegate = new SigMapPubKeyToSigBytes(accessor.getSigMap());
 	}
 
 	@Override

@@ -60,8 +60,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static junit.framework.TestCase.assertTrue;
@@ -122,7 +124,7 @@ class FileUpdateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
 		given(validator.hasGoodEncoding(newWacl)).willReturn(true);
-		given(validator.isValidEntityMemo(newMemo)).willReturn(true);
+		given(validator.memoCheck(newMemo)).willReturn(OK);
 
 		subject = new FileUpdateTransitionLogic(hfs, number, validator, txnCtx);
 	}
@@ -434,15 +436,14 @@ class FileUpdateTransitionLogicTest {
 	@Test
 	public void syntaxCheckTestsMemo() {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.MEMO));
-		given(validator.isValidEntityMemo(newMemo)).willReturn(false);
+		given(validator.memoCheck(newMemo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// when:
 		var syntaxCheck = subject.syntaxCheck();
 		var status = syntaxCheck.apply(fileUpdateTxn);
 
 		// expect:
-		assertEquals(MEMO_TOO_LONG, status);
-		verify(validator).isValidEntityMemo(newMemo);
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, status);
 	}
 
 	@Test

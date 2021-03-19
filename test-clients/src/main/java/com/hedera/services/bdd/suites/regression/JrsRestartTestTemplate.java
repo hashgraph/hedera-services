@@ -204,8 +204,7 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
 						.balance(99L)),
 
 				scheduleSign(PENDING_XFER)
-						.withSignatories(RECEIVER)
-						.lookingUpBytesToSign(),
+						.alsoSigningWith(RECEIVER),
 
 				getAccountInfo(RECEIVER).has(accountWith()
 						.balance(100L)),

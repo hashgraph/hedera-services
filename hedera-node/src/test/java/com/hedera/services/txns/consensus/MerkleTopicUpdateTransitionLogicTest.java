@@ -114,9 +114,9 @@ class MerkleTopicUpdateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(
 				Duration.newBuilder().setSeconds(INVALID_AUTORENEW_PERIOD_SECONDS).build()))
 				.willReturn(false);
-		given(validator.isValidEntityMemo("")).willReturn(true);
-		given(validator.isValidEntityMemo(VALID_MEMO)).willReturn(true);
-		given(validator.isValidEntityMemo(TOO_LONG_MEMO)).willReturn(false);
+		given(validator.memoCheck("")).willReturn(OK);
+		given(validator.memoCheck(VALID_MEMO)).willReturn(OK);
+		given(validator.memoCheck(TOO_LONG_MEMO)).willReturn(MEMO_TOO_LONG);
 
 		subject = new TopicUpdateTransitionLogic(() -> accounts, () -> topics, validator, transactionContext);
 	}
