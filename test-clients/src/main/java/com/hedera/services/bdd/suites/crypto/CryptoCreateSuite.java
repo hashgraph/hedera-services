@@ -57,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 
 public class CryptoCreateSuite extends HapiApiSuite {
@@ -84,7 +85,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountInvalidNestedThresholdKey(),
 				createAnAccountThresholdKeyWithInvalidThreshold(),
 				createAnAccountInvalidED25519(),
-				invalidDurationGetsMeaningfulResponse(),
+				syntaxChecksAreAsExpected(),
 				xferRequiresCrypto(),
 				usdFeeAsExpected()
 		);
@@ -140,12 +141,15 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec invalidDurationGetsMeaningfulResponse() {
-		return defaultHapiSpec("InvalidDurationGetsMeaningfulResponse")
+	public HapiApiSpec syntaxChecksAreAsExpected() {
+		return defaultHapiSpec("SyntaxChecksAreAsExpected")
 				.given().when().then(
 						cryptoCreate("broken")
 								.autoRenewSecs(1L)
-								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)
+								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
+						cryptoCreate("alsoBroken")
+								.entityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
 				);
 	}
 

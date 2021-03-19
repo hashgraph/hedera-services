@@ -1,5 +1,25 @@
 package com.hedera.services.yahcli.suites;
 
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -509,18 +529,16 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")
 										.fee(ONE_HBAR)
-										.signedBy("payingSender")
 						)
 								.via("canonicalScheduleCreation")
 								.payingWith("payingSender")
-								.adminKey("payingSender")
-								.inheritingScheduledSigs(),
+								.adminKey("payingSender"),
 						getScheduleInfo("canonicalSchedule")
 								.payingWith("payingSender"),
 						scheduleSign("canonicalSchedule")
 								.via("canonicalScheduleSigning")
 								.payingWith("payingSender")
-								.withSignatories("receiver"),
+								.alsoSigningWith("receiver"),
 						scheduleCreate("tbd",
 								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
 										.memo("")
@@ -528,8 +546,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 										.signedBy("payingSender")
 						)
 								.payingWith("payingSender")
-								.adminKey("payingSender")
-								.inheritingScheduledSigs(),
+								.adminKey("payingSender"),
 						scheduleDelete("tbd")
 								.via("canonicalScheduleDeletion")
 								.payingWith("payingSender")

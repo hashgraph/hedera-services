@@ -177,8 +177,9 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 	private ResponseCodeEnum validate(TransactionBody fileUpdateTxn) {
 		var op = fileUpdateTxn.getFileUpdate();
 
-		if (op.hasMemo() && !validator.isValidEntityMemo(op.getMemo().getValue())) {
-			return MEMO_TOO_LONG;
+		var memoValidity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
+		if (memoValidity != OK) {
+			return memoValidity;
 		}
 
 		if (op.hasExpirationTime()) {

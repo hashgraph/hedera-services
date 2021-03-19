@@ -223,7 +223,7 @@ public class ContractCreateTransitionLogicTest {
 	public void rejectsInvalidMemoInSyntaxCheck() {
 		givenValidTxnCtx();
 		// and:
-		given(validator.isValidEntityMemo(any())).willReturn(false);
+		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
 
 		// expect:
 		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(contractCreateTxn));
@@ -300,6 +300,6 @@ public class ContractCreateTransitionLogicTest {
 	private void withRubberstampingValidator() {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
-		given(validator.isValidEntityMemo(any())).willReturn(true);
+		given(validator.memoCheck(any())).willReturn(OK);
 	}
 }

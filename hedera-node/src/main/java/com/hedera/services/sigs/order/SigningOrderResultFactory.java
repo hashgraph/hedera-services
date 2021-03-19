@@ -23,7 +23,6 @@ package com.hedera.services.sigs.order;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -166,14 +165,6 @@ public interface SigningOrderResultFactory<T> {
 			TransactionBody scheduled,
 			TransactionID txnId,
 			T errorReport);
-
-	/**
-	 * Report a failure parsing bytes that were to represent a scheduled txn.
-	 *
-	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate}.
-	 * @return the error summary.
-	 */
-	SigningOrderResult<T> forUnparseableScheduledTxn(TransactionID txnId);
 
 	/**
 	 * Report an invalid attempt to schedule a schedule create txn .

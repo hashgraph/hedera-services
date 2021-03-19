@@ -147,11 +147,10 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	 */
 	private ResponseCodeEnum validatePreStateTransition() {
 		var op = transactionContext.accessor().getTxn().getConsensusCreateTopic();
-		ResponseCodeEnum validationResult;
 
-		if (!validator.isValidEntityMemo(op.getMemo())) {
-			validationResult = MEMO_TOO_LONG;
-		} else if (op.hasSubmitKey() && !validator.hasGoodEncoding(op.getSubmitKey())) {
+		ResponseCodeEnum validationResult = validator.memoCheck(op.getMemo());
+
+		if (op.hasSubmitKey() && !validator.hasGoodEncoding(op.getSubmitKey())) {
 			validationResult = BAD_ENCODING;
 		} else if (!op.hasAutoRenewPeriod()) {
 			validationResult = INVALID_RENEWAL_PERIOD;
@@ -163,8 +162,6 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 		} else if (op.hasAutoRenewAccount() && !op.hasAdminKey()) {
 			// If present, the autoRenewAccount's key must have signed transaction (see HederaSigningOrder).
 			validationResult = AUTORENEW_ACCOUNT_NOT_ALLOWED;
-		} else {
-			validationResult = OK;
 		}
 
 		return validationResult;

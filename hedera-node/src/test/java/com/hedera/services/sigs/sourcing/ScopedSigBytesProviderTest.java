@@ -45,36 +45,11 @@ class ScopedSigBytesProviderTest {
 	ScopedSigBytesProvider subject;
 
 	@Test
-	void usesStandardForNonScheduleTxn() throws InvalidProtocolBufferException {
+	void usesStandardDelegate() throws InvalidProtocolBufferException {
 		givenSubject(withoutLinkedSchedule());
 
 		// expect:
 		assertThat(subject.delegate, instanceOf(SigMapPubKeyToSigBytes.class));
-		// and:
-		assertSame(subject.payerSigBytesFor(null), subject.otherPartiesSigBytesFor(null));
-		assertSame(subject.otherPartiesSigBytesFor(null), subject.allPartiesSigBytesFor(null));
-	}
-
-	@Test
-	void usesScheduledForScheduleCreate() throws InvalidProtocolBufferException {
-		givenSubject(createdScheduled(withoutLinkedSchedule()));
-
-		// expect:
-		assertThat(subject.delegate, instanceOf(ScheduledPubKeyToSigBytes.class));
-		// and:
-		assertSame(subject.payerSigBytesFor(null), subject.otherPartiesSigBytesFor(null));
-		assertSame(subject.otherPartiesSigBytesFor(null), subject.allPartiesSigBytesFor(null));
-	}
-
-	@Test
-	void usesScheduledForScheduleSign() throws InvalidProtocolBufferException {
-		// setup:
-		var schid = IdUtils.asSchedule("0.0.75231");
-
-		givenSubject(signingScheduled(schid));
-
-		// expect:
-		assertThat(subject.delegate, instanceOf(ScheduledPubKeyToSigBytes.class));
 		// and:
 		assertSame(subject.payerSigBytesFor(null), subject.otherPartiesSigBytesFor(null));
 		assertSame(subject.otherPartiesSigBytesFor(null), subject.allPartiesSigBytesFor(null));
@@ -99,21 +74,4 @@ class ScopedSigBytesProviderTest {
 										.setAccountID(AccountID.newBuilder().setAccountNum(75231)))))
 				.build();
 	}
-
-	private TransactionBody createdScheduled(TransactionBody inner) {
-		return TransactionBody.newBuilder()
-				.setMemo("You won't want to hear this.")
-				.setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-						.setTransactionBody(inner.toByteString()))
-				.build();
-	}
-
-	private TransactionBody signingScheduled(ScheduleID schid) {
-		return TransactionBody.newBuilder()
-				.setMemo("You won't want to hear this.")
-				.setScheduleSign(ScheduleSignTransactionBody.newBuilder()
-						.setScheduleID(schid))
-				.build();
-	}
-
 }

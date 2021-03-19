@@ -20,49 +20,14 @@ package com.hedera.services.sigs.factories;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.utils.TxnAccessor;
-import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.function.Supplier;
-
-import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 
 public class SigFactoryCreator {
 	public static Logger log = LogManager.getLogger(SigFactoryCreator.class);
 
-	static final byte[] MISSING_SCHEDULED_TXN_BYTES = new byte[0];
-
-	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> scheduledTxns;
-
-	public SigFactoryCreator(Supplier<FCMap<MerkleEntityId, MerkleSchedule>> scheduledTxns) {
-		this.scheduledTxns = scheduledTxns;
-	}
-
 	public TxnScopedPlatformSigFactory createScopedFactory(TxnAccessor accessor) {
-		switch (accessor.getFunction()) {
-			case ScheduleCreate:
-				return new ScheduleBodySigningSigFactory(
-						accessor.getTxnBytes(),
-						accessor.getTxn().getScheduleCreate().getTransactionBody().toByteArray());
-			case ScheduleSign:
-				var schid = fromScheduleId(accessor.getTxn().getScheduleSign().getScheduleID());
-				var curScheduledTxns = scheduledTxns.get();
-				if (curScheduledTxns.containsKey(schid)) {
-					return new ScheduleBodySigningSigFactory(
-							accessor.getTxnBytes(),
-							curScheduledTxns.get(schid).transactionBody());
-				} else {
-					/* We don't want to fail during signature expansion/rationalization; if
-					this {@code ScheduleSign} txn references a non-existent scheduled txn,
-					it will resolve to a meaningful error code later. */
-					return new ScheduleBodySigningSigFactory(accessor.getTxnBytes(), MISSING_SCHEDULED_TXN_BYTES);
-				}
-			default:
-				return new BodySigningSigFactory(accessor);
-		}
+		return new BodySigningSigFactory(accessor);
 	}
 }

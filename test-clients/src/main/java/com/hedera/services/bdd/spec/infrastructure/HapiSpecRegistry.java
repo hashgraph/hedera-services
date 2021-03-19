@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -494,6 +495,14 @@ public class HapiSpecRegistry {
 		} catch (Throwable ignore) {
 			return false;
 		}
+	}
+
+	public void saveScheduledTxn(String name, SchedulableTransactionBody scheduledTxn) {
+		put(name, scheduledTxn);
+	}
+
+	public SchedulableTransactionBody getScheduledTxn(String name) {
+		return get(name, SchedulableTransactionBody.class);
 	}
 
 	public void saveTxnId(String name, TransactionID txnId) {

@@ -41,33 +41,6 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
             ));
         }
     },
-    SCHEDULE_CREATE_NESTED_SCHEDULE_CREATE {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return new PlatformTxnAccessor(from(
-                    newSignedScheduleCreate()
-                            .missingAdmin()
-                            .creating(newSignedScheduleCreate()
-                                            .missingAdmin()
-                                            .creatingNonsense(Transaction.newBuilder()
-                                                    .setBodyBytes(ByteString.copyFromUtf8("NONSENSE"))
-                                                    .build())
-                                            .get())
-                            .get()
-            ));
-        }
-    },
-    SCHEDULE_CREATE_NONSENSE {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return new PlatformTxnAccessor(from(
-                    newSignedScheduleCreate()
-                            .missingAdmin()
-                            .creatingNonsense(Transaction.newBuilder()
-                                    .setBodyBytes(ByteString.copyFromUtf8("NONSENSE"))
-                                    .build())
-                            .get()
-            ));
-        }
-    },
     SCHEDULE_CREATE_XFER_NO_ADMIN {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return new PlatformTxnAccessor(from(

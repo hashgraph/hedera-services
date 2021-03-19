@@ -23,9 +23,11 @@ package com.hedera.services.sigs.metadata;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -47,6 +49,7 @@ public class ScheduleDelegatingSigMetadataLookupTest {
 
     ScheduleID id = IdUtils.asSchedule("1.2.666");
 
+    String memo = "Hey there!";
     MerkleSchedule schedule;
     ScheduleStore scheduleStore;
 
@@ -54,7 +57,12 @@ public class ScheduleDelegatingSigMetadataLookupTest {
 
     @BeforeEach
     public void setup() {
-        schedule = new MerkleSchedule(transactionBody, schedulingAccount, schedulingTXValidStart);
+        schedule = MerkleSchedule.from(MerkleScheduleTest.scheduleCreateTxnWith(
+                TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(),
+                memo,
+                IdUtils.asAccount("0.0.2"),
+                schedulingAccount.toGrpcAccountId(),
+                schedulingTXValidStart.toGrpc()).toByteArray(), 0L);
         schedule.setPayer(new EntityId(0, 0, 2));
 
         scheduleStore = mock(ScheduleStore.class);

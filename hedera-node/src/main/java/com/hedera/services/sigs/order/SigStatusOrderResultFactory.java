@@ -155,18 +155,10 @@ public class SigStatusOrderResultFactory implements SigningOrderResultFactory<Si
 	}
 
 	@Override
-	public SigningOrderResult<SignatureStatus> forUnparseableScheduledTxn(TransactionID txnId) {
-		SignatureStatus error = new SignatureStatus(
-				SignatureStatusCode.UNPARSEABLE_SCHEDULED_TRANSACTION, ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION,
-				inHandleTxnDynamicContext, txnId);
-		return new SigningOrderResult<>(error);
-	}
-
-	@Override
 	public SigningOrderResult<SignatureStatus> forUnschedulableTxn(TransactionID txnId) {
 		SignatureStatus error = new SignatureStatus(
-				SignatureStatusCode.UNSCHEDULABLE_TRANSACTION,
-				ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION,
+				SignatureStatusCode.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST,
+				ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST,
 				inHandleTxnDynamicContext,
 				txnId);
 		return new SigningOrderResult<>(error);

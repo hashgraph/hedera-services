@@ -274,6 +274,7 @@ class ExpirableTxnRecordTest {
 		inOrder.verify(serdes).writeNullableSerializable(subject.getReceipt(), fout);
 		inOrder.verify(fout).writeByteArray(subject.getTxnHash());
 		inOrder.verify(serdes).writeNullableSerializable(subject.getTxnId(), fout);
+		inOrder.verify(serdes).writeNullableInstant(subject.getConsensusTimestamp(), fout);
 		inOrder.verify(serdes).writeNullableString(subject.getMemo(), fout);
 		inOrder.verify(fout).writeLong(subject.getFee());
 		inOrder.verify(serdes).writeNullableSerializable(subject.getHbarAdjustments(), fout);
