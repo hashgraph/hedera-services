@@ -48,7 +48,7 @@ import static java.util.EnumSet.complementOf;
 import static java.util.stream.Collectors.*;
 
 public class BucketThrottling implements FunctionalityThrottling {
-	private static final Logger log = LogManager.getLogger(BucketThrottling.class);
+	static Logger log = LogManager.getLogger(BucketThrottling.class);
 
 	static Consumer<String> displayFn = log::info;
 
