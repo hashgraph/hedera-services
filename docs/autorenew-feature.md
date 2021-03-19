@@ -7,11 +7,12 @@
 - Introduce new settings in `application.properties`:
   * `autorenew.isEnabled`
   * `autorenew.numberOfEntitiesToCheck`
+  * `autorenew.maxNumberOfEntitiesToRenew`
   * `autorenew.gracePeriod`
 - Each Hedera entity has an `expirationTime` which is the effective consensus timestamp at (and after) which the entity is set to expire.
 - Each Hedera entity also has an `autoRenewAccount` which is the account to pay for the fee at renewal. This `autoRenewAccount` could be itself if the entity is a crypto account or an account associated with the entity when it was created.
 - When a Hedera entity is created, its initial lifetime is defined by its `autoRenewPeriod`. At its `expirationTime`, Hedera Services will try to extend an entity's lifetime by another `autoRenewPeriod` if the `autoRenewAccount` has enough balance to do so, or as much extension as the remaining balance permits.
-- After handling a transaction, Hedera Services will search within the next `autorenew.numberOfEntitiesToCheck` for an entity that expired then try to renew this entity.
+- After handling a transaction, Hedera Services will search within the next `autorenew.numberOfEntitiesToCheck` for upto `autorenew.maxNumberOfEntitiesToRenew` entities that expired then try to renew these entities.
 - At the time of this writing, there is an AUTORENEW_GRACE_PERIOD of 7 days being mentioned in the HAPI document. Propose to use `autorenew.gracePeriod` in `application.properties` instead.
 - After the grace period, if the `expirationTime` of an entity is not extended, it will be deleted from the system.
 
