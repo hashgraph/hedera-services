@@ -57,7 +57,7 @@ import static com.swirlds.common.crypto.VerificationStatus.VALID;
  * it appear that a valid signature with an unrelated Ed25519 key was
  * actually an invalid signature with a linked key. See for example the
  * {@code ScheduleSignSpecs.overlappingKeysTreatedAsExpected()} in
- * the <tt>test-clients</tt> module.
+ * the {@code test-clients} module.
  *
  * @author Michael Tinker
  */
