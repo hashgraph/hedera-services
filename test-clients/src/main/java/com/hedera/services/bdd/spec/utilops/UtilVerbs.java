@@ -44,6 +44,7 @@ import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
+import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
@@ -618,7 +619,8 @@ public class UtilVerbs {
 					/ 100;
 			assertEquals(
 					String.format(
-							"%s fee more than %.2f percent different than expected!",
+							"%s fee (%s) more than %.2f percent different than expected!",
+							CryptoTransferSuite.sdec(actualUsdCharged, 4),
 							txn,
 							allowedPercentDiff),
 					expectedUsd,
@@ -651,14 +653,6 @@ public class UtilVerbs {
 						balanceSnapshot(
 								spec -> asAccountString(spec.registry().getAccountID(account)) + "Snapshot",
 								account).payingWith(EXCHANGE_RATE_CONTROL)
-				).toArray(n -> new HapiSpecOperation[n]));
-	}
-
-	public static HapiSpecOperation[] takeBalanceSnapshotsWithGenesis(String... entities) {
-		return HapiApiSuite.flattened(
-				Stream.of(entities).map(account ->
-						balanceSnapshot(
-								spec -> asAccountString(spec.registry().getAccountID(account)) + "Snapshot", account)
 				).toArray(n -> new HapiSpecOperation[n]));
 	}
 
@@ -769,44 +763,5 @@ public class UtilVerbs {
 	public static boolean isNotThrottleProp(Setting setting) {
 		var name = setting.getName();
 		return !name.startsWith("hapi.throttling");
-	}
-
-	public static HapiSpecOperation ensureIdempotentlyCreated(String txId, String otherTxId) {
-		return withOpContext((spec, opLog) -> {
-			var firstTx = getTxnRecord(txId);
-			var secondTx = getTxnRecord(otherTxId);
-			allRunFor(spec, firstTx, secondTx);
-			assertEquals(
-					firstTx.getResponseRecord().getReceipt().getScheduleID(),
-					secondTx.getResponseRecord().getReceipt().getScheduleID());
-		});
-	}
-
-	public static HapiSpecOperation ensureDifferentScheduledTXCreated(String txId, String otherTxId) {
-		return withOpContext((spec, opLog) -> {
-			var txRecord = getTxnRecord(txId);
-			var otherTxRecord = getTxnRecord(otherTxId);
-
-			allRunFor(spec, txRecord, otherTxRecord);
-
-			Assert.assertNotEquals(
-					"Schedule Ids should not be the same!",
-					txRecord.getResponseRecord().getReceipt().getScheduleID(),
-					otherTxRecord.getResponseRecord().getReceipt().getScheduleID());
-		});
-	}
-
-	public static HapiSpecOperation saveExpirations(String txId, String otherTxId, long afterConsensusTime) {
-		return withOpContext((spec, opLog) -> {
-			var txRecord = getTxnRecord(txId);
-			var otherTxRecord = getTxnRecord(otherTxId);
-
-			allRunFor(spec, txRecord, otherTxRecord);
-
-			var timestampFirst = txRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
-			var timestampSecond = otherTxRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
-			spec.registry().saveExpiry("first", timestampFirst + afterConsensusTime);
-			spec.registry().saveExpiry("second", timestampSecond + afterConsensusTime);
-		});
 	}
 }

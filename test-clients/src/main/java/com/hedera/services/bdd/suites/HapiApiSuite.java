@@ -89,6 +89,7 @@ public abstract class HapiApiSuite {
 
 	public static final Key EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 	public static final String NONSENSE_KEY = "Jabberwocky!";
+	public static final String ZERO_BYTE_MEMO = "\u0000kkkk";
 
 	public static final String NODE = HapiSpecSetup.getDefaultInstance().defaultNodeName();
 

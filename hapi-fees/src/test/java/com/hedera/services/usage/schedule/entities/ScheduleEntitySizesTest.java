@@ -20,51 +20,27 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
+import com.hedera.services.usage.SigUsage;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 import static org.junit.Assert.assertEquals;
 
 public class ScheduleEntitySizesTest {
-
 	ScheduleEntitySizes subject = ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 
 	@Test
-	public void fixedSizesAsExpected() {
-		// setup:
-		long expected = NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
-				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
-
-		// given:
-		long actual = subject.fixedBytesInScheduleRepr();
-
+	void estimatesSigsAsExpected() {
 		// expect:
-		assertEquals(expected, actual);
+		assertEquals(2,
+				subject.estimatedScheduleSigs(new SigUsage(3, 100, 1)));
+		assertEquals(1,
+				subject.estimatedScheduleSigs(new SigUsage(3, 100, 10)));
 	}
 
 	@Test
-	public void bytesInBaseReprGivenAsExpected() {
-		// setup:
-		var transactionBody = new byte[]{0x00, 0x01, 0x02, 0x03};
-		var memo = "memo";
-		long expected = NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
-				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE
-				+ transactionBody.length
-				+ memo.length();
-
-		// given:
-		long actual = subject.bytesInBaseReprGiven(transactionBody, ByteString.copyFromUtf8(memo));
-
+	void estimatesSig() {
 		// expect:
-		assertEquals(expected, actual);
+		assertEquals(7 * KEY_SIZE, subject.bytesUsedForSigningKeys(7));
 	}
-
 }

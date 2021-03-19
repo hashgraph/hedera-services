@@ -264,27 +264,11 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsUnparseableTxn() {
-		// setup:
-		SignatureStatus expectedError = new SignatureStatus(
-				SignatureStatusCode.UNPARSEABLE_SCHEDULED_TRANSACTION, ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION,
-				inHandleTxnDynamicContext, txnId);
-
-		// given:
-		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
-		var summary = subject.forUnparseableScheduledTxn(txnId);
-		SignatureStatus error = summary.getErrorReport();
-
-		// expect:
-		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
-	}
-
-	@Test
 	public void reportsNestedScheduleCreate() {
 		// setup:
 		SignatureStatus expectedError = new SignatureStatus(
-				SignatureStatusCode.UNSCHEDULABLE_TRANSACTION,
-				ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION,
+				SignatureStatusCode.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST,
+				ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST,
 				inHandleTxnDynamicContext,
 				txnId);
 

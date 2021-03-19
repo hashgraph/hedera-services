@@ -20,19 +20,15 @@ package com.hedera.services.sigs;
  * ‍
  */
 
-import com.hedera.services.ServicesState;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
-import com.swirlds.common.Address;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

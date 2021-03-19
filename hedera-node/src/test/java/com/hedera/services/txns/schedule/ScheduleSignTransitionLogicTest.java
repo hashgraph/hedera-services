@@ -24,6 +24,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -38,6 +40,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Optional;
+
+import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -47,6 +53,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -56,25 +63,25 @@ public class ScheduleSignTransitionLogicTest {
     private ScheduleStore store;
     private PlatformTxnAccessor accessor;
     private TransactionContext txnCtx;
-    private byte[] transactionBody = TransactionBody.newBuilder()
-            .setMemo("Just this")
-            .build()
-            .toByteArray();
     final TransactionID scheduledTxnId = TransactionID.newBuilder()
             .setAccountID(IdUtils.asAccount("0.0.2"))
-            .setNonce(ByteString.copyFromUtf8("Something something something"))
             .setScheduled(true)
             .build();
+    private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
+    private SigMapScheduleClassifier classifier;
+    private Optional<List<JKey>> validScheduleKeys = Optional.of(
+            List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
 
     private TransactionBody scheduleSignTxn;
 
     InHandleActivationHelper activationHelper;
-    private SignatureMap.Builder sigMap;
-    private SignatoryUtils.SigningsWitness signingWitness;
+    private SignatureMap sigMap;
+    private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
     private ScheduleReadyForExecution.ExecutionProcessor executor;
 
     private ScheduleSignTransitionLogic subject;
-    private ScheduleID schedule = IdUtils.asSchedule("1.2.3");
+    private ScheduleID scheduleId = IdUtils.asSchedule("1.2.3");
+    private MerkleSchedule schedule;
 
     @BeforeEach
     private void setup() throws InvalidProtocolBufferException {
@@ -82,17 +89,21 @@ public class ScheduleSignTransitionLogicTest {
         accessor = mock(PlatformTxnAccessor.class);
         executor = mock(ScheduleReadyForExecution.ExecutionProcessor.class);
         activationHelper = mock(InHandleActivationHelper.class);
-        signingWitness = mock(SignatoryUtils.SigningsWitness.class);
         txnCtx = mock(TransactionContext.class);
+        replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
+        classifier = mock(SigMapScheduleClassifier.class);
+        schedule = mock(MerkleSchedule.class);
+        given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-        given(signingWitness.observeInScope(1, schedule, store, activationHelper))
+        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
                 .willReturn(Pair.of(OK, true));
-        given(executor.doProcess(schedule)).willReturn(OK);
+        given(executor.doProcess(scheduleId)).willReturn(OK);
 
         subject = new ScheduleSignTransitionLogic(store, txnCtx, activationHelper);
 
-        subject.signingsWitness = signingWitness;
+        subject.replSigningsWitness = replSigningWitness;
         subject.executor = executor;
+        subject.classifier = classifier;
     }
 
     @Test
@@ -107,7 +118,7 @@ public class ScheduleSignTransitionLogicTest {
     public void setsFailInvalidIfUnhandledException() {
         givenValidTxnCtx();
         // and:
-        given(signingWitness.observeInScope(1, schedule, store, activationHelper))
+        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
                 .willThrow(IllegalArgumentException.class);
 
         // when:
@@ -127,39 +138,47 @@ public class ScheduleSignTransitionLogicTest {
     @Test
     public void acceptsValidTxn() {
         givenValidTxnCtx();
-        given(store.exists(schedule)).willReturn(true);
 
         // expect:
         assertEquals(OK, subject.syntaxCheck().apply(scheduleSignTxn));
     }
 
     @Test
-    public void followsHappyPath() throws InvalidProtocolBufferException {
-    	// setup:
-        MerkleSchedule entity = mock(MerkleSchedule.class);
-
+    public void relaysAlreadyExecuted() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
-        given(store.get(schedule)).willReturn(entity);
-        given(entity.scheduledTransactionId()).willReturn(scheduledTxnId);
+        given(store.get(scheduleId)).willReturn(schedule);
+        given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+
+        // when:
+        subject.doStateTransition();
+
+        // and:
+        verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+        verify(executor).doProcess(scheduleId);
+        verify(txnCtx).setStatus(SUCCESS);
+    }
+
+    @Test
+    public void followsHappyPath() throws InvalidProtocolBufferException {
+        givenValidTxnCtx();
+        given(store.get(scheduleId)).willReturn(schedule);
+        given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 
         // when:
         subject.doStateTransition();
 
         // and:
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
-		verify(executor).doProcess(schedule);
+		verify(executor).doProcess(scheduleId);
         verify(txnCtx).setStatus(SUCCESS);
     }
 
     @Test
     public void execsOnlyIfReady() throws InvalidProtocolBufferException {
-        // setup:
-        MerkleSchedule entity = mock(MerkleSchedule.class);
-
         givenValidTxnCtx();
-        given(store.get(schedule)).willReturn(entity);
-        given(entity.scheduledTransactionId()).willReturn(scheduledTxnId);
-        given(signingWitness.observeInScope(1, schedule, store, activationHelper))
+        given(store.get(scheduleId)).willReturn(schedule);
+        given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
                 .willReturn(Pair.of(OK, false));
 
         // when:
@@ -174,7 +193,7 @@ public class ScheduleSignTransitionLogicTest {
     @Test
     public void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
-        given(signingWitness.observeInScope(1, schedule, store, activationHelper))
+        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
                 .willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
         // when:
@@ -197,15 +216,17 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     private void givenCtx(boolean invalidScheduleId) {
-        this.sigMap = SignatureMap.newBuilder().addSigPair(
+        sigMap = SignatureMap.newBuilder().addSigPair(
                 SignaturePair.newBuilder()
                         .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
-                        .build());
+                        .build())
+                .build();
+        given(accessor.getSigMap()).willReturn(sigMap);
+        given(classifier.validScheduleKeys(eq(payerKey), eq(sigMap), any(), any())).willReturn(validScheduleKeys);
 
         var builder = TransactionBody.newBuilder();
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()
-                .setSigMap(sigMap)
-                .setScheduleID(schedule);
+                .setScheduleID(scheduleId);
         if (invalidScheduleId) {
             scheduleSign.clearScheduleID();
         }

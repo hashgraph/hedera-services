@@ -180,8 +180,7 @@ public class MixedOpsLoadTest extends LoadTest {
 						.deferStatusResolution() :
 						scheduleSign(schedule + r.nextInt(NUM_SUBMISSIONS))
 								.noLogging()
-								.lookingUpBytesToSign()
-								.withSignatories(receiver)
+								.alsoSigningWith(receiver)
 								.hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
 								.hasKnownStatusFrom(SUCCESS,
 										OK,
@@ -239,14 +238,10 @@ public class MixedOpsLoadTest extends LoadTest {
 								.mapToObj(ignore ->
 										scheduleCreate("schedule" + scheduleId.getAndIncrement(),
 												cryptoTransfer(tinyBarsFromTo(sender, receiver, 1))
-														.signedBy(sender)
-														.payingWith(DEFAULT_PAYER)
-														.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-														.deferStatusResolution()
 										)
 												.signedBy(DEFAULT_PAYER)
 												.fee(ONE_HUNDRED_HBARS)
-												.inheritingScheduledSigs()
+												.alsoSigningWith(sender)
 												.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 												.deferStatusResolution()
 												.adminKey(DEFAULT_PAYER)

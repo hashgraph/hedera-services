@@ -121,8 +121,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {
 		CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 
-		if (!validator.isValidEntityMemo(op.getMemo())) {
-			return MEMO_TOO_LONG;
+		var memoValidity = validator.memoCheck(op.getMemo());
+		if (memoValidity != OK) {
+			return memoValidity;
 		}
 		if (!op.hasKey()) {
 			return KEY_REQUIRED;

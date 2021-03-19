@@ -295,13 +295,18 @@ public class StateView {
 
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
+					.setScheduledTransactionBody(schedule.scheduledTxn())
 					.setScheduledTransactionID(schedule.scheduledTransactionId())
-					.setTransactionBody(ByteString.copyFrom(schedule.transactionBody()))
 					.setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
-					.setPayerAccountID(schedule.payer().toGrpcAccountId())
-					.setSignatories(signatoriesList)
+					.setPayerAccountID(schedule.effectivePayer().toGrpcAccountId())
+					.setSigners(signatoriesList)
 					.setExpirationTime(Timestamp.newBuilder().setSeconds(schedule.expiry()));
 			schedule.memo().ifPresent(info::setMemo);
+			if (schedule.isDeleted()) {
+				info.setDeletionTime(schedule.deletionTime());
+			} else if (schedule.isExecuted()) {
+				info.setExecutionTime(schedule.executionTime());
+			}
 
 			var adminCandidate = schedule.adminKey();
 			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));

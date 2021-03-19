@@ -64,8 +64,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
 			return new SignedTxnAccessor(validSignedTxn);
-		} catch (Exception impossible) {
-		}
+		} catch (Exception impossible) { }
 		return null;
 	}
 

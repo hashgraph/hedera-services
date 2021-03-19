@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -39,14 +38,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TriggeredTxnAccessorTest {
     AccountID id = asAccount("0.0.1001");
-    String nonce = "123";
     boolean scheduled = true;
     AccountID payer = asAccount("0.0.1234");
     ScheduleID scheduleRef = asSchedule("0.0.5876");
 
     TransactionID txnId = TransactionID.newBuilder()
             .setAccountID(id)
-            .setNonce(ByteString.copyFromUtf8(nonce))
             .setScheduled(scheduled).build();
     TransactionBody txnBody = TransactionBody.newBuilder()
             .setTransactionID(txnId)

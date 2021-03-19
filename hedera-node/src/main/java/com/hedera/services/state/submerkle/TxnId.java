@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,35 +44,30 @@ import static com.hedera.services.utils.EntityIdUtils.asAccount;
 public class TxnId implements SelfSerializable {
 	private static final Logger log = LogManager.getLogger(TxnId.class);
 
-	private static final byte[] ABSENT_NONCE = null;
-
-	static final int MAX_CONCEIVABLE_NONCE_BYTES = Integer.MAX_VALUE;
-
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
-	public static final int MERKLE_VERSION = RELEASE_0120_VERSION;
+	static final int RELEASE_0130_VERSION = 3;
+	public static final int MERKLE_VERSION = RELEASE_0130_VERSION;
 
 	public static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
 
 	static DomainSerdes serdes = new DomainSerdes();
 
-	private byte[] nonce = ABSENT_NONCE;
 	private boolean scheduled = false;
 	private EntityId payerAccount = MISSING_ENTITY_ID;
 	private RichInstant validStart = MISSING_INSTANT;
 
-	public TxnId() { }
+	public TxnId() {
+	}
 
 	public TxnId(
 			EntityId payerAccount,
 			RichInstant validStart,
-			boolean scheduled,
-			byte[] nonce
+			boolean scheduled
 	) {
 		this.scheduled = scheduled;
 		this.validStart = validStart;
 		this.payerAccount = payerAccount;
-		this.nonce = nonce;
 	}
 
 	public EntityId getPayerAccount() {
@@ -100,9 +95,12 @@ public class TxnId implements SelfSerializable {
 		validStart = serdes.deserializeTimestamp(in);
 		if (version >= RELEASE_0120_VERSION) {
 			scheduled = in.readBoolean();
+		}
+		if (version == RELEASE_0120_VERSION) {
 			var hasNonce = in.readBoolean();
 			if (hasNonce) {
-				nonce = in.readByteArray(MAX_CONCEIVABLE_NONCE_BYTES);
+				/* The 0.12.0 release only included a nonce field in the transaction id */
+				in.readByteArray(Integer.MAX_VALUE);
 			}
 		}
 	}
@@ -112,12 +110,6 @@ public class TxnId implements SelfSerializable {
 		out.writeSerializable(payerAccount, true);
 		serdes.serializeTimestamp(validStart, out);
 		out.writeBoolean(scheduled);
-		if (nonce == ABSENT_NONCE) {
-			out.writeBoolean(false);
-		} else {
-			out.writeBoolean(true);
-			out.writeByteArray(nonce);
-		}
 	}
 
 	/* --- Objects --- */
@@ -129,11 +121,10 @@ public class TxnId implements SelfSerializable {
 		if (o == null || TxnId.class != o.getClass()) {
 			return false;
 		}
-		var that = (TxnId)o;
+		var that = (TxnId) o;
 		return this.scheduled == that.scheduled &&
 				Objects.equals(payerAccount, that.payerAccount) &&
-				Objects.equals(validStart, that.validStart) &&
-				Arrays.equals(this.nonce, that.nonce);
+				Objects.equals(validStart, that.validStart);
 	}
 
 	@Override
@@ -143,31 +134,24 @@ public class TxnId implements SelfSerializable {
 				RUNTIME_CONSTRUCTABLE_ID,
 				payerAccount,
 				validStart,
-				scheduled,
-				nonce);
+				scheduled);
 	}
 
 	@Override
 	public String toString() {
-		var helper = MoreObjects.toStringHelper(this)
+		return MoreObjects.toStringHelper(this)
 				.add("payer", payerAccount)
 				.add("validStart", validStart)
-				.add("scheduled", scheduled);
-		if (nonce != ABSENT_NONCE) {
-			helper.add("nonce", Hex.encodeHexString(nonce));
-		}
-		return helper.toString();
+				.add("scheduled", scheduled)
+				.toString();
 	}
 
 	/* --- Helpers --- */
 	public static TxnId fromGrpc(final TransactionID grpc) {
-		var grpcNonce = grpc.getNonce();
-		byte[] nonce = grpcNonce.isEmpty() ? ABSENT_NONCE : grpcNonce.toByteArray();
 		return new TxnId(
 				ofNullableAccountId(grpc.getAccountID()),
 				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
-				grpc.getScheduled(),
-				nonce);
+				grpc.getScheduled());
 	}
 
 	public TransactionID toGrpc() {
@@ -177,9 +161,6 @@ public class TxnId implements SelfSerializable {
 			grpc.setTransactionValidStart(validStart.toGrpc());
 		}
 		grpc.setScheduled(scheduled);
-		if (nonce != ABSENT_NONCE) {
-			grpc.setNonce(ByteString.copyFrom(nonce));
-		}
 
 		return grpc.build();
 	}

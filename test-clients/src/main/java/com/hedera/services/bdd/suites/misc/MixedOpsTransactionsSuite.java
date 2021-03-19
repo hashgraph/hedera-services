@@ -70,8 +70,7 @@ public class MixedOpsTransactionsSuite extends HapiApiSuite {
 				).when(
 						scheduleSign("0.0.1016")
 								.logged()
-								.lookingUpBytesToSign()
-								.withSignatories(GENESIS)
+								.alsoSigningWith(GENESIS)
 				).then(
 						getAccountBalance("0.0.1002").hasTinyBars(1L)
 				);
@@ -113,14 +112,12 @@ public class MixedOpsTransactionsSuite extends HapiApiSuite {
 						IntStream.range(0, numScheduledTxns).mapToObj(i ->
 								scheduleCreate("schedule" + i,
 										cryptoTransfer(tinyBarsFromTo( "sender", "receiver", 1))
-												.signedBy("sender")
 								)
 										.advertisingCreation()
 										.fee(ONE_HUNDRED_HBARS)
 										.signedBy(DEFAULT_PAYER)
-										.inheritingScheduledSigs()
-										.entityMemo("This is the " + i + "th scheduled txn.")
-										.withNonce(TxnUtils.randomUtf8Bytes(8))
+										.alsoSigningWith("sender")
+										.withEntityMemo("This is the " + i + "th scheduled txn.")
 						).toArray(HapiSpecOperation[]::new)
 				).then(
 						freeze().payingWith(GENESIS)

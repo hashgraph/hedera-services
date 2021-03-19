@@ -71,16 +71,16 @@ public class Schedule {
 						simpleXfer.getFrom(),
 						simpleXfer.getTo(),
 						simpleXfer.getAmount())
-				).signedBy(signatories.toArray(new String[0]))
+				)
 		)
-				.inheritingScheduledSigs()
+				.alsoSigningWith(signatories.toArray(new String[0]))
 				.advertisingCreation();
 
 		if (adminKey != UNUSED_KEY) {
 			op.adminKey(adminKeyFor(name));
 		}
 		if (memo != UNSPECIFIED_MEMO) {
-			op.entityMemo(memo);
+			op.withEntityMemo(memo);
 		}
 
 		return op;

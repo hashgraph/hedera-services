@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -36,14 +35,13 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -69,9 +67,9 @@ class TxnIdTest {
 	TxnId subject;
 
 	@Test
-	void serializeWorksForScheduledNonce() throws IOException {
+	void serializeWorksForScheduled() throws IOException {
 		// setup:
-		subject = scheduledSubjectWithNonce();
+		subject = scheduledSubject();
 		// and:
 		dout = mock(SerializableDataOutputStream.class);
 		serdes = mock(DomainSerdes.class);
@@ -86,34 +84,7 @@ class TxnIdTest {
 		// then:
 		inOrder.verify(dout).writeSerializable(fcPayer, Boolean.TRUE);
 		inOrder.verify(serdes).serializeTimestamp(fcValidStart, dout);
-		inOrder.verify(dout, times(2)).writeBoolean(true);
-		inOrder.verify(dout).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, nonce.toByteArray())));
-
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
-	}
-
-	@Test
-	void serializeWorksForScheduledNoNonce() throws IOException {
-		// setup:
-		subject = scheduledSubjectWithoutNonce();
-		// and:
-		dout = mock(SerializableDataOutputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
-
-		// given:
-		InOrder inOrder = Mockito.inOrder(serdes, dout);
-
-		// when:
-		subject.serialize(dout);
-
-		// then:
-		inOrder.verify(dout).writeSerializable(fcPayer, Boolean.TRUE);
-		inOrder.verify(serdes).serializeTimestamp(fcValidStart, dout);
-		inOrder.verify(dout).writeBoolean(true);
-		inOrder.verify(dout).writeBoolean(false);
-		inOrder.verify(dout, never()).writeByteArray(any());
+		inOrder.verify(dout, times(1)).writeBoolean(anyBoolean());
 
 		// cleanup:
 		TxnId.serdes = new DomainSerdes();
@@ -122,7 +93,7 @@ class TxnIdTest {
 	@Test
 	public void preV0120DeserializeWorks() throws IOException {
 		// setup:
-		subject = unscheduledSubjectNoNonce();
+		subject = unscheduledSubject();
 		// and:
 		din = mock(SerializableDataInputStream.class);
 		serdes = mock(DomainSerdes.class);
@@ -139,44 +110,16 @@ class TxnIdTest {
 		// then:
 		assertEquals(subject, deserializedId);
 		verify(din, never()).readBoolean();
-		verify(din, never()).readByteArray(TxnId.MAX_CONCEIVABLE_NONCE_BYTES);
+		verify(din, never()).readByteArray(Integer.MAX_VALUE);
 
 		// cleanup:
 		TxnId.serdes = new DomainSerdes();
 	}
 
 	@Test
-	public void v0120DeserializeWorksWithoutNonce() throws IOException {
+	public void v0120DeserializeIgnoresNonce() throws IOException {
 		// setup:
-		subject = scheduledSubjectWithoutNonce();
-		// and:
-		din = mock(SerializableDataInputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
-
-		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
-		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
-		given(din.readBoolean()).willReturn(true).willReturn(false);
-		// and:
-		var deserializedId = new TxnId();
-
-		// when:
-		deserializedId.deserialize(din, TxnId.RELEASE_0120_VERSION);
-
-		// then:
-		assertEquals(subject, deserializedId);
-		// and:
-		verify(din, times(2)).readBoolean();
-		verify(din, never()).readByteArray(anyInt());
-
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
-	}
-
-	@Test
-	public void v0120DeserializeWorksWithNonce() throws IOException {
-		// setup:
-		subject = scheduledSubjectWithNonce();
+		subject = scheduledSubject();
 		// and:
 		din = mock(SerializableDataInputStream.class);
 		serdes = mock(DomainSerdes.class);
@@ -185,7 +128,7 @@ class TxnIdTest {
 		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
 		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
 		given(din.readBoolean()).willReturn(true).willReturn(true);
-		given(din.readByteArray(TxnId.MAX_CONCEIVABLE_NONCE_BYTES)).willReturn(nonce.toByteArray());
+		given(din.readByteArray(anyInt())).willReturn(nonce.toByteArray());
 		// and:
 		var deserializedId = new TxnId();
 
@@ -196,6 +139,34 @@ class TxnIdTest {
 		assertEquals(subject, deserializedId);
 		// and:
 		verify(din, times(2)).readBoolean();
+		verify(din).readByteArray(Integer.MAX_VALUE);
+
+		// cleanup:
+		TxnId.serdes = new DomainSerdes();
+	}
+
+	@Test
+	public void v0130DeserializeForgetsNonce() throws IOException {
+		// setup:
+		subject = scheduledSubject();
+		// and:
+		din = mock(SerializableDataInputStream.class);
+		serdes = mock(DomainSerdes.class);
+		TxnId.serdes = serdes;
+
+		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
+		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
+		given(din.readBoolean()).willReturn(true);
+		// and:
+		var deserializedId = new TxnId();
+
+		// when:
+		deserializedId.deserialize(din, TxnId.RELEASE_0130_VERSION);
+
+		// then:
+		assertEquals(subject, deserializedId);
+		// and:
+		verify(din, times(1)).readBoolean();
 
 		// cleanup:
 		TxnId.serdes = new DomainSerdes();
@@ -204,34 +175,29 @@ class TxnIdTest {
 	@Test
 	public void equalsWorks() {
 		// given:
-		subject = scheduledSubjectWithNonce();
+		subject = scheduledSubject();
 
 		// expect:
-		assertNotEquals(subject, unscheduledSubjectWithNonce());
-		// and:
-		assertNotEquals(subject, scheduledSubjectWithoutNonce());
+		assertNotEquals(subject, unscheduledSubject());
 	}
 
 	@Test
 	public void hashCodeWorks() {
 		// given:
-		subject = scheduledSubjectWithNonce();
+		subject = scheduledSubject();
 
 		// expect:
-		assertNotEquals(subject.hashCode(), unscheduledSubjectWithNonce().hashCode());
-		// and:
-		assertNotEquals(subject.hashCode(), scheduledSubjectWithoutNonce().hashCode());
+		assertNotEquals(subject.hashCode(), unscheduledSubject().hashCode());
 	}
 
 	@Test
 	public void toStringWorks() {
 		// given:
-		subject = scheduledSubjectWithNonce();
+		subject = scheduledSubject();
 		// and:
 		String expRepr = "TxnId{payer=EntityId{shard=0, realm=0, num=75231}, " +
 				"validStart=RichInstant{seconds=1234567, nanos=89}, " +
-				"scheduled=true, " +
-				"nonce=" + Hex.encodeHexString(nonce.toByteArray()) + "}";
+				"scheduled=true}";
 
 		// expect:
 		assertEquals(expRepr, subject.toString());
@@ -240,9 +206,9 @@ class TxnIdTest {
 	@Test
 	public void toGrpcWorks() {
 		// given:
-		var subject = scheduledSubjectWithNonce();
+		var subject = scheduledSubject();
 		// and:
-		var expected = base().setScheduled(true).setNonce(nonce).build();
+		var expected = base().setScheduled(true).build();
 
 		// expect:
 		assertEquals(expected, subject.toGrpc());
@@ -255,29 +221,16 @@ class TxnIdTest {
 
 		// expect:
 		assertEquals(TxnId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertEquals(TxnId.RELEASE_0120_VERSION, subject.getVersion());
+		assertEquals(TxnId.RELEASE_0130_VERSION, subject.getVersion());
 	}
 
-	private TxnId unscheduledSubjectNoNonce() {
+	private TxnId unscheduledSubject() {
 		return TxnId.fromGrpc(base().build());
 	}
 
-	private TxnId scheduledSubjectWithoutNonce() {
+	private TxnId scheduledSubject() {
 		return TxnId.fromGrpc(base()
 				.setScheduled(true)
-				.build());
-	}
-
-	private TxnId scheduledSubjectWithNonce() {
-		return TxnId.fromGrpc(base()
-				.setScheduled(true)
-				.setNonce(nonce)
-				.build());
-	}
-
-	private TxnId unscheduledSubjectWithNonce() {
-		return TxnId.fromGrpc(base()
-				.setNonce(nonce)
 				.build());
 	}
 

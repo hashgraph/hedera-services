@@ -48,12 +48,4 @@ public class BodySigningSigFactoryTest {
 		// then:
 		Assertions.assertEquals(EXPECTED_SIG, actualSig);
 	}
-
-	@Test
-	public void doesntSupportScheduledCreations() {
-		// expect:
-		Assertions.assertThrows(
-				UnsupportedOperationException.class,
-				() -> new BodySigningSigFactory(null).createForScheduled(null, null));
-	}
 }

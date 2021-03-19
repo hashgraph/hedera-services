@@ -136,6 +136,9 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.entityMemo(firstMemo)
 				).when(
 						cryptoUpdate(TARGET_ACCOUNT)
+								.entityMemo(ZERO_BYTE_MEMO)
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+						cryptoUpdate(TARGET_ACCOUNT)
 								.entityMemo(secondMemo)
 				).then(
 						getAccountInfo(TARGET_ACCOUNT)

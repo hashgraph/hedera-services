@@ -27,7 +27,11 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -36,9 +40,9 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.codec.binary.Hex;
-import org.bouncycastle.util.Arrays;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -47,48 +51,53 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.protobuf.ByteString.copyFrom;
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.utils.MiscUtils.asOrdinary;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.swirlds.common.CommonUtils.hex;
 import static java.util.stream.Collectors.toList;
 
-
 public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	static final int MERKLE_VERSION = 1;
 
 	static final int NUM_ED25519_PUBKEY_BYTES = 32;
-	static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d2b7d9e673285fcL;
 	static DomainSerdes serdes = new DomainSerdes();
 
+	public static final Key UNUSED_GRPC_KEY = null;
 	public static final JKey UNUSED_KEY = null;
 	public static final EntityId UNUSED_PAYER = null;
+	public static final RichInstant UNRESOLVED_TIME = null;
 
-	private byte[] grpcTxn;
-	private String memo;
+	private Key grpcAdminKey = UNUSED_GRPC_KEY;
 	private JKey adminKey = UNUSED_KEY;
+	private String memo;
+	private boolean deleted = false;
+	private boolean executed = false;
 	private EntityId payer = UNUSED_PAYER;
 	private EntityId schedulingAccount;
 	private RichInstant schedulingTXValidStart;
 	private long expiry;
+	private RichInstant resolutionTime = UNRESOLVED_TIME;
+
+	private byte[] bodyBytes;
+	private TransactionBody ordinaryScheduledTxn;
+	private SchedulableTransactionBody scheduledTxn;
 
 	private Set<ByteString> notary = ConcurrentHashMap.newKeySet();
 	private List<byte[]> signatories = new ArrayList<>();
 
-
 	public MerkleSchedule() {
 	}
 
-	public MerkleSchedule(
-			byte[] transactionBody,
-			EntityId schedulingAccount,
-			RichInstant schedulingTXValidStart
-	) {
-		this.grpcTxn = transactionBody;
-		this.schedulingAccount = schedulingAccount;
-		this.schedulingTXValidStart = schedulingTXValidStart;
+	public static MerkleSchedule from(byte[] bodyBytes, long consensusExpiry) {
+		var to = new MerkleSchedule();
+		to.expiry = consensusExpiry;
+		to.bodyBytes = bodyBytes;
+		to.initFromBodyBytes();
+
+		return to;
 	}
 
 	/* Notary functions */
@@ -103,16 +112,14 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		}
 	}
 
-	public Transaction asScheduledTransaction() {
-		var structuredGrpcTxn = uncheckedGrpcTxn();
-		var scheduledTxnId = scheduledTransactionIdFrom(structuredGrpcTxn);
+	public Transaction asSignedTxn() {
 		return Transaction.newBuilder()
 				.setSignedTransactionBytes(
 						SignedTransaction.newBuilder()
 								.setBodyBytes(
 										TransactionBody.newBuilder()
-												.mergeFrom(structuredGrpcTxn)
-												.setTransactionID(scheduledTxnId)
+												.mergeFrom(ordinaryScheduledTxn)
+												.setTransactionID(scheduledTransactionId())
 												.build()
 												.toByteString())
 								.build()
@@ -121,24 +128,14 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	}
 
 	public TransactionID scheduledTransactionId() {
-		return scheduledTransactionIdFrom(uncheckedGrpcTxn());
-	}
-
-	private TransactionID scheduledTransactionIdFrom(TransactionBody structuredGrpcTxn) {
+		if (schedulingAccount == null || schedulingTXValidStart == null) {
+			throw new IllegalStateException("Cannot invoke scheduledTransactionId on a content-addressable view!");
+		}
 		return TransactionID.newBuilder()
 				.setAccountID(schedulingAccount.toGrpcAccountId())
 				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-				.setNonce(structuredGrpcTxn.getTransactionID().getNonce())
 				.setScheduled(true)
 				.build();
-	}
-
-	private TransactionBody uncheckedGrpcTxn() {
-		try {
-			return TransactionBody.parseFrom(grpcTxn);
-		} catch (InvalidProtocolBufferException invariantFailure) {
-			throw new IllegalStateException(this + " contained unparseable transaction bytes!", invariantFailure);
-		}
 	}
 
 	public boolean hasValidEd25519Signature(byte[] key) {
@@ -146,6 +143,15 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	}
 
 	/* Object */
+
+	/**
+	 * Two {@code MerkleSchedule}s are identical as long as they agree on
+	 * the transaction being scheduled, the admin key used to manage it,
+	 * and the memo to accompany it.
+	 *
+	 * @param o the object to check for equality
+	 * @return whether {@code this} and {@code o} are identical
+	 */
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -156,89 +162,65 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		}
 
 		var that = (MerkleSchedule) o;
-		return this.expiry == that.expiry &&
-				Arrays.areEqual(this.grpcTxn, that.grpcTxn) &&
-				Objects.equals(this.memo, that.memo) &&
-				Objects.equals(this.payer, that.payer) &&
-				Objects.equals(this.schedulingAccount, that.schedulingAccount) &&
-				Objects.equals(this.schedulingTXValidStart, that.schedulingTXValidStart) &&
-				equalUpToDecodability(this.adminKey, that.adminKey) &&
-				signatoriesAreSame(this.signatories, that.signatories);
-	}
-
-	private boolean signatoriesAreSame(List<byte[]> a, List<byte[]> b) {
-		if (a.size() != b.size()) {
-			return false;
-		} else {
-			for (int i = 0, n = a.size(); i < n; i++) {
-				if (!Arrays.areEqual(a.get(i), b.get(i))) {
-					return false;
-				}
-			}
-		}
-		return true;
+		return Objects.equals(this.memo, that.memo) &&
+				Objects.equals(this.scheduledTxn, that.scheduledTxn) &&
+				Objects.equals(this.grpcAdminKey, that.grpcAdminKey);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(
-				expiry,
-				grpcTxn,
-				memo,
-				payer,
-				schedulingAccount,
-				schedulingTXValidStart,
-				adminKey);
+		return Objects.hash(memo, grpcAdminKey, scheduledTxn);
 	}
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(MerkleSchedule.class)
+		var helper = MoreObjects.toStringHelper(MerkleSchedule.class)
+				.add("scheduledTxn", scheduledTxn)
 				.add("expiry", expiry)
-				.add("transactionBody", hex(grpcTxn))
+				.add("executed", executed)
+				.add("deleted", deleted)
 				.add("memo", memo)
 				.add("payer", readablePayer())
 				.add("schedulingAccount", schedulingAccount)
 				.add("schedulingTXValidStart", schedulingTXValidStart)
 				.add("signatories", signatories.stream().map(Hex::encodeHexString).collect(toList()))
-				.add("adminKey", describe(adminKey))
-				.toString();
+				.add("adminKey", describe(adminKey));
+		if (resolutionTime != null) {
+			helper.add("resolutionTime", resolutionTime);
+		}
+		return helper.toString();
 	}
 
 	private String readablePayer() {
-		return Optional.ofNullable(payer).map(EntityId::toAbbrevString).orElse("<N/A>");
+		return Optional.ofNullable(effectivePayer()).map(EntityId::toAbbrevString).orElse("<N/A>");
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		expiry = in.readLong();
-		int txBodyLength = in.readInt();
-		grpcTxn = in.readByteArray(txBodyLength);
-		payer = serdes.readNullableSerializable(in);
-		schedulingAccount = in.readSerializable();
-		schedulingTXValidStart = RichInstant.from(in);
-		adminKey = serdes.readNullable(in, serdes::deserializeKey);
+		bodyBytes = in.readByteArray(Integer.MAX_VALUE);
+		executed = in.readBoolean();
+		deleted = in.readBoolean();
+		resolutionTime = serdes.readNullableInstant(in);
 		int numSignatories = in.readInt();
 		while (numSignatories-- > 0) {
 			witnessValidEd25519Signature(in.readByteArray(NUM_ED25519_PUBKEY_BYTES));
 		}
-		memo = serdes.readNullableString(in, UPPER_BOUND_MEMO_UTF8_BYTES);
+
+		initFromBodyBytes();
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeLong(expiry);
-		out.writeInt(grpcTxn.length);
-		out.writeByteArray(grpcTxn);
-		serdes.writeNullableSerializable(payer, out);
-		out.writeSerializable(schedulingAccount, true);
-		schedulingTXValidStart.serialize(out);
-		serdes.writeNullable(adminKey, out, serdes::serializeKey);
+		out.writeByteArray(bodyBytes);
+		out.writeBoolean(executed);
+		out.writeBoolean(deleted);
+		serdes.writeNullableInstant(resolutionTime, out);
 		out.writeInt(signatories.size());
 		for (byte[] key : signatories) {
 			out.writeByteArray(key);
 		}
-		serdes.writeNullableString(memo, out);
 	}
 
 	@Override
@@ -253,16 +235,24 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 	@Override
 	public MerkleSchedule copy() {
-		var fc = new MerkleSchedule(grpcTxn, schedulingAccount, schedulingTXValidStart);
+		var fc = new MerkleSchedule();
 
-		fc.setMemo(memo);
-		fc.setExpiry(expiry);
-		if (payer != UNUSED_PAYER) {
-			fc.setPayer(payer);
-		}
-		if (adminKey != UNUSED_KEY) {
-			fc.setAdminKey(adminKey);
-		}
+		/* These fields are all immutable or effectively immutable, we can share them between copies */
+		fc.grpcAdminKey = grpcAdminKey;
+		fc.adminKey = adminKey;
+		fc.memo = memo;
+		fc.deleted = deleted;
+		fc.executed = executed;
+		fc.payer = payer;
+		fc.schedulingAccount = schedulingAccount;
+		fc.schedulingTXValidStart = schedulingTXValidStart;
+		fc.expiry = expiry;
+		fc.bodyBytes = bodyBytes;
+		fc.scheduledTxn = scheduledTxn;
+		fc.ordinaryScheduledTxn = ordinaryScheduledTxn;
+		fc.resolutionTime = resolutionTime;
+
+		/* Signatories are mutable */
 		for (byte[] signatory : signatories) {
 			fc.witnessValidEd25519Signature(signatory);
 		}
@@ -270,8 +260,14 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		return fc;
 	}
 
-	public byte[] transactionBody() {
-		return this.grpcTxn;
+	public MerkleSchedule toContentAddressableView() {
+		var cav = new MerkleSchedule();
+
+		cav.memo = memo;
+		cav.grpcAdminKey = grpcAdminKey;
+		cav.scheduledTxn = scheduledTxn;
+
+		return cav;
 	}
 
 	public Optional<String> memo() {
@@ -299,15 +295,19 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	}
 
 	public EntityId payer() {
-		return this.payer;
+		return payer;
 	}
 
-	public boolean hasPayer() {
+	public EntityId effectivePayer() {
+		return hasExplicitPayer() ? payer : schedulingAccount;
+	}
+
+	public boolean hasExplicitPayer() {
 		return payer != UNUSED_PAYER;
 	}
 
 	public EntityId schedulingAccount() {
-		return this.schedulingAccount;
+		return schedulingAccount;
 	}
 
 	public RichInstant schedulingTXValidStart() {
@@ -324,5 +324,80 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 
 	public long expiry() {
 		return expiry;
+	}
+
+	public void markDeleted(Instant at) {
+		resolutionTime = RichInstant.fromJava(at);
+		deleted = true;
+	}
+
+	public void markExecuted(Instant at) {
+		resolutionTime = RichInstant.fromJava(at);
+		executed = true;
+	}
+
+	public boolean isExecuted() {
+		return executed;
+	}
+
+	public boolean isDeleted() {
+		return deleted;
+	}
+
+	public Timestamp deletionTime() {
+		if (!deleted) {
+			throw new IllegalStateException("Schedule not deleted, cannot return deletion time!");
+		}
+		return resolutionTime.toGrpc();
+	}
+
+	public Timestamp executionTime() {
+		if (!executed) {
+			throw new IllegalStateException("Schedule not executed, cannot return execution time!");
+		}
+		return resolutionTime.toGrpc();
+	}
+
+	public TransactionBody ordinaryViewOfScheduledTxn() {
+		return ordinaryScheduledTxn;
+	}
+
+	public SchedulableTransactionBody scheduledTxn() {
+		return scheduledTxn;
+	}
+
+	public byte[] bodyBytes() {
+		return bodyBytes;
+	}
+
+	public Key grpcAdminKey() {
+		return grpcAdminKey;
+	}
+
+	private void initFromBodyBytes() {
+		try {
+			var parentTxn = TransactionBody.parseFrom(bodyBytes);
+			var creationOp = parentTxn.getScheduleCreate();
+
+			if (!creationOp.getMemo().isEmpty()) {
+				memo = creationOp.getMemo();
+			}
+			if (creationOp.hasPayerAccountID()) {
+				payer = EntityId.ofNullableAccountId(creationOp.getPayerAccountID());
+			}
+			if (creationOp.hasAdminKey()) {
+				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(this::setAdminKey);
+				if (adminKey != UNUSED_KEY) {
+					grpcAdminKey = creationOp.getAdminKey();
+				}
+			}
+			scheduledTxn = parentTxn.getScheduleCreate().getScheduledTransactionBody();
+			schedulingAccount = EntityId.ofNullableAccountId(parentTxn.getTransactionID().getAccountID());
+			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
+			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
+		} catch (InvalidProtocolBufferException e) {
+			throw new IllegalArgumentException(String.format(
+					"Argument bodyBytes=0x%s was not a TransactionBody!", Hex.encodeHexString(bodyBytes)));
+		}
 	}
 }

@@ -37,7 +37,6 @@ import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +44,8 @@ import java.util.Optional;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -132,11 +133,6 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isValidEntityMemo(@Nullable String memo) {
-		return (null == memo) || (StringUtils.getBytesUtf8(memo).length <= properties.maxMemoUtf8Bytes());
-	}
-
-	@Override
 	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
 		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromTopicId(id));
 
@@ -147,26 +143,51 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
-		int numUtf8Bytes = StringUtils.getBytesUtf8(symbol).length;
-		if (numUtf8Bytes == 0) {
-			return MISSING_TOKEN_SYMBOL;
-		}
-		if (numUtf8Bytes > properties.maxTokenSymbolUtf8Bytes()) {
-			return TOKEN_SYMBOL_TOO_LONG;
-		}
-		return OK;
+		return tokenStringCheck(
+				symbol,
+				properties.maxTokenSymbolUtf8Bytes(),
+				MISSING_TOKEN_SYMBOL,
+				TOKEN_SYMBOL_TOO_LONG);
 	}
 
 	@Override
 	public ResponseCodeEnum tokenNameCheck(String name) {
-		int numUtf8Bytes = StringUtils.getBytesUtf8(name).length;
+		return tokenStringCheck(
+				name,
+				properties.maxTokenNameUtf8Bytes(),
+				MISSING_TOKEN_NAME,
+				TOKEN_NAME_TOO_LONG);
+	}
+
+	private ResponseCodeEnum tokenStringCheck(
+			String s,
+			int maxLen,
+			ResponseCodeEnum onMissing,
+			ResponseCodeEnum onTooLong
+	) {
+		int numUtf8Bytes = StringUtils.getBytesUtf8(s).length;
 		if (numUtf8Bytes == 0) {
-			return MISSING_TOKEN_NAME;
+			return onMissing;
 		}
-		if (numUtf8Bytes > properties.maxTokenNameUtf8Bytes()) {
-			return TOKEN_NAME_TOO_LONG;
+		if (numUtf8Bytes > maxLen) {
+			return onTooLong;
+		}
+		if (s.contains("\u0000")) {
+			return INVALID_ZERO_BYTE_IN_STRING;
 		}
 		return OK;
+
+	}
+
+	@Override
+	public ResponseCodeEnum memoCheck(String cand) {
+		if (StringUtils.getBytesUtf8(cand).length > properties.maxMemoUtf8Bytes()) {
+			return MEMO_TOO_LONG;
+		} else if (cand.contains("\u0000")) {
+			return INVALID_ZERO_BYTE_IN_STRING;
+		} else {
+			return OK;
+		}
 	}
 
 	/* Not applicable until auto-renew is implemented. */

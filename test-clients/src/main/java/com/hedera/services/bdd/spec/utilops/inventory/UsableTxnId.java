@@ -36,9 +36,6 @@ import java.util.Optional;
 public class UsableTxnId extends UtilOp {
 	static final Logger log = LogManager.getLogger(UsableTxnId.class);
 
-	private static final ByteString BAD_NONCE = ByteString.copyFromUtf8("BOOM");
-
-	private boolean useNonceInappropriately = false;
 	private boolean useScheduledInappropriately = false;
 	private Optional<String> payerId = Optional.empty();
 	private final String name;
@@ -49,11 +46,6 @@ public class UsableTxnId extends UtilOp {
 
 	public UsableTxnId payerId(String id) {
 		payerId = Optional.of(id);
-		return this;
-	}
-
-	public UsableTxnId usingNonceInappropriately() {
-		useNonceInappropriately = true;
 		return this;
 	}
 
@@ -70,9 +62,6 @@ public class UsableTxnId extends UtilOp {
 			String s = payerId.get();
 			AccountID id = TxnUtils.isIdLiteral(s) ? HapiPropertySource.asAccount(s) : spec.registry().getAccountID(s);
 			usable.setTransactionID(usable.getTransactionIDBuilder().setAccountID(id));
-		}
-		if (useNonceInappropriately) {
-			usable.setTransactionID(usable.getTransactionIDBuilder().setNonce(BAD_NONCE));
 		}
 		if (useScheduledInappropriately) {
 			usable.setTransactionID(usable.getTransactionIDBuilder().setScheduled(true));
