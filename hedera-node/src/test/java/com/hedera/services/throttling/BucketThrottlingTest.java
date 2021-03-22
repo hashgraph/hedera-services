@@ -30,6 +30,8 @@ import com.swirlds.common.throttle.Throttle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.apache.logging.log4j.Logger;
+
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,6 +78,7 @@ class BucketThrottlingTest {
 	PropertySource properties;
 	Function<PropertySource, Map<String, BucketConfig>> getBuckets;
 	BiFunction<PropertySource, Integer, PropertySource> getThrottleProps;
+	Logger log;
 
 	BucketThrottling subject;
 
@@ -88,6 +91,7 @@ class BucketThrottlingTest {
 		overflow = new BucketThrottle(deciThrottle);
 		queryBucket = new BucketThrottle(deciThrottle);
 		txnBucket = new BucketThrottle(deciThrottle);
+		log = mock(Logger.class);
 
 		bucketConfig = mock(BucketConfig.class);
 		given(bucketConfig.asNodeThrottle(networkSize)).willReturn(bucket);
@@ -97,6 +101,7 @@ class BucketThrottlingTest {
 		given(txnBucketConfig.asNodeThrottle(networkSize)).willReturn(txnBucket);
 		queryBucketConfig = mock(BucketConfig.class);
 		given(queryBucketConfig.asNodeThrottle(networkSize)).willReturn(queryBucket);
+		given(log.isDebugEnabled()).willReturn(true);
 
 		buckets = new HashMap<>();
 		buckets.put(b, bucketConfig);
@@ -132,6 +137,8 @@ class BucketThrottlingTest {
 		given(getThrottleProps.apply(properties, networkSize)).willReturn(throttleProps);
 
 		subject = new BucketThrottling(() -> book, properties, getBuckets, getThrottleProps);
+
+		subject.log = log;
 	}
 
 	@Test
