@@ -36,6 +36,7 @@ After renewing an entity, Hedera Services will generate a renewal record which c
 | consensusTimestamp | Timestamp | | The consensus timestamp of the renewal |
 | renewalFee | uint64 | | The fee charged for the renewal of the entity
 transferList | TransferList | | should be {(autoRenewAccount, -renewalFee), (defaultFeeCollectionAccount, renewalFee)} |
+| newExpiry | Timestamp | | The new expiry of the entity
 
 [`RenewalRecord.proto`](https://github.com/hashgraph/hedera-protobufs/blob/autorenew/services/RenewalRecord.proto)
 
