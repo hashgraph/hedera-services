@@ -131,17 +131,17 @@ Example Run:
 $ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -n localhost -p 56 fees list-base-prices crypto
 
 -------------------------------|-----------------|
-    Transaction and Query Fees |  		         |
+    Transaction and Query Fees |                 |
 -------------------------------|-----------------|
 -------------------------------|-----------------|
-        Cryptocurrency Service | Fees 		     |
+        Cryptocurrency Service | Fees            |
 -------------------------------|-----------------|
-                  cryptoCreate | 0.04992 	     |
-                  cryptoUpdate | 0.00021 	     |
-                cryptoTransfer | 0.00010 	     |
-       cryptoGetAccountRecords | 0.00010 	     |
-          cryptoGetAccountInfo | 0.00010 	     |
-                  cryptoDelete | 0.01122 	     |
+                  cryptoCreate | 0.04992         |
+                  cryptoUpdate | 0.00021         |
+                cryptoTransfer | 0.00010         |
+       cryptoGetAccountRecords | 0.00010         |
+          cryptoGetAccountInfo | 0.00010         |
+                  cryptoDelete | 0.01122         |
 ```
 
 ### Scenario 3 : Updating Throttles
