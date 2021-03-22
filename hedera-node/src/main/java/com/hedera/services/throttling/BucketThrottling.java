@@ -48,7 +48,7 @@ import static java.util.EnumSet.complementOf;
 import static java.util.stream.Collectors.*;
 
 public class BucketThrottling implements FunctionalityThrottling {
-	private static final Logger log = LogManager.getLogger(BucketThrottling.class);
+	static Logger log = LogManager.getLogger(BucketThrottling.class);
 
 	static Consumer<String> displayFn = log::info;
 
@@ -82,7 +82,9 @@ public class BucketThrottling implements FunctionalityThrottling {
 		var capacity = capacities.get(function);
 		if (capacity != null) {
 			var answer = !capacity.isAvailable();
-			log.debug("Should throttle {}? {} says, '{}'.", function, capacity, answer);
+			if(log.isDebugEnabled()) {
+				log.debug("Should throttle {}? {} says, '{}'.", function, capacity, answer);
+			}
 			return answer;
 		} else {
 			log.warn("No capacity test was available for {}, so throttling it!", function);

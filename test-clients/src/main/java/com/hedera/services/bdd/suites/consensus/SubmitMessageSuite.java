@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -58,6 +59,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				topicIdIsValidated(),
 				messageIsValidated(),
 				messageSubmissionSimple(),
+				messageSubmissionSizeChange(),
 				messageSubmissionIncreasesSeqNo(),
 				messageSubmissionWithSubmitKey(),
 				messageSubmissionMultiple(),
@@ -114,6 +116,34 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.message("testmessage")
 								.payingWith("civilian")
 								.hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec messageSubmissionSizeChange() {
+		return defaultHapiSpec("messageSubmissionSizeChange")
+				.given(
+						newKeyNamed("submitKey"),
+						createTopic("testTopic")
+								.submitKeyName("submitKey")
+				)
+				.when(
+						cryptoCreate("civilian"),
+						submitMessageTo("testTopic")
+								.message("testmessage")
+								.payingWith("civilian")
+								.hasKnownStatus(SUCCESS),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "20"))
+				)
+				.then(
+						submitMessageTo("testTopic")
+								.message("testmessagetestmessagetestmessagetestmessage")
+								.payingWith("civilian")
+								.hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "1024"))
 				);
 	}
 

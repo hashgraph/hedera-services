@@ -22,12 +22,12 @@ package com.hedera.services.txns.consensus;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
@@ -67,6 +68,7 @@ class SubmitMessageTransitionLogicTest {
 	private OptionValidator validator;
 	private SubmitMessageTransitionLogic subject;
 	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>();
+	private GlobalDynamicProperties globalDynamicProperties;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
 	@BeforeEach
@@ -78,8 +80,9 @@ class SubmitMessageTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		topics.clear();
-
-		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext);
+		globalDynamicProperties = mock(GlobalDynamicProperties.class);
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
+		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext, globalDynamicProperties);
 	}
 
 	@Test
@@ -131,6 +134,22 @@ class SubmitMessageTransitionLogicTest {
 		assertUnchangedTopics();
 		verify(transactionContext).setStatus(INVALID_TOPIC_MESSAGE);
 	}
+
+	@Test
+	public void failsForLargeMessage() {
+		// given:
+		givenValidTransactionContext();
+		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(5);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		assertUnchangedTopics();
+		verify(transactionContext).setStatus(MESSAGE_SIZE_TOO_LARGE);
+	}
+
+
 
 	@Test
 	public void failsForInvalidTopic() {
