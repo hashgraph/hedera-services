@@ -12,11 +12,11 @@ A command line interface that is able to perform the following actions against a
 ## Getting Started
 ### Setting up your environment
 
-####Install Docker
+#### Install Docker
 
 
 
-####Create a folder structure like this.<br>
+#### Create a folder structure like this.<br>
 ```
 ├── config.yml
 ├── previewnet
