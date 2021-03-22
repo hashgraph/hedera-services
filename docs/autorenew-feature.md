@@ -37,6 +37,8 @@ After renewing an entity, Hedera Services will generate a renewal record which c
 | renewalFee | uint64 | | The fee charged for the renewal of the entity
 transferList | TransferList | | should be {(autoRenewAccount, -renewalFee), (defaultFeeCollectionAccount, renewalFee)} |
 
+[`RenewalRecord.proto`](https://github.com/hashgraph/hedera-protobufs/blob/autorenew/services/RenewalRecord.proto)
+
 ## Special notes
 - At the time of this writing, a file is not associated with an `autoRenewAccount` so a file can only be renewed by a fileUpdate transaction.
 - Because cryptoDelete transfers all remaining balance of an account to another account, all accounts that are marked `deleted` will have zero balance. In other words, an account with a non-zero balance will never be marked `deleted`. Step 2 of the implementation does not need to worry about the `autoRenewAccount` being marked `deleted` before.
