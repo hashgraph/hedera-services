@@ -2,10 +2,8 @@ package com.hedera.services.fees;
 
 import com.hedera.services.throttling.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -15,9 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.mockito.BDDMockito.*;
 
+import java.time.Instant;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -65,9 +62,11 @@ class TxnRateFeeMultiplierSourceTest {
 			long firstUsed, long firstCapacity,
 			long secondUsed, long secondCapacity
 	) {
+		var lastUsed = Instant.ofEpochSecond(1L);
+
 		return List.of(
-				new DeterministicThrottle.StateSnapshot(firstUsed, firstCapacity),
-				new DeterministicThrottle.StateSnapshot(secondUsed, secondCapacity)
+				new DeterministicThrottle.StateSnapshot(firstUsed, firstCapacity, lastUsed),
+				new DeterministicThrottle.StateSnapshot(secondUsed, secondCapacity, lastUsed)
 		);
 	}
 }

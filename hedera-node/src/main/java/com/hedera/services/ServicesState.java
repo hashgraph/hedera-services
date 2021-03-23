@@ -294,6 +294,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		ctx.expiries().restartEntitiesTrackingFrom();
 		if (!blobStoreSupplier.get().isInitializing()) {
 			ctx.systemFilesManager().loadAllSystemFiles();
+			ctx.networkCtx().updateSyncedThrottlesFromSavedState();
 		}
 	}
 

@@ -24,11 +24,17 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 public interface FunctionalityThrottling {
 	boolean shouldThrottle(HederaFunctionality function);
 
 	default List<DeterministicThrottle.StateSnapshot> throttleStatesFor(HederaFunctionality function) {
+		throw new AssertionError("Not implemented!");
+	}
+
+	/* The key will be a name given in the system throttles file 0.0.123 */
+	default Map<String, DeterministicThrottle> currentThrottles() {
 		throw new AssertionError("Not implemented!");
 	}
 }

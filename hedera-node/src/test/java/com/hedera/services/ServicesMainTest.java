@@ -37,6 +37,7 @@ import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
@@ -107,6 +108,7 @@ public class ServicesMainTest {
 	PropertySources propertySources;
 	BalancesExporter balancesExporter;
 	StateMigrations stateMigrations;
+	MerkleNetworkContext networkCtx;
 	ServicesStatsManager statsManager;
 	GrpcServerManager grpc;
 	NodeLocalProperties nodeLocalProps;
@@ -243,6 +245,8 @@ public class ServicesMainTest {
 
 	@Test
 	public void initializesSanelyGivenPreconditions() {
+		networkCtx = mock(MerkleNetworkContext.class);
+
 		// given:
 		InOrder inOrder = inOrder(
 				systemFilesManager,
@@ -254,7 +258,9 @@ public class ServicesMainTest {
 				fees,
 				grpc,
 				statsManager,
-				ctx);
+				ctx,
+				networkCtx);
+		given(ctx.networkCtx()).willReturn(networkCtx);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -262,6 +268,7 @@ public class ServicesMainTest {
 		// then:
 		inOrder.verify(propertySources).assertSourcesArePresent();
 		inOrder.verify(systemFilesManager).loadAllSystemFiles();
+		inOrder.verify(networkCtx).updateSyncedThrottlesFromSavedState();
 		inOrder.verify(stateMigrations).runAllFor(ctx);
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);

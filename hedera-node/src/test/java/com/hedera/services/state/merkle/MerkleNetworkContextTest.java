@@ -24,6 +24,8 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.throttling.DeterministicThrottle;
+import com.hedera.services.throttling.FunctionalityThrottling;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -33,10 +35,18 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,6 +63,7 @@ class MerkleNetworkContextTest {
 	ExchangeRates midnightRateSetCopy;
 
 	DomainSerdes serdes;
+	FunctionalityThrottling throttling;
 
 	MerkleNetworkContext subject;
 
@@ -80,6 +91,14 @@ class MerkleNetworkContextTest {
 
 	@Test
 	public void copyWorks() {
+		throttling = mock(FunctionalityThrottling.class);
+		// and:
+		var current = expectedThrottles();
+
+		given(throttling.currentThrottles()).willReturn(current);
+
+		// when:
+		subject.syncWithThrottles(throttling);
 		// given:
 		var subjectCopy = subject.copy();
 
@@ -87,6 +106,20 @@ class MerkleNetworkContextTest {
 		assertTrue(subjectCopy.consensusTimeOfLastHandledTxn == subject.consensusTimeOfLastHandledTxn);
 		assertEquals(seqNoCopy, subjectCopy.seqNo);
 		assertEquals(midnightRateSetCopy, subjectCopy.midnightRates);
+		// and:
+		assertNull(subject.getThrottling());
+		assertSame(throttling, subjectCopy.getThrottling());
+		// and:
+		var immutableInternals = subject.getThrottleInternals();
+		assertEquals(List.of(throttleNames), immutableInternals.stream()
+				.map(MerkleNetworkContext.ThrottleInternals::getName)
+				.collect(Collectors.toList()));
+		assertArrayEquals(used, immutableInternals.stream()
+				.mapToLong(MerkleNetworkContext.ThrottleInternals::getUsed)
+				.toArray());
+		assertEquals(List.of(lastUseds), immutableInternals.stream()
+				.map(MerkleNetworkContext.ThrottleInternals::getLastUsed)
+				.collect(Collectors.toList()));
 	}
 
 	@Test
@@ -114,19 +147,62 @@ class MerkleNetworkContextTest {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		InOrder inOrder = inOrder(out, seqNo, midnightRateSet, serdes);
+		throttling = mock(FunctionalityThrottling.class);
+		// and:
+		var current = expectedThrottles();
+
+		given(throttling.currentThrottles()).willReturn(current);
 
 		// when:
+		subject.syncWithThrottles(throttling);
+		// and:
 		subject.serialize(out);
 
 		// expect:
 		inOrder.verify(serdes).writeNullableInstant(consensusTimeOfLastHandledTxn, out);
 		inOrder.verify(seqNo).serialize(out);
 		inOrder.verify(out).writeSerializable(midnightRateSet, true);
+		// and:
+		inOrder.verify(out).writeInt(3);
+		for (int i = 0; i < 3; i++) {
+			inOrder.verify(out).writeNormalisedString(throttleNames[i]);
+			inOrder.verify(out).writeLong(used[i]);
+			inOrder.verify(out).writeLong(lastUseds[i].getEpochSecond());
+			inOrder.verify(out).writeInt(lastUseds[i].getNano());
+		}
 	}
 
 	@Test
 	public void sanityChecks() {
 		assertEquals(MerkleNetworkContext.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleNetworkContext.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+	}
+
+	long[] used = new long[] { 100L, 200L, 300L };
+	String[] throttleNames = new String[] { "a", "b", "c" };
+	Instant[] lastUseds = new Instant[] {
+			Instant.ofEpochSecond(1L, 100),
+			Instant.ofEpochSecond(2L, 200),
+			Instant.ofEpochSecond(3L, 300)
+	};
+
+	private Map<String, DeterministicThrottle> expectedThrottles() {
+		Map<String, DeterministicThrottle> expected = new HashMap<>();
+
+		for (int i = 0; i < used.length; i++) {
+			var throttle = new DeterministicThrottle(
+					new DeterministicThrottle.StateSnapshot(used[i], 0L, lastUseds[i]));
+			expected.put(throttleNames[i], throttle);
+		}
+
+		return expected;
+	}
+
+	private List<MerkleNetworkContext.ThrottleInternals> expectedInternals() {
+		List<MerkleNetworkContext.ThrottleInternals> exp = new ArrayList<>();
+		for (int i = 0; i < used.length; i++) {
+			exp.add(new MerkleNetworkContext.ThrottleInternals(used[i], throttleNames[i], lastUseds[i]));
+		}
+		return exp;
 	}
 }

@@ -204,6 +204,7 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -1654,6 +1655,7 @@ public class ServicesContext {
 						globalDynamicProperties().reload();
 						PropertiesLoader.populateApplicationPropertiesWithProto(config);
 					},
+					/* TODO: add callback for throttle definitions */
 					PropertiesLoader::populateAPIPropertiesWithProto);
 			/* We must force eager evaluation of the throttle construction here,
 			as in DEV environment with the per-classloader singleton pattern used by
@@ -1909,6 +1911,10 @@ public class ServicesContext {
 
 	public MerkleDiskFs diskFs() {
 		return state.diskFs();
+	}
+
+	public MerkleNetworkContext networkCtx() {
+		return state.networkCtx();
 	}
 
 	/**

@@ -352,9 +352,13 @@ class ServicesStateTest {
 
 	@Test
 	public void initializesContext() {
-		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager);
+		// setup:
+		MerkleNetworkContext networkCtx = mock(MerkleNetworkContext.class);
+
+		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager, networkCtx);
 
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
+		given(ctx.networkCtx()).willReturn(networkCtx);
 		// and:
 		CONTEXTS.store(ctx);
 
@@ -370,6 +374,7 @@ class ServicesStateTest {
 		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
 		inOrder.verify(systemFilesManager).loadAllSystemFiles();
+		inOrder.verify(networkCtx).updateSyncedThrottlesFromSavedState();
 	}
 
 	@Test

@@ -39,6 +39,13 @@ public interface SystemFilesManager {
 	void loadApiPermissions();
 	void loadApplicationProperties();
 
+	/* Ensure file 0.0.123 exists in state, creating it from the throttles.json
+	 * if it is missing. (The {@code HfsSystemFilesManager} will signal interested
+	 * components of the loaded files via a callback.) */
+	default void loadThrottleDefinitions() {
+		throw new AssertionError("Not implemented!");
+	};
+
 	default void loadAllSystemFiles() {
 		loadApplicationProperties();
 		loadApiPermissions();

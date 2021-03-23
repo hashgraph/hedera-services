@@ -531,6 +531,9 @@ public class ServicesContextTest {
 
 	@Test
 	public void shouldInitFees() throws Exception {
+		// setup:
+		MerkleNetworkContext networkCtx = new MerkleNetworkContext();
+
 		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(180);
 		var book = mock(AddressBook.class);
@@ -538,6 +541,7 @@ public class ServicesContextTest {
 		var blob = mock(MerkleOptionalBlob.class);
 		byte[] fileInfo = new HFileMeta(false, StateView.EMPTY_WACL, 1_234_567L).serialize();
 		byte[] fileContents = new byte[0];
+		given(state.networkCtx()).willReturn(networkCtx);
 		given(state.addressBook()).willReturn(book);
 		given(state.diskFs()).willReturn(diskFs);
 		given(storage.containsKey(any())).willReturn(true);
@@ -549,6 +553,7 @@ public class ServicesContextTest {
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		var subject = ctx.systemFilesManager();
 
+		assertSame(networkCtx, ctx.networkCtx());
 		assertDoesNotThrow(() -> subject.loadFeeSchedules());
 	}
 
