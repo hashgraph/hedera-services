@@ -1,6 +1,7 @@
 package com.hedera.services.bdd.suites.file;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.logging.log4j.LogManager;
@@ -8,10 +9,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.suites.file.FetchSystemFiles.unchecked;
 
 public class ValidateNewAddressBook extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidateNewAddressBook.class);
@@ -20,7 +21,7 @@ public class ValidateNewAddressBook extends HapiApiSuite {
 		new ValidateNewAddressBook().runSuiteSync();
 	}
 
-	final String TARGET_DIR = "remote-system-files";
+	final String TARGET_DIR = "./remote-system-files";
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
@@ -30,30 +31,19 @@ public class ValidateNewAddressBook extends HapiApiSuite {
 	}
 
 	private HapiApiSpec fetchFiles() {
-		return defaultHapiSpec("ValidateNewAddressBook").given().when().then(
-						getFileContents(NODE_DETAILS)
-								.saveTo(path("nodeDetails.bin"))
-								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
-						getFileContents(ADDRESS_BOOK)
-								.saveTo(path("addressBook.bin"))
-								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt"))
-				);
+		return defaultHapiSpec("ValidateNewAddressBook").given(
+				getFileContents(NODE_DETAILS)
+						.saveTo(path("nodeDetails.bin"))
+						.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
+				getFileContents(ADDRESS_BOOK)
+						.saveTo(path("addressBook.bin"))
+						.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt"))
+		).when().then(validateFiles());
 	}
 
-	@FunctionalInterface
-	private interface CheckedParser {
-		Object parseFrom(byte[] bytes) throws Exception;
-	}
+	private HapiSpecOperation validateFiles(){
 
-	private Function<byte[], String> unchecked(ValidateNewAddressBook.CheckedParser parser) {
-		return bytes -> {
-			try {
-				return parser.parseFrom(bytes).toString();
-			} catch (Exception e) {
-				e.printStackTrace();
-				return "<N/A> due to " + e.getMessage() + "!";
-			}
-		};
+		return null;
 	}
 
 	private String path(String file) {
