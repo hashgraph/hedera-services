@@ -28,17 +28,23 @@ When trying to renew an entity:
 For restart and reconnect: The last scanned entity must be in the state for synchronization.
 
 ## Renewal record
-After renewing an entity, Hedera Services will generate a renewal record which contains the following:
+After renewing an entity, Hedera Services will generate a `TransactionRecord` that serves as a renewal record and contains the following:
 
 | Field | Type | Label | Description |
 |---|---|---|---|
-| entityID | AccountID/FileID/ContractID/TopicID/TokenID | | Unique identifier for the entity that got renewed |
+| receipt | TransactionReceipt | | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got renewed |
+| transactionHash | bytes | | empty |
 | consensusTimestamp | Timestamp | | The consensus timestamp of the renewal |
-| renewalFee | uint64 | | The fee charged for the renewal of the entity
-transferList | TransferList | | should be {(autoRenewAccount, -renewalFee), (defaultFeeCollectionAccount, renewalFee)} |
-| newExpiry | Timestamp | | The new expiry of the entity
+| transactionID | TransactionID | | { empty transactionValidStart, autoRenewAccount } |
+| memo | string | | "Entity {ID} was renewed. New expiry: {newExpiry}"|
+| transactionFee | uint64 | | The fee charged for the renewal of the entity |
+| contractCallResult | ContractFunctionResult | | empty |
+| contractCreateResult | ContractFunctionResult | | empty |
+transferList | TransferList | | {(autoRenewAccount, -transactionFee), (defaultFeeCollectionAccount, transactionFee)} |
+| tokenTransferLists | TokenTransferList | repeated | empty |
+| scheduleRef | ScheduleID | | empty |
 
-[`RenewalRecord.proto`](https://github.com/hashgraph/hedera-protobufs/blob/autorenew/services/RenewalRecord.proto)
+The main difference between a renewal record and a regular `TransactionRecord` is that it has an empty `transactionHash` and an empty `transactionID.transactionValidStart`. There were older versions of Hedera Services that did not have `transactionHash` in a `TransactionRecord`, but an empty `transactionID.transactionValidStart` will guarantee that the `TransactionRecord` was generated in place of a renewal record.
 
 ## Special notes
 - At the time of this writing, a file is not associated with an `autoRenewAccount` so a file can only be renewed by a fileUpdate transaction.
