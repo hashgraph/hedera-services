@@ -96,7 +96,7 @@ public class FetchSystemFiles extends HapiApiSuite {
 	}
 
 	@FunctionalInterface
-	private interface CheckedParser {
+	interface CheckedParser {
 		Object parseFrom(byte[] bytes) throws Exception;
 	}
 
