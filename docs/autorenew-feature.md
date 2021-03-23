@@ -27,35 +27,35 @@ When trying to renew an entity:
 
 For restart and reconnect: The last scanned entity must be in the state for synchronization.
 
-## Renewal record
-After renewing an entity, Hedera Services will generate a `TransactionRecord` that serves as a renewal record and contains the following:
+## Autorenewal record
+After autorenewing an entity, Hedera Services will generate a `TransactionRecord` that serves as an autorenewal record and contains the following:
 
 | Field | Type | Label | Description |
 |---|---|---|---|
-| receipt | TransactionReceipt | | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got renewed |
+| receipt | TransactionReceipt | | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got autorenewed |
 | transactionHash | bytes | | empty |
-| consensusTimestamp | Timestamp | | The consensus timestamp of the renewal |
+| consensusTimestamp | Timestamp | | The consensus timestamp of the autorenewal |
 | transactionID | TransactionID | | { empty transactionValidStart, autoRenewAccount } |
-| memo | string | | "Entity {ID} was renewed. New expiry: {newExpiry}" |
-| transactionFee | uint64 | | The fee charged for the renewal of the entity |
+| memo | string | | "Entity {ID} was automatically renewed. New expiry: {newExpiry}" |
+| transactionFee | uint64 | | The fee charged for the autorenewal of the entity |
 | contractCallResult | ContractFunctionResult | | empty |
 | contractCreateResult | ContractFunctionResult | | empty |
 | transferList | TransferList | | {(autoRenewAccount, -transactionFee), (defaultFeeCollectionAccount, transactionFee)} |
 | tokenTransferLists | TokenTransferList | repeated | empty |
 | scheduleRef | ScheduleID | | empty |
 
-The main difference between a renewal record and a regular `TransactionRecord` is that it has an empty `transactionHash` and an empty `transactionID.transactionValidStart`. There were older versions of Hedera Services that did not have `transactionHash` in a `TransactionRecord`, but an empty `transactionID.transactionValidStart` will guarantee that the `TransactionRecord` was generated in place of a renewal record.
+The main difference between an autorenewal record and a regular `TransactionRecord` is that it has an empty `transactionHash` and an empty `transactionID.transactionValidStart`. There were older versions of Hedera Services that did not have `transactionHash` in a `TransactionRecord`, but an empty `transactionID.transactionValidStart` will guarantee that the `TransactionRecord` was generated in place of an autorenewal record.
 
-## Deletion record
-After deleting an entity due to the zero balance of the `autoRenewAccount`, Hedera Services will generate a `TransactionRecord` that serves as a deletion record and contains the following:
+## Autodeletion record
+After autodeleting an entity due to the zero balance of the `autoRenewAccount`, Hedera Services will generate a `TransactionRecord` that serves as an autodeletion record and contains the following:
 
 | Field | Type | Label | Description |
 |---|---|---|---|
-| receipt | TransactionReceipt | | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got deleted |
+| receipt | TransactionReceipt | | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got autodeleted |
 | transactionHash | bytes | | empty |
-| consensusTimestamp | Timestamp | | The consensus timestamp of the deletion |
+| consensusTimestamp | Timestamp | | The consensus timestamp of the autodeletion |
 | transactionID | TransactionID | | { empty transactionValidStart, autoRenewAccount } |
-| memo | string | | "Entity {ID} was deleted." |
+| memo | string | | "Entity {ID} was automatically deleted." |
 | transactionFee | uint64 | | 0 |
 | contractCallResult | ContractFunctionResult | | empty |
 | contractCreateResult | ContractFunctionResult | | empty |
@@ -63,7 +63,7 @@ After deleting an entity due to the zero balance of the `autoRenewAccount`, Hede
 | tokenTransferLists | TokenTransferList | repeated | empty |
 | scheduleRef | ScheduleID | | empty |
 
-A deletion record will be very similar to a renewal record. The `memo` will reflect that the entity was deleted. Due to the zero balance of the `autoRenewAccount`, the `transactionFee` is zero and the `transferList` is empty.
+An autodeletion record will be very similar to an autorenewal record. The `memo` will reflect that the entity was automatically deleted. Due to the zero balance of the `autoRenewAccount`, the `transactionFee` is zero and the `transferList` is empty.
 
 ## Special notes
 - At the time of this writing, a file is not associated with an `autoRenewAccount` so a file can only be renewed by a fileUpdate transaction.
