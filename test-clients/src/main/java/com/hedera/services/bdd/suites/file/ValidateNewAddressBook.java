@@ -1,7 +1,6 @@
 package com.hedera.services.bdd.suites.file;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.logging.log4j.LogManager;
@@ -13,6 +12,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.suites.file.FetchSystemFiles.unchecked;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 
 public class ValidateNewAddressBook extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidateNewAddressBook.class);
@@ -33,12 +33,21 @@ public class ValidateNewAddressBook extends HapiApiSuite {
 	private HapiApiSpec fetchFiles() {
 		return defaultHapiSpec("ValidateNewAddressBook").given()
 				.when()
-				.then(getFileContents(NODE_DETAILS)
+				.then(
+						getFileContents(NODE_DETAILS)
 								.saveTo(path("nodeDetails.bin"))
-								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
+								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.json")),
 						getFileContents(ADDRESS_BOOK)
 								.saveTo(path("addressBook.bin"))
-								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt")));
+								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt")),
+						getFileContents(ADDRESS_BOOK)
+								.saveTo(path("addressBook.bin"))
+								.saveReadableTo(SYS_FILE_SERDES.get(101L)::fromRawFile,
+										path("addressBook.json")),
+						getFileContents(NODE_DETAILS)
+								.saveTo(path("nodeDetails.bin"))
+								.saveReadableTo(SYS_FILE_SERDES.get(102L)::fromRawFile, path("nodeDetails.json")));
+
 	}
 
 	private String path(String file) {
