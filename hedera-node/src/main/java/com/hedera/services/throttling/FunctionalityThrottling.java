@@ -23,7 +23,12 @@ package com.hedera.services.throttling;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import java.util.EnumSet;
+import java.util.List;
 
 public interface FunctionalityThrottling {
 	boolean shouldThrottle(HederaFunctionality function);
+
+	default List<DeterministicThrottle.StateSnapshot> throttleStatesFor(HederaFunctionality function) {
+		throw new AssertionError("Not implemented!");
+	}
 }

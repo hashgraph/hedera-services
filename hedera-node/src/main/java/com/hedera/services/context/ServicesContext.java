@@ -44,8 +44,10 @@ import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.fees.TxnRateFeeMultiplierSource;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
@@ -480,6 +482,7 @@ public class ServicesContext {
 	private RecordStreamManager recordStreamManager;
 	private Map<String, byte[]> blobStore;
 	private Map<EntityId, Long> entityExpiries;
+	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
 	private TxnFeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
@@ -588,6 +591,13 @@ public class ServicesContext {
 			}, nodeLocalProperties());
 		}
 		return runningAvgs;
+	}
+
+	public FeeMultiplierSource feeMultiplierSource() {
+		if (feeMultiplierSource == null) {
+			feeMultiplierSource = new TxnRateFeeMultiplierSource(bucketThrottling());
+		}
+		return feeMultiplierSource;
 	}
 
 	public MiscSpeedometers speedometers() {
@@ -880,6 +890,7 @@ public class ServicesContext {
 			fees = new UsageBasedFeeCalculator(
 					exchange(),
 					usagePrices(),
+					feeMultiplierSource(),
 					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),

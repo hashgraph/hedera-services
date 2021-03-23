@@ -46,6 +46,7 @@ import org.mockito.ArgumentMatcher;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
@@ -105,6 +106,8 @@ class UsageBasedFeeCalculatorTest {
 	Transaction signedTxn;
 	SignedTxnAccessor accessor;
 
+	AtomicLong suggestedMultiplier = new AtomicLong(1L);
+
 	@BeforeEach
 	private void setup() throws Throwable {
 		view = mock(StateView.class);
@@ -129,6 +132,7 @@ class UsageBasedFeeCalculatorTest {
 		subject = new UsageBasedFeeCalculator(
 				exchange,
 				usagePrices,
+				suggestedMultiplier::get,
 				List.of(incorrectQueryEstimator, correctQueryEstimator),
 				txnUsageEstimators);
 	}
@@ -318,6 +322,34 @@ class UsageBasedFeeCalculatorTest {
 
 		// when:
 		FeeObject fees = subject.estimatePayment(query, currentPrices, view, at, ANSWER_ONLY);
+
+		// then:
+		assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
+		assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
+		assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+	}
+
+	@Test
+	public void usesMultiplierAsExpected() throws Exception {
+		// setup:
+		long multiplier = 5L;
+		SigValueObj expectedSigUsage = new SigValueObj(
+				FeeBuilder.getSignatureCount(signedTxn),
+				9,
+				FeeBuilder.getSignatureSize(signedTxn));
+		FeeObject expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate, multiplier);
+		suggestedMultiplier.set(multiplier);
+
+		given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
+		given(txnUsageEstimators.apply(CryptoCreate)).willReturn(List.of(correctOpEstimator));
+		given(correctOpEstimator.usageGiven(
+				argThat(accessor.getTxn()::equals),
+				argThat(factory.apply(expectedSigUsage)),
+				argThat(view::equals))).willReturn(resourceUsage);
+		given(exchange.activeRate()).willReturn(currentRate);
+
+		// when:
+		FeeObject fees = subject.computeFee(accessor, payerKey, view);
 
 		// then:
 		assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
