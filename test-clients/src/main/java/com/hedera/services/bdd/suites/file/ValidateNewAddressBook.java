@@ -31,19 +31,14 @@ public class ValidateNewAddressBook extends HapiApiSuite {
 	}
 
 	private HapiApiSpec fetchFiles() {
-		return defaultHapiSpec("ValidateNewAddressBook").given(
-				getFileContents(NODE_DETAILS)
-						.saveTo(path("nodeDetails.bin"))
-						.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
-				getFileContents(ADDRESS_BOOK)
-						.saveTo(path("addressBook.bin"))
-						.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt"))
-		).when().then(validateFiles());
-	}
-
-	private HapiSpecOperation validateFiles(){
-
-		return null;
+		return defaultHapiSpec("ValidateNewAddressBook").given()
+				.when()
+				.then(getFileContents(NODE_DETAILS)
+								.saveTo(path("nodeDetails.bin"))
+								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
+						getFileContents(ADDRESS_BOOK)
+								.saveTo(path("addressBook.bin"))
+								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt")));
 	}
 
 	private String path(String file) {
