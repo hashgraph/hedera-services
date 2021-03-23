@@ -36,15 +36,34 @@ After renewing an entity, Hedera Services will generate a `TransactionRecord` th
 | transactionHash | bytes | | empty |
 | consensusTimestamp | Timestamp | | The consensus timestamp of the renewal |
 | transactionID | TransactionID | | { empty transactionValidStart, autoRenewAccount } |
-| memo | string | | "Entity {ID} was renewed. New expiry: {newExpiry}"|
+| memo | string | | "Entity {ID} was renewed. New expiry: {newExpiry}" |
 | transactionFee | uint64 | | The fee charged for the renewal of the entity |
 | contractCallResult | ContractFunctionResult | | empty |
 | contractCreateResult | ContractFunctionResult | | empty |
-transferList | TransferList | | {(autoRenewAccount, -transactionFee), (defaultFeeCollectionAccount, transactionFee)} |
+| transferList | TransferList | | {(autoRenewAccount, -transactionFee), (defaultFeeCollectionAccount, transactionFee)} |
 | tokenTransferLists | TokenTransferList | repeated | empty |
 | scheduleRef | ScheduleID | | empty |
 
 The main difference between a renewal record and a regular `TransactionRecord` is that it has an empty `transactionHash` and an empty `transactionID.transactionValidStart`. There were older versions of Hedera Services that did not have `transactionHash` in a `TransactionRecord`, but an empty `transactionID.transactionValidStart` will guarantee that the `TransactionRecord` was generated in place of a renewal record.
+
+## Deletion record
+After deleting an entity due to the zero balance of the `autoRenewAccount`, Hedera Services will generate a `TransactionRecord` that serves as a deletion record and contains the following:
+
+| Field | Type | Label | Description |
+|---|---|---|---|
+| receipt | TransactionReceipt | | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got deleted |
+| transactionHash | bytes | | empty |
+| consensusTimestamp | Timestamp | | The consensus timestamp of the deletion |
+| transactionID | TransactionID | | { empty transactionValidStart, autoRenewAccount } |
+| memo | string | | "Entity {ID} was deleted." |
+| transactionFee | uint64 | | 0 |
+| contractCallResult | ContractFunctionResult | | empty |
+| contractCreateResult | ContractFunctionResult | | empty |
+| transferList | TransferList | | empty |
+| tokenTransferLists | TokenTransferList | repeated | empty |
+| scheduleRef | ScheduleID | | empty |
+
+A deletion record will be very similar to a renewal record. The `memo` will reflect that the entity was deleted. Due to the zero balance of the `autoRenewAccount`, the `transactionFee` is zero and the `transferList` is empty.
 
 ## Special notes
 - At the time of this writing, a file is not associated with an `autoRenewAccount` so a file can only be renewed by a fileUpdate transaction.
