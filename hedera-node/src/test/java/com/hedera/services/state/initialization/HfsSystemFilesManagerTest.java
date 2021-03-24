@@ -20,6 +20,7 @@ package com.hedera.services.state.initialization;
  * ‍
  */
 
+import static com.swirlds.common.Address.ipString;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -30,6 +31,9 @@ import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ClientNodeAddress;
+import com.hederahashgraph.api.proto.java.ClientNodeAddressBook;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -38,6 +42,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.NodeEndpoint;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
@@ -451,19 +456,20 @@ class HfsSystemFilesManagerTest {
 				.build();
 	}
 
-	private NodeAddressBook legacyBookConstruction(AddressBook fromBook) {
-		NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+	private ClientNodeAddressBook legacyBookConstruction(AddressBook fromBook) {
+		ClientNodeAddressBook.Builder builder = ClientNodeAddressBook.newBuilder();
 		for (int i = 0; i < fromBook.getSize(); i++) {
 			var address = fromBook.getAddress(i);
-			byte[] nodeIP = address.getAddressExternalIpv4();
-			String nodeIPStr = Address.ipString(nodeIP);
-			String memo = address.getMemo();
-			NodeAddress.Builder nodeAddress = NodeAddress.newBuilder()
-					.setIpAddress(ByteString.copyFromUtf8(nodeIPStr))
-					.setMemo(ByteString.copyFromUtf8(memo))
+			ClientNodeAddress.Builder clientNodeAddress = ClientNodeAddress.newBuilder()
 					.setNodeId(address.getId());
-			setNodeAccountIfAvail(address, nodeAddress);
-			builder.addNodeAddress(nodeAddress);
+
+			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder()
+					.setIpAddress(Address.ipString(address.getAddressExternalIpv4()))
+					.setPort(String.valueOf(address.getPortExternalIpv4()));
+			clientNodeAddress.addNodeEndpoint(nodeEndPoint);
+
+			setNodeAccountIfAvailforAddressBook(address, clientNodeAddress);
+			builder.addClientNodeAddress(clientNodeAddress);
 		}
 		return builder.build();
 	}
@@ -475,16 +481,32 @@ class HfsSystemFilesManagerTest {
 			PublicKey publicKey = address.getSigPublicKey();
 			String memo = address.getMemo();
 			NodeAddress.Builder nodeAddress = NodeAddress.newBuilder()
+					.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
+					.setPortno(address.getPortExternalIpv4())
 					.setMemo(ByteString.copyFromUtf8(memo))
 					.setRSAPubKey(MiscUtils.commonsBytesToHex(publicKey.getEncoded()))
-					.setNodeId(address.getId());
-			setNodeAccountIfAvail(address, nodeAddress);
+					.setNodeId(address.getId())
+					.setStake(address.getStake());
+
+			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder()
+					.setIpAddress(Address.ipString(address.getAddressExternalIpv4()))
+					.setPort(String.valueOf(address.getPortExternalIpv4()));
+			nodeAddress.addNodeEndpoint(nodeEndPoint);
+
+			setNodeAccountIfAvailForNodeDetails(address, nodeAddress);
 			builder.addNodeAddress(nodeAddress);
 		}
 		return builder.build();
 	}
 
-	private void setNodeAccountIfAvail(Address entry, NodeAddress.Builder builder) {
+	private void setNodeAccountIfAvailForNodeDetails(Address entry, NodeAddress.Builder builder) {
+		try {
+			var id = EntityIdUtils.accountParsedFromString(entry.getMemo());
+			builder.setNodeAccountId(id);
+		} catch (Exception ignore) { }
+	}
+
+	private void setNodeAccountIfAvailforAddressBook(Address entry, ClientNodeAddress.Builder builder) {
 		try {
 			var id = EntityIdUtils.accountParsedFromString(entry.getMemo());
 			builder.setNodeAccountId(id);

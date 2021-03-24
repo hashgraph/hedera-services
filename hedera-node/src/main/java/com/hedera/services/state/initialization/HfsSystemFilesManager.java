@@ -27,12 +27,16 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ClientNodeAddress;
+import com.hederahashgraph.api.proto.java.ClientNodeAddressBook;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.NodeEndpoint;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
@@ -280,14 +284,28 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private byte[] bioAndIpv4Contents() {
-		var basics = NodeAddressBook.newBuilder();
+		var basics = ClientNodeAddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
 				.map(address ->
-						basicBioEntryFrom(address)
-								.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
-								.build())
-				.forEach(basics::addNodeAddress);
+					{
+						ClientNodeAddress.Builder clientNodeAddress = ClientNodeAddress.newBuilder()
+									.setNodeId(address.getId())
+									.addNodeEndpoint(
+											NodeEndpoint.newBuilder()
+													.setIpAddress(Address.ipString(address.getAddressExternalIpv4()))
+													.setPort(String.valueOf(address.getPortExternalIpv4()))
+									);
+
+						try {
+							clientNodeAddress.setNodeAccountId(EntityIdUtils.accountParsedFromString(address.getMemo()));
+						} catch (Exception ignore) {
+							log.warn(ignore.getMessage());
+						}
+						return clientNodeAddress;
+					}
+				)
+				.forEach(basics::addClientNodeAddress);
 		return basics.build().toByteArray();
 	}
 
@@ -297,6 +315,8 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				.mapToObj(currentBook::getAddress)
 				.map(address ->
 						basicBioEntryFrom(address)
+								.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
+								.setPortno(address.getPortExternalIpv4())
 								.setRSAPubKey(MiscUtils.commonsBytesToHex(address.getSigPublicKey().getEncoded()))
 								.build())
 				.forEach(details::addNodeAddress);
@@ -306,7 +326,12 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private NodeAddress.Builder basicBioEntryFrom(Address address) {
 		var builder = NodeAddress.newBuilder()
 				.setNodeId(address.getId())
+				.setStake(address.getStake())
 				.setMemo(ByteString.copyFromUtf8(address.getMemo()));
+		var nodeEndPoint = NodeEndpoint.newBuilder()
+				.setIpAddress(Address.ipString(address.getAddressExternalIpv4()))
+				.setPort(String.valueOf(address.getPortExternalIpv4()));
+		builder.addNodeEndpoint(nodeEndPoint);
 		try {
 			builder.setNodeAccountId(EntityIdUtils.accountParsedFromString(address.getMemo()));
 		} catch (Exception ignore) {
