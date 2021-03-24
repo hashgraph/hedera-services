@@ -58,6 +58,7 @@ import com.hedera.services.bdd.suites.file.FileDeleteSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
+import com.hedera.services.bdd.suites.file.ValidateNewAddressBook;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
@@ -354,6 +355,8 @@ public class SuiteRunner {
 		put("CryptoTransferThenFreezeTest", aof(new CryptoTransferThenFreezeTest()));
 		put("MixedOpsTransactionsSuite", aof(new MixedOpsTransactionsSuite()));
 		put("MixedOpsLoadTest", aof(new MixedOpsLoadTest()));
+		/* Validate new AddressBook */
+		put("ValidateNewAddressBook", aof(new ValidateNewAddressBook()));
 	}};
 
 	static boolean runAsync;
