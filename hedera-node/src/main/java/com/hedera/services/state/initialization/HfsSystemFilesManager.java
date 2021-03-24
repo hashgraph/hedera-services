@@ -284,28 +284,11 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private byte[] bioAndIpv4Contents() {
-		var basics = ClientNodeAddressBook.newBuilder();
+		var basics = NodeAddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
-				.map(address ->
-					{
-						ClientNodeAddress.Builder clientNodeAddress = ClientNodeAddress.newBuilder()
-									.setNodeId(address.getId())
-									.addNodeEndpoint(
-											NodeEndpoint.newBuilder()
-													.setIpAddress(Address.ipString(address.getAddressExternalIpv4()))
-													.setPort(String.valueOf(address.getPortExternalIpv4()))
-									);
-
-						try {
-							clientNodeAddress.setNodeAccountId(EntityIdUtils.accountParsedFromString(address.getMemo()));
-						} catch (Exception ignore) {
-							log.warn(ignore.getMessage());
-						}
-						return clientNodeAddress;
-					}
-				)
-				.forEach(basics::addClientNodeAddress);
+				.map(address ->	basicBioEntryFrom(address).build())
+				.forEach(basics::addNodeAddress);
 		return basics.build().toByteArray();
 	}
 
@@ -313,18 +296,16 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		var details = NodeAddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
-				.map(address ->
-						basicBioEntryFrom(address)
-								.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
-								.setPortno(address.getPortExternalIpv4())
-								.setRSAPubKey(MiscUtils.commonsBytesToHex(address.getSigPublicKey().getEncoded()))
-								.build())
+				.map(address ->	basicBioEntryFrom(address).build())
 				.forEach(details::addNodeAddress);
 		return details.build().toByteArray();
 	}
 
 	private NodeAddress.Builder basicBioEntryFrom(Address address) {
 		var builder = NodeAddress.newBuilder()
+				.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
+				.setPortno(address.getPortExternalIpv4())
+				.setRSAPubKey(MiscUtils.commonsBytesToHex(address.getSigPublicKey().getEncoded()))
 				.setNodeId(address.getId())
 				.setStake(address.getStake())
 				.setMemo(ByteString.copyFromUtf8(address.getMemo()));

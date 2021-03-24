@@ -456,20 +456,29 @@ class HfsSystemFilesManagerTest {
 				.build();
 	}
 
-	private ClientNodeAddressBook legacyBookConstruction(AddressBook fromBook) {
-		ClientNodeAddressBook.Builder builder = ClientNodeAddressBook.newBuilder();
+	private NodeAddressBook legacyBookConstruction(AddressBook fromBook) {
+		NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
 		for (int i = 0; i < fromBook.getSize(); i++) {
 			var address = fromBook.getAddress(i);
-			ClientNodeAddress.Builder clientNodeAddress = ClientNodeAddress.newBuilder()
-					.setNodeId(address.getId());
+			PublicKey publicKey = address.getSigPublicKey();
+			byte[] nodeIP = address.getAddressExternalIpv4();
+			String nodeIPStr = Address.ipString(nodeIP);
+			String memo = address.getMemo();
+			NodeAddress.Builder nodeAddress = NodeAddress.newBuilder()
+					.setIpAddress(ByteString.copyFromUtf8(nodeIPStr))
+					.setPortno(address.getPortExternalIpv4())
+					.setMemo(ByteString.copyFromUtf8(memo))
+					.setRSAPubKey(MiscUtils.commonsBytesToHex(publicKey.getEncoded()))
+					.setNodeId(address.getId())
+					.setStake(address.getStake());
 
 			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder()
 					.setIpAddress(Address.ipString(address.getAddressExternalIpv4()))
 					.setPort(String.valueOf(address.getPortExternalIpv4()));
-			clientNodeAddress.addNodeEndpoint(nodeEndPoint);
+			nodeAddress.addNodeEndpoint(nodeEndPoint);
 
-			setNodeAccountIfAvailforAddressBook(address, clientNodeAddress);
-			builder.addClientNodeAddress(clientNodeAddress);
+			setNodeAccountIfAvailforAddressBook(address, nodeAddress);
+			builder.addNodeAddress(nodeAddress);
 		}
 		return builder.build();
 	}
@@ -506,7 +515,7 @@ class HfsSystemFilesManagerTest {
 		} catch (Exception ignore) { }
 	}
 
-	private void setNodeAccountIfAvailforAddressBook(Address entry, ClientNodeAddress.Builder builder) {
+	private void setNodeAccountIfAvailforAddressBook(Address entry, NodeAddress.Builder builder) {
 		try {
 			var id = EntityIdUtils.accountParsedFromString(entry.getMemo());
 			builder.setNodeAccountId(id);
