@@ -1,5 +1,7 @@
 package com.hedera.services.throttling.real;
 
+import com.google.common.base.MoreObjects;
+
 import java.time.Duration;
 import java.time.Instant;
 
@@ -66,6 +68,22 @@ public class DeterministicThrottle {
 		}
 		lastDecisionTime = usageSnapshot.lastDecisionTime();
 		bucket.resetUsed(usageSnapshot.used());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		var that = (DeterministicThrottle)obj;
+
+		return this.delegate.bucket().totalCapacity() == that.delegate.bucket().totalCapacity()
+				&& this.delegate.mtps() == that.delegate.mtps();
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("totalCapacity", delegate.bucket().totalCapacity())
+				.add("mtps", delegate.mtps())
+				.toString();
 	}
 
 	public static class UsageSnapshot {

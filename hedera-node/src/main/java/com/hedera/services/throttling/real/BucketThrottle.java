@@ -38,6 +38,10 @@ public class BucketThrottle {
 	static final long CAPACITY_UNITS_PER_NT = 1_000L;
 	static final long CAPACITY_UNITS_PER_TXN = 1_000_000_000_000L;
 
+	public static long capacityUnitsPerTxn() {
+		return CAPACITY_UNITS_PER_TXN;
+	}
+
 	private final long mtps;
 	private final DiscreteLeakyBucket bucket;
 
