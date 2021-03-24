@@ -20,21 +20,26 @@ package com.hedera.services.throttling;
  * ‍
  */
 
+import com.hedera.services.throttling.real.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
 public interface FunctionalityThrottling {
 	boolean shouldThrottle(HederaFunctionality function);
 
-	default List<DeterministicThrottle.StateSnapshot> throttleStatesFor(HederaFunctionality function) {
+	default List<PretendDetThrottle.StateSnapshot> throttleStatesFor(HederaFunctionality function) {
 		throw new AssertionError("Not implemented!");
 	}
 
 	/* The key will be a name given in the system throttles file 0.0.123 */
-	default Map<String, DeterministicThrottle> currentThrottles() {
+	default Map<String, PretendDetThrottle> currentThrottles() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	default List<DeterministicThrottle> activeThrottles() {
 		throw new AssertionError("Not implemented!");
 	}
 }

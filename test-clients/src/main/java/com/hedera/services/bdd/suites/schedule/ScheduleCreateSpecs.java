@@ -30,9 +30,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -84,27 +86,28 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				suiteSetup(),
-				rejectsMalformedScheduledTxnMemo(),
-				bodyOnlyCreation(),
-				onlyBodyAndAdminCreation(),
-				onlyBodyAndMemoCreation(),
-				bodyAndSignatoriesCreation(),
-				bodyAndPayerCreation(),
-				rejectsUnresolvableReqSigners(),
-				triggersImmediatelyWithBothReqSimpleSigs(),
-				onlySchedulesWithMissingReqSimpleSigs(),
-				failsWithNonExistingPayerAccountId(),
-				failsWithTooLongMemo(),
-				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				doesntTriggerUntilPayerSigns(),
-				requiresExtantPayer(),
-				rejectsFunctionlessTxn(),
-				whitelistWorks(),
-				preservesRevocationServiceSemanticsForFileDelete(),
-				worksAsExpectedWithDefaultScheduleId(),
-				infoIncludesTxnIdFromCreationReceipt(),
-				suiteCleanup(),
+//				suiteSetup(),
+//				rejectsMalformedScheduledTxnMemo(),
+//				bodyOnlyCreation(),
+//				onlyBodyAndAdminCreation(),
+//				onlyBodyAndMemoCreation(),
+//				bodyAndSignatoriesCreation(),
+//				bodyAndPayerCreation(),
+//				rejectsUnresolvableReqSigners(),
+//				triggersImmediatelyWithBothReqSimpleSigs(),
+//				onlySchedulesWithMissingReqSimpleSigs(),
+//				failsWithNonExistingPayerAccountId(),
+//				failsWithTooLongMemo(),
+//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+//				doesntTriggerUntilPayerSigns(),
+//				requiresExtantPayer(),
+//				rejectsFunctionlessTxn(),
+//				whitelistWorks(),
+//				preservesRevocationServiceSemanticsForFileDelete(),
+//				worksAsExpectedWithDefaultScheduleId(),
+//				infoIncludesTxnIdFromCreationReceipt(),
+//				suiteCleanup(),
+				integrationBodyAndSignatoriesCreation(),
 		});
 	}
 
@@ -197,6 +200,32 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						getScheduleInfo("onlyBodyAndPayer")
 								.hasScheduleId("onlyBodyAndPayer")
 								.hasPayerAccountID("payer")
+								.hasRecordedScheduledTxn()
+				);
+	}
+
+	private HapiApiSpec integrationBodyAndSignatoriesCreation() {
+		var scheduleName = "onlyBodyAndSignatories";
+		var scheduledTxn = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
+
+		return customHapiSpec("IntegrationBodyAndSignatoriesCreation").withProperties(
+				Map.of("nodes", "34.74.191.8")
+		)
+				.given(
+						cryptoCreate("payingAccount"),
+						newKeyNamed("adminKey"),
+						cryptoCreate("sender"),
+						cryptoCreate("receiver").receiverSigRequired(true)
+				).when(
+						scheduleCreate(scheduleName, scheduledTxn)
+								.adminKey("adminKey")
+								.recordingScheduledTxn()
+								.designatingPayer("payingAccount")
+								.alsoSigningWith("receiver")
+				).then(
+						getScheduleInfo(scheduleName)
+								.hasScheduleId(scheduleName)
+								.hasSignatories("receiver")
 								.hasRecordedScheduledTxn()
 				);
 	}

@@ -25,22 +25,22 @@ import com.swirlds.common.throttle.Throttle;
 
 import java.util.Optional;
 
-public class BucketThrottle {
+public class LegacyBucketThrottle {
 	private static final double RESCALE_BUFFER = 0.01;
 
 	private final String name;
-	private Optional<BucketThrottle> overflow = Optional.empty();
+	private Optional<LegacyBucketThrottle> overflow = Optional.empty();
 
 	Throttle primary;
 
 	static final double EFFECTIVELY_UNLIMITED_CAPACITY = 1_000_000.0;
 
-	public BucketThrottle(Throttle primary) {
+	public LegacyBucketThrottle(Throttle primary) {
 		this.name = "<N/A>";
 		this.primary = primary;
 	}
 
-	BucketThrottle(String name, Throttle primary) {
+	LegacyBucketThrottle(String name, Throttle primary) {
 		this.name = name;
 		this.primary = primary;
 	}
@@ -59,7 +59,7 @@ public class BucketThrottle {
 		return primary;
 	}
 
-	public void setOverflow(BucketThrottle overflow) {
+	public void setOverflow(LegacyBucketThrottle overflow) {
 		this.overflow = Optional.of(overflow);
 	}
 
@@ -67,7 +67,7 @@ public class BucketThrottle {
 		return overflow.isPresent();
 	}
 
-	public BucketThrottle overflow() {
+	public LegacyBucketThrottle overflow() {
 		return overflow.get();
 	}
 

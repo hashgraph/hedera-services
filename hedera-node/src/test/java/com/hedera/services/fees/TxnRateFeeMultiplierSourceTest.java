@@ -1,6 +1,6 @@
 package com.hedera.services.fees;
 
-import com.hedera.services.throttling.DeterministicThrottle;
+import com.hedera.services.throttling.PretendDetThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,15 +58,15 @@ class TxnRateFeeMultiplierSourceTest {
 		Assertions.assertEquals(expectedMultiplier, actualMultiplier);
 	}
 
-	private List<DeterministicThrottle.StateSnapshot> snapshotsWith(
+	private List<PretendDetThrottle.StateSnapshot> snapshotsWith(
 			long firstUsed, long firstCapacity,
 			long secondUsed, long secondCapacity
 	) {
 		var lastUsed = Instant.ofEpochSecond(1L);
 
 		return List.of(
-				new DeterministicThrottle.StateSnapshot(firstUsed, firstCapacity, lastUsed),
-				new DeterministicThrottle.StateSnapshot(secondUsed, secondCapacity, lastUsed)
+				new PretendDetThrottle.StateSnapshot(firstUsed, firstCapacity, lastUsed),
+				new PretendDetThrottle.StateSnapshot(secondUsed, secondCapacity, lastUsed)
 		);
 	}
 }

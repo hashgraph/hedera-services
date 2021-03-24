@@ -26,70 +26,45 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.real.DeterministicThrottle;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
 	public static final RichInstant UNKNOWN_CONSENSUS_TIME = null;
 
-	static final int MERKLE_VERSION = 1;
+	static final int PRE_RELEASE_0130_VERSION = 1;
+	static final int RELEASE_0130_VERSION = 2;
+
+	static final int MERKLE_VERSION = RELEASE_0130_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 
 	static DomainSerdes serdes = new DomainSerdes();
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
 
-	static class ThrottleInternals {
-		private final long used;
-		private final String name;
-		private final Instant lastUsed;
-
-		public ThrottleInternals(long used, String name, Instant lastUsed) {
-			this.used = used;
-			this.name = name;
-			this.lastUsed = lastUsed;
-		}
-
-		public long getUsed() {
-			return used;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public Instant getLastUsed() {
-			return lastUsed;
-		}
-	}
-
 	RichInstant consensusTimeOfLastHandledTxn;
 	SequenceNumber seqNo;
 	ExchangeRates midnightRates;
-	List<ThrottleInternals> throttleInternals = Collections.emptyList();
+	List<DeterministicThrottle.UsageSnapshot> throttleUsages = Collections.emptyList();
 
-	/* Exactly one instance of {@code MerkleNetworkContext} (the instance
-	associated to the mutable state) will keep a reference to the active
-	throttles; and use their snapshots to serialize itself to a save state. */
+	/* Non-null iff {@code this} is mutable. */
 	FunctionalityThrottling throttling;
 
 	public MerkleNetworkContext() {
@@ -132,14 +107,18 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public MerkleNetworkContext copy() {
-		var mutableCopy = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo.copy(), midnightRates.copy());
+		if (throttling == null) {
+			throw new IllegalStateException("Copy called on immutable network context " + this);
+		}
 
-		throttleInternals = throttling.currentThrottles().entrySet().stream()
-				.sorted(Comparator.comparing(Map.Entry::getKey))
-				.map(entry -> Pair.of(entry.getKey(), entry.getValue().snapshot()))
-				.map(pair ->
-						new ThrottleInternals(pair.getRight().getUsed(), pair.getLeft(), pair.getRight().getLastUsed()))
-				.collect(Collectors.toList());
+		var mutableCopy = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo.copy(), midnightRates.copy());
+		var activeThrottles = throttling.activeThrottles();
+		int n = activeThrottles.size();
+		if (n > 0) {
+			throttleUsages = new ArrayList<>();
+			activeThrottles.forEach(throttle -> throttleUsages.add(throttle.usageSnapshot()));
+		}
+
 		mutableCopy.throttling = throttling;
 		this.throttling = null;
 		return mutableCopy;
@@ -151,30 +130,39 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		seqNo = seqNoSupplier.get();
 		seqNo.deserialize(in);
 		midnightRates = in.readSerializable(true, ratesSupplier);
-		/* TODO: read the throttle snapshots from the saved network state */
+
+		if (version >= RELEASE_0130_VERSION) {
+			int n = in.readInt();
+			if (n > 0) {
+				throttleUsages = new ArrayList<>();
+				while (n-- > 0) {
+					var snapshot = new DeterministicThrottle.UsageSnapshot(
+						in.readLong(),
+						in.readLong(),
+						RichInstant.from(in).toJava());
+					throttleUsages.add(snapshot);
+				}
+			}
+		}
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
+		if (throttling != null) {
+			throw new IllegalStateException("Serialize called on mutable network context " + this);
+		}
+
 		serdes.writeNullableInstant(consensusTimeOfLastHandledTxn, out);
 		seqNo.serialize(out);
 		out.writeSerializable(midnightRates, true);
-
-		/* TODO - behave differently if we aren't the special network context in the mutable state */
-		var current = throttling.currentThrottles();
-		out.writeInt(current.size());
-		current.entrySet().stream()
-				.sorted(Comparator.comparing(Map.Entry::getKey))
-				.forEach(entry -> {
-					try {
-						out.writeNormalisedString(entry.getKey());
-						var snapshot = entry.getValue().snapshot();
-						out.writeLong(snapshot.getUsed());
-						RichInstant.fromJava(snapshot.getLastUsed()).serialize(out);
-					} catch (IOException e) {
-						throw new AssertionError("Not implemented!");
-					}
-				});
+		/* And also the throttle usage snapshots */
+		int n = throttleUsages.size();
+		out.writeInt(n);
+		for (var usageSnapshot : throttleUsages) {
+			out.writeLong(usageSnapshot.used());
+			out.writeLong(usageSnapshot.capacity());
+			RichInstant.fromJava(usageSnapshot.lastDecisionTime()).serialize(out);
+		}
 	}
 
 	public Instant consensusTimeOfLastHandledTxn() {
@@ -199,11 +187,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return MERKLE_VERSION;
 	}
 
-	public FunctionalityThrottling getThrottling() {
+	FunctionalityThrottling getThrottling() {
 		return throttling;
 	}
 
-	public List<ThrottleInternals> getThrottleInternals() {
-		return throttleInternals;
+	List<DeterministicThrottle.UsageSnapshot> getThrottleUsages() {
+		return throttleUsages;
 	}
 }

@@ -101,8 +101,8 @@ public class BucketConfig {
 		this.overflow = Optional.empty();
 	}
 
-	public BucketThrottle asNodeThrottle(int networkSize) {
-		return new BucketThrottle(name, new Throttle((capacity / networkSize) / burstPeriod, burstPeriod));
+	public LegacyBucketThrottle asNodeThrottle(int networkSize) {
+		return new LegacyBucketThrottle(name, new Throttle((capacity / networkSize) / burstPeriod, burstPeriod));
 	}
 
 	public static BucketConfig namedIn(PropertySource properties, String name) {

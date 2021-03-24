@@ -22,7 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.throttling.bucket.BucketConfig;
-import com.hedera.services.throttling.bucket.BucketThrottle;
+import com.hedera.services.throttling.bucket.LegacyBucketThrottle;
 import com.hedera.services.throttling.bucket.CapacityTest;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -107,7 +107,7 @@ public class BucketThrottling implements FunctionalityThrottling {
 		displayFn.accept(sb.toString());
 	}
 
-	Map<String, BucketThrottle> throttlesGiven(PropertySource props, Map<String, BucketConfig> config) {
+	Map<String, LegacyBucketThrottle> throttlesGiven(PropertySource props, Map<String, BucketConfig> config) {
 		var networkSize = book.get().getSize();
 		var throttles = config.keySet()
 				.stream()
@@ -127,7 +127,7 @@ public class BucketThrottling implements FunctionalityThrottling {
 	CapacityTest testGiven(
 			PropertySource props,
 			HederaFunctionality function,
-			Map<String, BucketThrottle> throttles
+			Map<String, LegacyBucketThrottle> throttles
 	) {
 		var bucketProp = asBucketProperty.apply(function);
 		var bucket = props.containsProperty(bucketProp)

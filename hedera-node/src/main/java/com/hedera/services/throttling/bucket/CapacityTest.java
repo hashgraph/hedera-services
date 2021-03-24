@@ -24,9 +24,9 @@ import com.google.common.base.MoreObjects;
 
 public class CapacityTest {
 	private final double capacityRequired;
-	private final BucketThrottle bucket;
+	private final LegacyBucketThrottle bucket;
 
-	public CapacityTest(double capacityRequired, BucketThrottle bucket) {
+	public CapacityTest(double capacityRequired, LegacyBucketThrottle bucket) {
 		this.capacityRequired = capacityRequired;
 		this.bucket = bucket;
 		/* Ensure the bucket re-configures its primary throttle if necessary. */
@@ -41,7 +41,7 @@ public class CapacityTest {
 		return capacityRequired;
 	}
 
-	public BucketThrottle getBucket() {
+	public LegacyBucketThrottle getBucket() {
 		return bucket;
 	}
 

@@ -3,10 +3,10 @@ package com.hedera.services.throttling;
 import com.google.common.base.MoreObjects;
 import java.time.Instant;
 
-public class DeterministicThrottle {
+public class PretendDetThrottle {
 	private final StateSnapshot pretendState;
 
-	public DeterministicThrottle(StateSnapshot pretendState) {
+	public PretendDetThrottle(StateSnapshot pretendState) {
 		this.pretendState = pretendState;
 	}
 

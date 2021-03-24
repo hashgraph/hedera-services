@@ -25,21 +25,21 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.throttling.bucket.BucketThrottle.EFFECTIVELY_UNLIMITED_CAPACITY;
+import static com.hedera.services.throttling.bucket.LegacyBucketThrottle.EFFECTIVELY_UNLIMITED_CAPACITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
-class BucketThrottleTest {
+class LegacyBucketThrottleTest {
 	double amount = 123.0;
 
 	Throttle p;
 	Throttle o;
 	Throttle s;
 
-	BucketThrottle subject;
-	BucketThrottle overflow;
-	BucketThrottle spillover;
+	LegacyBucketThrottle subject;
+	LegacyBucketThrottle overflow;
+	LegacyBucketThrottle spillover;
 
 	@BeforeEach
 	private void setup() {
@@ -47,15 +47,15 @@ class BucketThrottleTest {
 		o = mock(Throttle.class);
 		s = mock(Throttle.class);
 
-		subject = new BucketThrottle("P", p);
-		overflow = new BucketThrottle("O", o);
-		spillover = new BucketThrottle("S", s);
+		subject = new LegacyBucketThrottle("P", p);
+		overflow = new LegacyBucketThrottle("O", o);
+		spillover = new LegacyBucketThrottle("S", s);
 	}
 
 	@Test
 	public void autoReconfiguresWhenInsufficientCapacity() {
 		// given:
-		subject = new BucketThrottle("T", new Throttle(0.358, 2.6));
+		subject = new LegacyBucketThrottle("T", new Throttle(0.358, 2.6));
 
 		// when:
 		var avail = subject.hasAvailableCapacity(1.0);
@@ -123,8 +123,8 @@ class BucketThrottleTest {
 		o = new Throttle(EFFECTIVELY_UNLIMITED_CAPACITY, 1.0);
 		s = new Throttle(200.0, 0.5);
 
-		subject = new BucketThrottle("P", p);
-		overflow = new BucketThrottle("O", o);
-		spillover = new BucketThrottle("S", s);
+		subject = new LegacyBucketThrottle("P", p);
+		overflow = new LegacyBucketThrottle("O", o);
+		spillover = new LegacyBucketThrottle("S", s);
 	}
 }

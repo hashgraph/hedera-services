@@ -22,7 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.throttling.bucket.BucketConfig;
-import com.hedera.services.throttling.bucket.BucketThrottle;
+import com.hedera.services.throttling.bucket.LegacyBucketThrottle;
 import com.hedera.services.throttling.bucket.CapacityTest;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.AddressBook;
@@ -64,13 +64,13 @@ class BucketThrottlingTest {
 	BucketConfig bucketConfig;
 	BucketConfig overflowConfig;
 	String queries = "defaultQueryBucket";
-	BucketThrottle queryBucket;
+	LegacyBucketThrottle queryBucket;
 	String txns = "defaultTxnBucket";
-	BucketThrottle txnBucket;
+	LegacyBucketThrottle txnBucket;
 	String b = "bucket";
-	BucketThrottle bucket;
+	LegacyBucketThrottle bucket;
 	String o = "overflow";
-	BucketThrottle overflow;
+	LegacyBucketThrottle overflow;
 	Map<String, BucketConfig> buckets;
 
 	AddressBook book;
@@ -87,10 +87,10 @@ class BucketThrottlingTest {
 	private void setup() {
 		unitThrottle = new Throttle(1.0, 1.0);
 		deciThrottle = new Throttle(10.0, 1.0);
-		bucket = new BucketThrottle(unitThrottle);
-		overflow = new BucketThrottle(deciThrottle);
-		queryBucket = new BucketThrottle(deciThrottle);
-		txnBucket = new BucketThrottle(deciThrottle);
+		bucket = new LegacyBucketThrottle(unitThrottle);
+		overflow = new LegacyBucketThrottle(deciThrottle);
+		queryBucket = new LegacyBucketThrottle(deciThrottle);
+		txnBucket = new LegacyBucketThrottle(deciThrottle);
 		log = mock(Logger.class);
 
 		bucketConfig = mock(BucketConfig.class);

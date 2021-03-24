@@ -33,13 +33,13 @@ import static org.mockito.Mockito.times;
 
 class CapacityTestTest {
 	double req = 123.0;
-	BucketThrottle bucket;
+	LegacyBucketThrottle bucket;
 
 	CapacityTest subject;
 
 	@BeforeEach
 	private void setup() {
-		bucket = mock(BucketThrottle.class);
+		bucket = mock(LegacyBucketThrottle.class);
 
 		subject = new CapacityTest(req, bucket);
 	}
@@ -63,7 +63,7 @@ class CapacityTestTest {
 		var t = new Throttle(5.0, 1.0);
 
 		// given:
-		subject = new CapacityTest(1.011, new BucketThrottle("B", t));
+		subject = new CapacityTest(1.011, new LegacyBucketThrottle("B", t));
 
 		// when:
 		var repr = subject.toString();
