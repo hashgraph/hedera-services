@@ -1649,13 +1649,13 @@ public class ServicesContext {
 							midnightRates().replaceWith(rates);
 						}
 					},
+					throttles -> {},
 					schedules -> fees().init(),
 					config -> {
 						((StandardizedPropertySources) propertySources()).reloadFrom(config);
 						globalDynamicProperties().reload();
 						PropertiesLoader.populateApplicationPropertiesWithProto(config);
 					},
-					/* TODO: add callback for throttle definitions */
 					PropertiesLoader::populateAPIPropertiesWithProto);
 			/* We must force eager evaluation of the throttle construction here,
 			as in DEV environment with the per-classloader singleton pattern used by

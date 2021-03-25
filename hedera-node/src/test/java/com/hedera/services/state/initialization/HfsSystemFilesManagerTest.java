@@ -20,6 +20,7 @@ package com.hedera.services.state.initialization;
  * ‍
  */
 
+import static com.hedera.services.throttling.bootstrap.ThrottlesJsonToProtoSerde.loadProtoDefs;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -27,6 +28,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
+import com.hedera.services.throttling.bootstrap.ThrottlesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -40,6 +42,7 @@ import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -82,6 +85,7 @@ class HfsSystemFilesManagerTest {
 	FileID detailsId = expectedFid(102);
 	FileID appPropsId = expectedFid(121);
 	FileID apiPermsId = expectedFid(122);
+	FileID throttlesId = expectedFid(123);
 	FileID schedulesId = expectedFid(111);
 	FileID ratesId = expectedFid(112);
 
@@ -109,6 +113,7 @@ class HfsSystemFilesManagerTest {
 	Consumer<ServicesConfigurationList> propertiesCb;
 	Consumer<ServicesConfigurationList> permissionsCb;
 	Consumer<ExchangeRateSet> ratesCb;
+	Consumer<ThrottleDefinitions> throttlesCb;
 	Consumer<CurrentAndNextFeeSchedule> schedulesCb;
 
 	HfsSystemFilesManager subject;
@@ -181,11 +186,14 @@ class HfsSystemFilesManagerTest {
 				.willReturn(nextExpiry);
 		given(properties.getStringProperty("bootstrap.feeSchedulesJson.resource"))
 				.willReturn("R4FeeSchedule.json");
+		given(properties.getStringProperty("bootstrap.throttleDefsJson.resource"))
+				.willReturn("bootstrap/throttles.json");
 
 		ratesCb = mock(Consumer.class);
 		schedulesCb = mock(Consumer.class);
 		propertiesCb = mock(Consumer.class);
 		permissionsCb = mock(Consumer.class);
+		throttlesCb = mock(Consumer.class);
 
 		subject = new HfsSystemFilesManager(
 				currentBook,
@@ -194,6 +202,7 @@ class HfsSystemFilesManagerTest {
 				hfs,
 				() -> masterKey,
 				ratesCb,
+				throttlesCb,
 				schedulesCb,
 				propertiesCb,
 				permissionsCb);
@@ -214,6 +223,7 @@ class HfsSystemFilesManagerTest {
 		verify(sub).loadApiPermissions();
 		verify(sub).loadFeeSchedules();
 		verify(sub).loadExchangeRates();
+		verify(sub).loadThrottleDefinitions();
 		verify(sub).setFilesLoaded();
 	}
 
@@ -370,6 +380,45 @@ class HfsSystemFilesManagerTest {
 		// then:
 		verify(hfs).exists(schedulesId);
 		verify(schedulesCb).accept(proto);
+	}
+
+	@Test
+	public void loadsThrottlesFromHfsIfAvailable() {
+		// setup:
+		var proto = loadProtoDefs("bootstrap/throttles.json");
+		byte[] throttleBytes = proto.toByteArray();
+
+		given(hfs.exists(throttlesId)).willReturn(true);
+		given(hfs.cat(throttlesId)).willReturn(throttleBytes);
+
+		// when:
+		subject.loadThrottleDefinitions();
+
+		// then:
+		verify(hfs).exists(throttlesId);
+		verify(throttlesCb).accept(proto);
+	}
+
+	@Test
+	public void createsThrottlesFromResourceIfMissing() throws IOException {
+		// setup:
+		var proto = loadProtoDefs("bootstrap/throttles.json");
+		byte[] throttleBytes = proto.toByteArray();
+
+		given(hfs.exists(throttlesId)).willReturn(false);
+		given(hfs.cat(throttlesId)).willReturn(throttleBytes);
+
+		// when:
+		subject.loadThrottleDefinitions();
+
+		// then:
+		verify(hfs).exists(throttlesId);
+		verify(metadata).put(
+				argThat(throttlesId::equals),
+				argThat(info -> expectedInfo.toString().equals(info.toString())));
+		verify(data).put(
+				argThat(throttlesId::equals),
+				argThat((byte[] bytes) -> Arrays.equals(throttleBytes, bytes)));
 	}
 
 	@Test

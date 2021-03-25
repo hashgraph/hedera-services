@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.throttling.bootstrap.ThrottlesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -35,6 +36,7 @@ import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -64,6 +66,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private static final String PERMISSIONS_TAG = "API permissions";
 	private static final String EXCHANGE_RATES_TAG = "exchange rates";
 	private static final String FEE_SCHEDULES_TAG = "fee schedules";
+	private static final String THROTTLE_DEFINITIONS_TAG = "throttle definitions";
 
 	private JKey systemKey;
 	private boolean filesLoaded = false;
@@ -73,6 +76,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private final TieredHederaFs hfs;
 	private final Supplier<JKey> keySupplier;
 	private final Consumer<ExchangeRateSet> ratesCb;
+	private final Consumer<ThrottleDefinitions> throttlesCb;
 	private final Consumer<CurrentAndNextFeeSchedule> schedulesCb;
 	private final Consumer<ServicesConfigurationList> propertiesCb;
 	private final Consumer<ServicesConfigurationList> permissionsCb;
@@ -84,6 +88,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 			TieredHederaFs hfs,
 			Supplier<JKey> keySupplier,
 			Consumer<ExchangeRateSet> ratesCb,
+			Consumer<ThrottleDefinitions> throttlesCb,
 			Consumer<CurrentAndNextFeeSchedule> schedulesCb,
 			Consumer<ServicesConfigurationList> propertiesCb,
 			Consumer<ServicesConfigurationList> permissionsCb
@@ -96,6 +101,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 		this.ratesCb = ratesCb;
 		this.schedulesCb = schedulesCb;
+		this.throttlesCb = throttlesCb;
 		this.propertiesCb = propertiesCb;
 		this.permissionsCb = permissionsCb;
 	}
@@ -146,6 +152,16 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				schedulesCb,
 				CurrentAndNextFeeSchedule::parseFrom,
 				() -> defaultSchedules().toByteArray());
+	}
+
+	@Override
+	public void loadThrottleDefinitions() {
+		loadProtoWithSupplierFallback(
+				fileNumbers.throttleDefinitions(),
+				THROTTLE_DEFINITIONS_TAG,
+				throttlesCb,
+				ThrottleDefinitions::parseFrom,
+				() -> defaultThrottles().toByteArray());
 	}
 
 	@Override
@@ -319,6 +335,12 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		var resource = properties.getStringProperty("bootstrap.feeSchedulesJson.resource");
 
 		return loadFeeScheduleFromJson(resource);
+	}
+
+	private ThrottleDefinitions defaultThrottles() throws Exception {
+		var resource = properties.getStringProperty("bootstrap.throttleDefsJson.resource");
+
+		return ThrottlesJsonToProtoSerde.loadProtoDefs(resource);
 	}
 
 	private ExchangeRateSet defaultRates() {

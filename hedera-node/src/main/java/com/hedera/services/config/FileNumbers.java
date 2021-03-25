@@ -37,6 +37,7 @@ public class FileNumbers {
 	private long apiPermissions = UNKNOWN_NUMBER;
 	private long applicationProperties = UNKNOWN_NUMBER;
 	private long softwareUpdateZip = UNKNOWN_NUMBER;
+	private long throtleDefinitions = UNKNOWN_NUMBER;
 
 	public FileNumbers(HederaNumbers hederaNums, PropertySource properties) {
 		this.hederaNums = hederaNums;
@@ -90,6 +91,13 @@ public class FileNumbers {
 			softwareUpdateZip = properties.getLongProperty("files.softwareUpdateZip");
 		}
 		return softwareUpdateZip;
+	}
+
+	public long throttleDefinitions() {
+		if (throtleDefinitions == UNKNOWN_NUMBER) {
+			throtleDefinitions = properties.getLongProperty("files.throttleDefinitions");
+		}
+		return throtleDefinitions;
 	}
 
 	public FileID toFid(long num) {

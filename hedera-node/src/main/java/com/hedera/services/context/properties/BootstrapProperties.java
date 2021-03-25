@@ -154,7 +154,8 @@ public class BootstrapProperties implements PropertySource {
 			"bootstrap.rates.nextHbarEquiv",
 			"bootstrap.rates.nextCentEquiv",
 			"bootstrap.rates.nextExpiry",
-			"bootstrap.system.entityExpiry"
+			"bootstrap.system.entityExpiry",
+			"bootstrap.throttleDefsJson.resource"
 	);
 
 	static final Set<String> GLOBAL_STATIC_PROPS = Set.of(
@@ -174,6 +175,7 @@ public class BootstrapProperties implements PropertySource {
 			"files.hapiPermissions",
 			"files.nodeDetails",
 			"files.softwareUpdateZip",
+			"files.throttleDefinitions",
 			"hedera.numReservedSystemEntities",
 			"hedera.realm",
 			"hedera.shard",
@@ -260,6 +262,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("files.hapiPermissions", AS_LONG),
 			entry("files.softwareUpdateZip", AS_LONG),
 			entry("files.nodeDetails", AS_LONG),
+			entry("files.throttleDefinitions", AS_LONG),
 			entry("grpc.port", AS_INT),
 			entry("grpc.tlsPort", AS_INT),
 			entry("hedera.numReservedSystemEntities", AS_LONG),
