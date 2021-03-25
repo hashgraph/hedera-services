@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
@@ -39,7 +38,6 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 	public String fromRawFile(byte[] bytes) {
 		try {
 			var pojoBook = addressBookFrom(NodeAddressBook.parseFrom(bytes));
-			mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 			return mapper
 					.writerWithDefaultPrettyPrinter()
 					.writeValueAsString(pojoBook);
