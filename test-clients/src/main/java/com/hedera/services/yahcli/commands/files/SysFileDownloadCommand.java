@@ -46,6 +46,11 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 			defaultValue = "{network}/sysfiles/")
 	String destDir;
 
+	@CommandLine.Option(names = { "-v", "--version" },
+			paramLabel = "protobuf version",
+			defaultValue = "13")
+	String version;
+
 	@Parameters(
 			arity = "1..*",
 			paramLabel = "<sysfiles>",
@@ -67,7 +72,7 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 			destDir = destDir.substring(0, destDir.length() - 1);
 		}
 
-		var delegate = new SysFileDownloadSuite(destDir, config.asSpecConfig(), sysFiles);
+		var delegate = new SysFileDownloadSuite(destDir, config.asSpecConfig(), sysFiles, version);
 		delegate.runSuiteSync();
 
 		return 0;

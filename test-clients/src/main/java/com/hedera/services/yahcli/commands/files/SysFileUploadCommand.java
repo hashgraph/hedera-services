@@ -42,6 +42,11 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			defaultValue = "{network}/sysfiles/")
 	String srcDir;
 
+	@CommandLine.Option(names = { "-v", "--version" },
+			paramLabel = "protobuf version",
+			defaultValue = "13")
+	String version;
+
 	@CommandLine.Parameters(
 			arity = "1",
 			paramLabel = "<sysfile>",
@@ -65,7 +70,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			srcDir = srcDir.substring(0, srcDir.length() - 1);
 		}
 
-		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile);
+		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile, version);
 		delegate.runSuiteSync();
 
 		return 0;

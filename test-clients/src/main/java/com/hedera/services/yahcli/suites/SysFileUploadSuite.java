@@ -43,6 +43,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes.setAppropriateVersion;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 
 public class SysFileUploadSuite extends HapiApiSuite {
@@ -71,11 +72,14 @@ public class SysFileUploadSuite extends HapiApiSuite {
 	private final String srcDir;
 	private final Map<String, String> specConfig;
 	private final long sysFileId;
+	private final String version;
 
-	public SysFileUploadSuite(final String srcDir, final Map<String, String> specConfig, final String sysFile) {
+	public SysFileUploadSuite(final String srcDir, final Map<String, String> specConfig,
+			final String sysFile,  final String version) {
 		this.srcDir = srcDir;
 		this.specConfig = specConfig;
 		this.sysFileId = rationalized(sysFile);
+		this.version = version;
 	}
 
 	@Override
@@ -109,6 +113,7 @@ public class SysFileUploadSuite extends HapiApiSuite {
 	private ByteString appropriateContents(final Long fileNum) {
 		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
 		String name = serde.preferredFileName();
+		setAppropriateVersion(version);
 		String loc = srcDir + File.separator + name;
 		try {
 			var stylized = Files.readString(Paths.get(loc));

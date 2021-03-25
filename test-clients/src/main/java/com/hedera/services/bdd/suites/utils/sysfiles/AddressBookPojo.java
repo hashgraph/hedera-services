@@ -21,8 +21,10 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hederahashgraph.api.proto.java.AddressBookForClients;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.AddressBook;
+import com.hederahashgraph.api.proto.java.NodeAddressForClients;
 
 import java.awt.print.Book;
 import java.util.List;
@@ -50,6 +52,10 @@ public class AddressBookPojo {
 
 	public static AddressBookPojo addressBookFrom(AddressBook book) {
 		return from(book, BookEntryPojo::fromAddressBookEntry, AddressBookPojo::withListedIps);
+	}
+
+	public static AddressBookPojo addressBookFrom(AddressBookForClients book) {
+		return from(book, BookEntryPojo::fromAddressBookEntry);
 	}
 
 	public static AddressBookPojo nodeDetailsFrom(AddressBook book) {
@@ -93,5 +99,17 @@ public class AddressBookPojo {
 				.map(converter)
 				.collect(toList()));
 		return finalizer.apply(pojo);
+	}
+
+	private static AddressBookPojo from(
+			AddressBookForClients book,
+			Function<NodeAddressForClients, BookEntryPojo> converter
+	) {
+		var pojo = new AddressBookPojo();
+		pojo.setEntries(book.getNodeAddressForClientsList()
+				.stream()
+				.map(converter)
+				.collect(toList()));
+		return pojo;
 	}
 }

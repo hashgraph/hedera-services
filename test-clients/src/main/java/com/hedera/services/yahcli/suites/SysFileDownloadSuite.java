@@ -24,6 +24,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes.setAppropriateVersion;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 
 public class SysFileDownloadSuite extends HapiApiSuite {
@@ -53,15 +56,18 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 	private final String destDir;
 	private final Map<String, String> specConfig;
 	private final String[] sysFilesToDownload;
+	private final String version;
 
 	public SysFileDownloadSuite(
 			String destDir,
 			Map<String, String> specConfig,
-			String[] sysFilesToDownload
+			String[] sysFilesToDownload,
+			String version
 	) {
 		this.destDir = destDir;
 		this.specConfig = specConfig;
 		this.sysFilesToDownload = sysFilesToDownload;
+		this.version = version;
 	}
 
 	@Override
@@ -86,6 +92,7 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 	private HapiGetFileContents appropriateQuery(long fileNum) {
 		String fid = String.format("0.0.%d", fileNum);
 		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
+		setAppropriateVersion(version);
 		String fqLoc = destDir + File.separator + serde.preferredFileName();
 		return getFileContents(fid).saveReadableTo(serde::fromRawFile, fqLoc);
 	}
@@ -115,6 +122,7 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 			fileId = Long.parseLong(file);
 		} catch (Exception e) {
 			fileId = NAMES_TO_NUMBERS.getOrDefault(file, 0L);
+			// TODO if fileId is 0 , throw an exception mentioning the file name received.
 		}
 		return fileId;
 	}

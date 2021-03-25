@@ -25,6 +25,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressForClients;
+import com.hederahashgraph.api.proto.java.NodeEndpoint;
 import org.apache.commons.codec.binary.Hex;
 
 import java.nio.file.Files;
@@ -58,6 +60,16 @@ public class BookEntryPojo {
 		if (pojo.port == 0) {
 			pojo.port = null;
 		}
+		if (address.getNodeCertHash().isEmpty()) {
+			pojo.certHash = "<N/A>";
+		} else {
+			pojo.certHash = new String(address.getNodeCertHash().toByteArray());
+		}
+		return pojo;
+	}
+
+	public static BookEntryPojo fromAddressBookEntry(NodeAddressForClients address) {
+		var pojo = fromAnyEntry(address);
 		if (address.getNodeCertHash().isEmpty()) {
 			pojo.certHash = "<N/A>";
 		} else {
@@ -103,6 +115,36 @@ public class BookEntryPojo {
 		return reps.stream();
 	}
 
+	public Stream<NodeAddressForClients> toAddressBookForClientEntries() {
+		List<NodeAddressForClients> reps = new ArrayList<>();
+		if(endPoints.isEmpty()) {
+			throw new IllegalStateException("invalid addressBook, no endpoints mentioned");
+		}
+
+		var address = NodeAddressForClients.newBuilder();
+		address.setNodeId(nodeId);
+		if (nodeAccount != null) {
+			address.setNodeAccountId(HapiPropertySource.asAccount(nodeAccount));
+		}
+		if (certHash != null) {
+			if ("!".equals(certHash)) {
+				certHash = asHexEncodedSha384HashFor(address.getNodeId());
+			}
+			address.setNodeCertHash(ByteString.copyFrom(certHash.getBytes()));
+		}
+
+		for (String endPoint : endPoints) {
+			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder();
+			String[] elements = endPoint.split(":");
+			nodeEndPoint.setIpAddress(elements[0].trim());
+			nodeEndPoint.setPort(elements[1].trim());
+			address.addNodeEndpoint(nodeEndPoint.build());
+		}
+
+		reps.add(address.build());
+		return reps.stream();
+	}
+
 	public static String asHexEncodedSha384HashFor(long nodeId) {
 		try {
 			var crtBytes = Files.readAllBytes(Paths.get(CRTS_DIR, String.format("node%d.crt", nodeId)));
@@ -145,6 +187,25 @@ public class BookEntryPojo {
 	private static BookEntryPojo fromAnyEntry(NodeAddress address) {
 		var entry = new BookEntryPojo();
 		entry.memo = new String(address.getMemo().toByteArray());
+		entry.nodeId = address.getNodeId();
+		if (address.hasNodeAccountId()) {
+			entry.nodeAccount = HapiPropertySource.asAccountString(address.getNodeAccountId());
+		} else {
+			entry.nodeAccount = "<N/A>";
+		}
+		if (address.getNodeEndpointCount() == 0) {
+			entry.endPoints = new ArrayList<>();
+		} else {
+			entry.endPoints = address.getNodeEndpointList()
+					.stream()
+					.map(s -> s.getIpAddress() + " : " + s.getPort())
+					.collect(Collectors.toList());
+		}
+		return entry;
+	}
+
+	private static BookEntryPojo fromAnyEntry(NodeAddressForClients address) {
+		var entry = new BookEntryPojo();
 		entry.nodeId = address.getNodeId();
 		if (address.hasNodeAccountId()) {
 			entry.nodeAccount = HapiPropertySource.asAccountString(address.getNodeAccountId());
