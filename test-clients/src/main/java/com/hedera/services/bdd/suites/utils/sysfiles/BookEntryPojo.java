@@ -32,6 +32,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -46,6 +47,7 @@ public class BookEntryPojo {
 	private String certHash;
 	private Integer port;
 	private Long nodeId;
+	private List<String> endPoints;
 
 	private List<String> ips = null;
 
@@ -69,6 +71,16 @@ public class BookEntryPojo {
 		pojo.rsaPubKey = address.getRSAPubKey();
 		if (pojo.rsaPubKey.length() == 0) {
 			pojo.rsaPubKey = null;
+		}
+		pojo.ip = new String(address.getIpAddress().toByteArray());
+		pojo.port = address.getPortno();
+		if (pojo.port == 0) {
+			pojo.port = null;
+		}
+		if (address.getNodeCertHash().isEmpty()) {
+			pojo.certHash = "<N/A>";
+		} else {
+			pojo.certHash = new String(address.getNodeCertHash().toByteArray());
 		}
 		return pojo;
 	}
@@ -139,6 +151,14 @@ public class BookEntryPojo {
 		} else {
 			entry.nodeAccount = "<N/A>";
 		}
+		if (address.getNodeEndpointCount() == 0) {
+			entry.endPoints = new ArrayList<>();
+		} else {
+			entry.endPoints = address.getNodeEndpointList()
+					.stream()
+					.map(s -> s.getIpAddress() + " : " + s.getPort())
+					.collect(Collectors.toList());
+		}
 		return entry;
 	}
 
@@ -204,5 +224,13 @@ public class BookEntryPojo {
 
 	public void setIps(List<String> ips) {
 		this.ips = ips;
+	}
+
+	public List<String> getEndPoints() {
+		return endPoints;
+	}
+
+	public void setEndPoints(List<String> endPoints) {
+		this.endPoints = endPoints;
 	}
 }
