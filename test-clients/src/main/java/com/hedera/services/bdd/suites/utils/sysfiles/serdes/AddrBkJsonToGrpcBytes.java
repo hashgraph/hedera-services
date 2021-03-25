@@ -20,13 +20,18 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
  * ‍
  */
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
+import com.hedera.services.bdd.suites.utils.sysfiles.ExchangeRatesPojo;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.commons.lang3.NotImplementedException;
+
+import java.io.IOException;
 
 import static com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo.addressBookFrom;
 
@@ -47,7 +52,16 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 
 	@Override
 	public byte[] toRawFile(String styledFile) {
-		throw new NotImplementedException("TBD");
+		try {
+			var pojoBook = mapper.readValue(styledFile, AddressBookPojo.class);
+			NodeAddressBook.Builder addressBook = NodeAddressBook.newBuilder();
+			pojoBook.getEntries().stream()
+					.flatMap(BookEntryPojo::toAddressBookEntries)
+					.forEach(addressBook::addNodeAddress);
+			return addressBook.build().toByteArray();
+		} catch (IOException ex) {
+			throw new IllegalArgumentException("Not an address book!", ex);
+		}
 	}
 
 	@Override
