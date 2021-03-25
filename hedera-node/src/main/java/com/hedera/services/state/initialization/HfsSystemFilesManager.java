@@ -24,29 +24,25 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ClientNodeAddress;
-import com.hederahashgraph.api.proto.java.ClientNodeAddressBook;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.NodeEndpoint;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import com.swirlds.common.AddressBook;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -284,7 +280,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private byte[] bioAndIpv4Contents() {
-		var basics = NodeAddressBook.newBuilder();
+		var basics = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
 				.map(address ->	basicBioEntryFrom(address).build())
@@ -293,7 +289,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private byte[] bioAndPubKeyContents() {
-		var details = NodeAddressBook.newBuilder();
+		var details = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
 				.map(address ->	basicBioEntryFrom(address).build())

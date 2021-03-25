@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.AddressBook;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.io.IOException;
@@ -38,7 +38,7 @@ public class NodesJsonToGrpcBytes implements SysFileSerde<String> {
 	@Override
 	public String fromRawFile(byte[] bytes) {
 		try {
-			var pojoBook = nodeDetailsFrom(NodeAddressBook.parseFrom(bytes));
+			var pojoBook = nodeDetailsFrom(AddressBook.parseFrom(bytes));
 			return mapper
 					.writerWithDefaultPrettyPrinter()
 					.writeValueAsString(pojoBook);
@@ -51,7 +51,7 @@ public class NodesJsonToGrpcBytes implements SysFileSerde<String> {
 	public byte[] toRawFile(String styledFile) {
 		try {
 			var pojoBook = mapper.readValue(styledFile, AddressBookPojo.class);
-			NodeAddressBook.Builder addressBook = NodeAddressBook.newBuilder();
+			AddressBook.Builder addressBook = AddressBook.newBuilder();
 			pojoBook.getEntries().stream()
 					.flatMap(BookEntryPojo::toNodeDetailsEntry)
 					.forEach(addressBook::addNodeAddress);

@@ -25,7 +25,7 @@ import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.verification.NodeSignatureVerifier;
 import com.hedera.services.bdd.spec.verification.RecordFileParser;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -63,7 +63,7 @@ public class RecordStreamVerification extends UtilOp {
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		NodeAddressBook addressBook = downloadBook(spec);
+		AddressBook addressBook = downloadBook(spec);
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier(addressBook);
 		Set<String> uniqRecordFiles = allRecordFilesFor(verifier.nodes());
 		Map<String, List<File>> sigFilesAvail = uniqRecordFiles
@@ -195,11 +195,11 @@ public class RecordStreamVerification extends UtilOp {
 		return String.format("%s/record%s", baseDir.get(), account);
 	}
 
-	private NodeAddressBook downloadBook(HapiApiSpec spec) throws Exception  {
+	private AddressBook downloadBook(HapiApiSpec spec) throws Exception  {
 		String addressBook = spec.setup().nodeDetailsName();
 		HapiGetFileContents op = getFileContents(addressBook);
 		allRunFor(spec, op);
 		byte[] serializedBook = op.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
-		return NodeAddressBook.parseFrom(serializedBook);
+		return AddressBook.parseFrom(serializedBook);
 	}
 }

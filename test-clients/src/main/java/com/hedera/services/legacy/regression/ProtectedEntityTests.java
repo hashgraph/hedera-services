@@ -55,7 +55,7 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.AddressBook;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody.Builder;
@@ -98,8 +98,8 @@ public class ProtectedEntityTests extends BaseClient {
   private String validFeeFilePath = "testSystemFiles/FeeSchedule_cryptoCreate_cheap.txt";
   private ByteString validFeeFile = null;
   private boolean isSmallExchangeRateUpdate = true;
-  private NodeAddressBook serverAddressBook = null;
-  private NodeAddressBook serverNodeDetails = null;
+  private AddressBook serverAddressBook = null;
+  private AddressBook serverNodeDetails = null;
   private ExchangeRateSet serverExchangeRate = null;
   private FeeSchedule serverFeeSchedule = null;
   
@@ -1618,9 +1618,9 @@ public class ProtectedEntityTests extends BaseClient {
    * @return the current address book
    * @throws Throwable
    */
-  public NodeAddressBook getAddressBookFromServer() throws Throwable {
+  public AddressBook getAddressBookFromServer() throws Throwable {
     ByteString content = getFileContent(addressBook101, genesisAccountID, defaultListeningNodeAccountID);
-    NodeAddressBook rv = NodeAddressBook.parseFrom(content);
+    AddressBook rv = AddressBook.parseFrom(content);
     return rv;
   }
 
@@ -1630,9 +1630,9 @@ public class ProtectedEntityTests extends BaseClient {
    * @return the current node details
    * @throws Throwable
    */
-  public NodeAddressBook getNodeDetailsFromServer() throws Throwable {
+  public AddressBook getNodeDetailsFromServer() throws Throwable {
     ByteString content = getFileContent(addressBook102, genesisAccountID, defaultListeningNodeAccountID);
-    NodeAddressBook rv = NodeAddressBook.parseFrom(content);
+    AddressBook rv = AddressBook.parseFrom(content);
     return rv;
   }
 
@@ -1645,7 +1645,7 @@ public class ProtectedEntityTests extends BaseClient {
    * @return modified node details file
    * @throws Throwable
    */
-  public ByteString modNodeDetailsFile(NodeAddressBook sourceNodeDetails, boolean isRandom) throws Throwable {
+  public ByteString modNodeDetailsFile(AddressBook sourceNodeDetails, boolean isRandom) throws Throwable {
     return modAddressBookFile(addressBook102, sourceNodeDetails, isRandom);
   }
   
@@ -1658,7 +1658,7 @@ public class ProtectedEntityTests extends BaseClient {
    * @return modified address book file
    * @throws Throwable
    */
-  public ByteString modAddressBookFile(NodeAddressBook sourceAddressBook, boolean isRandom) throws Throwable {
+  public ByteString modAddressBookFile(AddressBook sourceAddressBook, boolean isRandom) throws Throwable {
     return modAddressBookFile(addressBook101, sourceAddressBook, isRandom);
   }
   
@@ -1671,7 +1671,7 @@ public class ProtectedEntityTests extends BaseClient {
    * @return modified version of the addressbook or node details file
    * @throws Throwable
    */
-  public ByteString modAddressBookFile(FileID fid, NodeAddressBook sourceAddressBook, boolean isRandom) throws Throwable {
+  public ByteString modAddressBookFile(FileID fid, AddressBook sourceAddressBook, boolean isRandom) throws Throwable {
     List<NodeAddress> addressList = new ArrayList<>(sourceAddressBook.getNodeAddressList());
     int index = addressList.size() - 1;
     if(isRandom) {
@@ -1679,7 +1679,7 @@ public class ProtectedEntityTests extends BaseClient {
 	}
     
     addressList.remove(index);
-    NodeAddressBook mod = NodeAddressBook.newBuilder().addAllNodeAddress(addressList).build();
+    AddressBook mod = AddressBook.newBuilder().addAllNodeAddress(addressList).build();
     
     return mod.toByteString();
   }

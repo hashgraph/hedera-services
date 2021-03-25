@@ -20,20 +20,16 @@ package com.hedera.services.state.initialization;
  * ‍
  */
 
-import static com.swirlds.common.Address.ipString;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ClientNodeAddress;
-import com.hederahashgraph.api.proto.java.ClientNodeAddressBook;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -41,15 +37,11 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.NodeEndpoint;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +54,18 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 
-import static org.mockito.BDDMockito.*;
+import static com.swirlds.common.Address.ipString;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import com.swirlds.common.AddressBook;
 
 class HfsSystemFilesManagerTest {
 	String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
@@ -456,8 +459,8 @@ class HfsSystemFilesManagerTest {
 				.build();
 	}
 
-	private NodeAddressBook legacyBookConstruction(AddressBook fromBook) {
-		NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+	private com.hederahashgraph.api.proto.java.AddressBook legacyBookConstruction(AddressBook fromBook) {
+		com.hederahashgraph.api.proto.java.AddressBook.Builder builder = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
 		for (int i = 0; i < fromBook.getSize(); i++) {
 			var address = fromBook.getAddress(i);
 			PublicKey publicKey = address.getSigPublicKey();
@@ -483,8 +486,8 @@ class HfsSystemFilesManagerTest {
 		return builder.build();
 	}
 
-	private NodeAddressBook legacyNodeDetailsConstruction(AddressBook fromBook) {
-		NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+	private com.hederahashgraph.api.proto.java.AddressBook legacyNodeDetailsConstruction(AddressBook fromBook) {
+		com.hederahashgraph.api.proto.java.AddressBook.Builder builder = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
 		for (int i = 0; i < fromBook.getSize(); i++) {
 			var address = fromBook.getAddress(i);
 			PublicKey publicKey = address.getSigPublicKey();
