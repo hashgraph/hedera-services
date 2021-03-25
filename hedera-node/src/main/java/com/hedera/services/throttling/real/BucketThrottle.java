@@ -33,17 +33,19 @@ package com.hedera.services.throttling.real;
 public class BucketThrottle {
 	private static final int DEFAULT_BURST_PERIOD = 1;
 
+	public static long capacityUnitsPerTxn() {
+		return CAPACITY_UNITS_PER_TXN;
+	}
+
 	static final long MTPS_PER_TPS = 1_000L;
 	static final long NTPS_PER_MTPS = 1_000_000L;
 	static final long CAPACITY_UNITS_PER_NT = 1_000L;
 	static final long CAPACITY_UNITS_PER_TXN = 1_000_000_000_000L;
 
-	public static long capacityUnitsPerTxn() {
-		return CAPACITY_UNITS_PER_TXN;
-	}
-
 	private final long mtps;
 	private final DiscreteLeakyBucket bucket;
+
+	private long lastAllowedUnits = 0L;
 
 	public static BucketThrottle withTps(int tps) {
 		return new BucketThrottle(tps * MTPS_PER_TPS, DEFAULT_BURST_PERIOD);
@@ -80,7 +82,12 @@ public class BucketThrottle {
 		}
 
 		bucket.useCapacity(requiredUnits);
+		lastAllowedUnits = requiredUnits;
 		return true;
+	}
+
+	public void reclaimLastAllowedUse() {
+		bucket.leak(lastAllowedUnits);
 	}
 
 	DiscreteLeakyBucket bucket() {

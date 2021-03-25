@@ -112,7 +112,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 
 		var mutableCopy = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo.copy(), midnightRates.copy());
-		var activeThrottles = throttling.activeThrottles();
+		var activeThrottles = throttling.allActiveThrottles();
 		int n = activeThrottles.size();
 		if (n > 0) {
 			throttleUsages = new ArrayList<>();

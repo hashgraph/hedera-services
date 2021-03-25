@@ -30,16 +30,11 @@ import java.util.Map;
 public interface FunctionalityThrottling {
 	boolean shouldThrottle(HederaFunctionality function);
 
-	default List<PretendDetThrottle.StateSnapshot> throttleStatesFor(HederaFunctionality function) {
+	default List<DeterministicThrottle.UsageSnapshot> currentUsageFor(HederaFunctionality function) {
 		throw new AssertionError("Not implemented!");
 	}
 
-	/* The key will be a name given in the system throttles file 0.0.123 */
-	default Map<String, PretendDetThrottle> currentThrottles() {
-		throw new AssertionError("Not implemented!");
-	}
-
-	default List<DeterministicThrottle> activeThrottles() {
+	default List<DeterministicThrottle> allActiveThrottles() {
 		throw new AssertionError("Not implemented!");
 	}
 }

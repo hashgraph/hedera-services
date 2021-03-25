@@ -54,6 +54,10 @@ public class DeterministicThrottle {
 		return decision;
 	}
 
+	public void reclaimLastAllowedUse() {
+		delegate.reclaimLastAllowedUse();
+	}
+
 	public UsageSnapshot usageSnapshot() {
 		var bucket = delegate.bucket();
 		return new UsageSnapshot(bucket.capacityUsed(), bucket.totalCapacity(), lastDecisionTime);

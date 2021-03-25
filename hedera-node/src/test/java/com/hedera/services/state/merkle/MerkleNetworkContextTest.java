@@ -24,12 +24,10 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.throttling.PretendDetThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.real.DeterministicThrottle;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,9 +37,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -98,7 +94,7 @@ class MerkleNetworkContextTest {
 		// and:
 		var active = activeThrottles();
 
-		given(throttling.activeThrottles()).willReturn(active);
+		given(throttling.allActiveThrottles()).willReturn(active);
 
 		// when:
 		subject.syncWithThrottles(throttling);
@@ -198,7 +194,7 @@ class MerkleNetworkContextTest {
 		// and:
 		var active = activeThrottles();
 
-		given(throttling.activeThrottles()).willReturn(active);
+		given(throttling.allActiveThrottles()).willReturn(active);
 
 		// when:
 		subject.syncWithThrottles(throttling);

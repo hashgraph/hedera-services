@@ -1,7 +1,7 @@
 package com.hedera.services.fees;
 
-import com.hedera.services.throttling.PretendDetThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.real.DeterministicThrottle;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
@@ -34,14 +34,14 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	 */
 	public void updateMultiplier() {
 		multiplier = DEFAULT_MULTIPLIER;
-		var throttleStates = throttling.throttleStatesFor(CryptoTransfer);
+		var throttleStates = throttling.currentUsageFor(CryptoTransfer);
 		for (var throttleState : throttleStates) {
 			multiplier = Math.max(multiplier, multiplierGiven(throttleState));
 		}
 	}
 
-	private long multiplierGiven(PretendDetThrottle.StateSnapshot throttleState) {
-		long wholePercentUsed = (throttleState.getUsed() * PERCENT_FOR_FULL_CAPACITY) / throttleState.getCapacity();
+	private long multiplierGiven(DeterministicThrottle.UsageSnapshot usageSnapshot) {
+		int wholePercentUsed = (int)((usageSnapshot.used() * PERCENT_FOR_FULL_CAPACITY) / usageSnapshot.capacity());
 		if (wholePercentUsed < 90) {
 			return 1L;
 		} else if (wholePercentUsed < 95) {
