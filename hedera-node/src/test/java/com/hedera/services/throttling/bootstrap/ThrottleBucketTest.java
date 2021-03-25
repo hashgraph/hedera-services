@@ -39,6 +39,24 @@ class ThrottleBucketTest {
 	}
 
 	@Test
+	void failsWhenConstructingThrottlesWithZeroOpsPerSecForAGroup() {
+		// setup:
+		int n = 1;
+		var defs = loadPojoDefs("bootstrap/undersupplied-throttles.json");
+		// and:
+		var subject = defs.getBuckets().get(0);
+
+		try {
+			subject.asThrottleMapping(n);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		// expect:
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(n));
+	}
+
+	@Test
 	void constructsExpectedABucketMappingForGlobalThrottle() {
 		// setup:
 		var defs = loadPojoDefs("bootstrap/throttles.json");

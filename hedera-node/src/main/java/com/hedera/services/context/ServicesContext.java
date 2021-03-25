@@ -109,6 +109,7 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.ConfigListUtils;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
+import com.hedera.services.files.interceptors.ThrottleDefsManager;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
@@ -231,8 +232,12 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.BucketThrottling;
+import com.hedera.services.throttling.DeterministicThrottling;
+import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
+import com.hedera.services.throttling.bootstrap.ThrottleDefinitions;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -481,6 +486,7 @@ public class ServicesContext {
 	private Supplier<StateView> stateViews;
 	private FeeSchedulesManager feeSchedulesManager;
 	private RecordStreamManager recordStreamManager;
+	private ThrottleDefsManager throttleDefsManager;
 	private Map<String, byte[]> blobStore;
 	private Map<EntityId, Long> entityExpiries;
 	private FeeMultiplierSource feeMultiplierSource;
@@ -501,6 +507,8 @@ public class ServicesContext {
 	private CharacteristicsFactory characteristics;
 	private AccountRecordsHistorian recordsHistorian;
 	private GlobalDynamicProperties globalDynamicProperties;
+	private FunctionalityThrottling hapiThrottling;
+	private FunctionalityThrottling handleThrottling;
 	private AwareNodeDiligenceScreen nodeDiligenceScreen;
 	private InHandleActivationHelper activationHelper;
 	private PlatformSubmissionManager submissionManager;
@@ -603,10 +611,23 @@ public class ServicesContext {
 
 	public MiscSpeedometers speedometers() {
 		if (speedometers == null) {
-			speedometers = new MiscSpeedometers(new SpeedometerFactory() {
-			}, nodeLocalProperties());
+			speedometers = new MiscSpeedometers(new SpeedometerFactory() { }, nodeLocalProperties());
 		}
 		return speedometers;
+	}
+
+	public FunctionalityThrottling hapiThrottling() {
+		if (hapiThrottling == null) {
+			hapiThrottling = new HapiThrottling(this::addressBook);
+		}
+		return hapiThrottling;
+	}
+
+	public FunctionalityThrottling handleThrottling() {
+		if (handleThrottling == null) {
+			handleThrottling = new DeterministicThrottling(() -> 1);
+		}
+		return handleThrottling;
 	}
 
 	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
@@ -1114,6 +1135,7 @@ public class ServicesContext {
 			hfs.register(exchangeRatesManager());
 			hfs.register(apiPermissionsReloading());
 			hfs.register(applicationPropertiesReloading());
+			hfs.register(throttleDefsManager());
 		}
 		return hfs;
 	}
@@ -1463,6 +1485,20 @@ public class ServicesContext {
 		}
 	}
 
+	public ThrottleDefsManager throttleDefsManager() {
+		if (throttleDefsManager == null) {
+			throttleDefsManager = new ThrottleDefsManager(
+					fileNums(),
+					this::addressBook,
+					proto -> {
+						var defs = ThrottleDefinitions.fromProto(proto);
+						hapiThrottling().rebuildFor(defs);
+						handleThrottling().rebuildFor(defs);
+					});
+		}
+		return throttleDefsManager;
+	}
+
 	public RecordStreamManager recordStreamManager() {
 		return recordStreamManager;
 	}
@@ -1649,7 +1685,11 @@ public class ServicesContext {
 							midnightRates().replaceWith(rates);
 						}
 					},
-					throttles -> {},
+					throttles -> {
+						var defs = ThrottleDefinitions.fromProto(throttles);
+						hapiThrottling().rebuildFor(defs);
+						handleThrottling().rebuildFor(defs);
+					},
 					schedules -> fees().init(),
 					config -> {
 						((StandardizedPropertySources) propertySources()).reloadFrom(config);

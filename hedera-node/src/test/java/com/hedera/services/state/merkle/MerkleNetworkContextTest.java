@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.booleanThat;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
@@ -113,6 +113,51 @@ class MerkleNetworkContextTest {
 
 		// and:
 		assertThrows(IllegalStateException.class, subject::copy);
+	}
+
+	@Test
+	void updatesUsagesFromSavedWhenPresent() {
+		// setup:
+		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
+		aThrottle.allow(1);
+		var subjectSnapshot = aThrottle.usageSnapshot();
+		aThrottle.allow(2);
+
+		throttling = mock(FunctionalityThrottling.class);
+		// and:
+		subject.syncWithThrottles(throttling);
+
+		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle));
+		// given:
+		subject.throttleUsages = List.of(subjectSnapshot);
+
+		// when:
+		subject.updateSyncedThrottlesFromSavedState();
+
+		// then:
+		assertEquals(subjectSnapshot.used(), aThrottle.usageSnapshot().used());
+		assertEquals(subjectSnapshot.capacity(), aThrottle.usageSnapshot().capacity());
+		assertEquals(subjectSnapshot.lastDecisionTime(), aThrottle.usageSnapshot().lastDecisionTime());
+	}
+
+	@Test
+	void failsFastIfThrottlingNotSynced() {
+		// expect:
+		assertThrows(IllegalStateException.class, subject::updateSyncedThrottlesFromSavedState);
+	}
+
+	@Test
+	void doesNothingIfNoSavedUsageSnapshots() {
+		// setup:
+		throttling = mock(FunctionalityThrottling.class);
+		// and:
+		subject.syncWithThrottles(throttling);
+
+		// when:
+		subject.updateSyncedThrottlesFromSavedState();
+
+		// then:
+		verify(throttling, never()).allActiveThrottles();
 	}
 
 	@Test

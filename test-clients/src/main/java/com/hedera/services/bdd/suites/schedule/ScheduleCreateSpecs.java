@@ -209,7 +209,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		var scheduledTxn = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
 		return customHapiSpec("IntegrationBodyAndSignatoriesCreation").withProperties(
-				Map.of("nodes", "34.74.191.8")
+				Map.of("nodes", "35.196.138.70")
 		)
 				.given(
 						cryptoCreate("payingAccount"),

@@ -1,8 +1,10 @@
 package com.hedera.services.throttling.bootstrap;
 
+import com.hedera.services.throttling.ErrorCodeUtils;
 import com.hedera.services.throttling.real.BucketThrottle;
 import com.hedera.services.throttling.real.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -11,6 +13,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.hedera.services.throttling.ErrorCodeUtils.exceptionMsgFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_CAPACITY_OVERFLOW;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_HAS_NO_THROTTLE_GROUPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
 import static java.util.stream.Collectors.toList;
 
 public class ThrottleBucket {
@@ -66,16 +73,22 @@ public class ThrottleBucket {
 	 * Returns a deterministic throttle scoped to 1/nth of the nominal opsPerSec
 	 * in each throttle group; and a list that maps each relevant {@code HederaFunctionality}
 	 * to the number of logical operations it requires from the throttle.
+	 *
+	 * @throws IllegalStateException if this bucket was constructed with invalid throttle groups
 	 */
 	public Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> asThrottleMapping(int n) {
 		int numGroups = throttleGroups.size();
 		if (numGroups == 0) {
-			throw new IllegalStateException("Bucket " + name + " includes no throttle groups!");
+			throw new IllegalStateException(exceptionMsgFor(
+							BUCKET_HAS_NO_THROTTLE_GROUPS,
+					"Bucket " + name + " includes no throttle groups!"));
 		}
 
 		int logicalMtps = requiredLogicalMilliTpsToAccommodateAllGroups();
 		if (logicalMtps < 0) {
-			throw new IllegalStateException("Bucket " + name + " overflows with given throttle groups!");
+			throw new IllegalStateException(exceptionMsgFor(
+					BUCKET_CAPACITY_OVERFLOW,
+					"Bucket " + name + " overflows with given throttle groups!"));
 		}
 
 		var throttle = DeterministicThrottle.withMtpsAndBurstPeriod(logicalMtps / n, burstPeriod);
@@ -87,8 +100,9 @@ public class ThrottleBucket {
 			int opsReq = logicalMtps / throttleGroup.getMilliOpsPerSec();
 			long capacityReq = opsReq * BucketThrottle.capacityUnitsPerTxn();
 			if (capacityReq > totalCapacityUnits) {
-				throw new IllegalStateException(
-						"Bucket " + name + " contains an unsatisfiable opsPerSec with " + n + " nodes!");
+				throw new IllegalStateException(exceptionMsgFor(
+						NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
+						"Bucket " + name + " contains an unsatisfiable opsPerSec with " + n + " nodes!"));
 			}
 			var functions = throttleGroup.getOperations();
 			if (Collections.disjoint(seenSoFar, functions)) {
@@ -97,7 +111,9 @@ public class ThrottleBucket {
 				}
 				seenSoFar.addAll(functions);
 			} else {
-				throw new IllegalStateException("Bucket " + name + " repeats an operation!");
+				throw new IllegalStateException(exceptionMsgFor(
+						OPERATION_REPEATED_IN_BUCKET_GROUPS,
+						"Bucket " + name + " repeats an operation!"));
 			}
 		}
 

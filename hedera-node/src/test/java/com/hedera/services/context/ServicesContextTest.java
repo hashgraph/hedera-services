@@ -47,6 +47,7 @@ import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
+import com.hedera.services.files.interceptors.ThrottleDefsManager;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
@@ -121,6 +122,8 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.BucketThrottling;
+import com.hedera.services.throttling.DeterministicThrottling;
+import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
@@ -519,6 +522,9 @@ public class ServicesContextTest {
 		assertThat(ctx.characteristics(), instanceOf(CharacteristicsFactory.class));
 		assertThat(ctx.nodeDiligenceScreen(), instanceOf(AwareNodeDiligenceScreen.class));
 		assertThat(ctx.feeMultiplierSource(), instanceOf(TxnRateFeeMultiplierSource.class));
+		assertThat(ctx.hapiThrottling(), instanceOf(HapiThrottling.class));
+		assertThat(ctx.handleThrottling(), instanceOf(DeterministicThrottling.class));
+		assertThat(ctx.throttleDefsManager(), instanceOf(ThrottleDefsManager.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

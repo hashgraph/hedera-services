@@ -1,4 +1,18 @@
 networks:
+  devops:
+    bootstrap: 2
+    defaultNode: 3
+    ensureScenarioPayerHbars: 10000
+    nodes:
+    - {account: 3, ipv4Addr: 35.196.138.70}
+    scenarioPayer: 1043
+    scenarios:
+      sysFilesDown:
+        evalMode: snapshot
+        numsToFetch: [122]
+      sysFilesUp:
+        updates:
+        - {num: 122, payer: 2}
   largeperfnet:
     bootstrap: 2
     defaultNode: 3

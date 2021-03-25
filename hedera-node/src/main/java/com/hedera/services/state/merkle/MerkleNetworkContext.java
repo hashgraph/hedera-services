@@ -89,7 +89,18 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	 * throttles resulting from a {@code FileUpdate} to 0.0.123.
 	 */
 	public void updateSyncedThrottlesFromSavedState() {
-		throw new AssertionError("Not implemented!");
+		if (throttling == null) {
+			throw new IllegalStateException("Cannot update throttle snapshots, no throttles are synced!");
+		}
+		if (throttleUsages.isEmpty()) {
+			return;
+		}
+		var activeThrottles = throttling.allActiveThrottles();
+		for (int i = 0, n = throttleUsages.size(); i < n; i++) {
+			var savedUsageSnapshot = throttleUsages.get(i);
+			var throttle = activeThrottles.get(i);
+			throttle.resetUsageTo(savedUsageSnapshot);
+		}
 	}
 
 	public MerkleNetworkContext(

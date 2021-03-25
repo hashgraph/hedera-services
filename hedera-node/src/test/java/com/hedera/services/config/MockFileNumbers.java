@@ -20,7 +20,6 @@ package com.hedera.services.config;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.FileID;
 
 public class MockFileNumbers extends FileNumbers {
@@ -61,6 +60,11 @@ public class MockFileNumbers extends FileNumbers {
 	@Override
 	public long softwareUpdateZip() {
 		return 150;
+	}
+
+	@Override
+	public long throttleDefinitions() {
+		return 123;
 	}
 
 	@Override

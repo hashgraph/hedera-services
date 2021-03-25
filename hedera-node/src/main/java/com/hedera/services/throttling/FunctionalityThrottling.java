@@ -20,6 +20,7 @@ package com.hedera.services.throttling;
  * ‍
  */
 
+import com.hedera.services.throttling.bootstrap.ThrottleDefinitions;
 import com.hedera.services.throttling.real.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
@@ -36,5 +37,8 @@ public interface FunctionalityThrottling {
 
 	default List<DeterministicThrottle> allActiveThrottles() {
 		throw new AssertionError("Not implemented!");
+	}
+
+	default void rebuildFor(ThrottleDefinitions defs) {
 	}
 }
