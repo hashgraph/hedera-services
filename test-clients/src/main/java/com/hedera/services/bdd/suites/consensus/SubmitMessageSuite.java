@@ -77,10 +77,13 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				.when()
 				.then(
 						submitMessageTo((String) null)
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_TOPIC_ID),
 						submitMessageTo("1.2.3")
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_TOPIC_ID),
 						submitMessageTo(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_TOPIC_ID)
 				);
 	}
@@ -94,9 +97,11 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				.then(
 						submitMessageTo("testTopic")
                                 .clearMessage()
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_TOPIC_MESSAGE),
 						submitMessageTo("testTopic")
 								.message("")
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_TOPIC_MESSAGE)
 				);
 	}
@@ -107,6 +112,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 						newKeyNamed("submitKey"),
 						createTopic("testTopic")
 								.submitKeyName("submitKey")
+								.hasRetryPrecheckFrom(BUSY)
 				)
 				.when(
 						cryptoCreate("civilian")
@@ -115,6 +121,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 						submitMessageTo("testTopic")
 								.message("testmessage")
 								.payingWith("civilian")
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(SUCCESS)
 				);
 	}
@@ -131,6 +138,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 						submitMessageTo("testTopic")
 								.message("testmessage")
 								.payingWith("civilian")
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(SUCCESS),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
@@ -140,6 +148,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 						submitMessageTo("testTopic")
 								.message("testmessagetestmessagetestmessagetestmessage")
 								.payingWith("civilian")
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
@@ -158,10 +167,10 @@ public class SubmitMessageSuite extends HapiApiSuite {
 						getTopicInfo("testTopic").hasSeqNo(0),
 						submitMessageTo("testTopic")
 								.message("Hello world!")
+								.hasRetryPrecheckFrom(BUSY)
 				)
 				.then(
 						getTopicInfo("testTopic").hasSeqNo(1)
-
 				);
 	}
 
@@ -181,9 +190,11 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				.then(
 						submitMessageTo("testTopic")
 								.sigControl(forKey("testTopicSubmit", invalidSig))
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_SIGNATURE),
 						submitMessageTo("testTopic")
 								.sigControl(forKey("testTopicSubmit", validSig))
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(SUCCESS)
 				);
 	}
@@ -194,16 +205,19 @@ public class SubmitMessageSuite extends HapiApiSuite {
 		return defaultHapiSpec("messageSubmissionMultiple")
 				.given(
 						createTopic("testTopic")
+								.hasRetryPrecheckFrom(BUSY)
 				)
 				.when(
 						inParallel(
 								asOpArray(numMessages, i ->
 										submitMessageTo("testTopic")
 												.message("message")
+												.hasRetryPrecheckFrom(BUSY)
 								)
 						)
 				)
 				.then(
+						sleepFor(1000),
 						getTopicInfo("testTopic").hasSeqNo(numMessages)
 				);
 	}
@@ -217,12 +231,13 @@ public class SubmitMessageSuite extends HapiApiSuite {
 						newKeyNamed("submitKey"),
 						createTopic("testTopic")
 								.submitKeyName("submitKey")
+								.hasRetryPrecheckFrom(BUSY)
 				)
 				.when()
 				.then(
 						submitMessageTo("testTopic")
 								.message(new String(messageBytes))
-								.hasPrecheck(TRANSACTION_OVERSIZE)
+								.hasPrecheckFrom(TRANSACTION_OVERSIZE, BUSY)
 				);
 	}
 
@@ -231,18 +246,22 @@ public class SubmitMessageSuite extends HapiApiSuite {
 		Arrays.fill(messageBytes, (byte) 0b1);
 		return defaultHapiSpec("feeAsExpected")
 				.given(
-						cryptoCreate("payer"),
+						cryptoCreate("payer")
+								.hasRetryPrecheckFrom(BUSY),
 						createTopic("testTopic")
 								.submitKeyName("payer")
+								.hasRetryPrecheckFrom(BUSY)
 				)
 				.when(
 						submitMessageTo("testTopic")
 								.blankMemo()
 								.payingWith("payer")
 								.message(new String(messageBytes))
+								.hasRetryPrecheckFrom(BUSY)
 								.via("submitMessage")
 				)
 				.then(
+						sleepFor(1000),
 						validateChargedUsd("submitMessage", 0.0001)
 				);
 	}
@@ -265,6 +284,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				.when(
 						submitMessageTo(topic)
 								.message(message1)
+								.hasRetryPrecheckFrom(BUSY)
 								.via("submitMessage1")
 				)
 				.then(
@@ -272,6 +292,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.hasCorrectRunningHash(topic, message1),
 						submitMessageTo(topic)
 								.message(message2)
+								.hasRetryPrecheckFrom(BUSY)
 								.via("submitMessage2"),
 						getTxnRecord("submitMessage2")
 								.hasCorrectRunningHash(topic, message2),
@@ -279,11 +300,13 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.message(nonsense)
 								.via("nonsense")
 								.chunkInfo(3, 4)
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_CHUNK_NUMBER),
 						getTxnRecord("nonsense")
 								.hasCorrectRunningHash(topic, message2).logged(),
 						submitMessageTo(topic)
 								.message(message3)
+								.hasRetryPrecheckFrom(BUSY)
 								.via("submitMessage3"),
 						getTxnRecord("submitMessage3")
 								.hasCorrectRunningHash(topic, message3)
