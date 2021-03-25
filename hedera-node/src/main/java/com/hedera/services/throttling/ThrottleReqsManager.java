@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ThrottleReqsManager {
-	private boolean allPassed;
 	private final boolean[] passedReq;
 	private final List<Pair<DeterministicThrottle, Integer>> allReqs;
 
@@ -18,7 +17,7 @@ public class ThrottleReqsManager {
 	}
 
 	public boolean allReqsMetAt(Instant now) {
-		allPassed = true;
+		var allPassed = true;
 		for (int i = 0; i < passedReq.length; i++) {
 			var req = allReqs.get(i);
 			passedReq[i] = req.getLeft().allow(req.getRight(), now);

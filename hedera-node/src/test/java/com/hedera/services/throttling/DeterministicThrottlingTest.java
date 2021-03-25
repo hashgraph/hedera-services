@@ -1,0 +1,128 @@
+package com.hedera.services.throttling;
+
+import com.hedera.services.throttling.real.BucketThrottle;
+import com.hedera.services.throttling.real.DeterministicThrottle;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.EnumMap;
+import java.util.List;
+
+import static com.hedera.services.throttling.bootstrap.ThrottlesJsonToProtoSerde.loadPojoDefs;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+
+@ExtendWith(MockitoExtension.class)
+class DeterministicThrottlingTest {
+	int n = 2;
+	int aTps = 6, bTps = 12;
+	DeterministicThrottle a = DeterministicThrottle.withTps(aTps);
+	DeterministicThrottle b = DeterministicThrottle.withTps(bTps);
+	Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
+
+	DeterministicThrottling subject;
+
+	@Mock
+	ThrottleReqsManager manager;
+
+	@BeforeEach
+	void setUp() {
+		subject = new DeterministicThrottling(() -> n);
+	}
+
+	@Test
+	void managerBehavesAsExpectedForMultiBucketOp() {
+		// setup:
+		var defs = loadPojoDefs("bootstrap/throttles.json");
+
+		// when:
+		subject.rebuildFor(defs);
+		// and:
+		var ans = subject.shouldThrottle(ContractCall, consensusNow);
+		var throttlesNow = subject.currentUsageFor(ContractCall);
+		// and:
+		var aNow = throttlesNow.get(0);
+		var bNow = throttlesNow.get(1);
+
+		// then:
+		assertFalse(ans);
+		assertEquals( 2500 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+		assertEquals( BucketThrottle.capacityUnitsPerTxn(), bNow.used());
+	}
+
+	@Test
+	void constructsExpectedBucketsFromTestResource() {
+		// setup:
+		var defs = loadPojoDefs("bootstrap/throttles.json");
+		// and:
+		var expected = List.of(
+				DeterministicThrottle.withMtpsAndBurstPeriod(15_000_000, 2),
+				DeterministicThrottle.withMtpsAndBurstPeriod(5_000, 2),
+				DeterministicThrottle.withMtpsAndBurstPeriod(50_000, 3),
+				DeterministicThrottle.withMtpsAndBurstPeriod(500_000_000, 4));
+
+		// when:
+		subject.rebuildFor(defs);
+		// and:
+		var rebuilt = subject.allActiveThrottles();
+
+		// then:
+		assertEquals(expected, rebuilt);
+	}
+
+	@Test
+	void returnsExpectedSnapshots() {
+		// setup:
+		subject.functionReqs = reqsManager();
+		// and:
+		var expected = List.of(a.usageSnapshot(), b.usageSnapshot());
+
+		given(manager.currentUsage()).willReturn(expected);
+
+		// when:
+		var actual = subject.currentUsageFor(CryptoTransfer);
+
+		// then:
+		assertSame(expected, actual);
+	}
+
+	@Test
+	public void throwsIseIfNoThrottle() {
+		// expect:
+		assertThrows(IllegalStateException.class, () -> subject.shouldThrottle(ContractCall, consensusNow));
+		assertThrows(IllegalStateException.class, () -> subject.currentUsageFor(ContractCall));
+	}
+
+	@Test
+	public void shouldAllowWithEnoughCapacity() {
+		// setup:
+		subject.functionReqs = reqsManager();
+
+		given(manager.allReqsMetAt(consensusNow)).willReturn(true);
+
+		// then:
+		assertFalse(subject.shouldThrottle(CryptoTransfer, consensusNow));
+	}
+
+	@Test
+	void requiresExplicitTimestamp() {
+		// expect:
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottle(CryptoTransfer));
+	}
+
+	private EnumMap<HederaFunctionality, ThrottleReqsManager> reqsManager() {
+		EnumMap<HederaFunctionality, ThrottleReqsManager> opsManagers = new EnumMap<>(HederaFunctionality.class);
+		opsManagers.put(CryptoTransfer, manager);
+		return opsManagers;
+	}
+}
