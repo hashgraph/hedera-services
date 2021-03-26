@@ -31,6 +31,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import java.io.IOException;
 
 import static com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo.nodeDetailsFrom;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes.protoBufVersion;
 
 public class NodesJsonToGrpcBytes implements SysFileSerde<String> {
 	private final ObjectMapper mapper = new ObjectMapper();

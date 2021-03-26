@@ -35,21 +35,21 @@ import static com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo.addr
 public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 	private final ObjectMapper mapper = new ObjectMapper();
 
-	enum ProtoBufVersion {
+	public enum ProtoBufVersion {
 		V0_12_0, V0_13_0
 	}
 
-	private static ProtoBufVersion protoBufVersion = ProtoBufVersion.V0_13_0;
+	public static ProtoBufVersion protoBufVersion = ProtoBufVersion.V0_13_0;
 
 	@Override
 	public String fromRawFile(byte[] bytes) {
 		try {
 			var pojoBook = new AddressBookPojo();
-			if(protoBufVersion == ProtoBufVersion.V0_12_0) {
+			//if(protoBufVersion == ProtoBufVersion.V0_12_0) {
 				pojoBook = addressBookFrom(AddressBook.parseFrom(bytes));
-			} else {
-				pojoBook = addressBookFrom(AddressBookForClients.parseFrom(bytes));
-			}
+//			} else {
+//				pojoBook = addressBookFrom(AddressBookForClients.parseFrom(bytes));
+//			}
 			return mapper
 					.writerWithDefaultPrettyPrinter()
 					.writeValueAsString(pojoBook);

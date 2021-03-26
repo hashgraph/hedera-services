@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -55,16 +55,6 @@ public class BookEntryPojo {
 
 	public static BookEntryPojo fromAddressBookEntry(NodeAddress address) {
 		var pojo = fromAnyEntry(address);
-		pojo.ip = new String(address.getIpAddress().toByteArray());
-		pojo.port = address.getPortno();
-		if (pojo.port == 0) {
-			pojo.port = null;
-		}
-		if (address.getNodeCertHash().isEmpty()) {
-			pojo.certHash = "<N/A>";
-		} else {
-			pojo.certHash = new String(address.getNodeCertHash().toByteArray());
-		}
 		return pojo;
 	}
 
@@ -84,16 +74,6 @@ public class BookEntryPojo {
 		if (pojo.rsaPubKey.length() == 0) {
 			pojo.rsaPubKey = null;
 		}
-		pojo.ip = new String(address.getIpAddress().toByteArray());
-		pojo.port = address.getPortno();
-		if (pojo.port == 0) {
-			pojo.port = null;
-		}
-		if (address.getNodeCertHash().isEmpty()) {
-			pojo.certHash = "<N/A>";
-		} else {
-			pojo.certHash = new String(address.getNodeCertHash().toByteArray());
-		}
 		return pojo;
 	}
 
@@ -102,6 +82,7 @@ public class BookEntryPojo {
 		for (String ip : ips) {
 			var address = NodeAddress.newBuilder();
 			addBasicBioTo(address);
+			buildEndPoints(address, ip, port);
 			address.setIpAddress(ByteString.copyFrom(ip.getBytes()));
 			address.setPortno(Optional.ofNullable(port).orElse(0));
 			if (certHash != null) {
@@ -117,12 +98,13 @@ public class BookEntryPojo {
 
 	public Stream<NodeAddressForClients> toAddressBookForClientEntries() {
 		List<NodeAddressForClients> reps = new ArrayList<>();
-		if(endPoints.isEmpty()) {
+		if (endPoints.isEmpty()) {
 			throw new IllegalStateException("invalid addressBook, no endpoints mentioned");
 		}
 
 		var address = NodeAddressForClients.newBuilder();
 		address.setNodeId(nodeId);
+
 		if (nodeAccount != null) {
 			address.setNodeAccountId(HapiPropertySource.asAccount(nodeAccount));
 		}
@@ -158,6 +140,9 @@ public class BookEntryPojo {
 	public Stream<NodeAddress> toNodeDetailsEntry() {
 		var address = NodeAddress.newBuilder();
 		addBasicBioTo(address);
+		buildEndPoints(address, ip, port);
+		address.setIpAddress(ByteString.copyFrom(ip.getBytes()));
+		address.setPortno(Optional.ofNullable(port).orElse(0));
 		if (rsaPubKey != null) {
 			if ("!".equals(rsaPubKey)) {
 				rsaPubKey = asHexEncodedDerPubKey(nodeId);
@@ -182,18 +167,22 @@ public class BookEntryPojo {
 		if (nodeAccount != null) {
 			builder.setNodeAccountId(HapiPropertySource.asAccount(nodeAccount));
 		}
-		builder.setIpAddress(ByteString.copyFrom(ip.getBytes()));
-		builder.setPortno(Optional.ofNullable(port).orElse(0));
-		buildEndPoints(builder);
 	}
 
-	private void buildEndPoints(NodeAddress.Builder builder){
-		for (String endPoint : endPoints) {
+	private void buildEndPoints(NodeAddress.Builder builder, String ip, Integer port) {
+		if (endPoints == null || endPoints.isEmpty()) {
 			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder();
-			String[] elements = endPoint.split(":");
-			nodeEndPoint.setIpAddress(elements[0].trim());
-			nodeEndPoint.setPort(elements[1].trim());
+			nodeEndPoint.setIpAddress(ip);
+			nodeEndPoint.setPort(String.valueOf(port));
 			builder.addNodeEndpoint(nodeEndPoint.build());
+		} else {
+			for (String endPoint : endPoints) {
+				NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder();
+				String[] elements = endPoint.split(":");
+				nodeEndPoint.setIpAddress(elements[0].trim());
+				nodeEndPoint.setPort(elements[1].trim());
+				builder.addNodeEndpoint(nodeEndPoint.build());
+			}
 		}
 	}
 
@@ -213,6 +202,17 @@ public class BookEntryPojo {
 					.stream()
 					.map(s -> s.getIpAddress() + " : " + s.getPort())
 					.collect(Collectors.toList());
+		}
+
+		entry.ip = new String(address.getIpAddress().toByteArray());
+		entry.port = address.getPortno();
+		if (entry.port == 0) {
+			entry.port = null;
+		}
+		if (address.getNodeCertHash().isEmpty()) {
+			entry.certHash = "<N/A>";
+		} else {
+			entry.certHash = new String(address.getNodeCertHash().toByteArray());
 		}
 		return entry;
 	}
