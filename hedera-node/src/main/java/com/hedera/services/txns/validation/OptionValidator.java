@@ -50,7 +50,6 @@ import java.util.List;
 public interface OptionValidator {
 	boolean hasGoodEncoding(Key key);
 	boolean isValidExpiry(Timestamp expiry);
-	boolean isValidEntityMemo(String memo);
 	boolean isValidTxnDuration(long duration);
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
@@ -58,6 +57,7 @@ public interface OptionValidator {
 	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
 	ResponseCodeEnum tokenSymbolCheck(String symbol);
 	ResponseCodeEnum tokenNameCheck(String name);
+	ResponseCodeEnum memoCheck(String cand);
 	ResponseCodeEnum isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists);
 
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {

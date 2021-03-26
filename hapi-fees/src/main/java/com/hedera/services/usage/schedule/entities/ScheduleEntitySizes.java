@@ -20,45 +20,18 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hedera.services.usage.SigUsage;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum ScheduleEntitySizes {
 	SCHEDULE_ENTITY_SIZES;
 
-	/* { expiry } */
-	static int NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
-	/* { payer, schedulingAccount } */
-	static int NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 2;
-	/* { schedulingTXValidStart } */
-	static int NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION = 1;
-
-	public int fixedBytesInScheduleRepr() {
-		return NUM_LONG_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * LONG_SIZE
-				+ NUM_ENTITY_ID_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ NUM_RICH_INSTANT_FIELDS_IN_BASE_SCHEDULE_REPRESENTATION * BASIC_RICH_INSTANT_SIZE;
+	public int bytesUsedForSigningKeys(int n) {
+		return n * KEY_SIZE;
 	}
 
-	public int bytesInBaseReprGiven(byte[] transactionBody, ByteString memo) {
-		return fixedBytesInScheduleRepr() + transactionBody.length + memo.size();
-	}
-
-	/**
-	 * Signature map is not stored in state, we only need it for bpt
-	 */
-	public int bptScheduleReprGiven(SignatureMap sigMap) {
-		return sigMap.toByteArray().length;
-	}
-
-	/**
-	 * For a given Scheduled Entity, a set of simple JKEYs are stored
-	 */
-	public int sigBytesInScheduleReprGiven(SignatureMap sigMap) {
-		return sigMap.getSigPairCount() * KEY_SIZE;
+	public int estimatedScheduleSigs(SigUsage sigUsage) {
+		return Math.max(sigUsage.numSigs() - sigUsage.numPayerKeys(), 1);
 	}
 }

@@ -133,8 +133,9 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		if (!op.hasMemo()) {
 			return true;
 		}
-		if (!validator.isValidEntityMemo(op.getMemo().getValue())) {
-			transactionContext.setStatus(MEMO_TOO_LONG);
+		var memoValidity = validator.memoCheck(op.getMemo().getValue());
+		if (memoValidity != OK) {
+			transactionContext.setStatus(memoValidity);
 			return false;
 		}
 		return true;

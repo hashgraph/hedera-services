@@ -21,22 +21,29 @@ package com.hedera.services.bdd.spec.persistence;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
-import static com.hedera.services.bdd.spec.persistence.PemKey.RegistryForms.under;
-import static com.hedera.services.bdd.spec.persistence.PemKey.submitKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.under;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.adminKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.submitKeyFor;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 
 public class Topic {
-	private PemKey adminKey = UNUSED_KEY;
-	private PemKey submitKey = UNUSED_KEY;
+	private static final String UNUSED_ACCOUNT = null;
+
+	private String autoRenewAccount = UNUSED_ACCOUNT;
+	private SpecKey adminKey = UNUSED_KEY;
+	private SpecKey submitKey = UNUSED_KEY;
 
 	public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
 		if (adminKey != UNUSED_KEY) {
-			adminKey.registerWith(spec, under(name));
+			adminKey.registerWith(spec, under(adminKeyFor(name)));
 		}
 		if (submitKey != UNUSED_KEY) {
 			submitKey.registerWith(spec, under(submitKeyFor(name)));
@@ -46,33 +53,48 @@ public class Topic {
 		});
 	}
 
-	public HapiSpecOperation createOp(String name) {
+	public HapiQueryOp<?> existenceCheck(String name) {
+		return getTopicInfo(name);
+	}
+
+	HapiTxnOp<HapiTopicCreate> createOp(String name) {
 		var op = createTopic(name)
 				.advertisingCreation();
 
 		if (adminKey != UNUSED_KEY) {
-			op.adminKeyName(name);
+			op.adminKeyName(adminKeyFor(name));
 		}
 		if (submitKey != UNUSED_KEY) {
 			op.submitKeyName(submitKeyFor(name));
+		}
+		if (autoRenewAccount != UNUSED_ACCOUNT) {
+			op.autoRenewAccountId(autoRenewAccount);
 		}
 
 		return op;
 	}
 
-	public PemKey getAdminKey() {
+	public SpecKey getAdminKey() {
 		return adminKey;
 	}
 
-	public void setAdminKey(PemKey adminKey) {
+	public void setAdminKey(SpecKey adminKey) {
 		this.adminKey = adminKey;
 	}
 
-	public PemKey getSubmitKey() {
+	public SpecKey getSubmitKey() {
 		return submitKey;
 	}
 
-	public void setSubmitKey(PemKey submitKey) {
+	public void setSubmitKey(SpecKey submitKey) {
 		this.submitKey = submitKey;
+	}
+
+	public String getAutoRenewAccount() {
+		return autoRenewAccount;
+	}
+
+	public void setAutoRenewAccount(String autoRenewAccount) {
+		this.autoRenewAccount = autoRenewAccount;
 	}
 }

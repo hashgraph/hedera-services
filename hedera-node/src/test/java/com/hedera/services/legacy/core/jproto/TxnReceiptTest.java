@@ -59,7 +59,6 @@ public class TxnReceiptTest {
   final TransactionID scheduledTxnId = TransactionID.newBuilder()
 		  .setScheduled(true)
           .setAccountID(IdUtils.asAccount("0.0.2"))
-          .setNonce(ByteString.copyFromUtf8("Something something something"))
           .build();
 
   DomainSerdes serdes;

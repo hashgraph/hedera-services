@@ -103,10 +103,11 @@ authorized payer. Since `0.10.0` it has been possible to, for example, update `0
 The next class of privileges apply to certain `CryptoUpdate` and `FileUpdate`/`FileAppend`
 operations whose target is a system account or file. These privileges waive the normal 
 requirement that the key associated to an entity sign any transaction that updates it.
-The network grants these privileges so the admin accounts can never be "locked 
-out" of performing their system roles. For example, even if we lose the key to the exchange 
-rates file, the exchange rates admin can still issue a `FileUpdate` transaction to change 
-this file.
+When the system entity's key is being updated, they _also_ waive the requirement that the 
+entity's new key sign the update transaction.The network grants these privileges so the 
+admin accounts can never be "locked out" of performing their system roles. For example, 
+even if we lose the key to the exchange rates file, the exchange rates admin can still 
+issue a `FileUpdate` transaction to change this file.
 
 The waived signature privileges for `FileUpdate` and `FileAppend` are identical to 
 the corresponding authorization privileges in the tables above. The waived signature

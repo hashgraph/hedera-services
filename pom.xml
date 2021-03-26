@@ -21,45 +21,51 @@
     <url>https://github.com/hashgraph/hedera-services</url>
     <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
     <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
-    <tag>release/0.13</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <developers>
     <developer>
-      <name>Anirudh Ghanta</name>
-      <email>Anirudh.Ghanta@hedera.com</email>
+      <name>Abhishek Pandey</name>
+      <email>abhishek.pandey@hedera.com</email>
       <organization>Hedera Hashgraph, LLC</organization>
-      <organizationUrl>https://hedera.com</organizationUrl>
+      <organizationUrl>https://www.hedera.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Anirudh Ghanta</name>
+      <email>anirudh.ghanta@hedera.com</email>
+      <organization>Hedera Hashgraph, LLC</organization>
+      <organizationUrl>https://www.hedera.com</organizationUrl>
     </developer>
     <developer>
       <name>Cesar Vazquez</name>
       <email>cesarvazquez@swirlds.com</email>
-      <organization>Swirlds, Inc</organization>
+      <organization>Swirlds, Inc.</organization>
       <organizationUrl>https://www.swirlds.com</organizationUrl>
     </developer>
     <developer>
       <name>Jeffrey Tang</name>
       <email>jeffrey@swirlds.com</email>
-      <organization>Swirlds, Inc</organization>
+      <organization>Swirlds, Inc.</organization>
       <organizationUrl>https://www.swirlds.com</organizationUrl>
     </developer>
     <developer>
       <name>Leo Jiang</name>
-      <email>Leo.Jiang@hedera.com</email>
+      <email>leo.jiang@hedera.com</email>
       <organization>Hedera Hashgraph, LLC</organization>
-      <organizationUrl>https://hedera.com</organizationUrl>
+      <organizationUrl>https://www.hedera.com</organizationUrl>
     </developer>
     <developer>
       <name>Michael Tinker</name>
       <email>michael.tinker@hedera.com</email>
       <organization>Hedera Hashgraph, LLC</organization>
-      <organizationUrl>https://hedera.com</organizationUrl>
+      <organizationUrl>https://www.hedera.com</organizationUrl>
     </developer>
     <developer>
       <name>Neeharika Sompalli</name>
-      <email>Neeharika.Sompalli@hedera.com</email>
+      <email>neeharika.sompalli@hedera.com</email>
       <organization>Hedera Hashgraph, LLC</organization>
-      <organizationUrl>https://hedera.com</organizationUrl>
+      <organizationUrl>https://www.hedera.com</organizationUrl>
     </developer>
     <developer>
       <name>Nosh Mody</name>
@@ -68,16 +74,16 @@
       <organizationUrl>https://www.swirlds.com</organizationUrl>
     </developer>
     <developer>
-      <name>Qian Qu</name>
-      <email>qianqu@swirlds.com</email>
+      <name>Qian Qiu</name>
+      <email>qianqiu@swirlds.com</email>
       <organization>Swirlds, Inc.</organization>
       <organizationUrl>https://www.swirlds.com</organizationUrl>
     </developer>
     <developer>
       <name>Quan Nguyen</name>
-      <email>quannguyen@swirlds.com</email>
-      <organization>Swirlds, Inc.</organization>
-      <organizationUrl>https://www.swirlds.com</organizationUrl>
+      <email>quan.nguyen@hedera.com</email>
+      <organization>Hedera Hashgraph, LLC</organization>
+      <organizationUrl>https://www.hedera.com</organizationUrl>
     </developer>
   </developers>
 
@@ -153,7 +159,7 @@
     <grpc.version>1.33.0</grpc.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-    <hapi-proto.version>0.13.0-alpha.1</hapi-proto.version>
+    <hapi-proto.version>0.13.0-alpha.2-SNAPSHOT</hapi-proto.version>
     <log4j.version>2.13.2</log4j.version>
     <netty.version>4.1.51.Final</netty.version>
     <!-- Test dependency properties -->

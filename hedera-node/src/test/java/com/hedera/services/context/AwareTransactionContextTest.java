@@ -81,7 +81,6 @@ import static org.mockito.BDDMockito.verify;
 public class AwareTransactionContextTest {
 	final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
-			.setNonce(ByteString.copyFromUtf8("Something something something"))
 			.build();
 	private long fee = 123L;
 	private long memberId = 3;

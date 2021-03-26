@@ -34,6 +34,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -74,14 +75,13 @@ import static java.util.stream.Collectors.toList;
 public abstract class HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
 
-	private static final byte[] NO_NONCE = null;
 	protected static final FileOpsUsage fileOpsUsage = new FileOpsUsage();
 	protected static final CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
+	protected static final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
 	private Random r = new Random();
 
 	/* Note that an op may _be_ a txn; or just a query that submits a txn as payment. */
-	protected byte[] nonce = NO_NONCE;
 	protected String txnName = UUID.randomUUID().toString().substring(0, 8);
 	protected Transaction txnSubmitted;
 	protected TransactionRecord recordOfSubmission;
@@ -207,8 +207,10 @@ public abstract class HapiSpecOperation {
 				log.info("Node {} is unavailable as expected!", HapiPropertySource.asAccountString(node.get()));
 				return Optional.empty();
 			}
-			if (!loggingOff) {
-				log.warn(spec.logPrefix() + this + " failed ({})!", t.getMessage());
+			if (verboseLoggingOn) {
+				log.warn(spec.logPrefix() + this + " failed - {}", t);
+			} else if (!loggingOff) {
+				log.warn(spec.logPrefix() + this + " failed {}!", t.getMessage());
 			}
 			return Optional.of(t);
 		}
@@ -258,9 +260,6 @@ public abstract class HapiSpecOperation {
 					TransactionID id = spec.registry().getTxnId(name);
 					builder.setTransactionID(id);
 				});
-			}
-			if (nonce != NO_NONCE) {
-				builder.getTransactionIDBuilder().setNonce(ByteString.copyFrom(nonce));
 			}
 
 			if (omitNodeAccount) {

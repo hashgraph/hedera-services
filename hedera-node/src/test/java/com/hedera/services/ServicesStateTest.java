@@ -189,10 +189,9 @@ class ServicesStateTest {
 		given(book.copy()).willReturn(bookCopy);
 		given(book.getAddress(1)).willReturn(address);
 
-		FCMap<MerkleEntityId, MerkleSchedule> scheduledTxns = (FCMap<MerkleEntityId, MerkleSchedule>)mock(FCMap.class);
 		logic = mock(ProcessLogic.class);
 		ctx = mock(ServicesContext.class);
-		given(ctx.sigFactoryCreator()).willReturn(new SigFactoryCreator(() -> scheduledTxns));
+		given(ctx.sigFactoryCreator()).willReturn(new SigFactoryCreator());
 		given(ctx.id()).willReturn(self);
 		given(ctx.logic()).willReturn(logic);
 

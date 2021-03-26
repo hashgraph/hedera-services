@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,22 +34,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SplittableRandom;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.SEND_THRESHOLD;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static java.util.stream.Collectors.toList;
-import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.*;
 import static java.util.stream.Collectors.toSet;
 
 public class RandomTransfer implements OpProvider {
 	private static final Logger log = LogManager.getLogger(RandomTransfer.class);
 
-	private static final int NUM_INVOLVED_PARTIES = 2;
 	public static final int DEFAULT_NUM_STABLE_ACCOUNTS = 200;
 	public static final double DEFAULT_RECORD_PROBABILITY = 0.0;
 
@@ -89,14 +88,15 @@ public class RandomTransfer implements OpProvider {
 	@Override
 	public List<HapiSpecOperation> suggestedInitializers() {
 		return stableAccounts(numStableAccounts).stream()
-						.map(account ->
-								cryptoCreate(my(account))
-										.noLogging()
-										.balance(INITIAL_BALANCE)
-										.deferStatusResolution()
-										.payingWith(UNIQUE_PAYER_ACCOUNT)
-						)
-						.collect(toList());
+				.map(account ->
+						cryptoCreate(my(account))
+								.noLogging()
+								.balance(INITIAL_BALANCE)
+								.deferStatusResolution()
+								.payingWith(UNIQUE_PAYER_ACCOUNT)
+								.rechargeWindow(3)
+				)
+				.collect(toList());
 	}
 
 	@Override
@@ -112,7 +112,8 @@ public class RandomTransfer implements OpProvider {
 
 		HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromTo(from, to, amount))
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-				.hasKnownStatusFrom(permissibleOutcomes);
+				.hasKnownStatusFrom(permissibleOutcomes)
+				.payingWith(UNIQUE_PAYER_ACCOUNT);
 
 		return Optional.of(op);
 	}

@@ -44,6 +44,7 @@ import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
+import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
@@ -52,10 +53,10 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -86,6 +87,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -152,6 +154,10 @@ public class UtilVerbs {
 
 	public static SpecKeyFromMnemonic keyFromMnemonic(String name, String mnemonic) {
 		return new SpecKeyFromMnemonic(name, mnemonic);
+	}
+
+	public static HapiSpecOperation expectedEntitiesExist() {
+		return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
 	}
 
 	public static SpecKeyFromPem keyFromPem(String pemLoc) {
@@ -414,35 +420,53 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation makeFree(HederaFunctionality function) {
+		return reduceFeeFor(function, 0L, 0L, 0L);
+	}
+
+	public static HapiSpecOperation reduceFeeFor(HederaFunctionality function,
+			long tinyBarMaxNodeFee, long tinyBarMaxNetworkFee, long tinyBarMaxServiceFee) {
 		return withOpContext((spec, opLog) -> {
+			if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
+				opLog.info("Sleeping to wait for fee reduction...");
+				Thread.sleep(20000);
+				return;
+			}
+			opLog.info("Sleeping so not to spoil/fail the fee initializations on other clients...");
+			Thread.sleep(10000);
+			opLog.info("Reducing fee for {}...", function);
 			var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
 			allRunFor(spec, query);
 			byte[] rawSchedules =
 					query.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
-			var zeroTfs = zeroFor(function);
-			var schedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules);
-			var perturbedSchedules = CurrentAndNextFeeSchedule.newBuilder();
-			schedules.getCurrentFeeSchedule()
-					.getTransactionFeeScheduleList()
-					.stream()
-					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-					.forEach(perturbedSchedules.getCurrentFeeScheduleBuilder()::addTransactionFeeSchedule);
-			schedules.getNextFeeSchedule()
-					.getTransactionFeeScheduleList()
-					.stream()
-					.map(tfs -> tfs.getHederaFunctionality() != function ? tfs : zeroTfs)
-					.forEach(perturbedSchedules.getNextFeeScheduleBuilder()::addTransactionFeeSchedule);
-			perturbedSchedules.getCurrentFeeScheduleBuilder()
-					.setExpiryTime(schedules.getCurrentFeeSchedule().getExpiryTime());
-			perturbedSchedules.getNextFeeScheduleBuilder()
-					.setExpiryTime(schedules.getNextFeeSchedule().getExpiryTime());
+
+			// Convert from tinyBar to one-thousandth of a tinyCent, the unit of max field in FeeComponents
+			long centEquiv = spec.ratesProvider().rates().getCentEquiv();
+			long hbarEquiv = spec.ratesProvider().rates().getHbarEquiv();
+			long maxNodeFee = tinyBarMaxNodeFee * centEquiv * 1000L / hbarEquiv;
+			long maxNetworkFee = tinyBarMaxNetworkFee * centEquiv * 1000L / hbarEquiv;
+			long maxServiceFee = tinyBarMaxServiceFee * centEquiv * 1000L / hbarEquiv;
+
+			var perturbedSchedules = CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
+			reduceFeeComponentsFor(perturbedSchedules.getCurrentFeeScheduleBuilder(), function,
+					maxNodeFee, maxNetworkFee, maxServiceFee);
+			reduceFeeComponentsFor(perturbedSchedules.getNextFeeScheduleBuilder(), function,
+					maxNodeFee, maxNetworkFee, maxServiceFee);
 			var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
 			allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
 		});
 	}
 
-	private static TransactionFeeSchedule zeroFor(HederaFunctionality function) {
-		return TransactionFeeSchedule.newBuilder().setHederaFunctionality(function).build();
+	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
+			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
+		var feeData = feeSchedule.getTransactionFeeScheduleBuilderList()
+				.stream()
+				.filter(tfs -> tfs.getHederaFunctionality() == function)
+				.findAny()
+				.get()
+				.getFeeDataBuilder();
+		feeData.getNodedataBuilder().setMax(maxNodeFee);
+		feeData.getNetworkdataBuilder().setMax(maxNetworkFee);
+		feeData.getServicedataBuilder().setMax(maxServiceFee);
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
@@ -584,7 +608,7 @@ public class UtilVerbs {
 
 	public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
 		return assertionsHold((spec, assertLog) -> {
-			var subOp = getTxnRecord(txn);
+			var subOp = getTxnRecord(txn).logged();
 			allRunFor(spec, subOp);
 
 			var record = subOp.getResponseRecord();
@@ -595,12 +619,29 @@ public class UtilVerbs {
 					/ 100;
 			assertEquals(
 					String.format(
-							"%s fee more than %.2f percent different than expected!",
+							"%s fee (%s) more than %.2f percent different than expected!",
+							CryptoTransferSuite.sdec(actualUsdCharged, 4),
 							txn,
 							allowedPercentDiff),
 					expectedUsd,
 					actualUsdCharged,
 					(allowedPercentDiff / 100.0) * expectedUsd);
+		});
+	}
+
+	public static CustomSpecAssert getTransactionFee(String txn, StringBuilder feeTableBuilder, String operation) {
+		return assertionsHold((spec, asertLog) -> {
+			var subOp = getTxnRecord(txn);
+			allRunFor(spec, subOp);
+
+			var record = subOp.getResponseRecord();
+			double actualUsdCharged = (1.0 * record.getTransactionFee())
+					/ ONE_HBAR
+					/ record.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+					* record.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+					/ 100;
+
+			feeTableBuilder.append(String.format("%30s | %1.5f \t |\n", operation, actualUsdCharged));
 		});
 	}
 
@@ -612,14 +653,6 @@ public class UtilVerbs {
 						balanceSnapshot(
 								spec -> asAccountString(spec.registry().getAccountID(account)) + "Snapshot",
 								account).payingWith(EXCHANGE_RATE_CONTROL)
-				).toArray(n -> new HapiSpecOperation[n]));
-	}
-
-	public static HapiSpecOperation[] takeBalanceSnapshotsWithGenesis(String... entities) {
-		return HapiApiSuite.flattened(
-				Stream.of(entities).map(account ->
-						balanceSnapshot(
-								spec -> asAccountString(spec.registry().getAccountID(account)) + "Snapshot", account)
 				).toArray(n -> new HapiSpecOperation[n]));
 	}
 
@@ -730,44 +763,5 @@ public class UtilVerbs {
 	public static boolean isNotThrottleProp(Setting setting) {
 		var name = setting.getName();
 		return !name.startsWith("hapi.throttling");
-	}
-
-	public static HapiSpecOperation ensureIdempotentlyCreated(String txId, String otherTxId) {
-		return withOpContext((spec, opLog) -> {
-			var firstTx = getTxnRecord(txId);
-			var secondTx = getTxnRecord(otherTxId);
-			allRunFor(spec, firstTx, secondTx);
-			assertEquals(
-					firstTx.getResponseRecord().getReceipt().getScheduleID(),
-					secondTx.getResponseRecord().getReceipt().getScheduleID());
-		});
-	}
-
-	public static HapiSpecOperation ensureDifferentScheduledTXCreated(String txId, String otherTxId) {
-		return withOpContext((spec, opLog) -> {
-			var txRecord = getTxnRecord(txId);
-			var otherTxRecord = getTxnRecord(otherTxId);
-
-			allRunFor(spec, txRecord, otherTxRecord);
-
-			Assert.assertNotEquals(
-					"Schedule Ids should not be the same!",
-					txRecord.getResponseRecord().getReceipt().getScheduleID(),
-					otherTxRecord.getResponseRecord().getReceipt().getScheduleID());
-		});
-	}
-
-	public static HapiSpecOperation saveExpirations(String txId, String otherTxId, long afterConsensusTime) {
-		return withOpContext((spec, opLog) -> {
-			var txRecord = getTxnRecord(txId);
-			var otherTxRecord = getTxnRecord(otherTxId);
-
-			allRunFor(spec, txRecord, otherTxRecord);
-
-			var timestampFirst = txRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
-			var timestampSecond = otherTxRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
-			spec.registry().saveExpiry("first", timestampFirst + afterConsensusTime);
-			spec.registry().saveExpiry("second", timestampSecond + afterConsensusTime);
-		});
 	}
 }

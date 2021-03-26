@@ -27,7 +27,6 @@ import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -66,9 +65,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -86,8 +84,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			MODIFYING_IMMUTABLE_CONTRACT,
 			INVALID_CONTRACT_ID,
 			UNRESOLVABLE_REQUIRED_SIGNERS,
-			UNPARSEABLE_SCHEDULED_TRANSACTION,
-			UNSCHEDULABLE_TRANSACTION);
+			SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
 
 	private final ServicesTxnManager txnManager = new ServicesTxnManager(
 			this::processTxnInCtx,
@@ -227,7 +224,8 @@ public class AwareProcessLogic implements ProcessLogic {
 		var duplicity = (recentHistory == null)
 				? BELIEVED_UNIQUE
 				: recentHistory.currentDuplicityFor(ctx.txnCtx().submittingSwirldsMember());
-		if (nodeIgnoredDueDiligence(duplicity)) {
+
+		if (ctx.nodeDiligenceScreen().nodeIgnoredDueDiligence(duplicity)) {
 			ctx.txnChargingPolicy().applyForIgnoredDueDiligence(ctx.charging(), fee);
 			return;
 		}
@@ -286,49 +284,6 @@ public class AwareProcessLogic implements ProcessLogic {
 		} catch (Exception edgeCase) {
 			log.warn("Almost inconceivably, when testing payer sig activation:", edgeCase);
 		}
-		return false;
-	}
-
-	private boolean nodeIgnoredDueDiligence(DuplicateClassification duplicity) {
-		Instant consensusTime = ctx.txnCtx().consensusTime();
-		TxnAccessor accessor = ctx.txnCtx().accessor();
-
-		var swirldsMemberAccount = ctx.txnCtx().submittingNodeAccount();
-		var designatedNodeAccount = accessor.getTxn().getNodeAccountID();
-		boolean designatedNodeExists = ctx.backingAccounts().contains(designatedNodeAccount);
-		if (!designatedNodeExists || !swirldsMemberAccount.equals(designatedNodeAccount)) {
-			log.warn("Node {} (Member #{}) submitted a txn designated for {} node {} :: {}",
-					readableId(swirldsMemberAccount),
-					ctx.txnCtx().submittingSwirldsMember(),
-					designatedNodeExists ? "other" : "nonexistent",
-					readableId(designatedNodeAccount),
-					accessor.getSignedTxn4Log());
-			ctx.txnCtx().setStatus(INVALID_NODE_ACCOUNT);
-			return true;
-		}
-
-		if (!ctx.txnCtx().isPayerSigKnownActive()) {
-			ctx.txnCtx().setStatus(INVALID_PAYER_SIGNATURE);
-			return true;
-		}
-
-		if (duplicity == NODE_DUPLICATE) {
-			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
-			return true;
-		}
-
-		long txnDuration = accessor.getTxn().getTransactionValidDuration().getSeconds();
-		if (!ctx.validator().isValidTxnDuration(txnDuration)) {
-			ctx.txnCtx().setStatus(INVALID_TRANSACTION_DURATION);
-			return true;
-		}
-
-		var cronStatus = ctx.validator().chronologyStatus(accessor, consensusTime);
-		if (cronStatus != OK) {
-			ctx.txnCtx().setStatus(cronStatus);
-			return true;
-		}
-
 		return false;
 	}
 

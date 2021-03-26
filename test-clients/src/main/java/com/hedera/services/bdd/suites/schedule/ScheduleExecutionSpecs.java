@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.schedule;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -102,11 +101,13 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								"basicXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", transferAmount)
-								).signedBy()
-						).inheritingScheduledSigs().payingWith("payingAccount").via("createTx")
+								)
+						)
+								.payingWith("payingAccount")
+								.via("createTx")
 				).when(
 						scheduleSign("basicXfer")
-								.withSignatories("sender")
+								.alsoSigningWith("sender")
 								.via("signTx")
 				).then(
 						withOpContext((spec, opLog) -> {
@@ -129,10 +130,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							Assert.assertTrue("Transaction not scheduled!",
 									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
-
-							Assert.assertEquals("Wrong triggered transaction nonce!",
-									ByteString.EMPTY,
-									triggeredTx.getResponseRecord().getTransactionID().getNonce());
 
 							Assert.assertEquals("Wrong schedule ID!",
 									createTx.getResponseRecord().getReceipt().getScheduleID(),
@@ -159,8 +156,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								"basicXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", transferAmount)
-								).signedBy()
-						).inheritingScheduledSigs()
+								)
+						)
 								.payingWith("payingAccount")
 								.via("createTx"),
 						recordFeeAmount("createTx", "scheduleCreateFee")
@@ -175,7 +172,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 										}))),
 						getAccountBalance("payingAccount").hasTinyBars(noBalance),
 						scheduleSign("basicXfer")
-								.withSignatories("sender")
+								.alsoSigningWith("sender")
 								.hasKnownStatus(SUCCESS)
 				).then(
 						getAccountBalance("sender").hasTinyBars(transferAmount),
@@ -204,11 +201,13 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								"basicXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", transferAmount)
-								).signedBy()
-						).inheritingScheduledSigs().designatingPayer("payingAccount").via("createTx")
+								)
+						)
+								.designatingPayer("payingAccount")
+								.via("createTx")
 				).when(
 						scheduleSign("basicXfer")
-								.withSignatories("sender", "payingAccount")
+								.alsoSigningWith("sender", "payingAccount")
 								.via("signTx")
 								.hasKnownStatus(SUCCESS)
 				).then(
@@ -235,13 +234,13 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								"basicXfer",
 								cryptoTransfer(
 										tinyBarsFromTo("sender", "receiver", transferAmount)
-								).signedBy()
-						).inheritingScheduledSigs()
+								)
+						)
 								.designatingPayer("payingAccount")
 								.via("createTx")
 				).when(
 						scheduleSign("basicXfer")
-								.withSignatories("sender", "payingAccount")
+								.alsoSigningWith("sender", "payingAccount")
 								.via("signTx")
 								.hasKnownStatus(SUCCESS)
 				).then(
@@ -268,10 +267,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							Assert.assertTrue("Transaction not scheduled!",
 									triggeredTx.getResponseRecord().getTransactionID().getScheduled());
-
-							Assert.assertEquals("Wrong triggered transaction nonce!",
-									ByteString.EMPTY,
-									triggeredTx.getResponseRecord().getTransactionID().getNonce());
 
 							Assert.assertEquals("Wrong schedule ID!",
 									createTx.getResponseRecord().getReceipt().getScheduleID(),
@@ -302,9 +297,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 		boolean payerHasPaid = accountAmountList.stream().anyMatch(
 				a -> a.getAccountID().equals(payingAccountID) && a.getAmount() < 0);
-		boolean amountHasBeenTransfered = accountAmountList.contains(givingAmount) &&
+		boolean amountHasBeenTransferred = accountAmountList.contains(givingAmount) &&
 				accountAmountList.contains(receivingAmount);
 
-		return amountHasBeenTransfered && payerHasPaid;
+		return amountHasBeenTransferred && payerHasPaid;
 	}
 }

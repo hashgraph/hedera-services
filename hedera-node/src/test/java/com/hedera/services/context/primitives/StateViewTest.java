@@ -33,6 +33,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -49,18 +50,19 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -86,6 +88,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class StateViewTest {
+	Instant resolutionTime = Instant.ofEpochSecond(123L);
 	RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
 	long expiry = 2_000_000L;
 	byte[] data = "SOMETHING".getBytes();
@@ -107,6 +110,7 @@ class StateViewTest {
 	AccountID creatorAccountID = asAccount("3.5.7");
 	long autoRenewPeriod = 1_234_567;
 	String fileMemo = "Originally she thought";
+	String scheduleMemo = "For what but eye and ear";
 
 	FileGetInfoResponse.FileInfo expected;
 	FileGetInfoResponse.FileInfo expectedImmutable;
@@ -120,11 +124,7 @@ class StateViewTest {
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
 	TokenStore tokenStore;
 	ScheduleStore scheduleStore;
-	byte[] scheduleBody = TransactionBody.newBuilder()
-					.setTransactionID(TransactionID.newBuilder()
-							.setNonce(ByteString.copyFromUtf8("Surely this isn't taken!")))
-					.build()
-					.toByteArray();
+	TransactionBody parentScheduleCreate;
 
 	MerkleToken token;
 	MerkleSchedule schedule;
@@ -198,17 +198,19 @@ class StateViewTest {
 		given(tokenStore.get(tokenId)).willReturn(token);
 
 		scheduleStore = mock(ScheduleStore.class);
-		schedule = new MerkleSchedule(
-			scheduleBody,
-			EntityId.ofNullableAccountId(creatorAccountID),
-			now
-		);
-		schedule.setPayer(EntityId.ofNullableAccountId(payerAccountId));
-		schedule.setAdminKey(SCHEDULE_ADMIN_KT.asJKey());
-		schedule.setExpiry(expiry);
+		parentScheduleCreate =
+				scheduleCreateTxnWith(
+						SCHEDULE_ADMIN_KT.asKey(),
+						scheduleMemo,
+						payerAccountId,
+						creatorAccountID,
+						MiscUtils.asTimestamp(now.toJava())
+				);
+		schedule = MerkleSchedule.from(parentScheduleCreate.toByteArray(), expiry);
 		schedule.witnessValidEd25519Signature("firstPretendKey".getBytes());
 		schedule.witnessValidEd25519Signature("secondPretendKey".getBytes());
 		schedule.witnessValidEd25519Signature("thirdPretendKey".getBytes());
+
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
 		given(scheduleStore.get(scheduleId)).willReturn(schedule);
@@ -297,8 +299,12 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsScheduleInfo() {
+	public void getsScheduleInfoForDeleted() {
+		// setup:
+		var expectedScheduledTxn = parentScheduleCreate.getScheduleCreate().getScheduledTransactionBody();
+
 		// when:
+		schedule.markDeleted(resolutionTime);
 		var gotten = subject.infoForSchedule(scheduleId);
 		var info = gotten.get();
 
@@ -308,11 +314,26 @@ class StateViewTest {
 		assertEquals(schedule.payer().toGrpcAccountId(), info.getPayerAccountID());
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpirationTime());
 		var expectedSignatoryList = KeyList.newBuilder();
-		schedule.signatories().forEach(a -> expectedSignatoryList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
-		assertArrayEquals(expectedSignatoryList.build().getKeysList().toArray(), info.getSignatories().getKeysList().toArray());
+		schedule.signatories()
+				.forEach(a -> expectedSignatoryList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+		assertArrayEquals(
+				expectedSignatoryList.build().getKeysList().toArray(),
+				info.getSigners().getKeysList().toArray());
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
-		assertEquals(ByteString.copyFrom(schedule.transactionBody()), info.getTransactionBody());
+		assertEquals(expectedScheduledTxn, info.getScheduledTransactionBody());
 		assertEquals(schedule.scheduledTransactionId(), info.getScheduledTransactionID());
+		assertEquals(RichInstant.fromJava(resolutionTime).toGrpc(), info.getDeletionTime());
+	}
+
+	@Test
+	public void getsScheduleInfoForExecuted() {
+		// when:
+		schedule.markExecuted(resolutionTime);
+		var gotten = subject.infoForSchedule(scheduleId);
+		var info = gotten.get();
+
+		// then:
+		assertEquals(RichInstant.fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
 	}
 
 	@Test

@@ -131,8 +131,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {
 		CryptoUpdateTransactionBody op = cryptoUpdateTxn.getCryptoUpdateAccount();
 
-		if (op.hasMemo() && !validator.isValidEntityMemo(op.getMemo().getValue())) {
-			return MEMO_TOO_LONG;
+		var memoValidity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
+		if (memoValidity != OK) {
+			return memoValidity;
 		}
 
 		if (op.hasKey()) {

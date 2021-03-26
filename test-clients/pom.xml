@@ -153,6 +153,24 @@
             </configuration>
           </execution>
           <execution>
+            <id>yahcli-jar</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>yahcli</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifest>
+                  <mainClass>com.hedera.services.yahcli.Yahcli</mainClass>
+                </manifest>
+              </archive>
+              <descriptors>
+                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
             <id>puv-jar</id>
             <goals>
               <goal>single</goal>
@@ -251,11 +269,6 @@
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
       <version>${picocli.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.github.novacrypto</groupId>
-      <artifactId>BIP39</artifactId>
-      <version>${BIP39.version}</version>
     </dependency>
     <dependency>
       <groupId>net.i2p.crypto</groupId>

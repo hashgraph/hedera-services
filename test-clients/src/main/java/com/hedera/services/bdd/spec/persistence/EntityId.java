@@ -22,6 +22,9 @@ package com.hedera.services.bdd.spec.persistence;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
@@ -50,12 +53,24 @@ public class EntityId {
 		return HapiPropertySource.asAccount(asLiteral());
 	}
 
+	public ScheduleID asSchedule() {
+		return HapiPropertySource.asSchedule(asLiteral());
+	}
+
 	public TokenID asToken() {
 		return HapiPropertySource.asToken(asLiteral());
 	}
 
 	public TopicID asTopic() {
 		return HapiPropertySource.asTopic(asLiteral());
+	}
+
+	public FileID asFile() {
+		return HapiPropertySource.asFile(asLiteral());
+	}
+
+	public ContractID asContract() {
+		return HapiPropertySource.asContract(asLiteral());
 	}
 
 	private long shard = DEFAULT_SHARD;

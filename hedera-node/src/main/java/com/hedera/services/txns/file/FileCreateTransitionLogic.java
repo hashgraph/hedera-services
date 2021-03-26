@@ -119,8 +119,9 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	private ResponseCodeEnum validate(TransactionBody fileCreateTxn) {
 		var op = fileCreateTxn.getFileCreate();
 
-		if (!validator.isValidEntityMemo(op.getMemo())) {
-			return MEMO_TOO_LONG;
+		var memoValidity = validator.memoCheck(op.getMemo());
+		if (memoValidity != OK) {
+			return memoValidity;
 		}
 
 		if (!op.hasExpirationTime()) {

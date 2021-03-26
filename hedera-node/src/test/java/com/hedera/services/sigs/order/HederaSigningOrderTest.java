@@ -59,9 +59,7 @@ import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenario
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.*;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
 import static java.util.stream.Collectors.toList;
 import java.util.List;
 import java.util.Optional;
@@ -392,9 +390,24 @@ public class HederaSigningOrderTest {
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(
-				sanityRestored(summary.getOrderedKeys()),
-				contains(NEW_ACCOUNT_KT.asKey()));
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+		verify(updateSigReqs).test(txn);
+	}
+
+	@Test
+	public void getsCryptoUpdateProtectedSysAccountNewKey() throws Throwable {
+		// given:
+		@SuppressWarnings("unchecked")
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO, updateSigReqs);
+		// and:
+		given(updateSigReqs.test(txn)).willReturn(false);
+
+		// when:
+		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
 		verify(updateSigReqs).test(txn);
 	}
 
@@ -404,6 +417,23 @@ public class HederaSigningOrderTest {
 		@SuppressWarnings("unchecked")
 		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, updateSigReqs);
+		// and:
+		given(updateSigReqs.test(txn)).willReturn(false);
+
+		// when:
+		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
+		verify(updateSigReqs).test(txn);
+	}
+
+	@Test
+	public void getsCryptoUpdateProtectedSysAccountNoNewKey() throws Throwable {
+		// given:
+		@SuppressWarnings("unchecked")
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(false);
 
@@ -1669,45 +1699,6 @@ public class HederaSigningOrderTest {
 		assertTrue(summary.getOrderedKeys().isEmpty());
 		// and:
 		assertEquals(SignatureStatusCode.INVALID_AUTO_RENEW_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
-	}
-
-	@Test
-	public void getsNestedScheduleSign() throws Throwable {
-		// given:
-		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_SIGN);
-
-		// when:
-		var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(summary.hasErrorReport());
-		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
-	}
-
-	@Test
-	public void getsNestedScheduleCreates() throws Throwable {
-		// given:
-		setupFor(SCHEDULE_CREATE_NESTED_SCHEDULE_CREATE);
-
-		// when:
-		var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(summary.hasErrorReport());
-		assertEquals(UNSCHEDULABLE_TRANSACTION, summary.getErrorReport().getResponseCode());
-	}
-
-	@Test
-	public void getsScheduleCreateNonsense() throws Throwable {
-		// given:
-		setupFor(SCHEDULE_CREATE_NONSENSE);
-
-		// when:
-		var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(summary.hasErrorReport());
-		assertEquals(UNPARSEABLE_SCHEDULED_TRANSACTION, summary.getErrorReport().getResponseCode());
 	}
 
 	@Test

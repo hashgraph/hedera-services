@@ -1,0 +1,4 @@
+account:
+  balance: 99
+  key: {generateIfMissing: true, wordsLoc: receiver.words}
+  receiverSigRequired: true

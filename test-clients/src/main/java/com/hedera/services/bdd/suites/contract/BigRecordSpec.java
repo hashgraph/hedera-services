@@ -57,7 +57,7 @@ public class BigRecordSpec extends HapiApiSuite {
 
 		return defaultHapiSpec("BigRecord")
 				.given(
-						cryptoCreate("payer").balance( 10 * A_HUNDRED_HBARS),
+						cryptoCreate("payer").balance( 10 * ONE_HUNDRED_HBARS),
 						fileCreate("bytecode")
 								.path(ContractResources.BIG_BIG_BYTECODE_PATH),
 						contractCreate("bigBig")

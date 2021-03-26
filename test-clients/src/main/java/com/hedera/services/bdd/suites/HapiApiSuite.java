@@ -68,7 +68,8 @@ public abstract class HapiApiSuite {
 	}
 
 	public static final long ONE_HBAR = 100_000_000L;
-	public static final long A_HUNDRED_HBARS = 100 * ONE_HBAR;
+	public static final long ONE_HUNDRED_HBARS = 100 * ONE_HBAR;
+	public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	public static String TOKEN_TREASURY = "treasury";
 
@@ -88,6 +89,7 @@ public abstract class HapiApiSuite {
 
 	public static final Key EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 	public static final String NONSENSE_KEY = "Jabberwocky!";
+	public static final String ZERO_BYTE_MEMO = "\u0000kkkk";
 
 	public static final String NODE = HapiSpecSetup.getDefaultInstance().defaultNodeName();
 

@@ -161,6 +161,11 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
+	public int messageMaxBytesAllowed() {
+		return 1024;
+	}
+
+	@Override
 	public Set<HederaFunctionality> schedulingWhitelist() {
 		return Set.of(HederaFunctionality.CryptoCreate, HederaFunctionality.CryptoTransfer);
 	}

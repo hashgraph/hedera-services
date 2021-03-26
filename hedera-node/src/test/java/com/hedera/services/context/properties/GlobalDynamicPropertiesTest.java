@@ -89,6 +89,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(25, subject.minAutoRenewDuration());
 		assertEquals(26, subject.localCallEstRetBytes());
 		assertEquals(27, subject.scheduledTxExpiryTimeSecs());
+		assertEquals(28, subject.messageMaxBytesAllowed());
 		assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
 	}
 
@@ -127,6 +128,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(26, subject.minAutoRenewDuration());
 		assertEquals(27, subject.localCallEstRetBytes());
 		assertEquals(28, subject.scheduledTxExpiryTimeSecs());
+		assertEquals(29, subject.messageMaxBytesAllowed());
 		assertEquals(Set.of(HederaFunctionality.CryptoCreate), subject.schedulingWhitelist());
 	}
 
@@ -158,6 +160,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("ledger.autoRenewPeriod.minDuration")).willReturn(i + 24L);
 		given(properties.getIntProperty("contracts.localCall.estRetBytes")).willReturn(i + 25);
 		given(properties.getIntProperty("ledger.schedule.txExpiryTimeSecs")).willReturn(i + 26);
+		given(properties.getIntProperty("consensus.message.maxBytesAllowed")).willReturn(i + 27);
 		given(properties.getFunctionsProperty("scheduling.whitelist")).willReturn(i % 2 == 0
 				? Set.of(HederaFunctionality.CryptoCreate)
 				: Set.of(HederaFunctionality.CryptoTransfer));

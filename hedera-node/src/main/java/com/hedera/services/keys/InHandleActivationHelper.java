@@ -38,6 +38,16 @@ import java.util.function.Supplier;
 import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 
+/**
+ * Provides information about the Ed25519 keys that compose the Hedera keys
+ * linked to the active transaction (and the schedule it references, if
+ * applicable).
+ *
+ * In particular, lets a visitor traverse these Ed25519 keys along with
+ * their expanded {@code TransactionSignature}s (if present).
+ *
+ * @author Michael Tinker
+ */
 public class InHandleActivationHelper {
 	private static final Logger log = LogManager.getLogger(InHandleActivationHelper.class);
 
@@ -49,7 +59,6 @@ public class InHandleActivationHelper {
 	static Function<
 			List<TransactionSignature>,
 			Function<byte[], TransactionSignature>> sigsFnSource = HederaKeyActivation::pkToSigMapFrom;
-	static PkToSigMapFactory scopedSigsFnSource = HederaKeyActivation::matchingPkToSigMapFrom;
 
 	private final HederaSigningOrder keyOrderer;
 	private final CharacteristicsFactory characteristics;
@@ -57,8 +66,7 @@ public class InHandleActivationHelper {
 
 	private List<JKey> otherParties = NO_OTHER_PARTIES;
 	private TxnAccessor accessor = NO_LAST_ACCESSOR;
-	private Function<byte[], TransactionSignature> scheduledSigsFn = NO_LAST_SIGS_FN;
-	private Function<byte[], TransactionSignature> nonScheduledSigsFn = NO_LAST_SIGS_FN;
+	private Function<byte[], TransactionSignature> sigsFn = NO_LAST_SIGS_FN;
 
 	public InHandleActivationHelper(
 			HederaSigningOrder keyOrderer,
@@ -70,28 +78,56 @@ public class InHandleActivationHelper {
 		this.accessorSource = accessorSource;
 	}
 
+
+	/**
+	 * Returns true if the set of Ed25519 signing keys for the active transaction
+	 * suffice to meet the signing requirements of all Hedera keys prerequisite
+	 * to the active transaction.
+	 *
+	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 */
 	public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> tests) {
 		ensureUpToDate();
 		return arePartiesActive(false, accessor.getTxn(), tests);
 	}
 
+	/**
+	 * Returns true if the set of Ed25519 signing keys for the active transaction
+	 * suffice to meet the signing requirements of all Hedera keys prerequisite
+	 * to the schedule referenced by the active transaction.
+	 *
+	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 */
 	public boolean areScheduledPartiesActive(
 			TransactionBody scheduledTxn,
 			BiPredicate<JKey, TransactionSignature> tests
 	) {
 		ensureUpToDate();
-		ensureScheduledSigsFnPresent();
 		return arePartiesActive(true, scheduledTxn, tests);
 	}
 
+	/**
+	 * Permits a visitor to traverse the Ed25519 keys, and their expanded signatures,
+	 * that constitute the Hedera keys prerequisite to the schedule referenced by
+	 * the active transaction.
+	 *
+	 * @param visitor the consumer to give the tour to
+	 */
 	public void visitScheduledCryptoSigs(BiConsumer<JKey, TransactionSignature> visitor) {
 		ensureUpToDate();
-		ensureScheduledSigsFnPresent();
 		for (JKey req : otherParties) {
 			if (req.isForScheduledTxn()) {
-				visitSimpleKeys(req, key -> visitor.accept(key, scheduledSigsFn.apply(key.getEd25519())));
+				visitSimpleKeys(req, key -> visitor.accept(key, sigsFn.apply(key.getEd25519())));
 			}
 		}
+	}
+
+	/**
+	 * Returns the canonical mapping between Ed25519 public keys and expanded
+	 * signatures for the active transaction.
+	 */
+	public Function<byte[], TransactionSignature> currentSigsFn() {
+		return sigsFn;
 	}
 
 	private boolean arePartiesActive(
@@ -100,7 +136,6 @@ public class InHandleActivationHelper {
 			BiPredicate<JKey, TransactionSignature> givenTests
 	) {
 		var activeCharacter = characteristics.inferredFor(txn);
-		Function<byte[], TransactionSignature> sigsFn = useScheduleKeys ? scheduledSigsFn : nonScheduledSigsFn;
 		for (JKey req : otherParties) {
 			if (req.isForScheduledTxn() != useScheduleKeys) {
 				continue;
@@ -110,12 +145,6 @@ public class InHandleActivationHelper {
 			}
 		}
 		return true;
-	}
-
-	private void ensureScheduledSigsFnPresent() {
-		if (scheduledSigsFn == NO_LAST_SIGS_FN) {
-			throw new IllegalStateException("No scheduled sigs function available!");
-		}
 	}
 
 	private void ensureUpToDate() {
@@ -129,19 +158,8 @@ public class InHandleActivationHelper {
 			} else {
 				otherParties = otherOrderingResult.getOrderedKeys();
 			}
-
 			var sigs = current.getPlatformTxn().getSignatures();
-			switch (current.getFunction()) {
-				case ScheduleSign:
-				case ScheduleCreate:
-					var scopedTxnBytes = current.getTxnBytes();
-					nonScheduledSigsFn = scopedSigsFnSource.get(scopedTxnBytes, true, sigs);
-					scheduledSigsFn = scopedSigsFnSource.get(scopedTxnBytes, false, sigs);
-					break;
-				default:
-					scheduledSigsFn = NO_LAST_SIGS_FN;
-					nonScheduledSigsFn = sigsFnSource.apply(sigs);
-			}
+			sigsFn = sigsFnSource.apply(sigs);
 			accessor = current;
 		}
 	}
@@ -153,10 +171,5 @@ public class InHandleActivationHelper {
 				Function<byte[], TransactionSignature> sigsFn,
 				BiPredicate<JKey, TransactionSignature> tests,
 				KeyActivationCharacteristics characteristics);
-	}
-
-	@FunctionalInterface
-	interface PkToSigMapFactory {
-		Function<byte[], TransactionSignature> get(byte[] msg, boolean shouldMatch, List<TransactionSignature> sigs);
 	}
 }

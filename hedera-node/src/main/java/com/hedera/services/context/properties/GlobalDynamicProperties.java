@@ -58,6 +58,7 @@ public class GlobalDynamicProperties {
 	private long minAutoRenewDuration;
 	private int localCallEstRetBytes;
 	private int scheduledTxExpiryTimeSecs;
+	private int messageMaxBytesAllowed;
 	private Set<HederaFunctionality> schedulingWhitelist;
 
 	public GlobalDynamicProperties(
@@ -104,6 +105,7 @@ public class GlobalDynamicProperties {
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
 		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
+		messageMaxBytesAllowed = properties.getIntProperty( "consensus.message.maxBytesAllowed");
 	}
 
 	public int maxTokensPerAccount() {
@@ -216,6 +218,10 @@ public class GlobalDynamicProperties {
 
 	public int scheduledTxExpiryTimeSecs() {
 		return scheduledTxExpiryTimeSecs;
+	}
+
+	public int messageMaxBytesAllowed() {
+		return messageMaxBytesAllowed;
 	}
 
 	public Set<HederaFunctionality> schedulingWhitelist() {

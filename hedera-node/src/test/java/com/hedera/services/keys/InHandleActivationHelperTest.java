@@ -48,7 +48,7 @@ import java.util.function.Function;
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
@@ -72,12 +72,10 @@ class InHandleActivationHelperTest {
 
 	TransactionSignature sig;
 	CharacteristicsFactory characteristicsFactory;
-	Function<byte[], TransactionSignature> scheduleSigsFn;
-	Function<byte[], TransactionSignature> nonScheduleSigsFn;
+	Function<byte[], TransactionSignature> sigsFn;
 	List<TransactionSignature> sigs = new ArrayList<>();
 
 	InHandleActivationHelper.Activation activation;
-	InHandleActivationHelper.PkToSigMapFactory scopedSigsFnSource;
 
 	Function<
 			List<TransactionSignature>,
@@ -101,15 +99,10 @@ class InHandleActivationHelperTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getPlatformTxn()).willReturn(platformTxn);
 		given(accessor.getTxnBytes()).willReturn(scopedTxnBytes);
-		given(accessor.getFunction()).willReturn(CryptoTransfer);
 
 		sig = mock(TransactionSignature.class);
 
-		scheduleSigsFn = mock(Function.class);
-		nonScheduleSigsFn = mock(Function.class);
-		scopedSigsFnSource = mock(InHandleActivationHelper.PkToSigMapFactory.class);
-		given(scopedSigsFnSource.get(scopedTxnBytes, true, sigs)).willReturn(nonScheduleSigsFn);
-		given(scopedSigsFnSource.get(scopedTxnBytes, false, sigs)).willReturn(scheduleSigsFn);
+		sigsFn = mock(Function.class);
 		sigsFnSource =
 				(Function<List<TransactionSignature>, Function<byte[], TransactionSignature>>) mock(Function.class);
 
@@ -119,7 +112,6 @@ class InHandleActivationHelperTest {
 
 		InHandleActivationHelper.activation = activation;
 		InHandleActivationHelper.sigsFnSource = sigsFnSource;
-		InHandleActivationHelper.scopedSigsFnSource = scopedSigsFnSource;
 	}
 
 	@Test
@@ -142,25 +134,11 @@ class InHandleActivationHelperTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void throwsIfScheduleActivationTestedForNonSchedTxn() {
-		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
-
-		// expect:
-		Assertions.assertThrows(
-				IllegalStateException.class,
-				() -> subject.areScheduledPartiesActive(TransactionBody.getDefaultInstance(), tests));
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
 	public void usesExpectedSigsFnForOthers() {
 		// setup:
 		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
-		given(accessor.getFunction()).willReturn(ScheduleCreate);
-		given(activation.test(scheduled, scheduleSigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
-		given(activation.test(other, nonScheduleSigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(false);
+		given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(false);
 
 		// when:
 		boolean otherAns = subject.areOtherPartiesActive(tests);
@@ -168,17 +146,17 @@ class InHandleActivationHelperTest {
 
 		// then:
 		assertFalse(otherAns);
-		assertTrue(scheduledAns);
+		assertFalse(scheduledAns);
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void usesExpectedKeysForOthers() {
+	public void usesExpectedKeysForOtherPartiesActive() {
 		// setup:
 		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
-		given(sigsFnSource.apply(any())).willReturn(nonScheduleSigsFn);
-		given(activation.test(other, nonScheduleSigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
+		given(sigsFnSource.apply(any())).willReturn(sigsFn);
+		given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
 
 		// when:
 		boolean ans = subject.areOtherPartiesActive(tests);
@@ -197,8 +175,8 @@ class InHandleActivationHelperTest {
 		// setup:
 		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 
-		given(accessor.getFunction()).willReturn(ScheduleCreate);
-		given(activation.test(scheduled, scheduleSigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
+		given(sigsFnSource.apply(any())).willReturn(sigsFn);
+		given(activation.test(scheduled, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
 
 		// when:
 		boolean ans = subject.areScheduledPartiesActive(nonFileDelete(), tests);
@@ -209,13 +187,12 @@ class InHandleActivationHelperTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void countsKeysAsExpected() {
+	public void countsScheduledKeysAsExpected() {
 		// setup:
 		BiConsumer<JKey, TransactionSignature> visitor = (BiConsumer<JKey, TransactionSignature>) mock(BiConsumer.class);
 
-		given(accessor.getFunction()).willReturn(ScheduleCreate);
-		given(scopedSigsFnSource.get(scopedTxnBytes, false, sigs)).willReturn(scheduleSigsFn);
-		given(scheduleSigsFn.apply(scheduled.getEd25519())).willReturn(sig);
+		given(sigsFnSource.apply(any())).willReturn(sigsFn);
+		given(sigsFn.apply(scheduled.getEd25519())).willReturn(sig);
 
 		// when:
 		subject.visitScheduledCryptoSigs(visitor);
@@ -228,7 +205,6 @@ class InHandleActivationHelperTest {
 	public void cleanup() {
 		InHandleActivationHelper.activation = HederaKeyActivation::isActive;
 		InHandleActivationHelper.sigsFnSource = HederaKeyActivation::pkToSigMapFrom;
-		InHandleActivationHelper.scopedSigsFnSource = HederaKeyActivation::matchingPkToSigMapFrom;
 	}
 
 	private TransactionBody nonFileDelete() {

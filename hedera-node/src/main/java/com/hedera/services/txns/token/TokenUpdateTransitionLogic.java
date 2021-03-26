@@ -177,11 +177,11 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			return INVALID_TOKEN_ID;
 		}
 
-		if (op.hasMemo() && !validator.isValidEntityMemo(op.getMemo().getValue())) {
-			return MEMO_TOO_LONG;
+		var validity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
+		if (validity != OK) {
+			return validity;
 		}
 
-		var validity = OK;
 
 		var hasNewSymbol = op.getSymbol().length() > 0;
 		if (hasNewSymbol) {

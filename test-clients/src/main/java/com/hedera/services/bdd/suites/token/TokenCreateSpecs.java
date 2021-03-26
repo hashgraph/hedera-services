@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -38,7 +39,6 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -65,6 +65,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+						creationValidatesMemo(),
 						creationValidatesName(),
 						creationValidatesSymbol(),
 						treasuryHasCorrectBalance(),
@@ -283,6 +284,15 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec creationValidatesMemo() {
+		return defaultHapiSpec("CreationValidatesMemo")
+				.given().when().then(
+						tokenCreate("primary")
+								.entityMemo("N\u0000!!!")
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
+				);
+	}
+
 	public HapiApiSpec creationValidatesName() {
 		AtomicInteger maxUtf8Bytes = new AtomicInteger();
 
@@ -295,8 +305,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.name("")
 								.logged()
 								.hasPrecheck(MISSING_TOKEN_NAME),
+						tokenCreate("primary")
+								.name("T\u0000ken")
+								.logged()
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
 						sourcing(() -> tokenCreate("tooLong")
-								.name(nAscii(maxUtf8Bytes.get() + 1))
+								.name(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
 								.hasPrecheck(TOKEN_NAME_TOO_LONG)),
 						sourcing(() -> tokenCreate("tooLongAgain")
 								.name(nCurrencySymbols(maxUtf8Bytes.get() / 3 + 1))
@@ -348,17 +362,17 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("missingSymbol")
 								.symbol("")
 								.hasPrecheck(MISSING_TOKEN_SYMBOL),
+						tokenCreate("primary")
+								.name("T\u0000ken")
+								.logged()
+								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
 						sourcing(() -> tokenCreate("tooLong")
-								.symbol(nAscii(maxUtf8Bytes.get() + 1))
+								.symbol(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
 								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG)),
 						sourcing(() -> tokenCreate("tooLongAgain")
 								.symbol(nCurrencySymbols(maxUtf8Bytes.get() / 3 + 1))
 								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG))
 				);
-	}
-
-	private String nAscii(int n) {
-		return IntStream.range(0, n).mapToObj(ignore -> "A").collect(Collectors.joining());
 	}
 
 	private String nCurrencySymbols(int n) {

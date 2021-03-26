@@ -20,31 +20,46 @@ package com.hedera.services.fees.calculation.schedule.txns;
  * ‍
  */
 
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleDeleteUsage;
+import com.hedera.services.usage.schedule.ScheduleOpsUsage;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.BiFunction;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class ScheduleDeleteResourceUsageTest {
+    TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setScheduled(true)
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .build();
+
     ScheduleDeleteResourceUsage subject;
 
     StateView view;
-    ScheduleDeleteUsage usage;
-    BiFunction<TransactionBody, SigUsage, ScheduleDeleteUsage> factory;
+    ScheduleOpsUsage scheduleOpsUsage;
 
+    long expiry = 1_234_567L;
     int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    ScheduleID target = IdUtils.asSchedule("0.0.123");
     SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
     FeeData expected;
@@ -52,24 +67,31 @@ public class ScheduleDeleteResourceUsageTest {
     TransactionBody nonScheduleDeleteTxn;
     TransactionBody scheduleDeleteTxn;
 
+    ScheduleInfo info = ScheduleInfo.newBuilder()
+            .setScheduledTransactionID(scheduledTxnId)
+            .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+            .build();
+
     @BeforeEach
     private void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleDeleteTxn = mock(TransactionBody.class);
         given(scheduleDeleteTxn.hasScheduleDelete()).willReturn(true);
+        given(scheduleDeleteTxn.getScheduleDelete())
+                .willReturn(ScheduleDeleteTransactionBody.newBuilder()
+                        .setScheduleID(target)
+                        .build());
 
         nonScheduleDeleteTxn = mock(TransactionBody.class);
         given(nonScheduleDeleteTxn.hasScheduleDelete()).willReturn(false);
 
-        usage = mock(ScheduleDeleteUsage.class);
-        given(usage.get()).willReturn(expected);
+        scheduleOpsUsage = mock(ScheduleOpsUsage.class);
+        given(scheduleOpsUsage.scheduleDeleteUsage(scheduleDeleteTxn, sigUsage, expiry)).willReturn(expected);
 
-        factory = (BiFunction<TransactionBody, SigUsage, ScheduleDeleteUsage>)mock(BiFunction.class);
-        given(factory.apply(scheduleDeleteTxn, sigUsage)).willReturn(usage);
+        given(view.infoForSchedule(target)).willReturn(Optional.of(info));
 
-        ScheduleDeleteResourceUsage.factory = factory;
-        subject = new ScheduleDeleteResourceUsage();
+        subject = new ScheduleDeleteResourceUsage(scheduleOpsUsage, new MockGlobalDynamicProps());
     }
 
     @Test
@@ -83,5 +105,24 @@ public class ScheduleDeleteResourceUsageTest {
     public void delegatesToCorrectEstimate() throws Exception {
         // expect:
         assertEquals(expected, subject.usageGiven(scheduleDeleteTxn, obj, view));
+    }
+
+    @Test
+    public void returnsDefaultIfInfoMissing() throws Exception {
+        // setup:
+        long start = 1_234_567L;
+        TransactionID txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder()
+                        .setSeconds(start))
+                .build();
+        given(scheduleDeleteTxn.getTransactionID()).willReturn(txnId);
+        given(view.infoForSchedule(target)).willReturn(Optional.empty());
+        given(scheduleOpsUsage.scheduleDeleteUsage(scheduleDeleteTxn, sigUsage, start + 1800))
+                .willReturn(expected);
+
+        // expect:
+        assertEquals(expected, subject.usageGiven(scheduleDeleteTxn, obj, view));
+        // and:
+        verify(view).infoForSchedule(target);
     }
 }
