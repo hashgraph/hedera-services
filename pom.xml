@@ -154,6 +154,7 @@
     <commons-io.version>2.1</commons-io.version>
 
     <!-- Dependency properties -->
+    <commons-io.version>2.1</commons-io.version>
     <commons-codec.version>1.11</commons-codec.version>
     <eddsa.version>0.3.0</eddsa.version>
     <grpc.version>1.33.0</grpc.version>
@@ -162,6 +163,7 @@
     <hapi-proto.version>0.13.0-alpha.3-SNAPSHOT</hapi-proto.version>
     <log4j.version>2.13.2</log4j.version>
     <netty.version>4.1.51.Final</netty.version>
+    <swirlds.version>0.9.0</swirlds.version>
     <!-- Test dependency properties -->
     <hamcrest-all.version>1.3</hamcrest-all.version>
     <junit.version>4.13.1</junit.version>
@@ -416,6 +418,31 @@ ${git.signoff}
         <groupId>io.netty</groupId>
         <artifactId>netty-common</artifactId>
         <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-platform-core</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-fcmap</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-fcqueue</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-common</artifactId>
+        <version>${swirlds.version}</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>

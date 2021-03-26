@@ -1,7 +1,7 @@
-package com.hedera.services.throttling.bootstrap;
+package com.hedera.services.sysfiles.domain.throttling;
 
-import com.hedera.services.throttling.real.BucketThrottle;
-import com.hedera.services.throttling.real.DeterministicThrottle;
+import com.hedera.services.throttles.BucketThrottle;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.hedera.services.throttling.ErrorCodeUtils.exceptionMsgFor;
+import static com.hedera.services.sysfiles.logic.ErrorCodeUtils.exceptionMsgFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_CAPACITY_OVERFLOW;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_HAS_NO_THROTTLE_GROUPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION;
@@ -90,7 +90,7 @@ public class ThrottleBucket {
 		}
 
 		var throttle = DeterministicThrottle.withMtpsAndBurstPeriod(logicalMtps / n, burstPeriod);
-		long totalCapacityUnits = throttle.usageSnapshot().capacity();
+		long totalCapacityUnits = throttle.capacity();
 
 		Set<HederaFunctionality> seenSoFar = new HashSet<>();
 		List<Pair<HederaFunctionality, Integer>> opsReqs = new ArrayList<>();

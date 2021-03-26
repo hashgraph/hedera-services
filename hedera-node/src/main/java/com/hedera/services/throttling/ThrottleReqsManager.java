@@ -1,11 +1,12 @@
 package com.hedera.services.throttling;
 
-import com.hedera.services.throttling.real.DeterministicThrottle;
+import com.hedera.services.throttles.DeterministicThrottle;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ThrottleReqsManager {
 	private final boolean[] passedReq;
@@ -41,5 +42,9 @@ public class ThrottleReqsManager {
 			usages.add(req.getLeft().usageSnapshot());
 		}
 		return usages;
+	}
+
+	List<DeterministicThrottle> managedThrottles() {
+		return allReqs.stream().map(Pair::getLeft).collect(Collectors.toList());
 	}
 }

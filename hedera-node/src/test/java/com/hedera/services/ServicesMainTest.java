@@ -28,6 +28,7 @@ import com.hedera.services.context.properties.Profile;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -109,6 +110,7 @@ public class ServicesMainTest {
 	BalancesExporter balancesExporter;
 	StateMigrations stateMigrations;
 	MerkleNetworkContext networkCtx;
+	FeeMultiplierSource feeMultiplierSource;
 	ServicesStatsManager statsManager;
 	GrpcServerManager grpc;
 	NodeLocalProperties nodeLocalProps;
@@ -149,6 +151,9 @@ public class ServicesMainTest {
 		systemFilesManager = mock(SystemFilesManager.class);
 		systemAccountsCreator = mock(SystemAccountsCreator.class);
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
+		networkCtx = mock(MerkleNetworkContext.class);
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+
 		ctx = mock(ServicesContext.class);
 
 		ServicesMain.log = mockLog;
@@ -182,6 +187,8 @@ public class ServicesMainTest {
 		given(ctx.balancesExporter()).willReturn(balancesExporter);
 		given(ctx.statsManager()).willReturn(statsManager);
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
+		given(ctx.networkCtx()).willReturn(networkCtx);
+		given(ctx.feeMultiplierSource()).willReturn(feeMultiplierSource);
 		given(ledgerValidator.hasExpectedTotalBalance(any())).willReturn(true);
 		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
 
@@ -245,8 +252,6 @@ public class ServicesMainTest {
 
 	@Test
 	public void initializesSanelyGivenPreconditions() {
-		networkCtx = mock(MerkleNetworkContext.class);
-
 		// given:
 		InOrder inOrder = inOrder(
 				systemFilesManager,
@@ -259,8 +264,8 @@ public class ServicesMainTest {
 				grpc,
 				statsManager,
 				ctx,
-				networkCtx);
-		given(ctx.networkCtx()).willReturn(networkCtx);
+				networkCtx,
+				feeMultiplierSource);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -269,6 +274,7 @@ public class ServicesMainTest {
 		inOrder.verify(propertySources).assertSourcesArePresent();
 		inOrder.verify(systemFilesManager).loadAllSystemFiles();
 		inOrder.verify(networkCtx).updateSyncedThrottlesFromSavedState();
+		inOrder.verify(feeMultiplierSource).resetExpectations();
 		inOrder.verify(stateMigrations).runAllFor(ctx);
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);

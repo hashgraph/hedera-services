@@ -1,8 +1,8 @@
 package com.hedera.services.files.interceptors;
 
 import com.hedera.services.config.FileNumbers;
-import com.hedera.services.throttling.ErrorCodeUtils;
-import com.hedera.services.throttling.bootstrap.ThrottleBucket;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
+import com.hedera.services.sysfiles.logic.ErrorCodeUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.swirlds.common.AddressBook;
@@ -36,7 +36,7 @@ class ThrottleDefsManagerTest {
 	@Mock
 	ThrottleBucket bucket;
 	@Mock
-	Function<ThrottleDefinitions, com.hedera.services.throttling.bootstrap.ThrottleDefinitions> mockToPojo;
+	Function<ThrottleDefinitions, com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions> mockToPojo;
 	@Mock
 	Consumer<ThrottleDefinitions> postUpdateCb;
 
@@ -75,7 +75,7 @@ class ThrottleDefsManagerTest {
 	public void reusesResponseCodeFromMapperFailure() {
 		// setup:
 		int nodes = 7;
-		var pojoDefs = new com.hedera.services.throttling.bootstrap.ThrottleDefinitions();
+		var pojoDefs = new com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions();
 		pojoDefs.getBuckets().add(bucket);
 
 		given(book.getSize()).willReturn(nodes);
@@ -99,7 +99,7 @@ class ThrottleDefsManagerTest {
 	public void fallsBackToDefaultInvalidIfNoDetailsFromMapperFailure() {
 		// setup:
 		int nodes = 7;
-		var pojoDefs = new com.hedera.services.throttling.bootstrap.ThrottleDefinitions();
+		var pojoDefs = new com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions();
 		pojoDefs.getBuckets().add(bucket);
 
 		given(book.getSize()).willReturn(nodes);

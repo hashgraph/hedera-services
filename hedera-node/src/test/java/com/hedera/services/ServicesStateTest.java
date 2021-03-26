@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.PropertySources;
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
@@ -158,6 +159,7 @@ class ServicesStateTest {
 	SystemFilesManager systemFilesManager;
 	RecordStreamManager recordStreamManager;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	FeeMultiplierSource feeMultiplierSource;
 
 	ServicesState subject;
 
@@ -177,6 +179,7 @@ class ServicesStateTest {
 		mockHashReader = (Function<String, byte[]>) mock(Function.class);
 		given(mockHashReader.apply(any())).willReturn(EMPTY_HASH.getValue());
 		ServicesState.hashReader = mockHashReader;
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
 
 		out = mock(SerializableDataOutputStream.class);
 		in = mock(SerializableDataInputStream.class);
@@ -194,6 +197,7 @@ class ServicesStateTest {
 		given(ctx.sigFactoryCreator()).willReturn(new SigFactoryCreator());
 		given(ctx.id()).willReturn(self);
 		given(ctx.logic()).willReturn(logic);
+		given(ctx.feeMultiplierSource()).willReturn(feeMultiplierSource);
 
 		systemFilesManager = mock(SystemFilesManager.class);
 		historian = mock(AccountRecordsHistorian.class);
@@ -239,6 +243,7 @@ class ServicesStateTest {
 		given(networkCtx.copy()).willReturn(networkCtxCopy);
 		given(networkCtx.midnightRates()).willReturn(midnightRates);
 		given(networkCtx.seqNo()).willReturn(seqNo);
+		given(ctx.networkCtx()).willReturn(networkCtx);
 
 		propertySources = mock(PropertySources.class);
 
@@ -353,9 +358,8 @@ class ServicesStateTest {
 	@Test
 	public void initializesContext() {
 		// setup:
-		MerkleNetworkContext networkCtx = mock(MerkleNetworkContext.class);
 
-		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager, networkCtx);
+		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager, networkCtx, feeMultiplierSource);
 
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
 		given(ctx.networkCtx()).willReturn(networkCtx);
@@ -375,6 +379,7 @@ class ServicesStateTest {
 		inOrder.verify(historian).reviewExistingRecords();
 		inOrder.verify(systemFilesManager).loadAllSystemFiles();
 		inOrder.verify(networkCtx).updateSyncedThrottlesFromSavedState();
+		inOrder.verify(feeMultiplierSource).resetExpectations();
 	}
 
 	@Test

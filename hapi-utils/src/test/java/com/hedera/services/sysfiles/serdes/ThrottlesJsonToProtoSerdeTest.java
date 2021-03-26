@@ -1,4 +1,4 @@
-package com.hedera.services.throttling.bootstrap;
+package com.hedera.services.sysfiles.serdes;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ThrottleBucket;
@@ -8,13 +8,14 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.throttling.bootstrap.ThrottlesJsonToProtoSerde.loadProtoDefs;
+import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadProtoDefs;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -46,9 +47,10 @@ class ThrottlesJsonToProtoSerdeTest {
 	private ThrottleBucket aBucket() {
 		return ThrottleBucket.newBuilder()
 				.setName("A")
-				.setBurstPeriod(1)
+				.setBurstPeriod(2)
 				.addThrottleGroups(from(10000, List.of(CryptoTransfer, CryptoCreate)))
-				.addThrottleGroups(from(13, List.of(ContractCall)))
+				.addThrottleGroups(from(12, List.of(ContractCall)))
+				.addThrottleGroups(from(3000, List.of(TokenMint)))
 				.build();
 	}
 

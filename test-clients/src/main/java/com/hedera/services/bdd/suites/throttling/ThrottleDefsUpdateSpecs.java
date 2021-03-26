@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.throttling;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +34,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.suites.throttling.ThrottlesJsonToProtoSerde.loadProtoDefs;
+import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadProtoDefs;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
@@ -49,9 +50,9 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-//						throttleDefsRejectUnauthorizedPayers(),
-//						throttleDefsHaveExpectedDefaults(),
-//						throttleUpdateRejectsMultiGroupAssignment(),
+						throttleDefsRejectUnauthorizedPayers(),
+						throttleDefsHaveExpectedDefaults(),
+						throttleUpdateRejectsMultiGroupAssignment(),
 						throttleUpdateWithZeroGroupOpsPerSecFails(),
 				}
 		);

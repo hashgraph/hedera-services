@@ -1,7 +1,7 @@
 package com.hedera.services.throttling;
 
-import com.hedera.services.throttling.real.BucketThrottle;
-import com.hedera.services.throttling.real.DeterministicThrottle;
+import com.hedera.services.throttles.BucketThrottle;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,12 +13,11 @@ import java.time.Instant;
 import java.util.EnumMap;
 import java.util.List;
 
-import static com.hedera.services.throttling.bootstrap.ThrottlesJsonToProtoSerde.loadPojoDefs;
+import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadPojoDefs;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
@@ -49,7 +48,7 @@ class DeterministicThrottlingTest {
 		subject.rebuildFor(defs);
 		// and:
 		var ans = subject.shouldThrottle(ContractCall, consensusNow);
-		var throttlesNow = subject.currentUsageFor(ContractCall);
+		var throttlesNow = subject.activeThrottlesFor(ContractCall);
 		// and:
 		var aNow = throttlesNow.get(0);
 		var bNow = throttlesNow.get(1);
@@ -81,26 +80,10 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void returnsExpectedSnapshots() {
-		// setup:
-		subject.functionReqs = reqsManager();
-		// and:
-		var expected = List.of(a.usageSnapshot(), b.usageSnapshot());
-
-		given(manager.currentUsage()).willReturn(expected);
-
-		// when:
-		var actual = subject.currentUsageFor(CryptoTransfer);
-
-		// then:
-		assertSame(expected, actual);
-	}
-
-	@Test
 	public void throwsIseIfNoThrottle() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.shouldThrottle(ContractCall, consensusNow));
-		assertThrows(IllegalStateException.class, () -> subject.currentUsageFor(ContractCall));
+		assertThrows(IllegalStateException.class, () -> subject.activeThrottlesFor(ContractCall));
 	}
 
 	@Test

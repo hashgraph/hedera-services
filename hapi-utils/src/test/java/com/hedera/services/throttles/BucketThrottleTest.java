@@ -1,10 +1,10 @@
-package com.hedera.services.throttling.real;
+package com.hedera.services.throttles;
 
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.throttling.real.BucketThrottle.CAPACITY_UNITS_PER_NT;
-import static com.hedera.services.throttling.real.BucketThrottle.MTPS_PER_TPS;
-import static com.hedera.services.throttling.real.BucketThrottle.NTPS_PER_MTPS;
+import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_NT;
+import static com.hedera.services.throttles.BucketThrottle.MTPS_PER_TPS;
+import static com.hedera.services.throttles.BucketThrottle.NTPS_PER_MTPS;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BucketThrottleTest {

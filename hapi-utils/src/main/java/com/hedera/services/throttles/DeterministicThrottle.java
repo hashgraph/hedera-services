@@ -1,6 +1,4 @@
-package com.hedera.services.throttling.real;
-
-import com.google.common.base.MoreObjects;
+package com.hedera.services.throttles;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -10,29 +8,52 @@ import java.time.Instant;
  */
 public class DeterministicThrottle {
 	private static final Instant NEVER = null;
+	private static final String NO_NAME = null;
 
+	private final String name;
 	private final BucketThrottle delegate;
 	private Instant lastDecisionTime;
 
 	public static DeterministicThrottle withTps(int tps) {
-		return new DeterministicThrottle(BucketThrottle.withTps(tps));
+		return new DeterministicThrottle(BucketThrottle.withTps(tps), NO_NAME);
+	}
+
+	public static DeterministicThrottle withTpsNamed(int tps, String name) {
+		return new DeterministicThrottle(BucketThrottle.withTps(tps), name);
 	}
 
 	public static DeterministicThrottle withMtps(long mtps) {
-		return new DeterministicThrottle(BucketThrottle.withMtps(mtps));
+		return new DeterministicThrottle(BucketThrottle.withMtps(mtps), NO_NAME);
+	}
+
+	public static DeterministicThrottle withMtpsNamed(long mtps, String name) {
+		return new DeterministicThrottle(BucketThrottle.withMtps(mtps), name);
 	}
 
 	public static DeterministicThrottle withTpsAndBurstPeriod(int tps, int burstPeriod) {
-		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod));
+		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), NO_NAME);
+	}
+
+	public static DeterministicThrottle withTpsAndBurstPeriodNamed(int tps, int burstPeriod, String name) {
+		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), name);
 	}
 
 	public static DeterministicThrottle withMtpsAndBurstPeriod(long mtps, int burstPeriod) {
-		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod));
+		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), NO_NAME);
 	}
 
-	private DeterministicThrottle(BucketThrottle delegate) {
+	public static DeterministicThrottle withMtpsAndBurstPeriodNamed(long mtps, int burstPeriod, String name) {
+		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), name);
+	}
+
+	private DeterministicThrottle(BucketThrottle delegate, String name) {
+		this.name = name;
 		this.delegate = delegate;
 		lastDecisionTime = NEVER;
+	}
+
+	public static long capacityRequiredFor(int nTransactions) {
+		return nTransactions * BucketThrottle.capacityUnitsPerTxn();
 	}
 
 	public boolean allow(int n) {
@@ -58,18 +79,25 @@ public class DeterministicThrottle {
 		delegate.reclaimLastAllowedUse();
 	}
 
+	public String name() {
+		return name;
+	}
+
+	public long used() {
+		return delegate.bucket().capacityUsed();
+	}
+
+	public long capacity() {
+		return delegate.bucket().totalCapacity();
+	}
+
 	public UsageSnapshot usageSnapshot() {
 		var bucket = delegate.bucket();
-		return new UsageSnapshot(bucket.capacityUsed(), bucket.totalCapacity(), lastDecisionTime);
+		return new UsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
 	}
 
 	public void resetUsageTo(UsageSnapshot usageSnapshot) {
 		var bucket = delegate.bucket();
-		if (bucket.totalCapacity() != usageSnapshot.capacity()) {
-			throw new IllegalArgumentException(
-					"Throttle capacity " + bucket.totalCapacity()
-							+ "differs from snapshot " + usageSnapshot.capacity() + "!");
-		}
 		lastDecisionTime = usageSnapshot.lastDecisionTime();
 		bucket.resetUsed(usageSnapshot.used());
 	}
@@ -84,29 +112,29 @@ public class DeterministicThrottle {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(this)
-				.add("totalCapacity", delegate.bucket().totalCapacity())
-				.add("mtps", delegate.mtps())
+		StringBuilder sb = new StringBuilder("DeterministicThrottle{");
+		if (name != NO_NAME) {
+			sb.append("name='").append(name).append("', ");
+		}
+		return sb
+				.append("mtps=").append(delegate.mtps()).append(", ")
+				.append("capacity=").append(capacity()).append(" (used=").append(used()).append(")")
+				.append(lastDecisionTime == NEVER ? "" : (", last decision @ " + lastDecisionTime))
+				.append("}")
 				.toString();
 	}
 
 	public static class UsageSnapshot {
 		private final long used;
-		private final long capacity;
 		private final Instant lastDecisionTime;
 
-		public UsageSnapshot(long used, long capacity, Instant lastDecisionTime) {
+		public UsageSnapshot(long used, Instant lastDecisionTime) {
 			this.used = used;
-			this.capacity = capacity;
 			this.lastDecisionTime = lastDecisionTime;
 		}
 
 		public long used() {
 			return used;
-		}
-
-		public long capacity() {
-			return capacity;
 		}
 
 		public Instant lastDecisionTime() {

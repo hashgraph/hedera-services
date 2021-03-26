@@ -4,8 +4,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.throttling.ErrorCodeUtils;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hedera.services.sysfiles.logic.ErrorCodeUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -21,7 +20,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static com.hedera.services.throttling.ErrorCodeUtils.errorFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_THROTTLE_DEFINITIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_THROTTLE_DEFINITIONS;
@@ -42,8 +40,8 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
 	private final Supplier<AddressBook> addressBook;
 	private final Consumer<ThrottleDefinitions> postUpdateCb;
 
-	Function<ThrottleDefinitions, com.hedera.services.throttling.bootstrap.ThrottleDefinitions> toPojo =
-			com.hedera.services.throttling.bootstrap.ThrottleDefinitions::fromProto;
+	Function<ThrottleDefinitions, com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions> toPojo =
+			com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions::fromProto;
 
 	public ThrottleDefsManager(
 			FileNumbers fileNums,
@@ -74,7 +72,7 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
 			try {
 				bucket.asThrottleMapping(n);
 			} catch (Exception e) {
-				var detailError = errorFrom(e.getMessage());
+				var detailError = ErrorCodeUtils.errorFrom(e.getMessage());
 				return detailError
 						.<Map.Entry<ResponseCodeEnum, Boolean>>map(
 								code -> new AbstractMap.SimpleImmutableEntry<>(code, false))

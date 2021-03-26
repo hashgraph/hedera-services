@@ -1,4 +1,4 @@
-package com.hedera.services.throttling.real;
+package com.hedera.services.throttles;
 
 import org.junit.jupiter.api.Test;
 
@@ -7,22 +7,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class DiscreteLeakyBucketTest {
 	private long totalCapacity = 64_000L;
 	private long capacityUsed = totalCapacity / 4;
-	private long capacityFree = totalCapacity - capacityUsed;
 
 	@Test
 	public void requiresPositiveCapacity() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(-1L));
 		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0L));
-		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0L, -1L));
-		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0L, 0L));
-	}
-
-	@Test
-	public void requiresUsageInBounds() {
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(-1L, totalCapacity));
-		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(totalCapacity + 1L, totalCapacity));
 	}
 
 	@Test
@@ -34,17 +24,6 @@ class DiscreteLeakyBucketTest {
 		assertEquals(0L, subject.capacityUsed());
 		assertEquals(totalCapacity, subject.totalCapacity());
 		assertEquals(totalCapacity, subject.capacityFree());
-	}
-
-	@Test
-	void beginsWithInitialSpecifiedUsage() {
-		// given:
-		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
-
-		// expect:
-		assertEquals(capacityUsed, subject.capacityUsed());
-		assertEquals(totalCapacity, subject.totalCapacity());
-		assertEquals(capacityFree, subject.capacityFree());
 	}
 
 	@Test

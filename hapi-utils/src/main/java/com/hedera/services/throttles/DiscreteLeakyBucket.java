@@ -1,46 +1,47 @@
-package com.hedera.services.throttling.real;
+package com.hedera.services.throttles;
 
 /**
  * A bucket of discrete capacity.
  */
-public class DiscreteLeakyBucket {
+class DiscreteLeakyBucket {
 	private long used;
 	private final long capacity;
 
-	public DiscreteLeakyBucket(long capacity) {
+	DiscreteLeakyBucket(long capacity) {
 		assertValid(capacity);
 		used = 0L;
 		this.capacity = capacity;
 	}
 
-	public DiscreteLeakyBucket(long used, long capacity) {
+	/* Used only for test setup */
+	DiscreteLeakyBucket(long used, long capacity) {
 		assertValid(used, capacity);
 		this.used = used;
 		this.capacity = capacity;
 	}
 
-	public long capacityFree() {
+	long capacityFree() {
 		return capacity - used;
 	}
 
-	public long capacityUsed() {
+	long capacityUsed() {
 		return used;
 	}
 
-	public long totalCapacity() {
+	long totalCapacity() {
 		return capacity;
 	}
 
-	public void useCapacity(long units) {
+	void useCapacity(long units) {
 		assertValidUsage(units);
 		used += units;
 	}
 
-	public void leak(long units) {
+	void leak(long units) {
 		used -= Math.min(used, units);
 	}
 
-	public void resetUsed(long amount) {
+	void resetUsed(long amount) {
 		assertValid(amount, capacity);
 		this.used = amount;
 	}

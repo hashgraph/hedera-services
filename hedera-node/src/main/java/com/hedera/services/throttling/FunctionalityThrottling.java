@@ -20,18 +20,16 @@ package com.hedera.services.throttling;
  * ‍
  */
 
-import com.hedera.services.throttling.bootstrap.ThrottleDefinitions;
-import com.hedera.services.throttling.real.DeterministicThrottle;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
-import java.util.Map;
 
 public interface FunctionalityThrottling {
 	boolean shouldThrottle(HederaFunctionality function);
 
-	default List<DeterministicThrottle.UsageSnapshot> currentUsageFor(HederaFunctionality function) {
+	default List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function) {
 		throw new AssertionError("Not implemented!");
 	}
 

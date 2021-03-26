@@ -1,7 +1,7 @@
 package com.hedera.services.throttling;
 
-import com.hedera.services.throttling.real.BucketThrottle;
-import com.hedera.services.throttling.real.DeterministicThrottle;
+import com.hedera.services.throttles.BucketThrottle;
+import com.hedera.services.throttles.DeterministicThrottle;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,10 +64,6 @@ class ThrottleReqsManagerTest {
 	@Test
 	void getsExpectedUsage() {
 		// setup:
-		var emptyAUsage = a.usageSnapshot();
-		var emptyBUsage = b.usageSnapshot();
-
-		// given:
 		a.allow(aReq, lastDecision);
 		b.allow(bReq, lastDecision);
 
@@ -80,9 +76,6 @@ class ThrottleReqsManagerTest {
 		// then:
 		assertEquals(lastDecision, aUsage.lastDecisionTime());
 		assertEquals(lastDecision, bUsage.lastDecisionTime());
-		// and:
-		assertEquals(emptyAUsage.capacity(), aUsage.capacity());
-		assertEquals(emptyBUsage.capacity(), bUsage.capacity());
 		// and:
 		assertEquals(aReq * BucketThrottle.capacityUnitsPerTxn(), aUsage.used());
 		assertEquals(bReq * BucketThrottle.capacityUnitsPerTxn(), bUsage.used());

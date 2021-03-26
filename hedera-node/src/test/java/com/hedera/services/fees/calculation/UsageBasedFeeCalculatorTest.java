@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -132,7 +133,7 @@ class UsageBasedFeeCalculatorTest {
 		subject = new UsageBasedFeeCalculator(
 				exchange,
 				usagePrices,
-				suggestedMultiplier::get,
+				new NestedMultiplierSource(),
 				List.of(incorrectQueryEstimator, correctQueryEstimator),
 				txnUsageEstimators);
 	}
@@ -445,4 +446,16 @@ class UsageBasedFeeCalculatorTest {
 			expectedSigUsage.getSignatureSize() == sigUsage.getSignatureSize()
 					&& expectedSigUsage.getPayerAcctSigCount() == sigUsage.getPayerAcctSigCount()
 					&& expectedSigUsage.getSignatureSize() == sigUsage.getSignatureSize();
+
+	private class NestedMultiplierSource implements FeeMultiplierSource {
+		@Override
+		public long currentMultiplier() {
+			return suggestedMultiplier.get();
+		}
+
+		@Override
+		public void resetExpectations() {
+			/* No-op */
+		}
+	}
 }

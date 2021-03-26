@@ -190,6 +190,7 @@ public class ServicesMain implements SwirldMain {
 				ctx.systemFilesManager().loadAllSystemFiles();
 				ctx.networkCtx().syncWithThrottles(ctx.handleThrottling());
 				ctx.networkCtx().updateSyncedThrottlesFromSavedState();
+				ctx.feeMultiplierSource().resetExpectations();
 			}
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not create system files!", e);

@@ -237,8 +237,8 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
-import com.hedera.services.throttling.bootstrap.ThrottleDefinitions;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
@@ -604,7 +604,7 @@ public class ServicesContext {
 
 	public FeeMultiplierSource feeMultiplierSource() {
 		if (feeMultiplierSource == null) {
-			feeMultiplierSource = new TxnRateFeeMultiplierSource(bucketThrottling());
+			feeMultiplierSource = new TxnRateFeeMultiplierSource(hapiThrottling());
 		}
 		return feeMultiplierSource;
 	}

@@ -1,6 +1,4 @@
-package com.hedera.services.throttling.bootstrap;
-
-import com.hedera.services.throttling.real.DeterministicThrottle;
+package com.hedera.services.throttles;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;

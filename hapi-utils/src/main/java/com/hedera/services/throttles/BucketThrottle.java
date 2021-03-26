@@ -1,4 +1,4 @@
-package com.hedera.services.throttling.real;
+package com.hedera.services.throttles;
 
 /**
  * A throttle that enforces a milli-TPS-resolution transaction rate based
@@ -47,19 +47,19 @@ public class BucketThrottle {
 
 	private long lastAllowedUnits = 0L;
 
-	public static BucketThrottle withTps(int tps) {
+	static BucketThrottle withTps(int tps) {
 		return new BucketThrottle(tps * MTPS_PER_TPS, DEFAULT_BURST_PERIOD);
 	}
 
-	public static BucketThrottle withMtps(long mtps) {
+	static BucketThrottle withMtps(long mtps) {
 		return new BucketThrottle(mtps, DEFAULT_BURST_PERIOD);
 	}
 
-	public static BucketThrottle withTpsAndBurstPeriod(int tps, int burstPeriod) {
+	static BucketThrottle withTpsAndBurstPeriod(int tps, int burstPeriod) {
 		return new BucketThrottle(tps * MTPS_PER_TPS, burstPeriod);
 	}
 
-	public static BucketThrottle withMtpsAndBurstPeriod(long mtps, int burstPeriod) {
+	static BucketThrottle withMtpsAndBurstPeriod(long mtps, int burstPeriod) {
 		return new BucketThrottle(mtps, burstPeriod);
 	}
 
@@ -72,7 +72,7 @@ public class BucketThrottle {
 		}
 	}
 
-	public boolean allow(int n, long elapsedNanos) {
+	boolean allow(int n, long elapsedNanos) {
 		long capacityUnits = elapsedNanos * mtps;
 		bucket.leak(capacityUnits);
 
@@ -86,7 +86,7 @@ public class BucketThrottle {
 		return true;
 	}
 
-	public void reclaimLastAllowedUse() {
+	void reclaimLastAllowedUse() {
 		bucket.leak(lastAllowedUnits);
 	}
 

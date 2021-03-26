@@ -1,4 +1,4 @@
-package com.hedera.services.throttling;
+package com.hedera.services.sysfiles.logic;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 

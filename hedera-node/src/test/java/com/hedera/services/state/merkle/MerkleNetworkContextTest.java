@@ -24,8 +24,8 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.throttling.real.DeterministicThrottle;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -42,17 +42,17 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.booleanThat;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 class MerkleNetworkContextTest {
 	RichInstant consensusTimeOfLastHandledTxn;
@@ -136,7 +136,6 @@ class MerkleNetworkContextTest {
 
 		// then:
 		assertEquals(subjectSnapshot.used(), aThrottle.usageSnapshot().used());
-		assertEquals(subjectSnapshot.capacity(), aThrottle.usageSnapshot().capacity());
 		assertEquals(subjectSnapshot.lastDecisionTime(), aThrottle.usageSnapshot().lastDecisionTime());
 	}
 
@@ -190,22 +189,16 @@ class MerkleNetworkContextTest {
 		InOrder inOrder = inOrder(in, midnightRateSet, seqNo);
 		var snapshots = snapshots();
 
-		given(in.readInt())
-				.willReturn(3)
-				.willReturn(snapshots.get(0).lastDecisionTime().getNano())
-				.willReturn(snapshots.get(1).lastDecisionTime().getNano())
-				.willReturn(snapshots.get(2).lastDecisionTime().getNano());
+		given(in.readInt()).willReturn(lastUseds.length);
 		given(in.readLong())
 				.willReturn(snapshots.get(0).used())
-				.willReturn(oneTpsOfCapacity)
-				.willReturn(snapshots.get(0).lastDecisionTime().getEpochSecond())
 				.willReturn(snapshots.get(1).used())
-				.willReturn(oneTpsOfCapacity)
-				.willReturn(snapshots.get(1).lastDecisionTime().getEpochSecond())
-				.willReturn(snapshots.get(2).used())
-				.willReturn(oneTpsOfCapacity)
-				.willReturn(snapshots.get(2).lastDecisionTime().getEpochSecond());
-		given(serdes.readNullableInstant(in)).willReturn(consensusTimeOfLastHandledTxn);
+				.willReturn(snapshots.get(2).used());
+		given(serdes.readNullableInstant(in))
+				.willReturn(consensusTimeOfLastHandledTxn)
+				.willReturn(RichInstant.fromJava(lastUseds[0]))
+				.willReturn(RichInstant.fromJava(lastUseds[1]))
+				.willReturn(RichInstant.fromJava(lastUseds[2]));
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.RELEASE_0130_VERSION);
@@ -255,9 +248,7 @@ class MerkleNetworkContextTest {
 		inOrder.verify(out).writeInt(3);
 		for (int i = 0; i < 3; i++) {
 			inOrder.verify(out).writeLong(used[i]);
-			inOrder.verify(out).writeLong(oneTpsOfCapacity);
-			inOrder.verify(out).writeLong(lastUseds[i].getEpochSecond());
-			inOrder.verify(out).writeInt(lastUseds[i].getNano());
+			inOrder.verify(serdes).writeNullableInstant(RichInstant.fromJava(lastUseds[i]), out);
 		}
 	}
 
@@ -272,18 +263,13 @@ class MerkleNetworkContextTest {
 		assertArrayEquals(used, immutableUsages.stream()
 				.mapToLong(DeterministicThrottle.UsageSnapshot::used)
 				.toArray());
-		assertArrayEquals(capacities, immutableUsages.stream()
-				.mapToLong(DeterministicThrottle.UsageSnapshot::capacity)
-				.toArray());
 		assertEquals(List.of(lastUseds), immutableUsages.stream()
 				.map(DeterministicThrottle.UsageSnapshot::lastDecisionTime)
 				.collect(Collectors.toList()));
 	}
 
 
-	long oneTpsOfCapacity = 1_000_000_000_000L;
 	long[] used = new long[] { 100L, 200L, 300L };
-	long[] capacities = new long[] { oneTpsOfCapacity, oneTpsOfCapacity, oneTpsOfCapacity };
 	Instant[] lastUseds = new Instant[] {
 			Instant.ofEpochSecond(1L, 100),
 			Instant.ofEpochSecond(2L, 200),
@@ -304,7 +290,7 @@ class MerkleNetworkContextTest {
 	private List<DeterministicThrottle.UsageSnapshot> snapshots() {
 		List<DeterministicThrottle.UsageSnapshot> cur = new ArrayList<>();
 		for (int i = 0; i < used.length; i++) {
-			var usageSnapshot = new DeterministicThrottle.UsageSnapshot(used[i], oneTpsOfCapacity, lastUseds[i]);
+			var usageSnapshot = new DeterministicThrottle.UsageSnapshot(used[i], lastUseds[i]);
 			cur.add(usageSnapshot);
 		}
 		return cur;

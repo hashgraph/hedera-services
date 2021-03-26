@@ -1,7 +1,7 @@
 package com.hedera.services.fees;
 
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.throttling.real.DeterministicThrottle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,30 +40,25 @@ class TxnRateFeeMultiplierSourceTest {
 			"0, 2, 950, 1000, 25",
 	})
 	public void usesExpectedMultiplier(
-			long firstUsed,
-			long firstCapacity,
-			long secondUsed,
-			long secondCapacity,
+			int firstUsed,
+			int firstTps,
+			int secondUsed,
+			int secondTps,
 			long expectedMultiplier
 	) {
-		given(throttling.currentUsageFor(CryptoTransfer))
-				.willReturn(usageSnapshots(firstUsed, firstCapacity, secondUsed, secondCapacity));
+		var aThrottle = DeterministicThrottle.withTps(firstTps);
+		var bThrottle = DeterministicThrottle.withTps(secondTps);
+		aThrottle.allow(firstUsed);
+		bThrottle.allow(secondUsed);
+		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle, bThrottle));
 
 		// when:
+		subject.resetExpectations();
 		subject.updateMultiplier();
 		// and:
 		long actualMultiplier = subject.currentMultiplier();
 
 		// then:
 		Assertions.assertEquals(expectedMultiplier, actualMultiplier);
-	}
-
-	private List<DeterministicThrottle.UsageSnapshot> usageSnapshots(
-			long firstUsed, long firstCapacity, long secondUsed, long secondCapacity
-	) {
-		var lastUsed = Instant.ofEpochSecond(1L);
-		return List.of(
-				new DeterministicThrottle.UsageSnapshot(firstUsed, firstCapacity, lastUsed),
-				new DeterministicThrottle.UsageSnapshot(secondUsed, secondCapacity, lastUsed));
 	}
 }

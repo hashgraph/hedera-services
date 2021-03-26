@@ -1,12 +1,13 @@
 package com.hedera.services.throttling;
 
-import com.hedera.services.throttling.bootstrap.ThrottleDefinitions;
-import com.hedera.services.throttling.real.DeterministicThrottle;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -25,13 +26,13 @@ public class HapiThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public List<DeterministicThrottle.UsageSnapshot> currentUsageFor(HederaFunctionality function) {
+	public List<DeterministicThrottle> allActiveThrottles() {
 		throw new AssertionError("Not implemented!");
 	}
 
 	@Override
-	public List<DeterministicThrottle> allActiveThrottles() {
-		throw new AssertionError("Not implemented!");
+	public List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function) {
+		return Collections.emptyList();
 	}
 
 	@Override

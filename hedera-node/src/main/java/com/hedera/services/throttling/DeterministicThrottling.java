@@ -1,7 +1,7 @@
 package com.hedera.services.throttling;
 
-import com.hedera.services.throttling.bootstrap.ThrottleDefinitions;
-import com.hedera.services.throttling.real.DeterministicThrottle;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -41,17 +41,17 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public List<DeterministicThrottle.UsageSnapshot> currentUsageFor(HederaFunctionality function) {
+	public List<DeterministicThrottle> allActiveThrottles() {
+		return activeThrottles;
+	}
+
+	@Override
+	public List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function) {
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(function)) == null) {
 			throw new IllegalStateException("No throttle present for (apparently supported) operation " + function + "!");
 		}
-		return manager.currentUsage();
-	}
-
-	@Override
-	public List<DeterministicThrottle> allActiveThrottles() {
-		return activeThrottles;
+		return manager.managedThrottles();
 	}
 
 	@Override

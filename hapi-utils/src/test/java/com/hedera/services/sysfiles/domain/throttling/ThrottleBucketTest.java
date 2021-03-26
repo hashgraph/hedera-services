@@ -1,6 +1,7 @@
-package com.hedera.services.throttling.bootstrap;
+package com.hedera.services.sysfiles.domain.throttling;
 
-import com.hedera.services.throttling.real.DeterministicThrottle;
+import com.hedera.services.throttles.ConcurrentThrottleTestHelper;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
@@ -9,8 +10,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.throttling.bootstrap.ThrottlesJsonToProtoSerde.loadPojoDefs;
-import static com.hedera.services.throttling.bootstrap.ThrottlesJsonToProtoSerde.loadProtoDefs;
+import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadPojoDefs;
+import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadProtoDefs;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 
 class ThrottleBucketTest {

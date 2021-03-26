@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.throttling;
+package com.hedera.services.sysfiles.domain.throttling;
 
 import java.util.ArrayList;
 import java.util.List;

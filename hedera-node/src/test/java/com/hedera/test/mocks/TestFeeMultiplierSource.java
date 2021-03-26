@@ -9,4 +9,9 @@ public enum TestFeeMultiplierSource implements FeeMultiplierSource {
 	public long currentMultiplier() {
 		return 1L;
 	}
+
+	@Override
+	public void resetExpectations() {
+		/* No-op */
+	}
 }

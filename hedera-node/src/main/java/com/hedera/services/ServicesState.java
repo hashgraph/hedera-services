@@ -296,6 +296,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			ctx.systemFilesManager().loadAllSystemFiles();
 			ctx.networkCtx().syncWithThrottles(ctx.handleThrottling());
 			ctx.networkCtx().updateSyncedThrottlesFromSavedState();
+			ctx.feeMultiplierSource().resetExpectations();
 		}
 	}
 

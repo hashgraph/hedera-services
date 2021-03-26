@@ -1,6 +1,5 @@
-package com.hedera.services.throttling;
+package com.hedera.services.sysfiles.logic;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -34,9 +33,9 @@ class ErrorCodeUtilsTest {
 	@Test
 	void returnsEmptyOptionalIfNoErrorCode() {
 		// given:
-		var msg = "NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION :: YIKES!";
+		var msg = "YIKES!";
 
 		// expect:
-		assertEquals(NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, ErrorCodeUtils.errorFrom(msg));
+		assertEquals(Optional.empty(), ErrorCodeUtils.errorFrom(msg));
 	}
 }

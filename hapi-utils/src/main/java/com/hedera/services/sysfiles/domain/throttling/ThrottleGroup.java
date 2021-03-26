@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.throttling;
+package com.hedera.services.sysfiles.domain.throttling;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 

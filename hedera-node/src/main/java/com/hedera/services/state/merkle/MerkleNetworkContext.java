@@ -25,8 +25,8 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.throttling.real.DeterministicThrottle;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
@@ -147,10 +147,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			if (n > 0) {
 				throttleUsages = new ArrayList<>();
 				while (n-- > 0) {
-					var snapshot = new DeterministicThrottle.UsageSnapshot(
-						in.readLong(),
-						in.readLong(),
-						RichInstant.from(in).toJava());
+					var used = in.readLong();
+					var lastUsed = serdes.readNullableInstant(in);
+					var snapshot = new DeterministicThrottle.UsageSnapshot(used, lastUsed.toJava());
 					throttleUsages.add(snapshot);
 				}
 			}
@@ -171,8 +170,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeInt(n);
 		for (var usageSnapshot : throttleUsages) {
 			out.writeLong(usageSnapshot.used());
-			out.writeLong(usageSnapshot.capacity());
-			RichInstant.fromJava(usageSnapshot.lastDecisionTime()).serialize(out);
+			serdes.writeNullableInstant(RichInstant.fromJava(usageSnapshot.lastDecisionTime()), out);
 		}
 	}
 
