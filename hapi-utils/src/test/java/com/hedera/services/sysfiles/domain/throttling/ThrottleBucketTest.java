@@ -40,6 +40,7 @@ class ThrottleBucketTest {
 	}
 
 	@Test
+	@Disabled
 	void failsWhenConstructingThrottlesWithZeroOpsPerSecForAGroup() {
 		// setup:
 		int n = 1;
