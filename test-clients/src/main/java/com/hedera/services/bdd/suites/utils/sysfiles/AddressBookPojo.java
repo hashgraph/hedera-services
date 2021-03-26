@@ -51,7 +51,11 @@ public class AddressBookPojo {
 	}
 
 	public static AddressBookPojo addressBookFrom(AddressBook book) {
-		return from(book, BookEntryPojo::fromAddressBookEntry, AddressBookPojo::withListedIps);
+		return from(book, BookEntryPojo::fromAddressBookEntry);
+	}
+
+	public static AddressBookPojo addressBookForClientsFrom(AddressBook book) {
+		return from(book, BookEntryPojo::fromAddressBookForClientsEntry);
 	}
 
 	public static AddressBookPojo addressBookFrom(AddressBookForClients book) {
@@ -59,7 +63,7 @@ public class AddressBookPojo {
 	}
 
 	public static AddressBookPojo nodeDetailsFrom(AddressBook book) {
-		return from(book, BookEntryPojo::fromNodeDetailsEntry, pojo -> pojo);
+		return from(book, BookEntryPojo::fromNodeDetailsEntry);
 	}
 
 	public static AddressBookPojo withListedIps(AddressBookPojo pojo) {
@@ -90,15 +94,14 @@ public class AddressBookPojo {
 
 	private static AddressBookPojo from(
 			AddressBook book,
-			Function<NodeAddress, BookEntryPojo> converter,
-			UnaryOperator<AddressBookPojo> finalizer
+			Function<NodeAddress, BookEntryPojo> converter
 	) {
 		var pojo = new AddressBookPojo();
 		pojo.setEntries(book.getNodeAddressList()
 				.stream()
 				.map(converter)
 				.collect(toList()));
-		return finalizer.apply(pojo);
+		return pojo;
 	}
 
 	private static AddressBookPojo from(

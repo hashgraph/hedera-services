@@ -57,17 +57,20 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 	private final Map<String, String> specConfig;
 	private final String[] sysFilesToDownload;
 	private final String version;
+	private final String version13Type;
 
 	public SysFileDownloadSuite(
 			String destDir,
 			Map<String, String> specConfig,
 			String[] sysFilesToDownload,
-			String version
+			String version,
+			String version13Type
 	) {
 		this.destDir = destDir;
 		this.specConfig = specConfig;
 		this.sysFilesToDownload = sysFilesToDownload;
 		this.version = version;
+		this.version13Type = version13Type;
 	}
 
 	@Override
@@ -92,7 +95,7 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 	private HapiGetFileContents appropriateQuery(long fileNum) {
 		String fid = String.format("0.0.%d", fileNum);
 		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
-		setAppropriateVersion(version);
+		setAppropriateVersion(version, version13Type);
 		String fqLoc = destDir + File.separator + serde.preferredFileName();
 		return getFileContents(fid).saveReadableTo(serde::fromRawFile, fqLoc);
 	}

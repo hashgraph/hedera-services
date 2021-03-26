@@ -58,6 +58,19 @@ public class BookEntryPojo {
 		return pojo;
 	}
 
+	public static BookEntryPojo fromAddressBookForClientsEntry(NodeAddress address) {
+		var pojo = fromAnyEntry(address);
+		if (address.getNodeEndpointCount() == 0) {
+			pojo.endPoints = new ArrayList<>();
+		} else {
+			pojo.endPoints = address.getNodeEndpointList()
+					.stream()
+					.map(s -> s.getIpAddress() + " : " + s.getPort())
+					.collect(Collectors.toList());
+		}
+		return pojo;
+	}
+
 	public static BookEntryPojo fromAddressBookEntry(NodeAddressForClients address) {
 		var pojo = fromAnyEntry(address);
 		if (address.getNodeCertHash().isEmpty()) {
@@ -79,10 +92,10 @@ public class BookEntryPojo {
 
 	public Stream<NodeAddress> toAddressBookEntries() {
 		List<NodeAddress> reps = new ArrayList<>();
-		for (String ip : ips) {
+		//for (String ip : ips) {
 			var address = NodeAddress.newBuilder();
 			addBasicBioTo(address);
-			buildEndPoints(address, ip, port);
+			buildEndPointsIfExist(address);
 			address.setIpAddress(ByteString.copyFrom(ip.getBytes()));
 			address.setPortno(Optional.ofNullable(port).orElse(0));
 			if (certHash != null) {
@@ -92,7 +105,7 @@ public class BookEntryPojo {
 				address.setNodeCertHash(ByteString.copyFrom(certHash.getBytes()));
 			}
 			reps.add(address.build());
-		}
+		//}
 		return reps.stream();
 	}
 
@@ -140,7 +153,7 @@ public class BookEntryPojo {
 	public Stream<NodeAddress> toNodeDetailsEntry() {
 		var address = NodeAddress.newBuilder();
 		addBasicBioTo(address);
-		buildEndPoints(address, ip, port);
+		buildEndPointsIfExist(address);
 		address.setIpAddress(ByteString.copyFrom(ip.getBytes()));
 		address.setPortno(Optional.ofNullable(port).orElse(0));
 		if (rsaPubKey != null) {
@@ -169,39 +182,33 @@ public class BookEntryPojo {
 		}
 	}
 
-	private void buildEndPoints(NodeAddress.Builder builder, String ip, Integer port) {
-		if (endPoints == null || endPoints.isEmpty()) {
+	private void buildEndPointsIfExist(NodeAddress.Builder builder) {
+		if (endPoints == null) {
+			return;
+		}
+		for (String endPoint : endPoints) {
 			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder();
-			nodeEndPoint.setIpAddress(ip);
-			nodeEndPoint.setPort(String.valueOf(port));
+			String[] elements = endPoint.split(":");
+			nodeEndPoint.setIpAddress(elements[0].trim());
+			nodeEndPoint.setPort(elements[1].trim());
 			builder.addNodeEndpoint(nodeEndPoint.build());
-		} else {
-			for (String endPoint : endPoints) {
-				NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder();
-				String[] elements = endPoint.split(":");
-				nodeEndPoint.setIpAddress(elements[0].trim());
-				nodeEndPoint.setPort(elements[1].trim());
-				builder.addNodeEndpoint(nodeEndPoint.build());
-			}
 		}
 	}
 
 	private static BookEntryPojo fromAnyEntry(NodeAddress address) {
 		var entry = new BookEntryPojo();
-		entry.memo = new String(address.getMemo().toByteArray());
+
+		if(address.getMemo().isEmpty()){
+			entry.memo = "<N/A>";
+		}else{
+			entry.memo = new String(address.getMemo().toByteArray());
+		}
+
 		entry.nodeId = address.getNodeId();
 		if (address.hasNodeAccountId()) {
 			entry.nodeAccount = HapiPropertySource.asAccountString(address.getNodeAccountId());
 		} else {
 			entry.nodeAccount = "<N/A>";
-		}
-		if (address.getNodeEndpointCount() == 0) {
-			entry.endPoints = new ArrayList<>();
-		} else {
-			entry.endPoints = address.getNodeEndpointList()
-					.stream()
-					.map(s -> s.getIpAddress() + " : " + s.getPort())
-					.collect(Collectors.toList());
 		}
 
 		entry.ip = new String(address.getIpAddress().toByteArray());

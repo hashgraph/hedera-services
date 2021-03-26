@@ -73,13 +73,15 @@ public class SysFileUploadSuite extends HapiApiSuite {
 	private final Map<String, String> specConfig;
 	private final long sysFileId;
 	private final String version;
+	private final String version13Type;
 
 	public SysFileUploadSuite(final String srcDir, final Map<String, String> specConfig,
-			final String sysFile,  final String version) {
+			final String sysFile,  final String version, final String version13Type) {
 		this.srcDir = srcDir;
 		this.specConfig = specConfig;
 		this.sysFileId = rationalized(sysFile);
 		this.version = version;
+		this.version13Type = version13Type;
 	}
 
 	@Override
@@ -113,7 +115,7 @@ public class SysFileUploadSuite extends HapiApiSuite {
 	private ByteString appropriateContents(final Long fileNum) {
 		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
 		String name = serde.preferredFileName();
-		setAppropriateVersion(version);
+		setAppropriateVersion(version, version13Type);
 		String loc = srcDir + File.separator + name;
 		try {
 			var stylized = Files.readString(Paths.get(loc));
