@@ -457,5 +457,10 @@ class UsageBasedFeeCalculatorTest {
 		public void resetExpectations() {
 			/* No-op */
 		}
+
+		@Override
+		public void updateMultiplier() {
+			/* No-op. */
+		}
 	}
 }

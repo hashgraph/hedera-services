@@ -1877,7 +1877,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - new-throttling-spec
             workflow-name: "Continuous integration"
         - build-platform-and-services:
             context: SonarCloud

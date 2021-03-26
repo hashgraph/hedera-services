@@ -234,8 +234,8 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
-import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
+import com.hedera.services.throttling.TxnAwareHandleThrottling;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.txns.SubmissionFlow;
@@ -352,8 +352,6 @@ import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_L
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
-import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
-import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -623,7 +621,7 @@ public class ServicesContext {
 
 	public FunctionalityThrottling handleThrottling() {
 		if (handleThrottling == null) {
-			handleThrottling = new DeterministicThrottling(() -> 1);
+			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), new DeterministicThrottling(() -> 1));
 		}
 		return handleThrottling;
 	}
@@ -1481,6 +1479,7 @@ public class ServicesContext {
 						var defs = ThrottleDefinitions.fromProto(proto);
 						hapiThrottling().rebuildFor(defs);
 						handleThrottling().rebuildFor(defs);
+						feeMultiplierSource().resetExpectations();
 					});
 		}
 		return throttleDefsManager;
@@ -1676,6 +1675,7 @@ public class ServicesContext {
 						var defs = ThrottleDefinitions.fromProto(throttles);
 						hapiThrottling().rebuildFor(defs);
 						handleThrottling().rebuildFor(defs);
+						feeMultiplierSource().resetExpectations();
 					},
 					schedules -> fees().init(),
 					config -> {

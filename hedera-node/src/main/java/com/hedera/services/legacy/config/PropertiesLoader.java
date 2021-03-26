@@ -38,10 +38,6 @@ public class PropertiesLoader {
 	public static CustomProperties apiProperties;
 	public static List<Runnable> updateCallbacks = new ArrayList<>();
 
-	public static void registerUpdateCallback(Runnable cb) {
-		updateCallbacks.add(cb);
-	}
-
 	public static void populateApplicationPropertiesWithProto(ServicesConfigurationList serviceConfigList) {
 		Properties properties = new Properties();
 		serviceConfigList.getNameValueList().forEach(setting -> {

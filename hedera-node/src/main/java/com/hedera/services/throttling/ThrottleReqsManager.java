@@ -1,6 +1,7 @@
 package com.hedera.services.throttling;
 
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
@@ -46,5 +47,18 @@ public class ThrottleReqsManager {
 
 	List<DeterministicThrottle> managedThrottles() {
 		return allReqs.stream().map(Pair::getLeft).collect(Collectors.toList());
+	}
+
+	String asReadableRequirements() {
+		return allReqs.stream().map(this::readable).collect(Collectors.joining(", "));
+	}
+
+	private String readable(Pair<DeterministicThrottle, Integer> req) {
+		var throttle = req.getLeft();
+		return approximateTps(req.getRight(), throttle.mtps()) + " TPS from " + throttle.name();
+	}
+
+	private String approximateTps(int logicalTpsReq, long bucketMtps) {
+		return String.format("%.2f", (1.0 * bucketMtps) / 1000.0 / logicalTpsReq);
 	}
 }

@@ -121,10 +121,10 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.DeterministicThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
+import com.hedera.services.throttling.TxnAwareHandleThrottling;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
@@ -522,7 +522,7 @@ public class ServicesContextTest {
 		assertThat(ctx.nodeDiligenceScreen(), instanceOf(AwareNodeDiligenceScreen.class));
 		assertThat(ctx.feeMultiplierSource(), instanceOf(TxnRateFeeMultiplierSource.class));
 		assertThat(ctx.hapiThrottling(), instanceOf(HapiThrottling.class));
-		assertThat(ctx.handleThrottling(), instanceOf(DeterministicThrottling.class));
+		assertThat(ctx.handleThrottling(), instanceOf(TxnAwareHandleThrottling.class));
 		assertThat(ctx.throttleDefsManager(), instanceOf(ThrottleDefsManager.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());

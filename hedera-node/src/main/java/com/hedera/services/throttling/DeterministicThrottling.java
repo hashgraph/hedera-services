@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.function.IntSupplier;
@@ -76,5 +77,22 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		functionReqs = newFunctionReqs;
 		activeThrottles = newActiveThrottles;
+
+		logResolvedDefinitions(log);
+	}
+
+	void logResolvedDefinitions(Logger refinedLog) {
+		int n = capacitySplitSource.getAsInt();
+		var sb = new StringBuilder("Resolved throttles (after splitting capacity " + n + " ways) - \n");
+		functionReqs.entrySet().stream()
+				.sorted(Comparator.comparing(entry -> entry.getKey().toString()))
+				.forEach(entry -> {
+					var function = entry.getKey();
+					var manager = entry.getValue();
+					sb.append("  ").append(function).append(":\n    ")
+							.append(manager.asReadableRequirements())
+							.append("\n");
+				});
+		refinedLog.info(sb.toString().trim());
 	}
 }

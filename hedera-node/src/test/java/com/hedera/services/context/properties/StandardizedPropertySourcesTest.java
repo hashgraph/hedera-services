@@ -29,14 +29,6 @@ import org.junit.jupiter.api.Test;
 import java.util.function.Predicate;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.asCapacityRequiredProperty;
-import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_BURST_PROPERTY;
-import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_CAPACITY_PROPERTY;
-import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_QUERY_BUCKET_PROPERTY;
-import static com.hedera.services.throttling.bucket.BucketConfig.burstProperty;
-import static com.hedera.services.throttling.bucket.BucketConfig.capacityProperty;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -124,68 +116,6 @@ public class StandardizedPropertySourcesTest {
 
 		// cleanup:
 		StandardizedPropertySources.dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
-	}
-
-	@Test
-	void castsThrottlePropsAppropriately() {
-		// setup:
-		var bucket = "B";
-		var function = HederaFunctionality.ContractGetRecords;
-		var config = ServicesConfigurationList.newBuilder()
-				.addNameValue(from("random", "no-throttle-relation"))
-				.addNameValue(from(DEFAULT_BURST_PROPERTY, "1.23"))
-				.addNameValue(from(DEFAULT_CAPACITY_PROPERTY, "1.23"))
-				.addNameValue(from(DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY, "1.23"))
-				.addNameValue(from(DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY, "1.23"))
-				.addNameValue(from(DEFAULT_QUERY_BUCKET_PROPERTY, "something"))
-				.addNameValue(from(capacityProperty.apply(bucket), "1.23"))
-				.addNameValue(from(burstProperty.apply(bucket), "1.23"))
-				.addNameValue(from(asCapacityRequiredProperty.apply(function), "1.23"))
-				.build();
-
-		givenImpliedSubject();
-		// and:
-		var props = subject.asResolvingSource();
-
-		// when:
-		subject.reloadFrom(config);
-
-		// then:
-		assertEquals(1.23, props.getDoubleProperty(DEFAULT_BURST_PROPERTY));
-		assertEquals(1.23, props.getDoubleProperty(DEFAULT_CAPACITY_PROPERTY));
-		assertEquals(1.23, props.getDoubleProperty(DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY));
-		assertEquals(1.23, props.getDoubleProperty(DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY));
-		assertEquals(1.23, props.getDoubleProperty(capacityProperty.apply(bucket)));
-		assertEquals(1.23, props.getDoubleProperty(burstProperty.apply(bucket)));
-		assertEquals(1.23, props.getDoubleProperty(asCapacityRequiredProperty.apply(function)));
-		assertEquals("something", props.getStringProperty(DEFAULT_QUERY_BUCKET_PROPERTY));
-	}
-
-	@Test
-	void recoversFromUncastableProps() {
-		// setup:
-		var bucket = "B";
-		var function = HederaFunctionality.ContractGetRecords;
-		var config = ServicesConfigurationList.newBuilder()
-				.addNameValue(from(DEFAULT_BURST_PROPERTY, "asdf"))
-				.build();
-
-		givenImpliedSubject();
-		// and:
-		var props = subject.asResolvingSource();
-
-		// when:
-		subject.reloadFrom(config);
-
-		// then:
-		assertFalse(props.containsProperty(DEFAULT_BURST_PROPERTY));
-	}
-
-	private Setting from(String name, String value) {
-		return Setting.newBuilder()
-				.setName(name)
-				.setValue(value)
-				.build();
 	}
 
 	@Test

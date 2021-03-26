@@ -72,6 +72,7 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
 			try {
 				bucket.asThrottleMapping(n);
 			} catch (Exception e) {
+				log.warn("Rejected new definitions {}", proto, e);
 				var detailError = ErrorCodeUtils.errorFrom(e.getMessage());
 				return detailError
 						.<Map.Entry<ResponseCodeEnum, Boolean>>map(

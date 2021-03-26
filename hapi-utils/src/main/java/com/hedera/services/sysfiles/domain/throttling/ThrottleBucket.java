@@ -89,7 +89,7 @@ public class ThrottleBucket {
 					"Bucket " + name + " overflows with given throttle groups!"));
 		}
 
-		var throttle = DeterministicThrottle.withMtpsAndBurstPeriod(logicalMtps / n, burstPeriod);
+		var throttle = DeterministicThrottle.withMtpsAndBurstPeriodNamed(logicalMtps / n, burstPeriod, name);
 		long totalCapacityUnits = throttle.capacity();
 
 		Set<HederaFunctionality> seenSoFar = new HashSet<>();

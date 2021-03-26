@@ -21,19 +21,25 @@ package com.hedera.services.bdd.suites.throttling;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadProtoDefs;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
@@ -50,12 +56,46 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						throttleDefsRejectUnauthorizedPayers(),
-						throttleDefsHaveExpectedDefaults(),
-						throttleUpdateRejectsMultiGroupAssignment(),
-						throttleUpdateWithZeroGroupOpsPerSecFails(),
+//						throttleDefsRejectUnauthorizedPayers(),
+//						throttleDefsHaveExpectedDefaults(),
+//						throttleUpdateRejectsMultiGroupAssignment(),
+//						throttleUpdateWithZeroGroupOpsPerSecFails(),
+						congestionPricingWorks(),
 				}
 		);
+	}
+
+	private HapiApiSpec congestionPricingWorks() {
+		int burstSize = 999;
+		String expensiveXfer = "expensive";
+
+		var defaultThrottles = loadProtoDefs("network-defaults/throttles.json");
+		var expensiveXferThrottles = loadProtoDefs("testSystemFiles/expensive-xfer-throttles.json");
+
+		return defaultHapiSpec("CongestionPricingWorks")
+				.given(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)),
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(expensiveXferThrottles.toByteArray())
+				).when(
+						inParallel(IntStream.range(0, burstSize).mapToObj(i ->
+								cryptoTransfer(tinyBarsFromTo(EXCHANGE_RATE_CONTROL, FUNDING, 1))
+										.fee(ONE_HUNDRED_HBARS)
+										.payingWith(EXCHANGE_RATE_CONTROL)
+										.deferStatusResolution())
+								.toArray(HapiSpecOperation[]::new)),
+						cryptoTransfer(tinyBarsFromTo(EXCHANGE_RATE_CONTROL, FUNDING, 1))
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.fee(ONE_HUNDRED_HBARS)
+								.via(expensiveXfer)
+				).then(
+						getTxnRecord(expensiveXfer)
+								.logged(),
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles.toByteArray())
+				);
 	}
 
 	private HapiApiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {

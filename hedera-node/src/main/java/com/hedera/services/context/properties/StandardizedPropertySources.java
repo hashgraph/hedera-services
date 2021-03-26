@@ -22,25 +22,17 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
 import static com.hedera.services.legacy.config.PropertiesLoader.getSaveAccounts;
 import static com.hedera.services.legacy.config.PropertiesLoader.getUniqueListeningPortFlag;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_CONFIG_PREFIX;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_PREFIX;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY;
-import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_BURST_PROPERTY;
-import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_CAPACITY_PROPERTY;
 
 /**
  * Implements a {@link PropertySources} that re-resolves every property
@@ -64,7 +56,6 @@ public class StandardizedPropertySources implements PropertySources {
 
 	private final PropertySource bootstrapProps;
 	private final Predicate<String> fileSourceExists;
-	private final Map<String, Object> throttlePropsFromSysFile = new HashMap<>();
 
 	final ScreenedSysFileProps dynamicGlobalProps;
 	final ScreenedNodeFileProps nodeProps;
@@ -81,42 +72,8 @@ public class StandardizedPropertySources implements PropertySources {
 	}
 
 	public void reloadFrom(ServicesConfigurationList config) {
-		log.info("Updating throttle props from {} candidates", config.getNameValueCount());
-		throttlePropsFromSysFile.clear();
-		for (Setting setting : config.getNameValueList())  {
-			var name = setting.getName();
-			if (!name.startsWith(API_THROTTLING_PREFIX)) {
-				continue;
-			}
-			if (isDoubleProp(name)) {
-				putDouble(name, setting.getValue());
-			} else {
-				throttlePropsFromSysFile.put(name, setting.getValue());
-			}
-		}
+		log.info("Reloading global dynamic properties from {} candidates", config.getNameValueCount());
 		dynamicGlobalProps.screenNew(config);
-	}
-
-	private static final Set<String> DEFAULT_DOUBLE_PROPS = Set.of(
-			DEFAULT_BURST_PROPERTY,
-			DEFAULT_CAPACITY_PROPERTY,
-			DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY,
-			DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY);
-	private boolean isDoubleProp(String name) {
-		if (DEFAULT_DOUBLE_PROPS.contains(name)) {
-			return true;
-		}
-		if (name.endsWith("burstPeriod") || name.endsWith("capacity") || name.endsWith("capacityRequired")) {
-			return true;
-		}
-		return false;
-	}
-	private void putDouble(String name, String literal) {
-		try {
-			throttlePropsFromSysFile.put(name, Double.parseDouble(literal));
-		} catch (NumberFormatException nfe) {
-			log.warn("Ignoring config: {}={}", name, literal, nfe);
-		}
 	}
 
 	@Override
@@ -138,9 +95,8 @@ public class StandardizedPropertySources implements PropertySources {
 	@Override
 	public PropertySource asResolvingSource() {
 		var bootstrap = new SupplierMapPropertySource(sourceMap());
-		var bootstrapPlusThrottleProps = new DeferringPropertySource(bootstrap, throttlePropsFromSysFile);
-		var bootstrapPlusThrottlePlusNodeProps = new ChainedSources(nodeProps, bootstrapPlusThrottleProps);
-		return new ChainedSources(dynamicGlobalProps, bootstrapPlusThrottlePlusNodeProps);
+		var bootstrapPlusNodeProps = new ChainedSources(nodeProps, bootstrap);
+		return new ChainedSources(dynamicGlobalProps, bootstrapPlusNodeProps);
 	}
 
 	private Map<String, Supplier<Object>> sourceMap() {

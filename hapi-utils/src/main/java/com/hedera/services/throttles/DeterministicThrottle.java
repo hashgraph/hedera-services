@@ -83,6 +83,10 @@ public class DeterministicThrottle {
 		return name;
 	}
 
+	public long mtps() {
+		return delegate.mtps();
+	}
+
 	public long used() {
 		return delegate.bucket().capacityUsed();
 	}

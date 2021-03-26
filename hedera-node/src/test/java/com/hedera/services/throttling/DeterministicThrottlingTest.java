@@ -3,9 +3,11 @@ package com.hedera.services.throttling;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -19,7 +21,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DeterministicThrottlingTest {
@@ -57,6 +59,41 @@ class DeterministicThrottlingTest {
 		assertFalse(ans);
 		assertEquals( 2500 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
 		assertEquals( BucketThrottle.capacityUnitsPerTxn(), bNow.used());
+	}
+
+	@Test
+	void logsAsExpected() {
+		// setup:
+		var defs = loadPojoDefs("bootstrap/throttles.json");
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		String desired = "Resolved throttles (after splitting capacity 2 ways) - \n" +
+				"  ContractCall:\n" +
+				"    6.00 TPS from A, 5.00 TPS from B\n" +
+				"  CryptoCreate:\n" +
+				"    5000.00 TPS from A, 1.00 TPS from C\n" +
+				"  CryptoGetAccountBalance:\n" +
+				"    500000.00 TPS from D\n" +
+				"  CryptoTransfer:\n" +
+				"    5000.00 TPS from A\n" +
+				"  TokenAssociateToAccount:\n" +
+				"    50.00 TPS from C\n" +
+				"  TokenCreate:\n" +
+				"    50.00 TPS from C\n" +
+				"  TokenMint:\n" +
+				"    1500.00 TPS from A\n" +
+				"  TransactionGetReceipt:\n" +
+				"    500000.00 TPS from D";
+
+		var mockLog = mock(Logger.class);
+
+		// when:
+		subject.rebuildFor(defs);
+		// and:
+		subject.logResolvedDefinitions(mockLog);
+
+		// then:
+		verify(mockLog).info(captor.capture());
+		assertEquals(desired, captor.getValue());
 	}
 
 	@Test

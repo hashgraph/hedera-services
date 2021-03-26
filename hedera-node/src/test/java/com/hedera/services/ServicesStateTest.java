@@ -191,6 +191,7 @@ class ServicesStateTest {
 		book = mock(AddressBook.class);
 		given(book.copy()).willReturn(bookCopy);
 		given(book.getAddress(1)).willReturn(address);
+		given(book.getSize()).willReturn(1);
 
 		logic = mock(ProcessLogic.class);
 		ctx = mock(ServicesContext.class);

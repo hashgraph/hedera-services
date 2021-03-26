@@ -1,6 +1,5 @@
 package com.hedera.services.fees;
 
-import com.hedera.services.ServicesState;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import org.apache.logging.log4j.LogManager;
@@ -46,10 +45,36 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 			var throttle = activeThrottles.get(i);
 			long capacity = throttle.capacity();
 			for (int j = 0; j < UPSCALE_USAGE_PERCENT_TRIGGERS.length; j++) {
-				long cutoff = (capacity * UPSCALE_USAGE_PERCENT_TRIGGERS[j]) / 100;
+				long cutoff = (capacity / 100L) * UPSCALE_USAGE_PERCENT_TRIGGERS[j];
 				activeTriggerValues[i][j] = cutoff;
 			}
 		}
+		logReadableCutoffs(log);
+	}
+
+	void logReadableCutoffs(Logger refinedLog) {
+		refinedLog.info("The new cutoffs for congestion pricing are:\n  " + this);
+	}
+
+	@Override
+	public String toString() {
+		var sb = new StringBuilder();
+		for (int i = 0, n = activeThrottles.size(); i < n; i++) {
+			var throttle = activeThrottles.get(i);
+			sb.append("  (").append(throttle.name()).append(") When logical TPS exceeds:\n");
+			for (int j = 0; j < UPSCALE_MULTIPLIERS.length; j++) {
+				sb.append("    ")
+						.append(readableTpsCutoffFor(activeTriggerValues[i][j], throttle.mtps(), throttle.capacity()))
+						.append(" TPS, multiplier is ")
+						.append(UPSCALE_MULTIPLIERS[j])
+						.append("x\n");
+			}
+		}
+		return sb.toString().trim();
+	}
+
+	private String readableTpsCutoffFor(long capacityCutoff, long mtps, long capacity) {
+		return String.format("%.2f", (capacityCutoff * 1.0) / capacity * mtps / 1000.0);
 	}
 
 	/**
@@ -62,6 +87,7 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	 *
 	 * That is, the throttle states must be a child of the {@link com.hedera.services.ServicesState}.
 	 */
+	@Override
 	public void updateMultiplier() {
 		multiplier = DEFAULT_MULTIPLIER;
 		for (int i = 0; i < activeTriggerValues.length; i++) {

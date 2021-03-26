@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import static com.hedera.services.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
 import static com.hedera.services.context.properties.BootstrapProperties.transformFor;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_PREFIX;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static java.util.Map.entry;
 
@@ -127,8 +126,7 @@ public class ScreenedSysFileProps implements PropertySource {
 	private boolean isValidGlobalDynamic(Setting prop) {
 		var name = prop.getName();
 		var clearlyBelongs = GLOBAL_DYNAMIC_PROPS.contains(name);
-		var isThrottleProp = name.startsWith(API_THROTTLING_PREFIX);
-		if (!clearlyBelongs && !isThrottleProp) {
+		if (!clearlyBelongs) {
 			log.warn(String.format(MISPLACED_PROP_TPL, name));
 		}
 		return clearlyBelongs;
@@ -165,6 +163,7 @@ public class ScreenedSysFileProps implements PropertySource {
 			transformFor(prop.getName()).apply(prop.getValue());
 			return true;
 		} catch (Exception reason) {
+			reason.printStackTrace();
 			log.warn(String.format(
 					UNPARSEABLE_PROP_TPL,
 					prop.getValue(),

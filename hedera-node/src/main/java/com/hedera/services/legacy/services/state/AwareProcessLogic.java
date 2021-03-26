@@ -218,6 +218,11 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.txnCtx().payerSigIsKnownActive();
 		}
 
+		/* This is only to monitor the current network usage for automated
+		congestion pricing; we don't actually throttle consensus transactions. */
+		ctx.handleThrottling().shouldThrottle(accessor.getFunction());
+		ctx.feeMultiplierSource().updateMultiplier();
+
 		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
 
 		var recentHistory = ctx.txnHistories().get(accessor.getTxnId());
