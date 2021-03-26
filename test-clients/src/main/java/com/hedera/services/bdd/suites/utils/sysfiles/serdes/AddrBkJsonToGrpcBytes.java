@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,11 +45,11 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 	public String fromRawFile(byte[] bytes) {
 		try {
 			var pojoBook = new AddressBookPojo();
-			//if(protoBufVersion == ProtoBufVersion.V0_12_0) {
+			if (protoBufVersion == ProtoBufVersion.V0_12_0) {
 				pojoBook = addressBookFrom(AddressBook.parseFrom(bytes));
-//			} else {
-//				pojoBook = addressBookFrom(AddressBookForClients.parseFrom(bytes));
-//			}
+			} else {
+				pojoBook = addressBookFrom(AddressBookForClients.parseFrom(bytes));
+			}
 			return mapper
 					.writerWithDefaultPrettyPrinter()
 					.writeValueAsString(pojoBook);
@@ -62,7 +62,7 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 	public byte[] toRawFile(String styledFile) {
 		try {
 			var pojoBook = mapper.readValue(styledFile, AddressBookPojo.class);
-			if(protoBufVersion == ProtoBufVersion.V0_12_0) {
+			if (protoBufVersion == ProtoBufVersion.V0_12_0) {
 				AddressBook.Builder addressBook = AddressBook.newBuilder();
 				pojoBook.getEntries().stream()
 						.flatMap(BookEntryPojo::toAddressBookEntries)
@@ -75,7 +75,6 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 						.forEach(addressBook::addNodeAddressForClients);
 				return addressBook.build().toByteArray();
 			}
-
 		} catch (IOException ex) {
 			throw new IllegalArgumentException("Not an address book!", ex);
 		}
