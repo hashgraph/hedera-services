@@ -182,6 +182,19 @@ public class BookEntryPojo {
 		if (nodeAccount != null) {
 			builder.setNodeAccountId(HapiPropertySource.asAccount(nodeAccount));
 		}
+		builder.setIpAddress(ByteString.copyFrom(ip.getBytes()));
+		builder.setPortno(Optional.ofNullable(port).orElse(0));
+		buildEndPoints(builder);
+	}
+
+	private void buildEndPoints(NodeAddress.Builder builder){
+		for (String endPoint : endPoints) {
+			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder();
+			String[] elements = endPoint.split(":");
+			nodeEndPoint.setIpAddress(elements[0].trim());
+			nodeEndPoint.setPort(elements[1].trim());
+			builder.addNodeEndpoint(nodeEndPoint.build());
+		}
 	}
 
 	private static BookEntryPojo fromAnyEntry(NodeAddress address) {
