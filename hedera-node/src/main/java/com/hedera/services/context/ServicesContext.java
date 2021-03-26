@@ -231,7 +231,6 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.DeterministicThrottling;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
@@ -458,7 +457,6 @@ public class ServicesContext {
 	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
-	private BucketThrottling bucketThrottling;
 	private HbarCentExchange exchange;
 	private SemanticVersions semVers;
 	private PrecheckVerifier precheckVerifier;
@@ -604,7 +602,7 @@ public class ServicesContext {
 
 	public FeeMultiplierSource feeMultiplierSource() {
 		if (feeMultiplierSource == null) {
-			feeMultiplierSource = new TxnRateFeeMultiplierSource(hapiThrottling());
+			feeMultiplierSource = new TxnRateFeeMultiplierSource(handleThrottling());
 		}
 		return feeMultiplierSource;
 	}
@@ -618,7 +616,7 @@ public class ServicesContext {
 
 	public FunctionalityThrottling hapiThrottling() {
 		if (hapiThrottling == null) {
-			hapiThrottling = new HapiThrottling(this::addressBook);
+			hapiThrottling = new HapiThrottling(new DeterministicThrottling(() -> addressBook().getSize()));
 		}
 		return hapiThrottling;
 	}
@@ -760,20 +758,9 @@ public class ServicesContext {
 
 	public TransactionThrottling txnThrottling() {
 		if (txnThrottling == null) {
-			txnThrottling = new TransactionThrottling(bucketThrottling());
+			txnThrottling = new TransactionThrottling(hapiThrottling());
 		}
 		return txnThrottling;
-	}
-
-	public BucketThrottling bucketThrottling() {
-		if (bucketThrottling == null) {
-			bucketThrottling = new BucketThrottling(
-					this::addressBook,
-					properties(),
-					props -> bucketsIn(props).stream().collect(toMap(Function.identity(), b -> namedIn(props, b))),
-					ThrottlingPropsBuilder::withPrioritySource);
-		}
-		return bucketThrottling;
 	}
 
 	public ItemizableFeeCharging charging() {
@@ -1008,10 +995,10 @@ public class ServicesContext {
 						txns(),
 						stateViews(),
 						usagePrices(),
-						bucketThrottling(),
+						hapiThrottling(),
 						submissionManager());
 			} else {
-				answerFlow = new ZeroStakeAnswerFlow(txns(), stateViews(), bucketThrottling());
+				answerFlow = new ZeroStakeAnswerFlow(txns(), stateViews(), hapiThrottling());
 			}
 		}
 		return answerFlow;
@@ -1697,12 +1684,6 @@ public class ServicesContext {
 						PropertiesLoader.populateApplicationPropertiesWithProto(config);
 					},
 					PropertiesLoader::populateAPIPropertiesWithProto);
-			/* We must force eager evaluation of the throttle construction here,
-			as in DEV environment with the per-classloader singleton pattern used by
-			PropertiesLoader, it is otherwise possible to create weird race conditions
-			between the initializing threads. */
-			var throttles = bucketThrottling();
-			PropertiesLoader.registerUpdateCallback(throttles::rebuild);
 		}
 		return systemFilesManager;
 	}
@@ -1773,7 +1754,7 @@ public class ServicesContext {
 					stateViews(),
 					new BasicPrecheck(validator(), globalDynamicProperties()),
 					queryFeeCheck(),
-					bucketThrottling(),
+					hapiThrottling(),
 					accountNums(),
 					systemOpPolicies(),
 					exemptions(),

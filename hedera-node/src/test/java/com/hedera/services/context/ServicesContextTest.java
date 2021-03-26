@@ -454,7 +454,6 @@ public class ServicesContextTest {
 		assertThat(ctx.entityExpiries(), instanceOf(Map.class));
 		assertThat(ctx.syncVerifier(), instanceOf(SyncVerifier.class));
 		assertThat(ctx.txnThrottling(), instanceOf(TransactionThrottling.class));
-		assertThat(ctx.bucketThrottling(), instanceOf(BucketThrottling.class));
 		assertThat(ctx.accountSource(), instanceOf(LedgerAccountsSource.class));
 		assertThat(ctx.bytecodeDb(), instanceOf(BlobStorageSource.class));
 		assertThat(ctx.cryptoAnswers(), instanceOf(CryptoAnswers.class));

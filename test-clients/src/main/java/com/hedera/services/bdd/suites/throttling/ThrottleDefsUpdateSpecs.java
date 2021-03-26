@@ -40,7 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
 public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ThrottleLocalChecks.class);
+	private static final Logger log = LogManager.getLogger(ThrottleDefsUpdateSpecs.class);
 
 	public static void main(String... args) {
 		new ThrottleDefsUpdateSpecs().runSuiteSync();
