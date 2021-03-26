@@ -161,7 +161,8 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						sleepFor(10 * SECOND),
 						withOpContext( (spec, log) -> {
 							log.info("Now get all {} accounts created and save it in spec", totalAccounts);
-							for(int i = totalAccounts - 1; i >=0; i-- ) {
+							//for(int i = totalAccounts - 1; i >=0; i-- ) {
+							for(int i = 0; i < totalAccounts ;  i++ ) {
 								var op = getAccountBalance(ACCT_NAME_PREFIX + i)
 										.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
 										.persists(true)
@@ -211,10 +212,11 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						.withRecharging()
 						.rechargeWindow(30)
 						.noLogging()
+						.deferStatusResolution()
 						;
-				if (next > 0) {
-					op.deferStatusResolution();
-				}
+//				if (next > 0) {
+//					op.deferStatusResolution();
+//				}
 				return Optional.of(op);
 			}
 		};

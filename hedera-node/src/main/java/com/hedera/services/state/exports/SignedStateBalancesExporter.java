@@ -96,6 +96,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	Instant periodBegin = NEVER;
 	private final int exportPeriod;
+	private static int SCHEDULED_EXPORT_ALLOWED_SKEW = 1;
 
 	static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
 			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
@@ -114,11 +115,18 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	@Override
 	public boolean isTimeToExport(Instant now) {
 		if (periodBegin != NEVER
-				&& now.getEpochSecond() / exportPeriod != periodBegin.getEpochSecond() / exportPeriod) {
+				&& now.getEpochSecond() / exportPeriod != periodBegin.getEpochSecond() / exportPeriod
+		        && now.getEpochSecond() % exportPeriod <= SCHEDULED_EXPORT_ALLOWED_SKEW) {
+			log.info(String.format("Now %s is time to export. periodBegin = %s, exportPeriod = %d.",
+					now.toString(), periodBegin.toString(), exportPeriod));
+
 			periodBegin = now;
 			return true;
 		}
 		periodBegin = now;
+		if(log.isDebugEnabled()) {
+			log.debug(String.format("Now %s is NOT time to export.", now.toString()));
+		}
 		return false;
 	}
 

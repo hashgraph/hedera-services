@@ -1515,6 +1515,52 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
+    triggers:
+      - schedule:
+          cron: "42 16 * * *"
+          filters:
+            branches:
+              only:
+                - 01198-D-Misc-Basic-JRS-failure
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_1C/Restart
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Balances-Validation-6N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-NetDelay-15N-1C:
+    triggers:
+      - schedule:
+          cron: "45 16 * * *"
+          filters:
+            branches:
+              only:
+                - 01198-D-Misc-Basic-JRS-failure
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_1C/Restart
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-NetDelay-15N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
@@ -1877,6 +1923,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
+                  - 01198-D-Misc-Basic-JRS-failure
             workflow-name: "Continuous integration"
         - build-platform-and-services:
             context: SonarCloud
@@ -2253,7 +2300,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 01198-D-Misc-Basic-JRS-failure
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2864,10 +2911,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
