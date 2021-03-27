@@ -44,6 +44,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
@@ -114,7 +116,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
-		this.consensusTimeOfLastHandledTxn = RichInstant.fromJava(consensusTimeOfLastHandledTxn);
+		this.consensusTimeOfLastHandledTxn = fromJava(consensusTimeOfLastHandledTxn);
 	}
 
 	public MerkleNetworkContext copy() {
@@ -170,7 +172,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeInt(n);
 		for (var usageSnapshot : throttleUsages) {
 			out.writeLong(usageSnapshot.used());
-			serdes.writeNullableInstant(RichInstant.fromJava(usageSnapshot.lastDecisionTime()), out);
+			serdes.writeNullableInstant(fromJava(usageSnapshot.lastDecisionTime()), out);
 		}
 	}
 
@@ -194,6 +196,52 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	@Override
 	public int getVersion() {
 		return MERKLE_VERSION;
+	}
+
+	@Override
+	public String toString() {
+		boolean isMutable = throttling != null;
+		var header = isMutable ? "The active network context is," : "The saved network context was,";
+		var sb = new StringBuilder(header)
+				.append("\n  Consensus time of last handled transaction :: ")
+				.append(reprOf(consensusTimeOfLastHandledTxn))
+				.append("\n  Midnight rate set                          :: ")
+				.append(midnightRates.readableRepr())
+				.append("\n  Next entity number                         :: ")
+				.append(seqNo.current());
+		if (isMutable) {
+			addActiveThrottleUsageTo(sb);
+		} else {
+			addSavedUsageSnapshotsTo(sb);
+		}
+		return sb.toString();
+	}
+
+	private void addSavedUsageSnapshotsTo(StringBuilder sb)	{
+		sb.append("\n  Throttle usage snapshots were              ::");
+		for (var snapshot : throttleUsages) {
+			sb.append("\n    ").append(snapshot.used())
+					.append(" used (last decision time ")
+					.append(reprOf(fromJava(snapshot.lastDecisionTime()))).append(")");
+		}
+	}
+
+	private void addActiveThrottleUsageTo(StringBuilder sb) {
+		sb.append("\n  Usage statistics of active throttles       :: ");
+		for (var throttle : throttling.allActiveThrottles()) {
+			var cap = throttle.capacity();
+			var usage = throttle.usageSnapshot();
+			sb.append("\n    ").append(throttle.name()).append(" at ")
+					.append(usage.used()).append("/").append(cap)
+					.append(" used (last decision time ").append(reprOf(fromJava(usage.lastDecisionTime()))).append(")");
+		}
+	}
+
+	private String reprOf(RichInstant consensusTime) {
+		return Optional.ofNullable(consensusTime)
+				.map(RichInstant::toJava)
+				.map(Object::toString)
+				.orElse("<NEVER>");
 	}
 
 	FunctionalityThrottling getThrottling() {

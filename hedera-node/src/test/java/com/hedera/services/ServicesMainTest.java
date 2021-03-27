@@ -488,7 +488,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void doesNotPrintHashesIfNotInMaintenance() {
+	public void doesLogSummaryIfNotInMaintenance() {
 		// setup:
 		subject.ctx = ctx;
 		var signedState = mock(ServicesState.class);
@@ -501,11 +501,11 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, Instant.now(), 1L);
 
 		// then:
-		verify(signedState, never()).printHashes();
+		verify(signedState, never()).logSummary();
 	}
 
 	@Test
-	public void onlyPrintsHashesIfInMaintenance() {
+	public void onlyLogsSummary() {
 		// setup:
 		subject.ctx = ctx;
 		var signedState = mock(ServicesState.class);
@@ -518,7 +518,7 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, Instant.now(), 1L);
 
 		// then:
-		verify(signedState).printHashes();
+		verify(signedState).logSummary();
 	}
 
 	@Test

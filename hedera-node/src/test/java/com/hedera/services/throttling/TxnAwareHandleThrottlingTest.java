@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static org.mockito.BDDMockito.*;
 
 import static org.junit.jupiter.api.Assertions.*;

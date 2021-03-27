@@ -4,6 +4,7 @@ import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 
@@ -21,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -117,10 +120,14 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	public void throwsIseIfNoThrottle() {
+	public void alwaysRejectsIfNoThrottle() {
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.shouldThrottle(ContractCall, consensusNow));
-		assertThrows(IllegalStateException.class, () -> subject.activeThrottlesFor(ContractCall));
+		assertTrue(subject.shouldThrottle(ContractCall, consensusNow));
+	}
+
+	@Test
+	void returnsNoActiveThrottlesForUnconfiguredOp() {
+		Assertions.assertSame(Collections.emptyList(), subject.activeThrottlesFor(ContractCall));
 	}
 
 	@Test

@@ -74,7 +74,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
-	private static final Logger log = LogManager.getLogger(ServicesState.class);
+	static Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final ImmutableHash emptyHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
@@ -265,7 +265,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (initWithMerkle) {
 			// only digest when initialize with Merkle state
 			merkleDigest.accept(this);
-			printHashes();
+			logSummary();
 		}
 
 		initializeContext(ctx);
@@ -364,20 +364,25 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return accountParsedFromString(memo);
 	}
 
-	public void printHashes() {
-		ServicesMain.log.info(String.format("[SwirldState Hashes]\n" +
-						"  Overall           :: %s\n" +
-						"  Accounts          :: %s\n" +
-						"  Storage           :: %s\n" +
-						"  Topics            :: %s\n" +
-						"  Tokens            :: %s\n" +
-						"  TokenAssociations :: %s\n" +
-						"  DiskFs            :: %s\n" +
-						"  ScheduledTxs      :: %s\n" +
-						"  NetworkContext    :: %s\n" +
-						"  AddressBook       :: %s\n" +
-						"  RecordsRunningHashLeaf:: %s\n" +
-						"  running Hash saved in RecordsRunningHashLeaf:: %s",
+	public void logSummary() {
+		logHashes();
+		log.info(networkCtx().toString());
+	}
+
+	private void logHashes() {
+		log.info(String.format("[SwirldState Hashes]\n" +
+						"  Overall                :: %s\n" +
+						"  Accounts               :: %s\n" +
+						"  Storage                :: %s\n" +
+						"  Topics                 :: %s\n" +
+						"  Tokens                 :: %s\n" +
+						"  TokenAssociations      :: %s\n" +
+						"  DiskFs                 :: %s\n" +
+						"  ScheduledTxs           :: %s\n" +
+						"  NetworkContext         :: %s\n" +
+						"  AddressBook            :: %s\n" +
+						"  RecordsRunningHashLeaf :: %s\n" +
+						"    ↪ Running hash       :: %s",
 				getHash(),
 				accounts().getHash(),
 				storage().getHash(),

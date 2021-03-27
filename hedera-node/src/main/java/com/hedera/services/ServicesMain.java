@@ -122,7 +122,7 @@ public class ServicesMain implements SwirldMain {
 	@Override
 	public void newSignedState(SwirldState signedState, Instant when, long round) {
 		if (ctx.platformStatus().get() == MAINTENANCE) {
-			((ServicesState)signedState).printHashes();
+			((ServicesState)signedState).logSummary();
 		}
 		if (ctx.globalDynamicProperties().shouldExportBalances() && ctx.balancesExporter().isTimeToExport(when)) {
 			try {
@@ -288,7 +288,7 @@ public class ServicesMain implements SwirldMain {
 							notification.getRoundNumber(),
 							notification.getSequence()));
 					ServicesState state = (ServicesState)notification.getState();
-					state.printHashes();
+					state.logSummary();
 					ctx.recordStreamManager().setStartWriteAtCompleteWindow(true);
 				});
 	}

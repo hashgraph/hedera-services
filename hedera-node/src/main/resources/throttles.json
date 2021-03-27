@@ -19,14 +19,18 @@
                 },
                 {
                     "opsPerSec": 13,
-                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
+                    "operations": [ 
+                      "ContractCall", "ContractCreate", 
+                      "FileCreate", "FileUpdate", "FileAppend", "FileDelete", 
+                      "SystemDelete", "SystemUndelete"
+                    ]
                 },
                 {
                     "opsPerSec": 3000,
                     "operations": [
                         "ScheduleSign", 
                         "TokenCreate", "TokenDelete", "TokenMint", "TokenBurn", "TokenUpdate", "TokenAssociateToAccount",
-                        "TokenDissociateFromAccount", "TokenFreezeAccount", "TokenGrantKycToAccount", "TokenRevokeKycFromAccount"
+                        "TokenDissociateFromAccount","TokenFreezeAccount", "TokenUnfreezeAccount", "TokenGrantKycToAccount", "TokenRevokeKycFromAccount"
                     ]
                 }
             ]
@@ -37,7 +41,11 @@
             "throttleGroups": [
                 {
                     "opsPerSec": 10,
-                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
+                    "operations": [ 
+                      "ContractCall", "ContractCreate", 
+                      "FileCreate", "FileUpdate", "FileAppend", "FileDelete", 
+                      "SystemDelete", "SystemUndelete"
+                    ]
                 }
             ]
         },

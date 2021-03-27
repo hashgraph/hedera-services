@@ -515,7 +515,7 @@ class ServicesStateTest {
 	public void hashesPrintedAsExpected() {
 		// setup:
 		var mockLog = mock(Logger.class);
-		ServicesMain.log = mockLog;
+		ServicesState.log = mockLog;
 		Hash ctxHash = new Hash("sdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfy".getBytes());
 		Hash bookHash = new Hash("sdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfz".getBytes());
 		Hash topicRootHash = new Hash("sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes());
@@ -545,18 +545,18 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		// and:
 		var expected = String.format("[SwirldState Hashes]\n" +
-						"  Overall           :: %s\n" +
-						"  Accounts          :: %s\n" +
-						"  Storage           :: %s\n" +
-						"  Topics            :: %s\n" +
-						"  Tokens            :: %s\n" +
-						"  TokenAssociations :: %s\n" +
-						"  DiskFs            :: %s\n" +
-						"  ScheduledTxs      :: %s\n" +
-						"  NetworkContext    :: %s\n" +
-						"  AddressBook       :: %s\n" +
-						"  RecordsRunningHashLeaf:: %s\n" +
-						"  running Hash saved in RecordsRunningHashLeaf:: %s",
+						"  Overall                :: %s\n" +
+						"  Accounts               :: %s\n" +
+						"  Storage                :: %s\n" +
+						"  Topics                 :: %s\n" +
+						"  Tokens                 :: %s\n" +
+						"  TokenAssociations      :: %s\n" +
+						"  DiskFs                 :: %s\n" +
+						"  ScheduledTxs           :: %s\n" +
+						"  NetworkContext         :: %s\n" +
+						"  AddressBook            :: %s\n" +
+						"  RecordsRunningHashLeaf :: %s\n" +
+						"    ↪ Running hash       :: %s",
 
 				overallHash,
 				accountsRootHash,
@@ -578,6 +578,7 @@ class ServicesStateTest {
 		given(tokens.getHash()).willReturn(tokensRootHash);
 		given(tokenAssociations.getHash()).willReturn(tokenRelsRootHash);
 		given(networkCtx.getHash()).willReturn(ctxHash);
+		given(networkCtx.toString()).willReturn("Not really a network context representation!");
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
 		given(scheduledTxs.getHash()).willReturn(scheduledTxsRootHash);
@@ -586,13 +587,14 @@ class ServicesStateTest {
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(runningHash.getHash()).willReturn(hashInRunningHash);
 		// when:
-		subject.printHashes();
+		subject.logSummary();
 
 		// then:
 		verify(mockLog).info(expected);
+		verify(mockLog).info("Not really a network context representation!");
 
 		// cleanup:
-		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
+		ServicesState.log = LogManager.getLogger(ServicesState.class);
 	}
 
 	@Test

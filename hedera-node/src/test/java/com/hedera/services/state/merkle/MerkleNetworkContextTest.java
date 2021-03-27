@@ -68,14 +68,17 @@ class MerkleNetworkContextTest {
 
 	@BeforeEach
 	public void setup() {
-		consensusTimeOfLastHandledTxn = RichInstant.fromJava(Instant.now());
+		consensusTimeOfLastHandledTxn = RichInstant.fromJava(
+				Instant.ofEpochSecond(1_234_567L, 54321));
 
 		seqNo = mock(SequenceNumber.class);
+		given(seqNo.current()).willReturn(1234L);
 		seqNoCopy = mock(SequenceNumber.class);
 		given(seqNo.copy()).willReturn(seqNoCopy);
-		midnightRateSet = mock(ExchangeRates.class);
-		midnightRateSetCopy = mock(ExchangeRates.class);
-		given(midnightRateSet.copy()).willReturn(midnightRateSetCopy);
+		midnightRateSet = new ExchangeRates(
+				1, 14, 1_234_567L,
+				1, 15, 2_345_678L);
+		midnightRateSetCopy = midnightRateSet.copy();
 
 		serdes = mock(DomainSerdes.class);
 		MerkleNetworkContext.serdes = serdes;
@@ -90,6 +93,7 @@ class MerkleNetworkContextTest {
 
 	@Test
 	public void copyWorks() {
+		// setup:
 		throttling = mock(FunctionalityThrottling.class);
 		// and:
 		var active = activeThrottles();
@@ -113,6 +117,55 @@ class MerkleNetworkContextTest {
 
 		// and:
 		assertThrows(IllegalStateException.class, subject::copy);
+	}
+
+	@Test
+	public void toStringRendersImmutableAsExpected() {
+		// setup:
+		throttling = mock(FunctionalityThrottling.class);
+		// and:
+		var active = activeThrottles();
+
+		given(throttling.allActiveThrottles()).willReturn(active);
+		// and:
+		subject.syncWithThrottles(throttling);
+		// and:
+		var desired = "The saved network context was,\n" +
+				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
+				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
+				"  Next entity number                         :: 1234\n" +
+				"  Throttle usage snapshots were              ::\n" +
+				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
+				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
+				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)";
+
+		// when:
+		subject.copy();
+
+		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	public void toStringRendersMutableAsExpected() {
+		// setup:
+		throttling = mock(FunctionalityThrottling.class);
+		// and:
+		var active = activeThrottles();
+
+		given(throttling.allActiveThrottles()).willReturn(active);
+		// and:
+		subject.syncWithThrottles(throttling);
+		// and:
+		var desired = "The active network context is,\n" +
+				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
+				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
+				"  Next entity number                         :: 1234\n" +
+				"  Usage statistics of active throttles       :: \n" +
+				"    ThrottleA at 100/1000000000000 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
+				"    ThrottleB at 200/1000000000000 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
+				"    ThrottleC at 300/1000000000000 used (last decision time 1970-01-01T00:00:03.000000300Z)";
+
+		assertEquals(desired, subject.toString());
 	}
 
 	@Test
@@ -280,7 +333,7 @@ class MerkleNetworkContextTest {
 		var snapshots = snapshots();
 		List<DeterministicThrottle> active = new ArrayList<>();
 		for (int i = 0; i < used.length; i++) {
-			var throttle = DeterministicThrottle.withTps(1);
+			var throttle = DeterministicThrottle.withTpsNamed(1, "Throttle" + (char)('A' + i));
 			throttle.resetUsageTo(snapshots.get(i));
 			active.add(throttle);
 		}

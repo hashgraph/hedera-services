@@ -199,11 +199,10 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	private void logItemized() {
-		Transaction signedTxn = accessor().getSignedTxn4Log();
 		String readableTransferList = readableTransferList(itemizedRepresentation());
 		log.debug(
 				"Transfer list with itemized fees for {} is {}",
-				signedTxn,
+				accessor().getSignedTxn4Log(),
 				readableTransferList);
 	}
 

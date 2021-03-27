@@ -36,7 +36,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	public boolean shouldThrottle(HederaFunctionality function, Instant now) {
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(function)) == null) {
-			throw new IllegalStateException("No throttle present for (apparently supported) operation " + function + "!");
+			return true;
 		}
 		return !manager.allReqsMetAt(now);
 	}
@@ -50,7 +50,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	public List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function) {
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(function)) == null) {
-			throw new IllegalStateException("No throttle present for (apparently supported) operation " + function + "!");
+			return Collections.emptyList();
 		}
 		return manager.managedThrottles();
 	}
