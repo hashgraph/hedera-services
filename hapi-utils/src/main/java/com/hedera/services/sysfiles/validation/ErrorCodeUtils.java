@@ -1,4 +1,4 @@
-package com.hedera.services.sysfiles.logic;
+package com.hedera.services.sysfiles.validation;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 

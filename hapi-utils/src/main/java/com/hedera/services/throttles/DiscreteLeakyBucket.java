@@ -8,14 +8,14 @@ class DiscreteLeakyBucket {
 	private final long capacity;
 
 	DiscreteLeakyBucket(long capacity) {
-		assertValid(capacity);
 		used = 0L;
+		assertValidState(used, capacity);
 		this.capacity = capacity;
 	}
 
 	/* Used only for test setup */
 	DiscreteLeakyBucket(long used, long capacity) {
-		assertValid(used, capacity);
+		assertValidState(used, capacity);
 		this.used = used;
 		this.capacity = capacity;
 	}
@@ -33,41 +33,42 @@ class DiscreteLeakyBucket {
 	}
 
 	void useCapacity(long units) {
-		assertValidUsage(units);
-		used += units;
+		long newUsed = used + units;
+		assertValidUsage(units, newUsed);
+		used = newUsed;
 	}
 
 	void leak(long units) {
+		assertValidUnitsToFree(units);
 		used -= Math.min(used, units);
 	}
 
 	void resetUsed(long amount) {
-		assertValid(amount, capacity);
+		assertValidState(amount, capacity);
 		this.used = amount;
 	}
 
-	private void assertValid(long candidateUsed, long candidateCapacity) {
-		assertValid(candidateCapacity);
-		if (candidateUsed < 0L || candidateUsed > candidateCapacity) {
+	private void assertValidState(long candidateUsed, long candidateCapacity) {
+		assertValidUnitsToFree(candidateCapacity);
+		if (candidateUsed < 0 || candidateUsed > candidateCapacity || candidateCapacity == 0) {
 			throw new IllegalArgumentException(
-					"Cannot use " + candidateUsed + " units in a bucket of capacity" + candidateCapacity + "!");
+					"Cannot use " + candidateUsed + " units in a bucket of capacity " + candidateCapacity + "!");
 		}
 	}
 
-	private void assertValid(long candidateCapacity) {
-		if (candidateCapacity <= 0L) {
-			throw new IllegalArgumentException(
-					"Cannot construct a bucket with " + candidateCapacity + " units of capacity!");
-		}
-	}
-
-	private void assertValidUsage(long units) {
+	private void assertValidUnitsToFree(long units) {
 		if (units < 0) {
-			throw new IllegalArgumentException("Cannot use " + units + " units of capacity!");
+			throw new IllegalArgumentException("Cannot free " + units + " units of capacity!");
 		}
-		if ((used + units) > capacity) {
+	}
+
+	private void assertValidUsage(long newUnits, long newUsage) {
+		if (newUnits < 0) {
+			throw new IllegalArgumentException("Cannot use " + newUnits + " units of capacity!");
+		}
+		if (newUsage < 0 || newUsage > capacity) {
 			throw new IllegalArgumentException(
-					"Adding " + units + " units to " + used + " already used would exceed capacity " + capacity + "!");
+					"Adding " + newUnits + " units to " + used + " already used would exceed capacity " + capacity + "!");
 		}
 	}
 }

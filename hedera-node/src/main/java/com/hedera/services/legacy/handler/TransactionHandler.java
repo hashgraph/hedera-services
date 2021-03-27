@@ -41,6 +41,8 @@ import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.validation.BasicPrecheck;
@@ -48,6 +50,7 @@ import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TransferListChecks;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -62,7 +65,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -111,11 +116,6 @@ public class TransactionHandler {
     this.basicPrecheck = basicPrecheck;
   }
 
-  public void setThrottling(FunctionalityThrottling throttling) {
-    this.throttling = throttling;
-    this.txnThrottling = new TransactionThrottling(throttling);
-  }
-
   public void setFees(FeeCalculator fees) {
     this.fees = fees;
   }
@@ -132,7 +132,8 @@ public class TransactionHandler {
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
           FeeExemptions exemptions,
-          CurrentPlatformStatus platformStatus
+          CurrentPlatformStatus platformStatus,
+          FunctionalityThrottling throttling
   ) {
   	this.fees = fees;
   	this.stateView = stateView;
@@ -146,7 +147,7 @@ public class TransactionHandler {
     this.systemOpPolicies = systemOpPolicies;
     this.exemptions = exemptions;
     this.platformStatus = platformStatus;
-    throttling = function -> false;
+    this.throttling = throttling;
     txnThrottling = new TransactionThrottling(throttling);
   }
 

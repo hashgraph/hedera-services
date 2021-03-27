@@ -29,14 +29,7 @@ import java.util.List;
 public interface FunctionalityThrottling {
 	boolean shouldThrottle(HederaFunctionality function);
 
-	default List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function) {
-		throw new AssertionError("Not implemented!");
-	}
-
-	default List<DeterministicThrottle> allActiveThrottles() {
-		throw new AssertionError("Not implemented!");
-	}
-
-	default void rebuildFor(ThrottleDefinitions defs) {
-	}
+	void rebuildFor(ThrottleDefinitions defs);
+	List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function);
+	List<DeterministicThrottle> allActiveThrottles();
 }

@@ -1,4 +1,4 @@
-package com.hedera.services.sysfiles.logic;
+package com.hedera.services.sysfiles.validation;
 
 import org.junit.jupiter.api.Test;
 

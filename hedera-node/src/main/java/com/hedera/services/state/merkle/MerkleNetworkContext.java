@@ -120,11 +120,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public MerkleNetworkContext copy() {
+		var mutableCopy = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo.copy(), midnightRates.copy());
 		if (throttling == null) {
-			throw new IllegalStateException("Copy called on immutable network context " + this);
+			mutableCopy.throttleUsages = new ArrayList<>(throttleUsages);
+			return mutableCopy;
 		}
 
-		var mutableCopy = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo.copy(), midnightRates.copy());
 		var activeThrottles = throttling.allActiveThrottles();
 		int n = activeThrottles.size();
 		if (n > 0) {
@@ -151,7 +152,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				while (n-- > 0) {
 					var used = in.readLong();
 					var lastUsed = serdes.readNullableInstant(in);
-					var snapshot = new DeterministicThrottle.UsageSnapshot(used, lastUsed.toJava());
+					var snapshot = new DeterministicThrottle.UsageSnapshot(
+							used,
+							Optional.ofNullable(lastUsed).map(RichInstant::toJava).orElse(null));
 					throttleUsages.add(snapshot);
 				}
 			}
@@ -200,8 +203,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public String toString() {
-		boolean isMutable = throttling != null;
-		var header = isMutable ? "The active network context is," : "The saved network context was,";
+		boolean isSynced = throttling != null;
+		var header = isSynced ? "The throttle-synced network context is," : "The network context is,";
 		var sb = new StringBuilder(header)
 				.append("\n  Consensus time of last handled transaction :: ")
 				.append(reprOf(consensusTimeOfLastHandledTxn))
@@ -209,7 +212,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				.append(midnightRates.readableRepr())
 				.append("\n  Next entity number                         :: ")
 				.append(seqNo.current());
-		if (isMutable) {
+		if (isSynced) {
 			addActiveThrottleUsageTo(sb);
 		} else {
 			addSavedUsageSnapshotsTo(sb);

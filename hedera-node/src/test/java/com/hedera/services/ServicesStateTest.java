@@ -465,7 +465,7 @@ class ServicesStateTest {
 	public void logsNonNullHashesFromSavedState() {
 		// setup:
 		var mockLog = mock(Logger.class);
-		ServicesMain.log = mockLog;
+		ServicesState.log = mockLog;
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
 		CONTEXTS.store(ctx);
 
@@ -507,7 +507,7 @@ class ServicesStateTest {
 		inOrder.verify(ctx).update(subject);
 
 		// cleanup:
-		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
+		ServicesState.log = LogManager.getLogger(ServicesState.class);
 		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	}
 

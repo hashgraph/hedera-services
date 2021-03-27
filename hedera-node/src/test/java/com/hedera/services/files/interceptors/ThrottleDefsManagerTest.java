@@ -2,7 +2,7 @@ package com.hedera.services.files.interceptors;
 
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
-import com.hedera.services.sysfiles.logic.ErrorCodeUtils;
+import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.swirlds.common.AddressBook;

@@ -92,7 +92,7 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	public void copyWorksWithSyncedContext() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
 		// and:
@@ -114,13 +114,28 @@ class MerkleNetworkContextTest {
 		assertSame(throttling, subjectCopy.getThrottling());
 		// and:
 		assertSnapshotsMatch(subject);
-
-		// and:
-		assertThrows(IllegalStateException.class, subject::copy);
 	}
 
 	@Test
-	public void toStringRendersImmutableAsExpected() {
+	public void copyWorksBeforeSyncing() {
+		// given:
+		subject.throttleUsages = activeThrottles().stream()
+				.map(DeterministicThrottle::usageSnapshot)
+				.collect(Collectors.toList());
+
+		// when:
+		var subjectCopy = subject.copy();
+
+		// expect:
+		assertSame(subjectCopy.consensusTimeOfLastHandledTxn, subject.consensusTimeOfLastHandledTxn);
+		assertEquals(seqNoCopy, subjectCopy.seqNo);
+		assertEquals(midnightRateSetCopy, subjectCopy.midnightRates);
+		// and:
+		assertSnapshotsMatch(subjectCopy);
+	}
+
+	@Test
+	public void toStringRendersUnsyncedAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
 		// and:
@@ -130,7 +145,7 @@ class MerkleNetworkContextTest {
 		// and:
 		subject.syncWithThrottles(throttling);
 		// and:
-		var desired = "The saved network context was,\n" +
+		var desired = "The network context is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -139,6 +154,7 @@ class MerkleNetworkContextTest {
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)";
 
+
 		// when:
 		subject.copy();
 
@@ -146,7 +162,7 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	public void toStringRendersMutableAsExpected() {
+	public void toStringRendersSyncedAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
 		// and:
@@ -156,7 +172,7 @@ class MerkleNetworkContextTest {
 		// and:
 		subject.syncWithThrottles(throttling);
 		// and:
-		var desired = "The active network context is,\n" +
+		var desired = "The throttle-synced network context is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Next entity number                         :: 1234\n" +
@@ -218,7 +234,7 @@ class MerkleNetworkContextTest {
 		var in = mock(SerializableDataInputStream.class);
 		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
 		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, midnightRateSet, seqNo);
+		InOrder inOrder = inOrder(in, seqNo);
 
 		given(serdes.readNullableInstant(in)).willReturn(consensusTimeOfLastHandledTxn);
 
@@ -239,7 +255,7 @@ class MerkleNetworkContextTest {
 		var in = mock(SerializableDataInputStream.class);
 		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
 		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
-		InOrder inOrder = inOrder(in, midnightRateSet, seqNo);
+		InOrder inOrder = inOrder(in, seqNo);
 		var snapshots = snapshots();
 
 		given(in.readInt()).willReturn(lastUseds.length);
@@ -280,7 +296,7 @@ class MerkleNetworkContextTest {
 	public void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
-		InOrder inOrder = inOrder(out, seqNo, midnightRateSet, serdes);
+		InOrder inOrder = inOrder(out, seqNo, serdes);
 		throttling = mock(FunctionalityThrottling.class);
 		// and:
 		var active = activeThrottles();

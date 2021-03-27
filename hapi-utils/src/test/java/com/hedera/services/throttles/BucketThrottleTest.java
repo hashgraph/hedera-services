@@ -2,7 +2,8 @@ package com.hedera.services.throttles;
 
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_NT;
+import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
+import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_TXN;
 import static com.hedera.services.throttles.BucketThrottle.MTPS_PER_TPS;
 import static com.hedera.services.throttles.BucketThrottle.NTPS_PER_MTPS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,7 +22,7 @@ class BucketThrottleTest {
 	void factoriesResultInExpectedThrottles() {
 		// setup:
 		int tps = 1_000;
-		long expectedCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NT;
+		long expectedCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN;
 
 		// given:
 		var fromTps = BucketThrottle.withTps(tps);
@@ -42,10 +43,41 @@ class BucketThrottleTest {
 	}
 
 	@Test
+	void rejectsUnsupportedNumOfTransactions() {
+		// setup:
+		int maxTps = (int)(Long.MAX_VALUE / CAPACITY_UNITS_PER_TXN);
+
+		// given:
+		var subject = BucketThrottle.withTps(maxTps);
+
+		// when:
+		var shouldAllowUnsupportedTxns = subject.allow(maxTps + 123, 0);
+
+		// then:
+		assertFalse(shouldAllowUnsupportedTxns);
+	}
+
+	@Test
+	void withExcessElapsedNanosCompletelyEmptiesBucket() {
+		// setup:
+		int tps = 1_000;
+
+		// given:
+		var subject = BucketThrottle.withTps(tps);
+
+		// when:
+		var shouldAllowAll = subject.allow(1000, Long.MAX_VALUE / (tps * 1_000) + 123);
+
+		// then:
+		assertTrue(shouldAllowAll);
+		assertEquals(0, subject.bucket().capacityFree());
+	}
+
+	@Test
 	void withZeroElapsedNanosSimplyAdjustsCapacityFree() {
 		// setup:
 		int tps = 1_000;
-		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NT;
+		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN;
 
 		// given:
 		var subject = BucketThrottle.withTps(tps);
@@ -62,7 +94,7 @@ class BucketThrottleTest {
 	void withZeroElapsedNanosRejectsUnavailableCapacity() {
 		// setup:
 		int tps = 1_000;
-		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NT;
+		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN;
 
 		// given:
 		var subject = BucketThrottle.withTps(tps);
@@ -79,7 +111,7 @@ class BucketThrottleTest {
 	void scalesLeakRateByDesiredTps() {
 		// setup:
 		int tps = 1_000;
-		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NT;
+		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN;
 
 		// given:
 		var subject = BucketThrottle.withTps(tps);
@@ -99,7 +131,7 @@ class BucketThrottleTest {
 		// setup:
 		int mtps = 100;
 		int burstPeriod = 10;
-		long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NT * burstPeriod;
+		long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
 
 		// given:
 		var subject = BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
@@ -138,7 +170,7 @@ class BucketThrottleTest {
 		// setup:
 		int mtps = 500;
 		int burstPeriod = 4;
-		long internalCapacity = mtps * NTPS_PER_MTPS * burstPeriod * CAPACITY_UNITS_PER_NT;
+		long internalCapacity = mtps * NTPS_PER_MTPS * burstPeriod * CAPACITY_UNITS_PER_NANO_TXN;
 
 		// given:
 		var subject = BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);

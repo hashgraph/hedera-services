@@ -52,12 +52,40 @@ class DiscreteLeakyBucketTest {
 	}
 
 	@Test
+	void mustHaveNonZeroCapacity() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0, 0));
+
+	}
+
+	@Test
+	void cannotLeakNegativeUnits() {
+		// given:
+		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+
+		// when:
+		assertThrows(IllegalArgumentException.class, () -> subject.leak(-1));
+
+	}
+
+	@Test
 	void prohibitsNegativeUse() {
 		// given:
 		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
 
 		// when:
 		assertThrows(IllegalArgumentException.class, () -> subject.useCapacity(-1));
+	}
+
+	@Test
+	void prohibitsExcessUsageViaOverflow() {
+		// given:
+		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+		// and:
+		var overflowAmount = Long.MAX_VALUE - capacityUsed + 1L;
+
+		// when:
+		assertThrows(IllegalArgumentException.class, () -> subject.useCapacity(overflowAmount));
 	}
 
 	@Test

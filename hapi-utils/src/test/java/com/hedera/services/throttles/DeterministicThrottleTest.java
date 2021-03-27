@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_NT;
+import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
 import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_TXN;
 import static com.hedera.services.throttles.BucketThrottle.MTPS_PER_TPS;
 import static com.hedera.services.throttles.BucketThrottle.NTPS_PER_MTPS;
@@ -22,7 +22,7 @@ class DeterministicThrottleTest {
 	void factoriesWork() {
 		// setup:
 		int tps = 1_000;
-		long expectedCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NT;
+		long expectedCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN;
 		String name = "t6e";
 
 		// given:
@@ -74,7 +74,7 @@ class DeterministicThrottleTest {
 		// setup:
 		int tps = 1;
 		int burstPeriod = 5;
-		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NT * burstPeriod;
+		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
 		Instant now = Instant.ofEpochSecond(1_234_567L);
 
 		// given:
@@ -168,7 +168,7 @@ class DeterministicThrottleTest {
 		// setup:
 		int tps = 1;
 		int burstPeriod = 5;
-		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NT * burstPeriod;
+		long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
 		long elapsedNanos = 1_234;
 		Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
 		Instant now = Instant.ofEpochSecond(1_234_567L, elapsedNanos);
@@ -194,7 +194,7 @@ class DeterministicThrottleTest {
 		// setup:
 		int mtps = 333;
 		int burstPeriod = 6;
-		long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NT * burstPeriod;
+		long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
 		Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
 
 		// given:
@@ -215,7 +215,7 @@ class DeterministicThrottleTest {
 		// setup:
 		int mtps = 333;
 		int burstPeriod = 6;
-		long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NT * burstPeriod;
+		long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
 		long used = internalCapacity / 2;
 		Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
 
@@ -237,7 +237,7 @@ class DeterministicThrottleTest {
 		// setup:
 		int mtps = 333;
 		int burstPeriod = 6;
-		long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NT * burstPeriod;
+		long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
 		Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
 		String name = "Testing123";
 

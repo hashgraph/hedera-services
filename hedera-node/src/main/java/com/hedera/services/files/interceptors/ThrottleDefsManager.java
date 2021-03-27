@@ -4,7 +4,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.sysfiles.logic.ErrorCodeUtils;
+import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;

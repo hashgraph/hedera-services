@@ -19,11 +19,7 @@
                 },
                 {
                     "opsPerSec": 13,
-                    "operations": [ 
-                      "ContractCall", "ContractCreate", 
-                      "FileCreate", "FileUpdate", "FileAppend", "FileDelete", 
-                      "SystemDelete", "SystemUndelete"
-                    ]
+                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
                 },
                 {
                     "opsPerSec": 3000,
@@ -41,11 +37,7 @@
             "throttleGroups": [
                 {
                     "opsPerSec": 10,
-                    "operations": [ 
-                      "ContractCall", "ContractCreate", 
-                      "FileCreate", "FileUpdate", "FileAppend", "FileDelete", 
-                      "SystemDelete", "SystemUndelete"
-                    ]
+                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
                 }
             ]
         },

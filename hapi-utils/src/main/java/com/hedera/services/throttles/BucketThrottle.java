@@ -39,8 +39,8 @@ public class BucketThrottle {
 
 	static final long MTPS_PER_TPS = 1_000L;
 	static final long NTPS_PER_MTPS = 1_000_000L;
-	static final long CAPACITY_UNITS_PER_NT = 1_000L;
 	static final long CAPACITY_UNITS_PER_TXN = 1_000_000_000_000L;
+	static final long CAPACITY_UNITS_PER_NANO_TXN = 1_000L;
 
 	private final long mtps;
 	private final DiscreteLeakyBucket bucket;
@@ -65,7 +65,7 @@ public class BucketThrottle {
 
 	private BucketThrottle(long mtps, int burstPeriod) {
 		this.mtps = mtps;
-		bucket = new DiscreteLeakyBucket(mtps * NTPS_PER_MTPS * burstPeriod * CAPACITY_UNITS_PER_NT);
+		bucket = new DiscreteLeakyBucket(mtps * NTPS_PER_MTPS * burstPeriod * CAPACITY_UNITS_PER_NANO_TXN);
 		if (bucket.totalCapacity() < CAPACITY_UNITS_PER_TXN) {
 			throw new IllegalArgumentException("A throttle with " + mtps + " MTPS and "
 					+ burstPeriod + "s burst period can never allow a transaction!");
@@ -73,11 +73,14 @@ public class BucketThrottle {
 	}
 
 	boolean allow(int n, long elapsedNanos) {
-		long capacityUnits = elapsedNanos * mtps;
-		bucket.leak(capacityUnits);
+		long leakedUnits = elapsedNanos * mtps;
+		if (leakedUnits < 0) {
+			leakedUnits = bucket.totalCapacity();
+		}
+		bucket.leak(leakedUnits);
 
 		long requiredUnits = n * CAPACITY_UNITS_PER_TXN;
-		if (requiredUnits > bucket.capacityFree()) {
+		if (requiredUnits < 0 || requiredUnits > bucket.capacityFree()) {
 			return false;
 		}
 

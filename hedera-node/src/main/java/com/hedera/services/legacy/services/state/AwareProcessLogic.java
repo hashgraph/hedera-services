@@ -22,6 +22,7 @@ package com.hedera.services.legacy.services.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.logic.ServicesTxnManager;
@@ -178,6 +179,10 @@ public class AwareProcessLogic implements ProcessLogic {
 
 		updateIssEventInfo(consensusTime);
 
+		/* This is only to monitor the current network usage for automated
+		congestion pricing; we don't actually throttle consensus transactions. */
+		ctx.handleThrottling().shouldThrottle(accessor.getFunction());
+		ctx.feeMultiplierSource().updateMultiplier();
 		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
 
 		var chargingOutcome = ctx.txnChargingPolicy().applyForTriggered(ctx.charging(), fee);
@@ -213,11 +218,8 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.txnCtx().payerSigIsKnownActive();
 		}
 
-		/* This is only to monitor the current network usage for automated
-		congestion pricing; we don't actually throttle consensus transactions. */
 		ctx.handleThrottling().shouldThrottle(accessor.getFunction());
 		ctx.feeMultiplierSource().updateMultiplier();
-
 		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
 
 		var recentHistory = ctx.txnHistories().get(accessor.getTxnId());
