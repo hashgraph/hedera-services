@@ -42,19 +42,19 @@
             ]
         },
         {
-            "name": "CreationLimits",
+            "name": "DevCreationLimits",
             "burstPeriod": 10,
             "throttleGroups": [
                 {
-                    "opsPerSec": 2,
+                    "opsPerSec": 20,
                     "operations": [ "CryptoCreate" ]
                 },
                 {
-                    "opsPerSec": 5,
+                    "opsPerSec": 50,
                     "operations": [ "ConsensusCreateTopic" ]
                 },
                 {
-                    "opsPerSec": 100,
+                    "opsPerSec": 1000,
                     "operations": [ "TokenCreate", "TokenAssociateToAccount", "ScheduleCreate" ]
                 }
             ]
