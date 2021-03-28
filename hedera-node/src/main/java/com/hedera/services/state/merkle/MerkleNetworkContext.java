@@ -64,10 +64,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	RichInstant consensusTimeOfLastHandledTxn;
 	SequenceNumber seqNo;
 	ExchangeRates midnightRates;
-	List<DeterministicThrottle.UsageSnapshot> throttleUsages = Collections.emptyList();
+	volatile List<DeterministicThrottle.UsageSnapshot> throttleUsages = Collections.emptyList();
 
 	/* Non-null iff {@code this} is mutable. */
-	FunctionalityThrottling throttling;
+	volatile FunctionalityThrottling throttling;
 
 	public MerkleNetworkContext() {
 	}
