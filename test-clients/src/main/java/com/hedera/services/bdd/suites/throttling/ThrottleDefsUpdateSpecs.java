@@ -56,9 +56,9 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 				new HapiApiSpec[] {
 //						throttleDefsRejectUnauthorizedPayers(),
 //						throttleDefsHaveExpectedDefaults(),
-//						throttleUpdateRejectsMultiGroupAssignment(),
+						throttleUpdateRejectsMultiGroupAssignment(),
 //						throttleUpdateWithZeroGroupOpsPerSecFails(),
-						congestionPricingWorks(),
+//						congestionPricingWorks(),
 				}
 		);
 	}
@@ -67,7 +67,7 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 		int burstSize = 999;
 		String expensiveXfer = "expensive";
 
-		var defaultThrottles = protoDefsFromResource("network-defaults/throttles.json");
+		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 		var expensiveXferThrottles = protoDefsFromResource("testSystemFiles/expensive-xfer-throttles.json");
 
 		return defaultHapiSpec("CongestionPricingWorks")
@@ -135,7 +135,7 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec throttleDefsHaveExpectedDefaults() {
-		var defaultThrottles = protoDefsFromResource("network-defaults/throttles.json");
+		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 
 		return defaultHapiSpec("ThrottleDefsExistOnStartup")
 				.given( ).when( ).then(

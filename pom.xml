@@ -253,6 +253,12 @@ ${git.signoff}
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>com/hederahashgraph/**/*</exclude>
+            <exclude>com/hedera/services/proto/utils/**/*</exclude>
+          </excludes>
+        </configuration>
         <executions>
           <execution>
             <id>jacoco-agent</id>

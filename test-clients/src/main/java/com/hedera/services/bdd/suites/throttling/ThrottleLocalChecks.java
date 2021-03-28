@@ -49,7 +49,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateToNewThrottlePropsFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -66,7 +65,6 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 	private static final double EXPECTED_TOPIC_CREATE_TPS = 5.0 / NUM_LOCAL_NODES;
 
 	private static final String BACKUP_LOC = "bkup-application.properties";
-	private static final String THROTTLE_PROPS_FOR_CHECK = "src/main/resource/local-check-throttle.properties";
 
 	private AtomicLong duration = new AtomicLong(60);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -84,7 +82,7 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 						checkOtherHcsThrottles(),
 //						checkContractThrottles(),
 //						checkFileThrottles(),
-//						checkCryptoThrottles(),
+						checkCryptoThrottles(),
 //						checkTopicCreateThrottles(),
 //						restoreFromBkup(),
 				}
@@ -103,7 +101,6 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 							legacyProps.set(contents);
 						})
 				).when(
-						updateToNewThrottlePropsFrom(THROTTLE_PROPS_FOR_CHECK),
 						sleepFor(5_000L)
 				).then(
 						runWithProvider(topicCreates())
@@ -135,7 +132,6 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 							legacyProps.set(contents);
 						})
 				).when(
-						updateToNewThrottlePropsFrom(THROTTLE_PROPS_FOR_CHECK),
 						sleepFor(5_000L)
 				).then(
 						runWithProvider(contractOps())
@@ -167,7 +163,6 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 							legacyProps.set(contents);
 						})
 				).when(
-						updateToNewThrottlePropsFrom(THROTTLE_PROPS_FOR_CHECK),
 						sleepFor(5_000L)
 				).then(
 						runWithProvider(fileOps())
@@ -199,7 +194,6 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 							legacyProps.set(contents);
 						})
 				).when(
-						updateToNewThrottlePropsFrom(THROTTLE_PROPS_FOR_CHECK),
 						sleepFor(5_000L)
 				).then(
 						runWithProvider(otherHcsOps())
@@ -231,7 +225,6 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 							legacyProps.set(contents);
 						})
 				).when(
-						updateToNewThrottlePropsFrom(THROTTLE_PROPS_FOR_CHECK),
 						sleepFor(5_000L)
 				).then(
 						runWithProvider(cryptoOps())

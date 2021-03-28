@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateToNewThrottlePropsFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -83,7 +82,6 @@ public class BucketThrottlingSpec extends HapiApiSuite {
 							defaultProps.set(contents);
 						}),
 						cryptoCreate("civilian").balance(10_000_000_000L),
-						updateToNewThrottlePropsFrom(propertiesLocFor(SuiteRunner.expectedNetworkSize)),
 						sleepFor(3_000L)
 				).when(
 						/* Default transaction bucket. */
@@ -118,10 +116,6 @@ public class BucketThrottlingSpec extends HapiApiSuite {
 								.contents(ignore -> defaultProps.get()),
 						sleepFor(3_000L)
 				);
-	}
-
-	private String propertiesLocFor(int numNodes) {
-		return String.format("src/main/resource/ciSpecBucketThrottles-%dNodeNetwork.properties", numNodes);
 	}
 
 	private HapiSpecOperation sanityCheckReceiptThrottling() {

@@ -14,8 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.*;
 
+import java.util.Collections;
 import java.util.List;
 
 
@@ -63,7 +65,73 @@ class TxnRateFeeMultiplierSourceTest {
 		long actualMultiplier = subject.currentMultiplier();
 
 		// then:
-		Assertions.assertEquals(expectedMultiplier, actualMultiplier);
+		assertEquals(expectedMultiplier, actualMultiplier);
+	}
+
+	@Test
+	void doesntThrowOnMissingThrottles() {
+		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(Collections.emptyList());
+
+		// expect:
+		Assertions.assertDoesNotThrow(subject::resetExpectations);
+		assertEquals(1L, subject.currentMultiplier());
+	}
+
+	@Test
+	void logsCongestionPricingStart() {
+		// setup:
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		var mockLog = mock(Logger.class);
+		var desired = "Congestion pricing beginning w/ 10x multiplier";
+
+		// when:
+		subject.logMultiplierChange(1L, 10L, mockLog);
+
+		// then:
+		verify(mockLog).info(captor.capture());
+		assertEquals(desired, captor.getValue());
+	}
+
+	@Test
+	void logsCongestionPricingIncrease() {
+		// setup:
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		var mockLog = mock(Logger.class);
+		var desired = "Congestion pricing continuing, reached 100x multiplier";
+
+		// when:
+		subject.logMultiplierChange(10L, 100L, mockLog);
+
+		// then:
+		verify(mockLog).info(captor.capture());
+		assertEquals(desired, captor.getValue());
+	}
+
+	@Test
+	void logsCongestionPricingEnd() {
+		// setup:
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		var mockLog = mock(Logger.class);
+		var desired = "Congestion pricing ended";
+
+		// when:
+		subject.logMultiplierChange(10L, 1L, mockLog);
+
+		// then:
+		verify(mockLog).info(captor.capture());
+		assertEquals(desired, captor.getValue());
+	}
+
+	@Test
+	void silentOnCongestionPricingDrop() {
+		// setup:
+		var mockLog = mock(Logger.class);
+
+		// when:
+		subject.logMultiplierChange(100L, 10L, mockLog);
+
+		// then:
+		verify(mockLog, never()).info(any(String.class));
 	}
 
 	@Test
@@ -91,6 +159,6 @@ class TxnRateFeeMultiplierSourceTest {
 
 		// then:
 		verify(mockLog).info(captor.capture());
-		Assertions.assertEquals(desired, captor.getValue());
+		assertEquals(desired, captor.getValue());
 	}
 }

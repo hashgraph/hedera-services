@@ -19,7 +19,9 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	private static final long[] UPSCALE_MULTIPLIERS = { 10L, 25L, 100L };
 
 	private final FunctionalityThrottling throttling;
+
 	private long multiplier = DEFAULT_MULTIPLIER;
+	private long previousMultiplier = DEFAULT_MULTIPLIER;
 	private long[][] activeTriggerValues = {};
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
@@ -36,7 +38,7 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	public void resetExpectations() {
 		activeThrottles = throttling.activeThrottlesFor(CryptoTransfer);
 		if (activeThrottles.isEmpty()) {
-			log.info("Normally I wouldn't let this slide!");
+			log.warn("CryptoTransfer has no throttle buckets, fee multiplier will remain at one!");
 		}
 
 		int n = activeThrottles.size();
@@ -94,6 +96,22 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 			long used = activeThrottles.get(i).used();
 			for (int j = 0; j < UPSCALE_MULTIPLIERS.length && used >= activeTriggerValues[i][j]; j++) {
 				multiplier = Math.max(multiplier, UPSCALE_MULTIPLIERS[j]);
+			}
+		}
+		if (multiplier != previousMultiplier) {
+			logMultiplierChange(previousMultiplier, multiplier, log);
+		}
+		previousMultiplier = multiplier;
+	}
+
+	void logMultiplierChange(long prev, long cur, Logger refinedLog) {
+		if (prev == DEFAULT_MULTIPLIER)	{
+			refinedLog.info("Congestion pricing beginning w/ " + cur + "x multiplier");
+		} else {
+			if (cur > prev) {
+				refinedLog.info("Congestion pricing continuing, reached " + cur + "x multiplier");
+			} else if (cur == DEFAULT_MULTIPLIER) {
+				refinedLog.info("Congestion pricing ended");
 			}
 		}
 	}
