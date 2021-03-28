@@ -22,8 +22,6 @@ package com.hedera.services.bdd.suites.throttling;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,7 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadProtoDefs;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
@@ -69,8 +67,8 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 		int burstSize = 999;
 		String expensiveXfer = "expensive";
 
-		var defaultThrottles = loadProtoDefs("network-defaults/throttles.json");
-		var expensiveXferThrottles = loadProtoDefs("testSystemFiles/expensive-xfer-throttles.json");
+		var defaultThrottles = protoDefsFromResource("network-defaults/throttles.json");
+		var expensiveXferThrottles = protoDefsFromResource("testSystemFiles/expensive-xfer-throttles.json");
 
 		return defaultHapiSpec("CongestionPricingWorks")
 				.given(
@@ -99,7 +97,7 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
-		var zeroOpsPerSecThrottles = loadProtoDefs("testSystemFiles/zero-ops-group.json");
+		var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
 
 		return defaultFailingHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
 				.given( ).when( ).then(
@@ -110,7 +108,7 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec throttleUpdateRejectsMultiGroupAssignment() {
-		var multiGroupThrottles = loadProtoDefs("testSystemFiles/duplicated-operation.json");
+		var multiGroupThrottles = protoDefsFromResource("testSystemFiles/duplicated-operation.json");
 
 		return defaultHapiSpec("ThrottleUpdateRejectsMultiGroupAssignment")
 				.given( ).when( ).then(
@@ -137,7 +135,7 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec throttleDefsHaveExpectedDefaults() {
-		var defaultThrottles = loadProtoDefs("network-defaults/throttles.json");
+		var defaultThrottles = protoDefsFromResource("network-defaults/throttles.json");
 
 		return defaultHapiSpec("ThrottleDefsExistOnStartup")
 				.given( ).when( ).then(

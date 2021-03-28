@@ -210,7 +210,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		try {
 			rawProps = loader.get();
 		} catch (Exception e) {
-			log.error("Failed to read bootstrap {}, unable to continue!", resource);
+			log.error("Failed to read bootstrap {}, unable to continue!", resource, e);
 			throw new IllegalStateException(e);
 		}
 		materialize(disFid, systemFileInfo(), rawProps);
@@ -339,8 +339,9 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	private ThrottleDefinitions defaultThrottles() throws Exception {
 		var resource = properties.getStringProperty("bootstrap.throttleDefsJson.resource");
-
-		return ThrottlesJsonToProtoSerde.loadProtoDefs(resource);
+		try (InputStream in = HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(resource)) {
+			return ThrottlesJsonToProtoSerde.loadProtoDefs(in);
+		}
 	}
 
 	private ExchangeRateSet defaultRates() {

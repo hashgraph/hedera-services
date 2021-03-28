@@ -1,11 +1,13 @@
 package com.hedera.services.sysfiles.serdes;
 
+import com.hedera.services.TestUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ThrottleBucket;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.ThrottleGroup;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.List;
 
 import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadProtoDefs;
@@ -21,18 +23,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ThrottlesJsonToProtoSerdeTest {
 	@Test
-	void loadsExpectedDefs() {
+	void loadsExpectedDefs() throws IOException {
 		// given:
-		var actual = loadProtoDefs("bootstrap/throttles.json");
+		var actual = TestUtils.protoDefs("bootstrap/throttles.json");
 
 		// expect:
 		assertEquals(expected(), actual);
-	}
-
-	@Test
-	void translatesNonsense() {
-		// expect:
-		assertThrows(IllegalStateException.class,() -> loadProtoDefs(null));
 	}
 
 	private ThrottleDefinitions expected() {

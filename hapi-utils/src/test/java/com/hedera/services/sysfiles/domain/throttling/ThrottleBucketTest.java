@@ -1,5 +1,6 @@
 package com.hedera.services.sysfiles.domain.throttling;
 
+import com.hedera.services.TestUtils;
 import com.hedera.services.throttles.ConcurrentThrottleTestHelper;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -8,17 +9,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.List;
 
-import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadPojoDefs;
-import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadProtoDefs;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 
 class ThrottleBucketTest {
 	@Test
-	void factoryWorks() {
+	void factoryWorks() throws IOException {
 		// given:
-		var proto = loadProtoDefs("bootstrap/throttles.json");
+		var proto = TestUtils.protoDefs("bootstrap/throttles.json");
 
 		// setup:
 		var bucketA = proto.getThrottleBuckets(0);
@@ -28,10 +28,10 @@ class ThrottleBucketTest {
 	}
 
 	@Test
-	void failsWhenConstructingThrottlesThatNeverPermitAnOperationAtNodeLevel() {
+	void failsWhenConstructingThrottlesThatNeverPermitAnOperationAtNodeLevel() throws IOException {
 		// setup:
 		int n = 24;
-		var defs = loadPojoDefs("bootstrap/overdone-throttles.json");
+		var defs = TestUtils.pojoDefs("bootstrap/overdone-throttles.json");
 		// and:
 		var subject = defs.getBuckets().get(0);
 
@@ -41,10 +41,10 @@ class ThrottleBucketTest {
 
 	@Test
 	@Disabled
-	void failsWhenConstructingThrottlesWithZeroOpsPerSecForAGroup() {
+	void failsWhenConstructingThrottlesWithZeroOpsPerSecForAGroup() throws IOException {
 		// setup:
 		int n = 1;
-		var defs = loadPojoDefs("bootstrap/undersupplied-throttles.json");
+		var defs = TestUtils.pojoDefs("bootstrap/undersupplied-throttles.json");
 		// and:
 		var subject = defs.getBuckets().get(0);
 
@@ -59,9 +59,9 @@ class ThrottleBucketTest {
 	}
 
 	@Test
-	void constructsExpectedABucketMappingForGlobalThrottle() {
+	void constructsExpectedABucketMappingForGlobalThrottle() throws IOException {
 		// setup:
-		var defs = loadPojoDefs("bootstrap/throttles.json");
+		var defs = TestUtils.pojoDefs("bootstrap/throttles.json");
 		// and:
 		var subject = defs.getBuckets().get(0);
 
@@ -87,10 +87,10 @@ class ThrottleBucketTest {
 	}
 
 	@Test
-	void constructsExpectedABucketMappingForNetworkWith24Nodes() {
+	void constructsExpectedABucketMappingForNetworkWith24Nodes() throws IOException {
 		// setup:
 		int n = 24;
-		var defs = loadPojoDefs("bootstrap/throttles.json");
+		var defs = TestUtils.pojoDefs("bootstrap/throttles.json");
 
 		// given:
 		var subject = defs.getBuckets().get(0);
@@ -114,9 +114,9 @@ class ThrottleBucketTest {
 
 	@Test
 	@Disabled
-	void constructedSubTpsThrottleWorksAsExpected() throws InterruptedException {
+	void constructedSubTpsThrottleWorksAsExpected() throws InterruptedException, IOException {
 		// setup:
-		var defs = loadPojoDefs("bootstrap/throttles.json");
+		var defs = TestUtils.pojoDefs("bootstrap/throttles.json");
 
 		// given:
 		var subject = defs.getBuckets().get(0);
@@ -149,9 +149,9 @@ class ThrottleBucketTest {
 	}
 
 	@Test
-	void throwOnBucketWithOverflowingLogicalOps() {
+	void throwOnBucketWithOverflowingLogicalOps() throws IOException {
 		// setup:
-		var defs = loadPojoDefs("bootstrap/overflow-throttles.json");
+		var defs = TestUtils.pojoDefs("bootstrap/overflow-throttles.json");
 
 		// given:
 		var subject = defs.getBuckets().get(0);
@@ -161,9 +161,9 @@ class ThrottleBucketTest {
 	}
 
 	@Test
-	void throwOnBucketWithRepeatedOp() {
+	void throwOnBucketWithRepeatedOp() throws IOException {
 		// setup:
-		var defs = loadPojoDefs("bootstrap/repeated-op-throttles.json");
+		var defs = TestUtils.pojoDefs("bootstrap/repeated-op-throttles.json");
 
 		// given:
 		var subject = defs.getBuckets().get(0);

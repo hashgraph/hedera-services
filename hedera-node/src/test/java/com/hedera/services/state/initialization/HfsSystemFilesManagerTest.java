@@ -32,6 +32,7 @@ import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -383,9 +384,9 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void loadsThrottlesFromHfsIfAvailable() {
+	public void loadsThrottlesFromHfsIfAvailable() throws IOException {
 		// setup:
-		var proto = loadProtoDefs("bootstrap/throttles.json");
+		var proto = SerdeUtils.protoDefs("bootstrap/throttles.json");
 		byte[] throttleBytes = proto.toByteArray();
 
 		given(hfs.exists(throttlesId)).willReturn(true);
@@ -402,7 +403,7 @@ class HfsSystemFilesManagerTest {
 	@Test
 	public void createsThrottlesFromResourceIfMissing() throws IOException {
 		// setup:
-		var proto = loadProtoDefs("bootstrap/throttles.json");
+		var proto = SerdeUtils.protoDefs("bootstrap/throttles.json");
 		byte[] throttleBytes = proto.toByteArray();
 
 		given(hfs.exists(throttlesId)).willReturn(false);

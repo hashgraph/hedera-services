@@ -2,6 +2,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -12,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -45,9 +47,9 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void managerBehavesAsExpectedForMultiBucketOp() {
+	void managerBehavesAsExpectedForMultiBucketOp() throws IOException {
 		// setup:
-		var defs = loadPojoDefs("bootstrap/throttles.json");
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
 		// when:
 		subject.rebuildFor(defs);
@@ -65,9 +67,9 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void logsAsExpected() {
+	void logsAsExpected() throws IOException {
 		// setup:
-		var defs = loadPojoDefs("bootstrap/throttles.json");
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		String desired = "Resolved throttles (after splitting capacity 2 ways) - \n" +
 				"  ContractCall:\n" +
@@ -100,9 +102,9 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
-	void constructsExpectedBucketsFromTestResource() {
+	void constructsExpectedBucketsFromTestResource() throws IOException {
 		// setup:
-		var defs = loadPojoDefs("bootstrap/throttles.json");
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 		// and:
 		var expected = List.of(
 				DeterministicThrottle.withMtpsAndBurstPeriod(15_000_000, 2),
