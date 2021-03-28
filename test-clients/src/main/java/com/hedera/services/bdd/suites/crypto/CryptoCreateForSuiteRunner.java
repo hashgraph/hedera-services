@@ -59,7 +59,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	}
 
 	public static void main(String... args) {
-		new CryptoCreateForSuiteRunner("localhost", "0.0.3").runSuiteSync();
+		new CryptoCreateForSuiteRunner("localhost", "3").runSuiteSync();
 	}
 
 	@Override
