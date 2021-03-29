@@ -36,7 +36,6 @@ public class PropertiesLoader {
 
 	public static CustomProperties applicationProps;
 	public static CustomProperties apiProperties;
-	public static List<Runnable> updateCallbacks = new ArrayList<>();
 
 	public static void populateApplicationPropertiesWithProto(ServicesConfigurationList serviceConfigList) {
 		Properties properties = new Properties();
@@ -46,7 +45,6 @@ public class PropertiesLoader {
 		applicationProps = new CustomProperties(properties);
 		AsyncPropertiesObject.loadAsynchProperties(applicationProps);
 		log.info("Application Properties Populated with these values :: " + applicationProps.getCustomProperties());
-		updateCallbacks.forEach(Runnable::run);
 	}
 
 	public static void populateAPIPropertiesWithProto(ServicesConfigurationList serviceConfigList) {

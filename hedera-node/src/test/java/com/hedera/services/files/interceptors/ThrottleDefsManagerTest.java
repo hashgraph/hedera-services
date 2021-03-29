@@ -3,7 +3,9 @@ package com.hedera.services.files.interceptors;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
+import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.swirlds.common.AddressBook;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,10 +14,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+import java.util.EnumSet;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_THROTTLE_DEFINITIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,6 +43,12 @@ class ThrottleDefsManagerTest {
 	FileNumbers fileNums = new MockFileNumbers();
 	FileID throttleDefs = fileNums.toFid(123L);
 
+	EnumSet<HederaFunctionality> pretendExpectedOps = EnumSet.of(
+			CryptoCreate, CryptoTransfer, ContractCall,
+			TokenCreate, TokenAssociateToAccount, TokenMint,
+			CryptoGetAccountBalance, TransactionGetReceipt
+	);
+
 	@Mock
 	AddressBook book;
 	@Mock
@@ -45,6 +63,7 @@ class ThrottleDefsManagerTest {
 	@BeforeEach
 	void setUp() {
 		subject = new ThrottleDefsManager(fileNums, () -> book, postUpdateCb);
+		subject.expectedOps = pretendExpectedOps;
 	}
 
 	@Test
@@ -57,6 +76,32 @@ class ThrottleDefsManagerTest {
 	void throwsUnsupportedOnDelete() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.preDelete(throttleDefs));
+	}
+
+	@Test
+	void saysYesWhenAcceptable() throws IOException {
+		var ok = SerdeUtils.protoDefs("bootstrap/throttles.json");
+
+		given(book.getSize()).willReturn(2);
+
+		// when:
+		var verdict = subject.preUpdate(throttleDefs, ok.toByteArray());
+
+		// then:
+		assertEquals(ThrottleDefsManager.YES_VERDICT, verdict);
+	}
+
+	@Test
+	void detectsMissingExpectedOp() throws IOException {
+		var missingMint = SerdeUtils.protoDefs("bootstrap/throttles-sans-mint.json");
+
+		given(book.getSize()).willReturn(2);
+
+		// when:
+		var verdict = subject.preUpdate(throttleDefs, missingMint.toByteArray());
+
+		// then:
+		assertEquals(ThrottleDefsManager.YES_BUT_MISSING_OP_VERDICT, verdict);
 	}
 
 	@Test

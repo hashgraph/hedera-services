@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
 public class IssueXXXXSpec extends HapiApiSuite {
@@ -65,6 +66,7 @@ public class IssueXXXXSpec extends HapiApiSuite {
 						throttleUpdateRejectsMultiGroupAssignment(),
 						throttleUpdateWithZeroGroupOpsPerSecFails(),
 						canUpdateMultipliersDynamically(),
+						updateWithMissingTokenMintGetsWarning(),
 						ensureDefaultsRestored(),
 				}
 		);
@@ -127,6 +129,18 @@ public class IssueXXXXSpec extends HapiApiSuite {
 								.overridingProps(Map.of(
 										"fees.percentCongestionMultipliers", defaultCongestionMultipliers
 								))
+				);
+	}
+
+	private HapiApiSpec updateWithMissingTokenMintGetsWarning() {
+		var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
+
+		return defaultHapiSpec("UpdateWithMissingTokenMintGetsWarning")
+				.given( ).when( ).then(
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(missingMintThrottles.toByteArray())
+								.hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 				);
 	}
 
