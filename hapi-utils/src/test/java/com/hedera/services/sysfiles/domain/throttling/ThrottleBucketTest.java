@@ -6,13 +6,13 @@ import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
 class ThrottleBucketTest {
 	@Test
@@ -40,19 +40,12 @@ class ThrottleBucketTest {
 	}
 
 	@Test
-	@Disabled
 	void failsWhenConstructingThrottlesWithZeroOpsPerSecForAGroup() throws IOException {
 		// setup:
 		int n = 1;
 		var defs = TestUtils.pojoDefs("bootstrap/undersupplied-throttles.json");
 		// and:
 		var subject = defs.getBuckets().get(0);
-
-		try {
-			subject.asThrottleMapping(n);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 
 		// expect:
 		Assertions.assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(n));
@@ -113,29 +106,29 @@ class ThrottleBucketTest {
 	}
 
 	@Test
-	@Disabled
-	void constructedSubTpsThrottleWorksAsExpected() throws InterruptedException, IOException {
+	void constructedThrottleWorksAsExpected() throws InterruptedException, IOException {
 		// setup:
 		var defs = TestUtils.pojoDefs("bootstrap/throttles.json");
 
 		// given:
 		var subject = defs.getBuckets().get(0);
-		int n = 20;
-		int lifetimeSecs = 60;
-		double expectedContractCallTps = (1.0 * subject.getThrottleGroups().get(1).getOpsPerSec()) / n;
+		int n = 14;
+		double expectedXferTps = (1.0 * subject.getThrottleGroups().get(0).getOpsPerSec()) / n;
 		// and:
 		var mapping = subject.asThrottleMapping(n);
 		var throttle = mapping.getLeft();
-		int opsForContractCall = opsForFunction(mapping.getRight(), ContractCall);
+		int opsForXfer = opsForFunction(mapping.getRight(), CryptoTransfer);
+		throttle.resetUsageTo(new DeterministicThrottle.UsageSnapshot(
+				throttle.capacity() - DeterministicThrottle.capacityRequiredFor(opsForXfer),
+				null));
 
 		// when:
-		var helper = new ConcurrentThrottleTestHelper(1, lifetimeSecs, opsForContractCall);
+		var helper = new ConcurrentThrottleTestHelper(3, 10, opsForXfer);
 		// and:
-		int numAllowed = helper.successfulAllowsWhenRunWith(throttle);
+		helper.runWith(throttle);
 
 		// then:
-		double approxActualTps = (1.0 * numAllowed)	/ lifetimeSecs;
-		Assertions.assertEquals(expectedContractCallTps, approxActualTps, 0.00);
+		helper.assertTolerableTps(expectedXferTps, 1.00, opsForXfer);
 	}
 
 	private int opsForFunction(List<Pair<HederaFunctionality, Integer>> source, HederaFunctionality function) {

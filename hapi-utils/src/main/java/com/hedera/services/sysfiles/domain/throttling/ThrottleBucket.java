@@ -16,6 +16,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_CAPACIT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_HAS_NO_THROTTLE_GROUPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 import static java.util.stream.Collectors.toList;
 
 public class ThrottleBucket {
@@ -82,6 +83,7 @@ public class ThrottleBucket {
 					"Bucket " + name + " includes no throttle groups!"));
 		}
 
+		assertMinimalOpsPerSec();
 		int logicalMtps = requiredLogicalMilliTpsToAccommodateAllGroups();
 		if (logicalMtps < 0) {
 			throw new IllegalStateException(exceptionMsgFor(
@@ -116,6 +118,16 @@ public class ThrottleBucket {
 		}
 
 		return Pair.of(throttle, opsReqs);
+	}
+
+	private void assertMinimalOpsPerSec() {
+		for (var group : throttleGroups) {
+			if (group.getOpsPerSec() == 0) {
+				throw new IllegalStateException(exceptionMsgFor(
+						THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC,
+						"Bucket " + name + " contains a group with zero opsPerSec!"));
+			}
+		}
 	}
 
 	private int requiredLogicalMilliTpsToAccommodateAllGroups() {

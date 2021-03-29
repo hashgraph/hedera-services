@@ -2,20 +2,21 @@ package com.hedera.services.throttles;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.time.Instant;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
 import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_TXN;
 import static com.hedera.services.throttles.BucketThrottle.MTPS_PER_TPS;
 import static com.hedera.services.throttles.BucketThrottle.NTPS_PER_MTPS;
 import static com.hedera.services.throttles.BucketThrottleTest.NTPS_PER_TPS;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DeterministicThrottleTest {
 	@Test
@@ -70,6 +71,30 @@ class DeterministicThrottleTest {
 	}
 
 	@Test
+	void throttlesWithinPermissibleTolerance() throws InterruptedException, IOException {
+		// setup:
+		long mtps = 123_456L;
+
+		// given:
+		var subject = DeterministicThrottle.withMtps(mtps);
+
+		// given:
+		double expectedTps = (1.0 * mtps) / 1_000;
+		// and:
+		subject.resetUsageTo(new DeterministicThrottle.UsageSnapshot(
+				subject.capacity() - DeterministicThrottle.capacityRequiredFor(1),
+				null));
+
+		// when:
+		var helper = new ConcurrentThrottleTestHelper(10, 10, 2);
+		// and:
+		helper.runWith(subject);
+
+		// then:
+		helper.assertTolerableTps(expectedTps, 1.00);
+	}
+
+	@Test
 	void usesZeroElapsedNanosOnFirstDecision() {
 		// setup:
 		int tps = 1;
@@ -89,61 +114,6 @@ class DeterministicThrottleTest {
 		assertEquals(internalCapacity - CAPACITY_UNITS_PER_TXN, subject.delegate().bucket().capacityFree());
 	}
 
-	@Test
-	void canBeUsedWithoutExplicitTime() throws InterruptedException {
-		// setup:
-		int tps = 42;
-		int threads = 3;
-		int secsToTry = 5;
-		int txnsPerAttempt = 2;
-		// and:
-		AtomicInteger allowed = new AtomicInteger(0);
-		AtomicBoolean stopped = new AtomicBoolean(false);
-
-		// given:
-		var subject = DeterministicThrottle.withTps(tps);
-
-		// when:
-		var ready = new CountDownLatch(threads);
-		var start = new CountDownLatch(1);
-		var done = new CountDownLatch(threads);
-		ExecutorService exec = Executors.newCachedThreadPool();
-		// and:
-		for (int i = 0; i < threads; i++) {
-			exec.execute(() -> {
-				ready.countDown();
-				try {
-					start.await();
-					while (!stopped.get()) {
-						synchronized (subject) {
-							if (subject.allow(txnsPerAttempt)) {
-								allowed.getAndAdd(txnsPerAttempt);
-							}
-						}
-					}
-					System.out.println("Thread " + Thread.currentThread().getName() + " sees stopped=true");
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				} finally {
-					done.countDown();
-				}
-			});
-		}
-
-		// and:
-		ready.await();
-		start.countDown();
-		System.out.println("Now sleeping " + secsToTry + " seconds...");
-		TimeUnit.SECONDS.sleep(secsToTry);
-		System.out.println("...awake!");
-		stopped.set(true);
-		done.await();
-
-		exec.shutdown();
-
-		// then:
-		System.out.println("Allowed " + allowed.get() + " txns in " + secsToTry + "s w/ " + threads + " threads.");
-	}
 
 	@Test
 	void requiresMonotonicIncreasingTimeline() {
@@ -194,7 +164,6 @@ class DeterministicThrottleTest {
 		// setup:
 		int mtps = 333;
 		int burstPeriod = 6;
-		long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
 		Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
 
 		// given:

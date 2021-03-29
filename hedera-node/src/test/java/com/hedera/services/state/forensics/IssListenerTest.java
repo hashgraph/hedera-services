@@ -233,7 +233,7 @@ class IssListenerTest {
 	@Test
 	public void merkleSupplierFnDoesntBlowUp() {
 		// given:
-		var badPath = "this/path/does/not/exist";
+		var badPath = "/impermissible/path";
 
 		// then:
 		assertDoesNotThrow(() -> IssListener.merkleOutFn.apply(badPath));

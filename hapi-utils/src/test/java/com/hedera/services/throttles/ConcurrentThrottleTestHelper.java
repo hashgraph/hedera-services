@@ -1,5 +1,7 @@
 package com.hedera.services.throttles;
 
+import org.junit.jupiter.api.Assertions;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -9,16 +11,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConcurrentThrottleTestHelper {
 	private final int threads;
-	private final int lifetime;
+	private final int lifetimeSecs;
 	private final int opsToRequest;
 
-	public ConcurrentThrottleTestHelper(int threads, int lifetime, int opsToRequest) {
+	private int lastNumAllowed = 0;
+
+	public ConcurrentThrottleTestHelper(int threads, int lifetimeSecs, int opsToRequest) {
 		this.threads = threads;
-		this.lifetime = lifetime;
+		this.lifetimeSecs = lifetimeSecs;
 		this.opsToRequest = opsToRequest;
 	}
 
-	public int successfulAllowsWhenRunWith(DeterministicThrottle subject) throws InterruptedException {
+	public void assertTolerableTps(double expectedTps, double maxPerDeviation, int logicalToActualTxnRatio) {
+		var actualTps = (1.0 * lastNumAllowed) / logicalToActualTxnRatio / lifetimeSecs;
+		var percentDeviation = Math.abs(1.0 - actualTps / expectedTps) * 100.0;
+		Assertions.assertEquals(0.0, percentDeviation, maxPerDeviation);
+	}
+
+	public void assertTolerableTps(double expectedTps, double maxPerDeviation) {
+		var actualTps = (1.0 * lastNumAllowed) / lifetimeSecs;
+		var percentDeviation = Math.abs(1.0 - actualTps / expectedTps) * 100.0;
+		Assertions.assertEquals(0.0, percentDeviation, maxPerDeviation);
+	}
+
+	public int runWith(DeterministicThrottle subject) throws InterruptedException {
 		AtomicInteger allowed = new AtomicInteger(0);
 		AtomicBoolean stopped = new AtomicBoolean(false);
 
@@ -35,7 +51,7 @@ public class ConcurrentThrottleTestHelper {
 					while (!stopped.get()) {
 						synchronized (subject) {
 							if (subject.allow(opsToRequest)) {
-								allowed.getAndIncrement();
+								allowed.getAndAdd(opsToRequest);
 							}
 						}
 					}
@@ -50,12 +66,12 @@ public class ConcurrentThrottleTestHelper {
 		// and:
 		ready.await();
 		start.countDown();
-		TimeUnit.SECONDS.sleep(lifetime);
+		TimeUnit.SECONDS.sleep(lifetimeSecs);
 		stopped.set(true);
 		done.await();
 
 		exec.shutdown();
 
-		return allowed.get();
+		return (lastNumAllowed = allowed.get());
 	}
 }

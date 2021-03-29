@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -64,8 +63,9 @@ public class IssueXXXXSpec extends HapiApiSuite {
 						throttleDefsHaveExpectedDefaults(),
 						throttleDefsRejectUnauthorizedPayers(),
 						throttleUpdateRejectsMultiGroupAssignment(),
-//						throttleUpdateWithZeroGroupOpsPerSecFails(),
+						throttleUpdateWithZeroGroupOpsPerSecFails(),
 						canUpdateMultipliersDynamically(),
+						ensureDefaultsRestored(),
 				}
 		);
 	}
@@ -130,10 +130,26 @@ public class IssueXXXXSpec extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec ensureDefaultsRestored() {
+		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+
+		return defaultHapiSpec("EnsureDefaultsRestored")
+				.given( ).when( ).then(
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles.toByteArray()),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.overridingProps(Map.of(
+										"fees.percentCongestionMultipliers", defaultCongestionMultipliers
+								))
+				);
+	}
+
 	private HapiApiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
 		var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
 
-		return defaultFailingHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
+		return defaultHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
 				.given( ).when( ).then(
 						fileUpdate(THROTTLE_DEFS)
 								.contents(zeroOpsPerSecThrottles.toByteArray())
