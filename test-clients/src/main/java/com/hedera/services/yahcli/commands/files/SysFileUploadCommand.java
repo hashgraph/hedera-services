@@ -43,7 +43,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
 	String srcDir;
 
 	@CommandLine.Option(names = { "-v", "--version" },
-			paramLabel = "protobuf version : use 12 for v0.12.0 and 13 for v0.13.0",
+			paramLabel = "protobuf version : use \n 12 for v0.12.0 or \n 13 for v0.13.0",
 			defaultValue = "13")
 	String version;
 
@@ -53,7 +53,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			defaultValue = "full",
 			description = "One of \n" +
 					" Protobuf message names ['AddressBook', 'AddressBookForClients'] or \n" +
-					" short hands ['full', 'small] ")
+					" short hands ['full', 'small'] ")
 	String version13Type;
 
 	@CommandLine.Parameters(
