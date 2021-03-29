@@ -223,8 +223,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX,
-					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart),
-							new ExchangeRates()));
+					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart), new ExchangeRates()));
 			setChild(ChildIndices.TOPICS, new FCMap<>());
 			setChild(ChildIndices.STORAGE, new FCMap<>());
 			setChild(ChildIndices.ACCOUNTS, new FCMap<>());
@@ -294,8 +293,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		ctx.expiries().restartEntitiesTrackingFrom();
 		if (!blobStoreSupplier.get().isInitializing()) {
 			ctx.systemFilesManager().loadAllSystemFiles();
-			ctx.networkCtx().syncWithThrottles(ctx.handleThrottling());
-			ctx.networkCtx().updateSyncedThrottlesFromSavedState();
+			ctx.networkCtx().resetFromSavedSnapshots(ctx.handleThrottling());
 			ctx.feeMultiplierSource().resetExpectations();
 		}
 	}

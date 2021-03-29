@@ -43,6 +43,7 @@ import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.utils.IdUtils;
@@ -74,7 +75,6 @@ import java.time.Instant;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -118,6 +118,7 @@ public class ServicesMainTest {
 	SystemAccountsCreator systemAccountsCreator;
 	CurrentPlatformStatus platformStatus;
 	AccountRecordsHistorian recordsHistorian;
+	FunctionalityThrottling throttling;
 	GlobalDynamicProperties globalDynamicProperties;
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
 	RecordStreamManager recordStreamManager;
@@ -252,6 +253,8 @@ public class ServicesMainTest {
 
 	@Test
 	public void initializesSanelyGivenPreconditions() {
+		var throttling = mock(FunctionalityThrottling.class);
+
 		// given:
 		InOrder inOrder = inOrder(
 				systemFilesManager,
@@ -266,6 +269,7 @@ public class ServicesMainTest {
 				ctx,
 				networkCtx,
 				feeMultiplierSource);
+		given(ctx.handleThrottling()).willReturn(throttling);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -273,7 +277,7 @@ public class ServicesMainTest {
 		// then:
 		inOrder.verify(propertySources).assertSourcesArePresent();
 		inOrder.verify(systemFilesManager).loadAllSystemFiles();
-		inOrder.verify(networkCtx).updateSyncedThrottlesFromSavedState();
+		inOrder.verify(networkCtx).resetFromSavedSnapshots(throttling);
 		inOrder.verify(feeMultiplierSource).resetExpectations();
 		inOrder.verify(stateMigrations).runAllFor(ctx);
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);

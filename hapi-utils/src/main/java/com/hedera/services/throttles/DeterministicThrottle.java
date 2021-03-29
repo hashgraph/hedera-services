@@ -2,6 +2,7 @@ package com.hedera.services.throttles;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * A throttle with milli-TPS resolution that exists in a deterministic timeline.
@@ -143,6 +144,34 @@ public class DeterministicThrottle {
 
 		public Instant lastDecisionTime() {
 			return lastDecisionTime;
+		}
+
+		@Override
+		public String toString() {
+			var sb = new StringBuilder("DeterministicThrottle.UsageSnapshot{");
+			return sb
+					.append("used=").append(used)
+					.append(", last decision @ ")
+					.append(lastDecisionTime == NEVER ? "<N/A>" : lastDecisionTime)
+					.append("}")
+					.toString();
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (o == this) {
+				return true;
+			}
+			if (o == null || !o.getClass().equals(UsageSnapshot.class)) {
+				return false;
+			}
+			UsageSnapshot that = (UsageSnapshot) o;
+			return this.used == that.used && Objects.equals(this.lastDecisionTime, that.lastDecisionTime);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(used, lastDecisionTime);
 		}
 	}
 

@@ -51,6 +51,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
@@ -359,9 +360,11 @@ class ServicesStateTest {
 	@Test
 	public void initializesContext() {
 		// setup:
+		var throttling = mock(FunctionalityThrottling.class);
 
 		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager, networkCtx, feeMultiplierSource);
 
+		given(ctx.handleThrottling()).willReturn(throttling);
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
 		given(ctx.networkCtx()).willReturn(networkCtx);
 		// and:
@@ -379,7 +382,7 @@ class ServicesStateTest {
 		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
 		inOrder.verify(systemFilesManager).loadAllSystemFiles();
-		inOrder.verify(networkCtx).updateSyncedThrottlesFromSavedState();
+		inOrder.verify(networkCtx).resetFromSavedSnapshots(throttling);
 		inOrder.verify(feeMultiplierSource).resetExpectations();
 	}
 

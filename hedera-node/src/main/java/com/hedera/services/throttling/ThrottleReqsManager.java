@@ -50,12 +50,12 @@ public class ThrottleReqsManager {
 	}
 
 	String asReadableRequirements() {
-		return allReqs.stream().map(this::readable).collect(Collectors.joining(", "));
+		return "min{" + allReqs.stream().map(this::readable).collect(Collectors.joining(", ")) + "}";
 	}
 
 	private String readable(Pair<DeterministicThrottle, Integer> req) {
 		var throttle = req.getLeft();
-		return approximateTps(req.getRight(), throttle.mtps()) + " TPS from " + throttle.name();
+		return approximateTps(req.getRight(), throttle.mtps()) + " tps (" + throttle.name() + ")";
 	}
 
 	private String approximateTps(int logicalTpsReq, long bucketMtps) {

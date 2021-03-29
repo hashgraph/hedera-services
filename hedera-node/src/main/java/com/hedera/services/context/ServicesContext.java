@@ -600,7 +600,7 @@ public class ServicesContext {
 
 	public FeeMultiplierSource feeMultiplierSource() {
 		if (feeMultiplierSource == null) {
-			feeMultiplierSource = new TxnRateFeeMultiplierSource(handleThrottling());
+			feeMultiplierSource = new TxnRateFeeMultiplierSource(globalDynamicProperties(), handleThrottling());
 		}
 		return feeMultiplierSource;
 	}

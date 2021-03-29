@@ -705,7 +705,7 @@ public class SmartContractRequestHandler {
 				ledger.customizeDeleted(id, customizer);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.warn("Unhandled exception in SystemDelete", e);
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}
@@ -756,7 +756,7 @@ public class SmartContractRequestHandler {
 			}
 			entityExpiries.remove(entity);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.warn("Unhandled exception in SystemUndelete", e);
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}

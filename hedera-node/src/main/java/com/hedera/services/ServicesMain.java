@@ -188,8 +188,7 @@ public class ServicesMain implements SwirldMain {
 			ctx.systemFilesManager().createUpdateZipFileIfMissing();
 			if (!ctx.systemFilesManager().areFilesLoaded()) {
 				ctx.systemFilesManager().loadAllSystemFiles();
-				ctx.networkCtx().syncWithThrottles(ctx.handleThrottling());
-				ctx.networkCtx().updateSyncedThrottlesFromSavedState();
+				ctx.networkCtx().resetFromSavedSnapshots(ctx.handleThrottling());
 				ctx.feeMultiplierSource().resetExpectations();
 			}
 		} catch (Exception e) {

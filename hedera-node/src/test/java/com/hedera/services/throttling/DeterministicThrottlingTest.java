@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 
-import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadPojoDefs;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,23 +70,15 @@ class DeterministicThrottlingTest {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		String desired = "Resolved throttles (after splitting capacity 2 ways) - \n" +
-				"  ContractCall:\n" +
-				"    6.00 TPS from A, 5.00 TPS from B\n" +
-				"  CryptoCreate:\n" +
-				"    5000.00 TPS from A, 1.00 TPS from C\n" +
-				"  CryptoGetAccountBalance:\n" +
-				"    500000.00 TPS from D\n" +
-				"  CryptoTransfer:\n" +
-				"    5000.00 TPS from A\n" +
-				"  TokenAssociateToAccount:\n" +
-				"    50.00 TPS from C\n" +
-				"  TokenCreate:\n" +
-				"    50.00 TPS from C\n" +
-				"  TokenMint:\n" +
-				"    1500.00 TPS from A\n" +
-				"  TransactionGetReceipt:\n" +
-				"    500000.00 TPS from D";
+		var desired = "Resolved throttles (after splitting capacity 2 ways) - \n" +
+				"  ContractCall: min{6.00 tps (A), 5.00 tps (B)}\n" +
+				"  CryptoCreate: min{5000.00 tps (A), 1.00 tps (C)}\n" +
+				"  CryptoGetAccountBalance: min{500000.00 tps (D)}\n" +
+				"  CryptoTransfer: min{5000.00 tps (A)}\n" +
+				"  TokenAssociateToAccount: min{50.00 tps (C)}\n" +
+				"  TokenCreate: min{50.00 tps (C)}\n" +
+				"  TokenMint: min{1500.00 tps (A)}\n" +
+				"  TransactionGetReceipt: min{500000.00 tps (D)}";
 
 		var mockLog = mock(Logger.class);
 

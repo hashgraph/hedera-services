@@ -278,6 +278,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		logic.doStateTransition();
 
 		ctx.opCounters().countHandled(accessor.getFunction());
+		ctx.networkCtx().updateSnapshotsFrom(ctx.handleThrottling());
 	}
 
 	private boolean hasActivePayerSig(TxnAccessor accessor) {

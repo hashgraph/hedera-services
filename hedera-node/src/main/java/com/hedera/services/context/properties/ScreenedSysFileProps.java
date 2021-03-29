@@ -163,7 +163,6 @@ public class ScreenedSysFileProps implements PropertySource {
 			transformFor(prop.getName()).apply(prop.getValue());
 			return true;
 		} catch (Exception reason) {
-			reason.printStackTrace();
 			log.warn(String.format(
 					UNPARSEABLE_PROP_TPL,
 					prop.getValue(),

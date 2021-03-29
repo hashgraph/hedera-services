@@ -89,7 +89,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 				.forEach(entry -> {
 					var function = entry.getKey();
 					var manager = entry.getValue();
-					sb.append("  ").append(function).append(":\n    ")
+					sb.append("  ").append(function).append(": ")
 							.append(manager.asReadableRequirements())
 							.append("\n");
 				});

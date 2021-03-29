@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,6 +28,7 @@ import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,19 +40,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 class MerkleNetworkContextTest {
@@ -60,6 +58,7 @@ class MerkleNetworkContextTest {
 	SequenceNumber seqNoCopy;
 	ExchangeRates midnightRateSet;
 	ExchangeRates midnightRateSetCopy;
+	DeterministicThrottle.UsageSnapshot[] usageSnapshots;
 
 	DomainSerdes serdes;
 	FunctionalityThrottling throttling;
@@ -79,11 +78,17 @@ class MerkleNetworkContextTest {
 				1, 14, 1_234_567L,
 				1, 15, 2_345_678L);
 		midnightRateSetCopy = midnightRateSet.copy();
+		usageSnapshots = new DeterministicThrottle.UsageSnapshot[] {
+				new DeterministicThrottle.UsageSnapshot(
+						123L, consensusTimeOfLastHandledTxn.toJava()),
+				new DeterministicThrottle.UsageSnapshot(
+						456L, consensusTimeOfLastHandledTxn.toJava().plusSeconds(1L))
+		};
 
 		serdes = mock(DomainSerdes.class);
 		MerkleNetworkContext.serdes = serdes;
 
-		subject = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, midnightRateSet);
+		subject = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, midnightRateSet, usageSnapshots);
 	}
 
 	@AfterEach
@@ -92,16 +97,7 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	public void copyWorksWithSyncedContext() {
-		// setup:
-		throttling = mock(FunctionalityThrottling.class);
-		// and:
-		var active = activeThrottles();
-
-		given(throttling.allActiveThrottles()).willReturn(active);
-
-		// when:
-		subject.syncWithThrottles(throttling);
+	public void copyWorks() {
 		// given:
 		var subjectCopy = subject.copy();
 
@@ -109,47 +105,23 @@ class MerkleNetworkContextTest {
 		assertSame(subjectCopy.consensusTimeOfLastHandledTxn, subject.consensusTimeOfLastHandledTxn);
 		assertEquals(seqNoCopy, subjectCopy.seqNo);
 		assertEquals(midnightRateSetCopy, subjectCopy.midnightRates);
-		// and:
-		assertNull(subject.getThrottling());
-		assertSame(throttling, subjectCopy.getThrottling());
-		// and:
-		assertSnapshotsMatch(subject);
-	}
-
-	@Test
-	public void copyWorksBeforeSyncing() {
-		// given:
-		subject.throttleUsages = activeThrottles().stream()
-				.map(DeterministicThrottle::usageSnapshot)
-				.collect(Collectors.toList());
-
-		// when:
-		var subjectCopy = subject.copy();
-
-		// expect:
-		assertSame(subjectCopy.consensusTimeOfLastHandledTxn, subject.consensusTimeOfLastHandledTxn);
-		assertEquals(seqNoCopy, subjectCopy.seqNo);
-		assertEquals(midnightRateSetCopy, subjectCopy.midnightRates);
-		// and:
-		assertSnapshotsMatch(subjectCopy);
+		assertSame(subjectCopy.usageSnapshots, subject.usageSnapshots);
 	}
 
 	@Test
 	public void toStringRendersUnsyncedAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
-		// and:
-		var active = activeThrottles();
 
-		given(throttling.allActiveThrottles()).willReturn(active);
+		given(throttling.allActiveThrottles()).willReturn(activeThrottles());
 		// and:
-		subject.syncWithThrottles(throttling);
+		subject.updateSnapshotsFrom(throttling);
 		// and:
 		var desired = "The network context is,\n" +
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Next entity number                         :: 1234\n" +
-				"  Throttle usage snapshots were              ::\n" +
+				"  Throttle usage snapshots are               ::\n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
 				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)";
@@ -162,30 +134,114 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	public void toStringRendersSyncedAsExpected() {
+	void updatesEmptySnapshotsAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
-		// and:
-		var active = activeThrottles();
 
-		given(throttling.allActiveThrottles()).willReturn(active);
-		// and:
-		subject.syncWithThrottles(throttling);
-		// and:
-		var desired = "The throttle-synced network context is,\n" +
-				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
-				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
-				"  Next entity number                         :: 1234\n" +
-				"  Usage statistics of active throttles       :: \n" +
-				"    ThrottleA at 100/1000000000000 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
-				"    ThrottleB at 200/1000000000000 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
-				"    ThrottleC at 300/1000000000000 used (last decision time 1970-01-01T00:00:03.000000300Z)";
+		given(throttling.allActiveThrottles()).willReturn(Collections.emptyList());
 
-		assertEquals(desired, subject.toString());
+		// when:
+		subject.updateSnapshotsFrom(throttling);
+
+		// then:
+		assertSame(MerkleNetworkContext.NO_SNAPSHOTS, subject.usageSnapshots());
 	}
 
 	@Test
-	void updatesUsagesFromSavedWhenPresent() {
+	void updatesSnapshotsAsExpected() {
+		// setup:
+		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
+		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
+		var cThrottle = DeterministicThrottle.withTpsAndBurstPeriod(7, 4);
+		aThrottle.allow(1);
+		bThrottle.allow(1);
+		cThrottle.allow(20);
+		var activeThrottles = List.of(aThrottle, bThrottle, cThrottle);
+		var expectedSnapshots = activeThrottles.stream()
+				.map(DeterministicThrottle::usageSnapshot)
+				.toArray(DeterministicThrottle.UsageSnapshot[]::new);
+
+		throttling = mock(FunctionalityThrottling.class);
+
+		given(throttling.allActiveThrottles()).willReturn(activeThrottles);
+
+		// when:
+		subject.updateSnapshotsFrom(throttling);
+
+		// then:
+		assertArrayEquals(expectedSnapshots, subject.usageSnapshots());
+	}
+
+	@Test
+	void warnsIfSavedUsageNotCompatibleWithActiveThrottles() {
+		// setup:
+		var mockLog = mock(Logger.class);
+		MerkleNetworkContext.log = mockLog;
+		// and:
+		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
+		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
+		var cThrottle = DeterministicThrottle.withTpsAndBurstPeriod(7, 4);
+		aThrottle.allow(1);
+		bThrottle.allow(1);
+		cThrottle.allow(20);
+		// and:
+		var subjectSnapshotA = aThrottle.usageSnapshot();
+		aThrottle.allow(2);
+		var subjectSnapshotC = cThrottle.usageSnapshot();
+
+		throttling = mock(FunctionalityThrottling.class);
+
+		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
+		// and:
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshotA, subjectSnapshotC });
+		// and:
+		var desired = "Saved usage snapshot #2 was not compatible with the corresponding active throttle " +
+				"(Cannot use 20000000000000 units in a bucket of capacity 18000000000000!); not performing a reset!";
+
+		// when:
+		subject.resetFromSavedSnapshots(throttling);
+
+		// then:
+		verify(mockLog).warn(desired);
+		// and:
+		assertNotEquals(subjectSnapshotA.used(), aThrottle.usageSnapshot().used());
+		assertNotEquals(subjectSnapshotA.lastDecisionTime(), aThrottle.usageSnapshot().lastDecisionTime());
+	}
+
+	@Test
+	void warnsIfDifferentNumOfActiveThrottles() {
+		// setup:
+		var mockLog = mock(Logger.class);
+		MerkleNetworkContext.log = mockLog;
+		// and:
+		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
+		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
+		aThrottle.allow(1);
+		bThrottle.allow(1);
+		// and:
+		var subjectSnapshot = aThrottle.usageSnapshot();
+		aThrottle.allow(2);
+
+		throttling = mock(FunctionalityThrottling.class);
+
+		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
+		// and:
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshot });
+		// and:
+		var desired = "There are 2 active throttles, but 1 usage snapshots from saved state. Not performing a reset!";
+
+		// when:
+		subject.resetFromSavedSnapshots(throttling);
+
+		// then:
+		verify(mockLog).warn(desired);
+		// and:
+		assertNotEquals(subjectSnapshot.used(), aThrottle.usageSnapshot().used());
+		assertNotEquals(subjectSnapshot.lastDecisionTime(), aThrottle.usageSnapshot().lastDecisionTime());
+	}
+
+	@Test
+	void updatesFromMatchingSnapshotsAsExpected() {
 		// setup:
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
 		aThrottle.allow(1);
@@ -193,39 +249,17 @@ class MerkleNetworkContextTest {
 		aThrottle.allow(2);
 
 		throttling = mock(FunctionalityThrottling.class);
-		// and:
-		subject.syncWithThrottles(throttling);
 
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle));
 		// given:
-		subject.throttleUsages = List.of(subjectSnapshot);
+		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{ subjectSnapshot });
 
 		// when:
-		subject.updateSyncedThrottlesFromSavedState();
+		subject.resetFromSavedSnapshots(throttling);
 
 		// then:
 		assertEquals(subjectSnapshot.used(), aThrottle.usageSnapshot().used());
 		assertEquals(subjectSnapshot.lastDecisionTime(), aThrottle.usageSnapshot().lastDecisionTime());
-	}
-
-	@Test
-	void failsFastIfThrottlingNotSynced() {
-		// expect:
-		assertThrows(IllegalStateException.class, subject::updateSyncedThrottlesFromSavedState);
-	}
-
-	@Test
-	void doesNothingIfNoSavedUsageSnapshots() {
-		// setup:
-		throttling = mock(FunctionalityThrottling.class);
-		// and:
-		subject.syncWithThrottles(throttling);
-
-		// when:
-		subject.updateSyncedThrottlesFromSavedState();
-
-		// then:
-		verify(throttling, never()).allActiveThrottles();
 	}
 
 	@Test
@@ -243,7 +277,7 @@ class MerkleNetworkContextTest {
 
 		// then:
 		assertEquals(consensusTimeOfLastHandledTxn, subject.consensusTimeOfLastHandledTxn);
-		assertSame(Collections.emptyList(), subject.getThrottleUsages());
+		assertSame(usageSnapshots, subject.usageSnapshots());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
@@ -256,40 +290,28 @@ class MerkleNetworkContextTest {
 		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
 		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
 		InOrder inOrder = inOrder(in, seqNo);
-		var snapshots = snapshots();
 
-		given(in.readInt()).willReturn(lastUseds.length);
+		subject = new MerkleNetworkContext(
+				consensusTimeOfLastHandledTxn, seqNo, midnightRateSet, MerkleNetworkContext.NO_SNAPSHOTS);
+
+		given(in.readInt()).willReturn(usageSnapshots.length);
 		given(in.readLong())
-				.willReturn(snapshots.get(0).used())
-				.willReturn(snapshots.get(1).used())
-				.willReturn(snapshots.get(2).used());
+				.willReturn(usageSnapshots[0].used())
+				.willReturn(usageSnapshots[1].used());
 		given(serdes.readNullableInstant(in))
 				.willReturn(consensusTimeOfLastHandledTxn)
-				.willReturn(RichInstant.fromJava(lastUseds[0]))
-				.willReturn(RichInstant.fromJava(lastUseds[1]))
-				.willReturn(RichInstant.fromJava(lastUseds[2]));
+				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
+				.willReturn(RichInstant.fromJava(usageSnapshots[1].lastDecisionTime()));
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.RELEASE_0130_VERSION);
 
 		// then:
-		assertSnapshotsMatch(subject);
 		assertEquals(consensusTimeOfLastHandledTxn, subject.consensusTimeOfLastHandledTxn);
+		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
-	}
-
-	@Test
-	void cannotCallSerializeOnMutableCopy() {
-		// setup:
-		throttling = mock(FunctionalityThrottling.class);
-
-		// when:
-		subject.syncWithThrottles(throttling);
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.serialize(null));
 	}
 
 	@Test
@@ -304,9 +326,8 @@ class MerkleNetworkContextTest {
 		given(throttling.allActiveThrottles()).willReturn(active);
 
 		// when:
-		subject.syncWithThrottles(throttling);
+		subject.updateSnapshotsFrom(throttling);
 		// and:
-		subject.copy();
 		subject.serialize(out);
 
 		// expect:
@@ -327,17 +348,6 @@ class MerkleNetworkContextTest {
 		assertEquals(MerkleNetworkContext.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
-	private void assertSnapshotsMatch(MerkleNetworkContext subject) {
-		var immutableUsages = subject.getThrottleUsages();
-		assertArrayEquals(used, immutableUsages.stream()
-				.mapToLong(DeterministicThrottle.UsageSnapshot::used)
-				.toArray());
-		assertEquals(List.of(lastUseds), immutableUsages.stream()
-				.map(DeterministicThrottle.UsageSnapshot::lastDecisionTime)
-				.collect(Collectors.toList()));
-	}
-
-
 	long[] used = new long[] { 100L, 200L, 300L };
 	Instant[] lastUseds = new Instant[] {
 			Instant.ofEpochSecond(1L, 100),
@@ -349,7 +359,7 @@ class MerkleNetworkContextTest {
 		var snapshots = snapshots();
 		List<DeterministicThrottle> active = new ArrayList<>();
 		for (int i = 0; i < used.length; i++) {
-			var throttle = DeterministicThrottle.withTpsNamed(1, "Throttle" + (char)('A' + i));
+			var throttle = DeterministicThrottle.withTpsNamed(1, "Throttle" + (char) ('A' + i));
 			throttle.resetUsageTo(snapshots.get(i));
 			active.add(throttle);
 		}

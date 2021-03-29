@@ -1,5 +1,6 @@
 package com.hedera.services.fees;
 
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import org.apache.logging.log4j.Logger;
@@ -26,11 +27,13 @@ class TxnRateFeeMultiplierSourceTest {
 	@Mock
 	FunctionalityThrottling throttling;
 
+	MockGlobalDynamicProps mockProps;
 	TxnRateFeeMultiplierSource subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new TxnRateFeeMultiplierSource(throttling);
+		mockProps = new MockGlobalDynamicProps();
+		subject = new TxnRateFeeMultiplierSource(mockProps, throttling);
 	}
 
 	@ParameterizedTest
@@ -66,6 +69,24 @@ class TxnRateFeeMultiplierSourceTest {
 
 		// then:
 		assertEquals(expectedMultiplier, actualMultiplier);
+	}
+
+	@Test
+	void adaptsToChangedProperties() {
+		var aThrottle = DeterministicThrottle.withTps(100);
+		aThrottle.allow(96);
+		given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle));
+
+		// when:
+		subject.resetExpectations();
+		subject.updateMultiplier();
+		// then:
+		Assertions.assertEquals(25, subject.currentMultiplier());
+		// and when:
+		mockProps.useDifferentMultipliers();
+		subject.updateMultiplier();
+		// then:
+		Assertions.assertEquals(26, subject.currentMultiplier());
 	}
 
 	@Test
@@ -135,7 +156,21 @@ class TxnRateFeeMultiplierSourceTest {
 	}
 
 	@Test
-	void logsExpectedCutoffsMsg() {
+	void toStringIndicatesUnavailableConfig() {
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		var mockLog = mock(Logger.class);
+		var desired = "The new cutoffs for congestion pricing are: <N/A>";
+
+		// when:
+		subject.logReadableCutoffs(mockLog);
+
+		// then:
+		verify(mockLog).info(captor.capture());
+		assertEquals(desired, captor.getValue());
+	}
+
+	@Test
+	void toStringHasExpectedCutoffsMsg() {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		var mockLog = mock(Logger.class);
 		var desired = "The new cutoffs for congestion pricing are:\n" +

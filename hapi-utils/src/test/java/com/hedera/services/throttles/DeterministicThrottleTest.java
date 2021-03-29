@@ -259,4 +259,47 @@ class DeterministicThrottleTest {
 		assertEquals(expectedForAnonymous, anonymousSubject.toString());
 		assertEquals(expectedForDisclosed, disclosedSubject.toString());
 	}
+
+	@Test
+	void snapshotObjectContractMet() {
+		long aUsed = 123, bUsed = 456;
+		Instant aLast = Instant.ofEpochSecond(1_234_567L, 890);
+		Instant bLast = Instant.ofEpochSecond(7_654_321L, 890);
+
+		// given:
+		var a = new DeterministicThrottle.UsageSnapshot(aUsed, aLast);
+
+		// expect:
+		assertEquals(a, a);
+		assertEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, aLast));
+		assertNotEquals(a, null);
+		assertNotEquals(a, new Object());
+		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(bUsed, aLast));
+		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, bLast));
+		// and:
+		assertEquals(a.hashCode(), a.hashCode());
+		assertEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(aUsed, aLast).hashCode());
+		assertNotEquals(a, new Object().hashCode());
+		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(bUsed, aLast).hashCode());
+		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, bLast).hashCode());
+	}
+
+	@Test
+	void snapshotToStringWorks() {
+		// setup:
+		long aUsed = 123;
+		Instant aLast = Instant.ofEpochSecond(1_234_567L, 890);
+		var aNoLast = new DeterministicThrottle.UsageSnapshot(aUsed, null);
+		var aWithLast = new DeterministicThrottle.UsageSnapshot(aUsed, aLast);
+
+		// given:
+		var desiredWithLastDecision = "DeterministicThrottle.UsageSnapshot{used=123, " +
+				"last decision @ 1970-01-15T06:56:07.000000890Z}";
+		var desiredWithNoLastDecision = "DeterministicThrottle.UsageSnapshot{used=123, " +
+				"last decision @ <N/A>}";
+
+		// expect:
+		assertEquals(desiredWithNoLastDecision, aNoLast.toString());
+		assertEquals(desiredWithLastDecision, aWithLast.toString());
+	}
 }

@@ -1,5 +1,7 @@
 package com.hedera.services.fees;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import org.apache.logging.log4j.LogManager;
@@ -14,18 +16,20 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	private static final Logger log = LogManager.getLogger(TxnRateFeeMultiplierSource.class);
 
 	private static final long DEFAULT_MULTIPLIER = 1L;
+	private static final CongestionMultipliers NO_CONFIG = null;
 
-	private static final int[] UPSCALE_USAGE_PERCENT_TRIGGERS = { 90, 95, 99 };
-	private static final long[] UPSCALE_MULTIPLIERS = { 10L, 25L, 100L };
-
+	private final GlobalDynamicProperties properties;
 	private final FunctionalityThrottling throttling;
 
 	private long multiplier = DEFAULT_MULTIPLIER;
 	private long previousMultiplier = DEFAULT_MULTIPLIER;
 	private long[][] activeTriggerValues = {};
+	private CongestionMultipliers activeConfig = NO_CONFIG;
+
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
-	public TxnRateFeeMultiplierSource(FunctionalityThrottling throttling) {
+	public TxnRateFeeMultiplierSource(GlobalDynamicProperties properties, FunctionalityThrottling throttling) {
+		this.properties = properties;
 		this.throttling = throttling;
 	}
 
@@ -40,39 +44,34 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 		if (activeThrottles.isEmpty()) {
 			log.warn("CryptoTransfer has no throttle buckets, fee multiplier will remain at one!");
 		}
-
-		int n = activeThrottles.size();
-		activeTriggerValues = new long[n][UPSCALE_MULTIPLIERS.length];
-		for (int i = 0; i < n; i++) {
-			var throttle = activeThrottles.get(i);
-			long capacity = throttle.capacity();
-			for (int j = 0; j < UPSCALE_USAGE_PERCENT_TRIGGERS.length; j++) {
-				long cutoff = (capacity / 100L) * UPSCALE_USAGE_PERCENT_TRIGGERS[j];
-				activeTriggerValues[i][j] = cutoff;
-			}
-		}
-		logReadableCutoffs(log);
+		ensureConfigUpToDate();
+		rebuildActiveTriggerValues();
 	}
 
 	void logReadableCutoffs(Logger refinedLog) {
-		refinedLog.info("The new cutoffs for congestion pricing are:\n  " + this);
+		refinedLog.info("The new cutoffs for congestion pricing are:" + this);
 	}
 
 	@Override
 	public String toString() {
+		if (activeConfig == NO_CONFIG) {
+			return " <N/A>";
+		}
 		var sb = new StringBuilder();
+		long[] multipliers = activeConfig.multipliers();
 		for (int i = 0, n = activeThrottles.size(); i < n; i++) {
 			var throttle = activeThrottles.get(i);
-			sb.append("  (").append(throttle.name()).append(") When logical TPS exceeds:\n");
-			for (int j = 0; j < UPSCALE_MULTIPLIERS.length; j++) {
+			sb.append("\n  (").append(throttle.name()).append(") When logical TPS exceeds:\n");
+			for (int j = 0; j < multipliers.length; j++) {
 				sb.append("    ")
 						.append(readableTpsCutoffFor(activeTriggerValues[i][j], throttle.mtps(), throttle.capacity()))
 						.append(" TPS, multiplier is ")
-						.append(UPSCALE_MULTIPLIERS[j])
-						.append("x\n");
+						.append(multipliers[j])
+						.append("x")
+						.append((j == multipliers.length - 1) ? "" : "\n");
 			}
 		}
-		return sb.toString().trim();
+		return sb.toString();
 	}
 
 	private String readableTpsCutoffFor(long capacityCutoff, long mtps, long capacity) {
@@ -91,17 +90,46 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	 */
 	@Override
 	public void updateMultiplier() {
+		if (ensureConfigUpToDate()) {
+			rebuildActiveTriggerValues();
+		}
 		multiplier = DEFAULT_MULTIPLIER;
+		long[] multipliers = activeConfig.multipliers();
 		for (int i = 0; i < activeTriggerValues.length; i++) {
 			long used = activeThrottles.get(i).used();
-			for (int j = 0; j < UPSCALE_MULTIPLIERS.length && used >= activeTriggerValues[i][j]; j++) {
-				multiplier = Math.max(multiplier, UPSCALE_MULTIPLIERS[j]);
+			for (int j = 0; j < multipliers.length && used >= activeTriggerValues[i][j]; j++) {
+				multiplier = Math.max(multiplier, multipliers[j]);
 			}
 		}
 		if (multiplier != previousMultiplier) {
 			logMultiplierChange(previousMultiplier, multiplier, log);
 		}
 		previousMultiplier = multiplier;
+	}
+
+	private boolean ensureConfigUpToDate() {
+		var currConfig = properties.congestionMultipliers();
+		if (activeConfig != currConfig) {
+			activeConfig = currConfig;
+			return true;
+		}
+		return false;
+	}
+
+	private void rebuildActiveTriggerValues() {
+		int n = activeThrottles.size();
+		int[] triggers = activeConfig.usagePercentTriggers();
+		long[] multipliers = activeConfig.multipliers();
+		activeTriggerValues = new long[n][multipliers.length];
+		for (int i = 0; i < n; i++) {
+			var throttle = activeThrottles.get(i);
+			long capacity = throttle.capacity();
+			for (int j = 0; j < triggers.length; j++) {
+				long cutoff = (capacity / 100L) * triggers[j];
+				activeTriggerValues[i][j] = cutoff;
+			}
+		}
+		logReadableCutoffs(log);
 	}
 
 	void logMultiplierChange(long prev, long cur, Logger refinedLog) {

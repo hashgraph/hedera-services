@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,6 +83,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.localCall.estRetBytes", 32),
 			entry("contracts.maxGas", 300000),
 			entry("contracts.maxStorageKb", 1024),
+			entry("fees.percentCongestionMultipliers", CongestionMultipliers.from("90,10x,95,25x,99,100x")),
 			entry("files.addressBook", 101L),
 			entry("files.diskFsBaseDir.path", "data/diskFs/"),
 			entry("files.networkProperties", 121L),
