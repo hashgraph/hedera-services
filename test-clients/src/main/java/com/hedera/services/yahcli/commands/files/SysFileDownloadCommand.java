@@ -47,15 +47,17 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 	String destDir;
 
 	@CommandLine.Option(names = { "-v", "--version" },
-			paramLabel = "protobuf version",
+			paramLabel = "protobuf version : use 12 for v0.12.0 and 13 for v0.13.0",
 			defaultValue = "13")
 	String version;
 
 	@CommandLine.Option(names = { "-t", "--type" },
-			paramLabel = "protobuf version type if version 13",
-			defaultValue = "AddressBook",
-			description = "type is one of the (one of \n" +
-					" Full names ['AddressBook', 'AddressBookForClients']")
+			paramLabel = "If downloading protobuf v0.13.0 type file, mention if you want to download" +
+					" the `full` version [AddressBook] or `small` version [AddressBookForClients]",
+			defaultValue = "full",
+			description = "One of \n" +
+					" Protobuf message names ['AddressBook', 'AddressBookForClients'] or \n" +
+					" short hands ['full', 'small] ")
 	String version13Type;
 
 	@Parameters(

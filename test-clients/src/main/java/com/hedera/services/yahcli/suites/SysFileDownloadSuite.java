@@ -44,20 +44,11 @@ import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerde
 public class SysFileDownloadSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SysFileDownloadSuite.class);
 
-	private final Map<String, Long> NAMES_TO_NUMBERS = Map.ofEntries(
-			Map.entry("book", 101L),
-			Map.entry("details", 102L),
-			Map.entry("rates", 112L),
-			Map.entry("fees", 111L),
-			Map.entry("props", 121L),
-			Map.entry("permissions", 122L));
-	private final Set<Long> VALID_NUMBERS = new HashSet<>(NAMES_TO_NUMBERS.values());
-
 	private final String destDir;
 	private final Map<String, String> specConfig;
 	private final String[] sysFilesToDownload;
-	private final String version;
-	private final String version13Type;
+	private final AddrBkJsonToGrpcBytes.ProtoBufVersion version;
+	private final AddrBkJsonToGrpcBytes.ProtoBuf13Version version13Type;
 
 	public SysFileDownloadSuite(
 			String destDir,
@@ -69,8 +60,8 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 		this.destDir = destDir;
 		this.specConfig = specConfig;
 		this.sysFilesToDownload = sysFilesToDownload;
-		this.version = version;
-		this.version13Type = version13Type;
+		this.version = Utils.rationalizeVersion(version);
+		this.version13Type = Utils.rationalizeVersion13Type(version13Type);
 	}
 
 	@Override
@@ -81,7 +72,7 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec downloadSysFiles() {
-		long[] targets = rationalized(sysFilesToDownload);
+		long[] targets = Utils.rationalized(sysFilesToDownload);
 
 		return HapiApiSpec.customHapiSpec("downloadSysFiles").withProperties(
 				specConfig
@@ -103,30 +94,5 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
-	}
-
-	private long[] rationalized(String[] sysfiles) {
-		if(Arrays.asList(sysfiles).contains("all")) {
-			return VALID_NUMBERS.stream().mapToLong(Number::longValue).toArray();
-		}
-
-		return Arrays.stream(sysfiles)
-				.map(this::getFileId)
-				.peek(num -> {
-					if (!VALID_NUMBERS.contains(num)) {
-						throw new IllegalArgumentException("No such system file '" + num + "'!");
-					}
-				}).mapToLong(l -> l).toArray();
-	}
-
-	private long getFileId(String file) {
-		long fileId;
-		try {
-			fileId = Long.parseLong(file);
-		} catch (Exception e) {
-			fileId = NAMES_TO_NUMBERS.getOrDefault(file, 0L);
-			// TODO if fileId is 0 , throw an exception mentioning the file name received.
-		}
-		return fileId;
 	}
 }

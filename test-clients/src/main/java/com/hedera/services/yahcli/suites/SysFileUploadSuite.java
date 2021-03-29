@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import org.apache.logging.log4j.LogManager;
@@ -49,39 +50,19 @@ import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerde
 public class SysFileUploadSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SysFileUploadSuite.class);
 
-	private static final Map<String, Long> NAMES_TO_NUMBERS = Map.ofEntries(
-			Map.entry("book", 101L),
-			Map.entry("addressBook.json", 101L),
-			Map.entry("details", 102L),
-			Map.entry("nodeDetails.json", 102L),
-			Map.entry("rates", 112L),
-			Map.entry("exchangeRates.json", 112L),
-			Map.entry("fees", 111L),
-			Map.entry("feeSchedules.json", 111L),
-			Map.entry("props", 121L),
-			Map.entry("application.properties", 121L),
-			Map.entry("permissions", 122L),
-			Map.entry("api-permission.properties", 122L));
-
-	private static final Set<Long> VALID_NUMBERS = new HashSet<>(NAMES_TO_NUMBERS.values());
-
-	static Map<String, Function<BookEntryPojo, Stream<NodeAddress>>> updateConverters = new HashMap<>(Map.of(
-			"addressBook.json", BookEntryPojo::toAddressBookEntries,
-			"nodeDetails.json", BookEntryPojo::toNodeDetailsEntry));
-
 	private final String srcDir;
 	private final Map<String, String> specConfig;
 	private final long sysFileId;
-	private final String version;
-	private final String version13Type;
+	private final AddrBkJsonToGrpcBytes.ProtoBufVersion version;
+	private final AddrBkJsonToGrpcBytes.ProtoBuf13Version version13Type;
 
 	public SysFileUploadSuite(final String srcDir, final Map<String, String> specConfig,
 			final String sysFile,  final String version, final String version13Type) {
 		this.srcDir = srcDir;
 		this.specConfig = specConfig;
-		this.sysFileId = rationalized(sysFile);
-		this.version = version;
-		this.version13Type = version13Type;
+		this.sysFileId = Utils.rationalized(sysFile);
+		this.version = Utils.rationalizeVersion(version);
+		this.version13Type = Utils.rationalizeVersion13Type(version13Type);
 	}
 
 	@Override
@@ -123,18 +104,5 @@ public class SysFileUploadSuite extends HapiApiSuite {
 		} catch (IOException e) {
 			throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
 		}
-	}
-
-	private long rationalized(String sysfile) {
-		long fileId;
-		try{
-			fileId = Long.parseLong(sysfile);
-		} catch (Exception e) {
-			fileId = NAMES_TO_NUMBERS.getOrDefault(sysfile, 0L);
-		}
-		if (!VALID_NUMBERS.contains(fileId)) {
-			throw new IllegalArgumentException("No such system file '" + fileId + "'!");
-		}
-		return fileId;
 	}
 }

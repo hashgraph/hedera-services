@@ -114,13 +114,8 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 		return "addressBook.json";
 	}
 
-	public static void setAppropriateVersion(String version, String version13Type) {
-		if (Integer.parseInt(version) < 13) {
-			protoBufVersion = ProtoBufVersion.V0_12_0;
-		} else {
-			if (version13Type.contains("AddressBookForClients")) {
-				protoBuf13Version = ProtoBuf13Version.ADDRESS_BOOK_FOR_CLIENTS;
-			}
-		}
+	public static void setAppropriateVersion(ProtoBufVersion version, ProtoBuf13Version version13Type) {
+		protoBufVersion = version;
+		protoBuf13Version = version13Type;
 	}
 }
