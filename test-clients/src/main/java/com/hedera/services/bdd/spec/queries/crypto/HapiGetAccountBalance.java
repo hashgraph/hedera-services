@@ -105,13 +105,6 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		return this;
 	}
 
-	public HapiGetAccountBalance printBalance(StringBuilder balanceRegister) {
-		long balance = response.getCryptogetAccountBalance().getBalance();
-		AccountID accountID = response.getCryptogetAccountBalance().getAccountID();
-		balanceRegister.append(String.format("%20s | %20d |\n", accountID.toString(), balance));
-		return this;
-	}
-
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoGetAccountBalance;
