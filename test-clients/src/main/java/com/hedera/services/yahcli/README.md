@@ -173,3 +173,50 @@ Update the file by Enabling or Disabling a service and perform a sysfile upload 
 ```
 $ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -p 2 -n previewnet sysfiles upload permissions
 ```
+
+### Scenario 5 : Update AddressBook
+To Update address book of a network.
+
+```
+$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -n previewnet -p 2 sysfiles download help
+
+Download a system file
+      <sysfiles>...   system file names ('book', 'details', 'rates', 'fees',
+                        'props', 'permissions')
+                       or numbers
+                      or 'all' to download all system files
+  -d, --dest-dir=destination directory
+
+  -t, --type=If downloading protobuf v0.13.0 type file, mention if you want to 
+        download the `full` version [AddressBook] or `small` version 
+        [AddressBookForClients]
+                      One of
+                       Protobuf message names ['AddressBook',
+                        'AddressBookForClients'] or
+                       short hands ['full', 'small']
+  -v, --version=protobuf version : use 
+ 12 for v0.12.0 or 
+ 13 for v0.13.0
+```
+
+You can get the AddressBook [0.0.101] in either `v0.12.0` protobuf message structure or 
+`v0.13.0` protobuf message structure. Use option `-v`  to mention the protobuf version. 
+
+If you want to download the file in `v0.13.0` protobuf message structure, you can either download the full message or 
+just the information required to connect to the network.
+
+Use option `-t` to mention the type of the AddressBook to download if v0.13.0.
+
+```
+$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -n previewnet -p 2 sysfiles download -v 13 -t full book
+```
+
+Update the downloaded file as required and perform a System File update. 
+
+Again, mention the version `-v` and type `-t` of the file that you are uploading.
+
+```
+$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.0.1 -n previewnet -p 2 sysfiles upload -v 13 -t full book
+```
+
+> Note : By Default `version` is set to `13` and `type` is set to `full`
