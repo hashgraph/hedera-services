@@ -169,7 +169,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 						fileCreate("contractFile")
 								.payingWith("payer")
 								.fromResource("contract/bytecodes/CreateTrivial.bin")
-//								.path("resources/CreateTrivial.bin")
 				)
 				.when(
 						contractCreate("testContract")
