@@ -105,8 +105,21 @@ public class ContractCallSuite extends HapiApiSuite {
 				payableSuccess(),
 				depositSuccess(),
 				depositDeleteSuccess(),
-				multipleDepositSuccess()
+				multipleDepositSuccess(),
+				multipleSelfDestructsAreSafe()
 		);
+	}
+
+	private HapiApiSpec multipleSelfDestructsAreSafe() {
+		return defaultHapiSpec("MultipleSelfDestructsAreSafe")
+				.given(
+						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
+						contractCreate("fuse").bytecode("bytecode")
+				).when(
+						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
+				).then(
+						getTxnRecord("lightTxn").logged()
+				);
 	}
 
 	HapiApiSpec fridayThe13thSpec() {

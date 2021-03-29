@@ -46,12 +46,14 @@ import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.LongConsumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.Assert.assertArrayEquals;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
@@ -76,6 +78,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	Optional<String> registryEntry = Optional.empty();
 	Optional<String> topicToValidate = Optional.empty();
 	Optional<byte[]> lastMessagedSubmitted = Optional.empty();
+	Optional<LongConsumer> priceConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 
 	public HapiGetTxnRecord(String txn) {
@@ -124,6 +127,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord assertingNothing() {
 		assertNothing = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord providingFeeTo(LongConsumer priceConsumer) {
+		this.priceConsumer = Optional.of(priceConsumer);
 		return this;
 	}
 
@@ -272,6 +280,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 4);
 				log.info("Record (charged ${}): {}", priceInUsd,  record);
 			}
+		}
+		if (response.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode() == OK) {
+			priceConsumer.ifPresent(pc -> pc.accept(record.getTransactionFee()));
 		}
 		if (registryEntry.isPresent()) {
 			spec.registry().saveContractList(
