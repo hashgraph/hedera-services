@@ -394,7 +394,7 @@ commands:
             fi
 
             CI_PARAMETERS = ""
-            if [[ "<< parameters.continuous-integration >>" ]]; then
+            if [[ "<< parameters.continuous_integration >>" ]]; then
               CI_PARAMETERS="$CIRCLE_USERNAME $CIRCLE_BUILD_URL"
             fi
 
