@@ -1895,7 +1895,7 @@ workflows:
             regression_path: /swirlds-platform/regression
             result_path: results/CI
             config_type: "ci"
-            workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C.json"
+            workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
             requires:
               - javadoc-generation
             pre-steps:
