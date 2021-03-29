@@ -190,13 +190,11 @@ Download a system file
   -t, --type=If downloading protobuf v0.13.0 type file, mention if you want to 
         download the `full` version [AddressBook] or `small` version 
         [AddressBookForClients]
-                      One of
-                       Protobuf message names ['AddressBook',
+                      Protobuf messages ['AddressBook',
                         'AddressBookForClients'] or
-                       short hands ['full', 'small']
+                      short hands ['full', 'small']
   -v, --version=protobuf version : use 
- 12 for v0.12.0 or 
- 13 for v0.13.0
+ 12 for v0.12.0 or 13 for v0.13.0
 ```
 
 You can get the AddressBook [0.0.101] in either `v0.12.0` protobuf message structure or 
