@@ -1890,15 +1890,27 @@ workflows:
             pre-steps:
               - attach_workspace:
                   at: /
-        - run-continuous-integration-gcp:
+        - jrs-regression:
             context: Slack
+            regression_path: /swirlds-platform/regression
+            result_path: results/CI
+            config_type: "ci"
+            workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C.json"
             requires:
               - javadoc-generation
             pre-steps:
               - install-tools
               - attach_workspace:
                   at: /
-            workflow-name: "Continuous Integration GCP"
+#        - run-continuous-integration-gcp:
+#            context: Slack
+#            requires:
+#              - javadoc-generation
+#            pre-steps:
+#              - install-tools
+#              - attach_workspace:
+#                  at: /
+#            workflow-name: "Continuous Integration GCP"
 
   continuous-integration:
     jobs:
