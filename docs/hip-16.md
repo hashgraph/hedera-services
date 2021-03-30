@@ -19,11 +19,11 @@ When a Hedera entity is created, the payer account is charged enough hbars (as a
 
 ## Motivation
 
-Each Hedera entity has an expiration time which is the effective consensus timestamp at (and after) which the entity is set to expire. At the moment, an update transaction is needed to extend the expiration time of an entity. Even after an entity has expired, it still stays in the system which costs system resources.
+At the time of this writing, the expiration time of a Hedera entity is not checked or enforced. An entity continues to stay active in the system after its expiration time, without being charged. Hedera Services will __start to charge__ for an extension automatically or will delete the entity from the system if the admin account (or the autoRenewAccount) of the entity has a zero balance at the time of renewal.
 
 ## Rationale
 
-It is crucial to add an enforcement for the expiration time. When an entity expired, it should either be automatically renewed to extend its expiration time or be deleted from the system to save resources in the system.
+This section seems to be a duplicate of the `Motivation` section above. We will add more details if it is required.
 
 ## Specification
 
@@ -31,7 +31,7 @@ The technical specification should describe the syntax and semantics of any new 
 
 ## Backwards Compatibility
 
-After the implementation of this HIP, all entities that had expired will either be automatically renewed by charging their associated `autoRenewAccount` or enter their grace period of 7 days before being removed permanently from the system.
+There is no change in the protobufs. Users please make sure your account which is responsible for the renewal of an entity has balance. Hedera Services will __start to charge__ for an extension automatically or will delete the entity from the system at the time of renewal. The Product team will decide and communicate on when this feature is turned on.
 
 ## Security Implications
 
