@@ -166,6 +166,7 @@ public class IssueXXXXSpec extends HapiApiSuite {
 		return defaultHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
 				.given( ).when( ).then(
 						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(zeroOpsPerSecThrottles.toByteArray())
 								.hasKnownStatus(THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC)
 				);
@@ -177,6 +178,7 @@ public class IssueXXXXSpec extends HapiApiSuite {
 		return defaultHapiSpec("ThrottleUpdateRejectsMultiGroupAssignment")
 				.given( ).when( ).then(
 						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(multiGroupThrottles.toByteArray())
 								.hasKnownStatus(OPERATION_REPEATED_IN_BUCKET_GROUPS)
 				);
