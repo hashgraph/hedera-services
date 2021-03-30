@@ -33,8 +33,22 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ThrottleBucketTest {
+	@Test
+	void beanMethodsWork() {
+		var subject = new ThrottleBucket();
+
+		// when:
+		subject.setBurstPeriod(123);
+		subject.setName("Thom");
+
+		// then:
+		assertEquals(123, subject.getBurstPeriod());
+		assertEquals("Thom", subject.getName());
+	}
+
 	@Test
 	void factoryWorks() throws IOException {
 		// given:
@@ -44,7 +58,7 @@ class ThrottleBucketTest {
 		var bucketA = proto.getThrottleBuckets(0);
 
 		// expect:
-		Assertions.assertEquals(bucketA, ThrottleBucket.fromProto(bucketA).toProto());
+		assertEquals(bucketA, ThrottleBucket.fromProto(bucketA).toProto());
 	}
 
 	@Test
@@ -57,6 +71,12 @@ class ThrottleBucketTest {
 
 		// expect:
 		Assertions.assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(n));
+	}
+
+	@Test
+	void failsWhenConstructingThrottlesWithZeroGroups() {
+		// expect:
+		Assertions.assertThrows(IllegalStateException.class, () -> new ThrottleBucket().asThrottleMapping(1));
 	}
 
 	@Test
@@ -95,8 +115,8 @@ class ThrottleBucketTest {
 		var actualThrottle = mapping.getLeft();
 		var actualReqs = mapping.getRight();
 		// then:
-		Assertions.assertEquals(expectedThrottle, actualThrottle);
-		Assertions.assertEquals(expectedReqs, actualReqs);
+		assertEquals(expectedThrottle, actualThrottle);
+		assertEquals(expectedReqs, actualReqs);
 	}
 
 	@Test
@@ -121,8 +141,8 @@ class ThrottleBucketTest {
 		var actualThrottle = mapping.getLeft();
 		var actualReqs = mapping.getRight();
 		// then:
-		Assertions.assertEquals(expectedThrottle, actualThrottle);
-		Assertions.assertEquals(expectedReqs, actualReqs);
+		assertEquals(expectedThrottle, actualThrottle);
+		assertEquals(expectedReqs, actualReqs);
 	}
 
 	@Test

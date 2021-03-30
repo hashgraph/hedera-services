@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SteadyStateThrottlingCheck extends HapiApiSuite {
@@ -73,14 +75,14 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 	private static final double CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS = 1.0;
 	private static final double FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS = 100.0;
 
-	private static final int NETWORK_SIZE = LOCAL_NETWORK_SIZE;
+	private static final int NETWORK_SIZE = REGRESSION_NETWORK_SIZE;
 
 	private static final double expectedXferTps = THROUGHPUT_LIMITS_XFER_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedMintTps = TEST_THROUGHPUT_LIMITS_MINT_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedContractCallTps = PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedCryptoCreateTps = CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedGetBalanceQps = FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS / NETWORK_SIZE;
-	private static final double toleratedPercentDeviation = 5.0;
+	private static final double toleratedPercentDeviation = 6.0;
 
 	private AtomicLong duration = new AtomicLong(120);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -218,7 +220,10 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 						.noLogging()
 						.deferStatusResolution()
 						.payingWith("civilian")
-						.hasPrecheckFrom(OK, BUSY);
+						.hasPrecheckFrom(OK, BUSY)
+						/* In my local environment spec has been flaky with the first few
+						operations here...doesn't seem to happen with other specs? */
+						.hasKnownStatusFrom(OK, SUCCESS);
 				return Optional.of(op);
 			}
 		};

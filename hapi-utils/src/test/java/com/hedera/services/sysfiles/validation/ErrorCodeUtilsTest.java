@@ -43,6 +43,8 @@ class ErrorCodeUtilsTest {
 
 	@Test
 	void extractsErrorCodeFromMsg() {
+		assertDoesNotThrow(ErrorCodeUtils::new);
+
 		// given:
 		var msg = "NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION :: YIKES!";
 

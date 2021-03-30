@@ -23,7 +23,6 @@ package com.hedera.services.sysfiles.validation;
 import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static com.hedera.services.sysfiles.validation.ExpectedCustomThrottles.OPS_FOR_RELEASE_0130;
@@ -31,6 +30,8 @@ import static com.hedera.services.sysfiles.validation.ExpectedCustomThrottles.OP
 class ExpectedCustomThrottlesTest {
 	@Test
 	void release0130HasExpected() {
+		assertDoesNotThrow(ExpectedCustomThrottles::new);
+
 		assertEquals(46, OPS_FOR_RELEASE_0130.size());
 		// and:
 		assertTrue(OPS_FOR_RELEASE_0130.contains(CryptoCreate), "Missing CryptoCreate!");

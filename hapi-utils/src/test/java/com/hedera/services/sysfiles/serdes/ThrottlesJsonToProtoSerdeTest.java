@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde.loadProtoDefs;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -44,6 +43,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class ThrottlesJsonToProtoSerdeTest {
 	@Test
 	void loadsExpectedDefs() throws IOException {
+		// expect:
+		assertDoesNotThrow(ThrottlesJsonToProtoSerde::new);
+
 		// given:
 		var actual = TestUtils.protoDefs("bootstrap/throttles.json");
 

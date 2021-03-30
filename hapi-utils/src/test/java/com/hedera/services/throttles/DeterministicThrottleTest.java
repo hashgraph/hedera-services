@@ -66,14 +66,14 @@ class DeterministicThrottleTest {
 		assertEquals(expectedCapacity, fromTpsAndBurstPeriodNamed.delegate().bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromMtpsAndBurstPeriodNamed.delegate().bucket().totalCapacity());
 		// and:
-		assertEquals(tps * MTPS_PER_TPS, fromTps.delegate().mtps());
-		assertEquals(tps * MTPS_PER_TPS, fromMtps.delegate().mtps());
-		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriod.delegate().mtps());
-		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriod.delegate().mtps());
-		assertEquals(tps * MTPS_PER_TPS, fromTpsNamed.delegate().mtps());
-		assertEquals(tps * MTPS_PER_TPS, fromMtpsNamed.delegate().mtps());
-		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriodNamed.delegate().mtps());
-		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriodNamed.delegate().mtps());
+		assertEquals(tps * MTPS_PER_TPS, fromTps.mtps());
+		assertEquals(tps * MTPS_PER_TPS, fromMtps.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriod.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriod.mtps());
+		assertEquals(tps * MTPS_PER_TPS, fromTpsNamed.mtps());
+		assertEquals(tps * MTPS_PER_TPS, fromMtpsNamed.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriodNamed.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriodNamed.mtps());
 		// and:
 		assertNull(fromTps.lastDecisionTime());
 		assertNull(fromMtps.lastDecisionTime());
@@ -219,6 +219,24 @@ class DeterministicThrottleTest {
 		// then:
 		assertEquals(used, subject.delegate().bucket().capacityUsed());
 		assertEquals(originalDecision, subject.lastDecisionTime());
+	}
+
+	@Test
+	void reclaimsAsExpected() {
+		// setup:
+		int mtps = 333;
+		int burstPeriod = 6;
+
+		// given:
+		var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+		// and:
+		subject.allow(2);
+
+		// when:
+		subject.reclaimLastAllowedUse();
+
+		// then:
+		assertEquals(0, subject.delegate().bucket().capacityUsed());
 	}
 
 	@Test
