@@ -437,7 +437,7 @@ commands:
       workflow-name:
         description: name of the workflow
         type: string
-        default: "continuous integration"
+        default: "continuous-integration"
       slack-channel:
         description: name of the slack channel to send report to
         type: string
@@ -1884,12 +1884,12 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-            workflow-name: "Continuous integration"
+            workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
             requires:
               - build-artifact
-            workflow-name: "Continuous integration GCP"
+            workflow-name: "Continuous-integration-GCP"
         - javadoc-generation:
             context: Slack
             requires:
