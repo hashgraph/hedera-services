@@ -15,7 +15,7 @@ superseded-by:
 
 ## Abstract
 
-This HIP defines and discusses a way to automatically search for entities other than schedule transactions, namely accounts, files, smart contracts, topics, tokens that are expiring, then either renew or delete them from the system.
+When a Hedera entity is created, the payer account is charged enough hbars (as a rental fee) so that the entity can stay active in the system until it reaches the expiration time. Users can extend the expiration time of an entity by paying the appropriate fee for the extension via an update transaction. This HIP defines and discusses another mechanism offered by Hedera Services to automatically renew or delete entities that are deemed to expire.
 
 ## Motivation
 
