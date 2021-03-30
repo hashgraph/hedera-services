@@ -1879,6 +1879,7 @@ workflows:
   continuous-integration-gcp:
       jobs:
         - build-artifact:
+            name: "artifact-build"
             context: SonarCloud
             filters:
               branches:
@@ -1888,7 +1889,7 @@ workflows:
         - build-platform-and-services:
             context: SonarCloud
             requires:
-              - build-artifact
+              - artifact-build
             workflow-name: "Continuous-integration-GCP"
         - javadoc-generation:
             context: Slack
@@ -1903,6 +1904,7 @@ workflows:
             result_path: results/4N_1C/CI
             config_type: "ci"
             workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
+            name: "run-continuous-integration-gcp"
             continuous_integration: true
             slack_results_channel: "hedera-cicd"
             slack_summary_channel: "hedera-cicd"

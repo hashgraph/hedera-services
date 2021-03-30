@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toList;
 public class File {
 	private static final String UNSPECIFIED_CONTENTS_LOC = null;
 	private static final String DEFAULT_CONTENTS = "What America did you have / When Charon quit poling his ferry";
-	private static final String CONTENTS_SUBDIR = "data";
+	private static final String CONTENTS_SUBDIR = "code";
 	private static final String MISSING_MEMO = null;
 
 	private String memo = MISSING_MEMO;
