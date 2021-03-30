@@ -332,7 +332,7 @@ ${git.signoff}
           <configuration>
             <forkCount>3</forkCount>
             <reuseForks>true</reuseForks>
-            <argLine>@{argLine} -Xmx2048m</argLine>
+            <argLine>@{argLine} -Xmx4096m</argLine>
           </configuration>
         </plugin>
         <plugin>
