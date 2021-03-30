@@ -2852,10 +2852,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
