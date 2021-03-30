@@ -64,6 +64,7 @@ class NodeLocalPropertiesTest {
 		Assertions.assertTrue(subject.isRecordStreamEnabled());
 		assertEquals(12, subject.recordStreamQueueCapacity());
 		assertEquals(13, subject.queryBlobLookupRetries());
+		assertEquals(14L, subject.nettyProdKeepAliveTime());
 	}
 
 	@Test
@@ -87,6 +88,7 @@ class NodeLocalPropertiesTest {
 		Assertions.assertFalse(subject.isRecordStreamEnabled());
 		assertEquals(13, subject.recordStreamQueueCapacity());
 		assertEquals(14, subject.queryBlobLookupRetries());
+		assertEquals(15L, subject.nettyProdKeepAliveTime());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -103,6 +105,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getBooleanProperty("hedera.recordStream.isEnabled")).willReturn(i % 2 == 1);
 		given(properties.getIntProperty("hedera.recordStream.queueCapacity")).willReturn(i + 11);
 		given(properties.getIntProperty("queries.blob.lookupRetries")).willReturn(i + 12);
+		given(properties.getLongProperty("netty.prod.keepAliveTime")).willReturn(i + 13L);
 	}
 
 	static String logDir(int num) {

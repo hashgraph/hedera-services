@@ -36,6 +36,7 @@ public class NodeLocalProperties {
 	private boolean recordStreamEnabled;
 	private int recordStreamQueueCapacity;
 	private int queryBlobLookupRetries;
+	private long nettyProdKeepAliveTime;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -57,6 +58,7 @@ public class NodeLocalProperties {
 		recordStreamEnabled = properties.getBooleanProperty("hedera.recordStream.isEnabled");
 		recordStreamQueueCapacity = properties.getIntProperty("hedera.recordStream.queueCapacity");
 		queryBlobLookupRetries = properties.getIntProperty("queries.blob.lookupRetries");
+		nettyProdKeepAliveTime = properties.getLongProperty("netty.prod.keepAliveTime");
 	}
 
 	public int port() {
@@ -109,5 +111,9 @@ public class NodeLocalProperties {
 
 	public int queryBlobLookupRetries() {
 		return queryBlobLookupRetries;
+	}
+
+	public long nettyProdKeepAliveTime() {
+		return nettyProdKeepAliveTime;
 	}
 }
