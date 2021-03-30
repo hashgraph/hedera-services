@@ -1548,7 +1548,7 @@ workflows:
   GCP-Daily-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
-          cron: "0 5 * * *"
+          cron: "0 5 * * 6"
           filters:
             branches:
               only:
@@ -1558,7 +1558,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/Restart
+          result_path: results/15N_1C/Restart
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-NetDelay-15N-1C"
           requires:

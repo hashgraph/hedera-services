@@ -633,6 +633,10 @@ class SignedStateBalancesExporterTest {
 		assertTrue(subject.isTimeToExport(startTime.plusSeconds(1)));
 		assertEquals(startTime.plusSeconds(1), subject.periodBegin);
 
+		// The next consensus time moves out of allowed time window, no export
+		assertFalse(subject.isTimeToExport(startTime.plusSeconds(3)));
+		assertEquals(startTime.plusSeconds(3), subject.periodBegin);
+
 		shortlyAfter = startTime.plusSeconds(dynamicProperties.balancesExportPeriodSecs() / 2);
 		assertFalse(subject.isTimeToExport(shortlyAfter));
 		assertEquals(shortlyAfter, subject.periodBegin);
