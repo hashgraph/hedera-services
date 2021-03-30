@@ -1879,6 +1879,7 @@ workflows:
   continuous-integration-gcp:
       jobs:
         - build-artifact:
+            name: "artifact-build"
             context: SonarCloud
             filters:
               branches:
