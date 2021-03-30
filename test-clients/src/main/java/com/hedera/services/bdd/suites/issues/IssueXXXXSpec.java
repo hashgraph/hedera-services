@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.issues;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -99,6 +101,7 @@ public class IssueXXXXSpec extends HapiApiSuite {
 								.providingFeeTo(normalPrice::set)
 				).when(
 						fileUpdate(APP_PROPERTIES)
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.overridingProps(Map.of(
 										"fees.percentCongestionMultipliers", "1,7x"
@@ -122,13 +125,18 @@ public class IssueXXXXSpec extends HapiApiSuite {
 									0.1);
 						}),
 						fileUpdate(THROTTLE_DEFS)
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(defaultThrottles.toByteArray()),
 						fileUpdate(APP_PROPERTIES)
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.overridingProps(Map.of(
 										"fees.percentCongestionMultipliers", defaultCongestionMultipliers
-								))
+								)),
+						/* Make sure the multiplier is reset before the next spec runs */
+						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
+								.payingWith(GENESIS)
 				);
 	}
 

@@ -112,7 +112,6 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features
  */
 
-@Disabled
 public class SmartContractRequestHandlerStorageTest {
   public static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
   public static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";
