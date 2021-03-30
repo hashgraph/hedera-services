@@ -34,6 +34,11 @@ This section seems to be a duplicate of the `Motivation` section above. We will 
 
 ## Specification
 
+### Terminologies
+- Deletion - A successful delete transaction will mark an entity as deleted and that entity cannot be operated up on.
+The entity will remain in the ledger, marked as deleted, until it expires.
+- Removal - The entity is permanently removed from the state of the decentralized ledger.
+
 All Hedera Services nodes will perform a synchronous scanning of active entities. When a node finds a non-deleted, expired
 entity, it will try to renew the entity by charging its admin or autorenew account the renewal fee, for an extension
 period given in seconds.
