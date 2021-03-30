@@ -37,6 +37,8 @@ Crypto accounts will be prioritized for autorenewal followed by consensus topics
 
 Files do not have an autoRenewAccount so they can only be renewed manually by a file update. We will extend the protobufs for files in the future.
 
+Scheduled transactions do not autorenew. They will be deleted from the ledger after they have expired.
+
 ## Backwards Compatibility
 
 There is no change in existing protobufs. Account and entity owners must ensure that accounts responsible for the renewal of an entity have a sufficient balance or risk deletion of the entity.
