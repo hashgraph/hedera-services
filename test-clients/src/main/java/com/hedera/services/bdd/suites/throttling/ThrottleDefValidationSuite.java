@@ -21,87 +21,87 @@ package com.hedera.services.bdd.suites.throttling;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.Map;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
-public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ThrottleDefsUpdateSpecs.class);
+public class ThrottleDefValidationSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(ThrottleDefValidationSuite.class);
+
+	private static final String defaultCongestionMultipliers =
+			HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
 
 	public static void main(String... args) {
-		new ThrottleDefsUpdateSpecs().runSuiteSync();
+		new ThrottleDefValidationSuite().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-//						throttleDefsRejectUnauthorizedPayers(),
-//						throttleDefsHaveExpectedDefaults(),
+						throttleDefsHaveExpectedDefaults(),
+						throttleDefsRejectUnauthorizedPayers(),
 						throttleUpdateRejectsMultiGroupAssignment(),
-//						throttleUpdateWithZeroGroupOpsPerSecFails(),
-//						congestionPricingWorks(),
+						throttleUpdateWithZeroGroupOpsPerSecFails(),
+						updateWithMissingTokenMintGetsWarning(),
+						ensureDefaultsRestored(),
 				}
 		);
 	}
 
-	private HapiApiSpec congestionPricingWorks() {
-		int burstSize = 999;
-		String expensiveXfer = "expensive";
+	private HapiApiSpec updateWithMissingTokenMintGetsWarning() {
+		var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
 
+		return defaultHapiSpec("UpdateWithMissingTokenMintGetsWarning")
+				.given( ).when( ).then(
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(missingMintThrottles.toByteArray())
+								.hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
+				);
+	}
+
+	private HapiApiSpec ensureDefaultsRestored() {
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-		var expensiveXferThrottles = protoDefsFromResource("testSystemFiles/expensive-xfer-throttles.json");
 
-		return defaultHapiSpec("CongestionPricingWorks")
-				.given(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)),
+		return defaultHapiSpec("EnsureDefaultsRestored")
+				.given( ).when( ).then(
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(expensiveXferThrottles.toByteArray())
-				).when(
-						inParallel(IntStream.range(0, burstSize).mapToObj(i ->
-								cryptoTransfer(tinyBarsFromTo(EXCHANGE_RATE_CONTROL, FUNDING, 1))
-										.fee(ONE_HUNDRED_HBARS)
-										.payingWith(EXCHANGE_RATE_CONTROL)
-										.deferStatusResolution())
-								.toArray(HapiSpecOperation[]::new)),
-						cryptoTransfer(tinyBarsFromTo(EXCHANGE_RATE_CONTROL, FUNDING, 1))
+								.contents(defaultThrottles.toByteArray()),
+						fileUpdate(APP_PROPERTIES)
 								.payingWith(EXCHANGE_RATE_CONTROL)
-								.fee(ONE_HUNDRED_HBARS)
-								.via(expensiveXfer)
-				).then(
-						getTxnRecord(expensiveXfer)
-								.logged(),
-						fileUpdate(THROTTLE_DEFS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(defaultThrottles.toByteArray())
+								.overridingProps(Map.of(
+										"fees.percentCongestionMultipliers", defaultCongestionMultipliers
+								))
 				);
 	}
 
 	private HapiApiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
 		var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
 
-		return defaultFailingHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
+		return defaultHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
 				.given( ).when( ).then(
 						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(zeroOpsPerSecThrottles.toByteArray())
 								.hasKnownStatus(THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC)
 				);
@@ -113,6 +113,7 @@ public class ThrottleDefsUpdateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("ThrottleUpdateRejectsMultiGroupAssignment")
 				.given( ).when( ).then(
 						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(multiGroupThrottles.toByteArray())
 								.hasKnownStatus(OPERATION_REPEATED_IN_BUCKET_GROUPS)
 				);

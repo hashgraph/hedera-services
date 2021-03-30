@@ -1,5 +1,25 @@
 package com.hedera.services.bdd.suites.regression;
 
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.common.base.Stopwatch;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -60,9 +80,9 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 	private static final double expectedContractCallTps = PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedCryptoCreateTps = CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedGetBalanceQps = FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS / NETWORK_SIZE;
-	private static final double toleratedPercentDeviation = 2.0;
+	private static final double toleratedPercentDeviation = 5.0;
 
-	private AtomicLong duration = new AtomicLong(240);
+	private AtomicLong duration = new AtomicLong(120);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
@@ -84,8 +104,10 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 				}
 		);
 	}
+
 	private HapiApiSpec setArtificialLimits() {
 		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
+
 		return defaultHapiSpec("SetArtificialLimits")
 				.given().when().then(
 						fileUpdate(THROTTLE_DEFS)
@@ -135,6 +157,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 					int askedSoFar = 0;
 					int secsToRun = (int) duration.get();
 					var watch = Stopwatch.createStarted();
+					int logScreen = 0;
 					while (watch.elapsed(SECONDS) < secsToRun) {
 						var subOps = IntStream.range(0, burstSize)
 								.mapToObj(ignore -> getAccountBalance("0.0.2")
@@ -151,10 +174,12 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 								numBusy++;
 							}
 						}
-						opLog.info("{}/{} queries BUSY so far in {}ms",
-								numBusy,
-								askedSoFar,
-								watch.elapsed(TimeUnit.MILLISECONDS));
+						if (logScreen++ % 100 == 0) {
+							opLog.info("{}/{} queries BUSY so far in {}ms",
+									numBusy,
+									askedSoFar,
+									watch.elapsed(TimeUnit.MILLISECONDS));
+						}
 					}
 					var elapsedMs = watch.elapsed(TimeUnit.MILLISECONDS);
 					var numAnswered = askedSoFar - numBusy;

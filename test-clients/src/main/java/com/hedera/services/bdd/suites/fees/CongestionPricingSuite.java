@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.issues;
+package com.hedera.services.bdd.suites.fees;
 
 /*-
  * ‌
@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -44,32 +43,22 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
-public class IssueXXXXSpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(IssueXXXXSpec.class);
+public class CongestionPricingSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(CongestionPricingSuite.class);
 
 	private static final String defaultCongestionMultipliers =
 			HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
 
 	public static void main(String... args) {
-		new IssueXXXXSpec().runSuiteSync();
+		new CongestionPricingSuite().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						throttleDefsHaveExpectedDefaults(),
-						throttleDefsRejectUnauthorizedPayers(),
-						throttleUpdateRejectsMultiGroupAssignment(),
-						throttleUpdateWithZeroGroupOpsPerSecFails(),
 						canUpdateMultipliersDynamically(),
-						updateWithMissingTokenMintGetsWarning(),
-						ensureDefaultsRestored(),
 				}
 		);
 	}
@@ -116,6 +105,7 @@ public class IssueXXXXSpec extends HapiApiSuite {
 								.via("pricyCall")
 				).then(
 						getTxnRecord("pricyCall")
+								.payingWith(GENESIS)
 								.providingFeeTo(sevenXPrice::set),
 						withOpContext((spec, opLog) -> {
 							Assert.assertEquals(
@@ -137,85 +127,6 @@ public class IssueXXXXSpec extends HapiApiSuite {
 						/* Make sure the multiplier is reset before the next spec runs */
 						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
 								.payingWith(GENESIS)
-				);
-	}
-
-	private HapiApiSpec updateWithMissingTokenMintGetsWarning() {
-		var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
-
-		return defaultHapiSpec("UpdateWithMissingTokenMintGetsWarning")
-				.given( ).when( ).then(
-						fileUpdate(THROTTLE_DEFS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(missingMintThrottles.toByteArray())
-								.hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
-				);
-	}
-
-	private HapiApiSpec ensureDefaultsRestored() {
-		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-
-		return defaultHapiSpec("EnsureDefaultsRestored")
-				.given( ).when( ).then(
-						fileUpdate(THROTTLE_DEFS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(defaultThrottles.toByteArray()),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.overridingProps(Map.of(
-										"fees.percentCongestionMultipliers", defaultCongestionMultipliers
-								))
-				);
-	}
-
-	private HapiApiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
-		var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
-
-		return defaultHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
-				.given( ).when( ).then(
-						fileUpdate(THROTTLE_DEFS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(zeroOpsPerSecThrottles.toByteArray())
-								.hasKnownStatus(THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC)
-				);
-	}
-
-	private HapiApiSpec throttleUpdateRejectsMultiGroupAssignment() {
-		var multiGroupThrottles = protoDefsFromResource("testSystemFiles/duplicated-operation.json");
-
-		return defaultHapiSpec("ThrottleUpdateRejectsMultiGroupAssignment")
-				.given( ).when( ).then(
-						fileUpdate(THROTTLE_DEFS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(multiGroupThrottles.toByteArray())
-								.hasKnownStatus(OPERATION_REPEATED_IN_BUCKET_GROUPS)
-				);
-	}
-
-	private HapiApiSpec throttleDefsRejectUnauthorizedPayers() {
-		return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
-				.given(
-						cryptoCreate("civilian")
-				).when( ).then(
-						fileUpdate(THROTTLE_DEFS)
-								.contents("BOOM")
-								.payingWith("civilian")
-								.hasPrecheck(AUTHORIZATION_FAILED),
-						fileUpdate(THROTTLE_DEFS)
-								.contents("BOOM")
-								.payingWith(FEE_SCHEDULE_CONTROL)
-								.hasPrecheck(AUTHORIZATION_FAILED)
-				);
-	}
-
-	private HapiApiSpec throttleDefsHaveExpectedDefaults() {
-		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-
-		return defaultHapiSpec("ThrottleDefsExistOnStartup")
-				.given( ).when( ).then(
-						getFileContents(THROTTLE_DEFS)
-								.payingWith(GENESIS)
-								.hasContents(ignore -> defaultThrottles.toByteArray())
 				);
 	}
 

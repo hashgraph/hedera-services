@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.issues;
+package com.hedera.services.bdd.suites.throttling;
 
 /*-
  * ‌
@@ -35,7 +35,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,11 @@ import java.util.stream.IntStream;
 
 public class PrivilegedOpsSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(PrivilegedOpsSuite.class);
+
+	private static final byte[] totalLimits =
+			protoDefsFromResource("testSystemFiles/only-mint-allowed.json").toByteArray();
+	private static final byte[] defaultThrottles =
+			protoDefsFromResource("testSystemFiles/throttles-dev.json").toByteArray();
 
 	public static void main(String... args) {
 		new PrivilegedOpsSuite().runSuiteSync();
@@ -184,23 +191,22 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec superusersAreNeverThrottledOnTransfers() {
-		return defaultHapiSpec("MasterIsNeverThrottledOnTransfers")
+		return defaultHapiSpec("SuperusersAreNeverThrottledOnTransfers")
 				.given(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("simpletransferTps", "1"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(totalLimits)
+								.hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 				).then(flattened(
 						transferBurstFn.apply(SYSTEM_ADMIN),
 						transferBurstFn.apply(ADDRESS_BOOK_CONTROL),
 						sleepFor(5_000L),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("simpletransferTps", "0"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles)
 				));
 	}
 
@@ -210,17 +216,17 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("throttlingTps", "1"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(totalLimits)
+								.hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 				).then(flattened(
 						miscTxnBurstFn.apply(SYSTEM_ADMIN),
 						miscTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
 						sleepFor(5_000L),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("throttlingTps", "0"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles)
 				));
 	}
 
@@ -230,17 +236,16 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("throttling.hcs.createTopic.tps", "0.5"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(totalLimits)
+								.hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 				).then(flattened(
 						hcsTxnBurstFn.apply(SYSTEM_ADMIN),
 						hcsTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("throttling.hcs.createTopic.tps", "33.3"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles)
 				));
 	}
 
@@ -250,16 +255,16 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
 				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("queriesTps", "1"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(totalLimits)
+								.hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 				).then(flattened(
 						inParallel(miscQueryBurstFn.apply(SYSTEM_ADMIN)),
 						inParallel(miscQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("queriesTps", "0"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles)
 				));
 	}
 
@@ -270,15 +275,16 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)),
 						createTopic("misc")
 				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("throttling.hcs.getTopicInfo.tps", "0.5"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(totalLimits)
+								.hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION)
 				).then(flattened(
 						inParallel(hcsQueryBurstFn.apply(SYSTEM_ADMIN)),
 						inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("throttling.hcs.getTopicInfo.tps", "33.3"))
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(defaultThrottles)
 				));
 	}
 
