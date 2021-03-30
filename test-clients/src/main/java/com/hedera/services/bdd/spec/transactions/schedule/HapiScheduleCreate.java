@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.schedule.ScheduleUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -65,6 +66,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private boolean skipRegistryUpdate = false;
 	private boolean scheduleNoFunction = false;
 	private boolean saveExpectedScheduledTxnId = false;
+	private boolean useSentinelKeyListForAdminKey = false;
 	private ByteString bytesSigned = ByteString.EMPTY;
 	private List<String> initialSigners = Collections.emptyList();
 	private Optional<String> adminKey = Optional.empty();
@@ -112,6 +114,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
 	public HapiScheduleCreate<T> adminKey(String s) {
 		adminKey = Optional.of(s);
+		return this;
+	}
+
+	public HapiScheduleCreate<T> usingSentinelKeyListForAdminKey() {
+		useSentinelKeyListForAdminKey = true;
 		return this;
 	}
 
@@ -164,7 +171,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 									throw new IllegalStateException("Couldn't deserialize serialized TransactionBody!");
 								}
 							}
-							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
+							if (useSentinelKeyListForAdminKey) {
+								b.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()));
+							} else {
+								adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
+							}
 							entityMemo.ifPresent(b::setMemo);
 							payerAccountID.ifPresent(a -> {
 								var payer = TxnUtils.asId(a, spec);

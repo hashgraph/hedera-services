@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -85,6 +86,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				suiteSetup(),
+				rejectsSentinelKeyListAsAdminKey(),
 				rejectsMalformedScheduledTxnMemo(),
 				bodyOnlyCreation(),
 				onlyBodyAndAdminCreation(),
@@ -243,6 +245,17 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.hasPrecheck(MEMO_TOO_LONG)
 				)
 				.then();
+	}
+
+	private HapiApiSpec rejectsSentinelKeyListAsAdminKey() {
+		return defaultHapiSpec("RejectsSentinelKeyListAsAdminKey")
+				.given( ).when().then(
+						scheduleCreate("creation",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+						)
+								.usingSentinelKeyListForAdminKey()
+								.hasPrecheck(INVALID_ADMIN_KEY)
+				);
 	}
 
 	private HapiApiSpec rejectsMalformedScheduledTxnMemo() {
