@@ -1518,7 +1518,7 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "42 16 * * *"
+          cron: "56 19 * * *"
           filters:
             branches:
               only:

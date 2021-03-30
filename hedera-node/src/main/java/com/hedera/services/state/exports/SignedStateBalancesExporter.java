@@ -124,9 +124,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			return true;
 		}
 		periodBegin = now;
-		if(log.isDebugEnabled()) {
-			log.debug(String.format("Now %s is NOT time to export.", now.toString()));
-		}
+//		if(log.isDebugEnabled()) {
+			log.info(String.format("Now %s is NOT time to export.", now.toString()));
+//		}
 		return false;
 	}
 
