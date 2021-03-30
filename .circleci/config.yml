@@ -1903,7 +1903,7 @@ workflows:
             result_path: results/4N_1C/CI
             config_type: "ci"
             workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
-            name: "continuous-integration-gcp"
+            name: "run-continuous-integration-gcp"
             continuous_integration: true
             slack_results_channel: "hedera-cicd"
             slack_summary_channel: "hedera-cicd"
