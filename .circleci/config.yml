@@ -342,6 +342,9 @@ commands:
       hedera_services_path:
         type: string
         default: "/repo"
+      continuous_integration:
+        type: boolean
+        default: false
     steps:
       - run:
           name: Configure JRS Regression Keys
@@ -390,6 +393,10 @@ commands:
               JRS_OPTIONS="${JRS_OPTIONS} -Djrs.circleci.slack.results=${SLACK_RESULTS}"
             fi
 
+            CI_PARAMETERS=""
+            if [[ "<< parameters.continuous_integration >>" == "true" ]]; then
+              CI_PARAMETERS="${CI_PARAMETERS} $CIRCLE_USERNAME $CIRCLE_BUILD_URL"
+            fi
 
             pushd "${REGRESSION_PATH}" > /dev/null 2>&1
               CONFIG_PATH="<< parameters.config_file >>"
@@ -413,7 +420,7 @@ commands:
               ${JRS_OPTIONS} \
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
-              -jar regression.jar "${CONFIG_PATH}" "<< parameters.hedera_services_path >>"
+              -jar regression.jar "${CONFIG_PATH}" "<< parameters.hedera_services_path >>" ${CI_PARAMETERS}
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
@@ -430,7 +437,7 @@ commands:
       workflow-name:
         description: name of the workflow
         type: string
-        default: "continuous integration"
+        default: "continuous-integration"
       slack-channel:
         description: name of the slack channel to send report to
         type: string
@@ -1918,18 +1925,18 @@ workflows:
   continuous-integration-gcp:
       jobs:
         - build-artifact:
+            name: "artifact-build"
             context: SonarCloud
             filters:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 01198-D-Misc-Basic-JRS-failure
-            workflow-name: "Continuous integration"
+            workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
             requires:
-              - build-artifact
-            workflow-name: "Continuous integration GCP"
+              - artifact-build
+            workflow-name: "Continuous-integration-GCP"
         - javadoc-generation:
             context: Slack
             requires:
@@ -1937,15 +1944,22 @@ workflows:
             pre-steps:
               - attach_workspace:
                   at: /
-        - run-continuous-integration-gcp:
+        - jrs-regression:
             context: Slack
+            regression_path: /swirlds-platform/regression
+            result_path: results/4N_1C/CI
+            config_type: "ci"
+            workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
+            name: "run-continuous-integration-gcp"
+            continuous_integration: true
+            slack_results_channel: "hedera-cicd"
+            slack_summary_channel: "hedera-cicd"
             requires:
               - javadoc-generation
             pre-steps:
               - install-tools
               - attach_workspace:
                   at: /
-            workflow-name: "Continuous Integration GCP"
 
   continuous-integration:
     jobs:
@@ -2236,31 +2250,6 @@ jobs:
           paths:
             - repo/
             - swirlds-platform/
-
-  run-continuous-integration-gcp:
-    parameters:
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: build-executor
-      workflow-name: << parameters.workflow-name >>
-    steps:
-      - run:
-          name: Run continuous integration tests
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            ./regression_services_circleci.sh configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json /repo $CIRCLE_USERNAME $CIRCLE_BUILD_URL
-
-      - run:
-          name: Sync results of continuous integration to circelCI job
-          command: |
-            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/4N_1C/CI/*
-
-      - store_artifacts:
-          path: /results.tar.gz
 
   javadoc-generation:
     executor:
@@ -2921,6 +2910,9 @@ jobs:
       hedera_services_path:
         type: string
         default: "/repo"
+      continuous_integration:
+        type: boolean
+        default: false
     executor:
       name: << parameters.runtime >>
       workflow-name:  << parameters.workflow-name >>
@@ -2950,6 +2942,7 @@ jobs:
           slack_results_channel: << parameters.slack_results_channel >>
           slack_summary_channel: << parameters.slack_summary_channel >>
           hedera_services_path: << parameters.hedera_services_path >>
+          continuous_integration: << parameters.continuous_integration >>
       - when:
           condition: << parameters.automated_run >>
           steps:
