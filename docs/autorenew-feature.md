@@ -46,7 +46,7 @@ After autorenewing an entity, Hedera Services will generate a `TransactionRecord
 
 The main difference between an autorenewal record and a regular `TransactionRecord` is that it has an empty `transactionHash` and an empty `transactionID.transactionValidStart`. There were older versions of Hedera Services that did not have `transactionHash` in a `TransactionRecord`, but an empty `transactionID.transactionValidStart` will guarantee that the `TransactionRecord` was generated in place of an autorenewal record.
 
-## Autodeletion record
+## Entity removal record
 After autodeleting an entity due to the zero balance of the `autoRenewAccount`, Hedera Services will generate a `TransactionRecord` that serves as an autodeletion record and contains the following:
 
 | Field | Type | Label | Description |

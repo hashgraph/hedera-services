@@ -55,7 +55,7 @@ marked deleted will be removed from the ledger.
 
 Hedera Services will generate an [autorenewal-record](https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#autorenewal-record)
 for the action on each entity that is automatically renewed. Hedera Services will generate an
-[autoremoval-record](https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#autodeletion-record)
+[entity-removal-record](https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#entity-removal-record)
 for the action on each entity that is automatically removed.
 
 Crypto accounts will be prioritized for autorenewal, followed by consensus topics, tokens and smart contracts. Schedule entities
