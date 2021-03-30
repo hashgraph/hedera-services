@@ -1904,6 +1904,8 @@ workflows:
             config_type: "ci"
             workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
             continuous_integration: true
+            slack_results_channel: "hedera-cicd"
+            slack_summary_channel: "hedera-cicd"
             requires:
               - javadoc-generation
             pre-steps:
