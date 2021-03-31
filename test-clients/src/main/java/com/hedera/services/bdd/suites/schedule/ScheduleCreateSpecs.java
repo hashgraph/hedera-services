@@ -30,8 +30,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -43,6 +41,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.nAscii;
@@ -59,6 +58,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -86,6 +86,10 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				suiteSetup(),
+				notIdenticalScheduleIfScheduledTxnChanges(),
+				notIdenticalScheduleIfAdminKeyChanges(),
+				notIdenticalScheduleIfMemoChanges(),
+				recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
 				rejectsSentinelKeyListAsAdminKey(),
 				rejectsMalformedScheduledTxnMemo(),
 				bodyOnlyCreation(),
@@ -247,9 +251,105 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.then();
 	}
 
+	private HapiApiSpec notIdenticalScheduleIfScheduledTxnChanges() {
+		return defaultHapiSpec("NotIdenticalScheduleIfScheduledTxnChanges")
+				.given(
+						cryptoCreate("sender").balance(1L),
+						cryptoCreate("firstPayer"),
+						scheduleCreate("original",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.memo("A")
+										.fee(ONE_HBAR)
+						)
+								.payingWith("firstPayer")
+				).when( ).then(
+						scheduleCreate("continue",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.memo("B")
+										.fee(ONE_HBAR)
+						)
+								.payingWith("firstPayer")
+				);
+	}
+
+	private HapiApiSpec notIdenticalScheduleIfMemoChanges() {
+		return defaultHapiSpec("NotIdenticalScheduleIfMemoChanges")
+				.given(
+						cryptoCreate("sender").balance(1L),
+						scheduleCreate("original",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.withEntityMemo("This was Mr. Bleaney's room. He stayed")
+				).when( ).then(
+						scheduleCreate("continue",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.withEntityMemo("The whole time he was at the Bodies, til")
+				);
+	}
+
+	private HapiApiSpec notIdenticalScheduleIfAdminKeyChanges() {
+		return defaultHapiSpec("notIdenticalScheduleIfAdminKeyChanges")
+				.given(
+						newKeyNamed("adminA"),
+						newKeyNamed("adminB"),
+						cryptoCreate("sender").balance(1L),
+						cryptoCreate("firstPayer"),
+						scheduleCreate("original",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.adminKey("adminA")
+								.withEntityMemo("This was Mr. Bleaney's room. He stayed")
+								.designatingPayer("firstPayer")
+								.payingWith("firstPayer")
+				).when( ).then(
+						scheduleCreate("continue",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.adminKey("adminB")
+								.withEntityMemo("This was Mr. Bleaney's room. He stayed")
+								.designatingPayer("firstPayer")
+								.payingWith("firstPayer")
+				);
+	}
+
+	private HapiApiSpec recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
+		return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
+				.given(
+						cryptoCreate("sender").balance(1L),
+						cryptoCreate("firstPayer"),
+						scheduleCreate("original",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.designatingPayer("firstPayer")
+								.payingWith("firstPayer")
+								.savingExpectedScheduledTxnId()
+				).when(
+						cryptoCreate("secondPayer")
+				).then(
+						scheduleCreate("duplicate",
+								cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
+										.fee(ONE_HBAR)
+						)
+								.payingWith("secondPayer")
+								.designatingPayer("secondPayer")
+								.via("copycat")
+								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED),
+						getTxnRecord("copycat").logged(),
+						getReceipt("copycat")
+								.hasSchedule("original")
+								.hasScheduledTxnId("original")
+				);
+	}
+
 	private HapiApiSpec rejectsSentinelKeyListAsAdminKey() {
 		return defaultHapiSpec("RejectsSentinelKeyListAsAdminKey")
-				.given( ).when().then(
+				.given().when().then(
 						scheduleCreate("creation",
 								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
 						)
