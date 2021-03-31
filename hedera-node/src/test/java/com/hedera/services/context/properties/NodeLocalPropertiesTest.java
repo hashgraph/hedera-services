@@ -67,6 +67,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(14L, subject.nettyProdKeepAliveTime());
 		assertEquals("hedera1.crt", subject.nettyTlsCrtPath());
 		assertEquals("hedera2.key", subject.nettyTlsKeyPath());
+		assertEquals(15L, subject.nettyProdKeepAliveTimeout());
 	}
 
 	@Test
@@ -93,6 +94,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(15L, subject.nettyProdKeepAliveTime());
 		assertEquals("hedera2.crt", subject.nettyTlsCrtPath());
 		assertEquals("hedera3.key", subject.nettyTlsKeyPath());
+		assertEquals(16L, subject.nettyProdKeepAliveTimeout());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -111,7 +113,8 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("queries.blob.lookupRetries")).willReturn(i + 12);
 		given(properties.getLongProperty("netty.prod.keepAliveTime")).willReturn(i + 13L);
 		given(properties.getStringProperty("netty.tlsCrt.path")).willReturn("hedera" + i + ".crt");
-		given(properties.getStringProperty("netty.tlsKey.path")).willReturn("hedera" + (i + 1) + " +.key");
+		given(properties.getStringProperty("netty.tlsKey.path")).willReturn("hedera" + (i + 1) + ".key");
+		given(properties.getLongProperty("netty.prod.keepAliveTimeout")).willReturn(i + 14L);
 	}
 
 	static String logDir(int num) {

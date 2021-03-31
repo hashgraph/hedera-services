@@ -39,6 +39,7 @@ public class NodeLocalProperties {
 	private long nettyProdKeepAliveTime;
 	private String nettyTlsCrtPath;
 	private String nettyTlsKeyPath;
+	private long nettyProdKeepAliveTimeout;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -61,6 +62,9 @@ public class NodeLocalProperties {
 		recordStreamQueueCapacity = properties.getIntProperty("hedera.recordStream.queueCapacity");
 		queryBlobLookupRetries = properties.getIntProperty("queries.blob.lookupRetries");
 		nettyProdKeepAliveTime = properties.getLongProperty("netty.prod.keepAliveTime");
+		nettyTlsCrtPath = properties.getStringProperty("netty.tlsCrt.path");
+		nettyTlsKeyPath = properties.getStringProperty("netty.tlsKey.path");
+		nettyProdKeepAliveTimeout = properties.getLongProperty("netty.prod.keepAliveTimeout");
 	}
 
 	public int port() {
@@ -125,5 +129,9 @@ public class NodeLocalProperties {
 
 	public String nettyTlsKeyPath() {
 		return nettyTlsKeyPath;
+	}
+
+	public long nettyProdKeepAliveTimeout() {
+		return nettyProdKeepAliveTimeout;
 	}
 }

@@ -55,7 +55,8 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 	}
 
 	private void configureProd(NettyServerBuilder builder) {
-		builder.keepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS);
+		builder.keepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
+				.keepAliveTimeout(nodeProperties.nettyProdKeepAliveTimeout(), TimeUnit.SECONDS);
 	}
 
 	private void configureTls(NettyServerBuilder builder) throws SSLException, FileNotFoundException {

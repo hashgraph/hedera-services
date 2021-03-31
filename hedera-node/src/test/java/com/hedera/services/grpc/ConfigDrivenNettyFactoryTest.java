@@ -24,6 +24,7 @@ class ConfigDrivenNettyFactoryTest {
 
 	int port = 50123;
 	long keepAliveTime = 10;
+	long keepAliveTimeout = 3;
 
 	@Mock
 	NodeLocalProperties nodeLocalProperties;
@@ -39,12 +40,14 @@ class ConfigDrivenNettyFactoryTest {
 	void usesProdPropertiesWhenAppropros() throws FileNotFoundException, SSLException {
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.PROD);
 		given(nodeLocalProperties.nettyProdKeepAliveTime()).willReturn(keepAliveTime);
+		given(nodeLocalProperties.nettyProdKeepAliveTimeout()).willReturn(keepAliveTimeout);
 
 		// when:
 		subject.builderFor(port, false).build();
 
 		// then:
 		verify(nodeLocalProperties).nettyProdKeepAliveTime();
+		verify(nodeLocalProperties).nettyProdKeepAliveTimeout();
 	}
 
 	@Test
