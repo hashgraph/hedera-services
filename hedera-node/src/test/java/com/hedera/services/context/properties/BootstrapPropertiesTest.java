@@ -117,6 +117,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.autoRenewPeriod.maxDuration", 8000001L),
 			entry("ledger.autoRenewPeriod.minDuration", 6999999L),
 			entry("ledger.schedule.txExpiryTimeSecs", 1800),
+			entry("netty.prod.maxConnectionAge", 15L),
 			entry("netty.prod.keepAliveTime", 10L),
 			entry("netty.prod.keepAliveTimeout", 3L),
 			entry("netty.tlsCrt.path", "hedera.crt"),

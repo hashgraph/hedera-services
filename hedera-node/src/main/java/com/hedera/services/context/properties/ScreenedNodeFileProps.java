@@ -46,7 +46,9 @@ public class ScreenedNodeFileProps implements PropertySource {
 	private static final Profile[] LEGACY_ENV_ORDER = { DEV, PROD, TEST };
 
 	static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
+			entry("nettyMaxConnectionAge", "netty.prod.maxConnectionAge"),
 			entry("nettyKeepAliveTime", "netty.prod.keepAliveTime"),
+			entry("nettyKeepAliveTimeOut", "netty.prod.keepAliveTimeout"),
 			entry("port", "grpc.port"),
 			entry("recordStreamQueueCapacity", "hedera.recordStream.queueCapacity"),
 			entry("enableRecordStreaming", "hedera.recordStream.isEnabled"),

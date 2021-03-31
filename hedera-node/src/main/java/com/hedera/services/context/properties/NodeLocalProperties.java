@@ -40,6 +40,7 @@ public class NodeLocalProperties {
 	private String nettyTlsCrtPath;
 	private String nettyTlsKeyPath;
 	private long nettyProdKeepAliveTimeout;
+	private long nettyMaxConnectionAge;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -65,6 +66,7 @@ public class NodeLocalProperties {
 		nettyTlsCrtPath = properties.getStringProperty("netty.tlsCrt.path");
 		nettyTlsKeyPath = properties.getStringProperty("netty.tlsKey.path");
 		nettyProdKeepAliveTimeout = properties.getLongProperty("netty.prod.keepAliveTimeout");
+		nettyMaxConnectionAge = properties.getLongProperty("netty.prod.maxConnectionAge");
 	}
 
 	public int port() {
@@ -133,5 +135,9 @@ public class NodeLocalProperties {
 
 	public long nettyProdKeepAliveTimeout() {
 		return nettyProdKeepAliveTimeout;
+	}
+
+	public long nettyMaxConnectionAge() {
+		return nettyMaxConnectionAge;
 	}
 }
