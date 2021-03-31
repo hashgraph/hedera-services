@@ -40,8 +40,8 @@ networks:
 
 You can add details of multiple networks to this config file with appropriate ipv4Addresses.
 
-_{network}/keys/_ folder should contain account{num}.pem and account{num}.pass pair for each account that you want to use for that network.
-_num_ here is the account number. 
+_{network}/keys/_ folder should contain `account{num}.pem` and `account{num}.pass` pair for each account that you want to use for that network.
+_num_ here is the account number. `account{num}.pass` should contain the passphrase for the `account{num}.pem` file or empty if the passphrase is ignored
 
 > Note : Support for multisig accounts is not yet implemented.
 

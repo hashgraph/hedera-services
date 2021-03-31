@@ -56,7 +56,7 @@ public class BalanceSuite extends HapiApiSuite {
 			return account;
 		} else {
 			try {
-				int number = Integer.parseInt(account);
+				long number = Long.parseLong(account);
 				return "0.0." + number;
 			} catch (NumberFormatException ignore) {
 				throw  new IllegalArgumentException("Named accounts not yet supported!");
