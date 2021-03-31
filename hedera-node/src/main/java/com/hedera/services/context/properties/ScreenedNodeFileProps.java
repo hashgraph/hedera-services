@@ -46,6 +46,7 @@ public class ScreenedNodeFileProps implements PropertySource {
 	private static final Profile[] LEGACY_ENV_ORDER = { DEV, PROD, TEST };
 
 	static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
+			entry("nettyFlowControlWindow", "netty.prod.flowControlWindow"),
 			entry("nettyMaxConnectionAge", "netty.prod.maxConnectionAge"),
 			entry("nettyMaxConnectionAgeGrace", "netty.prod.maxConnectionAgeGrace"),
 			entry("nettyMaxConnectionIdle", "netty.prod.maxConnectionIdle"),

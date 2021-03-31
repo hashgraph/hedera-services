@@ -14,6 +14,7 @@ import java.io.FileNotFoundException;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class ConfigDrivenNettyFactoryTest {
@@ -25,6 +26,7 @@ class ConfigDrivenNettyFactoryTest {
 	long maxConnectionAgeGrace = 5;
 	long maxConnectionIdle = 10;
 	int maxConcurrentCalls = 10;
+	int flowControlWindow = 10240;
 
 	@Mock
 	NodeLocalProperties nodeLocalProperties;
@@ -45,17 +47,19 @@ class ConfigDrivenNettyFactoryTest {
 		given(nodeLocalProperties.nettyMaxConnectionAgeGrace()).willReturn(maxConnectionAgeGrace);
 		given(nodeLocalProperties.nettyMaxConnectionIdle()).willReturn(maxConnectionIdle);
 		given(nodeLocalProperties.nettyMaxConcurrentCalls()).willReturn(maxConcurrentCalls);
+		given(nodeLocalProperties.nettyFlowControlWindow()).willReturn(flowControlWindow);
 
 		// when:
 		subject.builderFor(port, false).build();
 
 		// then:
-		verify(nodeLocalProperties).nettyProdKeepAliveTime();
+		verify(nodeLocalProperties, times(2)).nettyProdKeepAliveTime();
 		verify(nodeLocalProperties).nettyProdKeepAliveTimeout();
 		verify(nodeLocalProperties).nettyMaxConnectionAge();
 		verify(nodeLocalProperties).nettyMaxConnectionAgeGrace();
 		verify(nodeLocalProperties).nettyMaxConnectionIdle();
 		verify(nodeLocalProperties).nettyMaxConcurrentCalls();
+		verify(nodeLocalProperties).nettyFlowControlWindow();
 	}
 
 	@Test

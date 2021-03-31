@@ -56,11 +56,13 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 
 	private void configureProd(NettyServerBuilder builder) {
 		builder.keepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
+				.permitKeepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
 				.keepAliveTimeout(nodeProperties.nettyProdKeepAliveTimeout(), TimeUnit.SECONDS)
 				.maxConnectionAge(nodeProperties.nettyMaxConnectionAge(), TimeUnit.SECONDS)
 				.maxConnectionAgeGrace(nodeProperties.nettyMaxConnectionAgeGrace(), TimeUnit.SECONDS)
 				.maxConnectionIdle(nodeProperties.nettyMaxConnectionIdle(), TimeUnit.SECONDS)
-				.maxConcurrentCallsPerConnection(nodeProperties.nettyMaxConcurrentCalls());
+				.maxConcurrentCallsPerConnection(nodeProperties.nettyMaxConcurrentCalls())
+				.flowControlWindow(nodeProperties.nettyFlowControlWindow());
 	}
 
 	private void configureTls(NettyServerBuilder builder) throws SSLException, FileNotFoundException {

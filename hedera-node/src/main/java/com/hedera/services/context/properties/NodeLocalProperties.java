@@ -44,6 +44,7 @@ public class NodeLocalProperties {
 	private long nettyMaxConnectionAgeGrace;
 	private long nettyMaxConnectionIdle;
 	private int nettyMaxConcurrentCalls;
+	private int nettyFlowControlWindow;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -73,6 +74,7 @@ public class NodeLocalProperties {
 		nettyMaxConnectionAgeGrace = properties.getLongProperty("netty.prod.maxConnectionAgeGrace");
 		nettyMaxConnectionIdle = properties.getLongProperty("netty.prod.maxConnectionIdle");
 		nettyMaxConcurrentCalls = properties.getIntProperty("netty.prod.maxConcurrentCalls");
+		nettyFlowControlWindow = properties.getIntProperty("netty.prod.flowControlWindow");
 	}
 
 	public int port() {
@@ -157,5 +159,9 @@ public class NodeLocalProperties {
 
 	public int nettyMaxConcurrentCalls() {
 		return nettyMaxConcurrentCalls;
+	}
+
+	public int nettyFlowControlWindow() {
+		return nettyFlowControlWindow;
 	}
 }
