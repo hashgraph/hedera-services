@@ -187,6 +187,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			if (!loggingOff) {
 				log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance + " tinyBars (" + hBars + "ħ)");
 			}
+			if(yahcliLogger) {
+				System.out.println(String.format("%20s | %20d |", entity, balance));
+			}
 		}
 	}
 

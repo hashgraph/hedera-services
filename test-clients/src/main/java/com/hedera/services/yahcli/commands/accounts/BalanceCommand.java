@@ -21,6 +21,8 @@ package com.hedera.services.yahcli.commands.accounts;
  */
 
 import com.hedera.services.yahcli.config.ConfigManager;
+import com.hedera.services.yahcli.suites.BalanceSuite;
+import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.Parameters;
@@ -51,13 +53,23 @@ public class BalanceCommand implements Callable<Integer> {
 		config.assertNoMissingDefaults();
 		COMMON_MESSAGES.printGlobalInfo(config);
 
-		var r = new SplittableRandom();
-		for (String account : accounts) {
-			System.out.println(String.format(
-					" - Account %s has balance %d",
-					account,
-					r.nextInt(0, Integer.MAX_VALUE)));
-		}
+		StringBuilder balanceRegister = new StringBuilder();
+		String serviceBorder = "---------------------|----------------------|\n";
+		balanceRegister.append(serviceBorder);
+		balanceRegister.append(String.format("%20s | %20s |\n", "Account Id", "Balance"));
+		balanceRegister.append(serviceBorder);
+
+		printTable(balanceRegister);
+
+		var delegate = new BalanceSuite(config.asSpecConfig(), accounts);
+		delegate.runSuiteSync();
+
+
+
 		return 0;
+	}
+
+	private void printTable(final StringBuilder balanceRegister) {
+		System.out.println(balanceRegister.toString());
 	}
 }
