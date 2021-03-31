@@ -612,7 +612,8 @@ public class ServicesContext {
 
 	public MiscSpeedometers speedometers() {
 		if (speedometers == null) {
-			speedometers = new MiscSpeedometers(new SpeedometerFactory() { }, nodeLocalProperties());
+			speedometers = new MiscSpeedometers(new SpeedometerFactory() {
+			}, nodeLocalProperties());
 		}
 		return speedometers;
 	}
@@ -1234,11 +1235,7 @@ public class ServicesContext {
 						List.of(new TokenCreateTransitionLogic(validator(), tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
-								validator(),
-								tokenStore(),
-								ledger(),
-								txnCtx(),
-								HederaTokenStore::affectsExpiryAtMost))),
+								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
@@ -1261,7 +1258,8 @@ public class ServicesContext {
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* Schedule */
 				entry(ScheduleCreate,
-						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx(), activationHelper(), validator()))),
+						List.of(new ScheduleCreateTransitionLogic(
+								scheduleStore(), txnCtx(), activationHelper(), validator()))),
 				entry(ScheduleSign,
 						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
 				entry(ScheduleDelete,
@@ -1465,7 +1463,7 @@ public class ServicesContext {
 	public void updateFeature() {
 		if (freeze != null) {
 			String os = System.getProperty("os.name").toLowerCase();
-			if (os.indexOf("mac") >= 0) {
+			if (os.contains("mac")) {
 				if (platform.getSelfId().getId() == 0) {
 					freeze.handleUpdateFeature();
 				}
@@ -1478,14 +1476,7 @@ public class ServicesContext {
 	public ThrottleDefsManager throttleDefsManager() {
 		if (throttleDefsManager == null) {
 			throttleDefsManager = new ThrottleDefsManager(
-					fileNums(),
-					this::addressBook,
-					proto -> {
-						var defs = ThrottleDefinitions.fromProto(proto);
-						hapiThrottling().rebuildFor(defs);
-						handleThrottling().rebuildFor(defs);
-						feeMultiplierSource().resetExpectations();
-					});
+					fileNums(), this::addressBook, sysFileCallbacks().throttlesCb());
 		}
 		return throttleDefsManager;
 	}
@@ -1653,7 +1644,7 @@ public class ServicesContext {
 					PropertiesLoader::populateApplicationPropertiesWithProto,
 					PropertiesLoader::populateAPIPropertiesWithProto);
 			var currencyCallbacks = new CurrencyCallbacks(fees(), exchange(), this::midnightRates);
-			var throttlesCallback = new ThrottlesCallback( feeMultiplierSource(), hapiThrottling(), handleThrottling());
+			var throttlesCallback = new ThrottlesCallback(feeMultiplierSource(), hapiThrottling(), handleThrottling());
 			sysFileCallbacks = new SysFileCallbacks(configCallbacks, throttlesCallback, currencyCallbacks);
 		}
 		return sysFileCallbacks;
