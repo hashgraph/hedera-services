@@ -626,17 +626,29 @@ class SignedStateBalancesExporterTest {
 
 	@Test
 	public void exportsWhenPeriodSecsHaveElapsed() {
-		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
+		given(mockLog.isDebugEnabled()).willReturn(true);
 		Instant startTime = Instant.parse("2021-03-11T10:59:59.0Z");
+
+		// now.getEpochSecond() % exportPeriod < ALLOWED_SKEW case
+		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
 		assertFalse(subject.isTimeToExport(startTime));
 		assertEquals(startTime, subject.periodBegin);
 		assertTrue(subject.isTimeToExport(startTime.plusSeconds(1)));
 		assertEquals(startTime.plusSeconds(1), subject.periodBegin);
 
+		// now.getEpochSecond() % exportPeriod == ALLOWED_SKEW case
+		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
+		assertFalse(subject.isTimeToExport(startTime));
+		assertTrue(subject.isTimeToExport(startTime.plusSeconds(2)));
+		assertEquals(startTime.plusSeconds(2), subject.periodBegin);
+
 		// The next consensus time moves out of allowed time window, no export
+		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
+		assertFalse(subject.isTimeToExport(startTime));
 		assertFalse(subject.isTimeToExport(startTime.plusSeconds(3)));
 		assertEquals(startTime.plusSeconds(3), subject.periodBegin);
 
+		// Other scenarios
 		shortlyAfter = startTime.plusSeconds(dynamicProperties.balancesExportPeriodSecs() / 2);
 		assertFalse(subject.isTimeToExport(shortlyAfter));
 		assertEquals(shortlyAfter, subject.periodBegin);
@@ -649,6 +661,11 @@ class SignedStateBalancesExporterTest {
 		anEternityLater = startTime.plusSeconds(dynamicProperties.balancesExportPeriodSecs() * 2 + 1);
 		assertTrue(subject.isTimeToExport(anEternityLater));
 		assertEquals(anEternityLater, subject.periodBegin);
+
+		given(mockLog.isDebugEnabled()).willReturn(false);
+		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
+		startTime = Instant.parse("2021-03-11T10:59:59.0Z");
+		assertFalse(subject.isTimeToExport(startTime));
 	}
 
 	@AfterAll
