@@ -70,6 +70,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(15L, subject.nettyProdKeepAliveTimeout());
 		assertEquals(16L, subject.nettyMaxConnectionAge());
 		assertEquals(17L, subject.nettyMaxConnectionAgeGrace());
+		assertEquals(18L, subject.nettyMaxConnectionIdle());
 	}
 
 	@Test
@@ -99,6 +100,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(16L, subject.nettyProdKeepAliveTimeout());
 		assertEquals(17L, subject.nettyMaxConnectionAge());
 		assertEquals(18L, subject.nettyMaxConnectionAgeGrace());
+		assertEquals(19L, subject.nettyMaxConnectionIdle());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -121,6 +123,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getLongProperty("netty.prod.keepAliveTimeout")).willReturn(i + 14L);
 		given(properties.getLongProperty("netty.prod.maxConnectionAge")).willReturn(i + 15L);
 		given(properties.getLongProperty("netty.prod.maxConnectionAgeGrace")).willReturn(i + 16L);
+		given(properties.getLongProperty("netty.prod.maxConnectionIdle")).willReturn(i + 17L);
 	}
 
 	static String logDir(int num) {

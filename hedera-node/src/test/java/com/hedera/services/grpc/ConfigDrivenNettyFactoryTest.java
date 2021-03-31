@@ -27,6 +27,7 @@ class ConfigDrivenNettyFactoryTest {
 	long keepAliveTimeout = 3;
 	long maxConnectionAge = 15;
 	long maxConnectionAgeGrace = 5;
+	long maxConnectionIdle = 10;
 
 	@Mock
 	NodeLocalProperties nodeLocalProperties;
@@ -45,6 +46,7 @@ class ConfigDrivenNettyFactoryTest {
 		given(nodeLocalProperties.nettyProdKeepAliveTimeout()).willReturn(keepAliveTimeout);
 		given(nodeLocalProperties.nettyMaxConnectionAge()).willReturn(maxConnectionAge);
 		given(nodeLocalProperties.nettyMaxConnectionAgeGrace()).willReturn(maxConnectionAgeGrace);
+		given(nodeLocalProperties.nettyMaxConnectionIdle()).willReturn(maxConnectionIdle);
 
 		// when:
 		subject.builderFor(port, false).build();
@@ -54,6 +56,7 @@ class ConfigDrivenNettyFactoryTest {
 		verify(nodeLocalProperties).nettyProdKeepAliveTimeout();
 		verify(nodeLocalProperties).nettyMaxConnectionAge();
 		verify(nodeLocalProperties).nettyMaxConnectionAgeGrace();
+		verify(nodeLocalProperties).nettyMaxConnectionIdle();
 	}
 
 	@Test

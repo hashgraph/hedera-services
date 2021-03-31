@@ -119,6 +119,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.schedule.txExpiryTimeSecs", 1800),
 			entry("netty.prod.maxConnectionAge", 15L),
 			entry("netty.prod.maxConnectionAgeGrace", 5L),
+			entry("netty.prod.maxConnectionIdle", 10L),
 			entry("netty.prod.keepAliveTime", 10L),
 			entry("netty.prod.keepAliveTimeout", 3L),
 			entry("netty.tlsCrt.path", "hedera.crt"),
