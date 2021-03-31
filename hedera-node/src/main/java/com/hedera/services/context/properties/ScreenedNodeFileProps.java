@@ -49,6 +49,7 @@ public class ScreenedNodeFileProps implements PropertySource {
 			entry("nettyMaxConnectionAge", "netty.prod.maxConnectionAge"),
 			entry("nettyMaxConnectionAgeGrace", "netty.prod.maxConnectionAgeGrace"),
 			entry("nettyMaxConnectionIdle", "netty.prod.maxConnectionIdle"),
+			entry("nettyMaxConcurrentCalls", "netty.prod.maxConcurrentCalls"),
 			entry("nettyKeepAliveTime", "netty.prod.keepAliveTime"),
 			entry("nettyKeepAliveTimeOut", "netty.prod.keepAliveTimeout"),
 			entry("port", "grpc.port"),

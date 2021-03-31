@@ -2,10 +2,6 @@ package com.hedera.services.grpc;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.Profile;
-import com.hedera.services.legacy.netty.NettyServerManager;
-import io.grpc.netty.NettyServerBuilder;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,10 +10,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.net.ssl.SSLException;
 import java.io.FileNotFoundException;
-import java.util.function.IntFunction;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ConfigDrivenNettyFactoryTest {
@@ -28,6 +24,7 @@ class ConfigDrivenNettyFactoryTest {
 	long maxConnectionAge = 15;
 	long maxConnectionAgeGrace = 5;
 	long maxConnectionIdle = 10;
+	int maxConcurrentCalls = 10;
 
 	@Mock
 	NodeLocalProperties nodeLocalProperties;
@@ -47,6 +44,7 @@ class ConfigDrivenNettyFactoryTest {
 		given(nodeLocalProperties.nettyMaxConnectionAge()).willReturn(maxConnectionAge);
 		given(nodeLocalProperties.nettyMaxConnectionAgeGrace()).willReturn(maxConnectionAgeGrace);
 		given(nodeLocalProperties.nettyMaxConnectionIdle()).willReturn(maxConnectionIdle);
+		given(nodeLocalProperties.nettyMaxConcurrentCalls()).willReturn(maxConcurrentCalls);
 
 		// when:
 		subject.builderFor(port, false).build();
@@ -57,6 +55,7 @@ class ConfigDrivenNettyFactoryTest {
 		verify(nodeLocalProperties).nettyMaxConnectionAge();
 		verify(nodeLocalProperties).nettyMaxConnectionAgeGrace();
 		verify(nodeLocalProperties).nettyMaxConnectionIdle();
+		verify(nodeLocalProperties).nettyMaxConcurrentCalls();
 	}
 
 	@Test

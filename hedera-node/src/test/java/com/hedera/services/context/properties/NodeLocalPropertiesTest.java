@@ -71,6 +71,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(16L, subject.nettyMaxConnectionAge());
 		assertEquals(17L, subject.nettyMaxConnectionAgeGrace());
 		assertEquals(18L, subject.nettyMaxConnectionIdle());
+		assertEquals(19, subject.nettyMaxConcurrentCalls());
 	}
 
 	@Test
@@ -101,6 +102,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(17L, subject.nettyMaxConnectionAge());
 		assertEquals(18L, subject.nettyMaxConnectionAgeGrace());
 		assertEquals(19L, subject.nettyMaxConnectionIdle());
+		assertEquals(20, subject.nettyMaxConcurrentCalls());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -124,6 +126,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getLongProperty("netty.prod.maxConnectionAge")).willReturn(i + 15L);
 		given(properties.getLongProperty("netty.prod.maxConnectionAgeGrace")).willReturn(i + 16L);
 		given(properties.getLongProperty("netty.prod.maxConnectionIdle")).willReturn(i + 17L);
+		given(properties.getIntProperty("netty.prod.maxConcurrentCalls")).willReturn(i + 18);
 	}
 
 	static String logDir(int num) {
