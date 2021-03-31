@@ -3,6 +3,8 @@ package com.hedera.services.grpc;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,7 +64,11 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 				.maxConnectionAgeGrace(nodeProperties.nettyMaxConnectionAgeGrace(), TimeUnit.SECONDS)
 				.maxConnectionIdle(nodeProperties.nettyMaxConnectionIdle(), TimeUnit.SECONDS)
 				.maxConcurrentCallsPerConnection(nodeProperties.nettyMaxConcurrentCalls())
-				.flowControlWindow(nodeProperties.nettyFlowControlWindow());
+				.flowControlWindow(nodeProperties.nettyFlowControlWindow())
+				.directExecutor()
+				.channelType(EpollServerSocketChannel.class)
+				.bossEventLoopGroup(new EpollEventLoopGroup())
+				.workerEventLoopGroup(new EpollEventLoopGroup());
 	}
 
 	private void configureTls(NettyServerBuilder builder) throws SSLException, FileNotFoundException {

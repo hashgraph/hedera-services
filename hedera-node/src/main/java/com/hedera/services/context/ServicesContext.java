@@ -113,6 +113,7 @@ import com.hedera.services.files.interceptors.ThrottleDefsManager;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.grpc.ConfigDrivenNettyFactory;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.grpc.controllers.ConsensusController;
@@ -142,7 +143,6 @@ import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.netty.NettyServerManager;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.hedera.services.queries.AnswerFlow;
@@ -1607,7 +1607,6 @@ public class ServicesContext {
 		if (grpc == null) {
 			grpc = new NettyGrpcServerManager(
 					Runtime.getRuntime()::addShutdownHook,
-					new NettyServerManager(),
 					List.of(
 							cryptoGrpc(),
 							filesGrpc(),
@@ -1617,6 +1616,7 @@ public class ServicesContext {
 							networkGrpc(),
 							tokenGrpc(),
 							scheduleGrpc()),
+					new ConfigDrivenNettyFactory(nodeLocalProperties()),
 					Collections.emptyList());
 		}
 		return grpc;

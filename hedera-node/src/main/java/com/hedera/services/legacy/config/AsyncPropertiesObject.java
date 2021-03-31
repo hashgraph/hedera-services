@@ -42,31 +42,12 @@ public class AsyncPropertiesObject {
 	private static String saveAccounts = ApplicationConstants.NO;
 	private static String exportedAccountPath = ApplicationConstants.EXPORTED_ACCOUNT_PATH;
 	
-	// Netty Server Properties
-	private static long nettyKeepAliveTime = ApplicationConstants.KEEP_ALIVE_TIME;
-	private static long nettyKeepAliveTimeOut = ApplicationConstants.KEEP_ALIVE_TIMEOUT;
-	private static long nettyMaxConnectionAge = ApplicationConstants.MAX_CONNECTION_AGE;
-	private static long nettyMaxConnectionAgeGrace = ApplicationConstants.MAX_CONNECTION_AGE_GRACE;
-	private static long nettyMaxConnectionIdle = ApplicationConstants.MAX_CONNECTION_IDLE;
-	private static int nettyMaxConcurrentCalls = ApplicationConstants.MAX_CONCURRENT_CALLS;
-	private static String nettyMode = ApplicationConstants.NETTY_MODE_DEV;
-	private static int nettyFlowControlWindow = ApplicationConstants.NETTY_FLOW_CONTROL_WINDOW;
 	private static Map<String, PermissionedAccountsRange> apiPermission = new HashMap<>();
 
 	public static void loadAsynchProperties(CustomProperties appConfig) {
 		// Server properties
 		defaultListeningNodeAccount = appConfig.getString("defaultListeningNodeAccount",ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT);
 		uniqueListeningPortFlag = appConfig.getInt("uniqueListeningPortFlag", ApplicationConstants.ZERO);
-		
-		 nettyKeepAliveTime = appConfig.getLong("nettyKeepAliveTime",ApplicationConstants.KEEP_ALIVE_TIME) ;
-		 nettyKeepAliveTimeOut = appConfig.getLong("nettyKeepAliveTimeOut",ApplicationConstants.KEEP_ALIVE_TIMEOUT) ;
-		 nettyMaxConnectionAge = appConfig.getLong("maxConnectionAge",ApplicationConstants.MAX_CONNECTION_AGE) ;
-		 nettyMaxConnectionAgeGrace = appConfig.getLong("maxConnectionAgeGrace",ApplicationConstants.MAX_CONNECTION_AGE_GRACE) ;
-		 nettyMaxConnectionIdle = appConfig.getLong("maxConnectionIdle",ApplicationConstants.MAX_CONNECTION_AGE_GRACE) ;
-		 nettyMaxConcurrentCalls = appConfig.getInt("maxConcurrentCalls",ApplicationConstants.MAX_CONCURRENT_CALLS) ;
-         nettyFlowControlWindow = appConfig.getInt("nettyFlowControlWindow",ApplicationConstants.NETTY_FLOW_CONTROL_WINDOW) ;
-         nettyMode = appConfig.getString("nettyMode",ApplicationConstants.NETTY_MODE_DEV);
-		
 		saveAccounts = appConfig.getString("saveAccounts", ApplicationConstants.NO);
 		exportedAccountPath = appConfig.getString("exportedAccountPath", ApplicationConstants.EXPORTED_ACCOUNT_PATH);
 	}
@@ -96,37 +77,5 @@ public class AsyncPropertiesObject {
 
 	static String getExportedAccountPath() {
 		return exportedAccountPath;
-	}
-
-	 static long getNettyKeepAliveTime() {
-		return nettyKeepAliveTime;
-	}
-
-	 static long getNettyKeepAliveTimeOut() {
-		return nettyKeepAliveTimeOut;
-	}
-
-	 static long getNettyMaxConnectionAge() {
-		return nettyMaxConnectionAge;
-	}
-
-	 static long getNettyMaxConnectionAgeGrace() {
-		return nettyMaxConnectionAgeGrace;
-	}
-
-	 static long getNettyMaxConnectionIdle() {
-		return nettyMaxConnectionIdle;
-	}
-
-	 static int getNettyMaxConcurrentCalls() {
-		return nettyMaxConcurrentCalls;
-	}
-
-	 static int getNettyFlowControlWindow() {
-		return nettyFlowControlWindow;
-	}
-	
-	 static String getNettyMode() {
-		return nettyMode;
 	}
 }

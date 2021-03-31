@@ -76,36 +76,4 @@ public class PropertiesLoader {
 	public static String getExportedAccountPath() {
 		return AsyncPropertiesObject.getExportedAccountPath();
 	}
-
-	public static long getNettyKeepAliveTime() {
-		return AsyncPropertiesObject.getNettyKeepAliveTime();
-	}
-
-	public static long getNettyKeepAliveTimeOut() {
-		return AsyncPropertiesObject.getNettyKeepAliveTimeOut();
-	}
-
-	public static long getNettyMaxConnectionAge() {
-		return AsyncPropertiesObject.getNettyMaxConnectionAge();
-	}
-
-	public static long getNettyMaxConnectionAgeGrace() {
-		return AsyncPropertiesObject.getNettyMaxConnectionAgeGrace();
-	}
-
-	public static long getNettyMaxConnectionIdle() {
-		return AsyncPropertiesObject.getNettyMaxConnectionIdle();
-	}
-
-	public static int getNettyMaxConcurrentCalls() {
-		return AsyncPropertiesObject.getNettyMaxConcurrentCalls();
-	}
-
-	public static int getNettyFlowControlWindow() {
-		return AsyncPropertiesObject.getNettyFlowControlWindow();
-	}
-
-	public static String getNettyMode() {
-		return AsyncPropertiesObject.getNettyMode();
-	}
 }

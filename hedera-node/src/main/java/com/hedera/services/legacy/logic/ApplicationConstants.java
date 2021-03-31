@@ -21,9 +21,6 @@ package com.hedera.services.legacy.logic;
  */
 
 public class ApplicationConstants {
-	public static String NETTY_MODE_DEV = "DEV";
-
-	// Default values
 	public static long DEFAULT_FEE = 100000l;
 
 	public static String EXPORTED_ACCOUNT_PATH = "exportedAccountPath";
@@ -38,12 +35,4 @@ public class ApplicationConstants {
 	public static char A = 'a';
 
 	public static String DEFAULT_LISTENING_NODE_ACCT = "0.0.3";
-
-	public static long KEEP_ALIVE_TIME = 20;
-	public static long KEEP_ALIVE_TIMEOUT = 5;
-	public static long MAX_CONNECTION_AGE = 30;
-	public static long MAX_CONNECTION_AGE_GRACE = 5;
-	public static long MAX_CONNECTION_IDLE = 10;
-	public static int MAX_CONCURRENT_CALLS = 100;
-	public static int NETTY_FLOW_CONTROL_WINDOW = 65535;
 }
