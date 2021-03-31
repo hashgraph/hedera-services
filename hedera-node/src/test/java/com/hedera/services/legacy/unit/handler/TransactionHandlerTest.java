@@ -96,7 +96,6 @@ public class TransactionHandlerTest {
 				stateView,
 				basicPrecheck,
 				queryFeeCheck,
-				throttling,
 				new MockAccountNumbers(),
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),

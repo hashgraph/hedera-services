@@ -1754,7 +1754,6 @@ public class ServicesContext {
 					stateViews(),
 					new BasicPrecheck(validator(), globalDynamicProperties()),
 					queryFeeCheck(),
-					hapiThrottling(),
 					accountNums(),
 					systemOpPolicies(),
 					exemptions(),
