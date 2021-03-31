@@ -2,7 +2,10 @@ package com.hedera.services.grpc;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.Profile;
+import com.hedera.services.legacy.netty.NettyServerManager;
 import io.grpc.netty.NettyServerBuilder;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +21,7 @@ import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ConfigDrivenNettyFactoryTest {
+
 	int port = 50123;
 	long keepAliveTime = 10;
 
@@ -41,5 +45,38 @@ class ConfigDrivenNettyFactoryTest {
 
 		// then:
 		verify(nodeLocalProperties).nettyProdKeepAliveTime();
+	}
+
+	@Test
+	void failsFastWhenCrtIsMissing() {
+		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+		given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("not-a-real-crt");
+
+		// when:
+		assertThrows(FileNotFoundException.class, () -> subject.builderFor(port, true));
+	}
+
+	@Test
+	void failsFastWhenKeyIsMissing() {
+		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+		given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("src/test/resources/test-hedera.crt");
+		given(nodeLocalProperties.nettyTlsKeyPath()).willReturn("not-a-real-key");
+
+		// when:
+		assertThrows(FileNotFoundException.class, () -> subject.builderFor(port, true));
+	}
+
+	@Test
+	void usesSslPropertiesWhenAppropros() throws FileNotFoundException, SSLException {
+		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+		given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("src/test/resources/test-hedera.crt");
+		given(nodeLocalProperties.nettyTlsKeyPath()).willReturn("src/test/resources/test-hedera.key");
+
+		// when:
+		subject.builderFor(port, true).build();
+
+		// then:
+		verify(nodeLocalProperties).nettyTlsCrtPath();
+		verify(nodeLocalProperties).nettyTlsKeyPath();
 	}
 }

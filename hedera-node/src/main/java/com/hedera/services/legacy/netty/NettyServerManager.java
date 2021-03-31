@@ -104,7 +104,7 @@ public class NettyServerManager {
 			contextBuilder
 					.protocols(protocols)
 					.ciphers(ciphers, SupportedCipherSuiteFilter.INSTANCE);
-			servBuilder = servBuilder.sslContext(contextBuilder.build());
+			servBuilder.sslContext(contextBuilder.build());
 		}
 
 		return servBuilder;

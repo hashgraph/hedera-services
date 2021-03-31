@@ -37,6 +37,8 @@ public class NodeLocalProperties {
 	private int recordStreamQueueCapacity;
 	private int queryBlobLookupRetries;
 	private long nettyProdKeepAliveTime;
+	private String nettyTlsCrtPath;
+	private String nettyTlsKeyPath;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -115,5 +117,13 @@ public class NodeLocalProperties {
 
 	public long nettyProdKeepAliveTime() {
 		return nettyProdKeepAliveTime;
+	}
+
+	public String nettyTlsCrtPath() {
+		return nettyTlsCrtPath;
+	}
+
+	public String nettyTlsKeyPath() {
+		return nettyTlsKeyPath;
 	}
 }
