@@ -69,6 +69,7 @@ class NodeLocalPropertiesTest {
 		assertEquals("hedera2.key", subject.nettyTlsKeyPath());
 		assertEquals(15L, subject.nettyProdKeepAliveTimeout());
 		assertEquals(16L, subject.nettyMaxConnectionAge());
+		assertEquals(17L, subject.nettyMaxConnectionAgeGrace());
 	}
 
 	@Test
@@ -97,6 +98,7 @@ class NodeLocalPropertiesTest {
 		assertEquals("hedera3.key", subject.nettyTlsKeyPath());
 		assertEquals(16L, subject.nettyProdKeepAliveTimeout());
 		assertEquals(17L, subject.nettyMaxConnectionAge());
+		assertEquals(18L, subject.nettyMaxConnectionAgeGrace());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -118,6 +120,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getStringProperty("netty.tlsKey.path")).willReturn("hedera" + (i + 1) + ".key");
 		given(properties.getLongProperty("netty.prod.keepAliveTimeout")).willReturn(i + 14L);
 		given(properties.getLongProperty("netty.prod.maxConnectionAge")).willReturn(i + 15L);
+		given(properties.getLongProperty("netty.prod.maxConnectionAgeGrace")).willReturn(i + 16L);
 	}
 
 	static String logDir(int num) {

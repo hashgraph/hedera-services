@@ -47,6 +47,7 @@ public class ScreenedNodeFileProps implements PropertySource {
 
 	static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
 			entry("nettyMaxConnectionAge", "netty.prod.maxConnectionAge"),
+			entry("nettyMaxConnectionAgeGrace", "netty.prod.maxConnectionAgeGrace"),
 			entry("nettyKeepAliveTime", "netty.prod.keepAliveTime"),
 			entry("nettyKeepAliveTimeOut", "netty.prod.keepAliveTimeout"),
 			entry("port", "grpc.port"),
