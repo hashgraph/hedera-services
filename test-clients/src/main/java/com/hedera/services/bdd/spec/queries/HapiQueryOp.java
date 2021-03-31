@@ -406,6 +406,16 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		return self();
 	}
 
+	public T noYahcliLogging() {
+		yahcliLogger = false;
+		return self();
+	}
+
+	public T yahcliLogging() {
+		yahcliLogger = true;
+		return self();
+	}
+
 	public T recordNodePaymentAs(String s) {
 		recordsNodePayment = true;
 		nodePaymentName = s;
