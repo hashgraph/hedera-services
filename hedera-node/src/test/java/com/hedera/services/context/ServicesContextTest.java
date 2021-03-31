@@ -32,6 +32,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.context.properties.SemanticVersions;
+import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.contracts.execution.SolidityLifecycle;
 import com.hedera.services.contracts.execution.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.contracts.persistence.BlobStoragePersistence;
@@ -182,7 +183,7 @@ public class ServicesContextTest {
 	ServicesState state;
 	Cryptography crypto;
 	PropertySource properties;
-	PropertySources propertySources;
+	StandardizedPropertySources propertySources;
 	FCMap<MerkleEntityId, MerkleTopic> topics;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -213,7 +214,7 @@ public class ServicesContextTest {
 		platform = mock(Platform.class);
 		given(platform.getCryptography()).willReturn(crypto);
 		properties = mock(PropertySource.class);
-		propertySources = mock(PropertySources.class);
+		propertySources = mock(StandardizedPropertySources.class);
 		given(propertySources.asResolvingSource()).willReturn(properties);
 	}
 
