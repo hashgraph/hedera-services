@@ -106,6 +106,7 @@ import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.MetadataMapFactory;
+import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.ConfigListUtils;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
@@ -113,6 +114,9 @@ import com.hedera.services.files.interceptors.ThrottleDefsManager;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.files.sysfiles.ConfigCallbacks;
+import com.hedera.services.files.sysfiles.CurrencyCallbacks;
+import com.hedera.services.files.sysfiles.ThrottlesCallback;
 import com.hedera.services.grpc.ConfigDrivenNettyFactory;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.grpc.NettyGrpcServerManager;
@@ -461,6 +465,7 @@ public class ServicesContext {
 	private BackingTokenRels backingTokenRels;
 	private FreezeController freezeGrpc;
 	private BalancesExporter balancesExporter;
+	private SysFileCallbacks sysFileCallbacks;
 	private SolidityLifecycle solidityLifecycle;
 	private ExpiringCreations creator;
 	private NetworkController networkGrpc;
@@ -1640,6 +1645,20 @@ public class ServicesContext {
 		return contracts;
 	}
 
+	public SysFileCallbacks sysFileCallbacks() {
+		if (sysFileCallbacks == null) {
+			var configCallbacks = new ConfigCallbacks(
+					globalDynamicProperties(),
+					(StandardizedPropertySources) propertySources(),
+					PropertiesLoader::populateApplicationPropertiesWithProto,
+					PropertiesLoader::populateAPIPropertiesWithProto);
+			var currencyCallbacks = new CurrencyCallbacks(fees(), exchange(), this::midnightRates);
+			var throttlesCallback = new ThrottlesCallback( feeMultiplierSource(), hapiThrottling(), handleThrottling());
+			sysFileCallbacks = new SysFileCallbacks(configCallbacks, throttlesCallback, currencyCallbacks);
+		}
+		return sysFileCallbacks;
+	}
+
 	public SolidityLifecycle solidityLifecycle() {
 		if (solidityLifecycle == null) {
 			solidityLifecycle = new SolidityLifecycle(globalDynamicProperties());
@@ -1665,25 +1684,7 @@ public class ServicesContext {
 							b64KeyReader(),
 							properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
 							properties.getStringProperty("bootstrap.genesisB64Keystore.keyName")),
-					rates -> {
-						exchange().updateRates(rates);
-						if (!midnightRates().isInitialized()) {
-							midnightRates().replaceWith(rates);
-						}
-					},
-					throttles -> {
-						var defs = ThrottleDefinitions.fromProto(throttles);
-						hapiThrottling().rebuildFor(defs);
-						handleThrottling().rebuildFor(defs);
-						feeMultiplierSource().resetExpectations();
-					},
-					schedules -> fees().init(),
-					config -> {
-						((StandardizedPropertySources) propertySources()).reloadFrom(config);
-						globalDynamicProperties().reload();
-						PropertiesLoader.populateApplicationPropertiesWithProto(config);
-					},
-					PropertiesLoader::populateAPIPropertiesWithProto);
+					sysFileCallbacks());
 		}
 		return systemFilesManager;
 	}

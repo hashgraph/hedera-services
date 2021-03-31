@@ -45,6 +45,7 @@ import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
 import com.hedera.services.files.interceptors.ThrottleDefsManager;
@@ -524,6 +525,7 @@ public class ServicesContextTest {
 		assertThat(ctx.hapiThrottling(), instanceOf(HapiThrottling.class));
 		assertThat(ctx.handleThrottling(), instanceOf(TxnAwareHandleThrottling.class));
 		assertThat(ctx.throttleDefsManager(), instanceOf(ThrottleDefsManager.class));
+		assertThat(ctx.sysFileCallbacks(), instanceOf(SysFileCallbacks.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

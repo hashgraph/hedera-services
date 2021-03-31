@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
@@ -75,11 +76,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private final PropertySource properties;
 	private final TieredHederaFs hfs;
 	private final Supplier<JKey> keySupplier;
-	private final Consumer<ExchangeRateSet> ratesCb;
-	private final Consumer<ThrottleDefinitions> throttlesCb;
-	private final Consumer<CurrentAndNextFeeSchedule> schedulesCb;
-	private final Consumer<ServicesConfigurationList> propertiesCb;
-	private final Consumer<ServicesConfigurationList> permissionsCb;
+	private SysFileCallbacks callbacks;
 
 	public HfsSystemFilesManager(
 			AddressBook currentBook,
@@ -87,23 +84,14 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 			PropertySource properties,
 			TieredHederaFs hfs,
 			Supplier<JKey> keySupplier,
-			Consumer<ExchangeRateSet> ratesCb,
-			Consumer<ThrottleDefinitions> throttlesCb,
-			Consumer<CurrentAndNextFeeSchedule> schedulesCb,
-			Consumer<ServicesConfigurationList> propertiesCb,
-			Consumer<ServicesConfigurationList> permissionsCb
+			SysFileCallbacks callbacks
 	) {
 		this.hfs = hfs;
+		this.callbacks = callbacks;
 		this.properties = properties;
 		this.currentBook = currentBook;
 		this.fileNumbers = fileNumbers;
 		this.keySupplier = keySupplier;
-
-		this.ratesCb = ratesCb;
-		this.schedulesCb = schedulesCb;
-		this.throttlesCb = throttlesCb;
-		this.propertiesCb = propertiesCb;
-		this.permissionsCb = permissionsCb;
 	}
 
 	@Override
@@ -122,7 +110,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				fileNumbers.apiPermissions(),
 				PERMISSIONS_TAG,
 				"bootstrap.hapiPermissions.path",
-				permissionsCb);
+				callbacks.permissionsCb());
 	}
 
 	@Override
@@ -131,7 +119,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				fileNumbers.applicationProperties(),
 				PROPERTIES_TAG,
 				"bootstrap.networkProperties.path",
-				propertiesCb);
+				callbacks.propertiesCb());
 	}
 
 	@Override
@@ -139,7 +127,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		loadProtoWithSupplierFallback(
 				fileNumbers.exchangeRates(),
 				EXCHANGE_RATES_TAG,
-				ratesCb,
+				callbacks.exchangeRatesCb(),
 				ExchangeRateSet::parseFrom,
 				() -> defaultRates().toByteArray());
 	}
@@ -149,7 +137,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		loadProtoWithSupplierFallback(
 				fileNumbers.feeSchedules(),
 				FEE_SCHEDULES_TAG,
-				schedulesCb,
+				callbacks.feeSchedulesCb(),
 				CurrentAndNextFeeSchedule::parseFrom,
 				() -> defaultSchedules().toByteArray());
 	}
@@ -159,7 +147,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		loadProtoWithSupplierFallback(
 				fileNumbers.throttleDefinitions(),
 				THROTTLE_DEFINITIONS_TAG,
-				throttlesCb,
+				callbacks.throttlesCb(),
 				ThrottleDefinitions::parseFrom,
 				() -> defaultThrottles().toByteArray());
 	}
