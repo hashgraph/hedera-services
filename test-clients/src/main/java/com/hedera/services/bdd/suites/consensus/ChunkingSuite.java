@@ -62,14 +62,17 @@ public class ChunkingSuite extends HapiApiSuite {
 						submitMessageTo("testTopic")
 								.message("failsForChunkNumberGreaterThanTotalChunks")
 								.chunkInfo(2, 3)
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_CHUNK_NUMBER),
 						submitMessageTo("testTopic")
 								.message("acceptsChunkNumberLessThanTotalChunks")
 								.chunkInfo(3, 2)
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(SUCCESS),
 						submitMessageTo("testTopic")
 								.message("acceptsChunkNumberEqualTotalChunks")
 								.chunkInfo(5, 5)
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(SUCCESS)
 
 				);
@@ -87,6 +90,7 @@ public class ChunkingSuite extends HapiApiSuite {
 						submitMessageTo("testTopic")
 								.message("failsForDifferentPayers")
 								.chunkInfo(3, 2, "initialTransactionPayer")
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
 						submitMessageTo("testTopic")
 								.message("acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart")
@@ -95,12 +99,14 @@ public class ChunkingSuite extends HapiApiSuite {
 								// Add delay to make sure the valid start of the transaction will not match
 								// that of the initialTransactionID
 								.delayBy(1000)
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(SUCCESS),
 						submitMessageTo("testTopic")
 								.message("failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID")
 								.chunkInfo(2, 1)
 								// Also add delay here
 								.delayBy(1000)
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
 						submitMessageTo("testTopic")
 								.message("acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID")
@@ -108,6 +114,7 @@ public class ChunkingSuite extends HapiApiSuite {
 								.via("firstChunk")
 								.payingWith("initialTransactionPayer")
 								.usePresetTimestamp()
+								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(SUCCESS)
 				);
 	}
