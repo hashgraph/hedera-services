@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -34,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -48,6 +50,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final int RELEASE_0130_VERSION = 2;
 	static final int MERKLE_VERSION = RELEASE_0130_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
+	static final RichInstant[] NO_CONGESTION_STARTS = new RichInstant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
 	public static final RichInstant UNKNOWN_CONSENSUS_TIME = null;
@@ -57,6 +60,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
 
 	RichInstant consensusTimeOfLastHandledTxn;
+	RichInstant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	ExchangeRates midnightRates;
 	SequenceNumber seqNo;
 	DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
@@ -79,12 +83,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			RichInstant consensusTimeOfLastHandledTxn,
 			SequenceNumber seqNo,
 			ExchangeRates midnightRates,
-			DeterministicThrottle.UsageSnapshot[] usageSnapshots
+			DeterministicThrottle.UsageSnapshot[] usageSnapshots,
+			RichInstant[] congestionStartPeriods
 	) {
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
 		this.seqNo = seqNo;
 		this.midnightRates = midnightRates;
 		this.usageSnapshots = usageSnapshots;
+		this.congestionLevelStarts = congestionStartPeriods;
 	}
 
 	public void updateSnapshotsFrom(FunctionalityThrottling throttling) {
@@ -96,6 +102,18 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			usageSnapshots = new DeterministicThrottle.UsageSnapshot[n];
 			for (int i = 0; i < n; i++) {
 				usageSnapshots[i] = activeThrottles.get(i).usageSnapshot();
+			}
+		}
+	}
+
+	public void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
+		var congestionStarts = feeMultiplierSource.congestionLevelStarts();
+		if (congestionStarts.length == 0) {
+			congestionLevelStarts = NO_CONGESTION_STARTS;
+		} else {
+			congestionLevelStarts = new RichInstant[congestionStarts.length];
+			for (int i = 0; i < congestionStarts.length; i++) {
+				congestionLevelStarts[i] = RichInstant.fromJava(congestionStarts[i]);
 			}
 		}
 	}
@@ -114,6 +132,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		reset(activeThrottles);
 	}
 
+	public void resetFromSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
+		if (congestionLevelStarts.length > 0) {
+			var congestionStarts = Arrays.stream(congestionLevelStarts)
+							.map(RichInstant::toJava)
+							.toArray(Instant[]::new);
+			feeMultiplierSource.resetCongestionLevelStarts(congestionStarts);
+		}
+	}
+
 	public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
 		this.consensusTimeOfLastHandledTxn = fromJava(consensusTimeOfLastHandledTxn);
 	}
@@ -123,7 +150,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				consensusTimeOfLastHandledTxn,
 				seqNo.copy(),
 				midnightRates.copy(),
-				usageSnapshots);
+				usageSnapshots,
+				congestionLevelStarts);
 	}
 
 	@Override
@@ -134,15 +162,23 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		midnightRates = in.readSerializable(true, ratesSupplier);
 
 		if (version >= RELEASE_0130_VERSION) {
-			int n = in.readInt();
-			if (n > 0) {
-				usageSnapshots = new DeterministicThrottle.UsageSnapshot[n];
-				for (int i = 0; i < n; i++) {
+			int numUsageSnapshots = in.readInt();
+			if (numUsageSnapshots > 0) {
+				usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
+				for (int i = 0; i < numUsageSnapshots; i++) {
 					var used = in.readLong();
 					var lastUsed = serdes.readNullableInstant(in);
 					usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
 							used,
 							Optional.ofNullable(lastUsed).map(RichInstant::toJava).orElse(null));
+				}
+			}
+
+			int numCongestionStarts = in.readInt();
+			if (numCongestionStarts > 0) {
+				congestionLevelStarts = new RichInstant[numCongestionStarts];
+				for (int i = 0; i < numCongestionStarts; i++) {
+					congestionLevelStarts[i] = RichInstant.from(in);
 				}
 			}
 		}
@@ -158,6 +194,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		for (var usageSnapshot : usageSnapshots) {
 			out.writeLong(usageSnapshot.used());
 			serdes.writeNullableInstant(fromJava(usageSnapshot.lastDecisionTime()), out);
+		}
+		n = congestionLevelStarts.length;
+		out.writeInt(n);
+		for (var congestionStart : congestionLevelStarts) {
+			congestionStart.serialize(out);
 		}
 	}
 
@@ -197,6 +238,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			sb.append("\n    ").append(snapshot.used())
 					.append(" used (last decision time ")
 					.append(reprOf(fromJava(snapshot.lastDecisionTime()))).append(")");
+		}
+		sb.append("\n  Congestion level start times are           ::");
+		for (var start : congestionLevelStarts) {
+			sb.append("\n    ").append(reprOf(start));
 		}
 		return sb.toString();
 	}
@@ -241,5 +286,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				.map(RichInstant::toJava)
 				.map(Object::toString)
 				.orElse("<NEVER>");
+	}
+
+	RichInstant[] congestionLevelStarts() {
+		return congestionLevelStarts;
 	}
 }

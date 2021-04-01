@@ -22,6 +22,8 @@ package com.hedera.test.mocks;
 
 import com.hedera.services.fees.FeeMultiplierSource;
 
+import java.time.Instant;
+
 public enum TestFeeMultiplierSource implements FeeMultiplierSource {
 	MULTIPLIER_SOURCE;
 
@@ -38,5 +40,15 @@ public enum TestFeeMultiplierSource implements FeeMultiplierSource {
 	@Override
 	public void resetExpectations() {
 		/* No-op */
+	}
+
+	@Override
+	public void resetCongestionLevelStarts(Instant[] startTimes) {
+		/* No-op */
+	}
+
+	@Override
+	public Instant[] congestionLevelStarts() {
+		return new Instant[0];
 	}
 }

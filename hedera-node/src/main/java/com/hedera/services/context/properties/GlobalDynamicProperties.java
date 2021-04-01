@@ -62,6 +62,7 @@ public class GlobalDynamicProperties {
 	private int messageMaxBytesAllowed;
 	private Set<HederaFunctionality> schedulingWhitelist;
 	private CongestionMultipliers congestionMultipliers;
+	private int feesMinCongestionPeriod;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -109,6 +110,7 @@ public class GlobalDynamicProperties {
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
 		messageMaxBytesAllowed = properties.getIntProperty( "consensus.message.maxBytesAllowed");
 		congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
+		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 	}
 
 	public int maxTokensPerAccount() {
@@ -233,5 +235,9 @@ public class GlobalDynamicProperties {
 
 	public CongestionMultipliers congestionMultipliers() {
 		return congestionMultipliers;
+	}
+
+	public int feesMinCongestionPeriod() {
+		return feesMinCongestionPeriod;
 	}
 }

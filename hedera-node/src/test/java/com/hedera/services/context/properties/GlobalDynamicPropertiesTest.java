@@ -95,6 +95,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(28, subject.messageMaxBytesAllowed());
 		assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
 		assertEquals(oddCongestion, subject.congestionMultipliers());
+		assertEquals(29, subject.feesMinCongestionPeriod());
 	}
 
 	@Test
@@ -135,6 +136,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(29, subject.messageMaxBytesAllowed());
 		assertEquals(Set.of(HederaFunctionality.CryptoCreate), subject.schedulingWhitelist());
 		assertEquals(evenCongestion, subject.congestionMultipliers());
+		assertEquals(30, subject.feesMinCongestionPeriod());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -171,6 +173,7 @@ class GlobalDynamicPropertiesTest {
 				: Set.of(HederaFunctionality.CryptoTransfer));
 		given(properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers"))
 				.willReturn(i % 2 == 0 ? evenCongestion : oddCongestion);
+		given(properties.getIntProperty("fees.minCongestionPeriod")).willReturn(i + 28);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

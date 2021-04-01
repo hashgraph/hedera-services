@@ -27,6 +27,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -125,6 +126,16 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 			logMultiplierChange(previousMultiplier, multiplier, log);
 		}
 		previousMultiplier = multiplier;
+	}
+
+	@Override
+	public void resetCongestionLevelStarts(Instant[] startTimes) {
+		throw new AssertionError("Not implemented!");
+	}
+
+	@Override
+	public Instant[] congestionLevelStarts() {
+		throw new AssertionError("Not implemented!");
 	}
 
 	private boolean ensureConfigUpToDate() {

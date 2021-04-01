@@ -84,6 +84,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.maxGas", 300000),
 			entry("contracts.maxStorageKb", 1024),
 			entry("fees.percentCongestionMultipliers", CongestionMultipliers.from("90,10x,95,25x,99,100x")),
+			entry("fees.minCongestionPeriod", 60),
 			entry("files.addressBook", 101L),
 			entry("files.diskFsBaseDir.path", "data/diskFs/"),
 			entry("files.networkProperties", 121L),

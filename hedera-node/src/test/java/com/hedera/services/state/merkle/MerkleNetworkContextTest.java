@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -37,10 +38,13 @@ import org.mockito.InOrder;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -51,6 +55,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.times;
 
 class MerkleNetworkContextTest {
 	RichInstant consensusTimeOfLastHandledTxn;
@@ -58,15 +63,22 @@ class MerkleNetworkContextTest {
 	SequenceNumber seqNoCopy;
 	ExchangeRates midnightRateSet;
 	ExchangeRates midnightRateSetCopy;
+	Instant[] congestionStarts;
 	DeterministicThrottle.UsageSnapshot[] usageSnapshots;
 
 	DomainSerdes serdes;
 	FunctionalityThrottling throttling;
+	FeeMultiplierSource feeMultiplierSource;
 
 	MerkleNetworkContext subject;
 
 	@BeforeEach
 	public void setup() {
+		congestionStarts = new Instant[] {
+				Instant.ofEpochSecond(1_234_567L, 54321),
+				Instant.ofEpochSecond(1_234_789L, 12345)
+		};
+
 		consensusTimeOfLastHandledTxn = RichInstant.fromJava(
 				Instant.ofEpochSecond(1_234_567L, 54321));
 
@@ -88,7 +100,12 @@ class MerkleNetworkContextTest {
 		serdes = mock(DomainSerdes.class);
 		MerkleNetworkContext.serdes = serdes;
 
-		subject = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, midnightRateSet, usageSnapshots);
+		subject = new MerkleNetworkContext(
+				consensusTimeOfLastHandledTxn,
+				seqNo,
+				midnightRateSet,
+				usageSnapshots,
+				richCongestionStarts());
 	}
 
 	@AfterEach
@@ -106,10 +123,11 @@ class MerkleNetworkContextTest {
 		assertEquals(seqNoCopy, subjectCopy.seqNo);
 		assertEquals(midnightRateSetCopy, subjectCopy.midnightRates);
 		assertSame(subjectCopy.usageSnapshots, subject.usageSnapshots);
+		assertSame(subjectCopy.congestionLevelStarts, subject.congestionLevelStarts);
 	}
 
 	@Test
-	public void toStringRendersUnsyncedAsExpected() {
+	public void toStringRendersAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
 
@@ -124,8 +142,10 @@ class MerkleNetworkContextTest {
 				"  Throttle usage snapshots are               ::\n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
-				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)";
-
+				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
+				"  Congestion level start times are           ::\n" +
+				"    1970-01-15T06:56:07.000054321Z\n" +
+				"    1970-01-15T06:59:49.000012345Z";
 
 		// when:
 		subject.copy();
@@ -144,7 +164,21 @@ class MerkleNetworkContextTest {
 		subject.updateSnapshotsFrom(throttling);
 
 		// then:
-		assertSame(MerkleNetworkContext.NO_SNAPSHOTS, subject.usageSnapshots());
+		assertSame(NO_SNAPSHOTS, subject.usageSnapshots());
+	}
+
+	@Test
+	void updatesEmptyLevelStartsAsExpected() {
+		// setup:
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+
+		given(feeMultiplierSource.congestionLevelStarts()).willReturn(new Instant[0]);
+
+		// when:
+		subject.updateCongestionStartsFrom(feeMultiplierSource);
+
+		// then:
+		assertSame(NO_CONGESTION_STARTS, subject.congestionLevelStarts());
 	}
 
 	@Test
@@ -170,6 +204,22 @@ class MerkleNetworkContextTest {
 
 		// then:
 		assertArrayEquals(expectedSnapshots, subject.usageSnapshots());
+	}
+
+	@Test
+	void updatesCongestionStartsAsExpected() {
+		// setup:
+		subject = new MerkleNetworkContext();
+
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+
+		given(feeMultiplierSource.congestionLevelStarts()).willReturn(congestionStarts);
+
+		// when:
+		subject.updateCongestionStartsFrom(feeMultiplierSource);
+
+		// then:
+		assertArrayEquals(richCongestionStarts(), subject.congestionLevelStarts());
 	}
 
 	@Test
@@ -263,6 +313,20 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void updatesFromSavedCongestionStarts() {
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+
+		// when:
+		subject.resetFromSavedCongestionStarts(feeMultiplierSource);
+		// and:
+		subject.congestionLevelStarts = NO_CONGESTION_STARTS;
+		subject.resetFromSavedCongestionStarts(feeMultiplierSource);
+
+		// then:
+		verify(feeMultiplierSource, times(1)).resetCongestionLevelStarts(congestionStarts);
+	}
+
+	@Test
 	public void deserializeWorksForPre0130() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
@@ -278,6 +342,7 @@ class MerkleNetworkContextTest {
 		// then:
 		assertEquals(consensusTimeOfLastHandledTxn, subject.consensusTimeOfLastHandledTxn);
 		assertSame(usageSnapshots, subject.usageSnapshots());
+		assertArrayEquals(richCongestionStarts(), subject.congestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
@@ -291,13 +356,18 @@ class MerkleNetworkContextTest {
 		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
 		InOrder inOrder = inOrder(in, seqNo);
 
-		subject = new MerkleNetworkContext(
-				consensusTimeOfLastHandledTxn, seqNo, midnightRateSet, MerkleNetworkContext.NO_SNAPSHOTS);
+		subject = new MerkleNetworkContext();
 
-		given(in.readInt()).willReturn(usageSnapshots.length);
+		given(in.readInt())
+				.willReturn(usageSnapshots.length)
+				.willReturn(congestionStarts.length)
+				.willReturn(congestionStarts[0].getNano())
+				.willReturn(congestionStarts[1].getNano());
 		given(in.readLong())
 				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used());
+				.willReturn(usageSnapshots[1].used())
+				.willReturn(congestionStarts[0].getEpochSecond())
+				.willReturn(congestionStarts[1].getEpochSecond());
 		given(serdes.readNullableInstant(in))
 				.willReturn(consensusTimeOfLastHandledTxn)
 				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
@@ -309,6 +379,7 @@ class MerkleNetworkContextTest {
 		// then:
 		assertEquals(consensusTimeOfLastHandledTxn, subject.consensusTimeOfLastHandledTxn);
 		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
+		assertArrayEquals(richCongestionStarts(), subject.congestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
@@ -339,6 +410,12 @@ class MerkleNetworkContextTest {
 		for (int i = 0; i < 3; i++) {
 			inOrder.verify(out).writeLong(used[i]);
 			inOrder.verify(serdes).writeNullableInstant(RichInstant.fromJava(lastUseds[i]), out);
+		}
+		// and:
+		inOrder.verify(out).writeInt(2);
+		for (int i = 0; i < 2; i++) {
+			inOrder.verify(out).writeLong(congestionStarts[i].getEpochSecond());
+			inOrder.verify(out).writeInt(congestionStarts[i].getNano());
 		}
 	}
 
@@ -373,5 +450,9 @@ class MerkleNetworkContextTest {
 			cur.add(usageSnapshot);
 		}
 		return cur;
+	}
+
+	private RichInstant[] richCongestionStarts() {
+		return Arrays.stream(congestionStarts).map(RichInstant::fromJava).toArray(RichInstant[]::new);
 	}
 }
