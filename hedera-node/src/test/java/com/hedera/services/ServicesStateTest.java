@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.PropertySources;
-import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
@@ -35,7 +34,7 @@ import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.expiry.ExpiryManager;
-import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -157,10 +156,9 @@ class ServicesStateTest {
 	SerializableDataInputStream in;
 	SerializableDataOutputStream out;
 	SystemExits systemExits;
-	SystemFilesManager systemFilesManager;
 	RecordStreamManager recordStreamManager;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	FeeMultiplierSource feeMultiplierSource;
+	NetworkCtxManager networkCtxManager;
 
 	ServicesState subject;
 
@@ -180,7 +178,6 @@ class ServicesStateTest {
 		mockHashReader = (Function<String, byte[]>) mock(Function.class);
 		given(mockHashReader.apply(any())).willReturn(EMPTY_HASH.getValue());
 		ServicesState.hashReader = mockHashReader;
-		feeMultiplierSource = mock(FeeMultiplierSource.class);
 
 		out = mock(SerializableDataOutputStream.class);
 		in = mock(SerializableDataInputStream.class);
@@ -199,13 +196,12 @@ class ServicesStateTest {
 		given(ctx.sigFactoryCreator()).willReturn(new SigFactoryCreator());
 		given(ctx.id()).willReturn(self);
 		given(ctx.logic()).willReturn(logic);
-		given(ctx.feeMultiplierSource()).willReturn(feeMultiplierSource);
 
-		systemFilesManager = mock(SystemFilesManager.class);
 		historian = mock(AccountRecordsHistorian.class);
 		txnHistories = mock(Map.class);
 		expiryManager = mock(ExpiryManager.class);
 		recordStreamManager = mock(RecordStreamManager.class);
+		networkCtxManager = mock(NetworkCtxManager.class);
 
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
@@ -259,7 +255,7 @@ class ServicesStateTest {
 		given(ctx.txnHistories()).willReturn(txnHistories);
 		given(ctx.expiries()).willReturn(expiryManager);
 		given(ctx.propertySources()).willReturn(propertySources);
-		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
+		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
 		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
 
 		systemExits = mock(SystemExits.class);
@@ -362,11 +358,10 @@ class ServicesStateTest {
 		// setup:
 		var throttling = mock(FunctionalityThrottling.class);
 
-		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager, networkCtx, feeMultiplierSource);
+		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager);
 
 		given(ctx.handleThrottling()).willReturn(throttling);
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
-		given(ctx.networkCtx()).willReturn(networkCtx);
 		// and:
 		CONTEXTS.store(ctx);
 
@@ -381,14 +376,12 @@ class ServicesStateTest {
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
-		inOrder.verify(systemFilesManager).loadAllSystemFiles();
-		inOrder.verify(networkCtx).resetFromSavedSnapshots(throttling);
-		inOrder.verify(feeMultiplierSource).resetExpectations();
+		inOrder.verify(networkCtxManager).initObservableSysFiles();
 	}
 
 	@Test
 	public void doesntInitializeFilesIfStoreStillInitializing() {
-		InOrder inOrder = inOrder(ctx, txnHistories, historian, systemFilesManager);
+		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager);
 
 		given(blobStore.isInitializing()).willReturn(true);
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
@@ -403,7 +396,7 @@ class ServicesStateTest {
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
-		inOrder.verify(systemFilesManager, never()).loadAllSystemFiles();
+		inOrder.verify(networkCtxManager, never()).initObservableSysFiles();
 	}
 
 	@Test

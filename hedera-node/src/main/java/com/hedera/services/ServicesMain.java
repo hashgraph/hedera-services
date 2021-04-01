@@ -122,7 +122,7 @@ public class ServicesMain implements SwirldMain {
 	@Override
 	public void newSignedState(SwirldState signedState, Instant when, long round) {
 		if (ctx.platformStatus().get() == MAINTENANCE) {
-			((ServicesState)signedState).logSummary();
+			((ServicesState) signedState).logSummary();
 		}
 		if (ctx.globalDynamicProperties().shouldExportBalances() && ctx.balancesExporter().isTimeToExport(when)) {
 			try {
@@ -186,13 +186,9 @@ public class ServicesMain implements SwirldMain {
 			ctx.systemFilesManager().createAddressBookIfMissing();
 			ctx.systemFilesManager().createNodeDetailsIfMissing();
 			ctx.systemFilesManager().createUpdateZipFileIfMissing();
-			if (!ctx.systemFilesManager().areFilesLoaded()) {
-				ctx.systemFilesManager().loadAllSystemFiles();
-				ctx.networkCtx().resetFromSavedSnapshots(ctx.handleThrottling());
-				ctx.feeMultiplierSource().resetExpectations();
-			}
+			ctx.networkCtxManager().initObservableSysFiles();
 		} catch (Exception e) {
-			throw new IllegalStateException("Could not create system files!", e);
+			throw new IllegalStateException("Could not initialize system files!", e);
 		}
 	}
 
@@ -286,7 +282,7 @@ public class ServicesMain implements SwirldMain {
 							notification.getConsensusTimestamp(),
 							notification.getRoundNumber(),
 							notification.getSequence()));
-					ServicesState state = (ServicesState)notification.getState();
+					ServicesState state = (ServicesState) notification.getState();
 					state.logSummary();
 					ctx.recordStreamManager().setStartWriteAtCompleteWindow(true);
 				});

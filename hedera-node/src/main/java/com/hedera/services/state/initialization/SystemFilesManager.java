@@ -45,15 +45,15 @@ public interface SystemFilesManager {
 	default void loadThrottleDefinitions() {
 	};
 
-	default void loadAllSystemFiles() {
+	default void loadObservableSystemFiles() {
 		loadApplicationProperties();
 		loadApiPermissions();
 		loadFeeSchedules();
 		loadExchangeRates();
 		loadThrottleDefinitions();
 
-		setFilesLoaded();
+		setObservableFilesLoaded();
 	}
-	void setFilesLoaded();
-	boolean areFilesLoaded();
+	void setObservableFilesLoaded();
+	boolean areObservableFilesLoaded();
 }

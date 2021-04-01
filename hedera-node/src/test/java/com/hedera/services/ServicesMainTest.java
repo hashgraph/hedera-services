@@ -37,6 +37,7 @@ import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.migration.StateMigrations;
@@ -118,10 +119,10 @@ public class ServicesMainTest {
 	SystemAccountsCreator systemAccountsCreator;
 	CurrentPlatformStatus platformStatus;
 	AccountRecordsHistorian recordsHistorian;
-	FunctionalityThrottling throttling;
 	GlobalDynamicProperties globalDynamicProperties;
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
 	RecordStreamManager recordStreamManager;
+	NetworkCtxManager networkCtxManager;
 
 	@BeforeEach
 	private void setup() {
@@ -154,6 +155,7 @@ public class ServicesMainTest {
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 		networkCtx = mock(MerkleNetworkContext.class);
 		feeMultiplierSource = mock(FeeMultiplierSource.class);
+		networkCtxManager = mock(NetworkCtxManager.class);
 
 		ctx = mock(ServicesContext.class);
 
@@ -189,6 +191,7 @@ public class ServicesMainTest {
 		given(ctx.statsManager()).willReturn(statsManager);
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
 		given(ctx.networkCtx()).willReturn(networkCtx);
+		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
 		given(ctx.feeMultiplierSource()).willReturn(feeMultiplierSource);
 		given(ledgerValidator.hasExpectedTotalBalance(any())).willReturn(true);
 		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
@@ -258,6 +261,7 @@ public class ServicesMainTest {
 		// given:
 		InOrder inOrder = inOrder(
 				systemFilesManager,
+				networkCtxManager,
 				propertySources,
 				platform,
 				stateMigrations,
@@ -276,9 +280,7 @@ public class ServicesMainTest {
 
 		// then:
 		inOrder.verify(propertySources).assertSourcesArePresent();
-		inOrder.verify(systemFilesManager).loadAllSystemFiles();
-		inOrder.verify(networkCtx).resetFromSavedSnapshots(throttling);
-		inOrder.verify(feeMultiplierSource).resetExpectations();
+		inOrder.verify(networkCtxManager).initObservableSysFiles();
 		inOrder.verify(stateMigrations).runAllFor(ctx);
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
@@ -375,7 +377,7 @@ public class ServicesMainTest {
 
 	@Test
 	public void loadsSystemFilesIfNotAlreadyDone() {
-		given(systemFilesManager.areFilesLoaded()).willReturn(true);
+		given(systemFilesManager.areObservableFilesLoaded()).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -385,12 +387,12 @@ public class ServicesMainTest {
 		verify(systemFilesManager).createNodeDetailsIfMissing();
 		verify(systemFilesManager).createUpdateZipFileIfMissing();
 		// and:
-		verify(systemFilesManager, never()).loadAllSystemFiles();
+		verify(systemFilesManager, never()).loadObservableSystemFiles();
 	}
 
 	@Test
 	public void managesSystemFiles() {
-		given(systemFilesManager.areFilesLoaded()).willReturn(false);
+		given(systemFilesManager.areObservableFilesLoaded()).willReturn(false);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -400,7 +402,7 @@ public class ServicesMainTest {
 		verify(systemFilesManager).createNodeDetailsIfMissing();
 		verify(systemFilesManager).createUpdateZipFileIfMissing();
 		// and:
-		verify(systemFilesManager).loadAllSystemFiles();
+		verify(networkCtxManager).initObservableSysFiles();
 	}
 
 	@Test

@@ -25,6 +25,7 @@ import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.stats.HapiOpCounters;
@@ -60,6 +61,8 @@ class NetworkCtxManagerTest {
 	@Mock
 	FeeMultiplierSource feeMultiplierSource;
 	@Mock
+	SystemFilesManager systemFilesManager;
+	@Mock
 	MerkleNetworkContext networkCtx;
 	@Mock
 	FunctionalityThrottling handleThrottling;
@@ -75,9 +78,38 @@ class NetworkCtxManagerTest {
 				properties,
 				opCounters,
 				exchange,
+				systemFilesManager,
 				feeMultiplierSource,
 				networkCtx,
 				handleThrottling);
+	}
+
+	@Test
+	void doesntInitObservableSysFilesIfAlreadyLoaded() {
+		given(systemFilesManager.areObservableFilesLoaded()).willReturn(true);
+
+		// when:
+		subject.initObservableSysFiles();
+
+		// then:
+		verify(systemFilesManager, never()).loadObservableSystemFiles();
+		verify(networkCtx, never()).resetWithSavedSnapshots(handleThrottling);
+		verify(networkCtx, never()).resetWithSavedCongestionStarts(feeMultiplierSource);
+		verify(feeMultiplierSource, never()).resetExpectations();
+	}
+
+	@Test
+	void initsSystemFilesAsExpected() {
+		given(systemFilesManager.areObservableFilesLoaded()).willReturn(false);
+
+		// when:
+		subject.initObservableSysFiles();
+
+		// then:
+		verify(systemFilesManager).loadObservableSystemFiles();
+		verify(networkCtx).resetWithSavedSnapshots(handleThrottling);
+		verify(networkCtx).resetWithSavedCongestionStarts(feeMultiplierSource);
+		verify(feeMultiplierSource).resetExpectations();
 	}
 
 	@Test

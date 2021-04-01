@@ -213,10 +213,10 @@ class HfsSystemFilesManagerTest {
 		// setup:
 		SystemFilesManager sub = mock(SystemFilesManager.class);
 
-		willCallRealMethod().given(sub).loadAllSystemFiles();
+		willCallRealMethod().given(sub).loadObservableSystemFiles();
 
 		// when:
-		sub.loadAllSystemFiles();
+		sub.loadObservableSystemFiles();
 
 		// then:
 		verify(sub).loadApplicationProperties();
@@ -224,19 +224,19 @@ class HfsSystemFilesManagerTest {
 		verify(sub).loadFeeSchedules();
 		verify(sub).loadExchangeRates();
 		verify(sub).loadThrottleDefinitions();
-		verify(sub).setFilesLoaded();
+		verify(sub).setObservableFilesLoaded();
 	}
 
 	@Test
 	public void tracksFileLoading() {
 		// expect:
-		assertFalse(subject.areFilesLoaded());
+		assertFalse(subject.areObservableFilesLoaded());
 
 		// when:
-		subject.setFilesLoaded();
+		subject.setObservableFilesLoaded();
 
 		// then:
-		assertTrue(subject.areFilesLoaded());
+		assertTrue(subject.areObservableFilesLoaded());
 	}
 
 	@Test

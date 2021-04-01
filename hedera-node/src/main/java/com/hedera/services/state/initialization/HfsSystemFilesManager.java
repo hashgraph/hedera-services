@@ -153,12 +153,12 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	@Override
-	public void setFilesLoaded() {
+	public void setObservableFilesLoaded() {
 		filesLoaded = true;
 	}
 
 	@Override
-	public boolean areFilesLoaded() {
+	public boolean areObservableFilesLoaded() {
 		return filesLoaded;
 	}
 

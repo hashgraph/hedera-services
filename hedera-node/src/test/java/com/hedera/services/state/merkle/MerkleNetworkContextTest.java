@@ -249,7 +249,7 @@ class MerkleNetworkContextTest {
 				"(Cannot use 20000000000000 units in a bucket of capacity 18000000000000!); not performing a reset!";
 
 		// when:
-		subject.resetFromSavedSnapshots(throttling);
+		subject.resetWithSavedSnapshots(throttling);
 
 		// then:
 		verify(mockLog).warn(desired);
@@ -281,7 +281,7 @@ class MerkleNetworkContextTest {
 		var desired = "There are 2 active throttles, but 1 usage snapshots from saved state. Not performing a reset!";
 
 		// when:
-		subject.resetFromSavedSnapshots(throttling);
+		subject.resetWithSavedSnapshots(throttling);
 
 		// then:
 		verify(mockLog).warn(desired);
@@ -305,7 +305,7 @@ class MerkleNetworkContextTest {
 		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{ subjectSnapshot });
 
 		// when:
-		subject.resetFromSavedSnapshots(throttling);
+		subject.resetWithSavedSnapshots(throttling);
 
 		// then:
 		assertEquals(subjectSnapshot.used(), aThrottle.usageSnapshot().used());
@@ -317,10 +317,10 @@ class MerkleNetworkContextTest {
 		feeMultiplierSource = mock(FeeMultiplierSource.class);
 
 		// when:
-		subject.resetFromSavedCongestionStarts(feeMultiplierSource);
+		subject.resetWithSavedCongestionStarts(feeMultiplierSource);
 		// and:
 		subject.congestionLevelStarts = NO_CONGESTION_STARTS;
-		subject.resetFromSavedCongestionStarts(feeMultiplierSource);
+		subject.resetWithSavedCongestionStarts(feeMultiplierSource);
 
 		// then:
 		verify(feeMultiplierSource, times(1)).resetCongestionLevelStarts(congestionStarts);

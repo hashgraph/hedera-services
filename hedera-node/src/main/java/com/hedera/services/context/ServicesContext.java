@@ -1482,6 +1482,7 @@ public class ServicesContext {
 					properties(),
 					opCounters(),
 					exchange(),
+					systemFilesManager(),
 					feeMultiplierSource(),
 					networkCtx(),
 					handleThrottling());

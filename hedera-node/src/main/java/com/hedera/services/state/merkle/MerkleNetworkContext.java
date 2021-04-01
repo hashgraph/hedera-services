@@ -118,7 +118,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 	}
 
-	public void resetFromSavedSnapshots(FunctionalityThrottling throttling) {
+	public void resetWithSavedSnapshots(FunctionalityThrottling throttling) {
 		var activeThrottles = throttling.allActiveThrottles();
 
 		if (activeThrottles.size() != usageSnapshots.length) {
@@ -132,7 +132,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		reset(activeThrottles);
 	}
 
-	public void resetFromSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
+	public void resetWithSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
 		if (congestionLevelStarts.length > 0) {
 			var congestionStarts = Arrays.stream(congestionLevelStarts)
 							.map(RichInstant::toJava)

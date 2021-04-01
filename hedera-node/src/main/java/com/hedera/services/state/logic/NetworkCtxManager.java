@@ -24,6 +24,7 @@ import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
@@ -42,6 +43,7 @@ public class NetworkCtxManager {
 	private final IssEventInfo issInfo;
 	private final HapiOpCounters opCounters;
 	private final HbarCentExchange exchange;
+	private final SystemFilesManager systemFilesManager;
 	private final FeeMultiplierSource feeMultiplierSource;
 	private final MerkleNetworkContext networkCtx;
 	private final FunctionalityThrottling handleThrottling;
@@ -51,6 +53,7 @@ public class NetworkCtxManager {
 			PropertySource properties,
 			HapiOpCounters opCounters,
 			HbarCentExchange exchange,
+			SystemFilesManager systemFilesManager,
 			FeeMultiplierSource feeMultiplierSource,
 			MerkleNetworkContext networkCtx,
 			FunctionalityThrottling handleThrottling
@@ -61,12 +64,18 @@ public class NetworkCtxManager {
 		this.opCounters = opCounters;
 		this.exchange = exchange;
 		this.networkCtx = networkCtx;
+		this.systemFilesManager = systemFilesManager;
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.handleThrottling = handleThrottling;
 	}
 
-	public static boolean inSameUtcDay(Instant now, Instant then) {
-		return LocalDateTime.ofInstant(now, UTC).getDayOfYear() == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
+	public void initObservableSysFiles() {
+		if (!systemFilesManager.areObservableFilesLoaded()) {
+			systemFilesManager.loadObservableSystemFiles();
+			networkCtx.resetWithSavedSnapshots(handleThrottling);
+			networkCtx.resetWithSavedCongestionStarts(feeMultiplierSource);
+			feeMultiplierSource.resetExpectations();
+		}
 	}
 
 	public void advanceConsensusClockTo(Instant consensusTime) {
@@ -96,6 +105,10 @@ public class NetworkCtxManager {
 		opCounters.countHandled(op);
 
 		networkCtx.updateSnapshotsFrom(handleThrottling);
+	}
+
+	public static boolean inSameUtcDay(Instant now, Instant then) {
+		return LocalDateTime.ofInstant(now, UTC).getDayOfYear() == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
 	}
 
 	int getIssResetPeriod() {
