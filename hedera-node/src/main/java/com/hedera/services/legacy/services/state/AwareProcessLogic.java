@@ -22,7 +22,6 @@ package com.hedera.services.legacy.services.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.logic.ServicesTxnManager;
@@ -38,10 +37,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.EnumSet;
 
-import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS_VERIFY_ASYNC;
@@ -63,8 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static java.time.ZoneOffset.UTC;
-import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class AwareProcessLogic implements ProcessLogic {
 	static Logger log = LogManager.getLogger(AwareProcessLogic.class);
@@ -82,19 +77,13 @@ public class AwareProcessLogic implements ProcessLogic {
 			UNRESOLVABLE_REQUIRED_SIGNERS,
 			SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
 
-	private final ServicesTxnManager txnManager = new ServicesTxnManager(
-			this::processTxnInCtx,
-			this::addRecordToStream,
-			this::processTriggeredTxnInCtx,
-			this::warnOf);
 	private final ServicesContext ctx;
+
+	private final ServicesTxnManager txnManager = new ServicesTxnManager(
+			this::processTxnInCtx, this::addRecordToStream, this::processTriggeredTxnInCtx, this::warnOf);
 
 	public AwareProcessLogic(ServicesContext ctx) {
 		this.ctx = ctx;
-	}
-
-	public static boolean inSameUtcDay(Instant now, Instant then) {
-		return LocalDateTime.ofInstant(now, UTC).getDayOfYear() == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
 	}
 
 	@Override
@@ -123,13 +112,9 @@ public class AwareProcessLogic implements ProcessLogic {
 	private boolean txnSanityChecks(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
 		var lastHandled = ctx.consensusTimeOfLastHandledTxn();
 		if (lastHandled != null && !consensusTime.isAfter(lastHandled)) {
-			var msg = String.format("Catastrophic invariant failure! " +
-							"Non-increasing consensus time %d.%d versus last-handled %d.%d for: %s",
-					consensusTime.getEpochSecond(),
-					consensusTime.getNano(),
-					lastHandled.getEpochSecond(),
-					lastHandled.getNano(),
-					accessor.getSignedTxn4Log());
+			var msg = String.format(
+					"Catastrophic invariant failure! Non-increasing consensus time %s versus last-handled %s: %s",
+					consensusTime, lastHandled, accessor.getSignedTxn4Log());
 			log.error(msg);
 			return false;
 		}
@@ -173,18 +158,10 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private void doTriggeredProcess(TxnAccessor accessor, Instant consensusTime) {
-		/* Side-effects of advancing data-driven clock to consensus time. */
-		updateMidnightRatesIfAppropriateAt(consensusTime);
-		ctx.updateConsensusTimeOfLastHandledTxn(consensusTime);
+		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
+		ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
 
-		updateIssEventInfo(consensusTime);
-
-		/* This is only to monitor the current network usage for automated
-		congestion pricing; we don't actually throttle consensus transactions. */
-		ctx.handleThrottling().shouldThrottle(accessor.getFunction());
-		ctx.feeMultiplierSource().updateMultiplier();
 		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
-
 		var chargingOutcome = ctx.txnChargingPolicy().applyForTriggered(ctx.charging(), fee);
 		if (chargingOutcome != OK) {
 			ctx.txnCtx().setStatus(chargingOutcome);
@@ -194,32 +171,17 @@ public class AwareProcessLogic implements ProcessLogic {
 		process(accessor);
 	}
 
-	private void updateIssEventInfo(Instant consensusTime) {
-		if (ctx.issEventInfo().status() == ONGOING_ISS) {
-			var resetPeriod = ctx.properties().getIntProperty("iss.reset.periodSecs");
-			var resetTime = ctx.issEventInfo().consensusTimeOfRecentAlert().get().plus(resetPeriod, SECONDS);
-			if (consensusTime.isAfter(resetTime)) {
-				ctx.issEventInfo().relax();
-			}
-		}
-	}
-
 	private void doProcess(TxnAccessor accessor, Instant consensusTime) {
-		/* Side-effects of advancing data-driven clock to consensus time. */
-		updateMidnightRatesIfAppropriateAt(consensusTime);
-		ctx.updateConsensusTimeOfLastHandledTxn(consensusTime);
+		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
 		ctx.recordsHistorian().purgeExpiredRecords();
 		ctx.expiries().purgeExpiredEntitiesAt(consensusTime.getEpochSecond());
 
-		updateIssEventInfo(consensusTime);
-
-		final SignatureStatus sigStatus = rationalizeWithPreConsensusSigs(accessor);
+		var sigStatus = rationalizeWithPreConsensusSigs(accessor);
 		if (hasActivePayerSig(accessor)) {
 			ctx.txnCtx().payerSigIsKnownActive();
+			ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
 		}
 
-		ctx.handleThrottling().shouldThrottle(accessor.getFunction());
-		ctx.feeMultiplierSource().updateMultiplier();
 		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
 
 		var recentHistory = ctx.txnHistories().get(accessor.getTxnId());
@@ -231,7 +193,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.txnChargingPolicy().applyForIgnoredDueDiligence(ctx.charging(), fee);
 			return;
 		}
-
 		if (duplicity == DUPLICATE) {
 			ctx.txnChargingPolicy().applyForDuplicate(ctx.charging(), fee);
 			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
@@ -243,12 +204,10 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.txnCtx().setStatus(chargingOutcome);
 			return;
 		}
-
 		if (SIG_RATIONALIZATION_ERRORS.contains(sigStatus.getResponseCode())) {
 			ctx.txnCtx().setStatus(sigStatus.getResponseCode());
 			return;
 		}
-
 		if (!ctx.activationHelper().areOtherPartiesActive(ONLY_IF_SIG_IS_VALID)) {
 			ctx.txnCtx().setStatus(INVALID_SIGNATURE);
 			return;
@@ -277,8 +236,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 		logic.doStateTransition();
 
-		ctx.opCounters().countHandled(accessor.getFunction());
-		ctx.networkCtx().updateSnapshotsFrom(ctx.handleThrottling());
+		ctx.networkCtxManager().finishIncorporating(accessor.getFunction());
 	}
 
 	private boolean hasActivePayerSig(TxnAccessor accessor) {
@@ -308,27 +266,12 @@ public class AwareProcessLogic implements ProcessLogic {
 		return sigStatus;
 	}
 
-	private void updateMidnightRatesIfAppropriateAt(Instant dataDrivenNow) {
-		if (shouldUpdateMidnightRatesAt(dataDrivenNow)) {
-			ctx.midnightRates().replaceWith(ctx.exchange().activeRates());
-		}
-	}
-
-	private boolean shouldUpdateMidnightRatesAt(Instant dataDrivenNow) {
-		return ctx.consensusTimeOfLastHandledTxn() != null &&
-				!inSameUtcDay(ctx.consensusTimeOfLastHandledTxn(), dataDrivenNow);
-	}
-
 	void addForStreaming(
 			com.hederahashgraph.api.proto.java.Transaction grpcTransaction,
 			TransactionRecord transactionRecord,
 			Instant consensusTimeStamp
 	) {
-		final RecordStreamObject recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction,
-				consensusTimeStamp);
-		// update runningHash instance in the leaf of ServicesState
-		// the Hash in the runningHash instance will be calculated and set by the runningHashCalculator in the
-		// RecordStreamManager
+		var recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp);
 		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
 		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
 	}

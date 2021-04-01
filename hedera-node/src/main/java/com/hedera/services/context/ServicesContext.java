@@ -204,6 +204,7 @@ import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -466,6 +467,7 @@ public class ServicesContext {
 	private FreezeController freezeGrpc;
 	private BalancesExporter balancesExporter;
 	private SysFileCallbacks sysFileCallbacks;
+	private NetworkCtxManager networkCtxManager;
 	private SolidityLifecycle solidityLifecycle;
 	private ExpiringCreations creator;
 	private NetworkController networkGrpc;
@@ -1471,6 +1473,20 @@ public class ServicesContext {
 				freeze.handleUpdateFeature();
 			}
 		}
+	}
+
+	public NetworkCtxManager networkCtxManager() {
+		if (networkCtxManager == null) {
+			networkCtxManager = new NetworkCtxManager(
+					issEventInfo(),
+					properties(),
+					opCounters(),
+					exchange(),
+					feeMultiplierSource(),
+					networkCtx(),
+					handleThrottling());
+		}
+		return networkCtxManager;
 	}
 
 	public ThrottleDefsManager throttleDefsManager() {

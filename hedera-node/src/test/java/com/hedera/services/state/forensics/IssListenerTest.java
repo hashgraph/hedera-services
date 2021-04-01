@@ -69,12 +69,6 @@ class IssListenerTest {
 	byte[] accountsRootHash = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes();
 	String acHashHex = Hex.encodeHexString(accountsRootHash);
 
-	byte[] runningHashLeafHash = "qasdqasdqasdqasdqasdqasdqasdqasdqasdqasdqasdqasd".getBytes();
-	String leafHashHex = Hex.encodeHexString(runningHashLeafHash);
-
-	byte[] runningHashHash = "kqaskqaskqaskqaskqaskqaskqaskqaskqaskqaskqaskqas".getBytes();
-	String runningHashHex = Hex.encodeHexString(runningHashHash);
-
 	Instant consensusTime = Instant.now();
 
 	FCMap topics;

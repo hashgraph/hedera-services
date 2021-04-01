@@ -98,6 +98,7 @@ import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -527,6 +528,7 @@ public class ServicesContextTest {
 		assertThat(ctx.handleThrottling(), instanceOf(TxnAwareHandleThrottling.class));
 		assertThat(ctx.throttleDefsManager(), instanceOf(ThrottleDefsManager.class));
 		assertThat(ctx.sysFileCallbacks(), instanceOf(SysFileCallbacks.class));
+		assertThat(ctx.networkCtxManager(), instanceOf(NetworkCtxManager.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

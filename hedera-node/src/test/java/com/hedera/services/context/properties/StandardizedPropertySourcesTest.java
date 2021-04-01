@@ -139,7 +139,6 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("hedera.transaction.maxMemoUtf8Bytes"));
 		assertTrue(properties.containsProperty("hedera.transaction.maxValidDuration"));
 		assertTrue(properties.containsProperty("hedera.transaction.minValidDuration"));
-		assertTrue(properties.containsProperty("iss.reset.periodSecs"));
 		assertTrue(properties.containsProperty("iss.roundsToDump"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.maxDuration"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.minDuration"));
