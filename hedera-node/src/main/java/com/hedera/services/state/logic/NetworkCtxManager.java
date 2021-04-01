@@ -73,8 +73,8 @@ public class NetworkCtxManager {
 		if (!systemFilesManager.areObservableFilesLoaded()) {
 			systemFilesManager.loadObservableSystemFiles();
 			networkCtx.resetWithSavedSnapshots(handleThrottling);
-			networkCtx.resetWithSavedCongestionStarts(feeMultiplierSource);
 			feeMultiplierSource.resetExpectations();
+			networkCtx.updateWithSavedCongestionStarts(feeMultiplierSource);
 		}
 	}
 
@@ -98,13 +98,14 @@ public class NetworkCtxManager {
 		congestion pricing; we don't actually throttle consensus transactions. */
 		handleThrottling.shouldThrottle(op);
 
-		feeMultiplierSource.updateMultiplier();
+		feeMultiplierSource.updateMultiplier(networkCtx.consensusTimeOfLastHandledTxn());
 	}
 
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
 
 		networkCtx.updateSnapshotsFrom(handleThrottling);
+		networkCtx.updateCongestionStartsFrom(feeMultiplierSource);
 	}
 
 	public static boolean inSameUtcDay(Instant now, Instant then) {

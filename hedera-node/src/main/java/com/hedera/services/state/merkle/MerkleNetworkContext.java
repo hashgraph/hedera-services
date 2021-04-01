@@ -106,18 +106,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 	}
 
-	public void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
-		var congestionStarts = feeMultiplierSource.congestionLevelStarts();
-		if (congestionStarts.length == 0) {
-			congestionLevelStarts = NO_CONGESTION_STARTS;
-		} else {
-			congestionLevelStarts = new RichInstant[congestionStarts.length];
-			for (int i = 0; i < congestionStarts.length; i++) {
-				congestionLevelStarts[i] = RichInstant.fromJava(congestionStarts[i]);
-			}
-		}
-	}
-
 	public void resetWithSavedSnapshots(FunctionalityThrottling throttling) {
 		var activeThrottles = throttling.allActiveThrottles();
 
@@ -132,7 +120,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		reset(activeThrottles);
 	}
 
-	public void resetWithSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
+	public void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
+		var congestionStarts = feeMultiplierSource.congestionLevelStarts();
+		if (congestionStarts.length == 0) {
+			congestionLevelStarts = NO_CONGESTION_STARTS;
+		} else {
+			congestionLevelStarts = new RichInstant[congestionStarts.length];
+			for (int i = 0; i < congestionStarts.length; i++) {
+				congestionLevelStarts[i] = RichInstant.fromJava(congestionStarts[i]);
+			}
+		}
+	}
+
+	public void updateWithSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
 		if (congestionLevelStarts.length > 0) {
 			var congestionStarts = Arrays.stream(congestionLevelStarts)
 							.map(RichInstant::toJava)
@@ -198,7 +198,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		n = congestionLevelStarts.length;
 		out.writeInt(n);
 		for (var congestionStart : congestionLevelStarts) {
-			congestionStart.serialize(out);
+			serdes.writeNullableInstant(congestionStart, out);
 		}
 	}
 

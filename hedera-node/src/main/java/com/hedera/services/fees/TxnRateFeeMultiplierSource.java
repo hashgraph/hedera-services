@@ -27,6 +27,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,7 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	private static final Logger log = LogManager.getLogger(TxnRateFeeMultiplierSource.class);
 
 	private static final long DEFAULT_MULTIPLIER = 1L;
+	private static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	private static final CongestionMultipliers NO_CONFIG = null;
 
 	private final GlobalDynamicProperties properties;
@@ -45,6 +47,7 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	private long multiplier = DEFAULT_MULTIPLIER;
 	private long previousMultiplier = DEFAULT_MULTIPLIER;
 	private long[][] activeTriggerValues = {};
+	private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	private CongestionMultipliers activeConfig = NO_CONFIG;
 
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
@@ -66,11 +69,7 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 			log.warn("CryptoTransfer has no throttle buckets, fee multiplier will remain at one!");
 		}
 		ensureConfigUpToDate();
-		rebuildActiveTriggerValues();
-	}
-
-	void logReadableCutoffs(Logger refinedLog) {
-		refinedLog.info("The new cutoffs for congestion pricing are:" + this);
+		rebuildState();
 	}
 
 	@Override
@@ -110,18 +109,44 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	 * That is, the throttle states must be a child of the {@link com.hedera.services.ServicesState}.
 	 */
 	@Override
-	public void updateMultiplier() {
+	public void updateMultiplier(Instant consensusNow) {
 		if (ensureConfigUpToDate()) {
-			rebuildActiveTriggerValues();
+			rebuildState();
 		}
-		multiplier = DEFAULT_MULTIPLIER;
+
+		long x = DEFAULT_MULTIPLIER;
 		long[] multipliers = activeConfig.multipliers();
 		for (int i = 0; i < activeTriggerValues.length; i++) {
 			long used = activeThrottles.get(i).used();
-			for (int j = 0; j < multipliers.length && used >= activeTriggerValues[i][j]; j++) {
-				multiplier = Math.max(multiplier, multipliers[j]);
+			for (int j = 0; j < multipliers.length; j++) {
+				if (used >= activeTriggerValues[i][j]) {
+					x = Math.max(x, multipliers[j]);
+				}
 			}
 		}
+		for (int i = 0; i < multipliers.length; i++) {
+			if (x < multipliers[i]) {
+				congestionLevelStarts[i] = null;
+			} else if (congestionLevelStarts[i] == null) {
+				congestionLevelStarts[i] = consensusNow;
+			}
+		}
+
+		/* Use the highest multiplier whose congestion level we have
+		stayed above for at least the minimum number of seconds. */
+		long minPeriod = properties.feesMinCongestionPeriod();
+		multiplier = DEFAULT_MULTIPLIER;
+		for (int i = multipliers.length - 1; i >= 0; i--) {
+			var levelStart = congestionLevelStarts[i];
+			if (levelStart != null) {
+				long secsAtLevel = Duration.between(levelStart, consensusNow).getSeconds();
+				if (secsAtLevel >= minPeriod) {
+					multiplier = multipliers[i];
+					break;
+				}
+			}
+		}
+
 		if (multiplier != previousMultiplier) {
 			logMultiplierChange(previousMultiplier, multiplier, log);
 		}
@@ -129,25 +154,25 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	}
 
 	@Override
-	public void resetCongestionLevelStarts(Instant[] startTimes) {
-		throw new AssertionError("Not implemented!");
+	public void resetCongestionLevelStarts(Instant[] savedStartTimes) {
+		congestionLevelStarts = savedStartTimes;
 	}
 
 	@Override
 	public Instant[] congestionLevelStarts() {
-		throw new AssertionError("Not implemented!");
+		return congestionLevelStarts;
 	}
 
 	private boolean ensureConfigUpToDate() {
 		var currConfig = properties.congestionMultipliers();
-		if (activeConfig != currConfig) {
+		if (!currConfig.equals(activeConfig)) {
 			activeConfig = currConfig;
 			return true;
 		}
 		return false;
 	}
 
-	private void rebuildActiveTriggerValues() {
+	private void rebuildState() {
 		int n = activeThrottles.size();
 		int[] triggers = activeConfig.usagePercentTriggers();
 		long[] multipliers = activeConfig.multipliers();
@@ -160,6 +185,9 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 				activeTriggerValues[i][j] = cutoff;
 			}
 		}
+
+		congestionLevelStarts = new Instant[multipliers.length];
+
 		logReadableCutoffs(log);
 	}
 
@@ -173,5 +201,9 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 				refinedLog.info("Congestion pricing ended");
 			}
 		}
+	}
+
+	void logReadableCutoffs(Logger refinedLog) {
+		refinedLog.info("The new cutoffs for congestion pricing are:" + this);
 	}
 }

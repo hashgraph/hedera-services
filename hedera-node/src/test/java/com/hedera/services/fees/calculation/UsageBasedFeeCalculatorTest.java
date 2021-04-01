@@ -460,12 +460,12 @@ class UsageBasedFeeCalculatorTest {
 		}
 
 		@Override
-		public void updateMultiplier() {
+		public void updateMultiplier(Instant consensusNow) {
 			/* No-op. */
 		}
 
 		@Override
-		public void resetCongestionLevelStarts(Instant[] startTimes) {
+		public void resetCongestionLevelStarts(Instant[] savedStartTimes) {
 			/* No-op. */
 		}
 

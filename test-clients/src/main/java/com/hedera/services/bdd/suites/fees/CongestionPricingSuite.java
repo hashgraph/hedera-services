@@ -49,6 +49,8 @@ public class CongestionPricingSuite extends HapiApiSuite {
 
 	private static final String defaultCongestionMultipliers =
 			HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
+	private static final String defaultMinCongestionPeriod =
+			HapiSpecSetup.getDefaultNodeProps().get("fees.minCongestionPeriod");
 
 	public static void main(String... args) {
 		new CongestionPricingSuite().runSuiteSync();
@@ -93,7 +95,8 @@ public class CongestionPricingSuite extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.overridingProps(Map.of(
-										"fees.percentCongestionMultipliers", "1,7x"
+										"fees.percentCongestionMultipliers", "1,7x",
+										"fees.minCongestionPeriod", "0"
 								)),
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
@@ -122,7 +125,8 @@ public class CongestionPricingSuite extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.overridingProps(Map.of(
-										"fees.percentCongestionMultipliers", defaultCongestionMultipliers
+										"fees.percentCongestionMultipliers", defaultCongestionMultipliers,
+										"fees.minCongestionPeriod", defaultMinCongestionPeriod
 								)),
 						/* Make sure the multiplier is reset before the next spec runs */
 						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))

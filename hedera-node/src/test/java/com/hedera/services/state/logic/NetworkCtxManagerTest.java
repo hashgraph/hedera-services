@@ -94,7 +94,7 @@ class NetworkCtxManagerTest {
 		// then:
 		verify(systemFilesManager, never()).loadObservableSystemFiles();
 		verify(networkCtx, never()).resetWithSavedSnapshots(handleThrottling);
-		verify(networkCtx, never()).resetWithSavedCongestionStarts(feeMultiplierSource);
+		verify(networkCtx, never()).updateWithSavedCongestionStarts(feeMultiplierSource);
 		verify(feeMultiplierSource, never()).resetExpectations();
 	}
 
@@ -108,7 +108,7 @@ class NetworkCtxManagerTest {
 		// then:
 		verify(systemFilesManager).loadObservableSystemFiles();
 		verify(networkCtx).resetWithSavedSnapshots(handleThrottling);
-		verify(networkCtx).resetWithSavedCongestionStarts(feeMultiplierSource);
+		verify(networkCtx).updateWithSavedCongestionStarts(feeMultiplierSource);
 		verify(feeMultiplierSource).resetExpectations();
 	}
 
@@ -120,16 +120,19 @@ class NetworkCtxManagerTest {
 		// then:
 		verify(opCounters).countHandled(TokenMint);
 		verify(networkCtx).updateSnapshotsFrom(handleThrottling);
+		verify(networkCtx).updateCongestionStartsFrom(feeMultiplierSource);
 	}
 
 	@Test
 	void preparesContextAsExpected() {
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+
 		// when:
 		subject.prepareForIncorporating(TokenMint);
 
 		// then:
 		verify(handleThrottling).shouldThrottle(TokenMint);
-		verify(feeMultiplierSource).updateMultiplier();
+		verify(feeMultiplierSource).updateMultiplier(sometime);
 	}
 
 	@Test

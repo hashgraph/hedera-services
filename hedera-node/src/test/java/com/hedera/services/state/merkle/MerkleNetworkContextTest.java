@@ -317,10 +317,10 @@ class MerkleNetworkContextTest {
 		feeMultiplierSource = mock(FeeMultiplierSource.class);
 
 		// when:
-		subject.resetWithSavedCongestionStarts(feeMultiplierSource);
+		subject.updateWithSavedCongestionStarts(feeMultiplierSource);
 		// and:
 		subject.congestionLevelStarts = NO_CONGESTION_STARTS;
-		subject.resetWithSavedCongestionStarts(feeMultiplierSource);
+		subject.updateWithSavedCongestionStarts(feeMultiplierSource);
 
 		// then:
 		verify(feeMultiplierSource, times(1)).resetCongestionLevelStarts(congestionStarts);
@@ -414,8 +414,7 @@ class MerkleNetworkContextTest {
 		// and:
 		inOrder.verify(out).writeInt(2);
 		for (int i = 0; i < 2; i++) {
-			inOrder.verify(out).writeLong(congestionStarts[i].getEpochSecond());
-			inOrder.verify(out).writeInt(congestionStarts[i].getNano());
+			inOrder.verify(serdes).writeNullableInstant(richCongestionStarts()[i], out);
 		}
 	}
 

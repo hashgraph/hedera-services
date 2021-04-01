@@ -23,10 +23,10 @@ package com.hedera.services.fees;
 import java.time.Instant;
 
 public interface FeeMultiplierSource {
-	void updateMultiplier();
+	void updateMultiplier(Instant consensusNow);
 	long currentMultiplier();
 	void resetExpectations();
 
-	void resetCongestionLevelStarts(Instant[] startTimes);
+	void resetCongestionLevelStarts(Instant[] savedStartTimes);
 	Instant[] congestionLevelStarts();
 }

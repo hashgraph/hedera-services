@@ -28,7 +28,7 @@ public enum TestFeeMultiplierSource implements FeeMultiplierSource {
 	MULTIPLIER_SOURCE;
 
 	@Override
-	public void updateMultiplier() {
+	public void updateMultiplier(Instant consensusNow) {
 		/* No-op */
 	}
 
@@ -43,7 +43,7 @@ public enum TestFeeMultiplierSource implements FeeMultiplierSource {
 	}
 
 	@Override
-	public void resetCongestionLevelStarts(Instant[] startTimes) {
+	public void resetCongestionLevelStarts(Instant[] savedStartTimes) {
 		/* No-op */
 	}
 

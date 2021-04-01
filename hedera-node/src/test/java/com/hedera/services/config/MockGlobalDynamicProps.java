@@ -32,6 +32,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	private final CongestionMultipliers defaultMultipliers = CongestionMultipliers.from("90,10x,95,25x,99,100x");
 	private final CongestionMultipliers differentMultipliers = CongestionMultipliers.from("90,11x,95,26x,99,101x");
 
+	int minCongestionPeriod = 2;
 	CongestionMultipliers currentMultipliers = defaultMultipliers;
 
 	public MockGlobalDynamicProps() {
@@ -183,5 +184,11 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
 	public void useDifferentMultipliers() {
 		currentMultipliers = differentMultipliers;
+		minCongestionPeriod = 0;
+	}
+
+	@Override
+	public int feesMinCongestionPeriod() {
+		return minCongestionPeriod;
 	}
 }
