@@ -62,10 +62,10 @@ public class IssListener implements InvalidSignedStateListener {
 		try {
 			// create parent directories if not exist
 			Files.createDirectories(Path.of(dumpLoc).getParent());
-			return new MerkleDataOutputStream(Files.newOutputStream(Path.of(dumpLoc)), false);
+			return new MerkleDataOutputStream(Files.newOutputStream(Path.of(dumpLoc)), true);
 		} catch (Exception e) {
 			log.warn("Unable to use suggested dump location {}, falling back to STDOUT!", dumpLoc, e);
-			return new MerkleDataOutputStream(System.out, false);
+			return new MerkleDataOutputStream(System.out, true);
 		}
 	};
 
