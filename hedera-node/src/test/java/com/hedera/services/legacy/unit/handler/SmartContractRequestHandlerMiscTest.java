@@ -36,7 +36,6 @@ import com.hedera.services.legacy.TestHelper;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
-import com.hedera.services.legacy.unit.PropertyLoaderTest;
 import com.hedera.services.legacy.unit.StorageKeyNotFoundException;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -229,9 +228,6 @@ public class SmartContractRequestHandlerMiscTest {
     payerMerkleEntityId.setNum(payerAccount);
     payerMerkleEntityId.setRealm(0);
     payerMerkleEntityId.setShard(0);
-    PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
-        "../../../configuration/dev/application.properties",
-        "../../../configuration/dev/api-permission.properties");
   }
 
   private void createAccount(AccountID payerAccount, long balance)

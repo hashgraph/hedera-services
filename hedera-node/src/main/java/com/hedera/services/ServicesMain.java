@@ -174,7 +174,9 @@ public class ServicesMain implements SwirldMain {
 
 	private void exportAccountsIfDesired() {
 		try {
-			ctx.accountsExporter().toFile(ctx.nodeLocalProperties().accountsExportPath(), ctx.accounts());
+			if (ctx.nodeLocalProperties().exportAccountsOnStartup()) {
+				ctx.accountsExporter().toFile(ctx.nodeLocalProperties().accountsExportPath(), ctx.accounts());
+			}
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not export accounts!", e);
 		}

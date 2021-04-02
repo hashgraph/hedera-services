@@ -30,8 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.Consumer;
-
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,14 +40,12 @@ class ConfigCallbacksTest {
 	StandardizedPropertySources propertySources;
 	@Mock
 	HapiOpPermissions hapiOpPermissions;
-	@Mock
-	Consumer<ServicesConfigurationList> legacyPropertiesCb;
 
 	ConfigCallbacks subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ConfigCallbacks(hapiOpPermissions, dynamicProps, propertySources, legacyPropertiesCb);
+		subject = new ConfigCallbacks(hapiOpPermissions, dynamicProps, propertySources);
 	}
 
 	@Test
@@ -62,7 +58,6 @@ class ConfigCallbacksTest {
 		// then:
 		verify(propertySources).reloadFrom(config);
 		verify(dynamicProps).reload();
-		verify(legacyPropertiesCb).accept(config);
 	}
 
 	@Test

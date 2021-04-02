@@ -144,7 +144,6 @@ import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.handler.TransactionHandler;
@@ -315,6 +314,8 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
@@ -344,7 +345,6 @@ import static com.hedera.services.files.interceptors.PureRatesValidation.isNorma
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.legacy.config.PropertiesLoader.log;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
@@ -393,7 +393,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static java.util.Map.entry;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Provide a trivial implementation of the inversion-of-control pattern,
@@ -403,6 +402,8 @@ import static java.util.stream.Collectors.toMap;
  * @author Michael Tinker
  */
 public class ServicesContext {
+	static Logger log = LogManager.getLogger(ServicesContext.class);
+
 	/* Injected dependencies. */
 	ServicesState state;
 
@@ -1654,8 +1655,7 @@ public class ServicesContext {
 			var configCallbacks = new ConfigCallbacks(
 					hapiOpPermissions(),
 					globalDynamicProperties(),
-					(StandardizedPropertySources) propertySources(),
-					PropertiesLoader::populateApplicationPropertiesWithProto);
+					(StandardizedPropertySources) propertySources());
 			var currencyCallbacks = new CurrencyCallbacks(fees(), exchange(), this::midnightRates);
 			var throttlesCallback = new ThrottlesCallback(feeMultiplierSource(), hapiThrottling(), handleThrottling());
 			sysFileCallbacks = new SysFileCallbacks(configCallbacks, throttlesCallback, currencyCallbacks);

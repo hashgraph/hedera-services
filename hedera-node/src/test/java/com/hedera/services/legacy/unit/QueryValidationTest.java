@@ -115,9 +115,6 @@ class QueryValidationTest {
 
 	@BeforeAll
 	void initializeState() throws Exception {
-		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
-				"./configuration/dev/application.properties",
-				"./configuration/dev/api-permission.properties");
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
 		var policies = new SystemOpPolicies(new MockEntityNumbers());

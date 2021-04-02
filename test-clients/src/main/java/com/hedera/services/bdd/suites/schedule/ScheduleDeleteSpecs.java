@@ -66,11 +66,11 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						suiteSetup(),
-						deleteWithNoAdminKeyFails(),
-						unauthorizedDeletionFails(),
-						deletingAlreadyDeletedIsObvious(),
-						deletingNonExistingFails(),
-						deletingExecutedIsPointless(),
+//						deleteWithNoAdminKeyFails(),
+//						unauthorizedDeletionFails(),
+//						deletingAlreadyDeletedIsObvious(),
+//						deletingNonExistingFails(),
+//						deletingExecutedIsPointless(),
 						expiredBeforeDeletion(),
 						suiteCleanup(),
 				}
@@ -107,8 +107,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 										tinyBarsFromTo("sender", "receiver", 1)
 								)
 						).adminKey("admin")
-								.signedBy(DEFAULT_PAYER, "admin")
-								.alsoSigningWith("sender"),
+								.signedBy(DEFAULT_PAYER, "admin", "sender"),
 						getAccountBalance("receiver").hasTinyBars(0L)
 				).then(
 						scheduleDelete("twoSigXfer")

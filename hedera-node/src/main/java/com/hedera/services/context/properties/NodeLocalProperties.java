@@ -48,6 +48,7 @@ public class NodeLocalProperties {
 	private String devListeningAccount;
 	private boolean devOnlyDefaultNodeListens;
 	private String accountsExportPath;
+	private boolean exportAccountsOnStartup;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -81,6 +82,7 @@ public class NodeLocalProperties {
 		devListeningAccount = properties.getStringProperty("dev.defaultListeningNodeAccount");
 		devOnlyDefaultNodeListens = properties.getBooleanProperty("dev.onlyDefaultNodeListens");
 		accountsExportPath = properties.getStringProperty("hedera.accountsExportPath");
+		exportAccountsOnStartup = properties.getBooleanProperty("hedera.exportAccountsOnStartup");
 	}
 
 	public int port() {
@@ -181,5 +183,9 @@ public class NodeLocalProperties {
 
 	public String accountsExportPath() {
 		return accountsExportPath;
+	}
+
+	public boolean exportAccountsOnStartup() {
+		return exportAccountsOnStartup;
 	}
 }

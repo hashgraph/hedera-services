@@ -204,9 +204,6 @@ class PreCheckValidationTest {
 				platformStatus,
 				DummyFunctionalityThrottling.throttlingAlways(false),
 				new DummyHapiPermissions());
-		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
-				"./configuration/dev/application.properties",
-				"./configuration/dev/api-permission.properties");
 		byte[] pubKey = ((EdDSAPublicKey) payerKeyGenerated.getPublic()).getAbyte();
 
 		onboardAccount(payerAccount, pubKey, payerAccountInitialBalance);

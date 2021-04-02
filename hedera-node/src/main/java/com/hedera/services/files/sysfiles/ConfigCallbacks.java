@@ -31,25 +31,21 @@ public class ConfigCallbacks {
 	private final HapiOpPermissions hapiOpPermissions;
 	private final GlobalDynamicProperties dynamicProps;
 	private final StandardizedPropertySources propertySources;
-	private final Consumer<ServicesConfigurationList> legacyPropertiesCb;
 
 	public ConfigCallbacks(
 			HapiOpPermissions hapiOpPermissions,
 			GlobalDynamicProperties dynamicProps,
-			StandardizedPropertySources propertySources,
-			Consumer<ServicesConfigurationList> legacyPropertiesCb
+			StandardizedPropertySources propertySources
 	) {
 		this.dynamicProps = dynamicProps;
 		this.propertySources = propertySources;
 		this.hapiOpPermissions = hapiOpPermissions;
-		this.legacyPropertiesCb = legacyPropertiesCb;
 	}
 
 	public Consumer<ServicesConfigurationList> propertiesCb() {
 		return config -> {
 			propertySources.reloadFrom(config);
 			dynamicProps.reload();
-			legacyPropertiesCb.accept(config);
 		};
 	}
 

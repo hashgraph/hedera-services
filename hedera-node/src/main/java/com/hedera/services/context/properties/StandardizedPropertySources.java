@@ -20,7 +20,6 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,16 +30,10 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
-import static com.hedera.services.legacy.config.PropertiesLoader.getSaveAccounts;
 
 /**
  * Implements a {@link PropertySources} that re-resolves every property
- * reference by delegating to a {@link PropertiesLoader} method or other
- * supplier.
- *
- * The main purpose of this implementation is standardize property naming
- * and access conventions across the codebase, which will greatly simplify
- * the task of refactoring {@link PropertiesLoader}.
+ * reference by delegating to a supplier.
  *
  * @author Michael Tinker
  */
@@ -105,7 +98,6 @@ public class StandardizedPropertySources implements PropertySources {
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
 		/* Node-local properties. */
-		source.put("hedera.exportAccountsOnStartup", () -> getSaveAccounts().equals("YES"));
 		source.put("iss.resetPeriod", () -> ISS_RESET_PERIOD_SECS);
 		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
 
