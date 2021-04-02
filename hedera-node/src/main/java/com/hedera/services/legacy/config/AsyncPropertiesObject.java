@@ -20,10 +20,6 @@ package com.hedera.services.legacy.config;
  * ‍
  */
 
-import java.util.HashMap;
-import java.util.Map;
-
-import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.logic.CustomProperties;
 
@@ -42,25 +38,12 @@ public class AsyncPropertiesObject {
 	private static String saveAccounts = ApplicationConstants.NO;
 	private static String exportedAccountPath = ApplicationConstants.EXPORTED_ACCOUNT_PATH;
 	
-	private static Map<String, PermissionedAccountsRange> apiPermission = new HashMap<>();
-
 	public static void loadAsynchProperties(CustomProperties appConfig) {
 		// Server properties
 		defaultListeningNodeAccount = appConfig.getString("defaultListeningNodeAccount",ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT);
 		uniqueListeningPortFlag = appConfig.getInt("uniqueListeningPortFlag", ApplicationConstants.ZERO);
 		saveAccounts = appConfig.getString("saveAccounts", ApplicationConstants.NO);
 		exportedAccountPath = appConfig.getString("exportedAccountPath", ApplicationConstants.EXPORTED_ACCOUNT_PATH);
-	}
-
-	public static void loadApiProperties(CustomProperties apiPermissionProp) {
-		apiPermission.clear();
-		apiPermissionProp.getCustomProperties().forEach((key, value) ->
-				  apiPermission.put(String.valueOf(key),
-				  PermissionedAccountsRange.from(value.toString())));
-	}
-
-	static Map<String , PermissionedAccountsRange> getApiPermission(){
-		return apiPermission;
 	}
 
 	static String getDefaultListeningNodeAccount() {

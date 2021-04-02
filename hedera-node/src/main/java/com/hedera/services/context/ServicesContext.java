@@ -26,6 +26,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.primitives.StateView;
@@ -242,7 +243,6 @@ import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
@@ -345,7 +345,6 @@ import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.legacy.config.PropertiesLoader.log;
-import static com.hedera.services.legacy.config.PropertiesLoader.populateAPIPropertiesWithProto;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateApplicationPropertiesWithProto;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
@@ -475,6 +474,7 @@ public class ServicesContext {
 	private TxnResponseHelper txnResponseHelper;
 	private SigFactoryCreator sigFactoryCreator;
 	private BlobStorageSource bytecodeDb;
+	private HapiOpPermissions hapiOpPermissions;
 	private TransactionContext txnCtx;
 	private TransactionHandler txns;
 	private ContractController contractsGrpc;
@@ -1150,16 +1150,12 @@ public class ServicesContext {
 
 	public FileUpdateInterceptor applicationPropertiesReloading() {
 		if (applicationPropertiesReloading == null) {
+			var propertiesCb = sysFileCallbacks().propertiesCb();
 			applicationPropertiesReloading = new ValidatingCallbackInterceptor(
 					0,
 					"files.networkProperties",
 					properties(),
-					contents -> {
-						var config = uncheckedParse(contents);
-						((StandardizedPropertySources) propertySources()).reloadFrom(config);
-						globalDynamicProperties().reload();
-						populateApplicationPropertiesWithProto(config);
-					},
+					contents -> propertiesCb.accept(uncheckedParse(contents)),
 					ConfigListUtils::isConfigList
 			);
 		}
@@ -1168,11 +1164,12 @@ public class ServicesContext {
 
 	public FileUpdateInterceptor apiPermissionsReloading() {
 		if (apiPermissionsReloading == null) {
+			var permissionsCb = sysFileCallbacks().permissionsCb();
 			apiPermissionsReloading = new ValidatingCallbackInterceptor(
 					0,
 					"files.hapiPermissions",
 					properties(),
-					contents -> populateAPIPropertiesWithProto(uncheckedParse(contents)),
+					contents -> permissionsCb.accept(uncheckedParse(contents)),
 					ConfigListUtils::isConfigList
 			);
 		}
@@ -1656,10 +1653,10 @@ public class ServicesContext {
 	public SysFileCallbacks sysFileCallbacks() {
 		if (sysFileCallbacks == null) {
 			var configCallbacks = new ConfigCallbacks(
+					hapiOpPermissions(),
 					globalDynamicProperties(),
 					(StandardizedPropertySources) propertySources(),
-					PropertiesLoader::populateApplicationPropertiesWithProto,
-					PropertiesLoader::populateAPIPropertiesWithProto);
+					PropertiesLoader::populateApplicationPropertiesWithProto);
 			var currencyCallbacks = new CurrencyCallbacks(fees(), exchange(), this::midnightRates);
 			var throttlesCallback = new ThrottlesCallback(feeMultiplierSource(), hapiThrottling(), handleThrottling());
 			sysFileCallbacks = new SysFileCallbacks(configCallbacks, throttlesCallback, currencyCallbacks);
@@ -1695,6 +1692,13 @@ public class ServicesContext {
 					sysFileCallbacks());
 		}
 		return systemFilesManager;
+	}
+
+	public HapiOpPermissions hapiOpPermissions() {
+		if (hapiOpPermissions == null) {
+			hapiOpPermissions = new HapiOpPermissions(accountNums());
+		}
+		return hapiOpPermissions;
 	}
 
 	public ServicesRepositoryRoot repository() {
@@ -1766,7 +1770,8 @@ public class ServicesContext {
 					accountNums(),
 					systemOpPolicies(),
 					exemptions(),
-					platformStatus());
+					platformStatus(),
+					hapiOpPermissions());
 		}
 		return txns;
 	}

@@ -27,6 +27,7 @@ import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
@@ -37,6 +38,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;
 import com.hedera.services.legacy.unit.handler.FileServiceHandler;
 import com.hedera.services.legacy.unit.utils.DummyFunctionalityThrottling;
+import com.hedera.services.legacy.unit.utils.DummyHapiPermissions;
 import com.hedera.services.legacy.util.MockStorageWrapper;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
@@ -200,7 +202,8 @@ class PreCheckValidationTest {
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
 				platformStatus,
-				DummyFunctionalityThrottling.throttlingAlways(false));
+				DummyFunctionalityThrottling.throttlingAlways(false),
+				new DummyHapiPermissions());
 		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
 				"./configuration/dev/application.properties",
 				"./configuration/dev/api-permission.properties");
@@ -448,7 +451,8 @@ class PreCheckValidationTest {
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
 				platformStatus,
-				DummyFunctionalityThrottling.throttlingAlways(true));
+				DummyFunctionalityThrottling.throttlingAlways(true),
+				new DummyHapiPermissions());
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
 		assert (result.getValidity() == ResponseCodeEnum.BUSY);
@@ -494,7 +498,8 @@ class PreCheckValidationTest {
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
 				platformStatus,
-				DummyFunctionalityThrottling.throttlingAlways(false));
+				DummyFunctionalityThrottling.throttlingAlways(false),
+				new DummyHapiPermissions());
 
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);

@@ -99,6 +99,7 @@ public class TransactionHandlerTest {
 				new MockAccountNumbers(),
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
-				platformStatus);
+				platformStatus,
+				null);
 	}
 }

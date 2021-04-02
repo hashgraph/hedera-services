@@ -24,6 +24,7 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.primitives.StateView;
@@ -529,6 +530,7 @@ public class ServicesContextTest {
 		assertThat(ctx.throttleDefsManager(), instanceOf(ThrottleDefsManager.class));
 		assertThat(ctx.sysFileCallbacks(), instanceOf(SysFileCallbacks.class));
 		assertThat(ctx.networkCtxManager(), instanceOf(NetworkCtxManager.class));
+		assertThat(ctx.hapiOpPermissions(), instanceOf(HapiOpPermissions.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

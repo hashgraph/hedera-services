@@ -20,28 +20,21 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import com.hedera.services.legacy.config.AsyncPropertiesObject;
+import com.hedera.services.legacy.config.PropertiesLoader;
+import com.hedera.services.legacy.logic.CustomProperties;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.Setting;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.Properties;
-
-import com.hedera.services.legacy.config.AsyncPropertiesObject;
-import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.logic.CustomProperties;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import com.hederahashgraph.api.proto.java.Setting;
-import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 
 public class PropertyLoaderTest {
 	private final int RECIEPT_TTL = 180;
@@ -56,11 +49,8 @@ public class PropertyLoaderTest {
 
 	public static void initialize(String applicationPropsFilePath, String apiPropertiesFilePath) {
 			PropertiesLoader.applicationProps = propertiesFrom(applicationPropsFilePath);
-			PropertiesLoader.apiProperties = propertiesFrom(apiPropertiesFilePath);
 			AsyncPropertiesObject.loadAsynchProperties(PropertiesLoader.applicationProps);
-			AsyncPropertiesObject.loadApiProperties(PropertiesLoader.apiProperties);
 			PropertiesLoader.log.info("Application Properties Populated with these values :: "+ PropertiesLoader.applicationProps.getCustomProperties());
-			PropertiesLoader.log.info("API Properties Populated with these values :: "+ PropertiesLoader.apiProperties.getCustomProperties());
 	}
 
 	private static CustomProperties propertiesFrom(String loc) {
@@ -133,51 +123,6 @@ public class PropertyLoaderTest {
 
   }
   
-  
-  @Test
-  public void testAPIChangeProperties() throws Exception {
-	Map<String , PermissionedAccountsRange> apiProperties = PropertiesLoader.getApiPermission();
-	PermissionedAccountsRange createAcctRange = apiProperties.get("createAccount");
-	PermissionedAccountsRange crptTransferRange = apiProperties.get("cryptoTransfer");
-	
-	assertEquals(0, createAcctRange.from().longValue());
-	assertEquals(Long.MAX_VALUE, createAcctRange.inclusiveTo().longValue());
-	
-	assertEquals(0, crptTransferRange.from().longValue());
-	assertEquals(Long.MAX_VALUE, crptTransferRange.inclusiveTo().longValue());
-
-	ServicesConfigurationList servicesConfigurationList =  getAPIConfigPropProto("10-1000","10-2000");
-	  // now reload properties
-	PropertiesLoader.populateAPIPropertiesWithProto(servicesConfigurationList); 
-	
-	apiProperties = PropertiesLoader.getApiPermission();
-	createAcctRange = apiProperties.get("createAccount");
-	crptTransferRange = apiProperties.get("cryptoTransfer");
-	
-	assertNotEquals(0, createAcctRange.from().longValue());
-	assertNotEquals(Long.MAX_VALUE,createAcctRange.inclusiveTo().longValue());
-	
-	assertNotEquals(0, crptTransferRange.from().longValue());
-	assertNotEquals(Long.MAX_VALUE,crptTransferRange.inclusiveTo().longValue());
-	
-	assertEquals(10, createAcctRange.from().longValue());
-	assertEquals(1000,createAcctRange.inclusiveTo().longValue());
-	
-	assertEquals(10, crptTransferRange.from().longValue());
-	assertEquals(2000,crptTransferRange.inclusiveTo().longValue());
-	
-    // delete the files after test.
-    File appProp = new File(APP_CONFIG_FILE_PATH);
-    File appApiProp = new File(API_CONFIG_FILE_PATH);
-
-    if (appProp.delete()) {
-    }
-    if (appApiProp.delete()) {
-    }
-
-  }
-
-    
   private ServicesConfigurationList getAPPConfigPropProto(int recieptTime, int txMaxDuration) {
 	  Setting recieptTimeSet = Setting.newBuilder().setName("txReceiptTTL").setValue(String.valueOf(recieptTime)).build();
 	  Setting txMaxDurationSet = Setting.newBuilder().setName("txMaximumDuration").setValue(String.valueOf(txMaxDuration)).build();
@@ -186,14 +131,4 @@ public class PropertyLoaderTest {
 			  																.addNameValue(txMaxDurationSet).build();
 	  return serviceConfigList;
   }
-
-  private ServicesConfigurationList getAPIConfigPropProto(String crAcctRange, String crTransferRange) {
-	  Setting recieptTimeSet = Setting.newBuilder().setName("createAccount").setValue(String.valueOf(crAcctRange)).build();
-	  Setting thresholdTimeSet = Setting.newBuilder().setName("cryptoTransfer").setValue(String.valueOf(crTransferRange)).build();
-	  ServicesConfigurationList serviceConfigList = ServicesConfigurationList.newBuilder()
-			  																.addNameValue(recieptTimeSet)
-			  																.addNameValue(thresholdTimeSet).build();
-	  return serviceConfigList;
-  }
-
 }

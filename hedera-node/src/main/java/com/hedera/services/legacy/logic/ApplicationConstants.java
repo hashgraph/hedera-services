@@ -24,9 +24,6 @@ public class ApplicationConstants {
 	public static long DEFAULT_FEE = 100000l;
 
 	public static String EXPORTED_ACCOUNT_PATH = "exportedAccountPath";
-	public static long EXCHANGE_RATE_FILE_ACCOUNT_NUM = 112;
-	public static long DEFAULT_FILE_SHARD = 0;
-	public static long DEFAULT_FILE_REALM = 0;
 
 	public static String NO = "NO";
 	public static int ZERO = 0;

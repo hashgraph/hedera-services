@@ -33,6 +33,7 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.unit.utils.DummyFunctionalityThrottling;
+import com.hedera.services.legacy.unit.utils.DummyHapiPermissions;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -85,7 +86,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 public class TxnHandlerVerifySigRegressionTest {
-	private SyncVerifier syncVerifier;
 	private PrecheckKeyReqs precheckKeyReqs;
 	private PrecheckVerifier precheckVerifier;
 	private HederaSigningOrder keyOrder;
@@ -126,7 +126,8 @@ public class TxnHandlerVerifySigRegressionTest {
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
 				platformStatus,
-				DummyFunctionalityThrottling.throttlingAlways(false));
+				DummyFunctionalityThrottling.throttlingAlways(false),
+				new DummyHapiPermissions());
 
 		// expect:
 		assertFalse(subject.verifySignature(invalidSignedTxn));
@@ -273,7 +274,8 @@ public class TxnHandlerVerifySigRegressionTest {
 				new MockAccountNumbers(),
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
-				platformStatus);
+				platformStatus,
+				new DummyHapiPermissions());
 	}
 }
 

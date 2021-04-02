@@ -96,7 +96,8 @@ public class RequestValidationTest {
                 new MockAccountNumbers(),
                 policies,
                 new StandardExemptions(new MockAccountNumbers(), policies),
-                platformStatus);
+                platformStatus,
+                null);
     Timestamp timestamp =
         RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(10));
 

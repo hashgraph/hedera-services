@@ -20,6 +20,7 @@ package com.hedera.services.files.sysfiles;
  * ‍
  */
 
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
@@ -40,15 +41,15 @@ class ConfigCallbacksTest {
 	@Mock
 	StandardizedPropertySources propertySources;
 	@Mock
-	Consumer<ServicesConfigurationList> legacyPropertiesCb;
+	HapiOpPermissions hapiOpPermissions;
 	@Mock
-	Consumer<ServicesConfigurationList> legacyPermissionsCb;
+	Consumer<ServicesConfigurationList> legacyPropertiesCb;
 
 	ConfigCallbacks subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ConfigCallbacks(dynamicProps, propertySources, legacyPropertiesCb, legacyPermissionsCb);
+		subject = new ConfigCallbacks(hapiOpPermissions, dynamicProps, propertySources, legacyPropertiesCb);
 	}
 
 	@Test
@@ -72,6 +73,6 @@ class ConfigCallbacksTest {
 		subject.permissionsCb().accept(config);
 
 		// then:
-		verify(legacyPermissionsCb).accept(config);
+		verify(hapiOpPermissions).reloadFrom(config);
 	}
 }

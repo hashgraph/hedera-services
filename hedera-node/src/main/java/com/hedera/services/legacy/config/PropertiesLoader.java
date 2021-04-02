@@ -20,22 +20,17 @@ package com.hedera.services.legacy.config;
  * ‍
  */
 
-import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.legacy.logic.CustomProperties;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 public class PropertiesLoader {
 	public static final Logger log = LogManager.getLogger(PropertiesLoader.class);
 
 	public static CustomProperties applicationProps;
-	public static CustomProperties apiProperties;
 
 	public static void populateApplicationPropertiesWithProto(ServicesConfigurationList serviceConfigList) {
 		Properties properties = new Properties();
@@ -45,20 +40,6 @@ public class PropertiesLoader {
 		applicationProps = new CustomProperties(properties);
 		AsyncPropertiesObject.loadAsynchProperties(applicationProps);
 		log.info("Application Properties Populated with these values :: " + applicationProps.getCustomProperties());
-	}
-
-	public static void populateAPIPropertiesWithProto(ServicesConfigurationList serviceConfigList) {
-		Properties properties = new Properties();
-		serviceConfigList.getNameValueList().forEach(setting -> {
-			properties.setProperty(setting.getName(), setting.getValue());
-		});
-		apiProperties = new CustomProperties(properties);
-		AsyncPropertiesObject.loadApiProperties(apiProperties);
-		log.info("API Properties Populated with these values :: " + apiProperties.getCustomProperties());
-	}
-
-	public static Map<String, PermissionedAccountsRange> getApiPermission() {
-		return AsyncPropertiesObject.getApiPermission();
 	}
 
 	public static String getDefaultListeningNodeAccount() {
