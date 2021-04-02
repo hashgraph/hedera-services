@@ -47,6 +47,7 @@ public class NodeLocalProperties {
 	private int nettyFlowControlWindow;
 	private String devListeningAccount;
 	private boolean devOnlyDefaultNodeListens;
+	private String accountsExportPath;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -79,6 +80,7 @@ public class NodeLocalProperties {
 		nettyFlowControlWindow = properties.getIntProperty("netty.prod.flowControlWindow");
 		devListeningAccount = properties.getStringProperty("dev.defaultListeningNodeAccount");
 		devOnlyDefaultNodeListens = properties.getBooleanProperty("dev.onlyDefaultNodeListens");
+		accountsExportPath = properties.getStringProperty("hedera.accountsExportPath");
 	}
 
 	public int port() {
@@ -175,5 +177,9 @@ public class NodeLocalProperties {
 
 	public boolean devOnlyDefaultNodeListens() {
 		return devOnlyDefaultNodeListens;
+	}
+
+	public String accountsExportPath() {
+		return accountsExportPath;
 	}
 }

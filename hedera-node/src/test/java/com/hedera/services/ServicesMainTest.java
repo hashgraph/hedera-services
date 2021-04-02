@@ -425,7 +425,7 @@ public class ServicesMainTest {
 
 	@Test
 	public void exportsAccountsIfRequested() throws Exception {
-		given(properties.getStringProperty("hedera.accountsExportPath")).willReturn(PATH);
+		given(nodeLocalProps.accountsExportPath()).willReturn(PATH);
 		given(properties.getBooleanProperty("hedera.exportAccountsOnStartup")).willReturn(true);
 
 		// when:
@@ -437,7 +437,7 @@ public class ServicesMainTest {
 
 	@Test
 	public void rethrowsAccountsExportFailureAsIse() {
-		given(properties.getStringProperty("hedera.accountsExportPath")).willReturn(PATH);
+		given(nodeLocalProps.accountsExportPath()).willReturn(PATH);
 		given(properties.getBooleanProperty("hedera.exportAccountsOnStartup")).willReturn(true);
 		given(ctx.accountsExporter()).willReturn(null);
 

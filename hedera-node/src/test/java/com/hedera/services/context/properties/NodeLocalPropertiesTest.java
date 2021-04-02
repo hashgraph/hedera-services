@@ -76,6 +76,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(20, subject.nettyFlowControlWindow());
 		assertEquals("0.0.4", subject.devListeningAccount());
 		assertFalse(subject.devOnlyDefaultNodeListens());
+		assertEquals("B", subject.accountsExportPath());
 	}
 
 	@Test
@@ -110,6 +111,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(21, subject.nettyFlowControlWindow());
 		assertEquals("0.0.3", subject.devListeningAccount());
 		assertTrue(subject.devOnlyDefaultNodeListens());
+		assertEquals("A", subject.accountsExportPath());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -138,6 +140,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getStringProperty("dev.defaultListeningNodeAccount"))
 				.willReturn(i % 2 == 0 ? "0.0.3" : "0.0.4");
 		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(i % 2 == 0);
+		given(properties.getStringProperty("hedera.accountsExportPath")).willReturn(i % 2 == 0 ? "A" : "B");
 	}
 
 	static String logDir(int num) {

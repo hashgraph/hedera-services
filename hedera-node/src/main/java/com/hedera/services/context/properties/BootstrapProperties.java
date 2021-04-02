@@ -223,6 +223,7 @@ public class BootstrapProperties implements PropertySource {
 			"dev.defaultListeningNodeAccount",
 			"grpc.port",
 			"grpc.tlsPort",
+			"hedera.accountsExportPath",
 			"hedera.profiles.active",
 			"hedera.recordStream.isEnabled",
 			"hedera.recordStream.logDir",

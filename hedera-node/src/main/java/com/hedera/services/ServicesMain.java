@@ -174,8 +174,7 @@ public class ServicesMain implements SwirldMain {
 
 	private void exportAccountsIfDesired() {
 		try {
-			String path = ctx.properties().getStringProperty("hedera.accountsExportPath");
-			ctx.accountsExporter().toFile(path, ctx.accounts());
+			ctx.accountsExporter().toFile(ctx.nodeLocalProperties().accountsExportPath(), ctx.accounts());
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not export accounts!", e);
 		}
