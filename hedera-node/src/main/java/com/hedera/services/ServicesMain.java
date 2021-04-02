@@ -23,6 +23,7 @@ package com.hedera.services;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.state.forensics.FcmDump;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
@@ -268,7 +269,7 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	void registerIssListener() {
-		ctx.platform().addSignedStateListener(new IssListener(ctx.issEventInfo()));
+		ctx.platform().addSignedStateListener(new IssListener(new FcmDump(), ctx.issEventInfo()));
 	}
 
 	void registerReconnectCompleteListener(final NotificationEngine notificationEngine) {

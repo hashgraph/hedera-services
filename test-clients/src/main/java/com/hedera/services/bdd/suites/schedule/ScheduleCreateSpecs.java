@@ -495,7 +495,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given(
 						scheduleCreate(
 								"nope",
-								createTopic("neverToBe").signedBy()
+								createTopic("neverToBe")
 						).hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST)
 				).when(
 						overriding("scheduling.whitelist", "ConsensusCreateTopic"),
