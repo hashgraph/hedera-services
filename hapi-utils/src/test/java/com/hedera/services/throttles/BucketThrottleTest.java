@@ -48,18 +48,24 @@ class BucketThrottleTest {
 		var fromTps = BucketThrottle.withTps(tps);
 		var fromMtps = BucketThrottle.withMtps(tps * MTPS_PER_TPS);
 		var fromTpsAndBurstPeriod = BucketThrottle.withTpsAndBurstPeriod(tps / 2, 2);
+		var fromTpsAndBurstPeriodMs = BucketThrottle.withTpsAndBurstPeriodMs(tps / 2, 2000);
 		var fromMtpsAndBurstPeriod = BucketThrottle.withMtpsAndBurstPeriod(tps / 2 * MTPS_PER_TPS, 2);
+		var fromMtpsAndBurstPeriodMs = BucketThrottle.withMtpsAndBurstPeriodMs(tps / 2 * MTPS_PER_TPS, 2000);
 
 		// expect:
 		assertEquals(expectedCapacity, fromTps.bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromMtps.bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromTpsAndBurstPeriod.bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromMtpsAndBurstPeriod.bucket().totalCapacity());
+		assertEquals(expectedCapacity, fromTpsAndBurstPeriodMs.bucket().totalCapacity());
+		assertEquals(expectedCapacity, fromMtpsAndBurstPeriodMs.bucket().totalCapacity());
 		// and:
 		assertEquals(tps * MTPS_PER_TPS, fromTps.mtps());
 		assertEquals(tps * MTPS_PER_TPS, fromMtps.mtps());
 		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriod.mtps());
 		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriod.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriodMs.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriodMs.mtps());
 	}
 
 	@Test

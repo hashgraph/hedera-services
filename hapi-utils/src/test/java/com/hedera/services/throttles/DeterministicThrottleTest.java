@@ -55,39 +55,57 @@ class DeterministicThrottleTest {
 		var fromMtpsNamed = DeterministicThrottle.withMtpsNamed(tps * MTPS_PER_TPS, name);
 		var fromTpsAndBurstPeriodNamed = DeterministicThrottle.withTpsAndBurstPeriodNamed(tps / 2, 2, name);
 		var fromMtpsAndBurstPeriodNamed = DeterministicThrottle.withMtpsAndBurstPeriodNamed(tps / 2 * MTPS_PER_TPS, 2, name);
+		var fromTpsAndBurstPeriodMs = DeterministicThrottle.withTpsAndBurstPeriodMs(tps / 2, 2_000);
+		var fromMtpsAndBurstPeriodMs = DeterministicThrottle.withMtpsAndBurstPeriodMs(tps / 2 * MTPS_PER_TPS, 2_000);
+		var fromTpsAndBurstPeriodMsNamed = DeterministicThrottle.withTpsAndBurstPeriodMsNamed(tps / 2, 2_000, name);
+		var fromMtpsAndBurstPeriodMsNamed = DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(tps / 2 * MTPS_PER_TPS, 2_000, name);
 
 		// expect:
 		assertEquals(expectedCapacity, fromTps.delegate().bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromMtps.delegate().bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromTpsAndBurstPeriod.delegate().bucket().totalCapacity());
+		assertEquals(expectedCapacity, fromTpsAndBurstPeriodMs.delegate().bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromMtpsAndBurstPeriod.delegate().bucket().totalCapacity());
+		assertEquals(expectedCapacity, fromMtpsAndBurstPeriodMs.delegate().bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromTpsNamed.delegate().bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromMtpsNamed.delegate().bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromTpsAndBurstPeriodNamed.delegate().bucket().totalCapacity());
+		assertEquals(expectedCapacity, fromTpsAndBurstPeriodMsNamed.delegate().bucket().totalCapacity());
 		assertEquals(expectedCapacity, fromMtpsAndBurstPeriodNamed.delegate().bucket().totalCapacity());
+		assertEquals(expectedCapacity, fromMtpsAndBurstPeriodMsNamed.delegate().bucket().totalCapacity());
 		// and:
 		assertEquals(tps * MTPS_PER_TPS, fromTps.mtps());
 		assertEquals(tps * MTPS_PER_TPS, fromMtps.mtps());
 		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriod.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriodMs.mtps());
 		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriod.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriodMs.mtps());
 		assertEquals(tps * MTPS_PER_TPS, fromTpsNamed.mtps());
 		assertEquals(tps * MTPS_PER_TPS, fromMtpsNamed.mtps());
 		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriodNamed.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromTpsAndBurstPeriodMsNamed.mtps());
 		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriodNamed.mtps());
+		assertEquals(tps * MTPS_PER_TPS / 2, fromMtpsAndBurstPeriodMsNamed.mtps());
 		// and:
 		assertNull(fromTps.lastDecisionTime());
 		assertNull(fromMtps.lastDecisionTime());
 		assertNull(fromTpsAndBurstPeriod.lastDecisionTime());
+		assertNull(fromTpsAndBurstPeriodMs.lastDecisionTime());
 		assertNull(fromMtpsAndBurstPeriod.lastDecisionTime());
+		assertNull(fromMtpsAndBurstPeriodMs.lastDecisionTime());
 		assertNull(fromTpsNamed.lastDecisionTime());
 		assertNull(fromMtpsNamed.lastDecisionTime());
 		assertNull(fromTpsAndBurstPeriodNamed.lastDecisionTime());
+		assertNull(fromTpsAndBurstPeriodMsNamed.lastDecisionTime());
 		assertNull(fromMtpsAndBurstPeriodNamed.lastDecisionTime());
+		assertNull(fromMtpsAndBurstPeriodMsNamed.lastDecisionTime());
 		// and:
 		assertEquals(name, fromTpsNamed.name());
 		assertEquals(name, fromMtpsNamed.name());
 		assertEquals(name, fromTpsAndBurstPeriodNamed.name());
 		assertEquals(name, fromMtpsAndBurstPeriodNamed.name());
+		assertEquals(name, fromTpsAndBurstPeriodMsNamed.name());
+		assertEquals(name, fromMtpsAndBurstPeriodMsNamed.name());
 	}
 
 	@Test

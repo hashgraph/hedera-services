@@ -67,6 +67,22 @@ public class DeterministicThrottle {
 		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), name);
 	}
 
+	public static DeterministicThrottle withTpsAndBurstPeriodMs(int tps, int burstPeriodMs) {
+		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), NO_NAME);
+	}
+
+	public static DeterministicThrottle withTpsAndBurstPeriodMsNamed(int tps, int burstPeriodMs, String name) {
+		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), name);
+	}
+
+	public static DeterministicThrottle withMtpsAndBurstPeriodMs(long mtps, int burstPeriodMs) {
+		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), NO_NAME);
+	}
+
+	public static DeterministicThrottle withMtpsAndBurstPeriodMsNamed(long mtps, int burstPeriodMs, String name) {
+		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), name);
+	}
+
 	private DeterministicThrottle(BucketThrottle delegate, String name) {
 		this.name = name;
 		this.delegate = delegate;
