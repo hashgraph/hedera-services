@@ -27,14 +27,15 @@ import java.util.List;
 
 public class ThrottleGroup {
 	int opsPerSec;
+	long milliOpsPerSec;
 	List<HederaFunctionality> operations = new ArrayList<>();
+
+	public void setMilliOpsPerSec(long milliOpsPerSec) {
+		this.milliOpsPerSec = milliOpsPerSec;
+	}
 
 	public int getOpsPerSec() {
 		return opsPerSec;
-	}
-
-	public int getMilliOpsPerSec() {
-		return opsPerSec * 1_000;
 	}
 
 	public void setOpsPerSec(int opsPerSec) {
@@ -51,15 +52,23 @@ public class ThrottleGroup {
 
 	public static ThrottleGroup fromProto(com.hederahashgraph.api.proto.java.ThrottleGroup group) {
 		var pojo = new ThrottleGroup();
-		pojo.setOpsPerSec(group.getOpsPerSec());
+		pojo.setMilliOpsPerSec(group.getMilliOpsPerSec());
 		pojo.operations.addAll(group.getOperationsList());
 		return pojo;
 	}
 
 	public com.hederahashgraph.api.proto.java.ThrottleGroup toProto() {
 		return com.hederahashgraph.api.proto.java.ThrottleGroup.newBuilder()
-				.setOpsPerSec(opsPerSec)
+				.setMilliOpsPerSec(impliedMilliOpsPerSec())
 				.addAllOperations(operations)
 				.build();
+	}
+
+	public long getMilliOpsPerSec() {
+		return milliOpsPerSec;
+	}
+
+	long impliedMilliOpsPerSec() {
+		return milliOpsPerSec > 0 ? milliOpsPerSec : 1_000 * opsPerSec;
 	}
 }

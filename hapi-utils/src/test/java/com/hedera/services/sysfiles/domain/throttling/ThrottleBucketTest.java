@@ -9,9 +9,9 @@ package com.hedera.services.sysfiles.domain.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,10 +42,12 @@ class ThrottleBucketTest {
 
 		// when:
 		subject.setBurstPeriod(123);
+		subject.setBurstPeriodMs(123L);
 		subject.setName("Thom");
 
 		// then:
 		assertEquals(123, subject.getBurstPeriod());
+		assertEquals(123L, subject.getBurstPeriodMs());
 		assertEquals("Thom", subject.getName());
 	}
 
@@ -95,6 +97,34 @@ class ThrottleBucketTest {
 	void constructsExpectedABucketMappingForGlobalThrottle() throws IOException {
 		// setup:
 		var defs = TestUtils.pojoDefs("bootstrap/throttles.json");
+		// and:
+		var subject = defs.getBuckets().get(0);
+
+		// and:
+		/* Bucket A includes groups with opsPerSec of 12, 3000, and 10_000 so the
+		logical operations are, respectively, 30_000 / 12 = 2500, 30_000 / 3_000 = 10,
+		and 30_000 / 10_000 = 3. */
+		var expectedThrottle = DeterministicThrottle.withTpsAndBurstPeriod(30_000, 2);
+		var expectedReqs = List.of(
+				Pair.of(HederaFunctionality.CryptoTransfer, 3),
+				Pair.of(HederaFunctionality.CryptoCreate, 3),
+				Pair.of(ContractCall, 2500),
+				Pair.of(HederaFunctionality.TokenMint, 10));
+
+		// when:
+		var mapping = subject.asThrottleMapping(1);
+		// and:
+		var actualThrottle = mapping.getLeft();
+		var actualReqs = mapping.getRight();
+		// then:
+		assertEquals(expectedThrottle, actualThrottle);
+		assertEquals(expectedReqs, actualReqs);
+	}
+
+	@Test
+	void constructsExpectedABucketMappingEvenWithRepetitions() throws IOException {
+		// setup:
+		var defs = TestUtils.pojoDefs("bootstrap/throttles-repeating.json");
 		// and:
 		var subject = defs.getBuckets().get(0);
 
@@ -172,13 +202,25 @@ class ThrottleBucketTest {
 	}
 
 	private int opsForFunction(List<Pair<HederaFunctionality, Integer>> source, HederaFunctionality function) {
-		for (var pair : source)	 {
+		for (var pair : source) {
 			if (pair.getLeft() == function) {
 				return pair.getRight();
 			}
 		}
 		Assertions.fail("Function " + function + " was missing!");
 		return 0;
+	}
+
+	@Test
+	void throwOnBucketWithHopelesslySmallCapacity() throws IOException {
+		// setup:
+		var defs = TestUtils.pojoDefs("bootstrap/never-true-throttles.json");
+
+		// given:
+		var subject = defs.getBuckets().get(0);
+
+		// expect:
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(1));
 	}
 
 	@Test

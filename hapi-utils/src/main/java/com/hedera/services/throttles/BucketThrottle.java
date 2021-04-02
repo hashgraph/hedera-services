@@ -100,7 +100,7 @@ public class BucketThrottle {
 		bucket = new DiscreteLeakyBucket(capacity);
 		if (bucket.totalCapacity() < CAPACITY_UNITS_PER_TXN) {
 			throw new IllegalArgumentException("A throttle with " + mtps + " MTPS and "
-					+ burstPeriodMs + "s burst period can never allow a transaction!");
+					+ burstPeriodMs + "ms burst period can never allow a transaction!");
 		}
 	}
 

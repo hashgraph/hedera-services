@@ -1,0 +1,16 @@
+{
+    "buckets": [
+        {
+            "name": "D",
+            "burstPeriod": 1,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "TransactionGetReceipt"
+                    ],
+                    "milliOpsPerSec": 1
+                }
+            ]
+        }
+    ]
+}

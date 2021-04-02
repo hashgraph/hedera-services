@@ -67,19 +67,19 @@ public class DeterministicThrottle {
 		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), name);
 	}
 
-	public static DeterministicThrottle withTpsAndBurstPeriodMs(int tps, int burstPeriodMs) {
+	public static DeterministicThrottle withTpsAndBurstPeriodMs(int tps, long burstPeriodMs) {
 		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), NO_NAME);
 	}
 
-	public static DeterministicThrottle withTpsAndBurstPeriodMsNamed(int tps, int burstPeriodMs, String name) {
+	public static DeterministicThrottle withTpsAndBurstPeriodMsNamed(int tps, long burstPeriodMs, String name) {
 		return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), name);
 	}
 
-	public static DeterministicThrottle withMtpsAndBurstPeriodMs(long mtps, int burstPeriodMs) {
+	public static DeterministicThrottle withMtpsAndBurstPeriodMs(long mtps, long burstPeriodMs) {
 		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), NO_NAME);
 	}
 
-	public static DeterministicThrottle withMtpsAndBurstPeriodMsNamed(long mtps, int burstPeriodMs, String name) {
+	public static DeterministicThrottle withMtpsAndBurstPeriodMsNamed(long mtps, long burstPeriodMs, String name) {
 		return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), name);
 	}
 

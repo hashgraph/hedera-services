@@ -65,7 +65,7 @@ class ThrottlesJsonToProtoSerdeTest {
 	private ThrottleBucket aBucket() {
 		return ThrottleBucket.newBuilder()
 				.setName("A")
-				.setBurstPeriod(2)
+				.setBurstPeriodMs(2_000)
 				.addThrottleGroups(from(10000, List.of(CryptoTransfer, CryptoCreate)))
 				.addThrottleGroups(from(12, List.of(ContractCall)))
 				.addThrottleGroups(from(3000, List.of(TokenMint)))
@@ -75,7 +75,7 @@ class ThrottlesJsonToProtoSerdeTest {
 	private ThrottleBucket bBucket() {
 		return ThrottleBucket.newBuilder()
 				.setName("B")
-				.setBurstPeriod(2)
+				.setBurstPeriodMs(2_000)
 				.addThrottleGroups(from(10, List.of(ContractCall)))
 				.build();
 	}
@@ -83,7 +83,7 @@ class ThrottlesJsonToProtoSerdeTest {
 	private ThrottleBucket cBucket() {
 		return ThrottleBucket.newBuilder()
 				.setName("C")
-				.setBurstPeriod(3)
+				.setBurstPeriodMs(3_000)
 				.addThrottleGroups(from(2, List.of(CryptoCreate)))
 				.addThrottleGroups(from(100, List.of(TokenCreate, TokenAssociateToAccount)))
 				.build();
@@ -92,14 +92,14 @@ class ThrottlesJsonToProtoSerdeTest {
 	private ThrottleBucket dBucket() {
 		return ThrottleBucket.newBuilder()
 				.setName("D")
-				.setBurstPeriod(4)
+				.setBurstPeriodMs(4_000)
 				.addThrottleGroups(from(1_000_000, List.of(CryptoGetAccountBalance, TransactionGetReceipt)))
 				.build();
 	}
 
 	private ThrottleGroup from(int opsPerSec, List<HederaFunctionality> functions) {
 		return ThrottleGroup.newBuilder()
-				.setOpsPerSec(opsPerSec)
+				.setMilliOpsPerSec(1_000 * opsPerSec)
 				.addAllOperations(functions)
 				.build();
 	}
