@@ -310,7 +310,7 @@ public class ServicesMainTest {
 		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(true);
+		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -327,7 +327,7 @@ public class ServicesMainTest {
 		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.4");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(true);
+		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -345,7 +345,7 @@ public class ServicesMainTest {
 		given(address.getMemo()).willReturn("0.0.3");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(false);
+		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(false);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -363,7 +363,7 @@ public class ServicesMainTest {
 		given(address.getMemo()).willReturn("0.0.4");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(false);
+		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(false);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -432,7 +432,7 @@ public class ServicesMainTest {
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		verify(accountsExporter).toFile(accounts, PATH);
+		verify(accountsExporter).toFile(PATH, accounts);
 	}
 
 	@Test

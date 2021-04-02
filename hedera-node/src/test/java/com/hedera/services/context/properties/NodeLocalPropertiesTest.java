@@ -20,7 +20,6 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +27,8 @@ import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -61,7 +62,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(8.0, subject.statsRunningAvgHalfLifeSecs());
 		assertEquals(logDir(9), subject.recordLogDir());
 		assertEquals(10L, subject.recordLogPeriod());
-		Assertions.assertTrue(subject.isRecordStreamEnabled());
+		assertTrue(subject.isRecordStreamEnabled());
 		assertEquals(12, subject.recordStreamQueueCapacity());
 		assertEquals(13, subject.queryBlobLookupRetries());
 		assertEquals(14L, subject.nettyProdKeepAliveTime());
@@ -74,6 +75,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(19, subject.nettyMaxConcurrentCalls());
 		assertEquals(20, subject.nettyFlowControlWindow());
 		assertEquals("0.0.4", subject.devListeningAccount());
+		assertFalse(subject.devOnlyDefaultNodeListens());
 	}
 
 	@Test
@@ -94,7 +96,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(9.0, subject.statsRunningAvgHalfLifeSecs());
 		assertEquals(logDir(10), subject.recordLogDir());
 		assertEquals(11L, subject.recordLogPeriod());
-		Assertions.assertFalse(subject.isRecordStreamEnabled());
+		assertFalse(subject.isRecordStreamEnabled());
 		assertEquals(13, subject.recordStreamQueueCapacity());
 		assertEquals(14, subject.queryBlobLookupRetries());
 		assertEquals(15L, subject.nettyProdKeepAliveTime());
@@ -107,6 +109,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(20, subject.nettyMaxConcurrentCalls());
 		assertEquals(21, subject.nettyFlowControlWindow());
 		assertEquals("0.0.3", subject.devListeningAccount());
+		assertTrue(subject.devOnlyDefaultNodeListens());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -134,6 +137,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("netty.prod.flowControlWindow")).willReturn(i + 19);
 		given(properties.getStringProperty("dev.defaultListeningNodeAccount"))
 				.willReturn(i % 2 == 0 ? "0.0.3" : "0.0.4");
+		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(i % 2 == 0);
 	}
 
 	static String logDir(int num) {

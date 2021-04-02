@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
 import static com.hedera.services.legacy.config.PropertiesLoader.getSaveAccounts;
-import static com.hedera.services.legacy.config.PropertiesLoader.getUniqueListeningPortFlag;
 
 /**
  * Implements a {@link PropertySources} that re-resolves every property
@@ -106,7 +105,6 @@ public class StandardizedPropertySources implements PropertySources {
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
 		/* Node-local properties. */
-		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);
 		source.put("hedera.accountsExportPath", PropertiesLoader::getExportedAccountPath);
 		source.put("hedera.exportAccountsOnStartup", () -> getSaveAccounts().equals("YES"));
 		source.put("iss.resetPeriod", () -> ISS_RESET_PERIOD_SECS);

@@ -27,9 +27,4 @@ public class ApplicationConstants {
 
 	public static String NO = "NO";
 	public static int ZERO = 0;
-	public static char P = 'p';
-	public static char N = 'n';
-	public static char A = 'a';
-
-	public static String DEFAULT_LISTENING_NODE_ACCT = "0.0.3";
 }

@@ -30,22 +30,14 @@ import com.hedera.services.legacy.logic.CustomProperties;
  *
  */
 public class AsyncPropertiesObject {
-	// Server Properties
-	private static int uniqueListeningPortFlag;
-	
 	// Save Accounts on Startup
 	private static String saveAccounts = ApplicationConstants.NO;
 	private static String exportedAccountPath = ApplicationConstants.EXPORTED_ACCOUNT_PATH;
 	
 	public static void loadAsynchProperties(CustomProperties appConfig) {
 		// Server properties
-		uniqueListeningPortFlag = appConfig.getInt("uniqueListeningPortFlag", ApplicationConstants.ZERO);
 		saveAccounts = appConfig.getString("saveAccounts", ApplicationConstants.NO);
 		exportedAccountPath = appConfig.getString("exportedAccountPath", ApplicationConstants.EXPORTED_ACCOUNT_PATH);
-	}
-
-	static int getUniqueListeningPortFlag() {
-		return uniqueListeningPortFlag;
 	}
 
 	static String getSaveAccounts() {

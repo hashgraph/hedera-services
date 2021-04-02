@@ -20,6 +20,8 @@ package com.hedera.services.legacy.handler;
  * ‍
  */
 
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.CurrentPlatformStatus;
@@ -34,7 +36,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.security.ops.SystemOpPolicies;
@@ -63,6 +64,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -86,6 +89,7 @@ import static com.swirlds.common.PlatformStatus.ACTIVE;
 public class TransactionHandler {
   public static final Predicate<AccountID> IS_THROTTLE_EXEMPT =
           id -> id.getAccountNum() >= 1 && id.getAccountNum() <= 100L;
+  public static final int MESSAGE_MAX_DEPTH = 50;
 
   private EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES = EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
 
@@ -104,6 +108,47 @@ public class TransactionHandler {
   private SystemOpPolicies systemOpPolicies;
   private CurrentPlatformStatus platformStatus;
   private HapiOpPermissions hapiOpPermissions;
+
+  public static boolean validateTxDepth(Transaction transaction) {
+        return getDepth(transaction) <= MESSAGE_MAX_DEPTH;
+    }
+
+  public static boolean validateTxBodyDepth(TransactionBody transactionBody) {
+        return getDepth(transactionBody) < MESSAGE_MAX_DEPTH;
+    }
+
+  public static int getDepth(final GeneratedMessageV3 message) {
+        Map<Descriptors.FieldDescriptor, Object> fields = message.getAllFields();
+        int depth = 0;
+        for (Descriptors.FieldDescriptor descriptor : fields.keySet()) {
+            Object field = fields.get(descriptor);
+            if (field instanceof GeneratedMessageV3) {
+                GeneratedMessageV3 fieldMessage = (GeneratedMessageV3) field;
+                depth = Math.max(depth, getDepth(fieldMessage) + 1);
+            } else if (field instanceof List) {
+                for (Object ele : (List) field) {
+                    if (ele instanceof GeneratedMessageV3) {
+                        depth = Math.max(depth, getDepth((GeneratedMessageV3) ele) + 1);
+                    }
+                }
+            }
+        }
+        return depth;
+    }
+
+  public static boolean validateTxSize(Transaction transaction) {
+        return transaction.toByteArray().length <= Platform.getTransactionMaxBytes();
+    }
+
+  public static boolean validateQueryHeader(QueryHeader queryHeader, boolean hasPayment) {
+        boolean returnFlag = true;
+        if (queryHeader == null || queryHeader.getResponseType() == null) {
+            returnFlag = false;
+        } else if (hasPayment) {
+            returnFlag = queryHeader.hasPayment();
+        }
+        return returnFlag;
+    }
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -306,7 +351,7 @@ public class TransactionHandler {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
     }
 
-    if (!TransactionValidationUtils.validateTxSize(transaction)) {
+    if (!validateTxSize(transaction)) {
       if (log.isDebugEnabled()) {
         log.debug("Size of the transaction exceeds transactionMaxBytes: "
             + Platform.getTransactionMaxBytes());
@@ -314,7 +359,7 @@ public class TransactionHandler {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.TRANSACTION_OVERSIZE);
     }
 
-    if (!TransactionValidationUtils.validateTxDepth(transaction)) {
+    if (!validateTxDepth(transaction)) {
       log.debug("Request transaction has too many layers.");
       return new TxnValidityAndFeeReq(ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS);
     }
@@ -329,7 +374,7 @@ public class TransactionHandler {
       returnCode = INVALID_TRANSACTION_BODY;
     }
 
-    if (returnCode == OK && !TransactionValidationUtils.validateTxBodyDepth(txn)) {
+    if (returnCode == OK && !validateTxBodyDepth(txn)) {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS);
     }
 
@@ -405,7 +450,7 @@ public class TransactionHandler {
     }
 
     QueryHeader header = activeHeaderFrom(query).orElse(QueryHeader.getDefaultInstance());
-    if (!TransactionValidationUtils.validateQueryHeader(header, hasPayment)) {
+    if (!validateQueryHeader(header, hasPayment)) {
       return ResponseCodeEnum.MISSING_QUERY_HEADER;
     }
     if (UNSUPPORTED_RESPONSE_TYPES.contains(header.getResponseType())) {

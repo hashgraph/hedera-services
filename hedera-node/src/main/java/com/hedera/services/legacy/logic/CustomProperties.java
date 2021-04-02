@@ -20,13 +20,10 @@ package com.hedera.services.legacy.logic;
  * ‍
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Properties;
 
 /**
  * Reads maintains custom properties from a file.

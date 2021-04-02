@@ -46,6 +46,7 @@ public class NodeLocalProperties {
 	private int nettyMaxConcurrentCalls;
 	private int nettyFlowControlWindow;
 	private String devListeningAccount;
+	private boolean devOnlyDefaultNodeListens;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -77,6 +78,7 @@ public class NodeLocalProperties {
 		nettyMaxConcurrentCalls = properties.getIntProperty("netty.prod.maxConcurrentCalls");
 		nettyFlowControlWindow = properties.getIntProperty("netty.prod.flowControlWindow");
 		devListeningAccount = properties.getStringProperty("dev.defaultListeningNodeAccount");
+		devOnlyDefaultNodeListens = properties.getBooleanProperty("dev.onlyDefaultNodeListens");
 	}
 
 	public int port() {
@@ -169,5 +171,9 @@ public class NodeLocalProperties {
 
 	public String devListeningAccount() {
 		return devListeningAccount;
+	}
+
+	public boolean devOnlyDefaultNodeListens() {
+		return devOnlyDefaultNodeListens;
 	}
 }

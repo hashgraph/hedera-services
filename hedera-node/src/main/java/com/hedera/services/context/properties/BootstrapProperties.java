@@ -219,6 +219,7 @@ public class BootstrapProperties implements PropertySource {
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
+			"dev.onlyDefaultNodeListens",
 			"dev.defaultListeningNodeAccount",
 			"grpc.port",
 			"grpc.tlsPort",
@@ -266,6 +267,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("balances.exportPeriodSecs", AS_INT),
 			entry("balances.nodeBalanceWarningThreshold", AS_LONG),
 			entry("cache.records.ttl", AS_INT),
+			entry("dev.onlyDefaultNodeListens", AS_BOOLEAN),
 			entry("balances.exportTokenBalances", AS_BOOLEAN),
 			entry("files.addressBook", AS_LONG),
 			entry("files.networkProperties", AS_LONG),

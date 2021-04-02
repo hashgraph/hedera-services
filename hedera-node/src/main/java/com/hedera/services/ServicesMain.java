@@ -175,7 +175,7 @@ public class ServicesMain implements SwirldMain {
 	private void exportAccountsIfDesired() {
 		try {
 			String path = ctx.properties().getStringProperty("hedera.accountsExportPath");
-			ctx.accountsExporter().toFile(ctx.accounts(), path);
+			ctx.accountsExporter().toFile(path, ctx.accounts());
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not export accounts!", e);
 		}
@@ -209,7 +209,7 @@ public class ServicesMain implements SwirldMain {
 		Profile activeProfile = ctx.nodeLocalProperties().activeProfile();
 		log.info("Active profile: {}", activeProfile);
 		if (activeProfile == DEV) {
-			if (onlyDefaultNodeListens()) {
+			if (ctx.nodeLocalProperties().devOnlyDefaultNodeListens()) {
 				if (thisNodeIsDefaultListener()) {
 					ctx.grpc().start(port, tlsPort, this::logInfoWithConsoleEcho);
 				}
@@ -224,10 +224,6 @@ public class ServicesMain implements SwirldMain {
 		} else {
 			log.warn("No Netty config for profile {}, skipping gRPC startup!", activeProfile);
 		}
-	}
-
-	private boolean onlyDefaultNodeListens() {
-		return ctx.properties().getBooleanProperty("dev.onlyDefaultNodeListens");
 	}
 
 	private boolean thisNodeIsDefaultListener() {
