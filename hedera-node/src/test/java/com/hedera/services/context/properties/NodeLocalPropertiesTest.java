@@ -73,6 +73,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(18L, subject.nettyMaxConnectionIdle());
 		assertEquals(19, subject.nettyMaxConcurrentCalls());
 		assertEquals(20, subject.nettyFlowControlWindow());
+		assertEquals("0.0.4", subject.devListeningAccount());
 	}
 
 	@Test
@@ -105,6 +106,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(19L, subject.nettyMaxConnectionIdle());
 		assertEquals(20, subject.nettyMaxConcurrentCalls());
 		assertEquals(21, subject.nettyFlowControlWindow());
+		assertEquals("0.0.3", subject.devListeningAccount());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -130,6 +132,8 @@ class NodeLocalPropertiesTest {
 		given(properties.getLongProperty("netty.prod.maxConnectionIdle")).willReturn(i + 17L);
 		given(properties.getIntProperty("netty.prod.maxConcurrentCalls")).willReturn(i + 18);
 		given(properties.getIntProperty("netty.prod.flowControlWindow")).willReturn(i + 19);
+		given(properties.getStringProperty("dev.defaultListeningNodeAccount"))
+				.willReturn(i % 2 == 0 ? "0.0.3" : "0.0.4");
 	}
 
 	static String logDir(int num) {

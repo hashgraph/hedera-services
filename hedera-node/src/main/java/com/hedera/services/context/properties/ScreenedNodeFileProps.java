@@ -59,7 +59,8 @@ public class ScreenedNodeFileProps implements PropertySource {
 			entry("recordLogDir", "hedera.recordStream.logDir"),
 			entry("recordLogPeriod", "hedera.recordStream.logPeriod"),
 			entry("tlsPort", "grpc.tlsPort"),
-			entry("environment", "hedera.profiles.active")
+			entry("environment", "hedera.profiles.active"),
+			entry("defaultListeningNodeAccount", "dev.defaultListeningNodeAccount")
 	);
 	static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
 			entry("environment", legacy -> LEGACY_ENV_ORDER[Integer.parseInt(legacy)].toString())

@@ -106,7 +106,6 @@ public class StandardizedPropertySources implements PropertySources {
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
 		/* Node-local properties. */
-		source.put("dev.defaultListeningNodeAccount", PropertiesLoader::getDefaultListeningNodeAccount);
 		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);
 		source.put("hedera.accountsExportPath", PropertiesLoader::getExportedAccountPath);
 		source.put("hedera.exportAccountsOnStartup", () -> getSaveAccounts().equals("YES"));

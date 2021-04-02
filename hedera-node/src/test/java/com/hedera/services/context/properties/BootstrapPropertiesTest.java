@@ -83,6 +83,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.localCall.estRetBytes", 32),
 			entry("contracts.maxGas", 300000),
 			entry("contracts.maxStorageKb", 1024),
+			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("fees.percentCongestionMultipliers", CongestionMultipliers.from("90,10x,95,25x,99,100x")),
 			entry("fees.minCongestionPeriod", 60),
 			entry("files.addressBook", 101L),

@@ -232,7 +232,7 @@ public class ServicesMain implements SwirldMain {
 
 	private boolean thisNodeIsDefaultListener() {
 		String myNodeAccount = ctx.addressBook().getAddress(ctx.id().getId()).getMemo();
-		String blessedNodeAccount = ctx.properties().getStringProperty("dev.defaultListeningNodeAccount");
+		String blessedNodeAccount = ctx.nodeLocalProperties().devListeningAccount();
 		return myNodeAccount.equals(blessedNodeAccount);
 	}
 

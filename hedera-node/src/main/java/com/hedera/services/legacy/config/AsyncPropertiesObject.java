@@ -31,7 +31,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
  */
 public class AsyncPropertiesObject {
 	// Server Properties
-	private static String defaultListeningNodeAccount = ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT;
 	private static int uniqueListeningPortFlag;
 	
 	// Save Accounts on Startup
@@ -40,14 +39,9 @@ public class AsyncPropertiesObject {
 	
 	public static void loadAsynchProperties(CustomProperties appConfig) {
 		// Server properties
-		defaultListeningNodeAccount = appConfig.getString("defaultListeningNodeAccount",ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT);
 		uniqueListeningPortFlag = appConfig.getInt("uniqueListeningPortFlag", ApplicationConstants.ZERO);
 		saveAccounts = appConfig.getString("saveAccounts", ApplicationConstants.NO);
 		exportedAccountPath = appConfig.getString("exportedAccountPath", ApplicationConstants.EXPORTED_ACCOUNT_PATH);
-	}
-
-	static String getDefaultListeningNodeAccount() {
-		return defaultListeningNodeAccount;
 	}
 
 	static int getUniqueListeningPortFlag() {

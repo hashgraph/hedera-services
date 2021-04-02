@@ -42,10 +42,6 @@ public class PropertiesLoader {
 		log.info("Application Properties Populated with these values :: " + applicationProps.getCustomProperties());
 	}
 
-	public static String getDefaultListeningNodeAccount() {
-		return AsyncPropertiesObject.getDefaultListeningNodeAccount();
-	}
-
 	public static int getUniqueListeningPortFlag() {
 		return AsyncPropertiesObject.getUniqueListeningPortFlag();
 	}

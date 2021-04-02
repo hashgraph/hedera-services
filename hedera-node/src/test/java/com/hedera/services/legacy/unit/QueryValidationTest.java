@@ -66,6 +66,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -159,7 +160,7 @@ class QueryValidationTest {
 				transferTransaction, ResponseType.ANSWER_ONLY);
 
 		ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
-		assert (result == ResponseCodeEnum.OK);
+		assertEquals(OK, result);
 	}
 
 	@Test
@@ -171,5 +172,6 @@ class QueryValidationTest {
 
 		ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
 		assertEquals(ResponseCodeEnum.NOT_SUPPORTED, result);
+		transactionHandler.setHapiOpPermissions(new DummyHapiPermissions());
 	}
 }

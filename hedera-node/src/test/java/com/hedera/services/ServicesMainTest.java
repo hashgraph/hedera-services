@@ -161,6 +161,7 @@ public class ServicesMainTest {
 
 		ServicesMain.log = mockLog;
 
+		given(nodeLocalProps.devListeningAccount()).willReturn("0.0.3");
 		given(nodeLocalProps.port()).willReturn(50211);
 		given(nodeLocalProps.tlsPort()).willReturn(50212);
 		given(ctx.fees()).willReturn(fees);
@@ -309,7 +310,6 @@ public class ServicesMainTest {
 		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
 		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(true);
 
 		// when:
@@ -327,7 +327,6 @@ public class ServicesMainTest {
 		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.4");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
 		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(true);
 
 		// when:
@@ -346,7 +345,6 @@ public class ServicesMainTest {
 		given(address.getMemo()).willReturn("0.0.3");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
 		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(false);
 
 		// when:
@@ -365,7 +363,6 @@ public class ServicesMainTest {
 		given(address.getMemo()).willReturn("0.0.4");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
 		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(false);
 
 		// when:

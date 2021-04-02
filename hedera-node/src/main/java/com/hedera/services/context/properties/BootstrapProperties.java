@@ -219,6 +219,7 @@ public class BootstrapProperties implements PropertySource {
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
+			"dev.defaultListeningNodeAccount",
 			"grpc.port",
 			"grpc.tlsPort",
 			"hedera.profiles.active",
