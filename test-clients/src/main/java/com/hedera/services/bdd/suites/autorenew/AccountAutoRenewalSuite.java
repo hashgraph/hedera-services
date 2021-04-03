@@ -52,7 +52,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 	private HapiApiSpec accountExpires() {
 		return defaultHapiSpec("AccountExpires")
 				.given(
-						overriding("ledger.autoRenewPeriod.minDuration", "10"),
+						overriding("minimumAutoRenewDuration", "10"),
 						cryptoCreate("willExpire").autoRenewSecs(10).balance(ONE_HBAR)
 				)
 				.when(
