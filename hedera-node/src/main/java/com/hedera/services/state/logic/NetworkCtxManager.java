@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
 import static java.time.ZoneOffset.UTC;
@@ -45,8 +46,8 @@ public class NetworkCtxManager {
 	private final HbarCentExchange exchange;
 	private final SystemFilesManager systemFilesManager;
 	private final FeeMultiplierSource feeMultiplierSource;
-	private final MerkleNetworkContext networkCtx;
 	private final FunctionalityThrottling handleThrottling;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	public NetworkCtxManager(
 			IssEventInfo issInfo,
@@ -55,8 +56,8 @@ public class NetworkCtxManager {
 			HbarCentExchange exchange,
 			SystemFilesManager systemFilesManager,
 			FeeMultiplierSource feeMultiplierSource,
-			MerkleNetworkContext networkCtx,
-			FunctionalityThrottling handleThrottling
+			FunctionalityThrottling handleThrottling,
+			Supplier<MerkleNetworkContext> networkCtx
 	) {
 		issResetPeriod = properties.getIntProperty("iss.resetPeriod");
 
@@ -71,19 +72,21 @@ public class NetworkCtxManager {
 
 	public void initObservableSysFiles() {
 		if (!systemFilesManager.areObservableFilesLoaded()) {
+			var networkCtxNow = networkCtx.get();
 			systemFilesManager.loadObservableSystemFiles();
-			networkCtx.resetWithSavedSnapshots(handleThrottling);
+			networkCtxNow.resetWithSavedSnapshots(handleThrottling);
 			feeMultiplierSource.resetExpectations();
-			networkCtx.updateWithSavedCongestionStarts(feeMultiplierSource);
+			networkCtxNow.updateWithSavedCongestionStarts(feeMultiplierSource);
 		}
 	}
 
 	public void advanceConsensusClockTo(Instant consensusTime) {
-		var lastConsensusTime = networkCtx.consensusTimeOfLastHandledTxn();
+		var networkCtxNow = networkCtx.get();
+		var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
 		if (lastConsensusTime != null && !inSameUtcDay(lastConsensusTime, consensusTime)) {
-			networkCtx.midnightRates().replaceWith(exchange.activeRates());
+			networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
 		}
-		networkCtx.setConsensusTimeOfLastHandledTxn(consensusTime);
+		networkCtxNow.setConsensusTimeOfLastHandledTxn(consensusTime);
 
 		if (issInfo.status() == ONGOING_ISS) {
 			var resetTime = issInfo.consensusTimeOfRecentAlert().get().plus(issResetPeriod, SECONDS);
@@ -98,14 +101,15 @@ public class NetworkCtxManager {
 		congestion pricing; we don't actually throttle consensus transactions. */
 		handleThrottling.shouldThrottle(op);
 
-		feeMultiplierSource.updateMultiplier(networkCtx.consensusTimeOfLastHandledTxn());
+		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());
 	}
 
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
 
-		networkCtx.updateSnapshotsFrom(handleThrottling);
-		networkCtx.updateCongestionStartsFrom(feeMultiplierSource);
+		var networkCtxNow = networkCtx.get();
+		networkCtxNow.updateSnapshotsFrom(handleThrottling);
+		networkCtxNow.updateCongestionStartsFrom(feeMultiplierSource);
 	}
 
 	public static boolean inSameUtcDay(Instant now, Instant then) {

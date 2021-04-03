@@ -1481,8 +1481,8 @@ public class ServicesContext {
 					exchange(),
 					systemFilesManager(),
 					feeMultiplierSource(),
-					networkCtx(),
-					handleThrottling());
+					handleThrottling(),
+					this::networkCtx);
 		}
 		return networkCtxManager;
 	}

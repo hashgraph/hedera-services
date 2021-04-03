@@ -21,9 +21,11 @@ package com.hedera.services.bdd.suites.fees;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +34,7 @@ import org.junit.Assert;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -41,6 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
@@ -68,6 +72,7 @@ public class CongestionPricingSuite extends HapiApiSuite {
 	private HapiApiSpec canUpdateMultipliersDynamically() {
 		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+		String tmpMinCongestionPeriod = "1";
 
 		AtomicLong normalPrice = new AtomicLong();
 		AtomicLong sevenXPrice = new AtomicLong();
@@ -96,11 +101,19 @@ public class CongestionPricingSuite extends HapiApiSuite {
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.overridingProps(Map.of(
 										"fees.percentCongestionMultipliers", "1,7x",
-										"fees.minCongestionPeriod", "0"
+										"fees.minCongestionPeriod", tmpMinCongestionPeriod
 								)),
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(artificialLimits.toByteArray()),
+						blockingOrder(
+								IntStream.range(0, 10).mapToObj(i ->
+										contractCall("scMulti")
+												.payingWith(GENESIS)
+												.fee(ONE_HUNDRED_HBARS)
+												.sending(ONE_HBAR))
+										.toArray(HapiSpecOperation[]::new)
+						),
 						contractCall("scMulti")
 								.payingWith("civilian")
 								.fee(ONE_HUNDRED_HBARS)

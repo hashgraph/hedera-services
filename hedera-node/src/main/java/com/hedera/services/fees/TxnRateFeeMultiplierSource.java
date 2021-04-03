@@ -20,6 +20,7 @@ package com.hedera.services.fees;
  * ‍
  */
 
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.throttles.DeterministicThrottle;

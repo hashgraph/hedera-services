@@ -80,8 +80,8 @@ class NetworkCtxManagerTest {
 				exchange,
 				systemFilesManager,
 				feeMultiplierSource,
-				networkCtx,
-				handleThrottling);
+				handleThrottling,
+				() -> networkCtx);
 	}
 
 	@Test
