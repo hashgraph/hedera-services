@@ -90,13 +90,13 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
 
 	@Override
 	public Map.Entry<ResponseCodeEnum, Boolean> preUpdate(FileID id, byte[] newContents) {
-		Optional<ThrottleDefinitions> rates = uncheckedParseFrom(newContents);
-		if (rates.isEmpty()) {
+		Optional<ThrottleDefinitions> newThrottles = uncheckedParseFrom(newContents);
+		if (newThrottles.isEmpty()) {
 			return UNPARSEABLE_VERDICT;
 		}
 
 		var n = addressBook.get().getSize();
-		var proto = rates.get();
+		var proto = newThrottles.get();
 		var defs = toPojo.apply(proto);
 		Set<HederaFunctionality> customizedOps = new HashSet<>();
 		for (var bucket : defs.getBuckets()) {

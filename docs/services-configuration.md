@@ -35,7 +35,7 @@ each kind of properties as described below.
 ## Overriding bootstrap and static properties
 
 If a _data/config/bootstrap.properties_ file is present when the network
-first starts (that is, at genesis), then the contents of this file
+starts (including at genesis), then the contents of this file
 override the defaults for any bootstrap or static property listed. 
 For example, when starting a network for integration testing, the 
 Services team often wants more permissive throttles than the 
@@ -47,9 +47,9 @@ This causes the throttling definitions file `0.0.123` to be initialized
 with a [genesis state](../hedera-node/src/main/resources/throttles-dev.json) that allows higher tps.
 
 Of course, if a _data/config/bootstrap.properties_ is used, it **must**
-be present on all nodes! Otherwise the genesis state would be 
-inconsistent across the network. This makes the file less attractive
-for production use cases.
+be present on all nodes! Otherwise the state would be inconsistent 
+across the network. This makes the file less attractive for production 
+use cases.
 
 ## Overriding dynamic properties
 
