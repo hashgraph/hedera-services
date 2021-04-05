@@ -290,7 +290,7 @@ public class UmbrellaTest {
     UmbrellaServiceRunnable.init(allLimitMap);
   }
 
-  public static NodeAddressBook getAddressBook() throws Throwable {
+  public static AddressBook getAddressBook() throws Throwable {
     FileServiceTest rt = new FileServiceTest();
     rt.setUp();
     rt.accountCreatBatch(FileServiceTest.numPayerAccounts);
@@ -300,7 +300,7 @@ public class UmbrellaTest {
     AccountID payerID = FileServiceTest.getRandomPayerAccount();
     ByteString content = rt
         .getFileContent(fid, payerID, FileServiceIT.defaultListeningNodeAccountID);
-    NodeAddressBook book = NodeAddressBook.newBuilder().mergeFrom(content.toByteArray()).build();
+    AddressBook book = AddressBook.newBuilder().mergeFrom(content.toByteArray()).build();
     return book;
   }
 

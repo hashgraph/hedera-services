@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -257,7 +256,7 @@ class HfsSystemFilesManagerTest {
 	@Test
 	public void createsAddressBookIfMissing() {
 		// setup:
-		var expectedBook = legacyBookConstruction(currentBook);
+		com.hederahashgraph.api.proto.java.AddressBook expectedBook = legacyBookConstruction(currentBook);
 
 		given(hfs.exists(bookId)).willReturn(false);
 
@@ -510,8 +509,9 @@ class HfsSystemFilesManagerTest {
 				.build();
 	}
 
-	private NodeAddressBook legacyBookConstruction(AddressBook fromBook) {
-		NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+	private com.hederahashgraph.api.proto.java.AddressBook legacyBookConstruction(AddressBook fromBook) {
+		com.hederahashgraph.api.proto.java.AddressBook.Builder builder =
+				com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
 		for (int i = 0; i < fromBook.getSize(); i++) {
 			var address = fromBook.getAddress(i);
 			byte[] nodeIP = address.getAddressExternalIpv4();
@@ -527,8 +527,9 @@ class HfsSystemFilesManagerTest {
 		return builder.build();
 	}
 
-	private NodeAddressBook legacyNodeDetailsConstruction(AddressBook fromBook) {
-		NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+	private com.hederahashgraph.api.proto.java.AddressBook legacyNodeDetailsConstruction(AddressBook fromBook) {
+		com.hederahashgraph.api.proto.java.AddressBook.Builder builder =
+				com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
 		for (int i = 0; i < fromBook.getSize(); i++) {
 			var address = fromBook.getAddress(i);
 			PublicKey publicKey = address.getSigPublicKey();

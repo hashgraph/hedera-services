@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -284,7 +283,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private byte[] bioAndIpv4Contents() {
-		var basics = NodeAddressBook.newBuilder();
+		var basics = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
 				.map(address ->
@@ -296,7 +295,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private byte[] bioAndPubKeyContents() {
-		var details = NodeAddressBook.newBuilder();
+		var details = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
 				.map(address ->
