@@ -15,9 +15,9 @@ superseded-by:
 
 ## Abstract
 
-When a Hedera entity is created, the payer account is charged enough hbars (as a rental fee) for the entity to stay active
+When a Hedera entity (a token, topic, account, file, or smart contract) is created, the payer account is charged enough hbars (as a rental fee) for the entity to stay active
 in the ledger state until consensus time passes its _expiration time_. Users can extend the expiration time of an entity by
-paying an extension fee via an update transaction. This HIP defines and discusses another mechanism to be implemented by
+paying an extension fee via an entity update transaction. This HIP defines and discusses another mechanism to be implemented by
 Hedera Services to automatically renew expired entities using funds of linked _autorenew accounts_ or _admin accounts_; and
 automatically remove expired entities that lack a funded autorenew account (or are deleted).
 
@@ -38,13 +38,17 @@ This section seems to be a duplicate of the `Motivation` section above. We will 
 - Deletion - A successful delete transaction will mark an entity as deleted and that entity cannot be operated up on.
 The entity will remain in the ledger, marked as deleted, until it expires.
 - Removal - The entity is permanently removed from the state of the decentralized ledger.
+- Expiration - The time the entity is removed from the Hedera ledger. Users can no longer access the entity.
+- Autorenew account - The account paying for entity renewal fees  
+- Admin account - The account paying for entity renewal fees
+- Autorenew fee - The fee to charge the admin/autorenew account at the time specified for entity renewal
 
 All Hedera Services nodes will perform a synchronous scanning of active entities. When a node finds a non-deleted, expired
 entity, it will try to renew the entity by charging its admin or autorenew account the renewal fee, for an extension
 period given in seconds.
 
 This extension period can be customized by the `autoRenewPeriod` property of a crypto account,
-a topic, a smart contract, or a token. For a file, the extension period will be three months. (Future protobuf changes will
+a topic, a smart contract, or a token entity. For a file, the extension period will be three months. (Future protobuf changes will
 permit customizing this extension period as well.) Records of autorenew charges will appear in the record stream, and
 will be available via mirror nodes. __No__ receipts or records for autorenewal actions will be available via HAPI queries.
 
