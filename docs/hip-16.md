@@ -15,22 +15,15 @@ superseded-by:
 
 ## Abstract
 
-When a Hedera entity is created, the payer account is charged enough hbars (as a rental fee) for the entity to stay active
-in the ledger state until consensus time passes its _expiration time_. Users can extend the expiration time of an entity by
-paying an extension fee via an update transaction. This HIP defines and discusses another mechanism to be implemented by
-Hedera Services to automatically renew expired entities using funds of linked _autorenew accounts_ or _admin accounts_; and
-automatically remove expired entities that lack a funded autorenew account (or are deleted).
+When a Hedera entity is created, the payer account is charged enough hbars (as a rental fee) for the entity to stay active in the ledger state until consensus time passes its _expiration time_. Users can extend the expiration time of an entity by paying an extension fee via an update transaction. This HIP defines and discusses another mechanism to be implemented by Hedera Services to automatically renew expired entities using funds of linked _autorenew accounts_ or _admin accounts_; and automatically remove expired entities that lack a funded autorenew account (or are deleted).
 
 ## Motivation
 
-Prior to this HIP, the expiration time of a Hedera entity has not been checked or enforced. An entity remains active in
-the ledger even after its expiration time, without additional fees being charged. Upon implementation of this HIP,
-Hedera Services will __begin to charge rent__ for automatically renewed entities; and will remove from the ledger expired
-entities which are either deleted, or have an admin/autorenew account with zero balance at the time renewal fees are due.
+For a public ledger to avoid suffering a tragedy of the commons it is important that all participants in the ledger share in the cost of ledger resources used. Auto-renewal fees are the implementation of this principal.
 
 ## Rationale
 
-This section seems to be a duplicate of the `Motivation` section above. We will add more details if required.
+Prior to this HIP, the expiration time of a Hedera entity has not been checked or enforced. An entity remains active in the ledger even after its expiration time, without additional fees being charged. Upon implementation of this HIP, Hedera Services will __begin to charge rent__ for automatically renewed entities; and will remove from the ledger expired entities which are either deleted or have an admin/autorenew account with zero balance at the time renewal fees are due.
 
 ## Specification
 
@@ -63,21 +56,36 @@ do not autorenew, and are always removed from the ledger when they expire.
 
 ## Backwards Compatibility
 
-There is no change in existing protobufs. Account and entity owners must ensure that linked autorenew and admin accounts have
-sufficient balances for autorenewal fees, or risk permanent removal of their entity! The Hedera Product team will set and
-publicize the timeline for enabling the autorenewal and autoremoval behaviors.
+There is no change in existing protobufs. Account and entity owners must ensure that linked autorenew and admin accounts have sufficient balances for autorenewal fees, or risk permanent removal of their entity.
+
+Every account will receive one free auto renewal at implementation of this feature. This will have the effect of extending the initial period for autorenewal ~92 days.
 
 ## Security Implications
 
-N/A
+A Hedera Account without an hbar balance sufficient to cover the cover the cost of renewal at the point of renewal would be marked for deletion. The Account owner then have a grace period to fund the account and renewal before permanent deletion.
+
+If the autoRenewAccount of a topic does not have sufficient balance the topic would be deleted. The ledger cannot enforce agreements regarding funding of the topic made by participants in the topic. 
+
+Any entity can have its expiration date extended by anyone. Not just the admin key. They expiration date is the only field that can be changed in an update without signature by the owner or the admin. 
+
+Entities who leverage omnibus accounts for services including wallets, exchanges, and custody will need to account for the deduction of hbar from any Hedera Accounts used in their system at time of autorenewal.
 
 ## How to Teach This
 
-N/A
+This feature has been documented in the initial White Paper and protobuf document.
+
+Implementation of this feature will be referenced in release notes, supported by SDKs, as well as supported at docs.hedera.com.
+
+Key partners operating mirror nodes, wallets, exchanges, etc. should notify users when supporting account or entity creation of both the autorenew period and anticipated cost for autorenew. 
 
 ## Reference Implementation
 
-N/A
+maximumAutoRenewDuration=8000001 seconds         // ~92 days
+minimumAutoRenewDuration=6999999 seconds          // ~81 days
+
+https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#autorenewal-record 
+
+https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#entity-removal-record
 
 ## Rejected Ideas
 
@@ -85,7 +93,7 @@ N/A
 
 ## Open Issues
 
-N/A
+New issues will be created to track implementation in the hedera-services repo: https://github.com/hashgraph/hedera-services/issues ![image](https://user-
 
 ## References
 
