@@ -67,6 +67,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
+import static com.hedera.test.mocks.TestFeeMultiplierSource.MULTIPLIER_SOURCE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
@@ -113,6 +114,7 @@ public enum TestFeesFactory {
 		return new UsageBasedFeeCalculator(
 				exchange,
 				TEST_USAGE_PRICES,
+				MULTIPLIER_SOURCE,
 				List.of(
 						/* Meta */
 						new GetTxnRecordResourceUsage(recordCache, answerFunctions, cryptoFees),

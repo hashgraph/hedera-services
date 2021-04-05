@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -43,9 +44,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
@@ -105,6 +108,8 @@ class UsageBasedFeeCalculatorTest {
 	Transaction signedTxn;
 	SignedTxnAccessor accessor;
 
+	AtomicLong suggestedMultiplier = new AtomicLong(1L);
+
 	@BeforeEach
 	private void setup() throws Throwable {
 		view = mock(StateView.class);
@@ -129,6 +134,7 @@ class UsageBasedFeeCalculatorTest {
 		subject = new UsageBasedFeeCalculator(
 				exchange,
 				usagePrices,
+				new NestedMultiplierSource(),
 				List.of(incorrectQueryEstimator, correctQueryEstimator),
 				txnUsageEstimators);
 	}
@@ -326,6 +332,34 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
+	public void usesMultiplierAsExpected() throws Exception {
+		// setup:
+		long multiplier = 5L;
+		SigValueObj expectedSigUsage = new SigValueObj(
+				FeeBuilder.getSignatureCount(signedTxn),
+				9,
+				FeeBuilder.getSignatureSize(signedTxn));
+		FeeObject expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate, multiplier);
+		suggestedMultiplier.set(multiplier);
+
+		given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
+		given(txnUsageEstimators.apply(CryptoCreate)).willReturn(List.of(correctOpEstimator));
+		given(correctOpEstimator.usageGiven(
+				argThat(accessor.getTxn()::equals),
+				argThat(factory.apply(expectedSigUsage)),
+				argThat(view::equals))).willReturn(resourceUsage);
+		given(exchange.activeRate()).willReturn(currentRate);
+
+		// when:
+		FeeObject fees = subject.computeFee(accessor, payerKey, view);
+
+		// then:
+		assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
+		assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
+		assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+	}
+
+	@Test
 	public void invokesOpDelegateAsExpectedWithOneOption() throws Exception {
 		// setup:
 		SigValueObj expectedSigUsage = new SigValueObj(
@@ -413,4 +447,31 @@ class UsageBasedFeeCalculatorTest {
 			expectedSigUsage.getSignatureSize() == sigUsage.getSignatureSize()
 					&& expectedSigUsage.getPayerAcctSigCount() == sigUsage.getPayerAcctSigCount()
 					&& expectedSigUsage.getSignatureSize() == sigUsage.getSignatureSize();
+
+	private class NestedMultiplierSource implements FeeMultiplierSource {
+		@Override
+		public long currentMultiplier() {
+			return suggestedMultiplier.get();
+		}
+
+		@Override
+		public void resetExpectations() {
+			/* No-op */
+		}
+
+		@Override
+		public void updateMultiplier(Instant consensusNow) {
+			/* No-op. */
+		}
+
+		@Override
+		public void resetCongestionLevelStarts(Instant[] savedStartTimes) {
+			/* No-op. */
+		}
+
+		@Override
+		public Instant[] congestionLevelStarts() {
+			return new Instant[0];
+		}
+	}
 }

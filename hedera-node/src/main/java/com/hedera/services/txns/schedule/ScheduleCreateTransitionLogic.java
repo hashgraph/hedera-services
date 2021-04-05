@@ -38,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -45,7 +46,6 @@ import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -103,8 +103,10 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 		}
 
 		var scheduleId = result.getCreated().get();
+		var payerKey = txnCtx.activePayerKey();
+		var topLevelKeys = schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
 		var validScheduleKeys = classifier.validScheduleKeys(
-				txnCtx.activePayerKey(),
+				topLevelKeys,
 				sigMap,
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);

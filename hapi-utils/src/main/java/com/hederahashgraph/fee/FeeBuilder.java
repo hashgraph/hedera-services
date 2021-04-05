@@ -125,17 +125,25 @@ public class FeeBuilder {
     return totalFee;
   }
 
-  public static FeeObject getFeeObject(FeeData feeData, FeeData feeMatrices,
-      ExchangeRate exchangeRate) {
+  public static FeeObject getFeeObject(
+          FeeData feeData,
+          FeeData feeMatrices,
+          ExchangeRate exchangeRate,
+          long multiplier
+  ) {
     // get the Network Fee
     long networkFee = getComponentFeeInTinyCents(feeData.getNetworkdata(), feeMatrices.getNetworkdata());
     long nodeFee = getComponentFeeInTinyCents(feeData.getNodedata(), feeMatrices.getNodedata());
     long serviceFee = getComponentFeeInTinyCents(feeData.getServicedata(), feeMatrices.getServicedata());
     // convert the Fee to tiny hbars
-    networkFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, networkFee);
-    nodeFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, nodeFee);
-    serviceFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, serviceFee);
+    networkFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, networkFee) * multiplier;
+    nodeFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, nodeFee) * multiplier;
+    serviceFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, serviceFee) * multiplier;
     return new FeeObject(nodeFee, networkFee, serviceFee);
+  }
+
+  public static FeeObject getFeeObject(FeeData feeData, FeeData feeMatrices, ExchangeRate exchangeRate) {
+  	return getFeeObject(feeData, feeMatrices, exchangeRate, 1L);
   }
 
 

@@ -30,9 +30,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -197,6 +199,32 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						getScheduleInfo("onlyBodyAndPayer")
 								.hasScheduleId("onlyBodyAndPayer")
 								.hasPayerAccountID("payer")
+								.hasRecordedScheduledTxn()
+				);
+	}
+
+	private HapiApiSpec integrationBodyAndSignatoriesCreation() {
+		var scheduleName = "onlyBodyAndSignatories";
+		var scheduledTxn = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
+
+		return customHapiSpec("IntegrationBodyAndSignatoriesCreation").withProperties(
+				Map.of("nodes", "35.196.138.70")
+		)
+				.given(
+						cryptoCreate("payingAccount"),
+						newKeyNamed("adminKey"),
+						cryptoCreate("sender"),
+						cryptoCreate("receiver").receiverSigRequired(true)
+				).when(
+						scheduleCreate(scheduleName, scheduledTxn)
+								.adminKey("adminKey")
+								.recordingScheduledTxn()
+								.designatingPayer("payingAccount")
+								.alsoSigningWith("receiver")
+				).then(
+						getScheduleInfo(scheduleName)
+								.hasScheduleId(scheduleName)
+								.hasSignatories("receiver")
 								.hasRecordedScheduledTxn()
 				);
 	}
@@ -467,7 +495,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given(
 						scheduleCreate(
 								"nope",
-								createTopic("neverToBe").signedBy()
+								createTopic("neverToBe")
 						).hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST)
 				).when(
 						overriding("scheduling.whitelist", "ConsensusCreateTopic"),
