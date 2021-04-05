@@ -54,7 +54,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -96,6 +95,7 @@ public class ScheduleCreateTransitionLogicTest {
 	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
 	private ScheduleReadyForExecution.ExecutionProcessor executor;
 
+	private boolean adminKeyActuallySkipped = false;
 	private boolean invalidAdminKeyIsSentinelKeyList = false;
 	private AccountID payer = IdUtils.asAccount("1.2.3");
 	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
@@ -304,6 +304,16 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
+	public void syntaxOkWithNoAdminKey() {
+		// setup:
+		adminKeyActuallySkipped = true;
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.syntaxCheck().apply(scheduleCreateTxn));
+	}
+
+	@Test
 	public void failsOnInvalidAdminKey() {
 		givenCtx(true, false, false);
 
@@ -368,6 +378,11 @@ public class ScheduleCreateTransitionLogicTest {
 				scheduleCreate.setAdminKey(invalidKey);
 			}
 		}
+
+		if (adminKeyActuallySkipped) {
+			scheduleCreate.clearAdminKey();
+		}
+
 		builder.setTransactionID(txnId);
 		builder.setScheduleCreate(scheduleCreate);
 
