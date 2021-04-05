@@ -1559,8 +1559,8 @@ workflows:
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_1C/Restart
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-NetDelay-15N-1C"
+          config_type: "weekly"
+          workflow-name: "GCP-Weekly-Services-Comp-NetDelay-15N-1C"
           requires:
             - build-platform-and-services
           pre-steps:
