@@ -82,9 +82,9 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 	private static final double expectedContractCallTps = PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedCryptoCreateTps = CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedGetBalanceQps = FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS / NETWORK_SIZE;
-	private static final double toleratedPercentDeviation = 6.0;
+	private static final double toleratedPercentDeviation = 5;
 
-	private AtomicLong duration = new AtomicLong(120);
+	private AtomicLong duration = new AtomicLong(180);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
