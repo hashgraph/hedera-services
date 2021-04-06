@@ -7,7 +7,7 @@
 - Introduce new settings in `application.properties`:
   * `autorenew.isEnabled`
   * `autorenew.numberOfEntitiesToScan`
-  * `autorenew.maxNumberOfEntitiesToRenew`
+  * `autorenew.maxNumberOfEntitiesToRenewOrDelete`
   * `autorenew.gracePeriod`
 - Each Hedera entity has an `expirationTime` which is the effective consensus timestamp at (and after) which the entity is set to expire.
 - Each Hedera entity also has an `autoRenewAccount` which is the account to pay for the fees at renewal. If this `autoRenewAccount` is not specified, a crypto account or a smart contract will be responsible for its own renewal fees, while an entity of other types will be marked for deletion at the point of renewal.
@@ -16,7 +16,7 @@
 - A Hedera entity that lacks a funded `autoRenewAccount`, namely `autoRenewAccount` is not specified or has zero balance at the time renewal fees are due, will be marked for deletion. The entity will then have a grace period (defaulted to 7 days) before permanent deletion.
 - A Hedera entity can have its expiration time extended by anyone, not just by the admin account. The expiration time is the only field that can be changed in an update without being signed by the owner or the admin.
 - Every token type has an associated account as its treasury account. An expired account on permanent deletion (not being renewed after the grace period) will have its tokens transfer to the treasury account. The treasury account always has an expiration time the same as or later than its token type, because extending the latter automatically extends the former, if needed. So the treasury account can’t expire unless the token type itself expires, in which case, all tokens of that type expire.
-- After handling a transaction, all Hedera Services nodes will perform a synchronous scanning within the next `autorenew.numberOfEntitiesToScan` for upto `autorenew.maxNumberOfEntitiesToRenew` entities that expired then try to renew these entities.
+- After handling a transaction, all Hedera Services nodes will perform a synchronous scanning within the next `autorenew.numberOfEntitiesToScan` for upto `autorenew.maxNumberOfEntitiesToRenewOrDelete` entities that expired then try to renew these entities.
 - Records of autorenew charges and autodeletion of entities will appear in the record stream, and will be available via mirror nodes. No receipts or records for autorenewal/autodeletion actions will be available via HAPI queries.
 - Crypto accounts will be prioritized for autorenewal, followed by consensus topics, tokens, smart contracts and files. Schedule entities do not autorenew, and are always removed from the ledger when they expire.
 - There is __no change in existing protobufs__. Account and entity owners must ensure that linked autorenew and admin accounts have sufficient balances for autorenewal fees, or risk permanent removal of their entity!
@@ -34,7 +34,11 @@ After handling a transaction, when trying to renew an entity:
 3. If the grace period also passes, permanently delete the entity from the ledger.
 4. The consensus timestamp of the autorenewal or autodeletion of the first entity will be 1 nanosecond after the consensus timestamp of the handled transaction. If Hedera Services autorenew or autodelete more than one entity in the same handled transaction, the consensus timestamp of the autorenewal or autodeletion of the next entity will be 1 nanosecond after that of the previous entity.
 
-For restart and reconnect: The last scanned entity must be in the state for synchronization.
+For restart, reconnect and for controlling the pace of auto renewal/deletion, the following (long) values will be stored in the ledger state:
+1. The last scanned entity
+2. The consensus timestamp of the last handled transaction
+3. The number of entities scanned in this second
+4. The number of entities changed (autorenewed/autodeleted) in this second
 
 ## Autorenewal record
 After autorenewing an entity, Hedera Services will generate a `TransactionRecord` that serves as an autorenewal record and contains the following:
