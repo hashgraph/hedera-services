@@ -1,7 +1,8 @@
 # The Entity Auto Renewal feature
 
 ## Goal
--	Allow Hedera Services to automatically search for entities such as accounts, files, smart contracts, topics, tokens... that are about to expire and renew them.
+- Prior to the implementation of the Entity Auto Renewal feature, the expiration time of a Hedera entity, which is specified in the HAPI document, has not been checked or enforced. An entity remains active in the ledger even after its expiration time, without additional fees being charged. Upon implementation of this feature, Hedera Services will __begin to charge rent__ for automatically renewed entities; and will remove from the ledger expired entities which are either deleted or have an admin/autorenew account with zero balance at the time renewal fees are due.
+- Schedule entities do not autorenew, and are always removed from the ledger when they expire.
 
 ## Design
 - Introduce new settings in `application.properties`:
