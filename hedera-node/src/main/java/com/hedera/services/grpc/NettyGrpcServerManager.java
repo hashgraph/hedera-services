@@ -20,7 +20,6 @@ package com.hedera.services.grpc;
  * ‍
  */
 
-import com.hedera.services.legacy.netty.NettyServerManager;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
@@ -42,18 +41,18 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 	private Server server;
 	private Server tlsServer;
 	private final Consumer<Thread> hookAdder;
-	private final NettyServerManager nettyManager;
 	private final List<BindableService> bindableServices;
+	private final ConfigDrivenNettyFactory nettyBuilder;
 	private final List<ServerServiceDefinition> serviceDefinitions;
 
 	public NettyGrpcServerManager(
 			Consumer<Thread> hookAdder,
-			NettyServerManager nettyManager,
 			List<BindableService> bindableServices,
+			ConfigDrivenNettyFactory nettyBuilder,
 			List<ServerServiceDefinition> serviceDefinitions
 	) {
 		this.hookAdder = hookAdder;
-		this.nettyManager = nettyManager;
+		this.nettyBuilder = nettyBuilder;
 		this.bindableServices = bindableServices;
 		this.serviceDefinitions = serviceDefinitions;
 	}
@@ -74,16 +73,16 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 		}
 	}
 
-	private Server startOneNettyServer(boolean tlsSupport, int port, Consumer<String> println) throws Exception {
-		println.accept(nettyAction("Starting", tlsSupport, port, true));
+	private Server startOneNettyServer(boolean sslEnabled, int port, Consumer<String> println) throws Exception {
+		println.accept(nettyAction("Starting", sslEnabled, port, true));
 
-		NettyServerBuilder builder = nettyManager.buildNettyServer(port, tlsSupport);
+		NettyServerBuilder builder = nettyBuilder.builderFor(port, sslEnabled);
 		bindableServices.forEach(builder::addService);
 		serviceDefinitions.forEach(builder::addService);
 		Server server = builder.build();
 		server.start();
 
-		println.accept(nettyAction("...done starting", tlsSupport, port, false));
+		println.accept(nettyAction("...done starting", sslEnabled, port, false));
 
 		return server;
 	}

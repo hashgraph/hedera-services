@@ -38,7 +38,7 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes.beginsWith;
 import static com.hedera.services.txns.schedule.SigClassification.INVALID_SCHEDULED_TXN_MATCH;
 import static com.hedera.services.txns.schedule.SigClassification.NO_MATCH;
-import static com.hedera.services.txns.schedule.SigClassification.PAYER_MATCH;
+import static com.hedera.services.txns.schedule.SigClassification.TOP_LEVEL_MATCH;
 import static com.hedera.services.txns.schedule.SigClassification.VALID_SCHEDULED_TXN_MATCH;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
@@ -71,16 +71,17 @@ public class SigMapScheduleClassifier {
 	 * Makes a best-effort attempt to return an empty optional <i>only</i>
 	 * if a {@code SignaturePair} in the active {@code SignatureMap}
 	 * expanded to exclusively invalid signatures; and seems linked to the active
-	 * schedule; and cannot be "explained" as an invalid payer signature.
+	 * schedule; and cannot be "explained" as an invalid top-level signature
+	 * (e.g., for a payer or admin key).
 	 *
-	 * @param payerKey the Hedera key for the active payer
+	 * @param topLevelKeys a list of keys known linked to the top-level transaction
 	 * @param sigMap the active transaction's signature map
 	 * @param sigsFn the active mapping from Ed25519 keys to expanded signatures
 	 * @param scheduleCryptoSigs a traversal accepting a visitor to the Ed25519 keys linked to the active schedule
 	 * @return the list of linked Ed25519 with valid signatures, if none appears to have given an invalid signature
 	 */
 	Optional<List<JKey>> validScheduleKeys(
-			JKey payerKey,
+			List<JKey> topLevelKeys,
 			SignatureMap sigMap,
 			Function<byte[], TransactionSignature> sigsFn,
 			Consumer<BiConsumer<JKey, TransactionSignature>> scheduleCryptoSigs
@@ -91,7 +92,9 @@ public class SigMapScheduleClassifier {
 			var prefix = sp.getPubKeyPrefix().toByteArray();
 			var classification = new MutableSigClassification();
 
-			updateForPayer(payerKey, prefix, classification, sigsFn);
+			for (var key : topLevelKeys) {
+				updateForTopLevel(key, prefix, classification, sigsFn);
+			}
 			updateForScheduled(prefix, valid, classification, scheduleCryptoSigs);
 
 			if (classification.get() == INVALID_SCHEDULED_TXN_MATCH) {
@@ -122,18 +125,18 @@ public class SigMapScheduleClassifier {
 		});
 	}
 
-	private void updateForPayer(
-			JKey payerKey,
+	private void updateForTopLevel(
+			JKey topLevelKey,
 			byte[] prefix,
 			MutableSigClassification classification,
 			Function<byte[], TransactionSignature> sigsFn
 	) {
-		visitSimpleKeys(payerKey, key -> {
+		visitSimpleKeys(topLevelKey, key -> {
 			byte[] ed25519 = key.getEd25519();
 			if (beginsWith(ed25519, prefix)) {
 				var sig = sigsFn.apply(ed25519);
 				if (sig != INVALID_MISSING_SIG) {
-					classification.considerSetting(PAYER_MATCH);
+					classification.considerSetting(TOP_LEVEL_MATCH);
 				}
 			}
 		});

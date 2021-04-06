@@ -40,8 +40,12 @@ hs_err_pid*
 !hedera-node/data/backup/*.sh
 !hedera-node/configuration/compose/init.db/*.sh
 *.json
+!hapi-utils/src/test/resources/bootstrap/*.json
 !hedera-node/src/test/resources/legacyAccounts.json
+!hedera-node/src/test/resources/bootstrap/*.json
+!hedera-node/src/main/resources/*.json
 !test-clients/src/main/resource/FeeSchedule.json
+!test-clients/src/main/resource/testSystemFiles/*.json
 .circleci/*.yml-excerpt
 hedera-node/temp/
 hedera-node/*.csv

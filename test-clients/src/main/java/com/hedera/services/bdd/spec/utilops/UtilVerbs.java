@@ -279,32 +279,6 @@ public class UtilVerbs {
 		});
 	}
 
-	public static HapiSpecOperation updateToNewThrottlePropsFrom(String throttlePropsLoc) {
-		return withOpContext((spec, opLog) -> {
-			var lookup = getFileContents(APP_PROPERTIES);
-			allRunFor(spec, lookup);
-			var oldContents = lookup.getResponse().getFileGetContents().getFileContents().getContents();
-			var oldConfig = ServicesConfigurationList.parseFrom(oldContents.toByteArray());
-
-			var newConfig = ServicesConfigurationList.newBuilder();
-			oldConfig.getNameValueList()
-					.stream()
-					.filter(UtilVerbs::isNotThrottleProp)
-					.forEach(newConfig::addNameValue);
-			var in = Files.newInputStream(Paths.get(throttlePropsLoc));
-			var jutilProps = new Properties();
-			jutilProps.load(in);
-			for (String name : jutilProps.stringPropertyNames()) {
-				newConfig.addNameValue(from(name, jutilProps.getProperty(name)));
-			}
-
-			var update = fileUpdate(APP_PROPERTIES)
-					.payingWith(ADDRESS_BOOK_CONTROL)
-					.contents(newConfig.build().toByteString());
-			allRunFor(spec, update);
-		});
-	}
-
 	public static Setting from(String name, String value) {
 		return Setting.newBuilder()
 				.setName(name)

@@ -20,10 +20,16 @@ package com.hedera.services.throttling;
  * ‍
  */
 
+import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
-import java.util.EnumSet;
+import java.util.List;
 
 public interface FunctionalityThrottling {
 	boolean shouldThrottle(HederaFunctionality function);
+
+	void rebuildFor(ThrottleDefinitions defs);
+	List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function);
+	List<DeterministicThrottle> allActiveThrottles();
 }

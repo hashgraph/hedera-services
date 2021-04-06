@@ -19,19 +19,19 @@ From IntelliJ, choose `File -> Open` and navigate to the the top-level _pom.xml_
 under the _hedera-services/_ directory you just cloned. Open it as a project:
 
 <p>
-    <img src="./import-dialogue.png"/>
+    <img src="./assets/import-dialogue.png"/>
 </p>
 
 Make sure you are using OpenJDK12 as the project SDK:
 
 <p>
-    <img src="./sdk-12.png"/>
+    <img src="./assets/sdk-12.png"/>
 </p>
 
 Open the Maven tool window, and run `mvn install` in the root project:
 
 <p>
-    <img src="./top-level-modules.png"/>
+    <img src="./assets/top-level-modules.png"/>
 </p>
 
 This will both, 
@@ -54,13 +54,13 @@ Run `ServicesMain#main` with an IntelliJ configuration whose working
 directory is the _hedera-node/_ directory of your clone of this repo:
 
 <p>
-    <img src="./node-configuration.png" height="300" width="450" />
+    <img src="./assets/node-configuration.png" height="300" width="450" />
 </p>
 
 You will see three black panes appear, similar to:
 
 <p>
-    <img src="./node-startup.png" height="150" width="600"/>
+    <img src="./assets/node-startup.png" height="150" width="600"/>
 </p>
 
 This node's name is "Alice" because of [Line 26](../hedera-node/config.txt#L26)
@@ -102,7 +102,7 @@ Run `HelloWorldSpec#main` with an IntelliJ configuration whose working
 directory is the _test-clients/_ directory of your clone of this repo:
 
 <p>
-    <img src="./spec-configuration.png" height="300" width="450" />
+    <img src="./assets/spec-configuration.png" height="300" width="450" />
 </p>
 
 Because [`node=localhost`](../test-clients/src/main/resource/spec-default.properties)
