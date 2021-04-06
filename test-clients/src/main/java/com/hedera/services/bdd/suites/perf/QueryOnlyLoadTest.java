@@ -131,6 +131,7 @@ public class QueryOnlyLoadTest extends LoadTest {
 				.payingWith(GENESIS)
 				.fee(ONE_HUNDRED_HBARS)
 				.noLogging()
+				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_ACCOUNT_ID, ACCOUNT_DELETED,ACCOUNT_ID_DOES_NOT_EXIST);
 	}
 
@@ -142,7 +143,9 @@ public class QueryOnlyLoadTest extends LoadTest {
 				.payingWith(GENESIS)
 				.fee(ONE_HUNDRED_HBARS)
 				.noLogging()
-				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_ACCOUNT_ID, ACCOUNT_DELETED,ACCOUNT_ID_DOES_NOT_EXIST);
+				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK)
+				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_ACCOUNT_ID,
+						ACCOUNT_DELETED,ACCOUNT_ID_DOES_NOT_EXIST);
 	}
 
 	private static HapiSpecOperation opGetAcctRecords(PerfTestLoadSettings settings) {
@@ -153,6 +156,7 @@ public class QueryOnlyLoadTest extends LoadTest {
 				.payingWith(GENESIS)
 				.fee(ONE_HUNDRED_HBARS)
 				.noLogging()
+				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_ACCOUNT_ID, ACCOUNT_DELETED,ACCOUNT_ID_DOES_NOT_EXIST);
 	}
 
@@ -165,6 +169,7 @@ public class QueryOnlyLoadTest extends LoadTest {
 				.payingWith(GENESIS)
 				.fee(ONE_HUNDRED_HBARS)
 				.noLogging()
+				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_TOPIC_ID, TOPIC_EXPIRED);
 	}
 
