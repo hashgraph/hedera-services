@@ -365,13 +365,13 @@ class MerkleNetworkContextTest {
 				.willReturn(congestionStarts[1].getNano());
 		given(in.readLong())
 				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used())
-				.willReturn(congestionStarts[0].getEpochSecond())
-				.willReturn(congestionStarts[1].getEpochSecond());
+				.willReturn(usageSnapshots[1].used());
 		given(serdes.readNullableInstant(in))
 				.willReturn(consensusTimeOfLastHandledTxn)
 				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(RichInstant.fromJava(usageSnapshots[1].lastDecisionTime()));
+				.willReturn(RichInstant.fromJava(usageSnapshots[1].lastDecisionTime()))
+				.willReturn(RichInstant.fromJava(congestionStarts[0]))
+				.willReturn(RichInstant.fromJava(congestionStarts[1]));
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.RELEASE_0130_VERSION);

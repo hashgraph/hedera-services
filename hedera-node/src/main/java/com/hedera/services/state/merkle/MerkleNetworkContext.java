@@ -178,7 +178,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			if (numCongestionStarts > 0) {
 				congestionLevelStarts = new RichInstant[numCongestionStarts];
 				for (int i = 0; i < numCongestionStarts; i++) {
-					congestionLevelStarts[i] = RichInstant.from(in);
+					congestionLevelStarts[i] = serdes.readNullableInstant(in);
 				}
 			}
 		}
