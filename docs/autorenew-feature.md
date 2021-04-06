@@ -21,12 +21,13 @@
 ## Implementation
 Hedera Services will perform a circular scanning of entities, meaning after we reach the last entity in the ledger, we will go back scanning from the first entity in the ledger.
 
-When trying to renew an entity:
+After handling a transaction, when trying to renew an entity:
 1. Calculate the fee to extend the entity's `expirationTime` for another `autoRenewPeriod`.
 2. If the `autoRenewAccount` of the entity has enough balance to cover this fee:
   - extend the entity's `expirationTime` for another `autoRenewPeriod`.
   - otherwise, translate the remaining balance of the `autoRenewAccount` into an extension, preferably proportional to the fee calculated in step 1, then extend accordingly.
 3. If the grace period also passes, permanently delete the entity from the ledger.
+4. The consensus timestamp of the autorenewal or autodeletion of the first entity will be 1 nanosecond after the consensus timestamp of the handled transaction. If Hedera Services autorenew or autodelete more than one entity in the same handled transaction, the consensus timestamp of the autorenewal or autodeletion of the next entity will be 1 nanosecond after that of the previous entity.
 
 For restart and reconnect: The last scanned entity must be in the state for synchronization.
 
