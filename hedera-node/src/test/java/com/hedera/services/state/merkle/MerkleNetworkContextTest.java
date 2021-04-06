@@ -313,6 +313,23 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void updatesFromSavedCongestionStartsEvenIfNull() {
+		// setup:
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+		congestionStarts[1] = null;
+
+		// given:
+		subject.congestionLevelStarts[1] = null;
+
+		// when:
+		subject.updateWithSavedCongestionStarts(feeMultiplierSource);
+
+		// then:
+		verify(feeMultiplierSource, times(1))
+				.resetCongestionLevelStarts(congestionStarts);
+	}
+
+	@Test
 	void updatesFromSavedCongestionStarts() {
 		feeMultiplierSource = mock(FeeMultiplierSource.class);
 

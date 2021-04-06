@@ -134,9 +134,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void updateWithSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
 		if (congestionLevelStarts.length > 0) {
-			var congestionStarts = Arrays.stream(congestionLevelStarts)
-							.map(RichInstant::toJava)
-							.toArray(Instant[]::new);
+			Instant[] congestionStarts = new Instant[congestionLevelStarts.length];
+			for (int i = 0; i < congestionLevelStarts.length; i++) {
+				if (congestionLevelStarts[i] != null) {
+					congestionStarts[i] = congestionLevelStarts[i].toJava();
+				}
+			}
 			feeMultiplierSource.resetCongestionLevelStarts(congestionStarts);
 		}
 	}
