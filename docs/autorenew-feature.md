@@ -1,4 +1,4 @@
-# The autorenew feature
+# The Entity Auto Renewal feature
 
 ## Goal
 -	Allow Hedera Services to automatically search for entities such as accounts, files, smart contracts, topics, tokens... that are about to expire and renew them.
@@ -10,10 +10,11 @@
   * `autorenew.maxNumberOfEntitiesToRenew`
   * `autorenew.gracePeriod`
 - Each Hedera entity has an `expirationTime` which is the effective consensus timestamp at (and after) which the entity is set to expire.
-- Each Hedera entity also has an `autoRenewAccount` which is the account to pay for the fee at renewal. This `autoRenewAccount` could be itself if the entity is a crypto account or an account associated with the entity when it was created.
-- When a Hedera entity is created, its initial lifetime is defined by its `autoRenewPeriod`. At its `expirationTime`, Hedera Services will try to extend an entity's lifetime by another `autoRenewPeriod` if the `autoRenewAccount` has enough balance to do so, or as much extension as the remaining balance permits.
+- Each Hedera entity also has an `autoRenewAccount` which is the account to pay for the fees at renewal. If this `autoRenewAccount` is not specified, a crypto account or a smart contract will be responsible for its own renewal fees, while an entity of other types will be marked for deletion at the point of renewal.
+- When a Hedera entity is created, the payer account is charged enough hbars (as a rental fee) for the entity to stay active in the ledger state until consensus time passes its `expirationTime`. At its expiration time, Hedera Services will try to extend an entity's expiration time by another `autoRenewPeriod` if the `autoRenewAccount` has enough balance to do so, or as much extension as the remaining balance permits.
+- A Hedera entity that lacks a funded `autoRenewAccount`, namely `autoRenewAccount` is not specified or has zero balance at the time renewal fees are due, will be marked for deletion. The entity will then have a grace period (defaulted to 7 days) before permanent deletion.
+- A Hedera entity can have its expiration time extended by anyone, not just by the admin account. The expiration time is the only field that can be changed in an update without being signed by the owner or the admin.
 - After handling a transaction, Hedera Services will search within the next `autorenew.numberOfEntitiesToCheck` for upto `autorenew.maxNumberOfEntitiesToRenew` entities that expired then try to renew these entities.
-- After the grace period, if the `expirationTime` of an entity is not extended, it will be deleted from the system.
 
 ## Implementation
 Hedera Services will perform a circular scanning of entities, meaning after we reach the last entity in the system, we will go back scanning from the first entity in the system.
