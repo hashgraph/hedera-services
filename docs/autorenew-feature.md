@@ -2,21 +2,26 @@
 
 ## Goal
 - Prior to the implementation of the Entity Auto Renewal feature, the expiration time of a Hedera entity, which is specified in the HAPI document, has not been checked or enforced. An entity remains active in the ledger even after its expiration time, without additional fees being charged. Upon implementation of this feature, Hedera Services will __begin to charge rent__ for automatically renewed entities; and will remove from the ledger expired entities which are either deleted or have an admin/autorenew account with zero balance at the time renewal fees are due.
-- Schedule entities do not autorenew, and are always removed from the ledger when they expire.
 
 ## Design
 - Introduce new settings in `application.properties`:
   * `autorenew.isEnabled`
-  * `autorenew.numberOfEntitiesToCheck`
+  * `autorenew.numberOfEntitiesToScan`
   * `autorenew.maxNumberOfEntitiesToRenew`
   * `autorenew.gracePeriod`
 - Each Hedera entity has an `expirationTime` which is the effective consensus timestamp at (and after) which the entity is set to expire.
 - Each Hedera entity also has an `autoRenewAccount` which is the account to pay for the fees at renewal. If this `autoRenewAccount` is not specified, a crypto account or a smart contract will be responsible for its own renewal fees, while an entity of other types will be marked for deletion at the point of renewal.
 - When a Hedera entity is created, the payer account is charged enough hbars (as a rental fee) for the entity to stay active in the ledger state until consensus time passes its `expirationTime`. At its expiration time, Hedera Services will try to extend an entity's expiration time by another `autoRenewPeriod` if the `autoRenewAccount` has enough balance to do so, or as much extension as the remaining balance permits.
+- `autoRenewPeriod` is a field to customize the extension period in seconds for a crypto account, a topic, a smart contract, or a token. For a file, the extension period will be three months. Future protobuf changes will permit customizing this extension period as well.
 - A Hedera entity that lacks a funded `autoRenewAccount`, namely `autoRenewAccount` is not specified or has zero balance at the time renewal fees are due, will be marked for deletion. The entity will then have a grace period (defaulted to 7 days) before permanent deletion.
 - A Hedera entity can have its expiration time extended by anyone, not just by the admin account. The expiration time is the only field that can be changed in an update without being signed by the owner or the admin.
 - Every token type has an associated account as its treasury account. An expired account on permanent deletion (not being renewed after the grace period) will have its tokens transfer to the treasury account. The treasury account always has an expiration time the same as or later than its token type, because extending the latter automatically extends the former, if needed. So the treasury account can’t expire unless the token type itself expires, in which case, all tokens of that type expire.
-- After handling a transaction, Hedera Services will search within the next `autorenew.numberOfEntitiesToCheck` for upto `autorenew.maxNumberOfEntitiesToRenew` entities that expired then try to renew these entities.
+- After handling a transaction, all Hedera Services nodes will perform a synchronous scanning within the next `autorenew.numberOfEntitiesToScan` for upto `autorenew.maxNumberOfEntitiesToRenew` entities that expired then try to renew these entities.
+- Records of autorenew charges and autodeletion of entities will appear in the record stream, and will be available via mirror nodes. No receipts or records for autorenewal/autodeletion actions will be available via HAPI queries.
+- Crypto accounts will be prioritized for autorenewal, followed by consensus topics, tokens, smart contracts and files. Schedule entities do not autorenew, and are always removed from the ledger when they expire.
+- There is __no change in existing protobufs__. Account and entity owners must ensure that linked autorenew and admin accounts have sufficient balances for autorenewal fees, or risk permanent removal of their entity!
+- Accounts who leverage omnibus entities for services including wallets, exchanges, and custody will need to account for the deduction of hbar from any Hedera Entities used in their system at time of autorenewal.
+- Every entity will receive one free auto renewal at implementation of this feature. This will have the effect of extending the initial period for autorenewal ~92 days.
 
 ## Implementation
 Hedera Services will perform a circular scanning of entities, meaning after we reach the last entity in the ledger, we will go back scanning from the first entity in the ledger.
@@ -70,6 +75,4 @@ After permanently deleting an entity from the ledger due to the zero balance of 
 An entity removal record will be very similar to an autorenewal record. The `memo` will reflect that the entity was automatically deleted. Due to the zero balance of the `autoRenewAccount`, the `transactionFee` is zero and the `transferList` is empty.
 
 ## Special notes
-- At the time of this writing, a file is not associated with an `autoRenewAccount` so a file can only be renewed by a fileUpdate transaction.
-- Because cryptoDelete transfers all remaining balance of an account to another account, all accounts that are marked `deleted` will have zero balance. In other words, an account with a non-zero balance will never be marked `deleted`. Step 2 of the implementation does not need to worry about the `autoRenewAccount` being marked `deleted` before.
-- At the time of this writing, __only topics__ have an AUTORENEW_GRACE_PERIOD of 7 days being mentioned in the HAPI document. Propose to either __remove__ this grace period or introduce `autorenew.gracePeriod` in `application.properties` to specify the autorenew grace period for __all entities__.
+- At the time of this writing, __only topics__ have an AUTORENEW_GRACE_PERIOD of 7 days being mentioned in the HAPI document.  `autorenew.gracePeriod` setting, defaulted to 7 days, will be added in `application.properties` to specify the autorenew grace period for __all entities__.
