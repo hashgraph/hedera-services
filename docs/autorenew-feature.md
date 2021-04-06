@@ -19,14 +19,14 @@
 - After handling a transaction, Hedera Services will search within the next `autorenew.numberOfEntitiesToCheck` for upto `autorenew.maxNumberOfEntitiesToRenew` entities that expired then try to renew these entities.
 
 ## Implementation
-Hedera Services will perform a circular scanning of entities, meaning after we reach the last entity in the system, we will go back scanning from the first entity in the system.
+Hedera Services will perform a circular scanning of entities, meaning after we reach the last entity in the ledger, we will go back scanning from the first entity in the ledger.
 
 When trying to renew an entity:
 1. Calculate the fee to extend the entity's `expirationTime` for another `autoRenewPeriod`.
 2. If the `autoRenewAccount` of the entity has enough balance to cover this fee:
   - extend the entity's `expirationTime` for another `autoRenewPeriod`.
   - otherwise, translate the remaining balance of the `autoRenewAccount` into an extension, preferably proportional to the fee calculated in step 1, then extend accordingly.
-3. If the grace period also passes, delete the entity from the system.
+3. If the grace period also passes, permanently delete the entity from the ledger.
 
 For restart and reconnect: The last scanned entity must be in the state for synchronization.
 
@@ -50,7 +50,7 @@ After autorenewing an entity, Hedera Services will generate a `TransactionRecord
 The main difference between an autorenewal record and a regular `TransactionRecord` is that it has an empty `transactionHash` and an empty `transactionID.transactionValidStart`. There were older versions of Hedera Services that did not have `transactionHash` in a `TransactionRecord`, but an empty `transactionID.transactionValidStart` will guarantee that the `TransactionRecord` was generated in place of an autorenewal record.
 
 ## Entity removal record
-After autodeleting an entity due to the zero balance of the `autoRenewAccount`, Hedera Services will generate a `TransactionRecord` that serves as an autodeletion record and contains the following:
+After permanently deleting an entity from the ledger due to the zero balance of the `autoRenewAccount`, Hedera Services will generate a `TransactionRecord` that serves as an entity removal record and contains the following:
 
 | Field | Type | Label | Description |
 |---|---|---|---|
@@ -66,7 +66,7 @@ After autodeleting an entity due to the zero balance of the `autoRenewAccount`, 
 | tokenTransferLists | TokenTransferList | repeated | empty |
 | scheduleRef | ScheduleID | | empty |
 
-An autodeletion record will be very similar to an autorenewal record. The `memo` will reflect that the entity was automatically deleted. Due to the zero balance of the `autoRenewAccount`, the `transactionFee` is zero and the `transferList` is empty.
+An entity removal record will be very similar to an autorenewal record. The `memo` will reflect that the entity was automatically deleted. Due to the zero balance of the `autoRenewAccount`, the `transactionFee` is zero and the `transferList` is empty.
 
 ## Special notes
 - At the time of this writing, a file is not associated with an `autoRenewAccount` so a file can only be renewed by a fileUpdate transaction.
