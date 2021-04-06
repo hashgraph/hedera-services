@@ -188,7 +188,7 @@ public class ServicesMain implements SwirldMain {
 			ctx.systemFilesManager().createAddressBookIfMissing();
 			ctx.systemFilesManager().createNodeDetailsIfMissing();
 			ctx.systemFilesManager().createUpdateZipFileIfMissing();
-			ctx.networkCtxManager().initObservableSysFiles();
+			ctx.networkCtxManager().loadObservableSysFilesIfNeeded();
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not initialize system files!", e);
 		}

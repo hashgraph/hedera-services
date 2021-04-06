@@ -263,11 +263,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			var throttle = throttles.get(i);
 			try {
 				throttle.resetUsageTo(savedUsageSnapshot);
+				log.info("Reset {} with saved usage snapshot", throttle);
 			} catch (Exception e) {
 				log.warn("Saved usage snapshot #" + (i + 1)
 						+ " was not compatible with the corresponding active throttle ("
 						+ e.getMessage() + "); not performing a reset!");
 				resetUnconditionally(throttles, currUsageSnapshots);
+				break;
 			}
 		}
 	}

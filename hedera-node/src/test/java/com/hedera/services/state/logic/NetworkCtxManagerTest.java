@@ -89,7 +89,7 @@ class NetworkCtxManagerTest {
 		given(systemFilesManager.areObservableFilesLoaded()).willReturn(true);
 
 		// when:
-		subject.initObservableSysFiles();
+		subject.loadObservableSysFilesIfNeeded();
 
 		// then:
 		verify(systemFilesManager, never()).loadObservableSystemFiles();
@@ -103,7 +103,7 @@ class NetworkCtxManagerTest {
 		given(systemFilesManager.areObservableFilesLoaded()).willReturn(false);
 
 		// when:
-		subject.initObservableSysFiles();
+		subject.loadObservableSysFilesIfNeeded();
 
 		// then:
 		verify(systemFilesManager).loadObservableSystemFiles();
@@ -202,5 +202,14 @@ class NetworkCtxManagerTest {
 		// then:
 		verify(networkCtx, never()).midnightRates();
 		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeSameDay);
+	}
+
+	@Test
+	void delegatesNotLoaded() {
+		// when:
+		subject.setObservableFilesNotLoaded();
+
+		// then:
+		verify(systemFilesManager).setObservableFilesNotLoaded();
 	}
 }
