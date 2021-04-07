@@ -24,6 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -36,6 +37,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JKeyListTest {
+	@Test
+	void requiresNonNullKeys() {
+		// expect:
+		Assertions.assertThrows(IllegalArgumentException.class, () -> new JKeyList(null));
+	}
+
 	@Test
 	void emptyWaclSerdeWorks() throws IOException {
 		// given:

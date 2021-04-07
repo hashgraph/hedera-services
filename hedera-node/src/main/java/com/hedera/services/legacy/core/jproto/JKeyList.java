@@ -38,6 +38,9 @@ public class JKeyList extends JKey {
 	}
 
 	public JKeyList(List<JKey> keys) {
+		if (keys == null) {
+			throw new IllegalArgumentException("JKeyList cannot be constructed with a null 'keys' argument!");
+		}
 		this.keys = keys;
 	}
 

@@ -20,14 +20,14 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hedera.services.legacy.util.ComplexKeyManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import org.apache.commons.codec.DecoderException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.legacy.proto.utils.KeyExpansion.KEY_EXPANSION_DEPTH;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,21 +39,34 @@ public class JKeyTest {
 	public void positiveConvertKeyTest() throws Exception {
 		//given
 		Key accountKey = ComplexKeyManager
-				.genComplexKey(ComplexKeyManager.SUPPORTE_KEY_TYPES.single.name());
+				.genComplexKey(ComplexKeyManager.SUPPORTED_KEY_TYPES.single.name());
 
 		//expect
 		assertDoesNotThrow(() -> JKey.convertKey(accountKey, 1));
 	}
 
 	@Test
-	public void negativeConvertKeyTest() throws Exception {
-		//given
-		Key accountKey = ComplexKeyManager
-				.genComplexKey(ComplexKeyManager.SUPPORTE_KEY_TYPES.thresholdKey.name());
+	public void negativeConvertKeyTest() {
+		// given:
+		var keyTooDeep = nestKeys(Key.newBuilder(), KEY_EXPANSION_DEPTH).build();
 
-		//expect
-		assertThrows(DecoderException.class, () -> JKey.convertKey(accountKey, KeyExpansion.KEY_EXPANSION_DEPTH + 1),
-				"Exceeding max expansion depth of " + KeyExpansion.KEY_EXPANSION_DEPTH);
+		// expect:
+		assertThrows(
+				DecoderException.class,
+				() -> JKey.convertKey(keyTooDeep, 1),
+				"Exceeding max expansion depth of " + KEY_EXPANSION_DEPTH);
+	}
+
+	private Key.Builder nestKeys(Key.Builder builder, int additionalKeysToNest) {
+		if (additionalKeysToNest == 0) {
+			builder.setEd25519(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
+			return builder;
+		} else {
+			var nestedBuilder = Key.newBuilder();
+			nestKeys(nestedBuilder, additionalKeysToNest - 1);
+			builder.setKeyList(KeyList.newBuilder().addKeys(nestedBuilder));
+			return builder;
+		}
 	}
 
 	@Test

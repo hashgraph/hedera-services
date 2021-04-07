@@ -140,5 +140,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	public boolean isTriggeredTxn() { return false; }
 
-	public ScheduleID getScheduleRef() { return ScheduleID.getDefaultInstance(); }
+	public ScheduleID getScheduleRef() {
+		throw new UnsupportedOperationException("Only the TriggeredTxnAccessor implementation can refer to a schedule");
+	}
 }
