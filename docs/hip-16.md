@@ -25,6 +25,8 @@ For a public ledger to avoid suffering a tragedy of the commons it is important 
 
 Prior to this HIP, the expiration time of a Hedera entity has not been checked or enforced. An entity remains active in the ledger even after its expiration time, without additional fees being charged. Upon implementation of this HIP, Hedera Services will __begin to charge rent__ for automatically renewed entities; and will remove from the ledger expired entities which are either deleted or have an admin/autorenew account with zero balance at the time renewal fees are due.
 
+The expiration time of an entity still can be extended via an update transaction, as it is currently supported. Anyone can initiate this update, not just the owner or the admin of the entity. Users will not be overcharged for the extension fee.
+
 ## Specification
 
 ### Terminologies
@@ -64,9 +66,9 @@ Every account will receive one free auto renewal at implementation of this featu
 
 A Hedera Account with zero balance at the point of renewal would be marked for deletion.
 
-A Hedera Account with non-zero balance that is not sufficient to cover the entire cost of renewal will have its remaining balance wholly used for a shorter extension of the entity. 
+A Hedera Account with non-zero balance that is not sufficient to cover the entire cost of renewal will have its remaining balance wholly used for a shorter extension of the entity.
 
-If the autoRenewAccount of a topic does not have sufficient balance the topic would be deleted. The ledger cannot enforce agreements regarding funding of the topic made by participants in the topic. 
+If the autoRenewAccount of a topic does not have sufficient balance the topic would be deleted. The ledger cannot enforce agreements regarding funding of the topic made by participants in the topic.
 
 Any entity can have its expiration time extended by anyone, not just by the admin account. The expiration time is the only field that can be changed in an update without being signed by the owner or the admin.
 
@@ -78,7 +80,7 @@ This feature has been documented in the initial White Paper and protobuf documen
 
 Implementation of this feature will be referenced in release notes, supported by SDKs, as well as supported at docs.hedera.com.
 
-Key partners operating mirror nodes, wallets, exchanges, etc. should notify users when supporting account or entity creation of both the autorenew period and anticipated cost for autorenew. 
+Key partners operating mirror nodes, wallets, exchanges, etc. should notify users when supporting account or entity creation of both the autorenew period and anticipated cost for autorenew.
 
 ## Reference Implementation
 
@@ -92,7 +94,7 @@ The proposed pricing is as follows (assumes exchange rate as of April 6, 2020 an
 - "ContractAutoRenew": $0.064
 - "FileAutoRenew": $0.0014
 
-https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#autorenewal-record 
+https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#autorenewal-record
 
 https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#entity-removal-record
 
