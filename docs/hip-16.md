@@ -62,13 +62,15 @@ Every account will receive one free auto renewal at implementation of this featu
 
 ## Security Implications
 
-A Hedera Account without an hbar balance sufficient to cover the cover the cost of renewal at the point of renewal would be marked for deletion. The Account owner then have a grace period to fund the account and renewal before permanent deletion.
+A Hedera Account with zero balance at the point of renewal would be marked for deletion.
+
+A Hedera Account with non-zero balance that is not sufficient to cover the entire cost of renewal will have its remaining balance wholly used for a shorter extension of the entity. 
 
 If the autoRenewAccount of a topic does not have sufficient balance the topic would be deleted. The ledger cannot enforce agreements regarding funding of the topic made by participants in the topic. 
 
-Any entity can have its expiration date extended by anyone. Not just the admin key. They expiration date is the only field that can be changed in an update without signature by the owner or the admin. 
+Any entity can have its expiration time extended by anyone, not just by the admin account. The expiration time is the only field that can be changed in an update without being signed by the owner or the admin.
 
-Entities who leverage omnibus accounts for services including wallets, exchanges, and custody will need to account for the deduction of hbar from any Hedera Accounts used in their system at time of autorenewal.
+Accounts who leverage omnibus entities for services including wallets, exchanges, and custody will need to account for the deduction of hbar from any Hedera Entities used in their system at time of autorenewal.
 
 ## How to Teach This
 
@@ -80,8 +82,16 @@ Key partners operating mirror nodes, wallets, exchanges, etc. should notify user
 
 ## Reference Implementation
 
-maximumAutoRenewDuration=8000001 seconds         // ~92 days
-minimumAutoRenewDuration=6999999 seconds          // ~81 days
+Use standardized properties:
+ledger.autoRenewPeriod.maxDuration=8000001 seconds // ~92 days
+ledger.autoRenewPeriod.minDuration=6999999 seconds // ~81 days
+
+The proposed pricing is as follows:
+- "CryptoAccountAutoRenew": $0.0014
+- "ConsensusTopicAutoRenew": $0.0003
+- "TokenAutoRenew": $0.026
+- "ContractAutoRenew": $0.064
+- "FileAutoRenew": $0.0014
 
 https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#autorenewal-record 
 
@@ -93,7 +103,7 @@ N/A
 
 ## Open Issues
 
-New issues will be created to track implementation in the hedera-services repo: https://github.com/hashgraph/hedera-services/issues ![image](https://user-
+New issues will be created to track implementation in the hedera-services repo: https://github.com/hashgraph/hedera-services/issues
 
 ## References
 
