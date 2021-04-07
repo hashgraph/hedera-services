@@ -29,6 +29,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.txns.validation.PureValidation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -43,9 +44,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
-import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -158,7 +159,9 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		var validity = OK;
 		var op = txnBody.getScheduleCreate();
-		validity = checkAdminKey(op.hasAdminKey(), op.getAdminKey());
+		if (op.hasAdminKey()) {
+			validity = PureValidation.checkKey(op.getAdminKey(), INVALID_ADMIN_KEY);
+		}
 		if (validity != OK) {
 			return validity;
 		}
