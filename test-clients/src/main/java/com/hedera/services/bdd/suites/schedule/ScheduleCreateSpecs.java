@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -580,7 +581,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given(
 						scheduleCreate(
 								"nope",
-								createTopic("neverToBe").signedBy()
+								createTopic("neverToBe")
 						).hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST)
 				).when(
 						overriding("scheduling.whitelist", "ConsensusCreateTopic"),

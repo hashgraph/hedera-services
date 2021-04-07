@@ -71,7 +71,7 @@ class SigMapScheduleClassifierTest {
 		given(sigsFn.apply(eq(a.getEd25519()))).willReturn(INVALID_MISSING_SIG);
 
 		// when:
-		var answer = subject.validScheduleKeys(a, sigMap, sigsFn, new MatchingInvalidASig());
+		var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
 
 		// then:
 		assertEquals(Optional.empty(), answer);
@@ -82,7 +82,7 @@ class SigMapScheduleClassifierTest {
 		given(sigsFn.apply(eq(a.getEd25519()))).willReturn(VALID_SIG);
 
 		// when:
-		var answer = subject.validScheduleKeys(a, sigMap, sigsFn, new MatchingInvalidASig());
+		var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
 
 		// then:
 		assertEquals(Optional.of(Collections.emptyList()), answer);
@@ -91,7 +91,7 @@ class SigMapScheduleClassifierTest {
 	@Test
 	void prioritizesValidScheduledSig() {
 		// when:
-		var answer = subject.validScheduleKeys(neither, sigMap, sigsFn, new MatchingValidAInvalidABSig());
+		var answer = subject.validScheduleKeys(List.of(neither), sigMap, sigsFn, new MatchingValidAInvalidABSig());
 
 		// then:
 		assertEquals(Optional.of(List.of(a)), answer);

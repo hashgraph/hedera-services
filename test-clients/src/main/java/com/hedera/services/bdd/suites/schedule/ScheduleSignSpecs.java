@@ -52,7 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleSignSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
@@ -83,6 +82,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						signalsIrrelevantSigEvenAfterLinkedEntityUpdate(),
 						triggersUponFinishingPayerSig(),
 						addingSignaturesToExecutedTxFails(),
+						okIfAdminKeyOverlapsWithActiveScheduleKey(),
 						suiteCleanup(),
 				}
 		);
@@ -253,6 +253,25 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec okIfAdminKeyOverlapsWithActiveScheduleKey() {
+		var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
+		var adminKey = "adminKey";
+		var scheduledTxnKey = "scheduledTxnKey";
+
+		return defaultHapiSpec("OkIfAdminKeyOverlapsWithActiveScheduleKey")
+				.given(
+						newKeyNamed(adminKey).generator(keyGen).logged(),
+						newKeyNamed(scheduledTxnKey).generator(keyGen).logged(),
+						cryptoCreate("sender").key(scheduledTxnKey).balance(1L)
+				).when(
+						scheduleCreate("deferredXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", ADDRESS_BOOK_CONTROL, 1)
+								)
+						).adminKey(adminKey)
+				).then();
+	}
+
 	public HapiApiSpec overlappingKeysTreatedAsExpected() {
 		var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
@@ -283,13 +302,13 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleSign("deferredXfer")
 								.alsoSigningWith("bKey")
 								/* In the rare, but possible, case that the overlapping byte shared by aKey
-								* and bKey is _also_ shared by the DEFAULT_PAYER, the bKey prefix in the sig
-								* map will probably not collide with aKey any more, and we will get
-								* NO_NEW_VALID_SIGNATURES instead of SOME_SIGNATURES_WERE_INVALID.
-								*
-								* So we need this to stabilize CI. But if just testing locally, you may
-								* only use .hasKnownStatus(SOME_SIGNATURES_WERE_INVALID) and it will pass
-								* >99.99% of the time. */
+								 * and bKey is _also_ shared by the DEFAULT_PAYER, the bKey prefix in the sig
+								 * map will probably not collide with aKey any more, and we will get
+								 * NO_NEW_VALID_SIGNATURES instead of SOME_SIGNATURES_WERE_INVALID.
+								 *
+								 * So we need this to stabilize CI. But if just testing locally, you may
+								 * only use .hasKnownStatus(SOME_SIGNATURES_WERE_INVALID) and it will pass
+								 * >99.99% of the time. */
 								.hasKnownStatusFrom(SOME_SIGNATURES_WERE_INVALID, NO_NEW_VALID_SIGNATURES),
 						scheduleSign("deferredXfer")
 								.alsoSigningWith("aKey", "bKey", "cKey"),

@@ -39,6 +39,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -103,8 +104,10 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 		}
 
 		var scheduleId = result.getCreated().get();
+		var payerKey = txnCtx.activePayerKey();
+		var topLevelKeys = schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
 		var validScheduleKeys = classifier.validScheduleKeys(
-				txnCtx.activePayerKey(),
+				topLevelKeys,
 				sigMap,
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);

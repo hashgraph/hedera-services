@@ -182,6 +182,7 @@ public class ScheduleCreateTransitionLogicTest {
 		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
 
 		givenValidTxnCtx();
+		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
 
 		// when:
 		subject.doStateTransition();
@@ -207,6 +208,7 @@ public class ScheduleCreateTransitionLogicTest {
 		given(merkleSchedule.expiry()).willReturn(now.getEpochSecond());
 
 		givenValidTxnCtx();
+		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
 		// and:
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
 				.willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
@@ -248,6 +250,7 @@ public class ScheduleCreateTransitionLogicTest {
 	public void rollsBackForAnyNonOkSigning() throws InvalidProtocolBufferException {
 		// given:
 		givenValidTxnCtx();
+		given(merkleSchedule.adminKey()).willReturn(jAdminKey);
 		// and:
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
 				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
@@ -354,7 +357,12 @@ public class ScheduleCreateTransitionLogicTest {
 			boolean invalidInnerMemo
 	) {
 		given(accessor.getSigMap()).willReturn(sigMap);
-		given(classifier.validScheduleKeys(eq(payerKey), eq(sigMap), any(), any())).willReturn(validScheduleKeys);
+		jAdminKey = asUsableFcKey(key);
+		given(classifier.validScheduleKeys(
+				eq(List.of(payerKey, jAdminKey.get())),
+				eq(sigMap),
+				any(),
+				any())).willReturn(validScheduleKeys);
 
 		txnId = TransactionID.newBuilder()
 				.setTransactionValidStart(

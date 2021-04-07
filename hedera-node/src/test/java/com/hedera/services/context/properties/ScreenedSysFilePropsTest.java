@@ -21,7 +21,6 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.Logger;
@@ -31,13 +30,11 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 class ScreenedSysFilePropsTest {
@@ -63,17 +60,6 @@ class ScreenedSysFilePropsTest {
 		assertEquals(42, subject.getProperty("tokens.maxPerAccount"));
 		assertTrue(subject.containsProperty("tokens.maxPerAccount"));
 		assertFalse(subject.containsProperty("nonsense"));
-	}
-
-	@Test
-	public void ignoresThrottleProps() {
-		// when:
-		subject.screenNew(withJust(API_THROTTLING_PREFIX, "42"));
-
-		// then:
-		assertTrue(subject.from121.isEmpty());
-		// and:
-		verify(log, never()).warn(String.format(ScreenedSysFileProps.MISPLACED_PROP_TPL, API_THROTTLING_PREFIX));
 	}
 
 	@Test

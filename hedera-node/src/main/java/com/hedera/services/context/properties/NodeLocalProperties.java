@@ -36,6 +36,19 @@ public class NodeLocalProperties {
 	private boolean recordStreamEnabled;
 	private int recordStreamQueueCapacity;
 	private int queryBlobLookupRetries;
+	private long nettyProdKeepAliveTime;
+	private String nettyTlsCrtPath;
+	private String nettyTlsKeyPath;
+	private long nettyProdKeepAliveTimeout;
+	private long nettyMaxConnectionAge;
+	private long nettyMaxConnectionAgeGrace;
+	private long nettyMaxConnectionIdle;
+	private int nettyMaxConcurrentCalls;
+	private int nettyFlowControlWindow;
+	private String devListeningAccount;
+	private boolean devOnlyDefaultNodeListens;
+	private String accountsExportPath;
+	private boolean exportAccountsOnStartup;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -57,6 +70,19 @@ public class NodeLocalProperties {
 		recordStreamEnabled = properties.getBooleanProperty("hedera.recordStream.isEnabled");
 		recordStreamQueueCapacity = properties.getIntProperty("hedera.recordStream.queueCapacity");
 		queryBlobLookupRetries = properties.getIntProperty("queries.blob.lookupRetries");
+		nettyProdKeepAliveTime = properties.getLongProperty("netty.prod.keepAliveTime");
+		nettyTlsCrtPath = properties.getStringProperty("netty.tlsCrt.path");
+		nettyTlsKeyPath = properties.getStringProperty("netty.tlsKey.path");
+		nettyProdKeepAliveTimeout = properties.getLongProperty("netty.prod.keepAliveTimeout");
+		nettyMaxConnectionAge = properties.getLongProperty("netty.prod.maxConnectionAge");
+		nettyMaxConnectionAgeGrace = properties.getLongProperty("netty.prod.maxConnectionAgeGrace");
+		nettyMaxConnectionIdle = properties.getLongProperty("netty.prod.maxConnectionIdle");
+		nettyMaxConcurrentCalls = properties.getIntProperty("netty.prod.maxConcurrentCalls");
+		nettyFlowControlWindow = properties.getIntProperty("netty.prod.flowControlWindow");
+		devListeningAccount = properties.getStringProperty("dev.defaultListeningNodeAccount");
+		devOnlyDefaultNodeListens = properties.getBooleanProperty("dev.onlyDefaultNodeListens");
+		accountsExportPath = properties.getStringProperty("hedera.accountsExportPath");
+		exportAccountsOnStartup = properties.getBooleanProperty("hedera.exportAccountsOnStartup");
 	}
 
 	public int port() {
@@ -109,5 +135,57 @@ public class NodeLocalProperties {
 
 	public int queryBlobLookupRetries() {
 		return queryBlobLookupRetries;
+	}
+
+	public long nettyProdKeepAliveTime() {
+		return nettyProdKeepAliveTime;
+	}
+
+	public String nettyTlsCrtPath() {
+		return nettyTlsCrtPath;
+	}
+
+	public String nettyTlsKeyPath() {
+		return nettyTlsKeyPath;
+	}
+
+	public long nettyProdKeepAliveTimeout() {
+		return nettyProdKeepAliveTimeout;
+	}
+
+	public long nettyMaxConnectionAge() {
+		return nettyMaxConnectionAge;
+	}
+
+	public long nettyMaxConnectionAgeGrace() {
+		return nettyMaxConnectionAgeGrace;
+	}
+
+	public long nettyMaxConnectionIdle() {
+		return nettyMaxConnectionIdle;
+	}
+
+	public int nettyMaxConcurrentCalls() {
+		return nettyMaxConcurrentCalls;
+	}
+
+	public int nettyFlowControlWindow() {
+		return nettyFlowControlWindow;
+	}
+
+	public String devListeningAccount() {
+		return devListeningAccount;
+	}
+
+	public boolean devOnlyDefaultNodeListens() {
+		return devOnlyDefaultNodeListens;
+	}
+
+	public String accountsExportPath() {
+		return accountsExportPath;
+	}
+
+	public boolean exportAccountsOnStartup() {
+		return exportAccountsOnStartup;
 	}
 }

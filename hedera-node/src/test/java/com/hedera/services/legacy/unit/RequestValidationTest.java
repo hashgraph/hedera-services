@@ -93,11 +93,11 @@ public class RequestValidationTest {
                 () -> StateView.EMPTY_VIEW,
                 new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
                 null,
-                null,
                 new MockAccountNumbers(),
                 policies,
                 new StandardExemptions(new MockAccountNumbers(), policies),
-                platformStatus);
+                platformStatus,
+                null);
     Timestamp timestamp =
         RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(10));
 
