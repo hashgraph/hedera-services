@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -108,6 +109,7 @@ public class ScheduleCreateTransitionLogicTest {
 	private SignatureMap sigMap = SigMapScheduleClassifierTest.sigMap;
 
 	private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
+	private Optional<JKey> jAdminKey;
 	private SigMapScheduleClassifier classifier;
 	private Optional<List<JKey>> validScheduleKeys = Optional.of(
 			List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
