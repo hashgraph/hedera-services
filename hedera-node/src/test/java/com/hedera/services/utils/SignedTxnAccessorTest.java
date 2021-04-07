@@ -78,7 +78,6 @@ public class SignedTxnAccessorTest {
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash().toByteArray());
 		assertEquals(expectedMap, accessor.getSigMap());
-		assertEquals(ScheduleID.getDefaultInstance(), accessor.getScheduleRef());
 	}
 
 	@Test
@@ -113,7 +112,6 @@ public class SignedTxnAccessorTest {
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()),
 				accessor.getHash().toByteArray());
 		assertEquals(expectedMap, accessor.getSigMap());
-		assertEquals(ScheduleID.getDefaultInstance(), accessor.getScheduleRef());
 	}
 
 	@Test
