@@ -287,12 +287,16 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		 * history. This history has two main uses: Purging expired records, and
 		 * classifying duplicate transactions. */
 		ctx.recordsHistorian().reviewExistingRecords();
-		/*
-		 * Use any entities stored in state to rebuild queue of expired entities.
-		 */
-		ctx.expiries().restartEntitiesTrackingFrom();
+		/* Use any entities stored in state to rebuild queue of expired entities. */
+		ctx.expiries().restartEntitiesTracking();
+		/* Re-initialize the "observable" system files; that is, the files which have
+	 	associated callbacks managed by the SysFilesCallback object. We explicitly
+	 	re-mark the files are not loaded here, in case this is a reconnect. (During a
+	 	reconnect the blob store might still be reloading, and we will finish loading
+	 	the observable files in the ServicesMain.init method.) */
+		ctx.networkCtxManager().setObservableFilesNotLoaded();
 		if (!blobStoreSupplier.get().isInitializing()) {
-			ctx.networkCtxManager().initObservableSysFiles();
+			ctx.networkCtxManager().loadObservableSysFilesIfNeeded();
 		}
 	}
 
