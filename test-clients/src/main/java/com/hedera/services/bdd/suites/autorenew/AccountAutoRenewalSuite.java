@@ -25,11 +25,13 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -50,19 +52,21 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				accountAutoRemoval()
+				accountAutoRemoval(),
+				accountAutoRenewal()
 		);
 	}
 
 	private HapiApiSpec accountAutoRemoval() {
+		String autoRemovedAccount = "autoRemovedAccount";
 		return defaultFailingHapiSpec("AccountAutoRemoval")
 				.given(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "10",
 										"autorenew.gracePeriod", "0"))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
-						cryptoCreate("autoRemovedAccount").autoRenewSecs(10).balance(0L),
-						getAccountInfo("autoRemovedAccount").logged()
+						cryptoCreate(autoRemovedAccount).autoRenewSecs(10).balance(0L),
+						getAccountInfo(autoRemovedAccount).logged()
 				)
 				.when(
 						sleepFor(15 * 1000),
@@ -70,7 +74,37 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						getTxnRecord("triggeringTransaction").logged()
 				)
 				.then(
-						getAccountBalance("autoRemovedAccount").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
+						getAccountBalance(autoRemovedAccount).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
+				);
+	}
+
+	private HapiApiSpec accountAutoRenewal() {
+		String autoRenewedAccount = "autoRenewedAccount";
+		long autoRenewSecs = 10;
+		long initialExpirationTime = Instant.now().getEpochSecond() + autoRenewSecs;
+		long newExpirationTime = initialExpirationTime + autoRenewSecs;
+		long initialBalance = ONE_HUNDRED_HBARS;
+		return defaultFailingHapiSpec("AccountAutoRenewal")
+				.given(
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
+								.overridingProps(Map.of(
+										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
+										"autorenew.gracePeriod", "0"))
+								.erasingProps(Set.of("minimumAutoRenewDuration")),
+						cryptoCreate(autoRenewedAccount).autoRenewSecs(autoRenewSecs).balance(initialBalance),
+						getAccountInfo(autoRenewedAccount).logged()
+				)
+				.when(
+						sleepFor(15 * 1000),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction"),
+						getTxnRecord("triggeringTransaction").logged()
+				)
+				.then(
+						getAccountInfo(autoRenewedAccount)
+								.has(accountWith()
+										.expiry(newExpirationTime, 5L)
+										.balance(initialBalance) // add and use balanceLessThan(initialBalance)
+								).logged()
 				);
 	}
 
