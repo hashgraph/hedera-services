@@ -60,7 +60,7 @@ class ConfigDrivenNettyFactoryTest {
 
 	@Test
 	void usesProdPropertiesWhenAppropros() {
-		given(nodeLocalProperties.activeProfile()).willReturn(Profile.PROD);
+		given(nodeLocalProperties.nettyMode()).willReturn(Profile.PROD);
 		given(nodeLocalProperties.nettyProdKeepAliveTime()).willReturn(keepAliveTime);
 		given(nodeLocalProperties.nettyProdKeepAliveTimeout()).willReturn(keepAliveTimeout);
 		given(nodeLocalProperties.nettyMaxConnectionAge()).willReturn(maxConnectionAge);
@@ -88,7 +88,7 @@ class ConfigDrivenNettyFactoryTest {
 
 	@Test
 	void failsFastWhenCrtIsMissing() {
-		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+		given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
 		given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("not-a-real-crt");
 
 		// when:
@@ -97,7 +97,7 @@ class ConfigDrivenNettyFactoryTest {
 
 	@Test
 	void failsFastWhenKeyIsMissing() {
-		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+		given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
 		given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("src/test/resources/test-hedera.crt");
 		given(nodeLocalProperties.nettyTlsKeyPath()).willReturn("not-a-real-key");
 
@@ -107,7 +107,7 @@ class ConfigDrivenNettyFactoryTest {
 
 	@Test
 	void usesSslPropertiesWhenAppropros() throws FileNotFoundException, SSLException {
-		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+		given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
 		given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("src/test/resources/test-hedera.crt");
 		given(nodeLocalProperties.nettyTlsKeyPath()).willReturn("src/test/resources/test-hedera.key");
 
