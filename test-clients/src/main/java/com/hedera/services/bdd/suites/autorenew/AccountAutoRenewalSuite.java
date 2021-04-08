@@ -31,6 +31,8 @@ import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -59,11 +61,13 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 								.overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "10",
 										"autorenew.gracePeriod", "0"))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
-						cryptoCreate("autoRemovedAccount").autoRenewSecs(10).balance(0L)
+						cryptoCreate("autoRemovedAccount").autoRenewSecs(10).balance(0L),
+						getAccountInfo("autoRemovedAccount").logged()
 				)
 				.when(
 						sleepFor(15 * 1000),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction"),
+						getTxnRecord("triggeringTransaction").logged()
 				)
 				.then(
 						getAccountBalance("autoRemovedAccount").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
