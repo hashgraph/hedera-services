@@ -41,17 +41,15 @@ public class ExportExistingAccounts {
 	@SuppressWarnings("unchecked")
 	static JSONArray asJsonArray(FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		JSONArray accountObjArr = new JSONArray();
-		JSONObject cryptoAccount = null;
-		MerkleAccount mapValue;
-		EntityId proxyAccountID;
-		for (MerkleEntityId currKey : accounts.keySet()) {
+
+		accounts.forEach((currKey, mapValue) -> {
 			try {
-				cryptoAccount = new JSONObject();
+				var cryptoAccount = new JSONObject();
 				log.info("retrieving account info from path :: Solidity Address in getAccountDetails "
 						+ currKey.getNum());
 				mapValue = accounts.get(currKey);
 				cryptoAccount.put("initialBalance", mapValue.getBalance());
-				proxyAccountID = mapValue.getProxy();
+				var proxyAccountID = mapValue.getProxy();
 				if (proxyAccountID != null) {
 					cryptoAccount.put("proxyAccountNum", proxyAccountID.num());
 					cryptoAccount.put("proxyRealmNum", proxyAccountID.realm());
@@ -68,11 +66,12 @@ public class ExportExistingAccounts {
 				cryptoAccount.put("accountNum", currKey.getNum());
 				String key = Hex.encodeHexString(SerializationUtils.serialize(mapValue.getKey()));
 				cryptoAccount.put("key", key);
+				accountObjArr.add(cryptoAccount);
 			} catch (Exception e) {
 				log.error("Exception occurred while fetching Accounts from Account FCMap", e);
 			}
-			accountObjArr.add(cryptoAccount);
-		}
+		});
+
 		return accountObjArr;
 	}
 
