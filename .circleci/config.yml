@@ -1522,6 +1522,52 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
+    triggers:
+      - schedule:
+          cron: "30 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_1C/Restart
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Balances-Validation-6N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-NetDelay-15N-1C:
+    triggers:
+      - schedule:
+          cron: "0 5 * * 6"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/15N_1C/Restart
+          config_type: "weekly"
+          workflow-name: "GCP-Weekly-Services-Comp-NetDelay-15N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:

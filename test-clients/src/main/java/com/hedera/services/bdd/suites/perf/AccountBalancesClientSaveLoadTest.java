@@ -211,10 +211,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						.withRecharging()
 						.rechargeWindow(30)
 						.noLogging()
-						;
-				if (next > 0) {
-					op.deferStatusResolution();
-				}
+						.deferStatusResolution();
 				return Optional.of(op);
 			}
 		};
