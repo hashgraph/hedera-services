@@ -606,7 +606,7 @@ public class SmartContractRequestHandler {
 				} else {
 					HederaAccountCustomizer customizer = new HederaAccountCustomizer();
 					if (op.hasProxyAccountID()) {
-						customizer.proxy(EntityId.ofNullableAccountId(op.getProxyAccountID()));
+						customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
 					}
 					if (op.hasAutoRenewPeriod()) {
 						customizer.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
@@ -698,7 +698,7 @@ public class SmartContractRequestHandler {
 			if (receipt.getStatus().equals(ResponseCodeEnum.SUCCESS)) {
 				AccountID id = asAccount(cid);
 				long oldExpiry = ledger.expiry(id);
-				var entity = EntityId.ofNullableContractId(cid);
+				var entity = EntityId.fromGrpcContractId(cid);
 				entityExpiries.put(entity, oldExpiry);
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(newExpiry);
 				ledger.customizeDeleted(id, customizer);
@@ -729,7 +729,7 @@ public class SmartContractRequestHandler {
 	public TransactionRecord systemUndelete(TransactionBody txBody, Instant consensusTimestamp) {
 		SystemUndeleteTransactionBody op = txBody.getSystemUndelete();
 		ContractID cid = op.getContractID();
-		var entity = EntityId.ofNullableContractId(cid);
+		var entity = EntityId.fromGrpcContractId(cid);
 		TransactionReceipt receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
 
 		long oldExpiry = 0;

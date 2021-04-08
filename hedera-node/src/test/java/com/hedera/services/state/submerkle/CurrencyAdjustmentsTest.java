@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -36,7 +35,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
@@ -59,7 +58,7 @@ class CurrencyAdjustmentsTest {
 		din = mock(DataInputStream.class);
 
 		subject = new CurrencyAdjustments();
-		subject.accountIds = List.of(ofNullableAccountId(a), ofNullableAccountId(b), ofNullableAccountId(c));
+		subject.accountIds = List.of(fromGrpcAccountId(a), fromGrpcAccountId(b), fromGrpcAccountId(c));
 		subject.hbars = new long[] { aAmount, bAmount, cAmount };
 	}
 

@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.state.submerkle.EntityId.ofNullableScheduleId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -384,7 +384,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 			tokens = new ArrayList<>();
 			tokenAdjustments = new ArrayList<>();
 			for (TokenTransferList tokenTransfers : record.getTokenTransferListsList()) {
-				tokens.add(EntityId.ofNullableTokenId(tokenTransfers.getToken()));
+				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
 				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
 			}
 
@@ -401,7 +401,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(record.getContractCreateResult()) : null,
 				tokens,
 				tokenAdjustments,
-				record.hasScheduleRef() ? ofNullableScheduleId(record.getScheduleRef()) : null);
+				record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null);
 	}
 
 	public static List<TransactionRecord> allToGrpc(List<ExpirableTxnRecord> records) {

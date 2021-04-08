@@ -151,7 +151,7 @@ public class ScheduleCreateTransitionLogicTest {
 		// setup:
 		givenValidTxnCtx();
 		// and:
-		given(merkleSchedule.effectivePayer()).willReturn(EntityId.ofNullableAccountId(payer));
+		given(merkleSchedule.effectivePayer()).willReturn(EntityId.fromGrpcAccountId(payer));
 		given(merkleSchedule.asSignedTxn()).willReturn(Transaction.getDefaultInstance());
 		given(store.get(schedule)).willReturn(merkleSchedule);
 		// and:

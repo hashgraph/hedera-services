@@ -72,7 +72,7 @@ class ExpiryManagerTest {
 	long expiry = 1_234_567L;
 	AccountID payer = IdUtils.asAccount("0.0.13257");
 	ScheduleID schedule = IdUtils.asSchedule("0.0.12345");
-	EntityId entityId = EntityId.ofNullableScheduleId(schedule);
+	EntityId entityId = EntityId.fromGrpcScheduleId(schedule);
 	Consumer<EntityId> entityIdConsumer;
 	Pair<Long, Consumer<EntityId>> expiringEntity;
 

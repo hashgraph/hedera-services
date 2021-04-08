@@ -22,7 +22,6 @@ package com.hedera.services.txns.crypto;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.StringValue;
-import com.google.protobuf.UInt64Value;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
@@ -109,7 +108,7 @@ public class CryptoUpdateTransitionLogicTest {
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(AccountProperty.PROXY));
+		assertEquals(EntityId.fromGrpcAccountId(proxy), changes.get(AccountProperty.PROXY));
 	}
 
 

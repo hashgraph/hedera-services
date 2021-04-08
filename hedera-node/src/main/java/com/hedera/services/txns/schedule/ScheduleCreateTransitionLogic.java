@@ -121,7 +121,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 		if (store.isCreationPending()) {
 			store.commitCreation();
 			var expiringEntity = new ExpiringEntity(
-					EntityId.ofNullableScheduleId(scheduleId),
+					EntityId.fromGrpcScheduleId(scheduleId),
 					store::expire,
 					schedule.expiry());
 			txnCtx.addExpiringEntities(Collections.singletonList(expiringEntity));

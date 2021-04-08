@@ -132,7 +132,7 @@ class FileSysDelTransitionLogicTest {
 		assertTrue(attr.isDeleted());;
 		assertEquals(oldExpiry, attr.getExpiry());
 		inOrder.verify(hfs).setattr(tbd, attr);
-		inOrder.verify(oldExpiries).put(EntityId.ofNullableFileId(tbd), Long.valueOf(oldExpiry));
+		inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -164,7 +164,7 @@ class FileSysDelTransitionLogicTest {
 		assertTrue(attr.isDeleted());;
 		assertEquals(newExpiry, attr.getExpiry());
 		inOrder.verify(hfs).setattr(tbd, attr);
-		inOrder.verify(oldExpiries).put(EntityId.ofNullableFileId(tbd), Long.valueOf(oldExpiry));
+		inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 

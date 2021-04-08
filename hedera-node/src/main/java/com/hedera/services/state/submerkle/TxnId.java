@@ -21,23 +21,19 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Objects;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 
@@ -149,7 +145,7 @@ public class TxnId implements SelfSerializable {
 	/* --- Helpers --- */
 	public static TxnId fromGrpc(final TransactionID grpc) {
 		return new TxnId(
-				ofNullableAccountId(grpc.getAccountID()),
+				EntityId.fromGrpcAccountId(grpc.getAccountID()),
 				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
 				grpc.getScheduled());
 	}

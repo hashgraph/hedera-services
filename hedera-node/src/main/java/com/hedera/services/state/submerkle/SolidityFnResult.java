@@ -28,11 +28,9 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -193,13 +191,13 @@ public class SolidityFnResult implements SelfSerializable {
 
 	public static SolidityFnResult fromGrpc(ContractFunctionResult that) {
 		return new SolidityFnResult(
-				EntityId.ofNullableContractId(that.hasContractID() ? that.getContractID() : null),
+				that.hasContractID() ? EntityId.fromGrpcContractId(that.getContractID()) : null,
 				that.getContractCallResult().isEmpty() ? MISSING_BYTES : that.getContractCallResult().toByteArray(),
 				!that.getContractCallResult().isEmpty() ? that.getErrorMessage() : null,
 				that.getBloom().isEmpty() ? MISSING_BYTES : that.getBloom().toByteArray(),
 				that.getGasUsed(),
 				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).collect(toList()),
-				that.getCreatedContractIDsList().stream().map(EntityId::ofNullableContractId).collect(toList()));
+				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).collect(toList()));
 	}
 
 	public ContractFunctionResult toGrpc() {

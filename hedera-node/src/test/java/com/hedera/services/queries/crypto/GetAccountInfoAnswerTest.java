@@ -22,7 +22,6 @@ package com.hedera.services.queries.crypto;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -250,7 +249,7 @@ class GetAccountInfoAnswerTest {
 		assertEquals(address, info.getContractAccountID());
 		assertEquals(payerAccount.getBalance(), info.getBalance());
 		assertEquals(payerAccount.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
-		assertEquals(payerAccount.getProxy(), EntityId.ofNullableAccountId(info.getProxyAccountID()));
+		assertEquals(payerAccount.getProxy(), EntityId.fromGrpcAccountId(info.getProxyAccountID()));
 		assertEquals(JKey.mapJKey(payerAccount.getKey()), info.getKey());
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());

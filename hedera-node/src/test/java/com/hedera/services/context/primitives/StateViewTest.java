@@ -189,7 +189,7 @@ class StateViewTest {
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
 		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
-		token.setAutoRenewAccount(EntityId.ofNullableAccountId(autoRenew));
+		token.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenew));
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setDeleted(true);

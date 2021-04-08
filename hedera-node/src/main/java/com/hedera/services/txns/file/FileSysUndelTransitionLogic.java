@@ -59,7 +59,7 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		var op = txnCtx.accessor().getTxn().getSystemUndelete();
 		var tbu = op.getFileID();
-		var entity = EntityId.ofNullableFileId(tbu);
+		var entity = EntityId.fromGrpcFileId(tbu);
 		var attr = new AtomicReference<HFileMeta>();
 
 		var validity = tryLookup(tbu, entity, attr);

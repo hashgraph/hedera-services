@@ -118,7 +118,7 @@ class FileSysUndelTransitionLogicTest {
 		assertFalse(deletedAttr.isDeleted());
 		assertEquals(oldFutureExpiry, deletedAttr.getExpiry());
 		inOrder.verify(hfs).sudoSetattr(deleted, deletedAttr);
-		inOrder.verify(oldExpiries).remove(EntityId.ofNullableFileId(deleted));
+		inOrder.verify(oldExpiries).remove(EntityId.fromGrpcFileId(deleted));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -131,7 +131,7 @@ class FileSysUndelTransitionLogicTest {
 
 		// then:
 		verify(hfs).rm(deleted);
-		verify(oldExpiries).remove(EntityId.ofNullableFileId(deleted));
+		verify(oldExpiries).remove(EntityId.fromGrpcFileId(deleted));
 		verify(hfs, never()).sudoSetattr(any(), any());
 	}
 
@@ -212,7 +212,7 @@ class FileSysUndelTransitionLogicTest {
 				id = deleted;
 				break;
 		}
-		EntityId entity = EntityId.ofNullableFileId(id);
+		EntityId entity = EntityId.fromGrpcFileId(id);
 
 		switch (expiryType) {
 			case NONE:

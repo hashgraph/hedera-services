@@ -53,7 +53,7 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
@@ -104,8 +104,8 @@ public class HederaScheduleStoreTest {
 	AccountID payerId = IdUtils.asAccount("1.2.456");
 	AccountID anotherPayerId = IdUtils.asAccount("1.2.457");
 
-	EntityId entityPayer = ofNullableAccountId(payerId);
-	EntityId entitySchedulingAccount = ofNullableAccountId(schedulingAccount);
+	EntityId entityPayer = fromGrpcAccountId(payerId);
+	EntityId entitySchedulingAccount = fromGrpcAccountId(schedulingAccount);
 
 	long expectedExpiry = 1_234_567L;
 
@@ -126,10 +126,10 @@ public class HederaScheduleStoreTest {
 
 		given(schedule.hasAdminKey()).willReturn(true);
 		given(schedule.adminKey()).willReturn(Optional.of(SCHEDULE_ADMIN_KT.asJKeyUnchecked()));
-		given(schedule.payer()).willReturn(ofNullableAccountId(payerId));
+		given(schedule.payer()).willReturn(fromGrpcAccountId(payerId));
 		given(schedule.memo()).willReturn(Optional.of(entityMemo));
 
-		given(anotherSchedule.payer()).willReturn(ofNullableAccountId(anotherPayerId));
+		given(anotherSchedule.payer()).willReturn(fromGrpcAccountId(anotherPayerId));
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newScheduleId(schedulingAccount)).willReturn(created);
@@ -634,7 +634,7 @@ public class HederaScheduleStoreTest {
 		subject.getExtantSchedules().put(schedule, fromScheduleId(created));
 
 		// when:
-		subject.expire(EntityId.ofNullableScheduleId(created));
+		subject.expire(EntityId.fromGrpcScheduleId(created));
 
 		// then:
 		verify(schedules).remove(fromScheduleId(created));
@@ -648,7 +648,7 @@ public class HederaScheduleStoreTest {
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
 
 		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.expire(EntityId.ofNullableScheduleId(created)));
+		assertThrows(IllegalArgumentException.class, () -> subject.expire(EntityId.fromGrpcScheduleId(created)));
 	}
 
 	@Test
@@ -666,6 +666,6 @@ public class HederaScheduleStoreTest {
 
 		// when:
 		assertThrows(IllegalArgumentException.class,
-				() -> subject.expire(EntityId.ofNullableScheduleId(subject.pendingId)));
+				() -> subject.expire(EntityId.fromGrpcScheduleId(subject.pendingId)));
 	}
 }

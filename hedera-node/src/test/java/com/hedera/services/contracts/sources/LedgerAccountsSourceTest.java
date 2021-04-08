@@ -110,7 +110,7 @@ class LedgerAccountsSourceTest {
 		MerkleAccount account = mock(MerkleAccount.class);
 		given(account.getAutoRenewSecs()).willReturn(autoRenew);
 		given(account.getExpiry()).willReturn(expiry);
-		given(account.getProxy()).willReturn(EntityId.ofNullableAccountId(IdUtils.asAccount("1.2.3")));
+		given(account.getProxy()).willReturn(EntityId.fromGrpcAccountId(IdUtils.asAccount("1.2.3")));
 		given(account.isReceiverSigRequired()).willReturn(receiverSigRequired);
 		given(account.isDeleted()).willReturn(deleted);
 		given(account.isSmartContract()).willReturn(smartContract);
@@ -202,7 +202,7 @@ class LedgerAccountsSourceTest {
 				argThat(k -> expectedKey.toString().equals(k.toString())));
 		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
 		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
-		verify(txnLedger).set(target, PROXY, EntityId.ofNullableAccountId(proxy));
+		verify(txnLedger).set(target, PROXY, EntityId.fromGrpcAccountId(proxy));
 		verify(txnLedger).set(target, MEMO, "");
 	}
 
@@ -243,7 +243,7 @@ class LedgerAccountsSourceTest {
 				argThat(k -> expectedKey.toString().equals(k.toString())));
 		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
 		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
-		verify(txnLedger).set(target, PROXY, EntityId.ofNullableAccountId(proxy));
+		verify(txnLedger).set(target, PROXY, EntityId.fromGrpcAccountId(proxy));
 		verify(txnLedger).set(target, MEMO, "");
 	}
 }

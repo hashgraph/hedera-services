@@ -51,7 +51,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.protobuf.ByteString.copyFrom;
-import static com.hedera.services.utils.MiscUtils.asOrdinary;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.swirlds.common.CommonUtils.hex;
@@ -383,7 +382,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 				memo = creationOp.getMemo();
 			}
 			if (creationOp.hasPayerAccountID()) {
-				payer = EntityId.ofNullableAccountId(creationOp.getPayerAccountID());
+				payer = EntityId.fromGrpcAccountId(creationOp.getPayerAccountID());
 			}
 			if (creationOp.hasAdminKey()) {
 				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(this::setAdminKey);
@@ -392,7 +391,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 				}
 			}
 			scheduledTxn = parentTxn.getScheduleCreate().getScheduledTransactionBody();
-			schedulingAccount = EntityId.ofNullableAccountId(parentTxn.getTransactionID().getAccountID());
+			schedulingAccount = EntityId.fromGrpcAccountId(parentTxn.getTransactionID().getAccountID());
 			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
 		} catch (InvalidProtocolBufferException e) {

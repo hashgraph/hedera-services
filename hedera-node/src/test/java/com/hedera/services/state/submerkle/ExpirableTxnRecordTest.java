@@ -282,7 +282,7 @@ class ExpirableTxnRecordTest {
 				subject.getTokens(), true, true);
 		inOrder.verify(fout).writeSerializableList(
 				subject.getTokenAdjustments(), true, true);
-		inOrder.verify(serdes).writeNullableSerializable(EntityId.ofNullableScheduleId(scheduleID), fout);
+		inOrder.verify(serdes).writeNullableSerializable(EntityId.fromGrpcScheduleId(scheduleID), fout);
 	}
 
 	@Test
