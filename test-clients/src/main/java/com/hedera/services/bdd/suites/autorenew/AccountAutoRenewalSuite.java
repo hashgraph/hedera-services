@@ -29,13 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 public class AccountAutoRenewalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AccountAutoRenewalSuite.class);
@@ -47,24 +48,25 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				accountExpires()
+				accountAutoRemoval()
 		);
 	}
 
-	private HapiApiSpec accountExpires() {
-		return defaultHapiSpec("AccountExpires")
+	private HapiApiSpec accountAutoRemoval() {
+		return defaultFailingHapiSpec("AccountAutoRemoval")
 				.given(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "10"))
+								.overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "10",
+										"autorenew.gracePeriod", "0"))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
-						cryptoCreate("willExpire").autoRenewSecs(10).balance(ONE_HBAR)
+						cryptoCreate("autoRemovedAccount").autoRenewSecs(10).balance(0L)
 				)
 				.when(
-						sleepFor(120 * 1000)
+						sleepFor(15 * 1000),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
 				)
 				.then(
-						getAccountInfo("willExpire").logged(),
-						cryptoTransfer(tinyBarsFromTo("willExpire", NODE, 1L))
+						getAccountBalance("autoRemovedAccount").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
 				);
 	}
 
