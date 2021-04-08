@@ -42,14 +42,7 @@ public class JThresholdKey extends JKey {
 
 	@Override
 	public boolean isEmpty() {
-		if ((keys != null) && keys.hasKeyList()) {
-			for (var key : keys.getKeysList()) {
-				if ((null != key) && !key.isEmpty()) {
-					return false;
-				}
-			}
-		}
-		return true;
+		return keys == null || keys.isEmpty();
 	}
 
 	public boolean hasThresholdKey() {
@@ -91,6 +84,6 @@ public class JThresholdKey extends JKey {
 
 	@Override
 	public boolean isForScheduledTxn() {
-		return keys.isForScheduledTxn();
+		return keys != null && keys.isForScheduledTxn();
 	}
 }

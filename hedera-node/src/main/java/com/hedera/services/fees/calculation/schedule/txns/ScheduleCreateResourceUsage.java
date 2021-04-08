@@ -39,7 +39,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 	private final ScheduleOpsUsage scheduleOpsUsage;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	public ScheduleCreateResourceUsage(GlobalDynamicProperties dynamicProperties, ScheduleOpsUsage scheduleOpsUsage) {
+	public ScheduleCreateResourceUsage(ScheduleOpsUsage scheduleOpsUsage, GlobalDynamicProperties dynamicProperties) {
 		this.scheduleOpsUsage = scheduleOpsUsage;
 		this.dynamicProperties = dynamicProperties;
 	}

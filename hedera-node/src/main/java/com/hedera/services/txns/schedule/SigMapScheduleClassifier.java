@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,10 +74,14 @@ public class SigMapScheduleClassifier {
 	 * schedule; and cannot be "explained" as an invalid top-level signature
 	 * (e.g., for a payer or admin key).
 	 *
-	 * @param topLevelKeys a list of keys known linked to the top-level transaction
-	 * @param sigMap the active transaction's signature map
-	 * @param sigsFn the active mapping from Ed25519 keys to expanded signatures
-	 * @param scheduleCryptoSigs a traversal accepting a visitor to the Ed25519 keys linked to the active schedule
+	 * @param topLevelKeys
+	 * 		a list of keys known linked to the top-level transaction
+	 * @param sigMap
+	 * 		the active transaction's signature map
+	 * @param sigsFn
+	 * 		the active mapping from Ed25519 keys to expanded signatures
+	 * @param scheduleCryptoSigs
+	 * 		a traversal accepting a visitor to the Ed25519 keys linked to the active schedule
 	 * @return the list of linked Ed25519 with valid signatures, if none appears to have given an invalid signature
 	 */
 	Optional<List<JKey>> validScheduleKeys(

@@ -104,6 +104,15 @@ public class JThresholdKeyTest {
   }
 
   @Test
+  public void degenerateKeyNotForScheduledTxn() {
+    // given:
+    var subject = new JThresholdKey(null, 0);
+
+    // expect:
+    assertFalse(subject.isForScheduledTxn());
+  }
+
+  @Test
   public void delegatesScheduledScope() {
     // setup:
     var ed25519Key = new JEd25519Key("ed25519".getBytes());

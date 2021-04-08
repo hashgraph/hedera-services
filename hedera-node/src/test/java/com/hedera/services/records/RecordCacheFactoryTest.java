@@ -39,7 +39,6 @@ class RecordCacheFactoryTest {
 	private TransactionID txnIdB = TransactionID.newBuilder()
 			.setAccountID(asAccount("2.2.0"))
 			.build();
-	private TransactionRecord record = TransactionRecord.getDefaultInstance();
 
 	private PropertySource properties;
 	private RecordCacheFactory subject;
