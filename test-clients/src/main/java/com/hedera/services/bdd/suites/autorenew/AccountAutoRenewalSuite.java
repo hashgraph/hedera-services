@@ -26,13 +26,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 public class AccountAutoRenewalSuite extends HapiApiSuite {
@@ -52,7 +54,9 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 	private HapiApiSpec accountExpires() {
 		return defaultHapiSpec("AccountExpires")
 				.given(
-						overriding("minimumAutoRenewDuration", "10"),
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
+								.overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "10"))
+								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						cryptoCreate("willExpire").autoRenewSecs(10).balance(ONE_HBAR)
 				)
 				.when(
