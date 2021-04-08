@@ -23,6 +23,7 @@ package com.hedera.services;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.state.forensics.FcmDump;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
@@ -122,7 +123,7 @@ public class ServicesMain implements SwirldMain {
 	@Override
 	public void newSignedState(SwirldState signedState, Instant when, long round) {
 		if (ctx.platformStatus().get() == MAINTENANCE) {
-			((ServicesState)signedState).printHashes();
+			((ServicesState) signedState).logSummary();
 		}
 		if (ctx.globalDynamicProperties().shouldExportBalances() && ctx.balancesExporter().isTimeToExport(when)) {
 			try {
@@ -174,8 +175,9 @@ public class ServicesMain implements SwirldMain {
 
 	private void exportAccountsIfDesired() {
 		try {
-			String path = ctx.properties().getStringProperty("hedera.accountsExportPath");
-			ctx.accountsExporter().toFile(ctx.accounts(), path);
+			if (ctx.nodeLocalProperties().exportAccountsOnStartup()) {
+				ctx.accountsExporter().toFile(ctx.nodeLocalProperties().accountsExportPath(), ctx.accounts());
+			}
 		} catch (Exception e) {
 			throw new IllegalStateException("Could not export accounts!", e);
 		}
@@ -186,11 +188,9 @@ public class ServicesMain implements SwirldMain {
 			ctx.systemFilesManager().createAddressBookIfMissing();
 			ctx.systemFilesManager().createNodeDetailsIfMissing();
 			ctx.systemFilesManager().createUpdateZipFileIfMissing();
-			if (!ctx.systemFilesManager().areFilesLoaded()) {
-				ctx.systemFilesManager().loadAllSystemFiles();
-			}
+			ctx.networkCtxManager().loadObservableSysFilesIfNeeded();
 		} catch (Exception e) {
-			throw new IllegalStateException("Could not create system files!", e);
+			throw new IllegalStateException("Could not initialize system files!", e);
 		}
 	}
 
@@ -211,7 +211,7 @@ public class ServicesMain implements SwirldMain {
 		Profile activeProfile = ctx.nodeLocalProperties().activeProfile();
 		log.info("Active profile: {}", activeProfile);
 		if (activeProfile == DEV) {
-			if (onlyDefaultNodeListens()) {
+			if (ctx.nodeLocalProperties().devOnlyDefaultNodeListens()) {
 				if (thisNodeIsDefaultListener()) {
 					ctx.grpc().start(port, tlsPort, this::logInfoWithConsoleEcho);
 				}
@@ -228,13 +228,9 @@ public class ServicesMain implements SwirldMain {
 		}
 	}
 
-	private boolean onlyDefaultNodeListens() {
-		return ctx.properties().getBooleanProperty("dev.onlyDefaultNodeListens");
-	}
-
 	private boolean thisNodeIsDefaultListener() {
 		String myNodeAccount = ctx.addressBook().getAddress(ctx.id().getId()).getMemo();
-		String blessedNodeAccount = ctx.properties().getStringProperty("dev.defaultListeningNodeAccount");
+		String blessedNodeAccount = ctx.nodeLocalProperties().devListeningAccount();
 		return myNodeAccount.equals(blessedNodeAccount);
 	}
 
@@ -273,7 +269,7 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	void registerIssListener() {
-		ctx.platform().addSignedStateListener(new IssListener(ctx.issEventInfo()));
+		ctx.platform().addSignedStateListener(new IssListener(new FcmDump(), ctx.issEventInfo()));
 	}
 
 	void registerReconnectCompleteListener(final NotificationEngine notificationEngine) {
@@ -284,8 +280,8 @@ public class ServicesMain implements SwirldMain {
 							notification.getConsensusTimestamp(),
 							notification.getRoundNumber(),
 							notification.getSequence()));
-					ServicesState state = (ServicesState)notification.getState();
-					state.printHashes();
+					ServicesState state = (ServicesState) notification.getState();
+					state.logSummary();
 					ctx.recordStreamManager().setStartWriteAtCompleteWindow(true);
 				});
 	}

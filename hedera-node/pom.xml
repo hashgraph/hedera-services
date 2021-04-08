@@ -26,9 +26,7 @@
     <ant-contrib.version>1.0b3</ant-contrib.version>
     <ant-nodeps.version>1.8.1</ant-nodeps.version>
 
-    <commons-io.version>2.1</commons-io.version>
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
-    <swirlds.version>0.9.0</swirlds.version>
   </properties>
 
   <build>
@@ -278,22 +276,18 @@
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-platform-core</artifactId>
-      <version>${swirlds.version}</version>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcmap</artifactId>
-      <version>${swirlds.version}</version>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcqueue</artifactId>
-      <version>${swirlds.version}</version>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-common</artifactId>
-      <version>${swirlds.version}</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
@@ -307,7 +301,6 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>${commons-io.version}</version>
     </dependency>
     <dependency>
       <groupId>net.i2p.crypto</groupId>

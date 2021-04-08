@@ -388,6 +388,12 @@ public class HapiSpecSetup {
 	public long statusWaitTimeoutMs() {
 		return props.getLong("status.wait.timeout.ms");
 	}
+	public FileID throttleDefinitionsId() {
+		return props.getFile("throttle.definitions.id");
+	}
+	public String throttleDefinitionsName() {
+		return props.get("throttle.definitions.name");
+	}
 	public TlsConfig tls() {
 		return props.getTlsConfig("tls");
 	}

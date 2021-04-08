@@ -21,7 +21,6 @@ package com.hedera.test.mocks;
  */
 
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.legacy.config.PropertiesLoader;
 
 import java.util.Set;
 

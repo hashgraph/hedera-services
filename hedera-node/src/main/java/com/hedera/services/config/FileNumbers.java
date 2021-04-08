@@ -21,7 +21,6 @@ package com.hedera.services.config;
  */
 
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hederahashgraph.api.proto.java.FileID;
 
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
@@ -37,6 +36,7 @@ public class FileNumbers {
 	private long apiPermissions = UNKNOWN_NUMBER;
 	private long applicationProperties = UNKNOWN_NUMBER;
 	private long softwareUpdateZip = UNKNOWN_NUMBER;
+	private long throttleDefinitions = UNKNOWN_NUMBER;
 
 	public FileNumbers(HederaNumbers hederaNums, PropertySource properties) {
 		this.hederaNums = hederaNums;
@@ -90,6 +90,13 @@ public class FileNumbers {
 			softwareUpdateZip = properties.getLongProperty("files.softwareUpdateZip");
 		}
 		return softwareUpdateZip;
+	}
+
+	public long throttleDefinitions() {
+		if (throttleDefinitions == UNKNOWN_NUMBER) {
+			throttleDefinitions = properties.getLongProperty("files.throttleDefinitions");
+		}
+		return throttleDefinitions;
 	}
 
 	public FileID toFid(long num) {

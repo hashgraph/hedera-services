@@ -50,7 +50,6 @@ public class SignedTxnAccessorTest {
 	@Test
 	public void parsesLegacyCorrectly() throws Exception {
 		// setup:
-		// given:
 		Transaction transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
 				3l, 0l, 0l,
 				100_000_000l,
@@ -64,6 +63,8 @@ public class SignedTxnAccessorTest {
 				.setSigMap(expectedMap)
 				.build();
 		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
+
+		// given:
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(transaction);
 
 		assertEquals(transaction, accessor.getBackwardCompatibleSignedTxn());

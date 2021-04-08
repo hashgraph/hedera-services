@@ -222,7 +222,11 @@ public class ScheduleSignTransitionLogicTest {
                         .build())
                 .build();
         given(accessor.getSigMap()).willReturn(sigMap);
-        given(classifier.validScheduleKeys(eq(payerKey), eq(sigMap), any(), any())).willReturn(validScheduleKeys);
+        given(classifier.validScheduleKeys(
+                eq(List.of(payerKey)),
+                eq(sigMap),
+                any(),
+                any())).willReturn(validScheduleKeys);
 
         var builder = TransactionBody.newBuilder();
         var scheduleSign = ScheduleSignTransactionBody.newBuilder()

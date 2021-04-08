@@ -1,0 +1,26 @@
+{
+    "buckets": [
+        {
+            "name": "ThroughputLimits",
+            "burstPeriod": 1,
+            "throttleGroups": [
+                {
+                    "opsPerSec": 30,
+                    "operations": [ "TokenMint" ]
+                }
+            ]
+        },
+        {
+            "name": "FreeQueryLimits",
+            "burstPeriod": 1,
+            "throttleGroups": [
+                {
+                    "opsPerSec": 1000,
+                    "operations": [ 
+                      "TransactionGetReceipt", "FileGetInfo", "FileGetContents" 
+                    ]
+                }
+            ]
+        }
+    ]
+}

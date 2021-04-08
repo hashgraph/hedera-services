@@ -64,7 +64,6 @@ public class FreezeHandler {
 
 	private static String TARGET_DIR = "./";
 	private static String TEMP_DIR = "./temp";
-	private static String TEMP_SDK_DIR = TEMP_DIR + File.separator + "sdk";
 	private static String DELETE_FILE = TEMP_DIR + File.separator + "delete.txt";
 	private static String CMD_SCRIPT = "exec.sh";
 	private static String FULL_SCRIPT_PATH = TEMP_DIR + File.separator + CMD_SCRIPT;

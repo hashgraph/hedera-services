@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -46,6 +47,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 	boolean requestDuplicates = false;
 	boolean useDefaultTxnId = false;
 	TransactionID defaultTxnId = TransactionID.getDefaultInstance();
+	Optional<String> expectedSchedule = Optional.empty();
 	Optional<String> expectedScheduledTxnId = Optional.empty();
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<ResponseCodeEnum> expectedPriorityStatus = Optional.empty();
@@ -98,6 +100,11 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 		return this;
 	}
 
+	public HapiGetReceipt hasSchedule(String name) {
+		expectedSchedule = Optional.of(name);
+		return this;
+	}
+
 	@Override
 	protected void submitWith(HapiApiSpec spec, Transaction payment) {
 		TransactionID txnId = explicitTxnId.orElseGet(() ->
@@ -113,8 +120,8 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) {
+		var receipt = response.getTransactionGetReceipt().getReceipt();
 		if (expectedPriorityStatus.isPresent()) {
-			var receipt = response.getTransactionGetReceipt().getReceipt();
 			ResponseCodeEnum actualStatus = receipt.getStatus();
 			Assert.assertEquals(expectedPriorityStatus.get(), actualStatus);
 		}
@@ -129,6 +136,10 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 			var expected = spec.registry().getTxnId(expectedScheduledTxnId.get());
 			var actual = response.getTransactionGetReceipt().getReceipt().getScheduledTransactionID();
 			Assert.assertEquals("Wrong scheduled transaction id!", expected, actual);
+		}
+		if (expectedSchedule.isPresent()) {
+			var schedule = TxnUtils.asScheduleId(expectedSchedule.get(), spec);
+			Assert.assertEquals("Wrong/missing schedule id!", schedule, receipt.getScheduleID());
 		}
 	}
 

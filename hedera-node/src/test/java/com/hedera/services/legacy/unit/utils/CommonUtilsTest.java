@@ -20,7 +20,7 @@ package com.hedera.services.legacy.unit.utils;
  * ‍
  */
 
-import com.hedera.services.legacy.services.state.AwareProcessLogic;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import org.junit.Assert;
 import org.junit.Test;
 import java.time.Instant;
@@ -34,12 +34,12 @@ public class CommonUtilsTest {
 		Instant instant2_2 = Instant.parse("2019-08-15T00:00:00.0Z");
 		Instant instant2_3 = Instant.parse("2019-08-15T00:00:00.00001Z");
 
-		Assert.assertTrue(AwareProcessLogic.inSameUtcDay(instant1_1, instant1_2));
+		Assert.assertTrue(NetworkCtxManager.inSameUtcDay(instant1_1, instant1_2));
 
-		Assert.assertFalse(AwareProcessLogic.inSameUtcDay(instant1_1, instant2_1));
-		Assert.assertFalse(AwareProcessLogic.inSameUtcDay(instant1_2, instant2_1));
+		Assert.assertFalse(NetworkCtxManager.inSameUtcDay(instant1_1, instant2_1));
+		Assert.assertFalse(NetworkCtxManager.inSameUtcDay(instant1_2, instant2_1));
 
-		Assert.assertTrue(AwareProcessLogic.inSameUtcDay(instant2_1, instant2_2));
-		Assert.assertTrue(AwareProcessLogic.inSameUtcDay(instant2_2, instant2_3));
+		Assert.assertTrue(NetworkCtxManager.inSameUtcDay(instant2_1, instant2_2));
+		Assert.assertTrue(NetworkCtxManager.inSameUtcDay(instant2_2, instant2_3));
 	}
 }

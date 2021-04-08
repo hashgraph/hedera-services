@@ -21,16 +21,11 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.builder.RequestBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.ethereum.core.Block;
-import org.ethereum.core.BlockHeader;
-import org.ethereum.core.BlockchainImpl;
 import org.ethereum.core.Bloom;
 import org.ethereum.core.Transaction;
 import org.ethereum.core.TransactionReceipt;
