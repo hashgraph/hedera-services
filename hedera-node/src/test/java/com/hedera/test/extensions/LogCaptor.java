@@ -11,6 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * Helper class to register a started appender on a given {@code Logger},
+ * and parse the events at each log level as a {@code List<String>}.
+ */
 public class LogCaptor {
 	private static final Pattern EVENT_PATTERN = Pattern.compile("(DEBUG|INFO|WARN|ERROR|$)");
 
