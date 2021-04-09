@@ -91,9 +91,8 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 							} catch (RegistryNotFound e) {
 								if (ignoreMissingSchedule) {
 									return;
-								} else {
-									throw e;
 								}
+								throw e;
 							}
 							b.setScheduleID(id);
 						}
