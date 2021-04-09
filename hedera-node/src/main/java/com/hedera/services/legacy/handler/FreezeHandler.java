@@ -56,7 +56,7 @@ import static com.swirlds.common.CommonUtils.hex;
  * 		transactions. Documentation available at index.html#proto.FreezeTransactionBody
  */
 public class FreezeHandler {
-	public static Logger log = LogManager.getLogger(FreezeHandler.class);
+	private static final Logger log = LogManager.getLogger(FreezeHandler.class);
 
 	private final Platform platform;
 	private final HederaFs hfs;

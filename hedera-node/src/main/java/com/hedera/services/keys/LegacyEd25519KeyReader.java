@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 public class LegacyEd25519KeyReader {
-	public static final Logger log = LogManager.getLogger(LegacyEd25519KeyReader.class);
+	private static final Logger log = LogManager.getLogger(LegacyEd25519KeyReader.class);
 
 	public String hexedABytesFrom(String b64EncodedKeyPairLoc, String keyPairId) {
 		try {

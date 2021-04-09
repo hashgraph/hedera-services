@@ -34,7 +34,7 @@ import java.util.function.Consumer;
 
 
 public class NettyGrpcServerManager implements GrpcServerManager {
-	public static final Logger log = LogManager.getLogger(NettyGrpcServerManager.class);
+	private static final Logger log = LogManager.getLogger(NettyGrpcServerManager.class);
 
 	private static final long TIME_TO_AWAIT_TERMINATION = 5;
 

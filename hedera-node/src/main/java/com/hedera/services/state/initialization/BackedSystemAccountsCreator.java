@@ -45,7 +45,7 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.commonsHexToBytes;
 
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
-	static Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
+	private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
 
 	private final HederaNumbers hederaNums;
 	private final AccountNumbers accountNums;

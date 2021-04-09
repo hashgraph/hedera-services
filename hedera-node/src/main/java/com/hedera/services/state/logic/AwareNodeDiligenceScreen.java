@@ -40,7 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class AwareNodeDiligenceScreen {
-	static Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
+	private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
 	final static String WRONG_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn meant for node account {} :: {}";
 	final static String MISSING_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";

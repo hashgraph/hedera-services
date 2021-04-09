@@ -41,7 +41,7 @@ import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class LedgerAccountsSource implements Source<byte[], AccountState> {
-	static Logger log = LogManager.getLogger(LedgerAccountsSource.class);
+	private final Logger log = LogManager.getLogger(LedgerAccountsSource.class);
 
 	private final HederaLedger ledger;
 	private final GlobalDynamicProperties properties;

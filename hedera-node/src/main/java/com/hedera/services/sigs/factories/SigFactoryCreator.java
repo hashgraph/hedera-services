@@ -25,7 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SigFactoryCreator {
-	public static Logger log = LogManager.getLogger(SigFactoryCreator.class);
+	private static final Logger log = LogManager.getLogger(SigFactoryCreator.class);
 
 	public TxnScopedPlatformSigFactory createScopedFactory(TxnAccessor accessor) {
 		return new BodySigningSigFactory(accessor);

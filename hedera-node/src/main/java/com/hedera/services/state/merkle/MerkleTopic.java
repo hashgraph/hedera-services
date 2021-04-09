@@ -71,9 +71,8 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
  * </ul>
  */
 public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
-	public static Logger log = LogManager.getLogger(MerkleTopic.class);
+	private static final Logger log = LogManager.getLogger(MerkleTopic.class);
 
-	public static final int MAX_MEMO_BYTES = 1_024;
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
 	public static final long RUNNING_HASH_VERSION = 3L;
 

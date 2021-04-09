@@ -402,7 +402,7 @@ import static java.util.Map.entry;
  * @author Michael Tinker
  */
 public class ServicesContext {
-	static Logger log = LogManager.getLogger(ServicesContext.class);
+	private static final Logger log = LogManager.getLogger(ServicesContext.class);
 
 	/* Injected dependencies. */
 	ServicesState state;

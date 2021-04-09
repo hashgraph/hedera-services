@@ -61,7 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER
  * @author Michael Tinker
  */
 public class ContextOptionValidator implements OptionValidator {
-	public static final Logger log = LogManager.getLogger(ContextOptionValidator.class);
+	private static final Logger log = LogManager.getLogger(ContextOptionValidator.class);
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties properties;
 

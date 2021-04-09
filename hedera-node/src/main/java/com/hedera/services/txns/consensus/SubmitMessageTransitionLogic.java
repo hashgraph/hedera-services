@@ -47,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 
 public class SubmitMessageTransitionLogic implements TransitionLogic {
-	protected static final Logger log = LogManager.getLogger(SubmitMessageTransitionLogic.class);
+	private static final Logger log = LogManager.getLogger(SubmitMessageTransitionLogic.class);
 
 	private static final Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
 

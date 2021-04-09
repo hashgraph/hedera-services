@@ -35,7 +35,7 @@ import java.util.function.Supplier;
 import static java.util.stream.Collectors.toSet;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
-	public static Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
+	private static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
 
 	private final Function<byte[], MerkleOptionalBlob> blobFactory;
 	private final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> pathedBlobs;

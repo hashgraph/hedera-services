@@ -15,10 +15,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class HapiOpPermissions {
+	private static final Logger log = LogManager.getLogger(HapiOpPermissions.class);
+
 	static final String MISSING_OP_TPL = "Ignoring key '%s', which does not correspond to a known Hedera operation!";
 	static final String UNPARSEABLE_RANGE_TPL = "Ignoring entry for supported op %s---cannot interpret range '%s'!";
-
-	static Logger log = LogManager.getLogger(HapiOpPermissions.class);
 
 	private final AccountNumbers accountNums;
 

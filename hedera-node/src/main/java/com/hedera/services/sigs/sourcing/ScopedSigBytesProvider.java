@@ -26,7 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ScopedSigBytesProvider implements PubKeyToSigBytesProvider {
-	public static Logger log = LogManager.getLogger(ScopedSigBytesProvider.class);
+	private static final Logger log = LogManager.getLogger(ScopedSigBytesProvider.class);
 
 	final PubKeyToSigBytes delegate;
 

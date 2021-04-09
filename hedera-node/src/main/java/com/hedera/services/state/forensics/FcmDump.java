@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.function.Function;
 
 public class FcmDump {
-	static Logger log = LogManager.getLogger(FcmDump.class);
+	private static final Logger log = LogManager.getLogger(FcmDump.class);
 
 	private static final MerkleTreeSerializationOptions serOptions =
 			MerkleTreeSerializationOptions.defaults().setAbbreviated(true);

@@ -56,7 +56,7 @@ import static com.swirlds.common.CommonUtils.hex;
  * All that is kept in memory is a map from {@code FileID} to the SHA-384 hash of the current contents.
  */
 public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLeaf {
-	static Logger log = LogManager.getLogger(MerkleDiskFs.class);
+	private static final Logger log = LogManager.getLogger(MerkleDiskFs.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
 
