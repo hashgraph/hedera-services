@@ -15,30 +15,31 @@ superseded-by:
 
 ## Abstract
 
-When a Hedera entity is created, the payer account is charged enough hbars (as a rental fee) for the entity to stay active in the ledger state until consensus time passes its _expiration time_. Users can extend the expiration time of an entity by paying an extension fee via an update transaction. This HIP defines and discusses another mechanism to be implemented by Hedera Services to automatically renew expired entities using funds of linked _autorenew accounts_ or _admin accounts_; and automatically remove expired entities that lack a funded autorenew account (or are deleted).
+When a Hedera entity is created (e.g., an account, file, smart contract, HCS topic, etc.), the payer account is charged enough hbars (as a rental fee) for the entity to stay active in the ledger state until consensus time passes its _expiration time_. Users can extend the expiration time of an entity by paying an extension fee via an update transaction. This HIP defines and discusses another mechanism to be implemented by Hedera Services to automatically renew expired entities using funds of linked _autorenew accounts_ or _admin accounts_; and automatically remove expired entities that have not been renewed by either update or auto-renewal.
 
 ## Motivation
 
-For a public ledger to avoid suffering a tragedy of the commons it is important that all participants in the ledger share in the cost of ledger resources used. Auto-renewal fees are the implementation of this principal.
+For a public ledger to avoid suffering a tragedy of the commons it is important that all participants in the ledger share in the cost of ledger resources used. Renewal and auto-renewal fees are the implementation of this principal.
 
 ## Rationale
 
-Prior to this HIP, the expiration time of a Hedera entity has not been checked or enforced. An entity remains active in the ledger even after its expiration time, without additional fees being charged. Upon implementation of this HIP, Hedera Services will __begin to charge rent__ for automatically renewed entities; and will remove from the ledger expired entities which are either deleted or have an admin/autorenew account with zero balance at the time renewal fees are due.
+Prior to this HIP, the expiration time of a Hedera entity has not been checked or enforced. An entity remains active in the ledger even after its expiration time, without additional fees being charged. Upon implementation of this HIP, Hedera Services will __begin to charge rent__ for entities; and will eventually remove from the ledger expired entities that have not been renewed, either manually or by autorenewal from a funded admin/autorenew account at the time renewal fees are due.
 
 The expiration time of an entity still can be extended via an update transaction, as it is currently supported. Anyone can initiate this update, not just the owner or the admin of the entity. Users will not be overcharged for the extension fee.
 
 ## Specification
 
-### Terminologies
-- Deletion - A successful delete transaction will mark an entity as deleted and that entity cannot be operated up on.
+### Terminology
+- Deletion - A successful delete transaction will mark an entity as deleted and that entity cannot be operated upon.
 The entity will remain in the ledger, marked as deleted, until it expires.
+- Expired - the entity has passed its expiration date and has not been renewed, so it is temporarily disabled.
 - Removal - The entity is permanently removed from the state of the decentralized ledger.
 
 All Hedera Services nodes will perform a synchronous scanning of active entities. When a node finds a non-deleted, expired
 entity, it will try to renew the entity by charging its admin or autorenew account the renewal fee, for an extension
 period given in seconds.
 
-This extension period can be customized by the `autoRenewPeriod` property of a crypto account,
+This extension period can be customized by the `autoRenewPeriod` property of the entity (e.g., a crypto account,
 a topic, a smart contract, or a token. For a file, the extension period will be three months. (Future protobuf changes will
 permit customizing this extension period as well.) Records of autorenew charges will appear in the record stream, and
 will be available via mirror nodes. __No__ receipts or records for autorenewal actions will be available via HAPI queries.
