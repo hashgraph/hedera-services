@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Inject;
 import java.time.Instant;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
@@ -80,6 +81,7 @@ class AwareNodeDiligenceScreenTest {
 	@Mock
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
 
+	@Inject
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

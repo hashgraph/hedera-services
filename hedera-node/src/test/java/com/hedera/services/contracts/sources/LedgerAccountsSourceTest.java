@@ -44,6 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
+import javax.inject.Inject;
 import java.math.BigInteger;
 
 import static com.hedera.services.ledger.properties.AccountProperty.*;
@@ -65,6 +66,7 @@ class LedgerAccountsSourceTest {
 
 	HederaLedger ledger;
 
+	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private LedgerAccountsSource subject;

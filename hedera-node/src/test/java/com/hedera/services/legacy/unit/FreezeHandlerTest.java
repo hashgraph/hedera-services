@@ -47,6 +47,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -72,6 +73,7 @@ class FreezeHandlerTest {
 	ExchangeRateSet rates;
 	HbarCentExchange exchange;
 
+	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private FreezeHandler subject;

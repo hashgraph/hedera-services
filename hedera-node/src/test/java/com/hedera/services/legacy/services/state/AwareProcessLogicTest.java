@@ -65,6 +65,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.inject.Inject;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
@@ -87,6 +89,7 @@ class AwareProcessLogicTest {
 	SmartContractRequestHandler contracts;
 	HederaFs hfs;
 
+	@Inject
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

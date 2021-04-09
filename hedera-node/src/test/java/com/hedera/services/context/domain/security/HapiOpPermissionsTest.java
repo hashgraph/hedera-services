@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Inject;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -26,6 +28,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class HapiOpPermissionsTest {
+	@Inject
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

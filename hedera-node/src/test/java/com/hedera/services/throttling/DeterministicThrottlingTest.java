@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
@@ -58,8 +59,8 @@ class DeterministicThrottlingTest {
 	DeterministicThrottle b = DeterministicThrottle.withTps(bTps);
 	Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
 
+	@Inject
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
 	private DeterministicThrottling subject;
 

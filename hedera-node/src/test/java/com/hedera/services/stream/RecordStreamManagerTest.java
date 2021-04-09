@@ -37,6 +37,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import javax.inject.Inject;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,6 +79,7 @@ public class RecordStreamManagerTest {
 	private static NodeLocalProperties disabledProps;
 	private static NodeLocalProperties enabledProps;
 
+	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private RecordStreamManager recordStreamManager;

@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -63,6 +64,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
 public class MerkleDiskFsTest {
+	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private MerkleDiskFs subject;

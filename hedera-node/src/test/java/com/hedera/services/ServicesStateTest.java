@@ -88,6 +88,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -170,6 +171,7 @@ class ServicesStateTest {
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	NetworkCtxManager networkCtxManager;
 
+	@Inject
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

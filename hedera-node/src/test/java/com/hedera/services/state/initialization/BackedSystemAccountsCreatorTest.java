@@ -49,6 +49,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Set;
 
@@ -82,6 +83,7 @@ class BackedSystemAccountsCreatorTest {
 	AddressBook book;
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
 
+	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private BackedSystemAccountsCreator subject;

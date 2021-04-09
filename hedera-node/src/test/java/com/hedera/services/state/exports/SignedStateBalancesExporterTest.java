@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -128,6 +129,7 @@ class SignedStateBalancesExporterTest {
 	FileHashReader hashReader;
 	DirectoryAssurance assurance;
 
+	@Inject
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

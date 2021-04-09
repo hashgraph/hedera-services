@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Inject;
 import java.time.Instant;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,6 +70,7 @@ class IssListenerTest {
 	@Mock
 	IssEventInfo info;
 
+	@Inject
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

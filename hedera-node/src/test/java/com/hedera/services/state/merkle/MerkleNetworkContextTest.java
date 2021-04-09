@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -76,6 +77,7 @@ class MerkleNetworkContextTest {
 	FunctionalityThrottling throttling;
 	FeeMultiplierSource feeMultiplierSource;
 
+	@Inject
 	private LogCaptor logCaptor;
 
 	@LoggingSubject

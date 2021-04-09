@@ -35,6 +35,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -57,6 +58,7 @@ class TxnRateFeeMultiplierSourceTest {
 
 	MockGlobalDynamicProps mockProps;
 
+	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private TxnRateFeeMultiplierSource subject;
