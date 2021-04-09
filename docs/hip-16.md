@@ -32,22 +32,26 @@ The expiration time of an entity still can be extended via an update transaction
 ### Terminology
 - Deletion - A successful delete transaction will mark an entity as deleted and that entity cannot be operated upon.
 The entity will remain in the ledger, marked as deleted, until it expires.
-- Expired - the entity has passed its expiration date and has not been renewed, so it is temporarily disabled.
+- Expiration - the entity has passed its expiration date and has not been renewed, so it is temporarily disabled.
 - Removal - The entity is permanently removed from the state of the decentralized ledger.
+- Action - An operation performed by the network that isn't during the processing of its transaction, such as an autorenewal, or the execution of a scheduled transaction.
 
 All Hedera Services nodes will perform a synchronous scanning of active entities. When a node finds a non-deleted, expired
 entity, it will try to renew the entity by charging its admin or autorenew account the renewal fee, for an extension
 period given in seconds.
 
 This extension period can be customized by the `autoRenewPeriod` property of the entity (e.g., a crypto account,
-a topic, a smart contract, or a token. For a file, the extension period will be three months. (Future protobuf changes will
+a topic, a smart contract, or a token type). For a file, the extension period will be three months. (Future protobuf changes will
 permit customizing this extension period as well.) Records of autorenew charges will appear in the record stream, and
 will be available via mirror nodes. __No__ receipts or records for autorenewal actions will be available via HAPI queries.
 
 If the linked autorenew or admin account cannot cover the fee required for the default extension period, its remaining balance
 will be wholly used for a shorter extension of the entity. If the linked account already has a zero balance at the time that
-renewal fees are due, the entity will be removed permanently from the ledger. Similarly, any expired entity that was already
-marked deleted will be removed from the ledger.
+renewal fees are due, the entity will be marked as expired. 
+
+An expired entity will still have a grace period before it is deleted. During that period, it is inactive, and all transactions involving it will fail, except for an update transaction to extend its expiration date. If it is not manually extended during the grace period, then at the end of the grace period it will be permanently removed from the ledger. Its entity ID number will not be reused.
+
+If an entity was marked as deleted, then it cannot have its expiration date extended. Neither an update transaction nor an autorenew will be able to extend it.
 
 Hedera Services will generate an [autorenewal-record](https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#autorenewal-record)
 for the action on each entity that is automatically renewed. Hedera Services will generate an
