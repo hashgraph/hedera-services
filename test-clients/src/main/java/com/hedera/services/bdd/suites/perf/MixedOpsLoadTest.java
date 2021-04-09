@@ -62,7 +62,6 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -182,7 +181,7 @@ public class MixedOpsLoadTest extends LoadTest {
 								UNKNOWN, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 						.deferStatusResolution() :
 						scheduleSign(schedule + "-" + getHostName() + "-" + r.nextInt(NUM_SUBMISSIONS))
-								.ignoreMissingSchedule()
+								.ignoreIfMissing()
 								.noLogging()
 								.alsoSigningWith(receiver)
 								.hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)

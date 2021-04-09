@@ -52,7 +52,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	private final String schedule;
 	private List<String> signatories = Collections.emptyList();
-	private boolean ignoreMissingSchedule = false;
+	private boolean ignoreMissing = false;
 
 	public HapiScheduleSign(String schedule) {
 		this.schedule = schedule;
@@ -63,8 +63,8 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 		return this;
 	}
 
-	public HapiScheduleSign ignoreMissingSchedule() {
-		ignoreMissingSchedule = true;
+	public HapiScheduleSign ignoreIfMissing() {
+		ignoreMissing = true;
 		return this;
 	}
 
@@ -89,7 +89,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 							try {
 								id = asScheduleId(schedule, spec);
 							} catch (RegistryNotFound e) {
-								if (ignoreMissingSchedule) {
+								if (ignoreMissing) {
 									return;
 								}
 								throw e;
