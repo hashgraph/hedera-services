@@ -29,6 +29,8 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -39,6 +41,8 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class NetworkCtxManager {
+	public static Logger log = LogManager.getLogger(NetworkCtxManager.class);
+
 	private final int issResetPeriod;
 
 	private final IssEventInfo issInfo;
@@ -70,9 +74,14 @@ public class NetworkCtxManager {
 		this.handleThrottling = handleThrottling;
 	}
 
-	public void initObservableSysFiles() {
+	public void setObservableFilesNotLoaded() {
+		systemFilesManager.setObservableFilesNotLoaded();
+	}
+
+	public void loadObservableSysFilesIfNeeded() {
 		if (!systemFilesManager.areObservableFilesLoaded()) {
 			var networkCtxNow = networkCtx.get();
+			log.info("Observable files not yet loaded, doing now with network context {}", networkCtxNow);
 			systemFilesManager.loadObservableSystemFiles();
 			networkCtxNow.resetWithSavedSnapshots(handleThrottling);
 			feeMultiplierSource.resetExpectations();

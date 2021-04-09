@@ -119,6 +119,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			return true;
 		}
 		periodBegin = now;
+		if(log.isDebugEnabled()) {
+			log.debug(String.format("Now %s is NOT time to export.", now.toString()));
+		}
 		return false;
 	}
 
@@ -157,7 +160,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			tryToSign(csvLoc);
 		}
 
-		log.info(" -> Took {}ms to export and sign CSV balances file", watch.getTime(TimeUnit.MILLISECONDS));
+		log.info(" -> Took {}ms to export and sign CSV balances file at {}", watch.getTime(TimeUnit.MILLISECONDS), exportTimeStamp);
 	}
 
 	private void toProtoFile(Instant exportTimeStamp) {
@@ -172,7 +175,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			tryToSign(protoLoc);
 		}
 
-		log.info(" -> Took {}ms to export and sign proto balances file", watch.getTime(TimeUnit.MILLISECONDS));
+		log.info(" -> Took {}ms to export and sign proto balances file at {}", watch.getTime(TimeUnit.MILLISECONDS), exportTimeStamp);
 	}
 
 	private void tryToSign(String csvLoc) {

@@ -58,7 +58,7 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 
 	@Override
 	public NettyServerBuilder builderFor(int port, boolean sslEnabled) throws FileNotFoundException, SSLException {
-		var activeProfile = nodeProperties.activeProfile();
+		var activeProfile = nodeProperties.nettyMode();
 
 		log.info("Configuring a Netty server on port {} (TLS {}) for {} environment",
 				port,

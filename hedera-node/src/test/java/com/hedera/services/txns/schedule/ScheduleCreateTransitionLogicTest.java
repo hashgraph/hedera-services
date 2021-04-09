@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -86,7 +87,6 @@ public class ScheduleCreateTransitionLogicTest {
 
 	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	private final Key invalidKey = Key.newBuilder().build();
-	private Optional<JKey> jAdminKey;
 
 	private OptionValidator validator;
 	private ScheduleStore store;
@@ -96,6 +96,8 @@ public class ScheduleCreateTransitionLogicTest {
 	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
 	private ScheduleReadyForExecution.ExecutionProcessor executor;
 
+	private boolean adminKeyActuallySkipped = false;
+	private boolean invalidAdminKeyIsSentinelKeyList = false;
 	private AccountID payer = IdUtils.asAccount("1.2.3");
 	private ScheduleID schedule = IdUtils.asSchedule("2.4.6");
 	private String entityMemo = "some cool memo?";
@@ -107,6 +109,7 @@ public class ScheduleCreateTransitionLogicTest {
 	private SignatureMap sigMap = SigMapScheduleClassifierTest.sigMap;
 
 	private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
+	private Optional<JKey> jAdminKey;
 	private SigMapScheduleClassifier classifier;
 	private Optional<List<JKey>> validScheduleKeys = Optional.of(
 			List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
@@ -296,6 +299,26 @@ public class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
+	public void failsOnAdminKeySetAsSentinelKeylist() {
+		// setup:
+		invalidAdminKeyIsSentinelKeyList = true;
+		givenCtx(true, false, false);
+
+		// expect:
+		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
+	}
+
+	@Test
+	public void syntaxOkWithNoAdminKey() {
+		// setup:
+		adminKeyActuallySkipped = true;
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.syntaxCheck().apply(scheduleCreateTxn));
+	}
+
+	@Test
 	public void failsOnInvalidAdminKey() {
 		givenCtx(true, false, false);
 
@@ -343,7 +366,6 @@ public class ScheduleCreateTransitionLogicTest {
 				any(),
 				any())).willReturn(validScheduleKeys);
 
-
 		txnId = TransactionID.newBuilder()
 				.setTransactionValidStart(
 						Timestamp.newBuilder()
@@ -360,8 +382,17 @@ public class ScheduleCreateTransitionLogicTest {
 						SchedulableTransactionBody.newBuilder().setMemo(innerMemo));
 
 		if (invalidAdminKey) {
-			scheduleCreate.setAdminKey(invalidKey);
+			if (invalidAdminKeyIsSentinelKeyList) {
+				scheduleCreate.setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY);
+			} else {
+				scheduleCreate.setAdminKey(invalidKey);
+			}
 		}
+
+		if (adminKeyActuallySkipped) {
+			scheduleCreate.clearAdminKey();
+		}
+
 		builder.setTransactionID(txnId);
 		builder.setScheduleCreate(scheduleCreate);
 

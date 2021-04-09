@@ -49,6 +49,7 @@ public class NodeLocalProperties {
 	private boolean devOnlyDefaultNodeListens;
 	private String accountsExportPath;
 	private boolean exportAccountsOnStartup;
+	private Profile nettyMode;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -83,6 +84,7 @@ public class NodeLocalProperties {
 		devOnlyDefaultNodeListens = properties.getBooleanProperty("dev.onlyDefaultNodeListens");
 		accountsExportPath = properties.getStringProperty("hedera.accountsExportPath");
 		exportAccountsOnStartup = properties.getBooleanProperty("hedera.exportAccountsOnStartup");
+		nettyMode = properties.getProfileProperty("netty.mode");
 	}
 
 	public int port() {
@@ -187,5 +189,9 @@ public class NodeLocalProperties {
 
 	public boolean exportAccountsOnStartup() {
 		return exportAccountsOnStartup;
+	}
+
+	public Profile nettyMode() {
+		return nettyMode;
 	}
 }

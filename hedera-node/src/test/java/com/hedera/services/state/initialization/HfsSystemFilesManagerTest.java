@@ -227,6 +227,21 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
+	public void canMarkFilesNotLoaded() {
+		// setup:
+		subject.setObservableFilesLoaded();
+
+		// expect:
+		assertTrue(subject.areObservableFilesLoaded());
+
+		// when:
+		subject.setObservableFilesNotLoaded();
+
+		// then:
+		assertFalse(subject.areObservableFilesLoaded());
+	}
+
+	@Test
 	public void tracksFileLoading() {
 		// expect:
 		assertFalse(subject.areObservableFilesLoaded());

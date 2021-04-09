@@ -134,9 +134,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void updateWithSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
 		if (congestionLevelStarts.length > 0) {
-			var congestionStarts = Arrays.stream(congestionLevelStarts)
-							.map(RichInstant::toJava)
-							.toArray(Instant[]::new);
+			Instant[] congestionStarts = new Instant[congestionLevelStarts.length];
+			for (int i = 0; i < congestionLevelStarts.length; i++) {
+				if (congestionLevelStarts[i] != null) {
+					congestionStarts[i] = congestionLevelStarts[i].toJava();
+				}
+			}
 			feeMultiplierSource.resetCongestionLevelStarts(congestionStarts);
 		}
 	}
@@ -178,7 +181,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			if (numCongestionStarts > 0) {
 				congestionLevelStarts = new RichInstant[numCongestionStarts];
 				for (int i = 0; i < numCongestionStarts; i++) {
-					congestionLevelStarts[i] = RichInstant.from(in);
+					congestionLevelStarts[i] = serdes.readNullableInstant(in);
 				}
 			}
 		}
@@ -263,11 +266,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			var throttle = throttles.get(i);
 			try {
 				throttle.resetUsageTo(savedUsageSnapshot);
+				log.info("Reset {} with saved usage snapshot", throttle);
 			} catch (Exception e) {
 				log.warn("Saved usage snapshot #" + (i + 1)
 						+ " was not compatible with the corresponding active throttle ("
 						+ e.getMessage() + "); not performing a reset!");
 				resetUnconditionally(throttles, currUsageSnapshots);
+				break;
 			}
 		}
 	}

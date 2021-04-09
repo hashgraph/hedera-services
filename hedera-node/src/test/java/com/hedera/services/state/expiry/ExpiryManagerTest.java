@@ -132,7 +132,7 @@ class ExpiryManagerTest {
 		// given:
 		givenSchedule(schedule.getScheduleNum());
 		// and:
-		subject.restartEntitiesTrackingFrom();
+		subject.restartEntitiesTracking();
 
 		// when:
 		subject.purgeExpiredEntitiesAt(expiry);
@@ -208,7 +208,7 @@ class ExpiryManagerTest {
 		givenSchedule(schedule.getScheduleNum());
 
 		// when:
-		subject.restartEntitiesTrackingFrom();
+		subject.restartEntitiesTracking();
 
 		// then:
 		var e = subject.entityExpiries.allExpiries.poll();

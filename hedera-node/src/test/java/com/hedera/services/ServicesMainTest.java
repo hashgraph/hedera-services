@@ -281,7 +281,7 @@ public class ServicesMainTest {
 
 		// then:
 		inOrder.verify(propertySources).assertSourcesArePresent();
-		inOrder.verify(networkCtxManager).initObservableSysFiles();
+		inOrder.verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 		inOrder.verify(stateMigrations).runAllFor(ctx);
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
@@ -399,7 +399,7 @@ public class ServicesMainTest {
 		verify(systemFilesManager).createNodeDetailsIfMissing();
 		verify(systemFilesManager).createUpdateZipFileIfMissing();
 		// and:
-		verify(networkCtxManager).initObservableSysFiles();
+		verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 	}
 
 	@Test

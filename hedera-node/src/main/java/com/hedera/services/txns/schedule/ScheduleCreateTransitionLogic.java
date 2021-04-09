@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,6 +29,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.txns.validation.PureValidation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -43,9 +44,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
-import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -53,7 +54,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
-	private static final EnumSet<ResponseCodeEnum> ACCEPTABLE_SIGNING_OUTCOMES = EnumSet.of(OK, NO_NEW_VALID_SIGNATURES);
+	private static final EnumSet<ResponseCodeEnum> ACCEPTABLE_SIGNING_OUTCOMES = EnumSet.of(OK,
+			NO_NEW_VALID_SIGNATURES);
 
 	private final OptionValidator validator;
 	private final InHandleActivationHelper activationHelper;
@@ -158,7 +160,9 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		var validity = OK;
 		var op = txnBody.getScheduleCreate();
-		validity = checkAdminKey(op.hasAdminKey(), op.getAdminKey());
+		if (op.hasAdminKey()) {
+			validity = PureValidation.checkKey(op.getAdminKey(), INVALID_ADMIN_KEY);
+		}
 		if (validity != OK) {
 			return validity;
 		}

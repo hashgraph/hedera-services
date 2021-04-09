@@ -354,11 +354,11 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void initializesContext() {
+	public void initializesFullContextIfBlobStoreReady() {
 		// setup:
 		var throttling = mock(FunctionalityThrottling.class);
 
-		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager);
+		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager, expiryManager);
 
 		given(ctx.handleThrottling()).willReturn(throttling);
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
@@ -376,7 +376,9 @@ class ServicesStateTest {
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
-		inOrder.verify(networkCtxManager).initObservableSysFiles();
+		inOrder.verify(expiryManager).restartEntitiesTracking();
+		inOrder.verify(networkCtxManager).setObservableFilesNotLoaded();
+		inOrder.verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 	}
 
 	@Test
@@ -396,7 +398,7 @@ class ServicesStateTest {
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
-		inOrder.verify(networkCtxManager, never()).initObservableSysFiles();
+		inOrder.verify(networkCtxManager, never()).loadObservableSysFilesIfNeeded();
 	}
 
 	@Test
