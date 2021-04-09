@@ -30,20 +30,23 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.Logger;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -56,8 +59,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.UnaryOperator;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
@@ -67,6 +70,8 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -78,12 +83,11 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
 	FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 	FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
-
-	Logger mockLog;
 
 	MerkleToken token;
 	MerkleToken deletedToken;
@@ -123,14 +127,13 @@ class SignedStateBalancesExporterTest {
 	FileHashReader hashReader;
 	DirectoryAssurance assurance;
 
+	LogCaptor logCaptor;
+
+	@LoggingSubject
 	SignedStateBalancesExporter subject;
 
 	@BeforeEach
 	public void setUp() throws Exception {
-		mockLog = mock(Logger.class);
-		given(mockLog.isDebugEnabled()).willReturn(true);
-		SignedStateBalancesExporter.log = mockLog;
-
 		thisNodeAccount = MerkleAccountFactory.newAccount().balance(thisNodeBalance).get();
 		anotherNodeAccount = MerkleAccountFactory.newAccount().balance(anotherNodeBalance).get();
 		firstNonNodeAccount = MerkleAccountFactory.newAccount().balance(firstNonNodeAccountBalance).get();
@@ -211,7 +214,7 @@ class SignedStateBalancesExporterTest {
 		subject.exportBalancesFrom(state, now);
 
 		// then:
-		verify(mockLog).error(any(String.class), any(Throwable.class));
+		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Could not export to")));
 	}
 
 	@Test
@@ -226,7 +229,7 @@ class SignedStateBalancesExporterTest {
 		subject.exportBalancesFrom(state, now);
 
 		// then:
-		verify(mockLog).error(any(String.class), any(Throwable.class));
+		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Could not sign balance file")));
 
 		// cleanup:
 		new File(loc).delete();
@@ -238,6 +241,7 @@ class SignedStateBalancesExporterTest {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		// and:
 		var loc = expectedExportLoc();
+		var desiredDebugMsg = String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig");
 		// and:
 		accounts.clear();
 		accounts.put(
@@ -297,7 +301,7 @@ class SignedStateBalancesExporterTest {
 		// and:
 		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
 		// and:
-		verify(mockLog).debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig"));
+		assertThat(logCaptor.debugLogs(), contains(desiredDebugMsg));
 
 		// cleanup:
 		new File(loc).delete();
@@ -309,6 +313,7 @@ class SignedStateBalancesExporterTest {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		// and:
 		var loc = expectedExportLoc();
+		var desiredDebugMsg = String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig");
 
 		given(hashReader.readHash(loc)).willReturn(fileHash);
 		given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
@@ -337,7 +342,7 @@ class SignedStateBalancesExporterTest {
 		// and:
 		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
 		// and:
-		verify(mockLog).debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig"));
+		assertThat(logCaptor.debugLogs(), contains(desiredDebugMsg));
 
 		// cleanup:
 		new File(loc).delete();
@@ -386,6 +391,7 @@ class SignedStateBalancesExporterTest {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		// and:
 		var loc = expectedExportLoc(true);
+		var desiredDebugMsg = String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig");
 
 		given(hashReader.readHash(loc)).willReturn(fileHash);
 		given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
@@ -417,7 +423,7 @@ class SignedStateBalancesExporterTest {
 		// and:
 		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
 		// and:
-		verify(mockLog).debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig"));
+		assertThat(logCaptor.debugLogs(), contains(desiredDebugMsg));
 
 		// cleanup:
 		new File(loc).delete();
@@ -442,7 +448,7 @@ class SignedStateBalancesExporterTest {
 		subject.exportBalancesFrom(state, now);
 
 		// then:
-		verify(mockLog).error(any(String.class), any(Throwable.class));
+		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Could not export to")));
 	}
 
 
@@ -495,6 +501,7 @@ class SignedStateBalancesExporterTest {
 	public void errorProtoLogsOnIoException() throws IOException {
 		// given:
 		subject.directories = assurance;
+		var desiredMsg = String.format(SignedStateBalancesExporter.BAD_EXPORT_DIR_ERROR_MSG_TPL, expectedExportDir());
 		// and:
 		willThrow(IOException.class).given(assurance).ensureExistenceOf(any());
 
@@ -503,8 +510,7 @@ class SignedStateBalancesExporterTest {
 		subject.exportBalancesFrom(state, now);
 
 		// then:
-		verify(mockLog).error(String.format(
-				SignedStateBalancesExporter.BAD_EXPORT_DIR_ERROR_MSG_TPL, expectedExportDir()));
+		assertThat(logCaptor.errorLogs(), contains(desiredMsg));
 	}
 
 	private String expectedBalancesName(Boolean isProto) {
@@ -535,6 +541,9 @@ class SignedStateBalancesExporterTest {
 	public void summarizesAsExpected() {
 		// given:
 		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
+		// and:
+		var desiredWarning = String.format(
+				SignedStateBalancesExporter.LOW_NODE_BALANCE_WARN_MSG_TPL, "0.0.4", anotherNodeBalance);
 
 		// when:
 		var summary = subject.summarized(state);
@@ -543,9 +552,7 @@ class SignedStateBalancesExporterTest {
 		assertEquals(ledgerFloat, summary.getTotalFloat().longValue());
 		assertEquals(expectedBalances, summary.getOrderedBalances());
 		// and:
-		verify(mockLog).warn(String.format(
-				SignedStateBalancesExporter.LOW_NODE_BALANCE_WARN_MSG_TPL,
-				"0.0.4", anotherNodeBalance));
+		assertThat(logCaptor.warnLogs(), contains(desiredWarning));
 	}
 
 	private List<SingleAccountBalances> theExpectedBalances() {
@@ -602,6 +609,7 @@ class SignedStateBalancesExporterTest {
 	public void errorLogsOnIoException() throws IOException {
 		// given:
 		subject.directories = assurance;
+		var desiredError = String.format(SignedStateBalancesExporter.BAD_EXPORT_DIR_ERROR_MSG_TPL, expectedExportDir());
 		// and:
 		willThrow(IOException.class).given(assurance).ensureExistenceOf(any());
 
@@ -610,8 +618,7 @@ class SignedStateBalancesExporterTest {
 		subject.exportBalancesFrom(state, now);
 
 		// then:
-		verify(mockLog).error(String.format(
-				SignedStateBalancesExporter.BAD_EXPORT_DIR_ERROR_MSG_TPL, expectedExportDir()));
+		assertThat(logCaptor.errorLogs(), contains(desiredError));
 	}
 
 	private String expectedExportDir() {
@@ -626,7 +633,6 @@ class SignedStateBalancesExporterTest {
 
 	@Test
 	public void exportsWhenPeriodSecsHaveElapsed() {
-		given(mockLog.isDebugEnabled()).willReturn(true);
 		Instant startTime = Instant.parse("2021-03-11T10:59:59.0Z");
 
 		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
@@ -654,7 +660,6 @@ class SignedStateBalancesExporterTest {
 		assertTrue(subject.isTimeToExport(anEternityLater));
 		assertEquals(anEternityLater, subject.periodBegin);
 
-		given(mockLog.isDebugEnabled()).willReturn(false);
 		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
 		startTime = Instant.parse("2021-03-11T10:59:59.0Z");
 		assertFalse(subject.isTimeToExport(startTime));

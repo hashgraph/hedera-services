@@ -43,6 +43,9 @@ import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -56,10 +59,14 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.RunningHash;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -69,8 +76,8 @@ import java.util.Optional;
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static org.mockito.BDDMockito.*;
 
+@ExtendWith(LogCaptureExtension.class)
 class AwareProcessLogicTest {
-	Logger mockLog;
 	Transaction platformTxn;
 	AddressBook book;
 	ServicesContext ctx;
@@ -80,6 +87,9 @@ class AwareProcessLogicTest {
 	SmartContractRequestHandler contracts;
 	HederaFs hfs;
 
+	LogCaptor logCaptor;
+
+	@LoggingSubject
 	AwareProcessLogic subject;
 
 	@BeforeEach
@@ -109,15 +119,12 @@ class AwareProcessLogicTest {
 		ctx = mock(ServicesContext.class);
 		txnBody = mock(TransactionBody.class);
 		contracts = mock(SmartContractRequestHandler.class);
-		mockLog = mock(Logger.class);
 		nonMockTxnBody = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 								.setAccountID(IdUtils.asAccount("0.0.2"))).build();
 		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
 				.setBodyBytes(nonMockTxnBody.toByteString())
 				.build().toByteArray());
-
-		AwareProcessLogic.log = mockLog;
 
 		var zeroStakeAddress = mock(Address.class);
 		given(zeroStakeAddress.getStake()).willReturn(0L);
@@ -194,7 +201,8 @@ class AwareProcessLogicTest {
 		subject.incorporateConsensusTxn(platformTxn, now, 666);
 
 		// then:
-		verify(mockLog).warn(argThat((String s) -> s.startsWith("Ignoring a transaction submitted by zero-stake")));
+		assertThat(logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Ignoring a transaction submitted by zero-stake")));
 	}
 
 	@Test
@@ -208,7 +216,8 @@ class AwareProcessLogicTest {
 		subject.incorporateConsensusTxn(platformTxn, now,1);
 
 		// then:
-		verify(mockLog).error(argThat((String s) -> s.startsWith("Catastrophic invariant failure!")));
+		assertThat(logCaptor.errorLogs(),
+				contains(Matchers.startsWith("Catastrophic invariant failure!")));
 	}
 
 	@Test
@@ -226,7 +235,8 @@ class AwareProcessLogicTest {
 		subject.incorporateConsensusTxn(platformSignedTxn, now, 666);
 
 		// then:
-		verify(mockLog).warn(argThat((String s) -> s.startsWith("Ignoring a transaction submitted by zero-stake")));
+		assertThat(logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Ignoring a transaction submitted by zero-stake")));
 	}
 
 	@Test

@@ -20,7 +20,6 @@ package com.hedera.services.fees;
  * ‍
  */
 
-import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.throttles.DeterministicThrottle;
@@ -149,7 +148,7 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 		}
 
 		if (multiplier != previousMultiplier) {
-			logMultiplierChange(previousMultiplier, multiplier, log);
+			logMultiplierChange(previousMultiplier, multiplier);
 		}
 		previousMultiplier = multiplier;
 	}
@@ -189,22 +188,22 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 
 		congestionLevelStarts = new Instant[multipliers.length];
 
-		logReadableCutoffs(log);
+		logReadableCutoffs();
 	}
 
-	void logMultiplierChange(long prev, long cur, Logger refinedLog) {
+	void logMultiplierChange(long prev, long cur) {
 		if (prev == DEFAULT_MULTIPLIER)	{
-			refinedLog.info("Congestion pricing beginning w/ " + cur + "x multiplier");
+			log.info("Congestion pricing beginning w/ " + cur + "x multiplier");
 		} else {
 			if (cur > prev) {
-				refinedLog.info("Congestion pricing continuing, reached " + cur + "x multiplier");
+				log.info("Congestion pricing continuing, reached " + cur + "x multiplier");
 			} else if (cur == DEFAULT_MULTIPLIER) {
-				refinedLog.info("Congestion pricing ended");
+				log.info("Congestion pricing ended");
 			}
 		}
 	}
 
-	void logReadableCutoffs(Logger refinedLog) {
-		refinedLog.info("The new cutoffs for congestion pricing are:" + this);
+	void logReadableCutoffs() {
+		log.info("The new cutoffs for congestion pricing are:" + this);
 	}
 }

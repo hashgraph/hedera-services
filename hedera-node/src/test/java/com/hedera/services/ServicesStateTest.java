@@ -102,6 +102,7 @@ import static com.hedera.services.ServicesState.RELEASE_0120_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_070_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
+import static com.hedera.services.ServicesState.log;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static java.util.Collections.EMPTY_LIST;
 import static org.hamcrest.Matchers.equalTo;
@@ -530,8 +531,6 @@ class ServicesStateTest {
 	@Test
 	public void hashesPrintedAsExpected() {
 		// setup:
-		var mockLog = mock(Logger.class);
-		ServicesState.log = mockLog;
 		Hash ctxHash = new Hash("sdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfy".getBytes());
 		Hash bookHash = new Hash("sdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfz".getBytes());
 		Hash topicRootHash = new Hash("sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes());
@@ -606,11 +605,9 @@ class ServicesStateTest {
 		subject.logSummary();
 
 		// then:
-		verify(mockLog).info(expected);
-		verify(mockLog).info("Not really a network context representation!");
-
-		// cleanup:
-		ServicesState.log = LogManager.getLogger(ServicesState.class);
+		assertThat(
+				logCaptor.infoLogs(),
+				contains(equalTo(expected), equalTo("Not really a network context representation!")));
 	}
 
 	@Test

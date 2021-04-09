@@ -27,12 +27,16 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -57,6 +61,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
+@ExtendWith(LogCaptureExtension.class)
 class MerkleNetworkContextTest {
 	RichInstant consensusTimeOfLastHandledTxn;
 	SequenceNumber seqNo;
@@ -70,6 +75,9 @@ class MerkleNetworkContextTest {
 	FunctionalityThrottling throttling;
 	FeeMultiplierSource feeMultiplierSource;
 
+	LogCaptor logCaptor;
+
+	@LoggingSubject
 	MerkleNetworkContext subject;
 
 	@BeforeEach

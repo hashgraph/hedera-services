@@ -22,14 +22,15 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -41,13 +42,15 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class DeterministicThrottlingTest {
 	int n = 2;
 	int aTps = 6, bTps = 12;
@@ -55,6 +58,9 @@ class DeterministicThrottlingTest {
 	DeterministicThrottle b = DeterministicThrottle.withTps(bTps);
 	Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
 
+	LogCaptor logCaptor;
+
+	@LoggingSubject
 	DeterministicThrottling subject;
 
 	@Mock
@@ -89,7 +95,6 @@ class DeterministicThrottlingTest {
 	void logsAsExpected() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		var desired = "Resolved throttles (after splitting capacity 2 ways) - \n" +
 				"  ContractCall: min{6.00 tps (A), 5.00 tps (B)}\n" +
 				"  CryptoCreate: min{5000.00 tps (A), 1.00 tps (C)}\n" +
@@ -100,16 +105,11 @@ class DeterministicThrottlingTest {
 				"  TokenMint: min{1500.00 tps (A)}\n" +
 				"  TransactionGetReceipt: min{500000.00 tps (D)}";
 
-		var mockLog = mock(Logger.class);
-
 		// when:
 		subject.rebuildFor(defs);
-		// and:
-		subject.logResolvedDefinitions(mockLog);
 
 		// then:
-		verify(mockLog).info(captor.capture());
-		assertEquals(desired, captor.getValue());
+		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	@Test

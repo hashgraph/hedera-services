@@ -1,19 +1,17 @@
 package com.hedera.services.context.domain.security;
 
 import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -22,14 +20,16 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.mockito.Mockito.verify;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class HapiOpPermissionsTest {
-	HapiOpPermissions subject;
+	LogCaptor logCaptor;
 
-	@Mock
-	Logger mockLog;
+	@LoggingSubject
+	HapiOpPermissions subject;
 
 	@BeforeEach
 	void setUp() {
@@ -43,8 +43,6 @@ class HapiOpPermissionsTest {
 		var sysadmin = IdUtils.asAccount("0.0.50");
 		var luckyCivilian = IdUtils.asAccount("0.0.1234");
 		var unluckyCivilian = IdUtils.asAccount("0.0.1235");
-
-		HapiOpPermissions.log = mockLog;
 
 		// given:
 		var config = configWith(
@@ -71,9 +69,6 @@ class HapiOpPermissionsTest {
 
 	@Test
 	void reloadsAsExpected() {
-		// setup:
-		HapiOpPermissions.log = mockLog;
-
 		// given:
 		var config = configWith(
 				Pair.of("doesntExist", "0-*"),
@@ -93,8 +88,11 @@ class HapiOpPermissionsTest {
 		assertRangeProps(permissions.get(CryptoTransfer), 3L, 1234L);
 		assertRangeProps(permissions.get(TokenMint), 666L, Long.MAX_VALUE);
 		// and:
-		verify(mockLog).warn(String.format(HapiOpPermissions.MISSING_OP_TPL, "doesntExist"));
-		verify(mockLog).warn(String.format(HapiOpPermissions.UNPARSEABLE_RANGE_TPL, TokenBurn, "abcde"));
+		assertThat(
+				logCaptor.warnLogs(),
+				contains(
+						equalTo(String.format(HapiOpPermissions.MISSING_OP_TPL, "doesntExist")),
+						equalTo(String.format(HapiOpPermissions.UNPARSEABLE_RANGE_TPL, TokenBurn, "abcde"))));
 	}
 
 	private void assertRangeProps(PermissionedAccountsRange range, Long l, Long r) {
