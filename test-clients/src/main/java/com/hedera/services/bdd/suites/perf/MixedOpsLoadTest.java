@@ -28,6 +28,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
@@ -69,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -178,7 +180,8 @@ public class MixedOpsLoadTest extends LoadTest {
 								INVALID_TOKEN_ID,
 								UNKNOWN, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 						.deferStatusResolution() :
-						scheduleSign(schedule + r.nextInt(NUM_SUBMISSIONS))
+						scheduleSign(schedule + "-" + getHostName() + "-" + r.nextInt(NUM_SUBMISSIONS))
+								.ignoreIfMissing()
 								.noLogging()
 								.alsoSigningWith(receiver)
 								.hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
@@ -186,7 +189,8 @@ public class MixedOpsLoadTest extends LoadTest {
 										OK,
 										TRANSACTION_EXPIRED,
 										INVALID_SCHEDULE_ID,
-										UNKNOWN)
+										UNKNOWN,
+										SCHEDULE_ALREADY_EXECUTED)
 								.fee(ONE_HBAR)
 								.deferStatusResolution()
 		};
@@ -236,13 +240,15 @@ public class MixedOpsLoadTest extends LoadTest {
 						sleepFor(10000),
 						inParallel(IntStream.range(0, NUM_SUBMISSIONS)
 								.mapToObj(ignore ->
-										scheduleCreate("schedule" + scheduleId.getAndIncrement(),
+										scheduleCreate("schedule-" + getHostName() + "-" +
+														scheduleId.getAndIncrement(),
 												cryptoTransfer(tinyBarsFromTo(sender, receiver, 1))
 										)
 												.signedBy(DEFAULT_PAYER)
 												.fee(ONE_HUNDRED_HBARS)
 												.alsoSigningWith(sender)
 												.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+												.hasAnyKnownStatus()
 												.deferStatusResolution()
 												.adminKey(DEFAULT_PAYER)
 												.noLogging())
@@ -274,5 +280,14 @@ public class MixedOpsLoadTest extends LoadTest {
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
+	}
+
+	private String getHostName() {
+		try {
+			return InetAddress.getLocalHost().getHostName();
+		} catch (Exception e) {
+			log.info("Error getting host name");
+			return "Hostname-Not-Available";
+		}
 	}
 }
