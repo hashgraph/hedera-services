@@ -69,14 +69,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
@@ -106,9 +112,11 @@ public class QueryOnlyLoadTest extends LoadTest {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
 		Supplier<HapiSpecOperation[]> mixedQueries = () -> new HapiSpecOperation[] {
-				opGetAcctInfo(settings),
-				opGetAcctBalance(settings),
-				opGetAcctRecords(settings),
+//				opGetAcctInfo(settings),
+//				opGetAcctBalance(settings),
+//				opGetAcctRecords(settings),
+//				opGetTokenInfo(settings),
+// 			opGetScheduleInfo(settings),
 				opGetTopicInfo(settings),
 		};
 
@@ -142,6 +150,7 @@ public class QueryOnlyLoadTest extends LoadTest {
 		return QueryVerbs.getAccountInfo(acctToQuery)
 				.payingWith(GENESIS)
 				.fee(ONE_HUNDRED_HBARS)
+				.nodePayment(ONE_HUNDRED_HBARS)
 				.noLogging()
 				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_ACCOUNT_ID,
@@ -149,12 +158,13 @@ public class QueryOnlyLoadTest extends LoadTest {
 	}
 
 	private static HapiSpecOperation opGetAcctRecords(PerfTestLoadSettings settings) {
-		String acctToQuery = String.format("0.0.%d",
-				settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalTopics()));
+		String acctQuery = String.format("0.0.%d",
+				settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
 
-		return QueryVerbs.getAccountRecords(acctToQuery)
+		return QueryVerbs.getAccountRecords(acctQuery)
 				.payingWith(GENESIS)
 				.fee(ONE_HUNDRED_HBARS)
+				.nodePayment(ONE_HUNDRED_HBARS)
 				.noLogging()
 				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_ACCOUNT_ID, ACCOUNT_DELETED,ACCOUNT_ID_DOES_NOT_EXIST);
@@ -162,15 +172,47 @@ public class QueryOnlyLoadTest extends LoadTest {
 
 	private static HapiSpecOperation opGetTopicInfo(PerfTestLoadSettings settings) {
 		int startingTopicNum = settings.getTestTreasureStartAccount() + settings.getTotalAccounts();
-		String topicToQuery = String.format("0.0.%d",
+		String topicQuery = String.format("0.0.%d",
 				startingTopicNum + r.nextInt(settings.getTotalTopics()));
 
-		return QueryVerbs.getTopicInfo(topicToQuery)
+		return QueryVerbs.getTopicInfo(topicQuery)
 				.payingWith(GENESIS)
 				.fee(ONE_HUNDRED_HBARS)
+				.nodePayment(ONE_HUNDRED_HBARS)
 				.noLogging()
-				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK)
+				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK, INVALID_TOPIC_ID)
 				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_TOPIC_ID, TOPIC_EXPIRED);
+	}
+
+	private static HapiSpecOperation opGetTokenInfo(PerfTestLoadSettings settings) {
+		int startingTokenNum = settings.getTestTreasureStartAccount() + settings.getTotalAccounts() + settings.getTotalTopics();
+		String tokenQuery = String.format("0.0.%d",
+				startingTokenNum + r.nextInt(103)); // need a way to handle these entities' range
+
+		return QueryVerbs.getTokenInfo(tokenQuery)
+				.payingWith(GENESIS)
+				.fee(ONE_HUNDRED_HBARS)
+				.nodePayment(ONE_HUNDRED_HBARS)
+				.noLogging()
+				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK, INVALID_TOKEN_ID)
+				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_TOKEN_ID, TOKEN_WAS_DELETED);
+	}
+
+	private static HapiSpecOperation opGetScheduleInfo(PerfTestLoadSettings settings) {
+		int startingScheduleNum = settings.getTestTreasureStartAccount() + settings.getTotalAccounts() + settings.getTotalTopics()
+				+ 103 + 1181397; // need some way to handle these entities' ranges
+		String scheduleQuery = String.format("0.0.%d",
+				startingScheduleNum + r.nextInt(1000));
+
+		return QueryVerbs.getScheduleInfo(scheduleQuery)
+				.payingWith(GENESIS)
+				.fee(ONE_HUNDRED_HBARS)
+				.nodePayment(ONE_HUNDRED_HBARS)
+				.noLogging()
+				.hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK, INVALID_SCHEDULE_ID, INVALID_SCHEDULE_ACCOUNT_ID)
+				.hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE,INVALID_SCHEDULE_ID,
+						SCHEDULE_ALREADY_DELETED, SCHEDULE_ALREADY_EXECUTED, INVALID_SCHEDULE_PAYER_ID,
+						INVALID_SCHEDULE_ACCOUNT_ID);  // Need to verify these response codes
 	}
 
 
