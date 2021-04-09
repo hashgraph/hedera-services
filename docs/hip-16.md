@@ -32,8 +32,8 @@ The expiration time of an entity still can be extended via an update transaction
 ### Terminology
 - Deletion - A successful delete transaction will mark an entity as deleted and that entity cannot be operated upon.
 The entity will remain in the ledger, marked as deleted, until it expires.
-- Expiration - the entity has passed its expiration date and has not been renewed, so it is temporarily disabled.
-- Renewal - the extension of an entity's expiration date, either by an update transaction, or by autorenewal.
+- Expiration - the entity has passed its expiration time and has not been renewed, so it is temporarily disabled.
+- Renewal - the extension of an entity's expiration time, either by an update transaction, or by autorenewal.
 - Removal - The entity is permanently removed from the state of the decentralized ledger.
 - Grace period - The time during which an expired entity is disabled, but not yet removed, and can still be renewed.
 - Action - An operation performed by the network that isn't during the processing of its transaction, such as an autorenewal, or the execution of a scheduled transaction.
@@ -51,9 +51,9 @@ If the linked autorenew or admin account cannot cover the fee required for the d
 will be wholly used for a shorter extension of the entity. If the linked account already has a zero balance at the time that
 renewal fees are due, the entity will be marked as expired. 
 
-An expired entity will still have a grace period before it is deleted. During that period, it is inactive, and all transactions involving it will fail, except for an update transaction to extend its expiration date. If it is not manually extended during the grace period, and if its autorenewal account still has a zero balance at the end of the grace period, then at the end of the grace period it will be permanently removed from the ledger. Its entity ID number will not be reused. The length of the grace period is a single, global setting for the entire ledger, such as 7 days. If it is renewed during the grace period (by a transaction, or by autorenewal at the end of the grace period, then the renewal must include payment for the portion of the grace period that has already passed.
+An expired entity will still have a grace period before it is removed. During that period, it is inactive, and all transactions involving it will fail, except for an update transaction to extend its expiration time. If it is not manually extended during the grace period, and if its autorenewal account still has a zero balance at the end of the grace period, then at the end of the grace period it will be permanently removed from the ledger. Its entity ID number will not be reused. The length of the grace period is a single, global setting for the entire ledger, such as 7 days. If it is renewed during the grace period (by a transaction, or by autorenewal at the end of the grace period, then the renewal must include payment for the portion of the grace period that has already passed.
 
-If an entity was marked as deleted, then it cannot have its expiration date extended. Neither an update transaction nor an autorenew will be able to extend it.
+If an entity was marked as deleted, then it cannot have its expiration time extended. Neither an update transaction nor an autorenew will be able to extend it.
 
 Hedera Services will generate an [autorenewal-record](https://github.com/hashgraph/hedera-services/blob/autorenew-document/docs/autorenew-feature.md#autorenewal-record)
 for the action on each entity that is automatically renewed. Hedera Services will generate an
@@ -67,7 +67,7 @@ do not autorenew, and cannot be manually renewed with a transaction, and are alw
 
 There is no change in existing protobufs. Account and entity owners must ensure that linked autorenew and admin accounts have sufficient balances for autorenewal fees, or risk permanent removal of their entity.
 
-Every entity will receive one free auto renewal at implementation of this feature. This will have the effect of extending the initial period for autorenewal ~92 days. Entities that are already past their expiration date will have it set to ~92 days after the date the feature is first deployed.
+Every entity will receive one free auto renewal at implementation of this feature. This will have the effect of extending the initial period for autorenewal ~92 days. Entities that are already past their expiration time will have it set to ~92 days after the date the feature is first deployed.
 
 ## Security Implications
 
