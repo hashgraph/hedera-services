@@ -28,6 +28,8 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETF
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.EnumMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.functionOf;
@@ -35,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
 public class PermissionFileUtils {
 	private static final EnumMap<HederaFunctionality, String> permissionKeys = new EnumMap<>(HederaFunctionality.class);
+	static final Map<String, HederaFunctionality> legacyKeys;
 
 	public static String permissionFileKeyForTxn(TransactionBody txn) {
 		try {
@@ -109,5 +112,8 @@ public class PermissionFileUtils {
 		permissionKeys.put(GetVersionInfo, "getVersionInfo");
 		permissionKeys.put(TokenGetInfo, "tokenGetInfo");
 		permissionKeys.put(ScheduleGetInfo, "scheduleGetInfo");
+
+		legacyKeys = permissionKeys.entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
 	}
 }

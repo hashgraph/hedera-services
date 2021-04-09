@@ -46,13 +46,22 @@ public class ScreenedNodeFileProps implements PropertySource {
 	private static final Profile[] LEGACY_ENV_ORDER = { DEV, PROD, TEST };
 
 	static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
+			entry("nettyFlowControlWindow", "netty.prod.flowControlWindow"),
+			entry("nettyMaxConnectionAge", "netty.prod.maxConnectionAge"),
+			entry("nettyMaxConnectionAgeGrace", "netty.prod.maxConnectionAgeGrace"),
+			entry("nettyMaxConnectionIdle", "netty.prod.maxConnectionIdle"),
+			entry("nettyMaxConcurrentCalls", "netty.prod.maxConcurrentCalls"),
+			entry("nettyKeepAliveTime", "netty.prod.keepAliveTime"),
+			entry("nettyKeepAliveTimeOut", "netty.prod.keepAliveTimeout"),
 			entry("port", "grpc.port"),
 			entry("recordStreamQueueCapacity", "hedera.recordStream.queueCapacity"),
 			entry("enableRecordStreaming", "hedera.recordStream.isEnabled"),
 			entry("recordLogDir", "hedera.recordStream.logDir"),
 			entry("recordLogPeriod", "hedera.recordStream.logPeriod"),
 			entry("tlsPort", "grpc.tlsPort"),
-			entry("environment", "hedera.profiles.active")
+			entry("environment", "hedera.profiles.active"),
+			entry("defaultListeningNodeAccount", "dev.defaultListeningNodeAccount"),
+			entry("uniqueListeningPortFlag", "dev.onlyDefaultNodeListens")
 	);
 	static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
 			entry("environment", legacy -> LEGACY_ENV_ORDER[Integer.parseInt(legacy)].toString())

@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.verification;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AddressBook;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.AddressBook;
 import com.hedera.services.legacy.core.HexUtils;

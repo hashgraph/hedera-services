@@ -39,7 +39,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.hedera.services.legacy.logic.ApplicationConstants.DEFAULT_FEE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static java.util.stream.Collectors.toMap;
 
@@ -51,6 +50,8 @@ import static java.util.stream.Collectors.toMap;
  */
 public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	private static final Logger log = LogManager.getLogger(AwareFcfsUsagePrices.class);
+
+	public static long DEFAULT_FEE = 100_000L;
 
 	public static final FeeComponents DEFAULT_RESOURCE_USAGE_PRICES = FeeComponents.newBuilder()
 			.setMin(DEFAULT_FEE)

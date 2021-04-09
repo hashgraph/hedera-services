@@ -33,7 +33,7 @@ import com.hedera.services.legacy.proto.utils.KeyExpansion;
 
 public class ComplexKeyManager {
 
-  public static enum SUPPORTE_KEY_TYPES {
+  public enum SUPPORTED_KEY_TYPES {
     single, keylist, thresholdKey
   }
   private static int COMPLEX_KEY_SIZE;
@@ -49,10 +49,10 @@ public class ComplexKeyManager {
    */
   public static Key genComplexKey(String accountKeyType) throws Exception {
     Key key = null;
-    if (accountKeyType.equals(SUPPORTE_KEY_TYPES.thresholdKey.name())) {
+    if (accountKeyType.equals(SUPPORTED_KEY_TYPES.thresholdKey.name())) {
       key = KeyExpansion
           .genThresholdKeyInstance(COMPLEX_KEY_SIZE, COMPLEX_KEY_THRESHOLD, pubKey2privKeyMap);
-    } else if (accountKeyType.equals(SUPPORTE_KEY_TYPES.keylist.name())) {
+    } else if (accountKeyType.equals(SUPPORTED_KEY_TYPES.keylist.name())) {
       key = KeyExpansion.genKeyListInstance(COMPLEX_KEY_SIZE, pubKey2privKeyMap);
     } else {
       key = KeyExpansion.genSingleEd25519KeyByteEncodePubKey(pubKey2privKeyMap);
@@ -78,7 +78,7 @@ public class ComplexKeyManager {
   }
 
   public static List<Key> genWaclComplex() throws Exception {
-    return genWaclComplex(1, SUPPORTE_KEY_TYPES.single.name());
+    return genWaclComplex(1, SUPPORTED_KEY_TYPES.single.name());
   }
 
   public static Key getAccountKey(AccountID accountID) {

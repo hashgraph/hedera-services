@@ -20,6 +20,8 @@ package com.hedera.test.utils;
  * ‍
  */
 
+import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
+import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
@@ -27,6 +29,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class SerdeUtils {
 	public static byte[] serOutcome(ThrowingConsumer<DataOutputStream> serializer) throws Exception {
@@ -43,6 +47,22 @@ public class SerdeUtils {
 			try (SerializableDataInputStream in = new SerializableDataInputStream(bais)) {
 				return deserializer.apply(in);
 			}
+		}
+	}
+
+	public static ThrottleDefinitions protoDefs(
+			String testResource
+	) throws IOException {
+		try (InputStream in = ThrottlesJsonToProtoSerde.class.getClassLoader().getResourceAsStream(testResource)) {
+			return ThrottlesJsonToProtoSerde.loadProtoDefs(in);
+		}
+	}
+
+	public static com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions pojoDefs(
+			String testResource
+	) throws IOException {
+		try (InputStream in = ThrottlesJsonToProtoSerde.class.getClassLoader().getResourceAsStream(testResource)) {
+			return ThrottlesJsonToProtoSerde.loadPojoDefs(in);
 		}
 	}
 

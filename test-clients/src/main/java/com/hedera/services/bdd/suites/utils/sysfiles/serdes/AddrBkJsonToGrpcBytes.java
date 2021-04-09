@@ -53,8 +53,6 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 			if (protoBufVersion == ProtoBufVersion.V0_12_0) {
 				pojoBook = addressBookFrom(AddressBook.parseFrom(bytes));
 			} else {
-				// if it is version 13, there are two cases where one can download
-				// AddressBook or AddressBookForClients
 				pojoBook = addressBookFromVersion13(bytes);
 			}
 			return mapper

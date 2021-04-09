@@ -21,6 +21,7 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -44,6 +45,8 @@ class GlobalDynamicPropertiesTest {
 	PropertySource properties;
 
 	HederaNumbers numbers;
+	CongestionMultipliers oddCongestion = CongestionMultipliers.from("90,11x,95,27x,99,103x");
+	CongestionMultipliers evenCongestion = CongestionMultipliers.from("90,10x,95,25x,99,100x");
 	GlobalDynamicProperties subject;
 
 	@BeforeEach
@@ -91,6 +94,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(27, subject.scheduledTxExpiryTimeSecs());
 		assertEquals(28, subject.messageMaxBytesAllowed());
 		assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
+		assertEquals(oddCongestion, subject.congestionMultipliers());
+		assertEquals(29, subject.feesMinCongestionPeriod());
 	}
 
 	@Test
@@ -130,6 +135,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(28, subject.scheduledTxExpiryTimeSecs());
 		assertEquals(29, subject.messageMaxBytesAllowed());
 		assertEquals(Set.of(HederaFunctionality.CryptoCreate), subject.schedulingWhitelist());
+		assertEquals(evenCongestion, subject.congestionMultipliers());
+		assertEquals(30, subject.feesMinCongestionPeriod());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -164,6 +171,9 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getFunctionsProperty("scheduling.whitelist")).willReturn(i % 2 == 0
 				? Set.of(HederaFunctionality.CryptoCreate)
 				: Set.of(HederaFunctionality.CryptoTransfer));
+		given(properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers"))
+				.willReturn(i % 2 == 0 ? evenCongestion : oddCongestion);
+		given(properties.getIntProperty("fees.minCongestionPeriod")).willReturn(i + 28);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

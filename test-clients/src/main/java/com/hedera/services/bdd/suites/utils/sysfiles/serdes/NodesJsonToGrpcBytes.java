@@ -26,7 +26,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
 import com.hederahashgraph.api.proto.java.AddressBook;
-import org.apache.commons.lang3.NotImplementedException;
 
 import java.io.IOException;
 

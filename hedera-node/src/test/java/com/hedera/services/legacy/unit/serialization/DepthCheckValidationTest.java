@@ -20,6 +20,7 @@ package com.hedera.services.legacy.unit.serialization;
  * ‍
  */
 
+import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -31,7 +32,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hedera.services.legacy.TestHelper;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.legacy.utils.TransactionValidationUtils;
+
 import java.security.KeyPair;
 
 import net.i2p.crypto.eddsa.KeyPairGenerator;
@@ -69,20 +70,20 @@ public class DepthCheckValidationTest {
 	@Test
 	public void getDepthTest_singleKey() {
 		Key key = TestHelper.genKey();
-		assert TransactionValidationUtils.getDepth(key) == 0;
+		assert TransactionHandler.getDepth(key) == 0;
 	}
 
 	@Test
 	public void getDepthTest_thresholdKey() {
 		Key key = TestHelper.genThresholdKey(3, 2);
-		assert TransactionValidationUtils.getDepth(key) == 3;
+		assert TransactionHandler.getDepth(key) == 3;
 	}
 
 	@Test
 	public void getDepthTest_multiLayerThresholdKey() {
 		Key basicThresholdKey = TestHelper.genThresholdKey(3, 2);
 		Key key = TestHelper.genMultiLayerThresholdKey(10, basicThresholdKey);
-		assert TransactionValidationUtils.getDepth(key) == 30;
+		assert TransactionHandler.getDepth(key) == 30;
 	}
 
 	private Key getKey_Depth47() {
@@ -102,12 +103,12 @@ public class DepthCheckValidationTest {
 		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
 		CryptoCreateTransactionBody cryptoCreateTransactionBody = trBody.getCryptoCreateAccount();
 		Key key_47 = getKey_Depth47();
-		assert TransactionValidationUtils.getDepth(key_47) == 47;
+		assert TransactionHandler.getDepth(key_47) == 47;
 		cryptoCreateTransactionBody = cryptoCreateTransactionBody.toBuilder().setKey(key_47).build();
-		assert TransactionValidationUtils.getDepth(cryptoCreateTransactionBody) == 48;
+		assert TransactionHandler.getDepth(cryptoCreateTransactionBody) == 48;
 		trBody = trBody.toBuilder().setCryptoCreateAccount(cryptoCreateTransactionBody).build();
-		assert TransactionValidationUtils.getDepth(trBody) == 49;
-		assert TransactionValidationUtils.validateTxBodyDepth(trBody);
+		assert TransactionHandler.getDepth(trBody) == 49;
+		assert TransactionHandler.validateTxBodyDepth(trBody);
 	}
 
 	@Test
@@ -116,12 +117,12 @@ public class DepthCheckValidationTest {
 		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
 		CryptoCreateTransactionBody cryptoCreateTransactionBody = trBody.getCryptoCreateAccount();
 		Key key_48 = getKey_Depth48();
-		assert TransactionValidationUtils.getDepth(key_48) == 48;
+		assert TransactionHandler.getDepth(key_48) == 48;
 		cryptoCreateTransactionBody = cryptoCreateTransactionBody.toBuilder().setKey(key_48).build();
-		assert TransactionValidationUtils.getDepth(cryptoCreateTransactionBody) == 49;
+		assert TransactionHandler.getDepth(cryptoCreateTransactionBody) == 49;
 		trBody = trBody.toBuilder().setCryptoCreateAccount(cryptoCreateTransactionBody).build();
-		assert TransactionValidationUtils.getDepth(trBody) == 50;
-		assert !TransactionValidationUtils.validateTxBodyDepth(trBody);
+		assert TransactionHandler.getDepth(trBody) == 50;
+		assert !TransactionHandler.validateTxBodyDepth(trBody);
 	}
 
 	private Signature getSig_Depth48(Signature base) {

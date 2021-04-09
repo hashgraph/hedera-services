@@ -148,6 +148,13 @@ public class ExchangeRates implements SelfSerializable {
 				.toString();
 	}
 
+	public String readableRepr() {
+		return new StringBuilder()
+				.append(currHbarEquiv).append("ℏ <-> ").append(currCentEquiv).append("¢ til ").append(currExpiry)
+				.append(" | ")
+				.append(nextHbarEquiv).append("ℏ <-> ").append(nextCentEquiv).append("¢ til ").append(nextExpiry)
+				.toString();
+	}
 
 	/* --- Bean --- */
 

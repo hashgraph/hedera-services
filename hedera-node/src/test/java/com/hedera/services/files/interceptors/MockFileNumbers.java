@@ -75,6 +75,11 @@ public class MockFileNumbers extends FileNumbers {
 	}
 
 	@Override
+	public long throttleDefinitions() {
+		return 123;
+	}
+
+	@Override
 	public FileID toFid(long num) {
 		return FileID.newBuilder()
 				.setShardNum(shard)

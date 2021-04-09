@@ -127,6 +127,9 @@ public class HapiSpecRegistry {
 		/* (system 7) :: Update Feature */
 		saveFileId(setup.updateFeatureName(), setup.updateFeatureId());
 		saveKey(setup.updateFeatureName(), asKeyList(genesisKey));
+		/* (system 8) :: Throttle Definitions */
+		saveFileId(setup.throttleDefinitionsName(), setup.throttleDefinitionsId());
+		saveKey(setup.throttleDefinitionsName(), asKeyList(genesisKey));
 		/* Migration :: File */
 		saveFileId(setup.migrationFileName(), setup.migrationFileID());
 		saveKey(setup.migrationFileName(), asKeyList(genesisKey));
