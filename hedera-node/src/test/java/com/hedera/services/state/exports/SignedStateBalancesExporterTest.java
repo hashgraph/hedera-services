@@ -680,7 +680,7 @@ class SignedStateBalancesExporterTest {
 			AllAccountBalances allAccountBalances = AllAccountBalances.parseFrom(fin);
 			return Optional.ofNullable(allAccountBalances);
 		} catch (IOException e) {
-			throw new UncheckedIOException(e);
+			return Optional.empty();
 		}
 	}
 }
