@@ -1356,11 +1356,11 @@ workflows:
   GCP-Weekly-Services-MixedOps-Restart-Performance-20N-20C:
     triggers:
       - schedule:
-          cron: "17 2 * * *"
+          cron: "0 2 * * 3"
           filters:
             branches:
               only:
-                - 1236-M-mixed-ops-test-fix
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2629,10 +2629,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
