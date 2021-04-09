@@ -80,7 +80,6 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-
 		ScheduleSignTransactionBody opBody = spec
 				.txns()
 				.<ScheduleSignTransactionBody, ScheduleSignTransactionBody.Builder>body(
@@ -88,13 +87,12 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 							ScheduleID id;
 							try {
 								id = asScheduleId(schedule, spec);
+								b.setScheduleID(id);
 							} catch (RegistryNotFound e) {
-								if (ignoreMissing) {
-									return;
+								if (!ignoreMissing) {
+									throw e;
 								}
-								throw e;
 							}
-							b.setScheduleID(id);
 						}
 				);
 		return b -> b.setScheduleSign(opBody);

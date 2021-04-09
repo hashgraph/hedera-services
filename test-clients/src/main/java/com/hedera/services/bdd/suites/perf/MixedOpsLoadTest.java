@@ -287,7 +287,7 @@ public class MixedOpsLoadTest extends LoadTest {
 			return InetAddress.getLocalHost().getHostName();
 		} catch (Exception e) {
 			log.info("Error getting host name");
-			return "x";
+			return "Hostname-Not-Available";
 		}
 	}
 }
