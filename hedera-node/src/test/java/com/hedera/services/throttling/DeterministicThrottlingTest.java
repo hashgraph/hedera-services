@@ -58,10 +58,10 @@ class DeterministicThrottlingTest {
 	DeterministicThrottle b = DeterministicThrottle.withTps(bTps);
 	Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
 
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	DeterministicThrottling subject;
+	private DeterministicThrottling subject;
 
 	@Mock
 	ThrottleReqsManager manager;

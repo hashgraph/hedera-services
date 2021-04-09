@@ -57,9 +57,9 @@ class TxnRateFeeMultiplierSourceTest {
 
 	MockGlobalDynamicProps mockProps;
 
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 	@LoggingSubject
-	TxnRateFeeMultiplierSource subject;
+	private TxnRateFeeMultiplierSource subject;
 
 	@BeforeEach
 	void setUp() {

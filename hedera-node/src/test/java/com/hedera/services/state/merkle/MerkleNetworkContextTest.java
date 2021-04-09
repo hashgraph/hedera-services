@@ -32,7 +32,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +48,8 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -75,10 +76,10 @@ class MerkleNetworkContextTest {
 	FunctionalityThrottling throttling;
 	FeeMultiplierSource feeMultiplierSource;
 
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	MerkleNetworkContext subject;
+	private MerkleNetworkContext subject;
 
 	@BeforeEach
 	public void setup() {
@@ -233,9 +234,6 @@ class MerkleNetworkContextTest {
 	@Test
 	void warnsIfSavedUsageNotCompatibleWithActiveThrottles() {
 		// setup:
-		var mockLog = mock(Logger.class);
-		MerkleNetworkContext.log = mockLog;
-		// and:
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
 		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
 		var cThrottle = DeterministicThrottle.withTpsAndBurstPeriod(7, 4);
@@ -260,7 +258,7 @@ class MerkleNetworkContextTest {
 		subject.resetWithSavedSnapshots(throttling);
 
 		// then:
-		verify(mockLog).warn(desired);
+
 		// and:
 		assertNotEquals(subjectSnapshotA.used(), aThrottle.usageSnapshot().used());
 		assertNotEquals(subjectSnapshotA.lastDecisionTime(), aThrottle.usageSnapshot().lastDecisionTime());
@@ -269,9 +267,6 @@ class MerkleNetworkContextTest {
 	@Test
 	void warnsIfDifferentNumOfActiveThrottles() {
 		// setup:
-		var mockLog = mock(Logger.class);
-		MerkleNetworkContext.log = mockLog;
-		// and:
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
 		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
 		aThrottle.allow(1);
@@ -292,7 +287,7 @@ class MerkleNetworkContextTest {
 		subject.resetWithSavedSnapshots(throttling);
 
 		// then:
-		verify(mockLog).warn(desired);
+		assertThat(logCaptor.warnLogs(), contains(desired));
 		// and:
 		assertNotEquals(subjectSnapshot.used(), aThrottle.usageSnapshot().used());
 		assertNotEquals(subjectSnapshot.lastDecisionTime(), aThrottle.usageSnapshot().lastDecisionTime());

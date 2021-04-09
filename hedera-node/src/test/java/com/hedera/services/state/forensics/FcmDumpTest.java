@@ -58,10 +58,10 @@ class FcmDumpTest {
 	@Mock
 	FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs;
 
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	FcmDump subject = new FcmDump();
+	private FcmDump subject = new FcmDump();
 
 	@Test
 	void dumpsAllFcms() throws IOException {

@@ -127,10 +127,10 @@ class SignedStateBalancesExporterTest {
 	FileHashReader hashReader;
 	DirectoryAssurance assurance;
 
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	SignedStateBalancesExporter subject;
+	private SignedStateBalancesExporter subject;
 
 	@BeforeEach
 	public void setUp() throws Exception {

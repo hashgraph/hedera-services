@@ -171,10 +171,10 @@ class ServicesStateTest {
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	NetworkCtxManager networkCtxManager;
 
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	ServicesState subject;
+	private ServicesState subject;
 
 	private static final Hash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 

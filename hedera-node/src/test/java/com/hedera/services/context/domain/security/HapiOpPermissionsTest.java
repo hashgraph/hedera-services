@@ -26,10 +26,10 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class HapiOpPermissionsTest {
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	HapiOpPermissions subject;
+	private HapiOpPermissions subject;
 
 	@BeforeEach
 	void setUp() {

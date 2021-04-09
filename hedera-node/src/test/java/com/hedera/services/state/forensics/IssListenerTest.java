@@ -71,10 +71,10 @@ class IssListenerTest {
 	@Mock
 	IssEventInfo info;
 
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	IssListener subject;
+	private IssListener subject;
 
 	@BeforeEach
 	public void setup() {

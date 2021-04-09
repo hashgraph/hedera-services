@@ -87,10 +87,10 @@ class AwareProcessLogicTest {
 	SmartContractRequestHandler contracts;
 	HederaFs hfs;
 
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	AwareProcessLogic subject;
+	private AwareProcessLogic subject;
 
 	@BeforeEach
 	public void setup() {

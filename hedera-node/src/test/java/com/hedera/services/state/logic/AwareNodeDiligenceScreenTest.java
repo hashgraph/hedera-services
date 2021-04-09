@@ -80,10 +80,10 @@ class AwareNodeDiligenceScreenTest {
 	@Mock
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
 
-	LogCaptor logCaptor;
+	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	AwareNodeDiligenceScreen subject;
+	private AwareNodeDiligenceScreen subject;
 
 	@BeforeEach
 	void setUp() {
