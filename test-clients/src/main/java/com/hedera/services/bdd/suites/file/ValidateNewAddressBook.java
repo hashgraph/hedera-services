@@ -2,7 +2,7 @@ package com.hedera.services.bdd.suites.file;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AddressBook;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,10 +36,10 @@ public class ValidateNewAddressBook extends HapiApiSuite {
 				.then(
 						getFileContents(NODE_DETAILS)
 								.saveTo(path("nodeDetails.bin"))
-								.saveReadableTo(unchecked(AddressBook::parseFrom), path("nodeDetails.json")),
+								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.json")),
 						getFileContents(ADDRESS_BOOK)
 								.saveTo(path("addressBook.bin"))
-								.saveReadableTo(unchecked(AddressBook::parseFrom), path("addressBook.txt")),
+								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt")),
 						getFileContents(ADDRESS_BOOK)
 								.saveTo(path("addressBook.bin"))
 								.saveReadableTo(SYS_FILE_SERDES.get(101L)::fromRawFile,

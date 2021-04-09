@@ -25,36 +25,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
-import com.hederahashgraph.api.proto.java.AddressBook;
-import com.hederahashgraph.api.proto.java.AddressBookForClients;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 
 import java.io.IOException;
 
-import static com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo.addressBookForClientsFrom;
 import static com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo.addressBookFrom;
 
 public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 	private final ObjectMapper mapper = new ObjectMapper();
 
-	public enum ProtoBufVersion {
-		V0_12_0, V0_13_0
-	}
-	public enum ProtoBuf13Version {
-		ADDRESS_BOOK, ADDRESS_BOOK_FOR_CLIENTS
-	}
-
-	public static ProtoBufVersion protoBufVersion = ProtoBufVersion.V0_13_0;
-	public static ProtoBuf13Version protoBuf13Version = ProtoBuf13Version.ADDRESS_BOOK;
-
 	@Override
 	public String fromRawFile(byte[] bytes) {
 		try {
-			var pojoBook = new AddressBookPojo();
-			if (protoBufVersion == ProtoBufVersion.V0_12_0) {
-				pojoBook = addressBookFrom(AddressBook.parseFrom(bytes));
-			} else {
-				pojoBook = addressBookFromVersion13(bytes);
-			}
+			var pojoBook = addressBookFrom(NodeAddressBook.parseFrom(bytes));
 			return mapper
 					.writerWithDefaultPrettyPrinter()
 					.writeValueAsString(pojoBook);
@@ -67,53 +50,22 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 	public byte[] toRawFile(String styledFile) {
 		try {
 			var pojoBook = mapper.readValue(styledFile, AddressBookPojo.class);
-			if (protoBufVersion == ProtoBufVersion.V0_12_0) {
-				AddressBook.Builder addressBook = AddressBook.newBuilder();
-				pojoBook.getEntries().stream()
-						.flatMap(BookEntryPojo::toAddressBookEntries)
-						.forEach(addressBook::addNodeAddress);
-				return addressBook.build().toByteArray();
-			} else {
-				// if it is version 13, there are two cases where one can upload
-				// AddressBook or AddressBookForClients
-				return buildAddressBookForVersion13(pojoBook);
-			}
+			return grpcBytesFromPojo(pojoBook);
 		} catch (IOException ex) {
 			throw new IllegalArgumentException("Not an address book!", ex);
 		}
 	}
 
-	private byte[] buildAddressBookForVersion13(AddressBookPojo pojoBook) {
-		if (protoBuf13Version == ProtoBuf13Version.ADDRESS_BOOK_FOR_CLIENTS) {
-			AddressBookForClients.Builder addressBookForClients = AddressBookForClients.newBuilder();
-			pojoBook.getEntries().stream()
-					.flatMap(BookEntryPojo::toAddressBookForClientEntries)
-					.forEach(addressBookForClients::addNodeAddressForClients);
-			return addressBookForClients.build().toByteArray();
-		} else {
-			AddressBook.Builder addressBook = AddressBook.newBuilder();
-			pojoBook.getEntries().stream()
-					.flatMap(BookEntryPojo::toAddressBookEntries)
-					.forEach(addressBook::addNodeAddress);
-			return addressBook.build().toByteArray();
-		}
-	}
-
-	private AddressBookPojo addressBookFromVersion13(byte[] bytes) throws InvalidProtocolBufferException {
-		if (protoBuf13Version == ProtoBuf13Version.ADDRESS_BOOK_FOR_CLIENTS) {
-			return addressBookFrom(AddressBookForClients.parseFrom(bytes));
-		} else {
-			return addressBookForClientsFrom(AddressBook.parseFrom(bytes));
-		}
+	private byte[] grpcBytesFromPojo(AddressBookPojo pojoBook) {
+		NodeAddressBook.Builder addressBookForClients = NodeAddressBook.newBuilder();
+		pojoBook.getEntries().stream()
+				.flatMap(BookEntryPojo::toAddressBookEntries)
+				.forEach(addressBookForClients::addNodeAddress);
+		return addressBookForClients.build().toByteArray();
 	}
 
 	@Override
 	public String preferredFileName() {
 		return "addressBook.json";
-	}
-
-	public static void setAppropriateVersion(ProtoBufVersion version, ProtoBuf13Version version13Type) {
-		protoBufVersion = version;
-		protoBuf13Version = version13Type;
 	}
 }

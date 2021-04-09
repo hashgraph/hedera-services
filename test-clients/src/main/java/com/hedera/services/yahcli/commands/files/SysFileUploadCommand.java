@@ -20,14 +20,13 @@ package com.hedera.services.yahcli.commands.files;
  * ‍
  */
 
-import com.hedera.services.yahcli.config.ConfigManager;
 import com.hedera.services.yahcli.suites.SysFileUploadSuite;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.util.concurrent.Callable;
 
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static com.hedera.services.yahcli.commands.files.SysFilesCommand.configFrom;
+import static com.hedera.services.yahcli.commands.files.SysFilesCommand.resolvedDir;
 
 @CommandLine.Command(
 		name = "upload",
@@ -42,20 +41,6 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			defaultValue = "{network}/sysfiles/")
 	String srcDir;
 
-	@CommandLine.Option(names = { "-v", "--version" },
-			paramLabel = "protobuf version : use \n 12 for v0.12.0 or 13 for v0.13.0",
-			defaultValue = "13")
-	String version;
-
-	@CommandLine.Option(names = { "-t", "--type" },
-			paramLabel = "If downloading protobuf v0.13.0 type file, mention if you want to download" +
-					" the `full` version [AddressBook] or `small` version [AddressBookForClients]",
-			defaultValue = "full",
-			description = "One of \n" +
-					" Protobuf messages ['AddressBook', 'AddressBookForClients'] or \n" +
-					" short hands ['full', 'small'] ")
-	String version13Type;
-
 	@CommandLine.Parameters(
 			arity = "1",
 			paramLabel = "<sysfile>",
@@ -68,20 +53,13 @@ public class SysFileUploadCommand implements Callable<Integer> {
 
 	@Override
 	public Integer call() throws Exception {
-		var config = ConfigManager.from(sysFilesCommand.getYahcli());
-		config.assertNoMissingDefaults();
-		COMMON_MESSAGES.printGlobalInfo(config);
+		var config = configFrom(sysFilesCommand.getYahcli());
+		srcDir = resolvedDir(srcDir, config);
 
-		if (srcDir.startsWith("{network}")) {
-			srcDir = config.getTargetName() + File.separator + "sysfiles";
-		}
-		if (srcDir.endsWith(File.separator)) {
-			srcDir = srcDir.substring(0, srcDir.length() - 1);
-		}
-
-		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile, version, version13Type);
+		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile);
 		delegate.runSuiteSync();
 
 		return 0;
 	}
+
 }

@@ -35,14 +35,4 @@ public class ThrottleDefsLoader {
 			throw new UncheckedIOException(e);
 		}
 	}
-
-	public static com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions pojoDefs(
-			String testResource
-	) {
-		try (InputStream in = ThrottlesJsonToProtoSerde.class.getClassLoader().getResourceAsStream(testResource)) {
-			return ThrottlesJsonToProtoSerde.loadPojoDefs(in);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
 }

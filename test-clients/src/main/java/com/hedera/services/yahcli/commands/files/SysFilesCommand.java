@@ -21,11 +21,17 @@ package com.hedera.services.yahcli.commands.files;
  */
 
 import com.hedera.services.yahcli.Yahcli;
+import com.hedera.services.yahcli.config.ConfigManager;
+import com.hedera.services.yahcli.config.ConfigUtils;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.Callable;
+
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @Command(
 		name = "sysfiles",
@@ -38,6 +44,24 @@ import java.util.concurrent.Callable;
 public class SysFilesCommand implements Callable<Integer> {
 	@ParentCommand
 	Yahcli yahcli;
+
+	static ConfigManager configFrom(Yahcli yahcli) throws IOException {
+		var config = ConfigManager.from(yahcli);
+		config.assertNoMissingDefaults();
+		COMMON_MESSAGES.printGlobalInfo(config);
+		return config;
+	}
+
+	static String resolvedDir(String literal, ConfigManager config) {
+		if (literal.startsWith("{network}")) {
+			literal = config.getTargetName() + File.separator + "sysfiles";
+		}
+		ConfigUtils.ensureDir(literal);
+		if (literal.endsWith(File.separator)) {
+			literal = literal.substring(0, literal.length() - 1);
+		}
+		return literal;
+	}
 
 	@Override
 	public Integer call() throws Exception {

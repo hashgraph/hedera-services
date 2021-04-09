@@ -21,15 +21,12 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hederahashgraph.api.proto.java.AddressBookForClients;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.AddressBook;
-import com.hederahashgraph.api.proto.java.NodeAddressForClients;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -48,19 +45,11 @@ public class AddressBookPojo {
 		this.entries = entries;
 	}
 
-	public static AddressBookPojo addressBookFrom(AddressBook book) {
+	public static AddressBookPojo addressBookFrom(NodeAddressBook book) {
 		return from(book, BookEntryPojo::fromAddressBookEntry);
 	}
 
-	public static AddressBookPojo addressBookForClientsFrom(AddressBook book) {
-		return from(book, BookEntryPojo::fromAddressBookForClientsEntry);
-	}
-
-	public static AddressBookPojo addressBookFrom(AddressBookForClients book) {
-		return from(book, BookEntryPojo::fromAddressBookEntry);
-	}
-
-	public static AddressBookPojo nodeDetailsFrom(AddressBook book) {
+	public static AddressBookPojo nodeDetailsFrom(NodeAddressBook book) {
 		return from(book, BookEntryPojo::fromNodeDetailsEntry);
 	}
 
@@ -91,23 +80,11 @@ public class AddressBookPojo {
 	}
 
 	private static AddressBookPojo from(
-			AddressBook book,
+			NodeAddressBook book,
 			Function<NodeAddress, BookEntryPojo> converter
 	) {
 		var pojo = new AddressBookPojo();
 		pojo.setEntries(book.getNodeAddressList()
-				.stream()
-				.map(converter)
-				.collect(toList()));
-		return pojo;
-	}
-
-	private static AddressBookPojo from(
-			AddressBookForClients book,
-			Function<NodeAddressForClients, BookEntryPojo> converter
-	) {
-		var pojo = new AddressBookPojo();
-		pojo.setEntries(book.getNodeAddressForClientsList()
 				.stream()
 				.map(converter)
 				.collect(toList()));

@@ -31,7 +31,8 @@ public class StandardSerdes {
 					111l, new FeesJsonToGrpcBytes(),
 					112l, new XRatesJsonToGrpcBytes(),
 					121l, new JutilPropsToSvcCfgBytes("application.properties"),
-					122l, new JutilPropsToSvcCfgBytes("api-permission.properties")
+					122l, new JutilPropsToSvcCfgBytes("api-permission.properties"),
+					123l, new ThrottlesJsonToGrpcBytes()
 			)
 	);
 

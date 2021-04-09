@@ -37,7 +37,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeEndpoint;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -289,7 +289,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private byte[] bioAndIpv4Contents() {
-		var basics = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
+		var basics = com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
 				.map(address ->	basicBioEntryFrom(address).build())
@@ -298,7 +298,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private byte[] bioAndPubKeyContents() {
-		var details = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
+		var details = com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
 				.map(address ->	basicBioEntryFrom(address).build())
@@ -314,14 +314,14 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				.setNodeId(address.getId())
 				.setStake(address.getStake())
 				.setMemo(ByteString.copyFromUtf8(address.getMemo()));
-		var nodeEndPoint = NodeEndpoint.newBuilder()
-				.setIpAddress(Address.ipString(address.getAddressExternalIpv4()))
-				.setPort(String.valueOf(address.getPortExternalIpv4()));
-		builder.addNodeEndpoint(nodeEndPoint);
+		var serviceEndpoint = ServiceEndpoint.newBuilder()
+				.setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))
+				.setPort(address.getPortExternalIpv4());
+		builder.addServiceEndpoint(serviceEndpoint);
 		try {
 			builder.setNodeAccountId(EntityIdUtils.accountParsedFromString(address.getMemo()));
-		} catch (Exception ignore) {
-			log.warn(ignore.getMessage());
+		} catch (Exception e) {
+			log.warn("Address for node {} had memo {}, not a parseable account!", address.getId(), address.getMemo());
 		}
 		return builder;
 	}

@@ -39,7 +39,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeEndpoint;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -273,7 +273,7 @@ class HfsSystemFilesManagerTest {
 	@Test
 	public void createsAddressBookIfMissing() {
 		// setup:
-		com.hederahashgraph.api.proto.java.AddressBook expectedBook = legacyBookConstruction(currentBook);
+		com.hederahashgraph.api.proto.java.NodeAddressBook expectedBook = legacyBookConstruction(currentBook);
 
 		given(hfs.exists(bookId)).willReturn(false);
 
@@ -293,7 +293,7 @@ class HfsSystemFilesManagerTest {
 	@Test
 	public void createsNodeDetailsIfMissing() {
 		// setup:
-		var expectedDetails = legacyNodeDetailsConstruction(currentBook);
+		var expectedDetails = legacyBookConstruction(currentBook);
 
 		given(hfs.exists(detailsId)).willReturn(false);
 
@@ -526,9 +526,9 @@ class HfsSystemFilesManagerTest {
 				.build();
 	}
 
-	private com.hederahashgraph.api.proto.java.AddressBook legacyBookConstruction(AddressBook fromBook) {
-		com.hederahashgraph.api.proto.java.AddressBook.Builder builder =
-				com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
+	private com.hederahashgraph.api.proto.java.NodeAddressBook legacyBookConstruction(AddressBook fromBook) {
+		com.hederahashgraph.api.proto.java.NodeAddressBook.Builder builder =
+				com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
 		for (int i = 0; i < fromBook.getSize(); i++) {
 			var address = fromBook.getAddress(i);
 			PublicKey publicKey = address.getSigPublicKey();
@@ -543,10 +543,10 @@ class HfsSystemFilesManagerTest {
 					.setNodeId(address.getId())
 					.setStake(address.getStake());
 
-			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder()
-					.setIpAddress(Address.ipString(address.getAddressExternalIpv4()))
-					.setPort(String.valueOf(address.getPortExternalIpv4()));
-			nodeAddress.addNodeEndpoint(nodeEndPoint);
+			ServiceEndpoint.Builder serviceEndpoint = ServiceEndpoint.newBuilder()
+					.setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))
+					.setPort(address.getPortExternalIpv4());
+			nodeAddress.addServiceEndpoint(serviceEndpoint);
 
 			setNodeAccountIfAvailforAddressBook(address, nodeAddress);
 			builder.addNodeAddress(nodeAddress);
@@ -554,45 +554,11 @@ class HfsSystemFilesManagerTest {
 		return builder.build();
 	}
 
-	private com.hederahashgraph.api.proto.java.AddressBook legacyNodeDetailsConstruction(AddressBook fromBook) {
-		com.hederahashgraph.api.proto.java.AddressBook.Builder builder =
-				com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
-		for (int i = 0; i < fromBook.getSize(); i++) {
-			var address = fromBook.getAddress(i);
-			PublicKey publicKey = address.getSigPublicKey();
-			String memo = address.getMemo();
-			NodeAddress.Builder nodeAddress = NodeAddress.newBuilder()
-					.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
-					.setPortno(address.getPortExternalIpv4())
-					.setMemo(ByteString.copyFromUtf8(memo))
-					.setRSAPubKey(MiscUtils.commonsBytesToHex(publicKey.getEncoded()))
-					.setNodeId(address.getId())
-					.setStake(address.getStake());
-
-			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder()
-					.setIpAddress(Address.ipString(address.getAddressExternalIpv4()))
-					.setPort(String.valueOf(address.getPortExternalIpv4()));
-			nodeAddress.addNodeEndpoint(nodeEndPoint);
-
-			setNodeAccountIfAvailForNodeDetails(address, nodeAddress);
-			builder.addNodeAddress(nodeAddress);
-		}
-		return builder.build();
-	}
-
-	private void setNodeAccountIfAvailForNodeDetails(Address entry, NodeAddress.Builder builder) {
-		try {
-			var id = EntityIdUtils.accountParsedFromString(entry.getMemo());
-			builder.setNodeAccountId(id);
-		} catch (Exception ignore) { }
-	}
-
 	private void setNodeAccountIfAvailforAddressBook(Address entry, NodeAddress.Builder builder) {
 		try {
 			var id = EntityIdUtils.accountParsedFromString(entry.getMemo());
 			builder.setNodeAccountId(id);
-		} catch (Exception ignore) {
-		}
+		} catch (Exception ignore) { }
 	}
 
 	private ExchangeRateSet expectedDefaultRates() {

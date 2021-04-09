@@ -20,18 +20,15 @@ package com.hedera.services.yahcli.commands.files;
  * ‍
  */
 
-import com.hedera.services.yahcli.config.ConfigManager;
-import com.hedera.services.yahcli.config.ConfigUtils;
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 
-import java.io.File;
 import java.util.concurrent.Callable;
 
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static com.hedera.services.yahcli.commands.files.SysFilesCommand.configFrom;
 
 @Command(
 		name = "download",
@@ -46,44 +43,22 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 			defaultValue = "{network}/sysfiles/")
 	String destDir;
 
-	@CommandLine.Option(names = { "-v", "--version" },
-			paramLabel = "protobuf version : use \n 12 for v0.12.0 or 13 for v0.13.0",
-			defaultValue = "13")
-	String version;
-
-	@CommandLine.Option(names = { "-t", "--type" },
-			paramLabel = "If downloading protobuf v0.13.0 type file, mention if you want to download" +
-					" the `full` version [AddressBook] or `small` version [AddressBookForClients]",
-			defaultValue = "full",
-			description = "One of \n" +
-					" Protobuf messages ['AddressBook', 'AddressBookForClients'] or \n" +
-					" short hands ['full', 'small'] ")
-	String version13Type;
-
 	@Parameters(
 			arity = "1..*",
 			paramLabel = "<sysfiles>",
-			description = "system file names ('book', 'details', 'rates', 'fees', 'props', 'permissions')  \n or numbers" +
-					"\nor 'all' to download all system files ")
+			description = "system file names ('book', 'details', 'fees', 'rates', 'props', 'permissions', 'throttles') " +
+					"or numbers (101, 102, 111, 112, 121, 122, 123); or 'all' to download all system files")
 	String[] sysFiles;
 
 	@Override
 	public Integer call() throws Exception {
-		var config = ConfigManager.from(sysFilesCommand.getYahcli());
-		config.assertNoMissingDefaults();
-		COMMON_MESSAGES.printGlobalInfo(config);
+		var config = configFrom(sysFilesCommand.getYahcli());
+		destDir = SysFilesCommand.resolvedDir(destDir, config);
 
-		if (destDir.startsWith("{network}")) {
-			destDir = config.getTargetName() + File.separator + "sysfiles";
-		}
-		ConfigUtils.ensureDir(destDir);
-		if (destDir.endsWith(File.separator)) {
-			destDir = destDir.substring(0, destDir.length() - 1);
-		}
-
-		var delegate = new SysFileDownloadSuite(destDir, config.asSpecConfig(), sysFiles, version, version13Type);
+		var delegate = new SysFileDownloadSuite(destDir, config.asSpecConfig(), sysFiles);
 		delegate.runSuiteSync();
 
 		return 0;
 	}
+
 }

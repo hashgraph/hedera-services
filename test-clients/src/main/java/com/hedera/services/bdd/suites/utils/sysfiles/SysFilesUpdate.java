@@ -36,12 +36,12 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBytes;
-import com.hederahashgraph.api.proto.java.AddressBook;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.AddressBook;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hedera.services.legacy.core.AccountKeyListObj;
@@ -256,7 +256,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 		try {
 			if (BOOK_FILES.contains(target)) {
 				AddressBookPojo pojoBook = mapper.readValue(new File(readableFile), AddressBookPojo.class);
-				AddressBook.Builder addressBook = AddressBook.newBuilder();
+				var addressBook = NodeAddressBook.newBuilder();
 				pojoBook.getEntries().stream()
 						.flatMap(updateConverters.get(target))
 						.forEach(addressBook::addNodeAddress);
@@ -352,7 +352,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 
 	private static Object asHumanReadable(byte[] bytes) throws Exception {
 		if (BOOK_FILES.contains(target)) {
-			var proto = AddressBook.parseFrom(bytes);
+			var proto = NodeAddressBook.parseFrom(bytes);
 			var pojoBook = (target == SystemFile.ADDRESS_BOOK)
 					? AddressBookPojo.addressBookFrom(proto)
 					: AddressBookPojo.nodeDetailsFrom(proto);

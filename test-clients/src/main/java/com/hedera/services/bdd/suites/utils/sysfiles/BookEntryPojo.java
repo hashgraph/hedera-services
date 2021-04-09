@@ -21,12 +21,12 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
  */
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.google.common.primitives.Ints;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressForClients;
-import com.hederahashgraph.api.proto.java.NodeEndpoint;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import org.apache.commons.codec.binary.Hex;
 
 import java.nio.file.Files;
@@ -55,28 +55,13 @@ public class BookEntryPojo {
 
 	public static BookEntryPojo fromAddressBookEntry(NodeAddress address) {
 		var pojo = fromAnyEntry(address);
-		return pojo;
-	}
-
-	public static BookEntryPojo fromAddressBookForClientsEntry(NodeAddress address) {
-		var pojo = fromAnyEntry(address);
-		if (address.getNodeEndpointCount() == 0) {
+		if (address.getServiceEndpointCount() == 0) {
 			pojo.endPoints = new ArrayList<>();
 		} else {
-			pojo.endPoints = address.getNodeEndpointList()
+			pojo.endPoints = address.getServiceEndpointList()
 					.stream()
-					.map(s -> s.getIpAddress() + " : " + s.getPort())
+					.map(s -> s.getIpAddressV4() + " : " + s.getPort())
 					.collect(Collectors.toList());
-		}
-		return pojo;
-	}
-
-	public static BookEntryPojo fromAddressBookEntry(NodeAddressForClients address) {
-		var pojo = fromAnyEntry(address);
-		if (address.getNodeCertHash().isEmpty()) {
-			pojo.certHash = "<N/A>";
-		} else {
-			pojo.certHash = new String(address.getNodeCertHash().toByteArray());
 		}
 		return pojo;
 	}
@@ -91,36 +76,14 @@ public class BookEntryPojo {
 	}
 
 	public Stream<NodeAddress> toAddressBookEntries() {
-		List<NodeAddress> reps = new ArrayList<>();
-		//for (String ip : ips) {
-			var address = NodeAddress.newBuilder();
-			addBasicBioTo(address);
-			buildEndPointsIfExist(address);
-			address.setIpAddress(ByteString.copyFrom(ip.getBytes()));
-			address.setPortno(Optional.ofNullable(port).orElse(0));
-			if (certHash != null) {
-				if ("!".equals(certHash)) {
-					certHash = asHexEncodedSha384HashFor(address.getNodeId());
-				}
-				address.setNodeCertHash(ByteString.copyFrom(certHash.getBytes()));
-			}
-			reps.add(address.build());
-		//}
-		return reps.stream();
-	}
+		var address = NodeAddress.newBuilder();
 
-	public Stream<NodeAddressForClients> toAddressBookForClientEntries() {
-		List<NodeAddressForClients> reps = new ArrayList<>();
-		if (endPoints.isEmpty()) {
-			throw new IllegalStateException("invalid addressBook, no endpoints mentioned");
-		}
+		address.setIpAddress(ByteString.copyFromUtf8(ip));
+		address.setPortno(Optional.ofNullable(port).orElse(0));
 
-		var address = NodeAddressForClients.newBuilder();
-		address.setNodeId(nodeId);
+		addBasicBioTo(address);
+		buildEndPointsIfExist(address);
 
-		if (nodeAccount != null) {
-			address.setNodeAccountId(HapiPropertySource.asAccount(nodeAccount));
-		}
 		if (certHash != null) {
 			if ("!".equals(certHash)) {
 				certHash = asHexEncodedSha384HashFor(address.getNodeId());
@@ -128,19 +91,10 @@ public class BookEntryPojo {
 			address.setNodeCertHash(ByteString.copyFrom(certHash.getBytes()));
 		}
 
-		for (String endPoint : endPoints) {
-			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder();
-			String[] elements = endPoint.split(":");
-			nodeEndPoint.setIpAddress(elements[0].trim());
-			nodeEndPoint.setPort(elements[1].trim());
-			address.addNodeEndpoint(nodeEndPoint.build());
-		}
-
-		reps.add(address.build());
-		return reps.stream();
+		return Stream.of(address.build());
 	}
 
-	public static String asHexEncodedSha384HashFor(long nodeId) {
+	static String asHexEncodedSha384HashFor(long nodeId) {
 		try {
 			var crtBytes = Files.readAllBytes(Paths.get(CRTS_DIR, String.format("node%d.crt", nodeId)));
 			var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
@@ -187,20 +141,33 @@ public class BookEntryPojo {
 			return;
 		}
 		for (String endPoint : endPoints) {
-			NodeEndpoint.Builder nodeEndPoint = NodeEndpoint.newBuilder();
+			var serviceEndpoint = ServiceEndpoint.newBuilder();
 			String[] elements = endPoint.split(":");
-			nodeEndPoint.setIpAddress(elements[0].trim());
-			nodeEndPoint.setPort(elements[1].trim());
-			builder.addNodeEndpoint(nodeEndPoint.build());
+			serviceEndpoint.setIpAddressV4(ByteString.copyFrom(ipv4Bytes(elements[0].trim())));
+			serviceEndpoint.setPort(Integer.parseInt(elements[1].trim()));
+			builder.addServiceEndpoint(serviceEndpoint.build());
+		}
+	}
+
+	private static byte[] ipv4Bytes(String dotDelimited) {
+		try {
+			var bytes = new byte[4];
+			var parts = dotDelimited.split("[.]");
+			for (int i = 0; i < 4; i++) {
+				System.arraycopy(Ints.toByteArray(Integer.parseInt(parts[i])), 0, bytes, i * 4, 4);
+			}
+			return bytes;
+		} catch (Exception e) {
+			throw new IllegalArgumentException(dotDelimited + " is not an IPv4 address!");
 		}
 	}
 
 	private static BookEntryPojo fromAnyEntry(NodeAddress address) {
 		var entry = new BookEntryPojo();
 
-		if(address.getMemo().isEmpty()){
+		if (address.getMemo().isEmpty()) {
 			entry.memo = "<N/A>";
-		}else{
+		} else {
 			entry.memo = new String(address.getMemo().toByteArray());
 		}
 
@@ -220,25 +187,6 @@ public class BookEntryPojo {
 			entry.certHash = "<N/A>";
 		} else {
 			entry.certHash = new String(address.getNodeCertHash().toByteArray());
-		}
-		return entry;
-	}
-
-	private static BookEntryPojo fromAnyEntry(NodeAddressForClients address) {
-		var entry = new BookEntryPojo();
-		entry.nodeId = address.getNodeId();
-		if (address.hasNodeAccountId()) {
-			entry.nodeAccount = HapiPropertySource.asAccountString(address.getNodeAccountId());
-		} else {
-			entry.nodeAccount = "<N/A>";
-		}
-		if (address.getNodeEndpointCount() == 0) {
-			entry.endPoints = new ArrayList<>();
-		} else {
-			entry.endPoints = address.getNodeEndpointList()
-					.stream()
-					.map(s -> s.getIpAddress() + " : " + s.getPort())
-					.collect(Collectors.toList());
 		}
 		return entry;
 	}
