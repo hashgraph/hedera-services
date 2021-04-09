@@ -235,7 +235,7 @@ public class MixedOpsLoadTest extends LoadTest {
 												.hasRetryPrecheckFrom(permissiblePrechecks)
 												.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 												.deferStatusResolution()
-												.logging())
+												.noLogging())
 								.toArray(n -> new HapiSpecOperation[n])),
 						sleepFor(10000),
 						inParallel(IntStream.range(0, NUM_SUBMISSIONS)
@@ -251,7 +251,7 @@ public class MixedOpsLoadTest extends LoadTest {
 												.hasAnyKnownStatus()
 												.deferStatusResolution()
 												.adminKey(DEFAULT_PAYER)
-												.logging())
+												.noLogging())
 								.toArray(n -> new HapiSpecOperation[n])),
 						sleepFor(10000),
 						inParallel(IntStream.range(0, NUM_SUBMISSIONS)
@@ -269,7 +269,7 @@ public class MixedOpsLoadTest extends LoadTest {
 										.fee(ONE_HUNDRED_HBARS)
 										.suppressStats(true)
 										.deferStatusResolution()
-										.logging())
+										.noLogging())
 								.toArray(n -> new HapiSpecOperation[n])),
 						sleepFor(10000)
 				).then(
