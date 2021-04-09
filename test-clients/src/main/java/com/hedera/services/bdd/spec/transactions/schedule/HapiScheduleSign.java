@@ -22,13 +22,13 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
-import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
+import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -40,11 +40,9 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asScheduleId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
@@ -54,13 +52,19 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	private final String schedule;
 	private List<String> signatories = Collections.emptyList();
+	private boolean ignoreMissingSchedule = false;
 
 	public HapiScheduleSign(String schedule) {
 		this.schedule = schedule;
 	}
 
-	public HapiScheduleSign alsoSigningWith(String... keys)	 {
+	public HapiScheduleSign alsoSigningWith(String... keys) {
 		signatories = List.of(keys);
+		return this;
+	}
+
+	public HapiScheduleSign ignoreMissingSchedule() {
+		ignoreMissingSchedule = true;
 		return this;
 	}
 
@@ -76,11 +80,22 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+
 		ScheduleSignTransactionBody opBody = spec
 				.txns()
 				.<ScheduleSignTransactionBody, ScheduleSignTransactionBody.Builder>body(
 						ScheduleSignTransactionBody.class, b -> {
-							b.setScheduleID(asScheduleId(schedule, spec));
+							ScheduleID id;
+							try {
+								id = asScheduleId(schedule, spec);
+							} catch (RegistryNotFound e) {
+								if (ignoreMissingSchedule) {
+									return;
+								} else {
+									throw e;
+								}
+							}
+							b.setScheduleID(id);
 						}
 				);
 		return b -> b.setScheduleSign(opBody);

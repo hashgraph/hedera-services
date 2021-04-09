@@ -28,6 +28,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
@@ -61,6 +62,7 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -69,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -178,7 +181,8 @@ public class MixedOpsLoadTest extends LoadTest {
 								INVALID_TOKEN_ID,
 								UNKNOWN, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 						.deferStatusResolution() :
-						scheduleSign(schedule + r.nextInt(NUM_SUBMISSIONS))
+						scheduleSign(schedule + "-" + getHostName() + "-" + r.nextInt(NUM_SUBMISSIONS))
+								.ignoreMissingSchedule()
 								.noLogging()
 								.alsoSigningWith(receiver)
 								.hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
@@ -186,7 +190,8 @@ public class MixedOpsLoadTest extends LoadTest {
 										OK,
 										TRANSACTION_EXPIRED,
 										INVALID_SCHEDULE_ID,
-										UNKNOWN)
+										UNKNOWN,
+										SCHEDULE_ALREADY_EXECUTED)
 								.fee(ONE_HBAR)
 								.deferStatusResolution()
 		};
@@ -231,21 +236,23 @@ public class MixedOpsLoadTest extends LoadTest {
 												.hasRetryPrecheckFrom(permissiblePrechecks)
 												.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
 												.deferStatusResolution()
-												.noLogging())
+												.logging())
 								.toArray(n -> new HapiSpecOperation[n])),
 						sleepFor(10000),
 						inParallel(IntStream.range(0, NUM_SUBMISSIONS)
 								.mapToObj(ignore ->
-										scheduleCreate("schedule" + scheduleId.getAndIncrement(),
+										scheduleCreate("schedule-" + getHostName() + "-" +
+														scheduleId.getAndIncrement(),
 												cryptoTransfer(tinyBarsFromTo(sender, receiver, 1))
 										)
 												.signedBy(DEFAULT_PAYER)
 												.fee(ONE_HUNDRED_HBARS)
 												.alsoSigningWith(sender)
 												.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+												.hasAnyKnownStatus()
 												.deferStatusResolution()
 												.adminKey(DEFAULT_PAYER)
-												.noLogging())
+												.logging())
 								.toArray(n -> new HapiSpecOperation[n])),
 						sleepFor(10000),
 						inParallel(IntStream.range(0, NUM_SUBMISSIONS)
@@ -263,7 +270,7 @@ public class MixedOpsLoadTest extends LoadTest {
 										.fee(ONE_HUNDRED_HBARS)
 										.suppressStats(true)
 										.deferStatusResolution()
-										.noLogging())
+										.logging())
 								.toArray(n -> new HapiSpecOperation[n])),
 						sleepFor(10000)
 				).then(
@@ -274,5 +281,14 @@ public class MixedOpsLoadTest extends LoadTest {
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
+	}
+
+	private String getHostName() {
+		try {
+			return InetAddress.getLocalHost().getHostName();
+		} catch (Exception e) {
+			log.info("Error getting host name");
+			return "x";
+		}
 	}
 }
