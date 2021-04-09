@@ -94,7 +94,7 @@ Key partners operating mirror nodes, wallets, exchanges, etc. should notify user
 ledger.autoRenewPeriod.maxDuration=8000001 seconds // ~92 days
 ledger.autoRenewPeriod.minDuration=6999999 seconds // ~81 days
 
-The proposed pricing is as follows (assumes exchange rate as of April 6, 2020 and the maxDuration):
+The proposed pricing is as follows (assumes maxDuration as of April 6, 2020 and the maxDuration):
 - "CryptoAccountAutoRenew": $0.0014
 - "ConsensusTopicAutoRenew": $0.0003
 - "TokenAutoRenew": $0.026
