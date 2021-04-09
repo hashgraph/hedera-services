@@ -184,11 +184,6 @@ class AwareProcessLogicTest {
 		subject = new AwareProcessLogic(ctx);
 	}
 
-	@AfterEach
-	public void cleanup() {
-		AwareProcessLogic.log = LogManager.getLogger(AwareProcessLogic.class);
-	}
-
 	@Test
 	public void shortCircuitsWithWarningOnZeroStakeSubmission() {
 		// setup:

@@ -20,6 +20,7 @@ package com.hedera.services.state.initialization;
  * ‍
  */
 
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.HederaNumbers;
@@ -32,6 +33,9 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -43,6 +47,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Instant;
 import java.util.Set;
@@ -54,7 +59,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
+@ExtendWith(LogCaptureExtension.class)
 class BackedSystemAccountsCreatorTest {
 	private long shard = 1;
 	private long realm = 2;
@@ -74,7 +82,9 @@ class BackedSystemAccountsCreatorTest {
 	AddressBook book;
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
 
-	BackedSystemAccountsCreator subject;
+	private LogCaptor logCaptor;
+	@LoggingSubject
+	private BackedSystemAccountsCreator subject;
 
 	@BeforeEach
 	public void setup() throws DecoderException, NegativeAccountBalanceException {
@@ -212,10 +222,8 @@ class BackedSystemAccountsCreatorTest {
 
 	@Test
 	public void createsNothingIfAllPresent() {
-		// setup:
-		BackedSystemAccountsCreator.log = mock(Logger.class);
-
 		given(backingAccounts.contains(any())).willReturn(true);
+		var desiredInfo = String.format("Ledger float is %d tinyBars in %d accounts.", totalBalance, 4);
 
 		// when:
 		subject.ensureSystemAccounts(backingAccounts, book);
@@ -223,11 +231,7 @@ class BackedSystemAccountsCreatorTest {
 		// then:
 		verify(backingAccounts, never()).put(any(), any());
 		// and:
-		verify(BackedSystemAccountsCreator.log).info(String.format(
-				"Ledger float is %d tinyBars in %d accounts.", totalBalance, 4));
-
-		// cleanup:
-		BackedSystemAccountsCreator.log = LogManager.getLogger(BackedSystemAccountsCreator.class);
+		assertThat(logCaptor.infoLogs(), contains(desiredInfo));
 	}
 
 	private void givenMissingSystemAccount() {

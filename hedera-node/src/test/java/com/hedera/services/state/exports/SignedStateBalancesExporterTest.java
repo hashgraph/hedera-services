@@ -52,6 +52,7 @@ import org.mockito.ArgumentCaptor;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -679,8 +680,7 @@ class SignedStateBalancesExporterTest {
 			AllAccountBalances allAccountBalances = AllAccountBalances.parseFrom(fin);
 			return Optional.ofNullable(allAccountBalances);
 		} catch (IOException e) {
-			SignedStateBalancesExporter.log.error("Can't read protobuf message file {}", protoLoc);
+			throw new UncheckedIOException(e);
 		}
-		return Optional.empty();
 	}
 }

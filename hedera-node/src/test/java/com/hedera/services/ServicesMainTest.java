@@ -199,11 +199,6 @@ public class ServicesMainTest {
 		CONTEXTS.store(ctx);
 	}
 
-	@AfterEach
-	public void cleanup() {
-		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
-	}
-
 	@Test
 	public void failsFastOnNonUtf8DefaultCharset() {
 		// setup:

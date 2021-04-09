@@ -81,11 +81,6 @@ class IssListenerTest {
 		subject = new IssListener(fcmDump, info);
 	}
 
-	@AfterEach
-	public void cleanup() {
-		IssListener.log = LogManager.getLogger(IssListener.class);
-	}
-
 	@Test
 	public void logsFallbackInfo() {
 		// given:

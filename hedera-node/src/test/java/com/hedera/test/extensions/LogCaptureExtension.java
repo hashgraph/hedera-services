@@ -8,6 +8,9 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import java.lang.reflect.Field;
 import java.util.stream.Stream;
 
+/**
+ * JUnit5 extension that reports the logging events generated
+ */
 public class LogCaptureExtension implements TestInstancePostProcessor, AfterEachCallback {
 	LogCaptor injectedCaptor = null;
 
