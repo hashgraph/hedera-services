@@ -47,6 +47,7 @@ import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pre
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
@@ -148,6 +149,7 @@ public class ScheduleSignTransitionLogicTest {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+        given(executor.doProcess(scheduleId)).willReturn(SCHEDULE_ALREADY_EXECUTED);
 
         // when:
         subject.doStateTransition();
@@ -155,7 +157,7 @@ public class ScheduleSignTransitionLogicTest {
         // and:
         verify(txnCtx).setScheduledTxnId(scheduledTxnId);
         verify(executor).doProcess(scheduleId);
-        verify(txnCtx).setStatus(SUCCESS);
+        verify(txnCtx).setStatus(SCHEDULE_ALREADY_EXECUTED);
     }
 
     @Test
