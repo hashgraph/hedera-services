@@ -103,7 +103,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						getAccountInfo(autoRenewedAccount)
 								.has(accountWith()
 										.expiry(newExpirationTime, 5L)
-										.balance(initialBalance) // add and use balanceLessThan(initialBalance)
+										.balanceLessThan(initialBalance)
 								).logged()
 				);
 	}
