@@ -53,7 +53,8 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				accountAutoRemoval(),
-				accountAutoRenewal()
+				accountAutoRenewal(),
+				maxNumberOfEntitiesToRenewOrDeleteWorks()
 		);
 	}
 
@@ -101,6 +102,45 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				)
 				.then(
 						getAccountInfo(autoRenewedAccount)
+								.has(accountWith()
+										.expiry(newExpirationTime, 5L)
+										.balanceLessThan(initialBalance)
+								).logged()
+				);
+	}
+
+	private HapiApiSpec maxNumberOfEntitiesToRenewOrDeleteWorks() {
+		long autoRenewSecs = 10;
+		long initialExpirationTime = Instant.now().getEpochSecond() + autoRenewSecs;
+		long newExpirationTime = initialExpirationTime + autoRenewSecs;
+		long initialBalance = ONE_HUNDRED_HBARS;
+		return defaultFailingHapiSpec("MaxNumberOfEntitiesToRenewOrDeleteWorks")
+				.given(
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
+								.overridingProps(Map.of(
+										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
+										"autorenew.gracePeriod", "0",
+										"autorenew.numberOfEntitiesToScan", "100",
+										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
+								.erasingProps(Set.of("minimumAutoRenewDuration")),
+						cryptoCreate("account1").autoRenewSecs(autoRenewSecs).balance(0L),
+						cryptoCreate("account2").autoRenewSecs(autoRenewSecs).balance(0L),
+						cryptoCreate("account3").autoRenewSecs(autoRenewSecs).balance(0L),
+						cryptoCreate("account4").autoRenewSecs(autoRenewSecs).balance(initialBalance),
+						getAccountInfo("account4").logged()
+				)
+				.when(
+						sleepFor(15 * 1000),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction1"),
+						getAccountBalance("account1").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
+						getAccountBalance("account2").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
+						getAccountBalance("account3").hasTinyBars(0L),
+						getAccountBalance("account4").hasTinyBars(initialBalance),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction2")
+				)
+				.then(
+						getAccountBalance("account3").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
+						getAccountInfo("account4")
 								.has(accountWith()
 										.expiry(newExpirationTime, 5L)
 										.balanceLessThan(initialBalance)
