@@ -32,7 +32,6 @@ import static com.hedera.services.yahcli.commands.files.SysFilesCommand.configFr
 
 @Command(
 		name = "download",
-		subcommands = { CommandLine.HelpCommand.class },
 		description = "Download a system file")
 public class SysFileDownloadCommand implements Callable<Integer> {
 	@ParentCommand
@@ -46,8 +45,9 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 	@Parameters(
 			arity = "1..*",
 			paramLabel = "<sysfiles>",
-			description = "system file names ('book', 'details', 'fees', 'rates', 'props', 'permissions', 'throttles') " +
-					"or numbers (101, 102, 111, 112, 121, 122, 123); or 'all' to download all system files")
+			description = "system file names ('addressbook', 'details', 'fees', 'rates', 'props', " +
+					"'permissions', 'throttles') or numbers (101, 102, 111, 112, 121, 122, 123); or " +
+					"'all' to download all system files")
 	String[] sysFiles;
 
 	@Override

@@ -22,13 +22,35 @@ package com.hedera.services.yahcli.output;
 
 import com.hedera.services.yahcli.config.ConfigManager;
 import com.hedera.services.yahcli.config.ConfigUtils;
+import com.hedera.services.yahcli.suites.Utils;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
+import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
+import static com.hedera.services.yahcli.config.ConfigUtils.asId;
 
 public enum CommonMessages {
 	COMMON_MESSAGES;
 
 	public void printGlobalInfo(ConfigManager config) {
-		var msg = String.format("Targeting %s, paying with %s", config.getTargetName(), ConfigUtils.asId(config.getDefaultPayer()));
+		var msg = String.format("Targeting %s, paying with %s", config.getTargetName(), asId(config.getDefaultPayer()));
 		System.out.println(msg);
+	}
+
+	public void downloadBeginning(FileID target) {
+		var msg = "Downloading the " + Utils.nameOf(target) + "...";
+		System.out.print(msg);
+		System.out.flush();
+	}
+
+	public void downloadEnding(Response response) {
+		try {
+			var precheck = reflectForPrecheck(response);
+			System.out.println(precheck.toString());
+		} catch (Throwable throwable) {
+			throwable.printStackTrace();
+		}
 	}
 
 	public String fq(Integer num) {

@@ -1,9 +1,12 @@
 package com.hedera.services.yahcli.suites;
 
+import com.hederahashgraph.api.proto.java.FileID;
+
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,7 +25,7 @@ public class Utils {
 	private static final Set<ServiceType> VALID_SERVICE_TYPES = new HashSet<>(SERVICES_TO_ENUM.values());
 
 	private static final Map<String, Long> NAMES_TO_NUMBERS = Map.ofEntries(
-			Map.entry("book", 101L),
+			Map.entry("addressbook", 101L),
 			Map.entry("addressBook.json", 101L),
 			Map.entry("details", 102L),
 			Map.entry("nodeDetails.json", 102L),
@@ -36,8 +39,17 @@ public class Utils {
 			Map.entry("api-permission.properties", 122L),
 			Map.entry("throttles", 123L),
 			Map.entry("throttles.json", 123L));
+	private static final Map<FileID, String> IDS_TO_NAMES = NAMES_TO_NUMBERS.entrySet().stream()
+			.filter(entry -> !entry.getKey().contains("."))
+			.collect(Collectors.toMap(
+					(Map.Entry<String, Long> entry) -> FileID.newBuilder().setFileNum(entry.getValue()).build(),
+					Map.Entry::getKey));
 
 	private static final Set<Long> VALID_NUMBERS = new HashSet<>(NAMES_TO_NUMBERS.values());
+
+	public static String nameOf(FileID fid) {
+		return Optional.ofNullable(IDS_TO_NAMES.get(fid)).orElse("<N/A>");
+	}
 
 	public static EnumSet<ServiceType> rationalizedServices(final String[] services) {
 		if (Arrays.asList(services).contains("all")) {

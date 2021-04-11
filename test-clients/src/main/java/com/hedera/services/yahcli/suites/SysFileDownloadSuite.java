@@ -35,6 +35,7 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 public class SysFileDownloadSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SysFileDownloadSuite.class);
@@ -76,7 +77,10 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 		String fid = String.format("0.0.%d", fileNum);
 		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
 		String fqLoc = destDir + File.separator + serde.preferredFileName();
-		return getFileContents(fid).saveReadableTo(serde::fromRawFile, fqLoc);
+		return getFileContents(fid)
+				.alertingPre(COMMON_MESSAGES::downloadBeginning)
+				.alertingPost(COMMON_MESSAGES::downloadEnding)
+				.saveReadableTo(serde::fromRawFile, fqLoc);
 	}
 
 	@Override
