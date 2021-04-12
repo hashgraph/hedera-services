@@ -36,7 +36,7 @@
             "burstPeriod": 1,
             "throttleGroups": [
                 {
-                    "opsPerSec": 20,
+                    "opsPerSec": 25,
                     "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
                 }
             ]
@@ -46,11 +46,15 @@
             "burstPeriod": 10,
             "throttleGroups": [
                 {
-                    "opsPerSec": 200,
+                    "opsPerSec": 2000,
                     "operations": [ "CryptoCreate" ]
                 },
                 {
-                    "opsPerSec": 500,
+                    "opsPerSec": 25,
+                    "operations": [ "FileCreate" ]
+                },
+                {
+                    "opsPerSec": 5000,
                     "operations": [ "ConsensusCreateTopic" ]
                 },
                 {
