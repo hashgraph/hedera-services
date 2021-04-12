@@ -71,12 +71,13 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						transferToTopicReturnsInvalidAccountId(),
-						tokenTransferFeesScaleAsExpected(),
+						fundAddressBookAdmin(),
+//						vanillaTransferSucceeds(),
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						transferToTopicReturnsInvalidAccountId(),
+//						tokenTransferFeesScaleAsExpected(),
 				}
 		);
 	}
@@ -299,6 +300,16 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						IntStream.concat(IntStream.range(1, 101), IntStream.range(900, 1001))
 								.mapToObj(i -> getAccountBalance("0.0." + i).logged())
 								.toArray(n -> new HapiSpecOperation[n])
+				);
+	}
+
+	private HapiApiSpec fundAddressBookAdmin() {
+		return defaultHapiSpec("FundAddressBookAdmin")
+				.given().when(
+						cryptoTransfer(
+								tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, ONE_MILLION_HBARS)
+						).via("transferTxn")
+				).then(
 				);
 	}
 

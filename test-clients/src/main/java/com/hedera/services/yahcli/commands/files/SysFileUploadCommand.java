@@ -24,14 +24,18 @@ import com.hedera.services.yahcli.suites.SysFileUploadSuite;
 import picocli.CommandLine;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.yahcli.commands.files.SysFilesCommand.configFrom;
 import static com.hedera.services.yahcli.commands.files.SysFilesCommand.resolvedDir;
 
 @CommandLine.Command(
 		name = "upload",
+		subcommands = { picocli.CommandLine.HelpCommand.class },
 		description = "Upload a system file")
 public class SysFileUploadCommand implements Callable<Integer> {
+	public static AtomicReference<String> activeSrcDir = new AtomicReference<>();
+
 	@CommandLine.ParentCommand
 	SysFilesCommand sysFilesCommand;
 
@@ -52,6 +56,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
 	public Integer call() throws Exception {
 		var config = configFrom(sysFilesCommand.getYahcli());
 		srcDir = resolvedDir(srcDir, config);
+		activeSrcDir.set(srcDir);
 
 		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile);
 		delegate.runSuiteSync();

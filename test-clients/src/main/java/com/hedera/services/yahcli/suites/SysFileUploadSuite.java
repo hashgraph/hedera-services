@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
+import com.hedera.services.yahcli.output.CommonMessages;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,6 +39,7 @@ import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 public class SysFileUploadSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SysFileUploadSuite.class);
@@ -72,10 +74,16 @@ public class SysFileUploadSuite extends HapiApiSuite {
 		).given().when().then(
 				updateLargeFile(
 						DEFAULT_PAYER,
-						String.format("0.0.%d",sysFileId),
+						String.format("0.0.%d", sysFileId),
 						uploadData,
 						true,
-						OptionalLong.of(10_000_000_000L)
+						OptionalLong.of(10_000_000_000L),
+						updateOp -> updateOp
+								.alertingPre(COMMON_MESSAGES::uploadBeginning)
+								.alertingPost(COMMON_MESSAGES::uploadEnding),
+						appendOp -> appendOp
+								.alertingPre(COMMON_MESSAGES::appendBeginning)
+								.alertingPost(COMMON_MESSAGES::appendEnding)
 				)
 		);
 	}

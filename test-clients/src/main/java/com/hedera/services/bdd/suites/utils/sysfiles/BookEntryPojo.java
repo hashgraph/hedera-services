@@ -24,11 +24,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.yahcli.commands.files.SysFileUploadCommand;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.Assert;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -39,8 +41,7 @@ import java.util.stream.Stream;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BookEntryPojo {
 	private static final String MISSING_CERT_HASH = "<N/A>";
-	static final String CRTS_DIR = "certs";
-	static final String RSA_PUBKEYS_DIR = "pubkeys";
+	private static final String SENTINEL_REPLACEMENT_VALUE = "!";
 
 	static class EndpointPojo {
 		private String ipAddressV4;
@@ -135,15 +136,28 @@ public class BookEntryPojo {
 		if (deprecatedMemo != null) {
 			grpc.setMemo(ByteString.copyFromUtf8(deprecatedMemo));
 		}
-		if (rsaPubKey != null) {
-			grpc.setRSAPubKey(rsaPubKey);
-		}
 		grpc.setNodeId(Optional.ofNullable(nodeId).orElse(0L));
+
+		if (rsaPubKey != null) {
+			if (rsaPubKey.equals(SENTINEL_REPLACEMENT_VALUE)) {
+				var baseDir = SysFileUploadCommand.activeSrcDir.get() + File.separator + "pubkeys";
+				var computedKey = asHexEncodedDerPubKey(baseDir, grpc.getNodeId());
+				grpc.setRSAPubKey(computedKey);
+			} else {
+				grpc.setRSAPubKey(rsaPubKey);
+			}
+		}
 		if (nodeAccount != null) {
 			grpc.setNodeAccountId(HapiPropertySource.asAccount(nodeAccount));
 		}
 		if (!certHash.equals(MISSING_CERT_HASH)) {
-			grpc.setNodeCertHash(ByteString.copyFromUtf8(certHash));
+			if (certHash.equals(SENTINEL_REPLACEMENT_VALUE)) {
+				var baseDir = SysFileUploadCommand.activeSrcDir.get() + File.separator + "certs";
+				var computedHash = asHexEncodedSha384HashFor(baseDir, grpc.getNodeId());
+				grpc.setNodeCertHash(ByteString.copyFromUtf8(computedHash));
+			} else {
+				grpc.setNodeCertHash(ByteString.copyFromUtf8(certHash));
+			}
 		}
 
 		for (var endpoint : endpoints) {
@@ -226,9 +240,9 @@ public class BookEntryPojo {
 		this.endpoints = endpoints;
 	}
 
-	static String asHexEncodedSha384HashFor(long nodeId) {
+	static String asHexEncodedSha384HashFor(String baseDir, long nodeId) {
 		try {
-			var crtBytes = Files.readAllBytes(Paths.get(CRTS_DIR, String.format("node%d.crt", nodeId)));
+			var crtBytes = Files.readAllBytes(Paths.get(baseDir, String.format("node%d.crt", nodeId)));
 			var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
 			return Hex.encodeHexString(crtHash);
 		} catch (Exception e) {
@@ -236,9 +250,9 @@ public class BookEntryPojo {
 		}
 	}
 
-	static String asHexEncodedDerPubKey(long nodeId) {
+	static String asHexEncodedDerPubKey(String baseDir, long nodeId) {
 		try {
-			var pubKeyBytes = Files.readAllBytes(Paths.get(RSA_PUBKEYS_DIR, String.format("node%d.der", nodeId)));
+			var pubKeyBytes = Files.readAllBytes(Paths.get(baseDir, String.format("node%d.der", nodeId)));
 			return Hex.encodeHexString(pubKeyBytes);
 		} catch (Exception e) {
 			throw new IllegalStateException(e);

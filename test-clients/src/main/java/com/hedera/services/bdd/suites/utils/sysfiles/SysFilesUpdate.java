@@ -83,6 +83,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class SysFilesUpdate extends HapiApiSuite {
+	static final String CRTS_DIR = "certs";
+	static final String RSA_PUBKEYS_DIR = "pubkeys";
 	private static final Logger log = LogManager.getLogger(SysFilesUpdate.class);
 
 	final static long TINYBARS_PER_HBAR = 100_000_000L;
@@ -532,7 +534,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 	}
 
 	private static void dumpAvailPubKeys() throws IOException {
-		var pubKeysDirDir = new File(BookEntryPojo.RSA_PUBKEYS_DIR);
+		var pubKeysDirDir = new File(RSA_PUBKEYS_DIR);
 		if (!pubKeysDirDir.exists()) {
 			System.out.println(
 					String.format("Missing dir '%s/', rsaPubKey fields cannot be auto-generated with '!'"));
@@ -544,13 +546,16 @@ public class SysFilesUpdate extends HapiApiSuite {
 			var matcher = pubKeyPattern.matcher(pubKeyLoc.toString());
 			matcher.matches();
 			long nodeId = Long.valueOf(matcher.group(1));
-			System.out.println(String.format("From '%s', %s", pubKeyLoc, BookEntryPojo.asHexEncodedDerPubKey(nodeId)));
+			System.out.println(String.format(
+					"From '%s', %s",
+					pubKeyLoc,
+					BookEntryPojo.asHexEncodedDerPubKey(RSA_PUBKEYS_DIR, nodeId)));
 		}
 
 	}
 
 	private static void dumpAvailCerts() throws IOException {
-		var certsDir = new File(BookEntryPojo.CRTS_DIR);
+		var certsDir = new File(CRTS_DIR);
 		if (!certsDir.exists()) {
 			System.out.println(
 					String.format("Missing dir '%s/', certHash fields cannot be auto-generated with '!'"));
@@ -562,19 +567,20 @@ public class SysFilesUpdate extends HapiApiSuite {
 			var matcher = nodeCertPattern.matcher(crtLoc.toString());
 			matcher.matches();
 			long nodeId = Long.valueOf(matcher.group(1));
-			System.out.println(String.format("From '%s', %s", crtLoc, BookEntryPojo.asHexEncodedSha384HashFor(nodeId)));
+			System.out.println(String.format("From '%s', %s", crtLoc,
+					BookEntryPojo.asHexEncodedSha384HashFor(CRTS_DIR, nodeId)));
 		}
 
 	}
 
 	private static List<Path> allPubKeyPaths() throws IOException {
-		return java.nio.file.Files.walk(Paths.get(BookEntryPojo.RSA_PUBKEYS_DIR))
+		return java.nio.file.Files.walk(Paths.get(RSA_PUBKEYS_DIR))
 				.filter(path -> path.toString().endsWith(".der"))
 				.collect(Collectors.toList());
 	}
 
 	private static List<Path> allCertFiles() throws IOException {
-		return java.nio.file.Files.walk(Paths.get(BookEntryPojo.CRTS_DIR))
+		return java.nio.file.Files.walk(Paths.get(CRTS_DIR))
 				.filter(path -> path.toString().endsWith(".crt"))
 				.collect(Collectors.toList());
 	}

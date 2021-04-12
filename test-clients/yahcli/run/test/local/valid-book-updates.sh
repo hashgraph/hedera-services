@@ -19,7 +19,7 @@ for BOOK in $BOOKS; do
 
   docker run -v $(pwd):/launch yahcli:$TAG -p 2 sysfiles download address-book
 
-  diff localhost/sysfiles/addressBook.json run/test/local/assets/${BOOK}.json
+  diff -b localhost/sysfiles/addressBook.json run/test/local/assets/${BOOK}.json
 
   if [ ! $? -eq 0 ]; then
     echo "FAILED to match dowload of book $BOOK"

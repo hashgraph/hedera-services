@@ -28,8 +28,8 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
-import com.hedera.services.yahcli.commands.files.SysFileUploadCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
+import com.hedera.services.yahcli.suites.BalanceSuite;
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
 import com.hedera.services.yahcli.suites.SysFileUploadSuite;
 import org.apache.logging.log4j.Level;
@@ -114,6 +114,7 @@ public class Yahcli implements Callable<Integer> {
 
 	private static void setLogLevelsToLessNoisy() {
 		List.of(
+				BalanceSuite.class,
 				SysFileUploadSuite.class,
 				SysFileDownloadSuite.class,
 				MapPropertySource.class,

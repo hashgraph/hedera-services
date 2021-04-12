@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
@@ -485,6 +486,18 @@ public class UtilVerbs {
 			boolean signOnlyWithPayer,
 			OptionalLong tinyBarsToOffer
 	) {
+		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer, op -> {}, op -> {});
+	}
+
+	public static HapiSpecOperation updateLargeFile(
+			String payer,
+			String fileName,
+			ByteString byteString,
+			boolean signOnlyWithPayer,
+			OptionalLong tinyBarsToOffer,
+			Consumer<HapiFileUpdate> updateCustomizer,
+			Consumer<HapiFileAppend> appendCustomizer
+	) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 
@@ -496,6 +509,7 @@ public class UtilVerbs {
 					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 					.noLogging()
 					.payingWith(payer);
+			updateCustomizer.accept(updateSubOp);
 			if (tinyBarsToOffer.isPresent()) {
 				updateSubOp = updateSubOp.fee(tinyBarsToOffer.getAsLong());
 			}
@@ -511,6 +525,7 @@ public class UtilVerbs {
 						.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 						.noLogging()
 						.payingWith(payer);
+				appendCustomizer.accept(appendSubOp);
 				if (tinyBarsToOffer.isPresent()) {
 					appendSubOp = appendSubOp.fee(tinyBarsToOffer.getAsLong());
 				}
