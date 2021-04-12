@@ -133,35 +133,15 @@ public class StandardizedPropertySourcesTest {
 
 	@Test
 	public void failsOnMissingApiPermissionProps() {
-		given(bootstrapProps.getStringProperty("bootstrap.networkProperties.path"))
-				.willReturn("application.properties");
 		given(bootstrapProps.getStringProperty("bootstrap.hapiPermissions.path"))
 				.willReturn("api-permission.properties");
 		// and:
-		given(fileSourceExists.test("application.properties")).willReturn(true);
 		given(fileSourceExists.test("api-permission.properties")).willReturn(false);
 		givenImpliedSubject();
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.assertSourcesArePresent());
-		verify(fileSourceExists).test("application.properties");
 		verify(fileSourceExists).test("api-permission.properties");
-	}
-
-	@Test
-	public void failsOnMissingAppProps() {
-		given(bootstrapProps.getStringProperty("bootstrap.networkProperties.path"))
-				.willReturn("application.properties");
-		given(bootstrapProps.getStringProperty("bootstrap.hapiPermissions.path"))
-				.willReturn("api-permission.properties");
-		// and:
-		given(fileSourceExists.test("application.properties")).willReturn(false);
-		givenImpliedSubject();
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertSourcesArePresent());
-		verify(fileSourceExists).test("application.properties");
-		verify(fileSourceExists,never()).test("api-permission.properties");
 	}
 
 	@Test

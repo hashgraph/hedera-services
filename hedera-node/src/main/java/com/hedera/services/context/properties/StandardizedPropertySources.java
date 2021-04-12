@@ -74,7 +74,6 @@ public class StandardizedPropertySources implements PropertySources {
 	}
 
 	private void assertPropertySourcesExist() {
-		assertFileSourceExists(bootstrapProps.getStringProperty("bootstrap.networkProperties.path"));
 		assertFileSourceExists(bootstrapProps.getStringProperty("bootstrap.hapiPermissions.path"));
 	}
 

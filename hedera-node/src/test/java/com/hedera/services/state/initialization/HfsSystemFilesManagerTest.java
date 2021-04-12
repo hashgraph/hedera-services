@@ -46,7 +46,6 @@ import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -523,17 +522,6 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void throwsIseOnMissingBootstrapProps() throws IOException {
-		// setup:
-		Files.deleteIfExists(Paths.get(bootstrapJutilPropsLoc));
-
-		given(hfs.exists(appPropsId)).willReturn(false);
-
-		// expect:
-		assertThrows(IllegalStateException.class, subject::loadApplicationProperties);
-	}
-
-	@Test
 	public void throwsIseOnNonsenseStateProperties() {
 		given(hfs.exists(appPropsId)).willReturn(true);
 		given(hfs.cat(appPropsId)).willReturn(nonsense);
@@ -541,7 +529,6 @@ class HfsSystemFilesManagerTest {
 		// expect:
 		assertThrows(IllegalStateException.class, subject::loadApplicationProperties);
 	}
-
 
 	private FileID expectedFid(long num) {
 		return FileID.newBuilder()
