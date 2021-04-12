@@ -86,7 +86,7 @@ public class SysFileUploadSuite extends HapiApiSuite {
 		String loc = srcDir + File.separator + name;
 		try {
 			var stylized = Files.readString(Paths.get(loc));
-			return ByteString.copyFrom(serde.toRawFile(stylized));
+			return ByteString.copyFrom(serde.toValidatedRawFile(stylized));
 		} catch (IOException e) {
 			throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
 		}

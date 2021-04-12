@@ -20,6 +20,8 @@ package com.hedera.services.yahcli.config;
  * ‍
  */
 
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottlesJsonToGrpcBytes;
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.config.domain.GlobalConfig;
 import com.hedera.services.yahcli.config.domain.NetConfig;
@@ -62,6 +64,9 @@ public class ConfigManager {
 
 	public Map<String, String> asSpecConfig() {
 		assertNoMissingDefaults();
+
+		StandardSerdes.SYS_FILE_SERDES.put(123L, new ThrottlesJsonToGrpcBytes(targetNet.getNodes().size()));
+
 		var specConfig = targetNet.toSpecProperties();
 		if (useFixedFee()) {
 			specConfig.put("fees.fixedOffer", String.valueOf(useFixedFee()));
