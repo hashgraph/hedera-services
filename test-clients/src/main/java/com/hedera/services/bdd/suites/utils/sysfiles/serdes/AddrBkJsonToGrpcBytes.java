@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -48,9 +49,38 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 
 	@Override
 	public byte[] toRawFile(String styledFile) {
+		return grpcBytesFromPojo(pojoFrom(styledFile));
+	}
+
+	@Override
+	public byte[] toValidatedRawFile(String styledFile) {
+		var pojo = pojoFrom(styledFile);
+		for (var entry : pojo.getEntries()) {
+			try {
+				BookEntryPojo.asOctets(entry.getDeprecatedIp());
+			} catch (Exception e) {
+				throw new IllegalStateException(
+						"Deprecated IP field cannot be set to '" + entry.getDeprecatedIp() + "'", e);
+			}
+
+			try {
+				HapiPropertySource.asAccount(entry.getDeprecatedMemo());
+			} catch (Exception e) {
+				throw new IllegalStateException(
+						"Deprecated memo field cannot be set to '" + entry.getDeprecatedMemo() + "'", e);
+			}
+
+			if (entry.getDeprecatedPortNo() <= 0) {
+				throw new IllegalStateException(
+						"Deprecated portno field cannot be set to '" + entry.getDeprecatedPortNo() + "'");
+			}
+		}
+		return grpcBytesFromPojo(pojo);
+	}
+
+	private AddressBookPojo pojoFrom(String styledFile) {
 		try {
-			var pojoBook = mapper.readValue(styledFile, AddressBookPojo.class);
-			return grpcBytesFromPojo(pojoBook);
+			return mapper.readValue(styledFile, AddressBookPojo.class);
 		} catch (IOException ex) {
 			throw new IllegalArgumentException("Not an address book!", ex);
 		}

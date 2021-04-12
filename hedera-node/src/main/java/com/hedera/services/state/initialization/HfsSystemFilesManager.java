@@ -96,12 +96,12 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	@Override
 	public void createAddressBookIfMissing() {
-		writeFromBookIfMissing(fileNumbers.addressBook(), this::bioAndIpv4Contents);
+		writeFromBookIfMissing(fileNumbers.addressBook(), this::platformAddressBookToGrpc);
 	}
 
 	@Override
 	public void createNodeDetailsIfMissing() {
-		writeFromBookIfMissing(fileNumbers.nodeDetails(), this::bioAndPubKeyContents);
+		writeFromBookIfMissing(fileNumbers.nodeDetails(), this::platformAddressBookToGrpc);
 	}
 
 	@Override
@@ -288,22 +288,13 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		}
 	}
 
-	private byte[] bioAndIpv4Contents() {
+	private byte[] platformAddressBookToGrpc() {
 		var basics = com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
 				.map(address ->	basicBioEntryFrom(address).build())
 				.forEach(basics::addNodeAddress);
 		return basics.build().toByteArray();
-	}
-
-	private byte[] bioAndPubKeyContents() {
-		var details = com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
-		LongStream.range(0, currentBook.getSize())
-				.mapToObj(currentBook::getAddress)
-				.map(address ->	basicBioEntryFrom(address).build())
-				.forEach(details::addNodeAddress);
-		return details.build().toByteArray();
 	}
 
 	private NodeAddress.Builder basicBioEntryFrom(Address address) {

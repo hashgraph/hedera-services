@@ -14,11 +14,12 @@ For the purposes of this document, we care about the the following:
  - The **treasury**, which upon network creation receives all minted ℏ except those
  explicitly designated for a network node account. 
  - The **address book admin**, used to manage metadata on network nodes 
- such as their id numbers, IP addresses, TLS certificate information, and signing keys.
+ such as their id numbers, IP addresses, TLS certificate information, 
+ and signing keys. May also change the network throttles.
  - The **fee schedules admin**, used to set the prices of resources consumed 
  by HAPI operations.
  - The **exchange rates admin**, used to set the network's active conversion
- ratio between USD and ℏ.
+ ratio between USD and ℏ. May also change the network throttles.
  - The **freeze admin**, used to schedule maintenance periods during which the 
  network stops accepting new transactions. In the future the freeze admin will
  also be able to trigger an update to the network software or files.
@@ -77,14 +78,14 @@ First we consider the four transaction types that always require authorization t
 
 Next we consider `FileUpdate` and `FileAppend` transactions when targeting one of the system files. 
 
-| Payer | [`files.addressBook=101`](../hedera-node/src/main/resources/bootstrap.properties)/[`files.nodeDetails=102`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.networkProperties=121`](../hedera-node/src/main/resources/bootstrap.properties)/[`files.hapiPermissions=122`](../hedera-node/src/main/resources/bootstrap.properties)| [`files.feeSchedules=111`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.exchangeRates=112`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.softwareUpdateZip=150`](../hedera-node/src/main/resources/bootstrap.properties)|
-| --- | :---: | :---: | :---: | :---: | :---: | 
-| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X | X |
-| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X | X |
-| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | |   | |
-| [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties) |   |   | X |   | |
-| [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties) |   | X |   | X | |
-| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties) |   |   |   |   | X |
+| Payer | [`files.addressBook=101`](../hedera-node/src/main/resources/bootstrap.properties)/[`files.nodeDetails=102`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.networkProperties=121`](../hedera-node/src/main/resources/bootstrap.properties)/[`files.hapiPermissions=122`](../hedera-node/src/main/resources/bootstrap.properties)| [`files.feeSchedules=111`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.exchangeRates=112`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.softwareUpdateZip=150`](../hedera-node/src/main/resources/bootstrap.properties) | [`files.throttleDefinitions=123`](../hedera-node/src/main/resources/bootstrap.properties) |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | 
+| [`accounts.treasury=2`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X | X | X |
+| [`accounts.systemAdmin=50`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | X | X | X | X |
+| [`accounts.addressBookAdmin=55`](../hedera-node/src/main/resources/bootstrap.properties) | X | X | |   | | X |
+| [`accounts.feeSchedulesAdmin=56`](../hedera-node/src/main/resources/bootstrap.properties) |   |   | X |   | | |
+| [`accounts.exchangeRatesAdmin=57`](../hedera-node/src/main/resources/bootstrap.properties) |   | X |   | X | | X |
+| [`accounts.freezeAdmin=58`](../hedera-node/src/main/resources/bootstrap.properties) |   |   |   |   | X | |
 
 ### Authorization for crypto updates
 

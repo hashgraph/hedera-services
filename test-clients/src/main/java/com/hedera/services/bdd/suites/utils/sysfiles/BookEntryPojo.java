@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BookEntryPojo {
+	private static final String MISSING_CERT_HASH = "<N/A>";
 	static final String CRTS_DIR = "certs";
 	static final String RSA_PUBKEYS_DIR = "pubkeys";
 
@@ -83,7 +84,7 @@ public class BookEntryPojo {
 
 	private Long stake;
 	private Long nodeId;
-	private String certHash;
+	private String certHash = MISSING_CERT_HASH;
 	private String rsaPubKey;
 	private String nodeAccount;
 	private String description;
@@ -112,7 +113,7 @@ public class BookEntryPojo {
 				entry.nodeAccount = null;
 			}
 		}
-		entry.certHash = address.getNodeCertHash().isEmpty() ? null : address.getNodeCertHash().toStringUtf8();
+		entry.certHash = address.getNodeCertHash().isEmpty() ? MISSING_CERT_HASH : address.getNodeCertHash().toStringUtf8();
 		mapEndpoints(address, entry);
 
 		entry.description = address.getDescription().isEmpty() ? null : address.getDescription();
@@ -141,7 +142,7 @@ public class BookEntryPojo {
 		if (nodeAccount != null) {
 			grpc.setNodeAccountId(HapiPropertySource.asAccount(nodeAccount));
 		}
-		if (certHash != null) {
+		if (!certHash.equals(MISSING_CERT_HASH)) {
 			grpc.setNodeCertHash(ByteString.copyFromUtf8(certHash));
 		}
 
@@ -244,7 +245,7 @@ public class BookEntryPojo {
 		}
 	}
 
-	private static ByteString asOctets(String ipAddressV4) {
+	public static ByteString asOctets(String ipAddressV4) {
 		byte[] octets = new byte[4];
 		String[] literals = ipAddressV4.split("[.]");
 		for (int i = 0; i < 4; i++) {

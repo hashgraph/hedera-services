@@ -53,6 +53,7 @@ public class ThrottleGroup {
 	public static ThrottleGroup fromProto(com.hederahashgraph.api.proto.java.ThrottleGroup group) {
 		var pojo = new ThrottleGroup();
 		pojo.setMilliOpsPerSec(group.getMilliOpsPerSec());
+		pojo.setOpsPerSec((int)(group.getMilliOpsPerSec() / 1_000));
 		pojo.operations.addAll(group.getOperationsList());
 		return pojo;
 	}

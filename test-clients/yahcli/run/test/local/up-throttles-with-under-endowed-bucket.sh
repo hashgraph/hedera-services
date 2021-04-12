@@ -14,5 +14,3 @@ docker run -v $(pwd):/launch yahcli:$TAG -p 2 \
 echo "RC=$?"
 
 mv throttles.json.bkup localhost/sysfiles/throttles.json
-
-cat syserr.log | head -5
