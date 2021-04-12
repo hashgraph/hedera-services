@@ -21,17 +21,16 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
  */
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.google.common.primitives.Ints;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import org.apache.commons.codec.binary.Hex;
+import org.junit.Assert;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,172 +38,143 @@ import java.util.stream.Stream;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BookEntryPojo {
-	public static String CRTS_DIR = "certs";
-	public static String RSA_PUBKEYS_DIR = "pubkeys";
+	static final String CRTS_DIR = "certs";
+	static final String RSA_PUBKEYS_DIR = "pubkeys";
 
-	private String ip;
-	private String memo;
-	private String nodeAccount;
-	private String rsaPubKey;
-	private String certHash;
-	private Integer port;
+	static class EndpointPojo {
+		private String ipAddressV4;
+		private Integer port;
+
+		public String getIpAddressV4() {
+			return ipAddressV4;
+		}
+
+		public void setIpAddressV4(String ipAddressV4) {
+			this.ipAddressV4 = ipAddressV4;
+		}
+
+		public Integer getPort() {
+			return port;
+		}
+
+		public void setPort(Integer port) {
+			this.port = port;
+		}
+
+		static EndpointPojo fromGrpc(ServiceEndpoint proto) {
+			var pojo = new EndpointPojo();
+			pojo.setIpAddressV4(asReadableIp(proto.getIpAddressV4()));
+			pojo.setPort(proto.getPort());
+			Assert.assertNotEquals("A port is a positive integer!", 0, pojo.getPort().intValue());
+			return pojo;
+		}
+
+		ServiceEndpoint toGrpc() {
+			return ServiceEndpoint.newBuilder()
+					.setIpAddressV4(asOctets(ipAddressV4))
+					.setPort(port)
+					.build();
+		}
+	}
+
+	private String deprecatedIp;
+	private String deprecatedMemo;
+	private Integer deprecatedPortNo;
+
+	private Long stake;
 	private Long nodeId;
-	private List<String> endPoints;
+	private String certHash;
+	private String rsaPubKey;
+	private String nodeAccount;
+	private String description;
+	private List<EndpointPojo> endpoints;
 
-	private List<String> ips = null;
-
-	public static BookEntryPojo fromAddressBookEntry(NodeAddress address) {
-		var pojo = fromAnyEntry(address);
-		if (address.getServiceEndpointCount() == 0) {
-			pojo.endPoints = new ArrayList<>();
-		} else {
-			pojo.endPoints = address.getServiceEndpointList()
-					.stream()
-					.map(s -> s.getIpAddressV4() + " : " + s.getPort())
-					.collect(Collectors.toList());
-		}
-		return pojo;
-	}
-
-	public static BookEntryPojo fromNodeDetailsEntry(NodeAddress address) {
-		var pojo = fromAnyEntry(address);
-		pojo.rsaPubKey = address.getRSAPubKey();
-		if (pojo.rsaPubKey.length() == 0) {
-			pojo.rsaPubKey = null;
-		}
-		return pojo;
-	}
-
-	public Stream<NodeAddress> toAddressBookEntries() {
-		var address = NodeAddress.newBuilder();
-
-		address.setIpAddress(ByteString.copyFromUtf8(ip));
-		address.setPortno(Optional.ofNullable(port).orElse(0));
-
-		addBasicBioTo(address);
-		buildEndPointsIfExist(address);
-
-		if (certHash != null) {
-			if ("!".equals(certHash)) {
-				certHash = asHexEncodedSha384HashFor(address.getNodeId());
-			}
-			address.setNodeCertHash(ByteString.copyFrom(certHash.getBytes()));
-		}
-
-		return Stream.of(address.build());
-	}
-
-	static String asHexEncodedSha384HashFor(long nodeId) {
-		try {
-			var crtBytes = Files.readAllBytes(Paths.get(CRTS_DIR, String.format("node%d.crt", nodeId)));
-			var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
-			return Hex.encodeHexString(crtHash);
-		} catch (Exception e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	public Stream<NodeAddress> toNodeDetailsEntry() {
-		var address = NodeAddress.newBuilder();
-		addBasicBioTo(address);
-		buildEndPointsIfExist(address);
-		address.setIpAddress(ByteString.copyFrom(ip.getBytes()));
-		address.setPortno(Optional.ofNullable(port).orElse(0));
-		if (rsaPubKey != null) {
-			if ("!".equals(rsaPubKey)) {
-				rsaPubKey = asHexEncodedDerPubKey(nodeId);
-			}
-			address.setRSAPubKey(rsaPubKey);
-		}
-		return Stream.of(address.build());
-	}
-
-	public static String asHexEncodedDerPubKey(long nodeId) {
-		try {
-			var pubKeyBytes = Files.readAllBytes(Paths.get(RSA_PUBKEYS_DIR, String.format("node%d.der", nodeId)));
-			return Hex.encodeHexString(pubKeyBytes);
-		} catch (Exception e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	private void addBasicBioTo(NodeAddress.Builder builder) {
-		builder.setNodeId(nodeId);
-		builder.setMemo(ByteString.copyFrom(memo.getBytes()));
-		if (nodeAccount != null) {
-			builder.setNodeAccountId(HapiPropertySource.asAccount(nodeAccount));
-		}
-	}
-
-	private void buildEndPointsIfExist(NodeAddress.Builder builder) {
-		if (endPoints == null) {
-			return;
-		}
-		for (String endPoint : endPoints) {
-			var serviceEndpoint = ServiceEndpoint.newBuilder();
-			String[] elements = endPoint.split(":");
-			serviceEndpoint.setIpAddressV4(ByteString.copyFrom(ipv4Bytes(elements[0].trim())));
-			serviceEndpoint.setPort(Integer.parseInt(elements[1].trim()));
-			builder.addServiceEndpoint(serviceEndpoint.build());
-		}
-	}
-
-	private static byte[] ipv4Bytes(String dotDelimited) {
-		try {
-			var bytes = new byte[4];
-			var parts = dotDelimited.split("[.]");
-			for (int i = 0; i < 4; i++) {
-				System.arraycopy(Ints.toByteArray(Integer.parseInt(parts[i])), 0, bytes, i * 4, 4);
-			}
-			return bytes;
-		} catch (Exception e) {
-			throw new IllegalArgumentException(dotDelimited + " is not an IPv4 address!");
-		}
-	}
-
-	private static BookEntryPojo fromAnyEntry(NodeAddress address) {
+	static BookEntryPojo fromGrpc(NodeAddress address) {
 		var entry = new BookEntryPojo();
 
-		if (address.getMemo().isEmpty()) {
-			entry.memo = "<N/A>";
-		} else {
-			entry.memo = new String(address.getMemo().toByteArray());
+		entry.deprecatedIp = address.getIpAddress().isEmpty() ? null : address.getIpAddress().toStringUtf8();
+		entry.deprecatedPortNo = address.getPortno();
+		if (entry.deprecatedPortNo == 0) {
+			entry.deprecatedPortNo = null;
 		}
+		entry.deprecatedMemo = address.getMemo().isEmpty() ? null : address.getMemo().toStringUtf8();
 
+		entry.rsaPubKey = address.getRSAPubKey().isEmpty() ? null : address.getRSAPubKey();
 		entry.nodeId = address.getNodeId();
 		if (address.hasNodeAccountId()) {
 			entry.nodeAccount = HapiPropertySource.asAccountString(address.getNodeAccountId());
 		} else {
-			entry.nodeAccount = "<N/A>";
+			try {
+				var memo = address.getMemo().toStringUtf8();
+				HapiPropertySource.asAccount(memo);
+				entry.nodeAccount = memo;
+			} catch (Exception ignore) {
+				entry.nodeAccount = null;
+			}
+		}
+		entry.certHash = address.getNodeCertHash().isEmpty() ? null : address.getNodeCertHash().toStringUtf8();
+		mapEndpoints(address, entry);
+
+		entry.description = address.getDescription().isEmpty() ? null : address.getDescription();
+		entry.stake = address.getStake();
+		if (entry.stake == 0) {
+			entry.stake = null;
 		}
 
-		entry.ip = new String(address.getIpAddress().toByteArray());
-		entry.port = address.getPortno();
-		if (entry.port == 0) {
-			entry.port = null;
-		}
-		if (address.getNodeCertHash().isEmpty()) {
-			entry.certHash = "<N/A>";
-		} else {
-			entry.certHash = new String(address.getNodeCertHash().toByteArray());
-		}
 		return entry;
 	}
 
-	public String getIp() {
-		return ip;
+	public Stream<NodeAddress> toGrpcStream() {
+		var grpc = NodeAddress.newBuilder();
+
+		if (deprecatedIp != null) {
+			grpc.setIpAddress(ByteString.copyFromUtf8(deprecatedIp));
+		}
+		grpc.setPortno(Optional.ofNullable(deprecatedPortNo).orElse(0));
+		if (deprecatedMemo != null) {
+			grpc.setMemo(ByteString.copyFromUtf8(deprecatedMemo));
+		}
+		if (rsaPubKey != null) {
+			grpc.setRSAPubKey(rsaPubKey);
+		}
+		grpc.setNodeId(Optional.ofNullable(nodeId).orElse(0L));
+		if (nodeAccount != null) {
+			grpc.setNodeAccountId(HapiPropertySource.asAccount(nodeAccount));
+		}
+		if (certHash != null) {
+			grpc.setNodeCertHash(ByteString.copyFromUtf8(certHash));
+		}
+
+		for (var endpoint : endpoints) {
+			grpc.addServiceEndpoint(endpoint.toGrpc());
+		}
+		if (description != null) {
+			grpc.setDescription(description);
+		}
+
+		return Stream.of(grpc.build());
 	}
 
-	public void setIp(String ip) {
-		this.ip = ip;
+	private static void mapEndpoints(NodeAddress from, BookEntryPojo to) {
+		to.endpoints = from.getServiceEndpointList().stream()
+				.map(EndpointPojo::fromGrpc)
+				.collect(Collectors.toList());
 	}
 
-	public String getMemo() {
-		return memo;
+	public String getDeprecatedIp() {
+		return deprecatedIp;
 	}
 
-	public void setMemo(String memo) {
-		this.memo = memo;
+	public void setDeprecatedIp(String deprecatedIp) {
+		this.deprecatedIp = deprecatedIp;
+	}
+
+	public String getDeprecatedMemo() {
+		return deprecatedMemo;
+	}
+
+	public void setDeprecatedMemo(String deprecatedMemo) {
+		this.deprecatedMemo = deprecatedMemo;
 	}
 
 	public String getNodeAccount() {
@@ -231,12 +201,12 @@ public class BookEntryPojo {
 		this.certHash = certHash;
 	}
 
-	public Integer getPort() {
-		return port;
+	public Integer getDeprecatedPortNo() {
+		return deprecatedPortNo;
 	}
 
-	public void setPort(Integer port) {
-		this.port = port;
+	public void setDeprecatedPortNo(Integer deprecatedPortNo) {
+		this.deprecatedPortNo = deprecatedPortNo;
 	}
 
 	public Long getNodeId() {
@@ -247,19 +217,52 @@ public class BookEntryPojo {
 		this.nodeId = nodeId;
 	}
 
-	public List<String> getIps() {
-		return ips;
+	public List<EndpointPojo> getEndpoints() {
+		return endpoints;
 	}
 
-	public void setIps(List<String> ips) {
-		this.ips = ips;
+	public void setEndpoints(List<EndpointPojo> endpoints) {
+		this.endpoints = endpoints;
 	}
 
-	public List<String> getEndPoints() {
-		return endPoints;
+	static String asHexEncodedSha384HashFor(long nodeId) {
+		try {
+			var crtBytes = Files.readAllBytes(Paths.get(CRTS_DIR, String.format("node%d.crt", nodeId)));
+			var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
+			return Hex.encodeHexString(crtHash);
+		} catch (Exception e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
-	public void setEndPoints(List<String> endPoints) {
-		this.endPoints = endPoints;
+	static String asHexEncodedDerPubKey(long nodeId) {
+		try {
+			var pubKeyBytes = Files.readAllBytes(Paths.get(RSA_PUBKEYS_DIR, String.format("node%d.der", nodeId)));
+			return Hex.encodeHexString(pubKeyBytes);
+		} catch (Exception e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private static ByteString asOctets(String ipAddressV4) {
+		byte[] octets = new byte[4];
+		String[] literals = ipAddressV4.split("[.]");
+		for (int i = 0; i < 4; i++) {
+			octets[i] = (byte) Integer.parseInt(literals[i]);
+		}
+		return ByteString.copyFrom(octets);
+	}
+
+	private static String asReadableIp(ByteString octets) {
+		byte[] raw = octets.toByteArray();
+		Assert.assertEquals("An IP4v4 address should have four octets!", 4, raw.length);
+		var sb = new StringBuilder();
+		for (int i = 0; i < 4; i++) {
+			sb.append("" + (0xff & raw[i]));
+			if (i != 3) {
+				sb.append(".");
+			}
+		}
+		return sb.toString();
 	}
 }

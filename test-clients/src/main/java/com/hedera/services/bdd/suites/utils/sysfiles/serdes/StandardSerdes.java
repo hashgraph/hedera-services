@@ -20,16 +20,17 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
  * ‍
  */
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class StandardSerdes {
-	public static final Map<Long, SysFileSerde<String>> SYS_FILE_SERDES = Map.of(
-			101L, new AddrBkJsonToGrpcBytes(),
-			102L, new NodesJsonToGrpcBytes(),
-			111L, new FeesJsonToGrpcBytes(),
-			112L, new XRatesJsonToGrpcBytes(),
-			121L, new JutilPropsToSvcCfgBytes("application.properties"),
-			122L, new JutilPropsToSvcCfgBytes("api-permission.properties"),
-			123L, new ThrottlesJsonToGrpcBytes()
-	);
+	public static final Map<Long, SysFileSerde<String>> SYS_FILE_SERDES = new HashMap<>() {{
+		put(101L, new AddrBkJsonToGrpcBytes());
+		put(102L, new NodesJsonToGrpcBytes());
+		put(111L, new FeesJsonToGrpcBytes());
+		put(112L, new XRatesJsonToGrpcBytes());
+		put(121L, new JutilPropsToSvcCfgBytes("application.properties"));
+		put(122L, new JutilPropsToSvcCfgBytes("api-permission.properties"));
+		put(123L, new ThrottlesJsonToGrpcBytes());
+	}};
 }

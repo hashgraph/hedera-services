@@ -52,7 +52,7 @@ public class NodesJsonToGrpcBytes implements SysFileSerde<String> {
 			var pojoBook = mapper.readValue(styledFile, AddressBookPojo.class);
 			NodeAddressBook.Builder addressBook = NodeAddressBook.newBuilder();
 			pojoBook.getEntries().stream()
-					.flatMap(BookEntryPojo::toNodeDetailsEntry)
+					.flatMap(BookEntryPojo::toGrpcStream)
 					.forEach(addressBook::addNodeAddress);
 			return addressBook.build().toByteArray();
 		} catch (IOException ex) {

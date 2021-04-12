@@ -27,10 +27,11 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
-import com.hedera.services.yahcli.commands.accounts.BalanceCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
+import com.hedera.services.yahcli.commands.files.SysFileUploadCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
+import com.hedera.services.yahcli.suites.SysFileUploadSuite;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,7 +87,7 @@ public class Yahcli implements Callable<Integer> {
 	}
 
 	public static void main(String... args) {
-		setLogLevelsToError();
+		setLogLevelsToLessNoisy();
 		int rc = new CommandLine(new Yahcli()).execute(args);
 		System.exit(rc);
 	}
@@ -111,8 +112,9 @@ public class Yahcli implements Callable<Integer> {
 		return fixedFee;
 	}
 
-	private static void setLogLevelsToError() {
+	private static void setLogLevelsToLessNoisy() {
 		List.of(
+				SysFileUploadSuite.class,
 				SysFileDownloadSuite.class,
 				MapPropertySource.class,
 				HapiApiClients.class,
@@ -120,10 +122,10 @@ public class Yahcli implements Callable<Integer> {
 				HapiQueryOp.class,
 				HapiGetFileContents.class,
 				HapiApiSpec.class
-		).forEach(Yahcli::setToError);
+		).forEach(Yahcli::setToLessNoisy);
 	}
 
-	private static void setToError(Class<?> cls) {
-		((org.apache.logging.log4j.core.Logger)LogManager.getLogger(cls)).setLevel(Level.ERROR);
+	private static void setToLessNoisy(Class<?> cls) {
+		((org.apache.logging.log4j.core.Logger)LogManager.getLogger(cls)).setLevel(Level.WARN);
 	}
 }

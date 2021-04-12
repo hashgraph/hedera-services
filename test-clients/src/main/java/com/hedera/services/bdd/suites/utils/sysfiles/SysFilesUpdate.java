@@ -41,7 +41,6 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hedera.services.legacy.core.AccountKeyListObj;
@@ -138,8 +137,8 @@ public class SysFilesUpdate extends HapiApiSuite {
 			SystemFile.API_PERMISSIONS, API_PERMISSIONS));
 
 	static EnumMap<SystemFile, Function<BookEntryPojo, Stream<NodeAddress>>> updateConverters = new EnumMap<>(Map.of(
-			SystemFile.ADDRESS_BOOK, BookEntryPojo::toAddressBookEntries,
-			SystemFile.NODE_DETAILS, BookEntryPojo::toNodeDetailsEntry));
+			SystemFile.ADDRESS_BOOK, BookEntryPojo::toGrpcStream,
+			SystemFile.NODE_DETAILS, BookEntryPojo::toGrpcStream));
 
 	static Pattern nodeCertPattern = Pattern.compile(".*node(\\d+)[.]crt");
 	static Pattern pubKeyPattern = Pattern.compile(".*node(\\d+)[.]der");

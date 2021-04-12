@@ -25,9 +25,9 @@ public class Utils {
 	private static final Set<ServiceType> VALID_SERVICE_TYPES = new HashSet<>(SERVICES_TO_ENUM.values());
 
 	private static final Map<String, Long> NAMES_TO_NUMBERS = Map.ofEntries(
-			Map.entry("addressbook", 101L),
+			Map.entry("address-book", 101L),
 			Map.entry("addressBook.json", 101L),
-			Map.entry("details", 102L),
+			Map.entry("node-details", 102L),
 			Map.entry("nodeDetails.json", 102L),
 			Map.entry("rates", 112L),
 			Map.entry("exchangeRates.json", 112L),

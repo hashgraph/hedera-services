@@ -30,7 +30,6 @@ import static com.hedera.services.yahcli.commands.files.SysFilesCommand.resolved
 
 @CommandLine.Command(
 		name = "upload",
-		subcommands = { CommandLine.HelpCommand.class },
 		description = "Upload a system file")
 public class SysFileUploadCommand implements Callable<Integer> {
 	@CommandLine.ParentCommand
@@ -44,11 +43,9 @@ public class SysFileUploadCommand implements Callable<Integer> {
 	@CommandLine.Parameters(
 			arity = "1",
 			paramLabel = "<sysfile>",
-			description = "system file name (one of \n" +
-					" Full names ['addressBook.json', 'nodeDetails.json', 'feeSchedules.json', 'exchangeRates.json'," +
-					" 'application.properties', 'api-permission.properties'] \n" +
-					" Short handles ['book', 'details', 'fees', 'rates', 'props', 'permissions'] \n" +
-					" File numbers ['101', '102'', '111', '112', '121', '122'])")
+			description = "one of " +
+					"{ address-book, node-details, fees, rates, props, permissions, throttles } (or " +
+					"{ 101, 102, 111, 112, 121, 122, 123 })")
 	String sysFile;
 
 	@Override

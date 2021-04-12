@@ -59,7 +59,7 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 	private byte[] grpcBytesFromPojo(AddressBookPojo pojoBook) {
 		NodeAddressBook.Builder addressBookForClients = NodeAddressBook.newBuilder();
 		pojoBook.getEntries().stream()
-				.flatMap(BookEntryPojo::toAddressBookEntries)
+				.flatMap(BookEntryPojo::toGrpcStream)
 				.forEach(addressBookForClients::addNodeAddress);
 		return addressBookForClients.build().toByteArray();
 	}
