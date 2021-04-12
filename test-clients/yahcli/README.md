@@ -112,7 +112,6 @@ Targeting previewnet, paying with 0.0.2
 ---------------------|----------------------|
           Account Id |              Balance |
 ---------------------|----------------------|
-
               0.0.56 |                    0 |
               0.0.50 |          15000000000 |
 ```
@@ -201,3 +200,32 @@ $ tail -17 localhost/sysfiles/addressBook.json
 }
 ```
  
+### Making a mistake
+
+Yahcli provides some client-side validation to catch errors early. For example,
+note that **all three** of the `deprecated*` fields must be set to "reasonable"
+values. Suppose we try to update the address book again, changing the 
+`deprecatedMemo` field to something other than an account literal,
+```
+...
+  }, {
+    "deprecatedIp" : "127.0.0.1",
+    "deprecatedMemo" : "This node is the best!",
+    "deprecatedPortNo" : 50207,
+    "nodeId" : 3,
+...
+```
+
+We then get a messy error and the update aborts before sending
+any `FileUpdate` transaction to the network:
+```
+$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 55 sysfiles upload address-book
+Targeting localhost, paying with 0.0.55
+java.lang.IllegalStateException: Deprecated memo field cannot be set to 'This node is the best!'
+	at com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes.toValidatedRawFile(AddrBkJsonToGrpcBytes.java:70)
+	at com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes.toValidatedRawFile(AddrBkJsonToGrpcBytes.java:35)
+	at com.hedera.services.yahcli.suites.SysFileUploadSuite.appropriateContents(SysFileUploadSuite.java:97)
+	at com.hedera.services.yahcli.suites.SysFileUploadSuite.uploadSysFiles(SysFileUploadSuite.java:70)
+	at com.hedera.services.yahcli.suites.SysFileUploadSuite.getSpecsInSuite(SysFileUploadSuite.java:65)
+...
+```
