@@ -50,6 +50,7 @@ import com.swirlds.common.AddressBook;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
@@ -271,6 +272,8 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 									.setValue(String.valueOf(entry.getValue()))));
 			log.info(sb.toString());
 			return config.build().toByteArray();
+		} catch (NoSuchFileException ignore) {
+			return ServicesConfigurationList.getDefaultInstance().toByteArray();
 		}
 	}
 

@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -70,17 +71,17 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 
 class HfsSystemFilesManagerTest {
-	String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
-	String bootstrapJutilPropsLoc = "src/test/resources/bootstrap.properties";
-	String bootstrapJutilPermsLoc = "src/test/resources/permission-bootstrap.properties";
+	private String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
+	private String bootstrapJutilPropsLoc = "src/test/resources/bootstrap.properties";
+	private String bootstrapJutilPermsLoc = "src/test/resources/permission-bootstrap.properties";
 
-	byte[] nonsense = "NONSENSE".getBytes();
-	ServicesConfigurationList fromState = ServicesConfigurationList.newBuilder()
+	private byte[] nonsense = "NONSENSE".getBytes();
+	private ServicesConfigurationList fromState = ServicesConfigurationList.newBuilder()
 			.addNameValue(Setting.newBuilder()
 					.setName("stateName")
 					.setValue("stateValue"))
 			.build();
-	ServicesConfigurationList fromBootstrapFile = ServicesConfigurationList.newBuilder()
+	private ServicesConfigurationList fromBootstrapFile = ServicesConfigurationList.newBuilder()
 			.addNameValue(Setting.newBuilder()
 					.setName("bootstrapNameA")
 					.setValue("bootstrapValueA"))
@@ -88,27 +89,27 @@ class HfsSystemFilesManagerTest {
 					.setName("bootstrapNameB")
 					.setValue("bootstrapValueB"))
 			.build();
-	FileID bookId = expectedFid(101);
-	FileID detailsId = expectedFid(102);
-	FileID appPropsId = expectedFid(121);
-	FileID apiPermsId = expectedFid(122);
-	FileID throttlesId = expectedFid(123);
-	FileID schedulesId = expectedFid(111);
-	FileID ratesId = expectedFid(112);
+	private FileID bookId = expectedFid(101);
+	private FileID detailsId = expectedFid(102);
+	private FileID appPropsId = expectedFid(121);
+	private FileID apiPermsId = expectedFid(122);
+	private FileID throttlesId = expectedFid(123);
+	private FileID schedulesId = expectedFid(111);
+	private FileID ratesId = expectedFid(112);
 
-	long expiry = 1_234_567_890L;
-	long nextExpiry = 2_234_567_890L;
-	int curCentEquiv = 1;
-	int curHbarEquiv = 12;
-	int nxtCentEquiv = 2;
-	int nxtHbarEquiv = 31;
-	Map<FileID, byte[]> data;
-	Map<FileID, HFileMeta> metadata;
-	JKey masterKey;
-	byte[] aIpv4, bIpv4;
-	byte[] aKeyEncoding = "not-really-A-key".getBytes();
-	byte[] bKeyEncoding = "not-really-B-key".getBytes();
-	String memoA, memoB;
+	private long expiry = 1_234_567_890L;
+	private long nextExpiry = 2_234_567_890L;
+	private int curCentEquiv = 1;
+	private int curHbarEquiv = 12;
+	private int nxtCentEquiv = 2;
+	private int nxtHbarEquiv = 31;
+	private Map<FileID, byte[]> data;
+	private Map<FileID, HFileMeta> metadata;
+	private JKey masterKey;
+	private byte[] aIpv4, bIpv4;
+	private byte[] aKeyEncoding = "not-really-A-key".getBytes();
+	private byte[] bKeyEncoding = "not-really-B-key".getBytes();
+	private String memoA, memoB;
 	Address addressA, addressB;
 	PublicKey keyA, keyB;
 	AddressBook currentBook;
@@ -463,6 +464,31 @@ class HfsSystemFilesManagerTest {
 		verify(data).put(
 				argThat(schedulesId::equals),
 				argThat((byte[] bytes) -> Arrays.equals(schedules, bytes)));
+	}
+
+	@Test
+	public void bootstrapsPropsAsEmptyConfigListIfNoDiskProperties() throws IOException {
+		// setup:
+		var emptyConfig = ServicesConfigurationList.getDefaultInstance();
+
+		given(hfs.exists(appPropsId)).willReturn(false);
+		given(hfs.cat(appPropsId)).willReturn(emptyConfig.toByteArray());
+		given(callbacks.propertiesCb()).willReturn(propertiesCb);
+
+		// when:
+		subject.loadApplicationProperties();
+
+		// then:
+		verify(hfs).exists(appPropsId);
+		// and:
+		verify(metadata).put(
+				argThat(appPropsId::equals),
+				argThat(info -> expectedInfo.toString().equals(info.toString())));
+		verify(data).put(
+				argThat(appPropsId::equals),
+				argThat((byte[] bytes) -> Arrays.equals(emptyConfig.toByteArray(), bytes)));
+		// and:
+		verify(propertiesCb).accept(ServicesConfigurationList.getDefaultInstance());
 	}
 
 	@Test
