@@ -36,46 +36,30 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
-public class SpecKeyFromMnemonic extends UtilOp {
-	static final Logger log = LogManager.getLogger(SpecKeyFromMnemonic.class);
+import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkSimpleKey;
+
+public class SpecKeyFromLiteral extends UtilOp {
+	static final Logger log = LogManager.getLogger(SpecKeyFromLiteral.class);
 
 	private final String name;
-	private final String mnemonic;
+	private final String hexEncodedPrivateKey;
 	private Optional<String> linkedId = Optional.empty();
 
-	public SpecKeyFromMnemonic(String name, String mnemonic) {
+	public SpecKeyFromLiteral(String name, String hexEncodedPrivateKey) {
 		this.name = name;
-		this.mnemonic = mnemonic;
+		this.hexEncodedPrivateKey = hexEncodedPrivateKey;
 	}
 
-	public SpecKeyFromMnemonic linkedTo(String id) {
+	public SpecKeyFromLiteral linkedTo(String id) {
 		linkedId = Optional.of(id);
 		return this;
 	}
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		byte[] seed = Bip0032.seedFrom(mnemonic);
-		byte[] privateKey = Bip0032.privateKeyFrom(seed);
+		byte[] privateKey = Hex.decodeHex(hexEncodedPrivateKey);
 		createAndLinkSimpleKey(spec, privateKey, name, linkedId, log);
 		return false;
-	}
-
-	static void createAndLinkSimpleKey(
-			HapiApiSpec spec,
-			byte[] privateKey,
-			String name,
-			Optional<String> linkedId,
-			Logger logToUse) {
-		var params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
-		var privateKeySpec = new EdDSAPrivateKeySpec(privateKey, params);
-		var pk = new EdDSAPrivateKey(privateKeySpec);
-		var pubKeyHex = Hex.encodeHexString(pk.getAbyte());
-		logToUse.info("Hex-encoded public key: " + pubKeyHex);
-		var key = Ed25519Factory.populatedFrom(pk.getAbyte());
-		spec.registry().saveKey(name, key);
-		spec.keys().incorporate(name, pubKeyHex, pk, KeyShape.SIMPLE);
-		linkedId.ifPresent(s -> spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s)));
 	}
 
 	@Override

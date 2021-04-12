@@ -293,6 +293,12 @@
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>ethereumj-core</artifactId>
       <version>${ethereum-core.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>rocksdbjni</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

@@ -36,6 +36,7 @@ import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
 import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
+import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
@@ -155,6 +156,10 @@ public class UtilVerbs {
 
 	public static SpecKeyFromMnemonic keyFromMnemonic(String name, String mnemonic) {
 		return new SpecKeyFromMnemonic(name, mnemonic);
+	}
+
+	public static SpecKeyFromLiteral keyFromLiteral(String name, String hexEncodedPrivateKey) {
+		return new SpecKeyFromLiteral(name, hexEncodedPrivateKey);
 	}
 
 	public static HapiSpecOperation expectedEntitiesExist() {
