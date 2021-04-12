@@ -86,7 +86,7 @@ Downloading the fees...OK
 $ ls previewnet/sysfiles/
 feeSchedules.json
 ```
-:turtle: The docker image needs to launch a JAR, which is fairly slow. Please allow a few 
+:turtle: &nbsp; The docker image needs to launch a JAR, which is fairly slow. Please allow a few 
 seconds for the the above command to run.
 
 The fee schedules were downloaded in JSON form to _previewnet/sysfiles/feeSchedules.json_.

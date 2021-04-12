@@ -71,13 +71,12 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						fundAddressBookAdmin(),
-//						vanillaTransferSucceeds(),
-//						complexKeyAcctPaysForOwnTransfer(),
-//						twoComplexKeysRequired(),
-//						specialAccountsBalanceCheck(),
-//						transferToTopicReturnsInvalidAccountId(),
-//						tokenTransferFeesScaleAsExpected(),
+						vanillaTransferSucceeds(),
+						complexKeyAcctPaysForOwnTransfer(),
+						twoComplexKeysRequired(),
+						specialAccountsBalanceCheck(),
+						transferToTopicReturnsInvalidAccountId(),
+						tokenTransferFeesScaleAsExpected(),
 				}
 		);
 	}
