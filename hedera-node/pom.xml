@@ -296,7 +296,15 @@
       <exclusions>
         <exclusion>
           <groupId>org.ethereum</groupId>
+          <artifactId>leveldbjni-all</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
           <artifactId>rocksdbjni</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>solcJ-all</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
