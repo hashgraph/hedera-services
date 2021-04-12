@@ -3,12 +3,12 @@ Yahcli (Yet Another Hedera Command Line Interface) is able to perform the
 listed actions against a specified network.
 
 1. Account Operations
-    - Get Balance.
+    - Check balances for one or more accounts.
 2. System File Operations
-    - Download all/specific file.
-    - Upload a System file.
+    - Download one or more system files.
+    - Upload a system file.
 3. Fees Operations
-    - List basic transaction and query fees of all/specific service.
+    - Run examples of all "canonical" transactions and queries, reporting the fees charged.
 
 # Setting up the working directory 
 
@@ -33,8 +33,8 @@ networks:
       - { id: 0, account: 3, ipv4Addr: 35.231.208.148 }
 ```
 
-You can add details for multiple networks to this config file; for example,
-you could add information about stabletestnet.
+We can add details for multiple networks to this config file; for example,
+we could add information about stabletestnet.
 ```
 defaultNetwork: previewnet
 
@@ -48,12 +48,12 @@ networks:
       - { id: 1, account: 4, ipv4Addr: 35.237.119.55 }
 ```
 
-For each network you add, there needs to be a _{network}/keys/_ 
-folder should contain `account{num}.pem` and `account{num}.pass` 
-pair for each account that you want to use with that network, where  
-_num_ is the account number and `account{num}.pass` contains 
-the passphrase for the `account{num}.pem` file (or is empty if 
-there is no passphrase for the PEM).
+For each network we add, we need a _{network}/keys/_ folder 
+that contains a `account{num}.pem` and `account{num}.pass` 
+pair for each account we will use with that network (where  
+`account{num}.pass` contains the passphrase for the 
+`account{num}.pem` file---or is empty if there is no passphrase 
+for the PEM file).
 
 **IMPORTANT:** Support for multisig accounts is not yet implemented.
 
@@ -74,10 +74,11 @@ Commands:
   sysfiles  Perform system file operations
   fees      Perform system fee operations
 ``` 
-:information_desk_person: Since we only have a key for account `0.0.2` on previewnet, 
-we will need to use `-p 2` for the payer argument when running against this network.
+:information_desk_person: &nbsp; Since we the only key we have for previewnet
+is for account `0.0.2`, we will need to use `-p 2` for the payer argument 
+when running against this network.
 
-To download the fee schedules from previewnet given the config above, we would run:
+To download the fee schedules from previewnet given the config above, we run:
 ```
 $ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -p 2 -n previewnet sysfiles download fees
 Targeting previewnet, paying with 0.0.2
@@ -85,12 +86,14 @@ Downloading the fees...OK
 $ ls previewnet/sysfiles/
 feeSchedules.json
 ```
-:turtle: The docker image needs to launch a JAR, which is fairly slow. This will take a few seconds to run.
+:turtle: The docker image needs to launch a JAR, which is fairly slow. Please allow a few 
+seconds for the the above command to run.
 
-The fee schedules were downloaded in JSON form to _previewnet/sysfiles/feeSchedules.json_, which is the 
-default location. To see more options for the `download` subcommand, we can run:
+The fee schedules were downloaded in JSON form to _previewnet/sysfiles/feeSchedules.json_.
+To see more options for the `download` subcommand (including a custom download directory), 
+we run:
 ```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0  sysfiles download help
+$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 sysfiles download help
 Usage: yahcli sysfiles download [-d=destination directory] <sysfiles>...
                                 [COMMAND]
 Download system files
@@ -99,6 +102,8 @@ Download system files
                         111, 112, 121, 122, 123 })---or 'all'
   -d, --dest-dir=destination directory
 ```
+
+The remaining sections of this document focus on specific use cases.
 
 ## Getting account balances
 ```
@@ -112,12 +117,12 @@ Targeting previewnet, paying with 0.0.2
               0.0.50 |          15000000000 |
 ```
 
-## Updating the address book and/or node details
+## Updating the address book and/or node details system files
 For this example, we will run against a `localhost` network since we will modify a system file.
 
-We want to add an address book entry for a new node with `nodeId=3`. The DER-encoded RSA public 
-key of the node is in a file _node3.der_, and its TLS X509 cert is in a file _node3.crt_. We place 
-these files in the directory structure below.
+Our goal in the example is to add a completely new address book entry for a node with `nodeId=3`. 
+The DER-encoded RSA public key of the node is in a file _node3.der_, and its TLS X509 cert is 
+in a file _node3.crt_. We place these files in the directory structure below.
 ```
 localhost
 ├── keys
@@ -142,8 +147,8 @@ Downloading the address-book...OK
 Next we edit the newly-downloaded _localhost/sysfiles/addressBook.json_ and 
 add a new entry with `nodeId=3`, as below.
 
-:information_desk_person: By using the `!` character in the `certHash` and `rsaPubKey` fields,
-we tell yahcli to automatically compute their values from the _certs/node3.crt_ and _pubkeys/node3.der_
+:information_desk_person: &nbsp; By using the `'!'` character in the `certHash` and `rsaPubKey` fields,
+we tell yahcli to compute their values from the _certs/node3.crt_ and _pubkeys/node3.der_
 files, respectively.
 ```
 ...
@@ -172,10 +177,6 @@ $ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost 
 
 Finally we re-download the book to see that the hex-encoded cert hash 
 and RSA public key were uploaded as expected:
-```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 sysfiles download address-book
-Targeting localhost, paying with 0.0.2
-Downloading the address-book...OK
 ```
 $ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 sysfiles download address-book
 Targeting localhost, paying with 0.0.2
