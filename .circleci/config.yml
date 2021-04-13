@@ -1525,11 +1525,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "43 20 * * *"
           filters:
             branches:
               only:
-                - master
+                - 01158-D-query-perf-test-clients
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1590,6 +1590,30 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
+
+  GCP-Daily-Services-Query-Restart-Performance-6N-6C:
+    triggers:
+      - schedule:
+          cron: "45 20 * * *"
+          filters:
+            branches:
+              only:
+                - 01158-D-query-perf-test-clients
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_6C/Restart
+          config_type: "weekly"
+          workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-6N-6C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
 
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
@@ -2207,7 +2231,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; 
+            cd regression; git checkout 01158-D-query-perf-test-clients
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
