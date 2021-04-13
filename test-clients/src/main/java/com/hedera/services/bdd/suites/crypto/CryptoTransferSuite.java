@@ -302,16 +302,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec fundAddressBookAdmin() {
-		return defaultHapiSpec("FundAddressBookAdmin")
-				.given().when(
-						cryptoTransfer(
-								tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, ONE_MILLION_HBARS)
-						).via("transferTxn")
-				).then(
-				);
-	}
-
 	private HapiApiSpec vanillaTransferSucceeds() {
 		long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
