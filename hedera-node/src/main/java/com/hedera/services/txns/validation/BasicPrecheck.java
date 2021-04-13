@@ -41,8 +41,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
 public class BasicPrecheck {
-	private static final Logger log = LogManager.getLogger(BasicPrecheck.class);
-
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 
