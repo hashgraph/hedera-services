@@ -147,7 +147,6 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.initialization.ExportExistingAccounts;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.answering.AnswerFunctions;
@@ -199,6 +198,7 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
+import com.hedera.services.state.exports.ToStringAccountsExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
@@ -538,7 +538,7 @@ public class ServicesContext {
 		pause = SleepingPause.SLEEPING_PAUSE;
 		b64KeyReader = new LegacyEd25519KeyReader();
 		stateMigrations = new StdStateMigrations(SleepingPause.SLEEPING_PAUSE);
-		accountsExporter = ExportExistingAccounts::exportAccounts;
+		accountsExporter = new ToStringAccountsExporter();
 	}
 
 	public ServicesContext(
