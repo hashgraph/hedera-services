@@ -126,50 +126,39 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 @ExtendWith(LogCaptureExtension.class)
 class ServicesStateTest {
-	Function<String, byte[]> mockHashReader;
-	Consumer<MerkleNode> mockDigest;
-	Supplier<BinaryObjectStore> mockBlobStoreSupplier;
-	BinaryObjectStore blobStore;
-	Instant now = Instant.now();
-	Transaction platformTxn;
-	Address address;
-	AddressBook book;
-	AddressBook bookCopy;
-	Platform platform;
-	ProcessLogic logic;
-	PropertySources propertySources;
-	ServicesContext ctx;
-	AccountRecordsHistorian historian;
-	ExpiryManager expiryManager;
-	FCMap<MerkleEntityId, MerkleTopic> topics;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
-	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
-	FCMap<MerkleEntityId, MerkleTopic> topicsCopy;
-	FCMap<MerkleEntityId, MerkleAccount> accountsCopy;
-	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageCopy;
-	FCMap<MerkleEntityId, MerkleToken> tokens;
-	FCMap<MerkleEntityId, MerkleSchedule> scheduledTxs;
-	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
-	FCMap<MerkleEntityId, MerkleToken> tokensCopy;
-	FCMap<MerkleEntityId, MerkleSchedule> scheduledTxsCopy;
-	MerkleDiskFs diskFs;
-	MerkleDiskFs diskFsCopy;
-	RecordsRunningHashLeaf runningHashLeaf;
-	RecordsRunningHashLeaf runningHashLeafCopy;
-	RunningHash runningHash;
-	Hash recordsHash;
-	ExchangeRates midnightRates;
-	SequenceNumber seqNo;
-	MerkleNetworkContext networkCtx;
-	MerkleNetworkContext networkCtxCopy;
-	NodeId self = new NodeId(false, 1);
-	SerializableDataInputStream in;
-	SerializableDataOutputStream out;
-	SystemExits systemExits;
-	RecordStreamManager recordStreamManager;
-	Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	NetworkCtxManager networkCtxManager;
+	private Consumer<MerkleNode> mockDigest;
+	private BinaryObjectStore blobStore;
+	private Instant now = Instant.now();
+	private Transaction platformTxn;
+	private AddressBook book;
+	private AddressBook bookCopy;
+	private Platform platform;
+	private ProcessLogic logic;
+	private ServicesContext ctx;
+	private AccountRecordsHistorian historian;
+	private ExpiryManager expiryManager;
+	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
+	private FCMap<MerkleEntityId, MerkleTopic> topicsCopy;
+	private FCMap<MerkleEntityId, MerkleAccount> accountsCopy;
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageCopy;
+	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private FCMap<MerkleEntityId, MerkleSchedule> scheduledTxs;
+	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
+	private FCMap<MerkleEntityId, MerkleToken> tokensCopy;
+	private FCMap<MerkleEntityId, MerkleSchedule> scheduledTxsCopy;
+	private MerkleDiskFs diskFs;
+	private MerkleDiskFs diskFsCopy;
+	private RecordsRunningHashLeaf runningHashLeaf;
+	private RecordsRunningHashLeaf runningHashLeafCopy;
+	private Hash recordsHash;
+	private MerkleNetworkContext networkCtx;
+	private MerkleNetworkContext networkCtxCopy;
+	private NodeId self = new NodeId(false, 1);
+	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	private NetworkCtxManager networkCtxManager;
 
 	@Inject
 	private LogCaptor logCaptor;
@@ -186,19 +175,19 @@ class ServicesStateTest {
 		mockDigest = (Consumer<MerkleNode>) mock(Consumer.class);
 		ServicesState.merkleDigest = mockDigest;
 		blobStore = mock(BinaryObjectStore.class);
-		mockBlobStoreSupplier = (Supplier<BinaryObjectStore>) mock(Supplier.class);
+		Supplier<BinaryObjectStore> mockBlobStoreSupplier = (Supplier<BinaryObjectStore>) mock(Supplier.class);
 		given(mockBlobStoreSupplier.get()).willReturn(blobStore);
 		ServicesState.blobStoreSupplier = mockBlobStoreSupplier;
 		given(blobStore.isInitializing()).willReturn(false);
-		mockHashReader = (Function<String, byte[]>) mock(Function.class);
+		Function<String, byte[]> mockHashReader = (Function<String, byte[]>) mock(Function.class);
 		given(mockHashReader.apply(any())).willReturn(EMPTY_HASH.getValue());
 		ServicesState.hashReader = mockHashReader;
 
-		out = mock(SerializableDataOutputStream.class);
-		in = mock(SerializableDataInputStream.class);
+		SerializableDataOutputStream out = mock(SerializableDataOutputStream.class);
+		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 		platformTxn = mock(Transaction.class);
 
-		address = mock(Address.class);
+		Address address = mock(Address.class);
 		given(address.getMemo()).willReturn("0.0.3");
 		bookCopy = mock(AddressBook.class);
 		book = mock(AddressBook.class);
@@ -215,7 +204,7 @@ class ServicesStateTest {
 		historian = mock(AccountRecordsHistorian.class);
 		txnHistories = mock(Map.class);
 		expiryManager = mock(ExpiryManager.class);
-		recordStreamManager = mock(RecordStreamManager.class);
+		RecordStreamManager recordStreamManager = mock(RecordStreamManager.class);
 		networkCtxManager = mock(NetworkCtxManager.class);
 
 		topics = mock(FCMap.class);
@@ -226,7 +215,7 @@ class ServicesStateTest {
 		diskFs = mock(MerkleDiskFs.class);
 		scheduledTxs = mock(FCMap.class);
 		runningHashLeaf = mock(RecordsRunningHashLeaf.class);
-		runningHash = mock(RunningHash.class);
+		RunningHash runningHash = mock(RunningHash.class);
 		recordsHash = mock(Hash.class);
 		given(runningHash.getHash()).willReturn(recordsHash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
@@ -249,8 +238,8 @@ class ServicesStateTest {
 		given(scheduledTxs.copy()).willReturn(scheduledTxsCopy);
 		given(runningHashLeaf.copy()).willReturn(runningHashLeafCopy);
 
-		seqNo = mock(SequenceNumber.class);
-		midnightRates = mock(ExchangeRates.class);
+		SequenceNumber seqNo = mock(SequenceNumber.class);
+		ExchangeRates midnightRates = mock(ExchangeRates.class);
 		networkCtx = mock(MerkleNetworkContext.class);
 		networkCtxCopy = mock(MerkleNetworkContext.class);
 		given(networkCtx.copy()).willReturn(networkCtxCopy);
@@ -258,7 +247,7 @@ class ServicesStateTest {
 		given(networkCtx.seqNo()).willReturn(seqNo);
 		given(ctx.networkCtx()).willReturn(networkCtx);
 
-		propertySources = mock(PropertySources.class);
+		PropertySources propertySources = mock(PropertySources.class);
 
 		var crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
@@ -273,7 +262,7 @@ class ServicesStateTest {
 		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
 		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
 
-		systemExits = mock(SystemExits.class);
+		SystemExits systemExits = mock(SystemExits.class);
 
 		subject = new ServicesState();
 	}
@@ -499,6 +488,7 @@ class ServicesStateTest {
 		inOrder.verify(diskFs).setFsBaseDir(any());
 		inOrder.verify(ctx).nodeAccount();
 		inOrder.verify(diskFs).setFsNodeScopedDir(any());
+		inOrder.verify(diskFs).completeDeserializationIfNeeded();
 		inOrder.verify(diskFs).checkHashesAgainstDiskContents();
 		inOrder.verify(ctx).setRecordsInitialHash(recordsHash);
 		inOrder.verify(mockDigest).accept(subject);

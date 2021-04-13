@@ -21,6 +21,8 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -48,6 +50,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.ledger.HederaLedger.FILE_ID_COMPARATOR;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.swirlds.common.CommonUtils.hex;
 
 /**
@@ -58,21 +61,21 @@ import static com.swirlds.common.CommonUtils.hex;
 public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleDiskFs.class);
 
+	private static final int HASH_BYTES = 48;
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
-
 	private static final String UNKNOWN_PATH_SEGMENT = null;
-	static final byte[] MISSING_CONTENT = new byte[0];
 
-	static final int HASH_BYTES = 48;
+	static final byte[] MISSING_CONTENT = new byte[0];
 	static final int MAX_FILE_BYTES = 1_024 * 1_024 * 1_024;
 	static final int MERKLE_VERSION = 1;
 
-	static ThrowingBytesWriter writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
-	static ThrowingBytesGetter bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
+	private ThrowingBytesWriter writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
+	private ThrowingBytesGetter bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
 
 	private String fsBaseDir = UNKNOWN_PATH_SEGMENT;
 	private String fsNodeScopedDir = UNKNOWN_PATH_SEGMENT;
 	private Map<FileID, byte[]> fileHashes = new HashMap<>();
+	private Map<FileID, byte[]> pendingFileContents = null;
 
 	/* --- RuntimeConstructable --- */
 	public MerkleDiskFs() {
@@ -107,6 +110,31 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		this.fsNodeScopedDir = fsNodeScopedDir;
 	}
 
+	public boolean isDeserializationComplete() {
+		return pendingFileContents == null;
+	}
+
+	public void completeDeserializationIfNeeded() {
+		if (!isDiskLocKnown()) {
+			throw new IllegalStateException("Cannot complete deserialization without a known disk location!");
+		}
+		if (pendingFileContents == null) {
+			return;
+		}
+		for (var entry : pendingFileContents.entrySet()) {
+			var loc = pathToContentsOf(entry.getKey());
+			try {
+				writeHelper.allBytesTo(loc, entry.getValue());
+			} catch (IOException e) {
+				log.error(
+						"Could not complete deserialization of file {} to {}!",
+						readableId(entry.getKey()), loc.toAbsolutePath(), e);
+				throw new UncheckedIOException(e);
+			}
+		}
+		pendingFileContents = null;
+	}
+
 	public void checkHashesAgainstDiskContents() {
 		for (FileID fid : fileHashes.keySet()) {
 			byte[] expectedHash = fileHashes.get(fid);
@@ -119,10 +147,6 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 						hex(actualHash));
 			}
 		}
-	}
-
-	public byte[] diskContentHash(FileID fid) {
-		return noThrowSha384HashOf(contentsOf(fid));
 	}
 
 	public synchronized byte[] contentsOf(FileID fid) {
@@ -207,6 +231,10 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	/* --- SelfSerializable --- */
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		boolean canPersistNow = isDiskLocKnown();
+		if (!canPersistNow) {
+			pendingFileContents = new HashMap<>();
+		}
 		int numSavedHashes = in.readInt();
 		for (int i = 0; i < numSavedHashes; i++) {
 			var fid = FileID.newBuilder()
@@ -215,10 +243,17 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 					.setFileNum(in.readLong())
 					.build();
 			byte[] contents = in.readByteArray(MAX_FILE_BYTES);
-			writeHelper.allBytesTo(pathToContentsOf(fid), contents);
+			if (canPersistNow) {
+				writeHelper.allBytesTo(pathToContentsOf(fid), contents);
+			} else {
+				pendingFileContents.put(fid, contents);
+			}
 			byte[] fileHash = noThrowSha384HashOf(contents);
 			fileHashes.put(fid, fileHash);
-			log.info("Restored file '{}' with hash :: {}", asLiteralString(fid), hex(fileHash));
+			log.info("Restored {}file '{}' with hash :: {}",
+					canPersistNow ? "" : "write-pending ",
+					asLiteralString(fid),
+					hex(fileHash));
 		}
 		setHashFromContents();
 	}
@@ -335,5 +370,29 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	@FunctionalInterface
 	interface ThrowingBytesWriter {
 		void allBytesTo(Path loc, byte[] contents) throws IOException;
+	}
+
+	private boolean isDiskLocKnown() {
+		return fsBaseDir != null && fsNodeScopedDir != null;
+	}
+
+	byte[] diskContentHash(FileID fid) {
+		return noThrowSha384HashOf(contentsOf(fid));
+	}
+
+	void setWriteHelper(ThrowingBytesWriter writeHelper) {
+		this.writeHelper = writeHelper;
+	}
+
+	void setBytesHelper(ThrowingBytesGetter bytesHelper) {
+		this.bytesHelper = bytesHelper;
+	}
+
+	ThrowingBytesWriter getWriteHelper() {
+		return writeHelper;
+	}
+
+	ThrowingBytesGetter getBytesHelper() {
+		return bytesHelper;
 	}
 }

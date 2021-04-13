@@ -69,7 +69,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_TIME;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
@@ -222,15 +222,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			initWithMerkle = false;
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
-			setChild(ChildIndices.NETWORK_CTX,
-					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart), new ExchangeRates()));
+			var networkCtx = new MerkleNetworkContext(UNKNOWN_TIME, new SequenceNumber(seqStart), new ExchangeRates());
+			setChild(ChildIndices.NETWORK_CTX, networkCtx);
 			setChild(ChildIndices.TOPICS, new FCMap<>());
 			setChild(ChildIndices.STORAGE, new FCMap<>());
 			setChild(ChildIndices.ACCOUNTS, new FCMap<>());
 			setChild(ChildIndices.TOKENS, new FCMap<>());
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
-			setChild(ChildIndices.DISK_FS,
-					new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
+			setChild(ChildIndices.DISK_FS, new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
@@ -242,6 +241,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			var restoredDiskFs = diskFs();
 			restoredDiskFs.setFsBaseDir(diskFsBaseDirPath);
 			restoredDiskFs.setFsNodeScopedDir(asLiteralString(ctx.nodeAccount()));
+			restoredDiskFs.completeDeserializationIfNeeded();
 			if (!skipDiskFsHashCheck) {
 				restoredDiskFs.checkHashesAgainstDiskContents();
 			}

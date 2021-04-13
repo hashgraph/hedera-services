@@ -53,7 +53,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final RichInstant[] NO_CONGESTION_STARTS = new RichInstant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
-	public static final RichInstant UNKNOWN_CONSENSUS_TIME = null;
+	public static final RichInstant UNKNOWN_TIME = null;
 
 	static DomainSerdes serdes = new DomainSerdes();
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;

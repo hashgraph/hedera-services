@@ -32,8 +32,7 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.AfterEach;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,12 +51,17 @@ import java.util.Map;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -69,17 +73,17 @@ public class MerkleDiskFsTest {
 	@LoggingSubject
 	private MerkleDiskFs subject;
 
-	AccountID nodeAccount = AccountID.newBuilder().setAccountNum(3).build();
-	FileID file150 = asFile("0.0.150");
-	byte[] origContents = "Where, like a pillow on a bed /".getBytes();
-	byte[] origFileHash = null;
-	byte[] newContents = "A pregnant bank swelled up to rest /".getBytes();
-	byte[] newFileHash = null;
+	private AccountID nodeAccount = AccountID.newBuilder().setAccountNum(3).build();
+	private FileID file150 = asFile("0.0.150");
+	private byte[] origContents = "Where, like a pillow on a bed /".getBytes();
+	private byte[] origFileHash = null;
+	private byte[] newContents = "A pregnant bank swelled up to rest /".getBytes();
+	private byte[] newFileHash = null;
 
-	String MOCK_DISKFS_DIR = "src/test/resources/diskFs";
+	private String MOCK_DISKFS_DIR = "src/test/resources/diskFs";
 
-	MerkleDiskFs.ThrowingBytesGetter getter;
-	MerkleDiskFs.ThrowingBytesWriter writer;
+	private MerkleDiskFs.ThrowingBytesGetter getter;
+	private MerkleDiskFs.ThrowingBytesWriter writer;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -94,23 +98,17 @@ public class MerkleDiskFsTest {
 				asLiteralString(nodeAccount));
 
 		getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
-		MerkleDiskFs.bytesHelper = getter;
+		subject.setBytesHelper(getter);
 		writer = mock(MerkleDiskFs.ThrowingBytesWriter.class);
-		MerkleDiskFs.writeHelper = writer;
+		subject.setWriteHelper(writer);
 
 		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willReturn(origContents);
-	}
-
-	@AfterEach
-	private void cleanup() {
-		MerkleDiskFs.writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
-		MerkleDiskFs.bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
 	}
 
 	@Test
 	public void helpersSanityCheck() throws IOException {
 		// setup:
-		cleanup();
+		var subject = new MerkleDiskFs();
 
 		// given:
 		String tmpBase = MOCK_DISKFS_DIR + File.separator + "a" + File.separator + "b" + File.separator;
@@ -118,10 +116,10 @@ public class MerkleDiskFsTest {
 		byte[] tmpMsg = "Testing-1-2-3".getBytes();
 
 		// when:
-		MerkleDiskFs.writeHelper.allBytesTo(tmpLoc, tmpMsg);
+		subject.getWriteHelper().allBytesTo(tmpLoc, tmpMsg);
 
 		// then:
-		assertArrayEquals(tmpMsg, MerkleDiskFs.bytesHelper.allBytesFrom(tmpLoc));
+		assertArrayEquals(tmpMsg, subject.getBytesHelper().allBytesFrom(tmpLoc));
 
 		// cleanup:
 		tmpLoc.toFile().delete();
@@ -152,7 +150,7 @@ public class MerkleDiskFsTest {
 
 		subject.checkHashesAgainstDiskContents();
 
-		Assertions.assertTrue(logCaptor.errorLogs().isEmpty());
+		assertTrue(logCaptor.errorLogs().isEmpty());
 		// and:
 		verify(writer).allBytesTo(subject.pathToContentsOf(file150), origContents);
 	}
@@ -207,7 +205,7 @@ public class MerkleDiskFsTest {
 		// setup:
 		byte[] expectedBytes = "ABCDEFGH".getBytes();
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
-		MerkleDiskFs.bytesHelper = getter;
+		subject.setBytesHelper(getter);
 
 		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willReturn(expectedBytes);
 		// and:
@@ -227,7 +225,7 @@ public class MerkleDiskFsTest {
 	public void serializePropagatesException() throws IOException {
 		// setup:
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
-		MerkleDiskFs.bytesHelper = getter;
+		subject.setBytesHelper(getter);
 		// and:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -286,11 +284,102 @@ public class MerkleDiskFsTest {
 		given(fin.readByteArray(MerkleDiskFs.MAX_FILE_BYTES)).willReturn(origContents);
 		// and:
 		var read = new MerkleDiskFs(MOCK_DISKFS_DIR, asLiteralString(nodeAccount));
+		read.setWriteHelper(writer);
 
 		// when:
 		read.deserialize(fin, MerkleDiskFs.MERKLE_VERSION);
 
 		// then:
+		assertEquals(subject, read);
+		// and:
+		assertEquals(expectedHash, read.getHash());
+		// and:
+		verify(writer).allBytesTo(subject.pathToContentsOf(file150), origContents);
+	}
+
+	@Test
+	void cannotCompleteDeserializationWithoutPathInfoSet() {
+		// given:
+		var unprepared = new MerkleDiskFs();
+
+		// expect:
+		assertThrows(IllegalStateException.class, unprepared::completeDeserializationIfNeeded);
+	}
+
+	@Test
+	void completingDeserializationIsNoopIfNoPendingContents() {
+		// given:
+		var preparedButNothingToDo = new MerkleDiskFs(MOCK_DISKFS_DIR, asLiteralString(nodeAccount));
+
+		// expect:
+		assertDoesNotThrow(preparedButNothingToDo::completeDeserializationIfNeeded);
+	}
+
+	@Test
+	public void propagatesFailedDeserializeCompletion() throws IOException {
+		// setup:
+		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+		// and:
+		var expectedHash = new Hash(hashWithOrigContents());
+
+		given(fin.readInt()).willReturn(1);
+		given(fin.readLong())
+				.willReturn(0L)
+				.willReturn(0L)
+				.willReturn(150L);
+		given(fin.readByteArray(MerkleDiskFs.MAX_FILE_BYTES)).willReturn(origContents);
+		willThrow(IOException.class).given(writer).allBytesTo(any(), any());
+		// and:
+		var read = new MerkleDiskFs();
+		read.setWriteHelper(writer);
+
+		// when:
+		read.deserialize(fin, MerkleDiskFs.MERKLE_VERSION);
+		// then:
+		assertFalse(read.isDeserializationComplete());
+
+		// and when:
+		read.setFsBaseDir(MOCK_DISKFS_DIR);
+		read.setFsNodeScopedDir(asLiteralString(nodeAccount));
+		assertThrows(UncheckedIOException.class, read::completeDeserializationIfNeeded);
+
+		// then:
+		assertFalse(read.isDeserializationComplete());
+		// and:
+		assertThat(
+				logCaptor.errorLogs().get(0),
+				Matchers.startsWith("Could not complete deserialization of file 0.0.150"));
+	}
+
+	@Test
+	public void deserializeWithDelayedDiskWriteWorks() throws IOException {
+		// setup:
+		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+		// and:
+		var expectedHash = new Hash(hashWithOrigContents());
+
+		given(fin.readInt()).willReturn(1);
+		given(fin.readLong())
+				.willReturn(0L)
+				.willReturn(0L)
+				.willReturn(150L);
+		given(fin.readByteArray(MerkleDiskFs.MAX_FILE_BYTES)).willReturn(origContents);
+		// and:
+		var read = new MerkleDiskFs();
+		read.setWriteHelper(writer);
+
+		// when:
+		read.deserialize(fin, MerkleDiskFs.MERKLE_VERSION);
+		// then:
+		assertFalse(read.isDeserializationComplete());
+
+		// and when:
+		read.setFsBaseDir(MOCK_DISKFS_DIR);
+		read.setFsNodeScopedDir(asLiteralString(nodeAccount));
+		read.completeDeserializationIfNeeded();
+
+		// then:
+		assertTrue(read.isDeserializationComplete());
 		assertEquals(subject, read);
 		// and:
 		assertEquals(expectedHash, read.getHash());
