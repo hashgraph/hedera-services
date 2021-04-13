@@ -27,14 +27,18 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -45,6 +49,8 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -57,6 +63,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
+@ExtendWith(LogCaptureExtension.class)
 class MerkleNetworkContextTest {
 	RichInstant consensusTimeOfLastHandledTxn;
 	SequenceNumber seqNo;
@@ -70,7 +77,11 @@ class MerkleNetworkContextTest {
 	FunctionalityThrottling throttling;
 	FeeMultiplierSource feeMultiplierSource;
 
-	MerkleNetworkContext subject;
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private MerkleNetworkContext subject;
 
 	@BeforeEach
 	public void setup() {
@@ -225,9 +236,6 @@ class MerkleNetworkContextTest {
 	@Test
 	void warnsIfSavedUsageNotCompatibleWithActiveThrottles() {
 		// setup:
-		var mockLog = mock(Logger.class);
-		MerkleNetworkContext.log = mockLog;
-		// and:
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
 		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
 		var cThrottle = DeterministicThrottle.withTpsAndBurstPeriod(7, 4);
@@ -252,7 +260,7 @@ class MerkleNetworkContextTest {
 		subject.resetWithSavedSnapshots(throttling);
 
 		// then:
-		verify(mockLog).warn(desired);
+
 		// and:
 		assertNotEquals(subjectSnapshotA.used(), aThrottle.usageSnapshot().used());
 		assertNotEquals(subjectSnapshotA.lastDecisionTime(), aThrottle.usageSnapshot().lastDecisionTime());
@@ -261,9 +269,6 @@ class MerkleNetworkContextTest {
 	@Test
 	void warnsIfDifferentNumOfActiveThrottles() {
 		// setup:
-		var mockLog = mock(Logger.class);
-		MerkleNetworkContext.log = mockLog;
-		// and:
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
 		var bThrottle = DeterministicThrottle.withTpsAndBurstPeriod(6, 3);
 		aThrottle.allow(1);
@@ -284,7 +289,7 @@ class MerkleNetworkContextTest {
 		subject.resetWithSavedSnapshots(throttling);
 
 		// then:
-		verify(mockLog).warn(desired);
+		assertThat(logCaptor.warnLogs(), contains(desired));
 		// and:
 		assertNotEquals(subjectSnapshot.used(), aThrottle.usageSnapshot().used());
 		assertNotEquals(subjectSnapshot.lastDecisionTime(), aThrottle.usageSnapshot().lastDecisionTime());

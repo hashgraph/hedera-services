@@ -1,5 +1,25 @@
 package com.hedera.services.state.forensics;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -10,30 +30,36 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.NodeId;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.times;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willThrow;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class FcmDumpTest {
 	long selfId = 1, round = 1_234_567;
 	NodeId self = new NodeId(false, selfId);
 
-	@Mock
-	Logger mockLog;
 	@Mock
 	ServicesState state;
 	@Mock
@@ -53,7 +79,11 @@ class FcmDumpTest {
 	@Mock
 	FCMap<MerkleEntityId, MerkleSchedule> scheduleTxs;
 
-	FcmDump subject = new FcmDump();
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private FcmDump subject = new FcmDump();
 
 	@Test
 	void dumpsAllFcms() throws IOException {
@@ -83,13 +113,11 @@ class FcmDumpTest {
 		verify(out).writeMerkleTree(scheduleTxs);
 		// and:
 		verify(out, times(6)).close();
-		// and: verify(mockLog).warn(String.format(FcmDump.DUMP_IO_WARNING, "scheduleTxs"));
 	}
 
 	@Test
 	void recoversToKeepTryingDumps() throws IOException {
 		// setup:
-		FcmDump.log = mockLog;
 		FcmDump.merkleOutFn = merkleOutFn;
 
 		given(merkleOutFn.apply(any())).willReturn(out);
@@ -107,12 +135,13 @@ class FcmDumpTest {
 		subject.dumpFrom(state, self, round);
 
 		// then:
-		verify(mockLog).warn(String.format(FcmDump.DUMP_IO_WARNING, "accounts"));
-		verify(mockLog).warn(String.format(FcmDump.DUMP_IO_WARNING, "storage"));
-		verify(mockLog).warn(String.format(FcmDump.DUMP_IO_WARNING, "topics"));
-		verify(mockLog).warn(String.format(FcmDump.DUMP_IO_WARNING, "tokens"));
-		verify(mockLog).warn(String.format(FcmDump.DUMP_IO_WARNING, "tokenAssociations"));
-		verify(mockLog).warn(String.format(FcmDump.DUMP_IO_WARNING, "scheduleTxs"));
+		assertThat(logCaptor.warnLogs(), contains(
+				String.format(FcmDump.DUMP_IO_WARNING, "accounts"),
+				String.format(FcmDump.DUMP_IO_WARNING, "storage"),
+				String.format(FcmDump.DUMP_IO_WARNING, "topics"),
+				String.format(FcmDump.DUMP_IO_WARNING, "tokens"),
+				String.format(FcmDump.DUMP_IO_WARNING, "tokenAssociations"),
+				String.format(FcmDump.DUMP_IO_WARNING, "scheduleTxs")));
 	}
 
 	@Test

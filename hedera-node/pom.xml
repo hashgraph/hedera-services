@@ -293,6 +293,20 @@
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>ethereumj-core</artifactId>
       <version>${ethereum-core.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>leveldbjni-all</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>rocksdbjni</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>solcJ-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -305,6 +319,10 @@
     <dependency>
       <groupId>net.i2p.crypto</groupId>
       <artifactId>eddsa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.annotation</groupId>
@@ -367,11 +385,6 @@
       <id>central</id>
       <name>bintray</name>
       <url>https://jcenter.bintray.com</url>
-    </repository>
-    <repository>
-      <id>Ethereum</id>
-      <name>Ethereum</name>
-      <url>https://dl.bintray.com/ethereum/maven/</url>
     </repository>
   </repositories>
   <profiles>

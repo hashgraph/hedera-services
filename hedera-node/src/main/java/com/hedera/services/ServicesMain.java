@@ -58,10 +58,11 @@ import static com.swirlds.common.PlatformStatus.MAINTENANCE;
  * @author Michael Tinker
  */
 public class ServicesMain implements SwirldMain {
+	private static final Logger log = LogManager.getLogger(ServicesMain.class);
+
 	private static final String START_INIT_MSG_PATTERN = "Using context to initialize HederaNode#%d...";
 
 	static final long SUGGESTED_POST_CREATION_PAUSE_MS = 0L;
-	public static Logger log = LogManager.getLogger(ServicesMain.class);
 
 	SystemExits systemExits = new JvmSystemExits();
 	Supplier<Charset> defaultCharset = Charset::defaultCharset;

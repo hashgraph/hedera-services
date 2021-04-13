@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class ConsensusStatusCounts {
-	public static Logger log = LogManager.getLogger(ConsensusStatusCounts.class);
+	private static final Logger log = LogManager.getLogger(ConsensusStatusCounts.class);
 
 	private final ObjectMapper om;
 	EnumMap<ResponseCodeEnum, EnumMap<HederaFunctionality, AtomicInteger>> counts =

@@ -62,7 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 public class AwareProcessLogic implements ProcessLogic {
-	static Logger log = LogManager.getLogger(AwareProcessLogic.class);
+	private static final Logger log = LogManager.getLogger(AwareProcessLogic.class);
 
 	private static final EnumSet<ResponseCodeEnum> SIG_RATIONALIZATION_ERRORS = EnumSet.of(
 			INVALID_FILE_ID,

@@ -21,29 +21,32 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.events.Event;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterEach;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.inject.Inject;
 import java.time.Instant;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class IssListenerTest {
 	long selfId = 1, otherId = 2, round = 1_234_567, numConsEvents = 111;
 	NodeId self = new NodeId(false, selfId);
@@ -57,8 +60,6 @@ class IssListenerTest {
 	Instant consensusTime = Instant.now();
 
 	@Mock
-	Logger mockLog;
-	@Mock
 	FcmDump fcmDump;
 	@Mock
 	ServicesState state;
@@ -69,23 +70,19 @@ class IssListenerTest {
 	@Mock
 	IssEventInfo info;
 
-	IssListener subject;
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private IssListener subject;
 
 	@BeforeEach
 	public void setup() {
 		subject = new IssListener(fcmDump, info);
 	}
 
-	@AfterEach
-	public void cleanup() {
-		IssListener.log = LogManager.getLogger(IssListener.class);
-	}
-
 	@Test
 	public void logsFallbackInfo() {
-		// setup:
-		IssListener.log = mockLog;
-
 		// given:
 		willThrow(IllegalStateException.class).given(info).alert(any());
 
@@ -99,14 +96,11 @@ class IssListenerTest {
 				round,
 				String.valueOf(self),
 				String.valueOf(other));
-		verify(mockLog).warn((String) argThat(desired::equals), any(Exception.class));
+		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desired)));
 	}
 
 	@Test
 	public void logsExpectedIssInfo() {
-		// setup:
-		IssListener.log = mockLog;
-
 		given(info.shouldDumpThisRound()).willReturn(true);
 
 		// when:
@@ -117,7 +111,7 @@ class IssListenerTest {
 		var desired = String.format(IssListener.ISS_ERROR_MSG_PATTERN, round, selfId, otherId, sigHex, hashHex);
 		verify(info).alert(consensusTime);
 		verify(info).decrementRoundsToDump();
-		verify(mockLog).error(desired);
+		assertThat(logCaptor.errorLogs(), contains(desired));
 		verify(fcmDump).dumpFrom(state, self, round);
 		verify(state).logSummary();
 	}

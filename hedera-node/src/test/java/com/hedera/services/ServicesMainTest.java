@@ -95,7 +95,6 @@ public class ServicesMainTest {
 	FCMap accounts;
 	FCMap storage;
 	Pause pause;
-	Logger mockLog;
 	Console console;
 	Platform platform;
 	SystemExits systemExits;
@@ -132,7 +131,6 @@ public class ServicesMainTest {
 		accounts = mock(FCMap.class);
 		topics = mock(FCMap.class);
 		storage = mock(FCMap.class);
-		mockLog = mock(Logger.class);
 		console = mock(Console.class);
 		consoleOut = mock(PrintStream.class);
 		platform = mock(Platform.class);
@@ -158,8 +156,6 @@ public class ServicesMainTest {
 		networkCtxManager = mock(NetworkCtxManager.class);
 
 		ctx = mock(ServicesContext.class);
-
-		ServicesMain.log = mockLog;
 
 		given(nodeLocalProps.devListeningAccount()).willReturn("0.0.3");
 		given(nodeLocalProps.port()).willReturn(50211);
@@ -201,11 +197,6 @@ public class ServicesMainTest {
 		subject.systemExits = systemExits;
 		subject.defaultCharset = () -> StandardCharsets.UTF_8;
 		CONTEXTS.store(ctx);
-	}
-
-	@AfterEach
-	public void cleanup() {
-		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
 	}
 
 	@Test
