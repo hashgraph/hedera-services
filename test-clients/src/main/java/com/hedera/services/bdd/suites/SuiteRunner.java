@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
-import com.hedera.services.bdd.suites.consensus.ConsensusThrottlesSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
 import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
@@ -49,6 +48,7 @@ import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
+import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
@@ -64,8 +64,9 @@ import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
-import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
-import com.hedera.services.bdd.suites.issues.PrivilegedOpsSuite;
+import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
+import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
+import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
@@ -121,7 +122,6 @@ import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
-import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
@@ -274,7 +274,6 @@ public class SuiteRunner {
 		put("SubmitMessageSpecs", aof(new SubmitMessageSuite()));
 		put("HCSTopicFragmentationSuite", aof(new ChunkingSuite()));
 		put("TopicGetInfoSpecs", aof(new TopicGetInfoSuite()));
-		put("ConsensusThrottlesSpecs", aof(new ConsensusThrottlesSuite()));
 		put("ConsensusQueriesStressTests", aof(new ConsensusQueriesStressTests()));
 		/* Functional tests - FILE */
 		put("FileCreateSuite", aof(new FileCreateSuite()));
@@ -309,7 +308,6 @@ public class SuiteRunner {
 		/* Functional tests - CONTRACTS */
 		put("NewOpInConstructorSpecs", aof(new NewOpInConstructorSuite()));
 		put("DeprecatedContractKeySpecs", aof(new DeprecatedContractKeySuite()));
-		put("MultipleSelfDestructsAreSafe", aof(new IssueXXXXSpec()));
 		put("ContractQueriesStressTests", aof(new ContractQueriesStressTests()));
 		put("ChildStorageSpecs", aof(new ChildStorageSpec()));
 		put("ContractCallLocalSuite", aof(new ContractCallLocalSuite()));
@@ -337,12 +335,14 @@ public class SuiteRunner {
 		put("FetchSystemFiles", aof(new FetchSystemFiles()));
 		put("CannotDeleteSystemEntitiesSuite", aof(new CannotDeleteSystemEntitiesSuite()));
 		/* Throttling */
-		put("BucketThrottlingSpec", aof(new BucketThrottlingSpec()));
+		put("ThrottleDefValidationSuite", aof(new ThrottleDefValidationSuite()));
+		put("CongestionPricingSuite", aof(new CongestionPricingSuite()));
+		put("SteadyStateThrottlingCheck", aof(new SteadyStateThrottlingCheck()));
 		/* Network metadata. */
 		put("VersionInfoSpec", aof(new VersionInfoSpec()));
 		put("FreezeSuite", aof(new FreezeSuite()));
 		/* Authorization. */
-		put("SuperusersAreNeverThrottled", aof(new PrivilegedOpsSuite()));
+		put("PrivilegedOpsSuite", aof(new PrivilegedOpsSuite()));
 		put("SysDelSysUndelSpec", aof(new SysDelSysUndelSpec()));
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));

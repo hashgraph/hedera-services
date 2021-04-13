@@ -99,7 +99,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -705,7 +704,7 @@ public class SmartContractRequestHandler {
 				ledger.customizeDeleted(id, customizer);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.warn("Unhandled exception in SystemDelete", e);
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}
@@ -756,7 +755,7 @@ public class SmartContractRequestHandler {
 			}
 			entityExpiries.remove(entity);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.warn("Unhandled exception in SystemUndelete", e);
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}

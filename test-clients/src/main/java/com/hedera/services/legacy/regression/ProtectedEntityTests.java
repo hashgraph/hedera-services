@@ -35,6 +35,8 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
+
+import com.hederahashgraph.api.proto.java.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -55,7 +57,6 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody.Builder;
@@ -98,8 +99,8 @@ public class ProtectedEntityTests extends BaseClient {
   private String validFeeFilePath = "testSystemFiles/FeeSchedule_cryptoCreate_cheap.txt";
   private ByteString validFeeFile = null;
   private boolean isSmallExchangeRateUpdate = true;
-  private NodeAddressBook serverAddressBook = null;
-  private NodeAddressBook serverNodeDetails = null;
+  private AddressBook serverAddressBook = null;
+  private AddressBook serverNodeDetails = null;
   private ExchangeRateSet serverExchangeRate = null;
   private FeeSchedule serverFeeSchedule = null;
   
@@ -717,7 +718,6 @@ public class ProtectedEntityTests extends BaseClient {
    * @param entityID file or contract ID to be deleted
    * @param payerAccount
    * @param nodeID
-   * @param fileWacl the wacl of the file to be deleted, it should sign if not null
    * @param expectedPrecheckCode
    * @param expectedPostcheckCode
    * @throws Throwable
@@ -809,7 +809,6 @@ public class ProtectedEntityTests extends BaseClient {
   /**
    * Dynamic restart with freeze API.
    * 
-   * @param entityID file or contract ID to be deleted
    * @param payerAccount
    * @param nodeID
    * @param expectedPrecheckCode
@@ -1618,9 +1617,9 @@ public class ProtectedEntityTests extends BaseClient {
    * @return the current address book
    * @throws Throwable
    */
-  public NodeAddressBook getAddressBookFromServer() throws Throwable {
+  public AddressBook getAddressBookFromServer() throws Throwable {
     ByteString content = getFileContent(addressBook101, genesisAccountID, defaultListeningNodeAccountID);
-    NodeAddressBook rv = NodeAddressBook.parseFrom(content);
+    AddressBook rv = AddressBook.parseFrom(content);
     return rv;
   }
 
@@ -1630,9 +1629,9 @@ public class ProtectedEntityTests extends BaseClient {
    * @return the current node details
    * @throws Throwable
    */
-  public NodeAddressBook getNodeDetailsFromServer() throws Throwable {
+  public AddressBook getNodeDetailsFromServer() throws Throwable {
     ByteString content = getFileContent(addressBook102, genesisAccountID, defaultListeningNodeAccountID);
-    NodeAddressBook rv = NodeAddressBook.parseFrom(content);
+    AddressBook rv = AddressBook.parseFrom(content);
     return rv;
   }
 
@@ -1645,7 +1644,7 @@ public class ProtectedEntityTests extends BaseClient {
    * @return modified node details file
    * @throws Throwable
    */
-  public ByteString modNodeDetailsFile(NodeAddressBook sourceNodeDetails, boolean isRandom) throws Throwable {
+  public ByteString modNodeDetailsFile(AddressBook sourceNodeDetails, boolean isRandom) throws Throwable {
     return modAddressBookFile(addressBook102, sourceNodeDetails, isRandom);
   }
   
@@ -1658,7 +1657,7 @@ public class ProtectedEntityTests extends BaseClient {
    * @return modified address book file
    * @throws Throwable
    */
-  public ByteString modAddressBookFile(NodeAddressBook sourceAddressBook, boolean isRandom) throws Throwable {
+  public ByteString modAddressBookFile(AddressBook sourceAddressBook, boolean isRandom) throws Throwable {
     return modAddressBookFile(addressBook101, sourceAddressBook, isRandom);
   }
   
@@ -1671,7 +1670,7 @@ public class ProtectedEntityTests extends BaseClient {
    * @return modified version of the addressbook or node details file
    * @throws Throwable
    */
-  public ByteString modAddressBookFile(FileID fid, NodeAddressBook sourceAddressBook, boolean isRandom) throws Throwable {
+  public ByteString modAddressBookFile(FileID fid, AddressBook sourceAddressBook, boolean isRandom) throws Throwable {
     List<NodeAddress> addressList = new ArrayList<>(sourceAddressBook.getNodeAddressList());
     int index = addressList.size() - 1;
     if(isRandom) {
@@ -1679,7 +1678,7 @@ public class ProtectedEntityTests extends BaseClient {
 	}
     
     addressList.remove(index);
-    NodeAddressBook mod = NodeAddressBook.newBuilder().addAllNodeAddress(addressList).build();
+    AddressBook mod = AddressBook.newBuilder().addAllNodeAddress(addressList).build();
     
     return mod.toByteString();
   }

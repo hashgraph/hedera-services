@@ -28,6 +28,7 @@ import com.hedera.services.context.properties.Profile;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -36,11 +37,14 @@ import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.utils.IdUtils;
@@ -72,7 +76,6 @@ import java.time.Instant;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -92,7 +95,6 @@ public class ServicesMainTest {
 	FCMap accounts;
 	FCMap storage;
 	Pause pause;
-	Logger mockLog;
 	Console console;
 	Platform platform;
 	SystemExits systemExits;
@@ -107,6 +109,8 @@ public class ServicesMainTest {
 	PropertySources propertySources;
 	BalancesExporter balancesExporter;
 	StateMigrations stateMigrations;
+	MerkleNetworkContext networkCtx;
+	FeeMultiplierSource feeMultiplierSource;
 	ServicesStatsManager statsManager;
 	GrpcServerManager grpc;
 	NodeLocalProperties nodeLocalProps;
@@ -117,6 +121,7 @@ public class ServicesMainTest {
 	GlobalDynamicProperties globalDynamicProperties;
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
 	RecordStreamManager recordStreamManager;
+	NetworkCtxManager networkCtxManager;
 
 	@BeforeEach
 	private void setup() {
@@ -126,7 +131,6 @@ public class ServicesMainTest {
 		accounts = mock(FCMap.class);
 		topics = mock(FCMap.class);
 		storage = mock(FCMap.class);
-		mockLog = mock(Logger.class);
 		console = mock(Console.class);
 		consoleOut = mock(PrintStream.class);
 		platform = mock(Platform.class);
@@ -147,10 +151,13 @@ public class ServicesMainTest {
 		systemFilesManager = mock(SystemFilesManager.class);
 		systemAccountsCreator = mock(SystemAccountsCreator.class);
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
+		networkCtx = mock(MerkleNetworkContext.class);
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+		networkCtxManager = mock(NetworkCtxManager.class);
+
 		ctx = mock(ServicesContext.class);
 
-		ServicesMain.log = mockLog;
-
+		given(nodeLocalProps.devListeningAccount()).willReturn("0.0.3");
 		given(nodeLocalProps.port()).willReturn(50211);
 		given(nodeLocalProps.tlsPort()).willReturn(50212);
 		given(ctx.fees()).willReturn(fees);
@@ -180,6 +187,9 @@ public class ServicesMainTest {
 		given(ctx.balancesExporter()).willReturn(balancesExporter);
 		given(ctx.statsManager()).willReturn(statsManager);
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
+		given(ctx.networkCtx()).willReturn(networkCtx);
+		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
+		given(ctx.feeMultiplierSource()).willReturn(feeMultiplierSource);
 		given(ledgerValidator.hasExpectedTotalBalance(any())).willReturn(true);
 		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
 
@@ -187,11 +197,6 @@ public class ServicesMainTest {
 		subject.systemExits = systemExits;
 		subject.defaultCharset = () -> StandardCharsets.UTF_8;
 		CONTEXTS.store(ctx);
-	}
-
-	@AfterEach
-	public void cleanup() {
-		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
 	}
 
 	@Test
@@ -243,9 +248,12 @@ public class ServicesMainTest {
 
 	@Test
 	public void initializesSanelyGivenPreconditions() {
+		var throttling = mock(FunctionalityThrottling.class);
+
 		// given:
 		InOrder inOrder = inOrder(
 				systemFilesManager,
+				networkCtxManager,
 				propertySources,
 				platform,
 				stateMigrations,
@@ -254,14 +262,17 @@ public class ServicesMainTest {
 				fees,
 				grpc,
 				statsManager,
-				ctx);
+				ctx,
+				networkCtx,
+				feeMultiplierSource);
+		given(ctx.handleThrottling()).willReturn(throttling);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
 		inOrder.verify(propertySources).assertSourcesArePresent();
-		inOrder.verify(systemFilesManager).loadAllSystemFiles();
+		inOrder.verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 		inOrder.verify(stateMigrations).runAllFor(ctx);
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
@@ -290,8 +301,7 @@ public class ServicesMainTest {
 		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
-		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(true);
+		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -308,8 +318,7 @@ public class ServicesMainTest {
 		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.4");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
-		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(true);
+		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -327,8 +336,7 @@ public class ServicesMainTest {
 		given(address.getMemo()).willReturn("0.0.3");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
-		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(false);
+		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(false);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -346,8 +354,7 @@ public class ServicesMainTest {
 		given(address.getMemo()).willReturn("0.0.4");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
-		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
-		given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(false);
+		given(nodeLocalProps.devOnlyDefaultNodeListens()).willReturn(false);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -358,7 +365,7 @@ public class ServicesMainTest {
 
 	@Test
 	public void loadsSystemFilesIfNotAlreadyDone() {
-		given(systemFilesManager.areFilesLoaded()).willReturn(true);
+		given(systemFilesManager.areObservableFilesLoaded()).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -368,12 +375,12 @@ public class ServicesMainTest {
 		verify(systemFilesManager).createNodeDetailsIfMissing();
 		verify(systemFilesManager).createUpdateZipFileIfMissing();
 		// and:
-		verify(systemFilesManager, never()).loadAllSystemFiles();
+		verify(systemFilesManager, never()).loadObservableSystemFiles();
 	}
 
 	@Test
 	public void managesSystemFiles() {
-		given(systemFilesManager.areFilesLoaded()).willReturn(false);
+		given(systemFilesManager.areObservableFilesLoaded()).willReturn(false);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -383,7 +390,7 @@ public class ServicesMainTest {
 		verify(systemFilesManager).createNodeDetailsIfMissing();
 		verify(systemFilesManager).createUpdateZipFileIfMissing();
 		// and:
-		verify(systemFilesManager).loadAllSystemFiles();
+		verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 	}
 
 	@Test
@@ -409,20 +416,20 @@ public class ServicesMainTest {
 
 	@Test
 	public void exportsAccountsIfRequested() throws Exception {
-		given(properties.getStringProperty("hedera.accountsExportPath")).willReturn(PATH);
-		given(properties.getBooleanProperty("hedera.exportAccountsOnStartup")).willReturn(true);
+		given(nodeLocalProps.accountsExportPath()).willReturn(PATH);
+		given(nodeLocalProps.exportAccountsOnStartup()).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		verify(accountsExporter).toFile(accounts, PATH);
+		verify(accountsExporter).toFile(PATH, accounts);
 	}
 
 	@Test
 	public void rethrowsAccountsExportFailureAsIse() {
-		given(properties.getStringProperty("hedera.accountsExportPath")).willReturn(PATH);
-		given(properties.getBooleanProperty("hedera.exportAccountsOnStartup")).willReturn(true);
+		given(nodeLocalProps.accountsExportPath()).willReturn(PATH);
+		given(nodeLocalProps.exportAccountsOnStartup()).willReturn(true);
 		given(ctx.accountsExporter()).willReturn(null);
 
 		// when:
@@ -475,7 +482,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void doesNotPrintHashesIfNotInMaintenance() {
+	public void doesLogSummaryIfNotInMaintenance() {
 		// setup:
 		subject.ctx = ctx;
 		var signedState = mock(ServicesState.class);
@@ -488,11 +495,11 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, Instant.now(), 1L);
 
 		// then:
-		verify(signedState, never()).printHashes();
+		verify(signedState, never()).logSummary();
 	}
 
 	@Test
-	public void onlyPrintsHashesIfInMaintenance() {
+	public void onlyLogsSummary() {
 		// setup:
 		subject.ctx = ctx;
 		var signedState = mock(ServicesState.class);
@@ -505,7 +512,7 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, Instant.now(), 1L);
 
 		// then:
-		verify(signedState).printHashes();
+		verify(signedState).logSummary();
 	}
 
 	@Test

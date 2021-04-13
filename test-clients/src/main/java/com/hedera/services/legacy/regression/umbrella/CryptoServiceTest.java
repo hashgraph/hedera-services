@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.KeyList.Builder;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.AddressBook;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -718,7 +718,7 @@ public class CryptoServiceTest extends TestHelperComplex {
    * Gets the node account IDs from the config file.
    */
   public void getNodeAccountsFromLedger() throws Throwable {
-    NodeAddressBook addrBook = getAddressBook();
+    AddressBook addrBook = getAddressBook();
     List<NodeAddress> addrList = addrBook.getNodeAddressList();
     int numNodes = addrList.size();
     nodeAccounts = new AccountID[numNodes];
@@ -735,14 +735,14 @@ public class CryptoServiceTest extends TestHelperComplex {
   /**
    * Gets the node addressbook from the ledger.
    */
-  public NodeAddressBook getAddressBook() throws Throwable {
+  public AddressBook getAddressBook() throws Throwable {
     AccountID payerID = createAccountComplex(genesisAccountID, defaultListeningNodeAccountID,
         SUPPORTE_KEY_TYPES.single.name(), true, false);
     CommonUtils.nap(2);
     FileID fid = FileID.newBuilder().setFileNum(ADDRESS_FILE_ACCOUNT_NUM).setRealmNum(0)
         .setShardNum(0).build();
     ByteString content = getFileContent(fid, payerID, defaultListeningNodeAccountID);
-    NodeAddressBook book = NodeAddressBook.newBuilder().mergeFrom(content.toByteArray()).build();
+    AddressBook book = AddressBook.newBuilder().mergeFrom(content.toByteArray()).build();
     return book;
   }
 

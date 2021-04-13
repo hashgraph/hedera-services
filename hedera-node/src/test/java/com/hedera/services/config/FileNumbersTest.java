@@ -51,6 +51,7 @@ class FileNumbersTest {
 		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
 		given(properties.getLongProperty("files.exchangeRates")).willReturn(112L);
 		given(properties.getLongProperty("files.softwareUpdateZip")).willReturn(150L);
+		given(properties.getLongProperty("files.throttleDefinitions")).willReturn(123L);
 
 		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(1_000L);
 
@@ -67,6 +68,7 @@ class FileNumbersTest {
 		assertEquals(121, subject.applicationProperties());
 		assertEquals(122, subject.apiPermissions());
 		assertEquals(150, subject.softwareUpdateZip());
+		assertEquals(123, subject.throttleDefinitions());
 	}
 
 	@Test

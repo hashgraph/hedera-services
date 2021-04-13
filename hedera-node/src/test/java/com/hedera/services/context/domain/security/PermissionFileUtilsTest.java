@@ -20,8 +20,6 @@ package com.hedera.services.context.domain.security;
  * ‍
  */
 
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -56,9 +54,7 @@ import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -68,7 +64,6 @@ import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.legacy.handler.TransactionHandler.GET_TOPIC_INFO_QUERY_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
@@ -453,7 +448,7 @@ class PermissionFileUtilsTest {
 			case GETBYKEY:
 				break;
 			case CONSENSUSGETTOPICINFO:
-				queryBody = GET_TOPIC_INFO_QUERY_NAME;
+				queryBody = "getTopicInfo";
 				break;
 			case GETBYSOLIDITYID:
 				queryBody = "getBySolidityID";

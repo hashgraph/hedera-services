@@ -98,9 +98,7 @@ public abstract class JKey implements Serializable {
 				JKey res = convertKey(aKey, depth + 1);
 				jkeys.add(res);
 			}
-			int thd = tKeys.size();
-			JKey result = new JKeyList(jkeys);
-			return (result);
+			return new JKeyList(jkeys);
 		}
 	}
 

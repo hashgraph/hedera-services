@@ -24,14 +24,15 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.context.properties.SemanticVersions;
+import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.contracts.execution.SolidityLifecycle;
 import com.hedera.services.contracts.execution.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.contracts.persistence.BlobStoragePersistence;
@@ -39,13 +40,16 @@ import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.fees.TxnRateFeeMultiplierSource;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
+import com.hedera.services.files.interceptors.ThrottleDefsManager;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
@@ -69,7 +73,6 @@ import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
-import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.answering.StakedAnswerFlow;
@@ -94,6 +97,7 @@ import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -119,8 +123,9 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.throttling.BucketThrottling;
+import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
+import com.hedera.services.throttling.TxnAwareHandleThrottling;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
@@ -177,7 +182,7 @@ public class ServicesContextTest {
 	ServicesState state;
 	Cryptography crypto;
 	PropertySource properties;
-	PropertySources propertySources;
+	StandardizedPropertySources propertySources;
 	FCMap<MerkleEntityId, MerkleTopic> topics;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -208,7 +213,7 @@ public class ServicesContextTest {
 		platform = mock(Platform.class);
 		given(platform.getCryptography()).willReturn(crypto);
 		properties = mock(PropertySource.class);
-		propertySources = mock(PropertySources.class);
+		propertySources = mock(StandardizedPropertySources.class);
 		given(propertySources.asResolvingSource()).willReturn(properties);
 	}
 
@@ -450,7 +455,6 @@ public class ServicesContextTest {
 		assertThat(ctx.entityExpiries(), instanceOf(Map.class));
 		assertThat(ctx.syncVerifier(), instanceOf(SyncVerifier.class));
 		assertThat(ctx.txnThrottling(), instanceOf(TransactionThrottling.class));
-		assertThat(ctx.bucketThrottling(), instanceOf(BucketThrottling.class));
 		assertThat(ctx.accountSource(), instanceOf(LedgerAccountsSource.class));
 		assertThat(ctx.bytecodeDb(), instanceOf(BlobStorageSource.class));
 		assertThat(ctx.cryptoAnswers(), instanceOf(CryptoAnswers.class));
@@ -517,18 +521,28 @@ public class ServicesContextTest {
 		assertThat(ctx.activationHelper(), instanceOf(InHandleActivationHelper.class));
 		assertThat(ctx.characteristics(), instanceOf(CharacteristicsFactory.class));
 		assertThat(ctx.nodeDiligenceScreen(), instanceOf(AwareNodeDiligenceScreen.class));
+		assertThat(ctx.feeMultiplierSource(), instanceOf(TxnRateFeeMultiplierSource.class));
+		assertThat(ctx.hapiThrottling(), instanceOf(HapiThrottling.class));
+		assertThat(ctx.handleThrottling(), instanceOf(TxnAwareHandleThrottling.class));
+		assertThat(ctx.throttleDefsManager(), instanceOf(ThrottleDefsManager.class));
+		assertThat(ctx.sysFileCallbacks(), instanceOf(SysFileCallbacks.class));
+		assertThat(ctx.networkCtxManager(), instanceOf(NetworkCtxManager.class));
+		assertThat(ctx.hapiOpPermissions(), instanceOf(HapiOpPermissions.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));
 		assertThat(ctx.contracts(), instanceOf(SmartContractRequestHandler.class));
-		assertThat(ctx.accountsExporter(), instanceOf(DefaultAccountsExporter.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
+		assertNotNull(ctx.accountsExporter());
 	}
 
 	@Test
 	public void shouldInitFees() throws Exception {
+		// setup:
+		MerkleNetworkContext networkCtx = new MerkleNetworkContext();
+
 		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(180);
 		var book = mock(AddressBook.class);
@@ -536,6 +550,7 @@ public class ServicesContextTest {
 		var blob = mock(MerkleOptionalBlob.class);
 		byte[] fileInfo = new HFileMeta(false, StateView.EMPTY_WACL, 1_234_567L).serialize();
 		byte[] fileContents = new byte[0];
+		given(state.networkCtx()).willReturn(networkCtx);
 		given(state.addressBook()).willReturn(book);
 		given(state.diskFs()).willReturn(diskFs);
 		given(storage.containsKey(any())).willReturn(true);
@@ -547,6 +562,7 @@ public class ServicesContextTest {
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		var subject = ctx.systemFilesManager();
 
+		assertSame(networkCtx, ctx.networkCtx());
 		assertDoesNotThrow(() -> subject.loadFeeSchedules());
 	}
 

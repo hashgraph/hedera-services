@@ -48,7 +48,7 @@ import static com.swirlds.common.Units.SECONDS_TO_MILLISECONDS;
  */
 public class RecordStreamManager {
 	/** use this for all logging, as controlled by the optional data/log4j2.xml file */
-	static Logger LOGGER = LogManager.getLogger(RecordStreamManager.class);
+	private static final Logger log = LogManager.getLogger(RecordStreamManager.class);
 
 	/**
 	 * receives {@link RecordStreamObject}s from {@link com.hedera.services.legacy.services.state.AwareProcessLogic}
@@ -147,7 +147,7 @@ public class RecordStreamManager {
 		this.initialHash = initialHash;
 		multiStream.setRunningHash(initialHash);
 
-		LOGGER.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}," +
+		log.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}, " +
 						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}, initialHash: {}",
 				nodeLocalProperties::isRecordStreamEnabled,
 				() -> nodeScopedRecordLogDir,
@@ -188,7 +188,7 @@ public class RecordStreamManager {
 			try {
 				multiStream.add(recordStreamObject);
 			} catch (InterruptedException ex) {
-				LOGGER.error("thread interruption ignored in addRecordStreamObject: {}", ex, ex);
+				log.error("thread interruption ignored in addRecordStreamObject: {}", ex, ex);
 			}
 		}
 		runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());
@@ -202,7 +202,7 @@ public class RecordStreamManager {
 	 */
 	public void setInFreeze(boolean inFreeze) {
 		this.inFreeze = inFreeze;
-		LOGGER.info("RecordStream inFreeze is set to be {} ", inFreeze);
+		log.info("RecordStream inFreeze is set to be {} ", inFreeze);
 		if (inFreeze) {
 			multiStream.close();
 		}
@@ -216,7 +216,7 @@ public class RecordStreamManager {
 	 */
 	public void setInitialHash(final Hash initialHash) {
 		this.initialHash = initialHash;
-		LOGGER.info("RecordStreamManager::setInitialHash: {}", () -> initialHash);
+		log.info("RecordStreamManager::setInitialHash: {}", () -> initialHash);
 		multiStream.setRunningHash(initialHash);
 	}
 
@@ -231,7 +231,7 @@ public class RecordStreamManager {
 	public void setStartWriteAtCompleteWindow(boolean startWriteAtCompleteWindow) {
 		if (streamFileWriter != null) {
 			streamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
-			LOGGER.info("RecordStreamManager::setStartWriteAtCompleteWindow: {}", startWriteAtCompleteWindow);
+			log.info("RecordStreamManager::setStartWriteAtCompleteWindow: {}", startWriteAtCompleteWindow);
 		}
 	}
 

@@ -26,6 +26,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.primitives.StateView;
@@ -44,8 +45,10 @@ import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.fees.TxnRateFeeMultiplierSource;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
@@ -104,12 +107,18 @@ import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.MetadataMapFactory;
+import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.ConfigListUtils;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
+import com.hedera.services.files.interceptors.ThrottleDefsManager;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.files.sysfiles.ConfigCallbacks;
+import com.hedera.services.files.sysfiles.CurrencyCallbacks;
+import com.hedera.services.files.sysfiles.ThrottlesCallback;
+import com.hedera.services.grpc.ConfigDrivenNettyFactory;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.grpc.controllers.ConsensusController;
@@ -135,13 +144,11 @@ import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.netty.NettyServerManager;
+import com.hedera.services.legacy.initialization.ExportExistingAccounts;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
-import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.answering.QueryResponseHelper;
@@ -197,11 +204,13 @@ import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
+import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -227,9 +236,11 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.throttling.BucketThrottling;
-import com.hedera.services.throttling.ThrottlingPropsBuilder;
+import com.hedera.services.throttling.DeterministicThrottling;
+import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
+import com.hedera.services.throttling.TxnAwareHandleThrottling;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -303,6 +314,8 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.Source;
 import org.ethereum.datasource.StoragePersistence;
@@ -332,9 +345,6 @@ import static com.hedera.services.files.interceptors.PureRatesValidation.isNorma
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.legacy.config.PropertiesLoader.log;
-import static com.hedera.services.legacy.config.PropertiesLoader.populateAPIPropertiesWithProto;
-import static com.hedera.services.legacy.config.PropertiesLoader.populateApplicationPropertiesWithProto;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
@@ -345,8 +355,6 @@ import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_L
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
-import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
-import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -385,7 +393,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static java.util.Map.entry;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Provide a trivial implementation of the inversion-of-control pattern,
@@ -395,6 +402,8 @@ import static java.util.stream.Collectors.toMap;
  * @author Michael Tinker
  */
 public class ServicesContext {
+	private static final Logger log = LogManager.getLogger(ServicesContext.class);
+
 	/* Injected dependencies. */
 	ServicesState state;
 
@@ -450,13 +459,14 @@ public class ServicesContext {
 	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
-	private BucketThrottling bucketThrottling;
 	private HbarCentExchange exchange;
 	private SemanticVersions semVers;
 	private PrecheckVerifier precheckVerifier;
 	private BackingTokenRels backingTokenRels;
 	private FreezeController freezeGrpc;
 	private BalancesExporter balancesExporter;
+	private SysFileCallbacks sysFileCallbacks;
+	private NetworkCtxManager networkCtxManager;
 	private SolidityLifecycle solidityLifecycle;
 	private ExpiringCreations creator;
 	private NetworkController networkGrpc;
@@ -464,6 +474,7 @@ public class ServicesContext {
 	private TxnResponseHelper txnResponseHelper;
 	private SigFactoryCreator sigFactoryCreator;
 	private BlobStorageSource bytecodeDb;
+	private HapiOpPermissions hapiOpPermissions;
 	private TransactionContext txnCtx;
 	private TransactionHandler txns;
 	private ContractController contractsGrpc;
@@ -478,8 +489,10 @@ public class ServicesContext {
 	private Supplier<StateView> stateViews;
 	private FeeSchedulesManager feeSchedulesManager;
 	private RecordStreamManager recordStreamManager;
+	private ThrottleDefsManager throttleDefsManager;
 	private Map<String, byte[]> blobStore;
 	private Map<EntityId, Long> entityExpiries;
+	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
 	private TxnFeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
@@ -497,6 +510,8 @@ public class ServicesContext {
 	private CharacteristicsFactory characteristics;
 	private AccountRecordsHistorian recordsHistorian;
 	private GlobalDynamicProperties globalDynamicProperties;
+	private FunctionalityThrottling hapiThrottling;
+	private FunctionalityThrottling handleThrottling;
 	private AwareNodeDiligenceScreen nodeDiligenceScreen;
 	private InHandleActivationHelper activationHelper;
 	private PlatformSubmissionManager submissionManager;
@@ -523,7 +538,7 @@ public class ServicesContext {
 		pause = SleepingPause.SLEEPING_PAUSE;
 		b64KeyReader = new LegacyEd25519KeyReader();
 		stateMigrations = new StdStateMigrations(SleepingPause.SLEEPING_PAUSE);
-		accountsExporter = new DefaultAccountsExporter();
+		accountsExporter = ExportExistingAccounts::exportAccounts;
 	}
 
 	public ServicesContext(
@@ -590,12 +605,33 @@ public class ServicesContext {
 		return runningAvgs;
 	}
 
+	public FeeMultiplierSource feeMultiplierSource() {
+		if (feeMultiplierSource == null) {
+			feeMultiplierSource = new TxnRateFeeMultiplierSource(globalDynamicProperties(), handleThrottling());
+		}
+		return feeMultiplierSource;
+	}
+
 	public MiscSpeedometers speedometers() {
 		if (speedometers == null) {
 			speedometers = new MiscSpeedometers(new SpeedometerFactory() {
 			}, nodeLocalProperties());
 		}
 		return speedometers;
+	}
+
+	public FunctionalityThrottling hapiThrottling() {
+		if (hapiThrottling == null) {
+			hapiThrottling = new HapiThrottling(new DeterministicThrottling(() -> addressBook().getSize()));
+		}
+		return hapiThrottling;
+	}
+
+	public FunctionalityThrottling handleThrottling() {
+		if (handleThrottling == null) {
+			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), new DeterministicThrottling(() -> 1));
+		}
+		return handleThrottling;
 	}
 
 	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
@@ -728,20 +764,9 @@ public class ServicesContext {
 
 	public TransactionThrottling txnThrottling() {
 		if (txnThrottling == null) {
-			txnThrottling = new TransactionThrottling(bucketThrottling());
+			txnThrottling = new TransactionThrottling(hapiThrottling());
 		}
 		return txnThrottling;
-	}
-
-	public BucketThrottling bucketThrottling() {
-		if (bucketThrottling == null) {
-			bucketThrottling = new BucketThrottling(
-					this::addressBook,
-					properties(),
-					props -> bucketsIn(props).stream().collect(toMap(Function.identity(), b -> namedIn(props, b))),
-					ThrottlingPropsBuilder::withPrioritySource);
-		}
-		return bucketThrottling;
 	}
 
 	public ItemizableFeeCharging charging() {
@@ -880,6 +905,7 @@ public class ServicesContext {
 			fees = new UsageBasedFeeCalculator(
 					exchange(),
 					usagePrices(),
+					feeMultiplierSource(),
 					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),
@@ -955,7 +981,7 @@ public class ServicesContext {
 				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
 				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
 				/* Schedule */
-				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(props, scheduleOpsUsage))),
+				entry(ScheduleCreate, List.of(new ScheduleCreateResourceUsage(scheduleOpsUsage, props))),
 				entry(ScheduleDelete, List.of(new ScheduleDeleteResourceUsage(scheduleOpsUsage, props))),
 				entry(ScheduleSign, List.of(new ScheduleSignResourceUsage(scheduleOpsUsage, props))),
 				/* System */
@@ -975,10 +1001,10 @@ public class ServicesContext {
 						txns(),
 						stateViews(),
 						usagePrices(),
-						bucketThrottling(),
+						hapiThrottling(),
 						submissionManager());
 			} else {
-				answerFlow = new ZeroStakeAnswerFlow(txns(), stateViews(), bucketThrottling());
+				answerFlow = new ZeroStakeAnswerFlow(txns(), stateViews(), hapiThrottling());
 			}
 		}
 		return answerFlow;
@@ -1102,6 +1128,7 @@ public class ServicesContext {
 			hfs.register(exchangeRatesManager());
 			hfs.register(apiPermissionsReloading());
 			hfs.register(applicationPropertiesReloading());
+			hfs.register(throttleDefsManager());
 		}
 		return hfs;
 	}
@@ -1123,16 +1150,12 @@ public class ServicesContext {
 
 	public FileUpdateInterceptor applicationPropertiesReloading() {
 		if (applicationPropertiesReloading == null) {
+			var propertiesCb = sysFileCallbacks().propertiesCb();
 			applicationPropertiesReloading = new ValidatingCallbackInterceptor(
 					0,
 					"files.networkProperties",
 					properties(),
-					contents -> {
-						var config = uncheckedParse(contents);
-						((StandardizedPropertySources) propertySources()).reloadFrom(config);
-						globalDynamicProperties().reload();
-						populateApplicationPropertiesWithProto(config);
-					},
+					contents -> propertiesCb.accept(uncheckedParse(contents)),
 					ConfigListUtils::isConfigList
 			);
 		}
@@ -1141,11 +1164,12 @@ public class ServicesContext {
 
 	public FileUpdateInterceptor apiPermissionsReloading() {
 		if (apiPermissionsReloading == null) {
+			var permissionsCb = sysFileCallbacks().permissionsCb();
 			apiPermissionsReloading = new ValidatingCallbackInterceptor(
 					0,
 					"files.hapiPermissions",
 					properties(),
-					contents -> populateAPIPropertiesWithProto(uncheckedParse(contents)),
+					contents -> permissionsCb.accept(uncheckedParse(contents)),
 					ConfigListUtils::isConfigList
 			);
 		}
@@ -1210,11 +1234,7 @@ public class ServicesContext {
 						List.of(new TokenCreateTransitionLogic(validator(), tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
-								validator(),
-								tokenStore(),
-								ledger(),
-								txnCtx(),
-								HederaTokenStore::affectsExpiryAtMost))),
+								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
@@ -1237,7 +1257,8 @@ public class ServicesContext {
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* Schedule */
 				entry(ScheduleCreate,
-						List.of(new ScheduleCreateTransitionLogic(scheduleStore(), txnCtx(), activationHelper(), validator()))),
+						List.of(new ScheduleCreateTransitionLogic(
+								scheduleStore(), txnCtx(), activationHelper(), validator()))),
 				entry(ScheduleSign,
 						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
 				entry(ScheduleDelete,
@@ -1441,7 +1462,7 @@ public class ServicesContext {
 	public void updateFeature() {
 		if (freeze != null) {
 			String os = System.getProperty("os.name").toLowerCase();
-			if (os.indexOf("mac") >= 0) {
+			if (os.contains("mac")) {
 				if (platform.getSelfId().getId() == 0) {
 					freeze.handleUpdateFeature();
 				}
@@ -1449,6 +1470,29 @@ public class ServicesContext {
 				freeze.handleUpdateFeature();
 			}
 		}
+	}
+
+	public NetworkCtxManager networkCtxManager() {
+		if (networkCtxManager == null) {
+			networkCtxManager = new NetworkCtxManager(
+					issEventInfo(),
+					properties(),
+					opCounters(),
+					exchange(),
+					systemFilesManager(),
+					feeMultiplierSource(),
+					handleThrottling(),
+					this::networkCtx);
+		}
+		return networkCtxManager;
+	}
+
+	public ThrottleDefsManager throttleDefsManager() {
+		if (throttleDefsManager == null) {
+			throttleDefsManager = new ThrottleDefsManager(
+					fileNums(), this::addressBook, sysFileCallbacks().throttlesCb());
+		}
+		return throttleDefsManager;
 	}
 
 	public RecordStreamManager recordStreamManager() {
@@ -1573,7 +1617,6 @@ public class ServicesContext {
 		if (grpc == null) {
 			grpc = new NettyGrpcServerManager(
 					Runtime.getRuntime()::addShutdownHook,
-					new NettyServerManager(),
 					List.of(
 							cryptoGrpc(),
 							filesGrpc(),
@@ -1583,6 +1626,7 @@ public class ServicesContext {
 							networkGrpc(),
 							tokenGrpc(),
 							scheduleGrpc()),
+					new ConfigDrivenNettyFactory(nodeLocalProperties()),
 					Collections.emptyList());
 		}
 		return grpc;
@@ -1604,6 +1648,19 @@ public class ServicesContext {
 					globalDynamicProperties());
 		}
 		return contracts;
+	}
+
+	public SysFileCallbacks sysFileCallbacks() {
+		if (sysFileCallbacks == null) {
+			var configCallbacks = new ConfigCallbacks(
+					hapiOpPermissions(),
+					globalDynamicProperties(),
+					(StandardizedPropertySources) propertySources());
+			var currencyCallbacks = new CurrencyCallbacks(fees(), exchange(), this::midnightRates);
+			var throttlesCallback = new ThrottlesCallback(feeMultiplierSource(), hapiThrottling(), handleThrottling());
+			sysFileCallbacks = new SysFileCallbacks(configCallbacks, throttlesCallback, currencyCallbacks);
+		}
+		return sysFileCallbacks;
 	}
 
 	public SolidityLifecycle solidityLifecycle() {
@@ -1631,27 +1688,16 @@ public class ServicesContext {
 							b64KeyReader(),
 							properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
 							properties.getStringProperty("bootstrap.genesisB64Keystore.keyName")),
-					rates -> {
-						exchange().updateRates(rates);
-						if (!midnightRates().isInitialized()) {
-							midnightRates().replaceWith(rates);
-						}
-					},
-					schedules -> fees().init(),
-					config -> {
-						((StandardizedPropertySources) propertySources()).reloadFrom(config);
-						globalDynamicProperties().reload();
-						PropertiesLoader.populateApplicationPropertiesWithProto(config);
-					},
-					PropertiesLoader::populateAPIPropertiesWithProto);
-			/* We must force eager evaluation of the throttle construction here,
-			as in DEV environment with the per-classloader singleton pattern used by
-			PropertiesLoader, it is otherwise possible to create weird race conditions
-			between the initializing threads. */
-			var throttles = bucketThrottling();
-			PropertiesLoader.registerUpdateCallback(throttles::rebuild);
+					sysFileCallbacks());
 		}
 		return systemFilesManager;
+	}
+
+	public HapiOpPermissions hapiOpPermissions() {
+		if (hapiOpPermissions == null) {
+			hapiOpPermissions = new HapiOpPermissions(accountNums());
+		}
+		return hapiOpPermissions;
 	}
 
 	public ServicesRepositoryRoot repository() {
@@ -1720,11 +1766,11 @@ public class ServicesContext {
 					stateViews(),
 					new BasicPrecheck(validator(), globalDynamicProperties()),
 					queryFeeCheck(),
-					bucketThrottling(),
 					accountNums(),
 					systemOpPolicies(),
 					exemptions(),
-					platformStatus());
+					platformStatus(),
+					hapiOpPermissions());
 		}
 		return txns;
 	}
@@ -1898,6 +1944,10 @@ public class ServicesContext {
 
 	public MerkleDiskFs diskFs() {
 		return state.diskFs();
+	}
+
+	public MerkleNetworkContext networkCtx() {
+		return state.networkCtx();
 	}
 
 	/**

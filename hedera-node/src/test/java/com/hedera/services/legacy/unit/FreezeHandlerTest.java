@@ -25,6 +25,9 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -34,52 +37,52 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.internal.SettingsCommon;
-import org.apache.logging.log4j.Logger;
+import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static java.lang.Thread.sleep;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.stringContainsInOrder;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.anyInt;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class FreezeHandlerTest {
-	Instant consensusTime;
+@ExtendWith(LogCaptureExtension.class)
+class FreezeHandlerTest {
+	Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
 	HederaFs hfs;
 	Platform platform;
-	FreezeHandler freezeHandler;
 	ExchangeRateSet rates;
 	HbarCentExchange exchange;
 
-	@BeforeAll
-	@BeforeClass
-	public static void setupAll() {
-		SettingsCommon.transactionMaxBytes = 1_234_567;
-	}
+	@Inject
+	private LogCaptor logCaptor;
+	@LoggingSubject
+	private FreezeHandler subject;
 
-	@BeforeAll
-	public void init() {
-		consensusTime = new Date().toInstant();
-	}
 
 	@BeforeEach
 	void setUp() {
+		SettingsCommon.transactionMaxBytes = 1_234_567;
+
 		hfs = mock(HederaFs.class);
 		rates = mock(ExchangeRateSet.class);
 		exchange = mock(HbarCentExchange.class);
@@ -88,15 +91,14 @@ public class FreezeHandlerTest {
 
 		given(platform.getSelfId()).willReturn(new NodeId(false, 1));
 
-		freezeHandler = new FreezeHandler(hfs, platform, exchange);
-
+		subject = new FreezeHandler(hfs, platform, exchange);
 	}
 
 	@Test
 	public void freezeTest() throws Exception {
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		TransactionRecord record = subject.freeze(txBody, consensusTime);
 		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 	}
 
@@ -105,7 +107,7 @@ public class FreezeHandlerTest {
 		willThrow(IllegalArgumentException.class).given(platform).setFreezeTime(anyInt(), anyInt(), anyInt(), anyInt());
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		TransactionRecord record = subject.freeze(txBody, consensusTime);
 		Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, record.getReceipt().getStatus());
 	}
 
@@ -122,10 +124,10 @@ public class FreezeHandlerTest {
 		given(hfs.cat(fileID)).willReturn(data);
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		TransactionRecord record = subject.freeze(txBody, consensusTime);
 		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
-		freezeHandler.handleUpdateFeature();
+		subject.handleUpdateFeature();
 
 		// Wait script to finish
 		sleep(2000);
@@ -138,17 +140,21 @@ public class FreezeHandlerTest {
 
 	@Test
 	public void freezeOnlyNoUpdateFeature() throws Exception {
-
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		TransactionRecord record = subject.freeze(txBody, consensusTime);
 		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
-		FreezeHandler.log = mock(Logger.class);
-		freezeHandler.handleUpdateFeature();
-		verify(FreezeHandler.log)
-				.info(argThat((String s) -> s.contains("Update file id is not defined")));
+		// when:
+		subject.handleUpdateFeature();
+
+		// then:
+		assertThat(
+				logCaptor.infoLogs(),
+				contains(
+						Matchers.startsWith("Freeze time starts"),
+						stringContainsInOrder(List.of("Update file id is not defined"))));
 	}
 
 	@Test
@@ -163,18 +169,22 @@ public class FreezeHandlerTest {
 		given(hfs.cat(fileID)).willReturn(data);
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		TransactionRecord record = subject.freeze(txBody, consensusTime);
 		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
-		FreezeHandler.log = mock(Logger.class);
-		freezeHandler.handleUpdateFeature();
-		verify(FreezeHandler.log)
-				.error(argThat((String s) -> s.contains("Update file is empty")));
+		// when:
+		subject.handleUpdateFeature();
+
+		// then:
+		assertThat(
+				logCaptor.errorLogs(),
+				contains(
+						Matchers.equalTo("NETWORK_UPDATE Node 1 Update file is empty"),
+						Matchers.equalTo("NETWORK_UPDATE Node 1 ABORT UPDATE PROCRESS")));
 	}
 
 	@Test
 	public void freeze_updateFileHash_MisMatch() throws Exception {
-		byte[] data = new byte[0];
 		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
 
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, new byte[48]);
@@ -183,15 +193,20 @@ public class FreezeHandlerTest {
 		given(hfs.cat(fileID)).willReturn(new byte[100]);
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		TransactionRecord record = subject.freeze(txBody, consensusTime);
 		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
-		FreezeHandler.log = mock(Logger.class);
+		// when:
+		subject.handleUpdateFeature();
 
-		freezeHandler.handleUpdateFeature();
-
-		verify(FreezeHandler.log)
-				.error(argThat((String s) -> s.contains("File hash mismatch")));
+		// then:
+		assertThat(
+				logCaptor.errorLogs(),
+				contains(
+						stringContainsInOrder(List.of("File hash mismatch")),
+						Matchers.startsWith("NETWORK_UPDATE Node 1 Hash from transaction body"),
+						Matchers.startsWith("NETWORK_UPDATE Node 1 Hash from file system"),
+						Matchers.equalTo("NETWORK_UPDATE Node 1 ABORT UPDATE PROCRESS")));
 	}
 
 
@@ -203,12 +218,15 @@ public class FreezeHandlerTest {
 		given(hfs.cat(fileID)).willReturn(new byte[100]);
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		TransactionRecord record = subject.freeze(txBody, consensusTime);
 		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
-		FreezeHandler.log = mock(Logger.class);
-		freezeHandler.handleUpdateFeature();
-		verify(FreezeHandler.log)
-				.error(argThat((String s) -> s.contains("not found in file system")));
+		// when:
+		subject.handleUpdateFeature();
+
+		// then:
+		assertThat(
+				logCaptor.errorLogs(),
+				contains(stringContainsInOrder(List.of("not found in file system"))));
 	}
 }

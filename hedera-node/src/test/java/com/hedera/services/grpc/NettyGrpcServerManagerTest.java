@@ -20,7 +20,6 @@ package com.hedera.services.grpc;
  * ‍
  */
 
-import com.hedera.services.legacy.netty.NettyServerManager;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
@@ -46,7 +45,7 @@ class NettyGrpcServerManagerTest {
 	Consumer<String> println;
 	NettyServerBuilder nettyBuilder;
 	NettyServerBuilder tlsBuilder;
-	NettyServerManager nettyManager;
+	ConfigDrivenNettyFactory nettyFactory;
 	BindableService a, b, c;
 	List<BindableService> bindableServices;
 	List<ServerServiceDefinition> serviceDefinitions;
@@ -75,20 +74,20 @@ class NettyGrpcServerManagerTest {
 		given(tlsBuilder.addService(any(ServerServiceDefinition.class))).willReturn(tlsBuilder);
 		given(tlsBuilder.build()).willReturn(tlsServer);
 
-		nettyManager = mock(NettyServerManager.class);
-		given(nettyManager.buildNettyServer(port, false)).willReturn(nettyBuilder);
-		given(nettyManager.buildNettyServer(tlsPort, true)).willReturn(tlsBuilder);
+		nettyFactory = mock(ConfigDrivenNettyFactory.class);
+		given(nettyFactory.builderFor(port, false)).willReturn(nettyBuilder);
+		given(nettyFactory.builderFor(tlsPort, true)).willReturn(tlsBuilder);
 
 		println = mock(Consumer.class);
 		hookAdder = mock(Consumer.class);
 
-		subject = new NettyGrpcServerManager(hookAdder, nettyManager, bindableServices, serviceDefinitions);
+		subject = new NettyGrpcServerManager(hookAdder, bindableServices, nettyFactory, serviceDefinitions);
 	}
 
 	@Test
 	public void buildsAndAddsHookNonTlsOnNonExistingCertOrKey() throws Exception {
 		// setup:
-		given(nettyManager.buildNettyServer(tlsPort, true)).willThrow(new FileNotFoundException());
+		given(nettyFactory.builderFor(tlsPort, true)).willThrow(new FileNotFoundException());
 		ArgumentCaptor<Thread> captor = ArgumentCaptor.forClass(Thread.class);
 
 		willDoNothing().given(hookAdder).accept(captor.capture());

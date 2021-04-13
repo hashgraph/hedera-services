@@ -23,7 +23,7 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.AddressBook;
 import org.apache.commons.lang3.NotImplementedException;
 
 import static com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo.nodeDetailsFrom;
@@ -34,7 +34,7 @@ public class NodesJsonToGrpcBytes implements SysFileSerde<String> {
 	@Override
 	public String fromRawFile(byte[] bytes) {
 		try {
-			var pojoBook = nodeDetailsFrom(NodeAddressBook.parseFrom(bytes));
+			var pojoBook = nodeDetailsFrom(AddressBook.parseFrom(bytes));
 			return mapper
 					.writerWithDefaultPrettyPrinter()
 					.writeValueAsString(pojoBook);

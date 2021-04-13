@@ -70,14 +70,14 @@ its `scmDevelopmentCommitComment` config during `release:branch`.)
 The first action is to choose the next working version; for example,
 `1.0.0-SNAPSHOT`:
 <p>
-    <img src="./new-working-copy-version.png"/>
+    <img src="./assets/new-working-copy-version.png"/>
 </p>
 
 The next action is to accept the commit signoff amendment in your
 default editor:
 
 <p>
-    <img src="./amend-with-signoff.png"/>
+    <img src="./assets/amend-with-signoff.png"/>
 </p>
 
 ## Creating a release candidate
@@ -94,7 +94,7 @@ When prompted for the release version, use the version suffixed
 with available `-rc1` and accept the resulting :
 
 <p>
-    <img src="./release-version-tag.png"/>
+    <img src="./assets/release-version-tag.png"/>
 </p>
 
 This step will take some time. After it finishes, you can perform the release:

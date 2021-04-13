@@ -21,6 +21,7 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.exceptions.UnparseablePropertyException;
+import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
@@ -53,6 +54,7 @@ public interface PropertySource {
 	Function<String, Object> AS_FUNCTIONS = s -> Arrays.stream(s.split(","))
 			.map(HederaFunctionality::valueOf)
 			.collect(toSet());
+	Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 
 	boolean containsProperty(String name);
 	Object getProperty(String name);
@@ -70,6 +72,9 @@ public interface PropertySource {
 	@SuppressWarnings("unchecked")
 	default Set<HederaFunctionality> getFunctionsProperty(String name) {
 		return (Set<HederaFunctionality>)getTypedProperty(Set.class, name);
+	}
+	default CongestionMultipliers getCongestionMultiplierProperty(String name) {
+		return getTypedProperty(CongestionMultipliers.class, name);
 	}
 	default int getIntProperty(String name) {
 		return getTypedProperty(Integer.class, name);

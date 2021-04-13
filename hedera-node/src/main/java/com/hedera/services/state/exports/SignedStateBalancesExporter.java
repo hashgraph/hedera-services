@@ -64,7 +64,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 
 public class SignedStateBalancesExporter implements BalancesExporter {
-	static Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
+	private static final Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
 
 	private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 	private static final String UNKNOWN_EXPORT_DIR = "";
@@ -119,6 +119,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			return true;
 		}
 		periodBegin = now;
+		if(log.isDebugEnabled()) {
+			log.debug(String.format("Now %s is NOT time to export.", now.toString()));
+		}
 		return false;
 	}
 
@@ -157,7 +160,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			tryToSign(csvLoc);
 		}
 
-		log.info(" -> Took {}ms to export and sign CSV balances file", watch.getTime(TimeUnit.MILLISECONDS));
+		log.info(" -> Took {}ms to export and sign CSV balances file at {}", watch.getTime(TimeUnit.MILLISECONDS), exportTimeStamp);
 	}
 
 	private void toProtoFile(Instant exportTimeStamp) {
@@ -172,7 +175,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			tryToSign(protoLoc);
 		}
 
-		log.info(" -> Took {}ms to export and sign proto balances file", watch.getTime(TimeUnit.MILLISECONDS));
+		log.info(" -> Took {}ms to export and sign proto balances file at {}", watch.getTime(TimeUnit.MILLISECONDS), exportTimeStamp);
 	}
 
 	private void tryToSign(String csvLoc) {
