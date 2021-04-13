@@ -138,7 +138,7 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
 	private HapiApiSpec throttleDefsHaveExpectedDefaults() {
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 
-		return defaultHapiSpec("ThrottleDefsExistOnStartup")
+		return defaultHapiSpec("ThrottleDefsHaveExpectedDefaults")
 				.given( ).when( ).then(
 						getFileContents(THROTTLE_DEFS)
 								.payingWith(GENESIS)
