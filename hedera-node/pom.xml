@@ -382,11 +382,6 @@
       <name>bintray</name>
       <url>https://jcenter.bintray.com</url>
     </repository>
-    <repository>
-      <id>Ethereum</id>
-      <name>Ethereum</name>
-      <url>https://dl.bintray.com/ethereum/maven/</url>
-    </repository>
   </repositories>
   <profiles>
     <profile>
