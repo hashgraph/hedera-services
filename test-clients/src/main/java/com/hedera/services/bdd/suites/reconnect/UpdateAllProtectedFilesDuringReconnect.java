@@ -153,7 +153,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 								.path(ContractResources.VALID_BYTECODE_PATH),
 						contractCreate("testContract")
 								.bytecode("contractFile")
-								.autoRenewSecs(15)
+								.autoRenewSecs(1)
 								.setNode("0.0.6")
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
 
