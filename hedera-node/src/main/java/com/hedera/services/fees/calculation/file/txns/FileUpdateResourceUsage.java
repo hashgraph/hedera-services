@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
 public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
-	public static final Logger log = LogManager.getLogger(FileUpdateResourceUsage.class);
+	private static final Logger log = LogManager.getLogger(FileUpdateResourceUsage.class);
 
 	private final FileOpsUsage fileOpsUsage;
 

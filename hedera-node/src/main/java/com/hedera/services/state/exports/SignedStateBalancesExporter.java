@@ -64,7 +64,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 
 public class SignedStateBalancesExporter implements BalancesExporter {
-	static Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
+	private static final Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
 
 	private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 	private static final String UNKNOWN_EXPORT_DIR = "";

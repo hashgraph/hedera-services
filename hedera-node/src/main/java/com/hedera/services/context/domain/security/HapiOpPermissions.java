@@ -1,5 +1,25 @@
 package com.hedera.services.context.domain.security;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.config.AccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -15,10 +35,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class HapiOpPermissions {
+	private static final Logger log = LogManager.getLogger(HapiOpPermissions.class);
+
 	static final String MISSING_OP_TPL = "Ignoring key '%s', which does not correspond to a known Hedera operation!";
 	static final String UNPARSEABLE_RANGE_TPL = "Ignoring entry for supported op %s---cannot interpret range '%s'!";
-
-	static Logger log = LogManager.getLogger(HapiOpPermissions.class);
 
 	private final AccountNumbers accountNums;
 

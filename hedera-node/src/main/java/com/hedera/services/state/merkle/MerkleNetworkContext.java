@@ -44,7 +44,7 @@ import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static java.util.stream.Collectors.toList;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
-	static Logger log = LogManager.getLogger(MerkleNetworkContext.class);
+	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
 	static final int PRE_RELEASE_0130_VERSION = 1;
 	static final int RELEASE_0130_VERSION = 2;

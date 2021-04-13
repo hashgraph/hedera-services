@@ -41,7 +41,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class NetworkCtxManager {
-	public static Logger log = LogManager.getLogger(NetworkCtxManager.class);
+	private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
 
 	private final int issResetPeriod;
 

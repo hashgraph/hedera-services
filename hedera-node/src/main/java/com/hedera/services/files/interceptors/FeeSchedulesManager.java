@@ -39,7 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class FeeSchedulesManager implements FileUpdateInterceptor {
-	public static final Logger log = LogManager.getLogger(FeeSchedulesManager.class);
+	private static final Logger log = LogManager.getLogger(FeeSchedulesManager.class);
 	private static final int APPLICABLE_PRIORITY = 0;
 
 	private final FeeCalculator fees;

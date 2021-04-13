@@ -98,10 +98,10 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		functionReqs = newFunctionReqs;
 		activeThrottles = newActiveThrottles;
 
-		logResolvedDefinitions(log);
+		logResolvedDefinitions();
 	}
 
-	void logResolvedDefinitions(Logger refinedLog) {
+	void logResolvedDefinitions() {
 		int n = capacitySplitSource.getAsInt();
 		var sb = new StringBuilder("Resolved throttles (after splitting capacity " + n + " ways) - \n");
 		functionReqs.entrySet().stream()
@@ -113,6 +113,6 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 							.append(manager.asReadableRequirements())
 							.append("\n");
 				});
-		refinedLog.info(sb.toString().trim());
+		log.info(sb.toString().trim());
 	}
 }

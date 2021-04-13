@@ -46,7 +46,7 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class TopicUpdateTransitionLogic implements TransitionLogic {
-	protected static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
+	private static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
 
 	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK =
 			this::validatePreSignatureValidation;
