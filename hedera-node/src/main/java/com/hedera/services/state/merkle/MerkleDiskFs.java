@@ -326,11 +326,11 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		this.writeHelper = writeHelper;
 	}
 
-	public ThrowingBytesGetter getBytesHelper() {
+	ThrowingBytesGetter getBytesHelper() {
 		return bytesHelper;
 	}
 
-	public ThrowingBytesWriter getWriteHelper() {
+	ThrowingBytesWriter getWriteHelper() {
 		return writeHelper;
 	}
 }
