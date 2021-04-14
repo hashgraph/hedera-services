@@ -20,6 +20,35 @@ package com.hedera.services.txns.contract.helpers;
  * ‍
  */
 
-public class UpdateCustomizerFactory {
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.Optional;
+
+public class UpdateCustomizerFactory {
+	public Pair<Optional<HederaAccountCustomizer>, ResponseCodeEnum> customizerFor(
+			MerkleAccount contract,
+			ContractUpdateTransactionBody updateOp
+	) {
+		throw new AssertionError("Not implemented!");
+	}
+
+	boolean isMutable(MerkleAccount contract) {
+		return Optional.ofNullable(contract.getKey()).map(key -> !key.hasContractID()).orElse(false);
+	}
+
+	boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
+		return !(op.hasProxyAccountID()
+				|| op.hasFileID()
+				|| affectsMemo(op)
+				|| op.hasAutoRenewPeriod()
+				|| op.hasAdminKey());
+	}
+
+	boolean affectsMemo(ContractUpdateTransactionBody op) {
+		return op.hasMemoWrapper() || op.getMemo().length() > 0;
+	}
 }
