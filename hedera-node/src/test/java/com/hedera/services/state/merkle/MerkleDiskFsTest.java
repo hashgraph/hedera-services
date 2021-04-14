@@ -31,15 +31,11 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -53,6 +49,7 @@ import java.util.Map;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,34 +89,27 @@ class MerkleDiskFsTest {
 		subject = new MerkleDiskFs(hashes);
 
 		getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
-		MerkleDiskFs.bytesHelper = getter;
+		subject.setBytesHelper(getter);
 		writer = mock(MerkleDiskFs.ThrowingBytesWriter.class);
-		MerkleDiskFs.writeHelper = writer;
+		subject.setWriteHelper(writer);
 
 		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willReturn(origContents);
 	}
 
-	@AfterEach
-	private void cleanup() {
-		MerkleDiskFs.writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
-		MerkleDiskFs.bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
-	}
-
 	@Test
 	public void helpersSanityCheck() throws IOException {
-		// setup:
-		cleanup();
-
 		// given:
 		String tmpBase = MOCK_DISKFS_DIR + File.separator + "a" + File.separator + "b" + File.separator;
 		Path tmpLoc = Paths.get(tmpBase + "c.txt");
 		byte[] tmpMsg = "Testing-1-2-3".getBytes();
+		// and:
+		var subject = new MerkleDiskFs();
 
 		// when:
-		MerkleDiskFs.writeHelper.allBytesTo(tmpLoc, tmpMsg);
+		subject.getWriteHelper().allBytesTo(tmpLoc, tmpMsg);
 
 		// then:
-		assertArrayEquals(tmpMsg, MerkleDiskFs.bytesHelper.allBytesFrom(tmpLoc));
+		assertArrayEquals(tmpMsg, subject.getBytesHelper().allBytesFrom(tmpLoc));
 
 		// cleanup:
 		tmpLoc.toFile().delete();
@@ -183,6 +173,8 @@ class MerkleDiskFsTest {
 	public void fileNotExistNoDebug() throws IOException {
 		// setup:
 		subject = new MerkleDiskFs();
+		// and:
+		subject.setBytesHelper(getter);
 
 		given(getter.allBytesFrom(any())).willThrow(IOException.class);
 
@@ -208,7 +200,7 @@ class MerkleDiskFsTest {
 		// setup:
 		byte[] expectedBytes = "ABCDEFGH".getBytes();
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
-		MerkleDiskFs.bytesHelper = getter;
+		subject.setBytesHelper(getter);
 
 		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willReturn(expectedBytes);
 		// and:
@@ -228,7 +220,7 @@ class MerkleDiskFsTest {
 	public void serializePropagatesException() throws IOException {
 		// setup:
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
-		MerkleDiskFs.bytesHelper = getter;
+		subject.setBytesHelper(getter);
 		// and:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -287,6 +279,8 @@ class MerkleDiskFsTest {
 		given(fin.readByteArray(MerkleDiskFs.MAX_FILE_BYTES)).willReturn(origContents);
 		// and:
 		var read = new MerkleDiskFs();
+		read.setBytesHelper(getter);
+		read.setWriteHelper(writer);
 
 		// when:
 		read.deserialize(fin, MerkleDiskFs.MERKLE_VERSION);

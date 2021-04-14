@@ -210,7 +210,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
 		var bootstrapProps = new BootstrapProperties();
-		var diskFsBaseDirPath = bootstrapProps.getStringProperty("files.diskFsBaseDir.path");
 		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
 		try {
 			ctx = CONTEXTS.lookup(nodeId.getId());

@@ -54,6 +54,14 @@ import static com.swirlds.common.CommonUtils.hex;
  * Save some special system files on the local file system instead of database to improve access efficiency.
  *
  * All that is kept in memory is a map from {@code FileID} to the SHA-384 hash of the current contents.
+ *
+ * <b>IMPORTANT:</b> If running multiple nodes in a process, all of their disk-based file systems will use
+ * the same path for a given file! There is no simple way to "scope" the path by node id without creating
+ * problems during reconnect.
+ *
+ * So if testing the update feature locally, please use a single node; or use multiple nodes in a
+ * Docker Compose network. Otherwise, updates to file 0.0.150 will be hopelessly interleaved and failure
+ * is essentially guaranteed.
  */
 public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleDiskFs.class);
@@ -67,10 +75,9 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	static final int MAX_FILE_BYTES = 1_024 * 1_024 * 1_024;
 	static final int MERKLE_VERSION = 1;
 
-	static ThrowingBytesWriter writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
-	static ThrowingBytesGetter bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
-
 	private Map<FileID, byte[]> fileHashes = new HashMap<>();
+	private ThrowingBytesGetter bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
+	private ThrowingBytesWriter writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
 
 	/* --- RuntimeConstructable --- */
 	public MerkleDiskFs() {
@@ -309,5 +316,21 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	@FunctionalInterface
 	interface ThrowingBytesWriter {
 		void allBytesTo(Path loc, byte[] contents) throws IOException;
+	}
+
+	void setBytesHelper(ThrowingBytesGetter bytesHelper) {
+		this.bytesHelper = bytesHelper;
+	}
+
+	void setWriteHelper(ThrowingBytesWriter writeHelper) {
+		this.writeHelper = writeHelper;
+	}
+
+	public ThrowingBytesGetter getBytesHelper() {
+		return bytesHelper;
+	}
+
+	public ThrowingBytesWriter getWriteHelper() {
+		return writeHelper;
 	}
 }
