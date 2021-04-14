@@ -1525,7 +1525,7 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "30 5 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
@@ -1535,7 +1535,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/Restart
+          result_path: results/6N_1C/BalanceValid
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Balances-Validation-6N-1C"
           requires:
@@ -1558,7 +1558,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/15N_1C/Restart
+          result_path: results/15N_1C/NetDelay
           config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-Comp-NetDelay-15N-1C"
           requires:
@@ -1591,10 +1591,10 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Query-Restart-Performance-6N-6C:
+  GCP-Weekly-Services-Query-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "0 6 * * 2,6"
+          cron: "0 6 * * 2"
           filters:
             branches:
               only:
@@ -1604,7 +1604,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Restart
+          result_path: results/6N_6C/QueryPerf
           config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-6N-6C"
           requires:
@@ -2231,7 +2231,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; 
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
