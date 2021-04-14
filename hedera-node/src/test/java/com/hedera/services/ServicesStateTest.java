@@ -384,8 +384,6 @@ class ServicesStateTest {
 		subject.init(platform, book);
 
 		// then:
-		inOrder.verify(ctx).nodeAccount();
-		// during migration, if the records directory doesn't have old files, initialHash will be empty hash
 		inOrder.verify(ctx).setRecordsInitialHash(EMPTY_HASH);
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
@@ -409,7 +407,6 @@ class ServicesStateTest {
 		subject.init(platform, book);
 
 		// then:
-		inOrder.verify(ctx).nodeAccount();
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
@@ -496,9 +493,6 @@ class ServicesStateTest {
 		InOrder inOrder = inOrder(
 				scheduledTxs, runningHashLeaf, diskFs, ctx, mockDigest,
 				accounts, storage, topics, tokens, tokenAssociations, networkCtx, book);
-		inOrder.verify(diskFs).setFsBaseDir(any());
-		inOrder.verify(ctx).nodeAccount();
-		inOrder.verify(diskFs).setFsNodeScopedDir(any());
 		inOrder.verify(diskFs).checkHashesAgainstDiskContents();
 		inOrder.verify(ctx).setRecordsInitialHash(recordsHash);
 		inOrder.verify(mockDigest).accept(subject);

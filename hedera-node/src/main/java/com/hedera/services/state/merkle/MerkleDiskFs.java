@@ -60,7 +60,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
 
-	private static final String UNKNOWN_PATH_SEGMENT = null;
+	private static final String DISK_FS_ROOT_DIR = "data/diskFs/";
 	static final byte[] MISSING_CONTENT = new byte[0];
 
 	static final int HASH_BYTES = 48;
@@ -70,8 +70,6 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	static ThrowingBytesWriter writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
 	static ThrowingBytesGetter bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
 
-	private String fsBaseDir = UNKNOWN_PATH_SEGMENT;
-	private String fsNodeScopedDir = UNKNOWN_PATH_SEGMENT;
 	private Map<FileID, byte[]> fileHashes = new HashMap<>();
 
 	/* --- RuntimeConstructable --- */
@@ -79,16 +77,8 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		setHashFromContents();
 	}
 
-	public MerkleDiskFs(String fsBaseDir, String fsNodeScopedDir) {
-		this.fsBaseDir = fsBaseDir;
-		this.fsNodeScopedDir = fsNodeScopedDir;
-		setHashFromContents();
-	}
-
-	public MerkleDiskFs(Map<FileID, byte[]> fileHashes, String fsBaseDir, String fsNodeScopedDir) {
-		this.fsBaseDir = fsBaseDir;
+	public MerkleDiskFs(Map<FileID, byte[]> fileHashes) {
 		this.fileHashes = fileHashes;
-		this.fsNodeScopedDir = fsNodeScopedDir;
 		setHashFromContents();
 	}
 
@@ -96,15 +86,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		Map<FileID, byte[]> fileHashesCopy = fileHashes.entrySet()
 				.stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, HashMap::new));
-		return new MerkleDiskFs(fileHashesCopy, fsBaseDir, fsNodeScopedDir);
-	}
-
-	public void setFsBaseDir(String fsBaseDir) {
-		this.fsBaseDir = fsBaseDir;
-	}
-
-	public void setFsNodeScopedDir(String fsNodeScopedDir) {
-		this.fsNodeScopedDir = fsNodeScopedDir;
+		return new MerkleDiskFs(fileHashesCopy);
 	}
 
 	public void checkHashesAgainstDiskContents() {
@@ -256,21 +238,17 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 			return false;
 		}
 		MerkleDiskFs that = (MerkleDiskFs) o;
-		return Objects.equals(this.fsBaseDir, that.fsBaseDir) &&
-				Objects.equals(this.fsNodeScopedDir, that.fsNodeScopedDir) &&
-				allFileHashesMatch(this.fileHashes, that.fileHashes);
+		return allFileHashesMatch(this.fileHashes, that.fileHashes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(fileHashes, fsBaseDir, fsNodeScopedDir);
+		return Objects.hash(fileHashes);
 	}
 
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleDiskFs.class)
-				.add("baseDir", fsBaseDir)
-				.add("nodeScopedDir", fsNodeScopedDir)
 				.add("fileHashes", readableFileHashes())
 				.toString();
 	}
@@ -296,11 +274,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	}
 
 	Path pathToContentsOf(FileID fid) {
-		return Paths.get(String.format(
-				"%s%sFile%s",
-				separatorSuffixed(fsBaseDir),
-				separatorSuffixed(fsNodeScopedDir),
-				asLiteralString(fid)));
+		return Paths.get(String.format("%sFile%s", separatorSuffixed(DISK_FS_ROOT_DIR), asLiteralString(fid)));
 	}
 
 	private String separatorSuffixed(String dir) {

@@ -229,8 +229,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.ACCOUNTS, new FCMap<>());
 			setChild(ChildIndices.TOKENS, new FCMap<>());
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
-			setChild(ChildIndices.DISK_FS,
-					new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
+			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
@@ -240,8 +239,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			constructed from state with this node's account, which the DiskFs will use to scope the
 			path to its disk-based storage. */
 			var restoredDiskFs = diskFs();
-			restoredDiskFs.setFsBaseDir(diskFsBaseDirPath);
-			restoredDiskFs.setFsNodeScopedDir(asLiteralString(ctx.nodeAccount()));
 			if (!skipDiskFsHashCheck) {
 				restoredDiskFs.checkHashesAgainstDiskContents();
 			}
