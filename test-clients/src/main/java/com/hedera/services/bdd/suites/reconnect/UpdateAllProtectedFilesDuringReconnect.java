@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
@@ -92,9 +93,9 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 								.unavailableNode()
 				)
 				.when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(Map.of("minimumAutoRenewDuration", "20")),
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
+								.overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "20"))
+								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						fileUpdate(API_PERMISSIONS)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("updateFile", "2-50")),
@@ -153,7 +154,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 								.path(ContractResources.VALID_BYTECODE_PATH),
 						contractCreate("testContract")
 								.bytecode("contractFile")
-								.autoRenewSecs(1)
+								.autoRenewSecs(15)
 								.setNode("0.0.6")
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
 

@@ -1640,11 +1640,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
       - schedule:
-          cron: "5 7 * * *"
+          cron: "3 0 * * *"
           filters:
             branches:
               only:
-                - master
+                - 1251-M-fix-AllProtectedFilesUpdate
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2207,7 +2207,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout test-allprotected-files-update;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2629,10 +2629,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
