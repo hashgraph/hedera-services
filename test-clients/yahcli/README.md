@@ -74,7 +74,7 @@ Commands:
   sysfiles  Perform system file operations
   fees      Perform system fee operations
 ``` 
-:information_desk_person: &nbsp; Since we the only key we have for previewnet
+:information_desk_person: &nbsp; Since the only key we have for previewnet
 is for account `0.0.2`, we will need to use `-p 2` for the payer argument 
 when running against this network.
 

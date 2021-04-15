@@ -94,6 +94,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.ServicesState.RELEASE_0100_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0110_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0120_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_0130_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_070_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
@@ -297,6 +298,7 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_0100_CHILDREN, subject.getMinimumChildCount(RELEASE_0100_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0110_CHILDREN, subject.getMinimumChildCount(RELEASE_0110_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0120_CHILDREN, subject.getMinimumChildCount(RELEASE_0120_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_0130_CHILDREN, subject.getMinimumChildCount(RELEASE_0130_VERSION));
 
 		Throwable throwable = assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(invalidVersion));
