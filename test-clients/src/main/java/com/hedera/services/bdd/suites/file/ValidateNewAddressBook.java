@@ -40,10 +40,6 @@ public class ValidateNewAddressBook extends HapiApiSuite {
 						getFileContents(ADDRESS_BOOK)
 								.saveTo(path("addressBook.bin"))
 								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt")),
-						getFileContents(ADDRESS_BOOK)
-								.saveTo(path("addressBook.bin"))
-								.saveReadableTo(SYS_FILE_SERDES.get(101L)::fromRawFile,
-										path("addressBook.json")),
 						getFileContents(NODE_DETAILS)
 								.saveTo(path("nodeDetails.bin"))
 								.saveReadableTo(SYS_FILE_SERDES.get(102L)::fromRawFile, path("nodeDetails.json")));

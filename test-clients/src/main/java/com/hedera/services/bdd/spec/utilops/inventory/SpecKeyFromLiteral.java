@@ -39,7 +39,7 @@ import java.util.Optional;
 import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkSimpleKey;
 
 public class SpecKeyFromLiteral extends UtilOp {
-	static final Logger log = LogManager.getLogger(SpecKeyFromLiteral.class);
+	private static final Logger log = LogManager.getLogger(SpecKeyFromLiteral.class);
 
 	private final String name;
 	private final String hexEncodedPrivateKey;

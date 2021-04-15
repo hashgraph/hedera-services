@@ -37,7 +37,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Optional;
 
 public class SpecKeyFromMnemonic extends UtilOp {
-	static final Logger log = LogManager.getLogger(SpecKeyFromMnemonic.class);
+	private static final Logger log = LogManager.getLogger(SpecKeyFromMnemonic.class);
 
 	private final String name;
 	private final String mnemonic;
