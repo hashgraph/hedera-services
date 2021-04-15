@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.factories;
+package com.hedera.test.extensions;
 
 /*-
  * ‌
@@ -20,14 +20,16 @@ package com.hedera.services.sigs.factories;
  * ‍
  */
 
-import com.hedera.services.utils.TxnAccessor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class SigFactoryCreator {
-	private static final Logger log = LogManager.getLogger(SigFactoryCreator.class);
-
-	public TxnScopedPlatformSigFactory createScopedFactory(TxnAccessor accessor) {
-		return new BodySigningSigFactory(accessor);
-	}
+/**
+ * In a JUnit5 test extended with the {@link LogCaptureExtension}, denotes the field
+ * whose logs should be captured per test method execution.
+ */
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LoggingSubject {
 }

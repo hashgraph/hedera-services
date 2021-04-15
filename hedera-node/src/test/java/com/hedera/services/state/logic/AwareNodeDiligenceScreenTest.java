@@ -27,24 +27,27 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.Logger;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.state.logic.AwareNodeDiligenceScreen.MISSING_NODE_LOG_TPL;
-import static com.hedera.services.state.logic.AwareNodeDiligenceScreen.WRONG_NODE_LOG_TPL;
+import javax.inject.Inject;
+import java.time.Instant;
+
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
@@ -52,13 +55,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
-import java.time.Instant;
-
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class AwareNodeDiligenceScreenTest {
 	long submittingMember = 2L;
 	String pretendMemo = "ignored";
@@ -69,21 +75,21 @@ class AwareNodeDiligenceScreenTest {
 	Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
 
 	@Mock
-	Logger mockLog;
-	@Mock
 	TransactionContext txnCtx;
 	@Mock
 	OptionValidator validator;
 	@Mock
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
 
-	AwareNodeDiligenceScreen subject;
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private AwareNodeDiligenceScreen subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new AwareNodeDiligenceScreen(validator, txnCtx, backingAccounts);
-
-		AwareNodeDiligenceScreen.log = mockLog;
 	}
 
 	@Test
@@ -97,13 +103,9 @@ class AwareNodeDiligenceScreenTest {
 		// and:
 		verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
 		// and:
-		verify(mockLog).warn(
-				MISSING_NODE_LOG_TPL,
-				readableId(aNodeAccount),
-				submittingMember,
-				readableId(aNodeAccount),
-				accessor.getSignedTxn4Log());
-
+		assertThat(
+				logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Node 0.0.3 (member #2) submitted a txn w/ missing node account 0.0.3")));
 	}
 
 	@Test
@@ -117,13 +119,9 @@ class AwareNodeDiligenceScreenTest {
 		// and:
 		verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
 		// and:
-		verify(mockLog).warn(
-				WRONG_NODE_LOG_TPL,
-				readableId(bNodeAccount),
-				submittingMember,
-				readableId(aNodeAccount),
-				accessor.getSignedTxn4Log());
-
+		assertThat(
+				logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Node 0.0.4 (member #2) submitted a txn meant for node account 0.0.3")));
 	}
 
 	@Test

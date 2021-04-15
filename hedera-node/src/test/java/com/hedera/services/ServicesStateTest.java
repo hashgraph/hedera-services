@@ -53,6 +53,9 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.utils.SystemExits;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -78,11 +81,14 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -100,6 +106,8 @@ import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static java.util.Collections.EMPTY_LIST;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -108,13 +116,16 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
+
+@ExtendWith(LogCaptureExtension.class)
 class ServicesStateTest {
 	Function<String, byte[]> mockHashReader;
 	Consumer<MerkleNode> mockDigest;
@@ -161,7 +172,11 @@ class ServicesStateTest {
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	NetworkCtxManager networkCtxManager;
 
-	ServicesState subject;
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private ServicesState subject;
 
 	private static final Hash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
@@ -432,8 +447,6 @@ class ServicesStateTest {
 	@Test
 	public void skipsHashCheckIfNotAppropriate() {
 		// setup:
-		var mockLog = mock(Logger.class);
-		ServicesMain.log = mockLog;
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
 		CONTEXTS.store(ctx);
 		// and:
@@ -457,15 +470,12 @@ class ServicesStateTest {
 		verify(diskFs, never()).checkHashesAgainstDiskContents();
 
 		// cleanup:
-		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
 		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	}
 
 	@Test
 	public void logsNonNullHashesFromSavedState() {
 		// setup:
-		var mockLog = mock(Logger.class);
-		ServicesState.log = mockLog;
 		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
 		CONTEXTS.store(ctx);
 
@@ -485,8 +495,9 @@ class ServicesStateTest {
 		subject.init(platform, book);
 
 		// then:
-		InOrder inOrder = inOrder(scheduledTxs, runningHashLeaf, diskFs, ctx, mockDigest, accounts, storage, topics,
-				tokens, tokenAssociations, networkCtx, book, mockLog);
+		InOrder inOrder = inOrder(
+				scheduledTxs, runningHashLeaf, diskFs, ctx, mockDigest,
+				accounts, storage, topics, tokens, tokenAssociations, networkCtx, book);
 		inOrder.verify(diskFs).setFsBaseDir(any());
 		inOrder.verify(ctx).nodeAccount();
 		inOrder.verify(diskFs).setFsNodeScopedDir(any());
@@ -503,19 +514,26 @@ class ServicesStateTest {
 		inOrder.verify(networkCtx).getHash();
 		inOrder.verify(book).getHash();
 		inOrder.verify(runningHashLeaf).getHash();
-		inOrder.verify(mockLog).info(argThat((String s) -> s.startsWith("[SwirldState Hashes]")));
 		inOrder.verify(ctx).update(subject);
+		// and:
+		assertThat(
+				logCaptor.infoLogs(),
+				contains(
+						equalTo("Init called on Services node 1 WITH Merkle saved state"),
+						startsWith("initial Hash in RecordsRunningHashLeaf"),
+						startsWith("[SwirldState Hashes]"),
+						startsWith("Mock for MerkleNetworkContext"),
+						equalTo("--> Context initialized accordingly on Services node 1"),
+						equalTo("ServicesState init with 0 accounts"),
+						equalTo("ServicesState init with 0 topics")));
 
 		// cleanup:
-		ServicesState.log = LogManager.getLogger(ServicesState.class);
 		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	}
 
 	@Test
 	public void hashesPrintedAsExpected() {
 		// setup:
-		var mockLog = mock(Logger.class);
-		ServicesState.log = mockLog;
 		Hash ctxHash = new Hash("sdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfy".getBytes());
 		Hash bookHash = new Hash("sdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfz".getBytes());
 		Hash topicRootHash = new Hash("sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes());
@@ -590,11 +608,9 @@ class ServicesStateTest {
 		subject.logSummary();
 
 		// then:
-		verify(mockLog).info(expected);
-		verify(mockLog).info("Not really a network context representation!");
-
-		// cleanup:
-		ServicesState.log = LogManager.getLogger(ServicesState.class);
+		assertThat(
+				logCaptor.infoLogs(),
+				contains(equalTo(expected), equalTo("Not really a network context representation!")));
 	}
 
 	@Test

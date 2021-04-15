@@ -23,29 +23,32 @@ package com.hedera.services.fees;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import org.apache.logging.log4j.Logger;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static java.time.Instant.ofEpochSecond;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.BDDMockito.*;
-
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static java.time.Instant.ofEpochSecond;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.BDDMockito.given;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class TxnRateFeeMultiplierSourceTest {
 	Instant[] congestionStarts = new Instant[] { ofEpochSecond(1L), ofEpochSecond(2L), ofEpochSecond(3L), };
 	Instant consensusNow = congestionStarts[2].plusSeconds(1L);
@@ -54,7 +57,11 @@ class TxnRateFeeMultiplierSourceTest {
 	FunctionalityThrottling throttling;
 
 	MockGlobalDynamicProps mockProps;
-	TxnRateFeeMultiplierSource subject;
+
+	@Inject
+	private LogCaptor logCaptor;
+	@LoggingSubject
+	private TxnRateFeeMultiplierSource subject;
 
 	@BeforeEach
 	void setUp() {
@@ -166,78 +173,61 @@ class TxnRateFeeMultiplierSourceTest {
 	@Test
 	void logsCongestionPricingStart() {
 		// setup:
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		var mockLog = mock(Logger.class);
 		var desired = "Congestion pricing beginning w/ 10x multiplier";
 
 		// when:
-		subject.logMultiplierChange(1L, 10L, mockLog);
+		subject.logMultiplierChange(1L, 10L);
 
 		// then:
-		verify(mockLog).info(captor.capture());
-		assertEquals(desired, captor.getValue());
+		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	@Test
 	void logsCongestionPricingIncrease() {
-		// setup:
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		var mockLog = mock(Logger.class);
+		// given:
 		var desired = "Congestion pricing continuing, reached 100x multiplier";
 
 		// when:
-		subject.logMultiplierChange(10L, 100L, mockLog);
+		subject.logMultiplierChange(10L, 100L);
 
 		// then:
-		verify(mockLog).info(captor.capture());
-		assertEquals(desired, captor.getValue());
+		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	@Test
 	void logsCongestionPricingEnd() {
 		// setup:
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		var mockLog = mock(Logger.class);
 		var desired = "Congestion pricing ended";
 
 		// when:
-		subject.logMultiplierChange(10L, 1L, mockLog);
+		subject.logMultiplierChange(10L, 1L);
 
 		// then:
-		verify(mockLog).info(captor.capture());
-		assertEquals(desired, captor.getValue());
+		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	@Test
 	void silentOnCongestionPricingDrop() {
-		// setup:
-		var mockLog = mock(Logger.class);
-
 		// when:
-		subject.logMultiplierChange(100L, 10L, mockLog);
+		subject.logMultiplierChange(100L, 10L);
 
 		// then:
-		verify(mockLog, never()).info(any(String.class));
+		Assertions.assertTrue(logCaptor.infoLogs().isEmpty());
 	}
 
 	@Test
 	void toStringIndicatesUnavailableConfig() {
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		var mockLog = mock(Logger.class);
 		var desired = "The new cutoffs for congestion pricing are: <N/A>";
 
 		// when:
-		subject.logReadableCutoffs(mockLog);
+		subject.logReadableCutoffs();
 
 		// then:
-		verify(mockLog).info(captor.capture());
-		assertEquals(desired, captor.getValue());
+		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	@Test
 	void toStringHasExpectedCutoffsMsg() {
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		var mockLog = mock(Logger.class);
 		var desired = "The new cutoffs for congestion pricing are:\n" +
 				"  (A) When logical TPS exceeds:\n" +
 				"    900.00 TPS, multiplier is 10x\n" +
@@ -254,12 +244,9 @@ class TxnRateFeeMultiplierSourceTest {
 
 		// when:
 		subject.resetExpectations();
-		// and:
-		subject.logReadableCutoffs(mockLog);
 
 		// then:
-		verify(mockLog).info(captor.capture());
-		assertEquals(desired, captor.getValue());
+		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 
 	private Instant[] instants(long a, long b, long c) {

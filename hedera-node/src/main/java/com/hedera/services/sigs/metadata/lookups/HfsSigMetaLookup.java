@@ -34,7 +34,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
  * @author Michael Tinker
  */
 public class HfsSigMetaLookup implements FileSigMetaLookup {
-	public static Logger log = LogManager.getLogger(HfsSigMetaLookup.class);
+	private static final Logger log = LogManager.getLogger(HfsSigMetaLookup.class);
 
 	private final HederaFs hfs;
 

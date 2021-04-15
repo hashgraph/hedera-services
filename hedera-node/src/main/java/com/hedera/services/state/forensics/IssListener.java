@@ -20,7 +20,6 @@ package com.hedera.services.state.forensics;
  * ‍
  */
 
-import com.hedera.services.ServicesMain;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.swirlds.common.AddressBook;
@@ -29,21 +28,15 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldState;
 import com.swirlds.common.events.Event;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
-import java.util.function.Function;
 
 import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
 public class IssListener implements InvalidSignedStateListener {
-	static Logger log = LogManager.getLogger(IssListener.class);
+	private static final Logger log = LogManager.getLogger(IssListener.class);
 
 	static final String ISS_ERROR_MSG_PATTERN =
 			"In round %d, node %d received a signed state from node %d with a signature different than %s on %s";

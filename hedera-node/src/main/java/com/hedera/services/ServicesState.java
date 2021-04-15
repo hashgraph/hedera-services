@@ -74,7 +74,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
-	static Logger log = LogManager.getLogger(ServicesState.class);
+	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final ImmutableHash emptyHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
