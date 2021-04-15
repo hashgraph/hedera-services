@@ -495,7 +495,6 @@ class ServicesStateTest {
 				accounts, storage, topics, tokens, tokenAssociations, networkCtx, book);
 		inOrder.verify(diskFs).checkHashesAgainstDiskContents();
 		inOrder.verify(ctx).setRecordsInitialHash(recordsHash);
-		inOrder.verify(mockDigest).accept(subject);
 		inOrder.verify(accounts).getHash();
 		inOrder.verify(storage).getHash();
 		inOrder.verify(topics).getHash();

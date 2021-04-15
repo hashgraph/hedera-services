@@ -257,11 +257,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		// set records initialHash
 		ctx.setRecordsInitialHash(runningHashLeaf().getRunningHash().getHash());
 
-		if (initWithMerkle) {
-			// only digest when initialize with Merkle state
-			merkleDigest.accept(this);
-			logSummary();
-		}
+		logSummary();
 
 		initializeContext(ctx);
 		CONTEXTS.store(ctx);
