@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.perf;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
@@ -171,10 +172,10 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 								try {
 									acctID = spec.registry().getAccountID(acctName);
 								} catch (RegistryNotFound e) {
-									log.info(acctName + " was not created successfully, which is normal...");
+									log.info(acctName + " was not created successfully.");
 									continue;
 								}
-								var op = getAccountBalance("0.0." + acctID.getAccountNum())
+								var op = getAccountBalance(HapiPropertySource.asAccountString(acctID))
 										.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
 										.persists(true)
 										.noLogging();
@@ -199,7 +200,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 		log.info("Total accounts: {}", totalAccounts);
 		log.info("Total tokens: {}", totalTestTokens);
 
-		AtomicInteger createdSofar = new AtomicInteger(totalAccounts - 1);
+		AtomicInteger moreToCreate = new AtomicInteger(totalAccounts - 1);
 
 		return spec -> new OpProvider() {
 			@Override
@@ -211,11 +212,11 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 			@Override
 			public Optional<HapiSpecOperation> get() {
 				int next;
-				if ((next = createdSofar.getAndDecrement()) < 0) {
+				if ((next = moreToCreate.getAndDecrement()) < 0) {
 					return Optional.empty();
 				}
 
-				var op =  cryptoCreate(String.format("%s%s",ACCT_NAME_PREFIX , next))
+				var op =  cryptoCreate(String.format("%s%d",ACCT_NAME_PREFIX , next))
 						.balance((long)(r.nextInt((int)ONE_HBAR) + MIN_ACCOUNT_BALANCE))
 						.key(GENESIS)
 						.fee(ONE_HUNDRED_HBARS)
