@@ -200,7 +200,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 		log.info("Total accounts: {}", totalAccounts);
 		log.info("Total tokens: {}", totalTestTokens);
 
-		AtomicInteger moreToCreate = new AtomicInteger(totalAccounts - 1);
+		AtomicInteger moreToCreate = new AtomicInteger(totalAccounts );
 
 		return spec -> new OpProvider() {
 			@Override
@@ -212,7 +212,8 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 			@Override
 			public Optional<HapiSpecOperation> get() {
 				int next;
-				if ((next = moreToCreate.getAndDecrement()) < 0) {
+				next = moreToCreate.getAndDecrement();
+				if (next <= 0) {
 					return Optional.empty();
 				}
 
@@ -246,7 +247,8 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 			@Override
 			public Optional<HapiSpecOperation> get() {
 				int next;
-				if ((next = createdSofar.getAndIncrement()) >= totalTestTokens) {
+				next = createdSofar.getAndIncrement();
+				if (next >= totalTestTokens) {
 					return Optional.empty();
 				}
 				var payingTreasury = String.format(ACCT_NAME_PREFIX + next);
