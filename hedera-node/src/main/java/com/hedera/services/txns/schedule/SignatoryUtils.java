@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,11 +61,15 @@ public class SignatoryUtils {
 	 * and a flag that is {@code true} if the linked scheduled transaction is
 	 * ready-to-execute.
 	 *
-	 * @param id the id of the schedule to receive the witnessed keys
-	 * @param store the store to retrieve the schedule from
-	 * @param validScheduleKeys if present, a list of the relevant Ed25519 keys with valid signatures on the active
-	 *                             transaction (if absent, a linked Ed25519 key was expanded to an invalid signature)
-	 * @param activationHelper an information source on Ed25519 keys prerequisite to the relevant schedule
+	 * @param id
+	 * 		the id of the schedule to receive the witnessed keys
+	 * @param store
+	 * 		the store to retrieve the schedule from
+	 * @param validScheduleKeys
+	 * 		if present, a list of the relevant Ed25519 keys with valid signatures on the active
+	 * 		transaction (if absent, a linked Ed25519 key was expanded to an invalid signature)
+	 * @param activationHelper
+	 * 		an information source on Ed25519 keys prerequisite to the relevant schedule
 	 * @return a pair whose left element is the status result, right element is the ready-to-execute flag
 	 */
 	static Pair<ResponseCodeEnum, Boolean> witnessScoped(

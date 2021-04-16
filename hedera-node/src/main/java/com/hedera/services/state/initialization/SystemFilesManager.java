@@ -39,14 +39,22 @@ public interface SystemFilesManager {
 	void loadApiPermissions();
 	void loadApplicationProperties();
 
-	default void loadAllSystemFiles() {
+	/* Ensure file 0.0.123 exists in state, creating it from the throttles.json
+	 * resource if it is missing. (The {@code HfsSystemFilesManager} will signal
+	 * interested components of the loaded files via a callback.) */
+	void loadThrottleDefinitions();
+
+	default void loadObservableSystemFiles() {
 		loadApplicationProperties();
 		loadApiPermissions();
 		loadFeeSchedules();
 		loadExchangeRates();
+		loadThrottleDefinitions();
 
-		setFilesLoaded();
+		setObservableFilesLoaded();
 	}
-	void setFilesLoaded();
-	boolean areFilesLoaded();
+
+	void setObservableFilesLoaded();
+	void setObservableFilesNotLoaded();
+	boolean areObservableFilesLoaded();
 }

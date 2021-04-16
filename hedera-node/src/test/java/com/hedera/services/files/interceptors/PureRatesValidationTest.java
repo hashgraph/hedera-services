@@ -22,7 +22,6 @@ package com.hedera.services.files.interceptors;
 
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;

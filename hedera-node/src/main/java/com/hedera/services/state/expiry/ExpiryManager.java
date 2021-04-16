@@ -90,7 +90,7 @@ public class ExpiryManager {
 	/**
 	 * Invites the expiry manager to build any auxiliary data structures later needed to purge expired entities.
 	 */
-	public void restartEntitiesTrackingFrom() {
+	public void restartEntitiesTracking() {
 		entityExpiries.reset();
 
 		var expiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();

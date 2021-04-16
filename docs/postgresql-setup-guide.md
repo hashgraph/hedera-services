@@ -8,7 +8,7 @@ This document describes the standard Hedera configuration for the PostgreSQL loc
 2. On Windows, you may be forced to log off after the installation completes.
 3. On Windows, if Hyper-V and Containers features are disabled, you will see the prompt below. Save your work, press Ok, and wait for your computer to restart.
 
-![](enable-hyper-v-and-containers.png)
+![](assets/enable-hyper-v-and-containers.png)
 
 ### Run PostgreSQL image as a container
 Execute the following docker commands from the CLI:
@@ -32,7 +32,7 @@ Notes:
 1. The version of PostgresSQL that is currently used: **postgres:10.9-alpine**
 2. On Windows, you may be asked to authorize the drive sharing as shown below. Press the “Share It” button to allow access.
 
-![](authorize-drive-sharing.png)
+![](assets/authorize-drive-sharing.png)
 
 ### Control your PostgresSQL container
 ```

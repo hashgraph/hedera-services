@@ -60,17 +60,17 @@ public class ScheduleController extends ScheduleServiceGrpc.ScheduleServiceImplB
     }
 
     @Override
-    public void signSchedule(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
-        txnHelper.submit(request, responseObserver, ScheduleSign);
+    public void signSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+        txnHelper.submit(signedTxn, observer, ScheduleSign);
     }
 
     @Override
-    public void deleteSchedule(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
-        txnHelper.submit(request, responseObserver, ScheduleDelete);
+    public void deleteSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+        txnHelper.submit(signedTxn, observer, ScheduleDelete);
     }
 
     @Override
-    public void getScheduleInfo(Query request, StreamObserver<Response> responseObserver) {
-        queryHelper.answer(request, responseObserver, scheduleAnswers.getScheduleInfo(), ScheduleGetInfo);
+    public void getScheduleInfo(Query query, StreamObserver<Response> observer) {
+        queryHelper.answer(query, observer, scheduleAnswers.getScheduleInfo(), ScheduleGetInfo);
     }
 }

@@ -222,12 +222,15 @@ public class SystemOpPolicies {
 	}
 
 	private boolean canExchangeRatesAdminUpdate(long entity) {
-		return entity == entityNums.files().exchangeRates() || isPropertiesOrPermissions(entity);
+		return entity == entityNums.files().exchangeRates() ||
+				entity == entityNums.files().throttleDefinitions() ||
+				isPropertiesOrPermissions(entity);
 	}
 
 	private boolean canAddressBookAdminUpdate(long entity) {
 		return entity == entityNums.files().addressBook() ||
 				entity == entityNums.files().nodeDetails() ||
+				entity == entityNums.files().throttleDefinitions() ||
 				isPropertiesOrPermissions(entity);
 	}
 

@@ -22,12 +22,19 @@ package com.hedera.services.config;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import java.util.Set;
 
 public class MockGlobalDynamicProps extends GlobalDynamicProperties {
+	private final CongestionMultipliers defaultMultipliers = CongestionMultipliers.from("90,10x,95,25x,99,100x");
+	private final CongestionMultipliers differentMultipliers = CongestionMultipliers.from("90,11x,95,26x,99,101x");
+
+	int minCongestionPeriod = 2;
+	CongestionMultipliers currentMultipliers = defaultMultipliers;
+
 	public MockGlobalDynamicProps() {
 		super(null, null);
 	}
@@ -168,5 +175,20 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public Set<HederaFunctionality> schedulingWhitelist() {
 		return Set.of(HederaFunctionality.CryptoCreate, HederaFunctionality.CryptoTransfer);
+	}
+
+	@Override
+	public CongestionMultipliers congestionMultipliers() {
+		return currentMultipliers;
+	}
+
+	public void useDifferentMultipliers() {
+		currentMultipliers = differentMultipliers;
+		minCongestionPeriod = 0;
+	}
+
+	@Override
+	public int feesMinCongestionPeriod() {
+		return minCongestionPeriod;
 	}
 }

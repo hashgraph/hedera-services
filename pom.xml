@@ -3,7 +3,7 @@
 
   <groupId>com.hedera.hashgraph</groupId>
   <artifactId>hedera-services</artifactId>
-  <version>0.13.0-alpha.3-SNAPSHOT</version>
+  <version>0.13.0-rc.2-SNAPSHOT</version>
   <description>
     Hedera Services (crypto, file, contract, consensus) on the Platform
   </description>
@@ -154,14 +154,17 @@
     <commons-io.version>2.1</commons-io.version>
 
     <!-- Dependency properties -->
+    <commons-io.version>2.1</commons-io.version>
     <commons-codec.version>1.11</commons-codec.version>
     <eddsa.version>0.3.0</eddsa.version>
     <grpc.version>1.33.0</grpc.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-    <hapi-proto.version>0.13.0-alpha.2</hapi-proto.version>
+    <hapi-proto.version>0.13.0-rc.1</hapi-proto.version>
+    <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.13.2</log4j.version>
     <netty.version>4.1.51.Final</netty.version>
+    <swirlds.version>0.9.0</swirlds.version>
     <!-- Test dependency properties -->
     <hamcrest-all.version>1.3</hamcrest-all.version>
     <junit.version>4.13.1</junit.version>
@@ -176,7 +179,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <project.build.outputTimestamp>2021-03-30T18:24:10Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2021-04-16T18:44:25Z</project.build.outputTimestamp>
   </properties>
 
   <modules>
@@ -249,6 +252,12 @@ ${git.signoff}
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>com/hederahashgraph/**/*</exclude>
+            <exclude>com/hedera/services/proto/utils/**/*</exclude>
+          </excludes>
+        </configuration>
         <executions>
           <execution>
             <id>jacoco-agent</id>
@@ -322,7 +331,7 @@ ${git.signoff}
           <configuration>
             <forkCount>3</forkCount>
             <reuseForks>true</reuseForks>
-            <argLine>@{argLine} -Xmx2048m</argLine>
+            <argLine>@{argLine} -Xmx4096m</argLine>
           </configuration>
         </plugin>
         <plugin>
@@ -376,6 +385,11 @@ ${git.signoff}
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>javax.inject</groupId>
+        <artifactId>javax.inject</artifactId>
+        <version>${javax-inject.version}</version>
+      </dependency>
+      <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-netty</artifactId>
         <version>${grpc.version}</version>
@@ -414,6 +428,31 @@ ${git.signoff}
         <groupId>io.netty</groupId>
         <artifactId>netty-common</artifactId>
         <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-platform-core</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-fcmap</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-fcqueue</artifactId>
+        <version>${swirlds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.swirlds</groupId>
+        <artifactId>swirlds-common</artifactId>
+        <version>${swirlds.version}</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>

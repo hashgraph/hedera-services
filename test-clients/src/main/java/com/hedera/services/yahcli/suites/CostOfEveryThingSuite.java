@@ -98,22 +98,10 @@ import static java.util.stream.Collectors.toList;
 public class CostOfEveryThingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CostOfEveryThingSuite.class);
 
-	enum service {
-		CRYPTO, CONSENSUS, TOKEN, FILE, CONTRACT, SCHEDULED, INVALID
-	}
-
-	private final Map<String, service> SERVICES_TO_ENUM = Map.ofEntries(
-			Map.entry("crypto", service.CRYPTO),
-			Map.entry("consensus", service.CONSENSUS),
-			Map.entry("token", service.TOKEN),
-			Map.entry("file", service.FILE),
-			Map.entry("contract", service.CONTRACT),
-			Map.entry("scheduled", service.SCHEDULED));
-	private final Set<service> VALID_SERVICES = new HashSet<>(SERVICES_TO_ENUM.values());
 
 	HapiApiSpec.CostSnapshotMode costSnapshotMode = TAKE;
 	private final Map<String, String> specConfig;
-	private final EnumSet<service> services;
+	private final EnumSet<Utils.ServiceType> ServiceTypes;
 	private StringBuilder feeTableBuilder;
 	private String serviceBorder;
 
@@ -122,20 +110,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 		this.specConfig = specConfig;
 		this.feeTableBuilder = feeTableBuilder;
 		this.serviceBorder = serviceBorder;
-		this.services = rationalized(services);
-	}
-
-	private EnumSet<service> rationalized(final String[] services) {
-		if(Arrays.asList(services).contains("all")) {
-			return EnumSet.copyOf(VALID_SERVICES);
-		}
-		return Arrays.stream(services)
-				.map(s -> SERVICES_TO_ENUM.getOrDefault(s, service.INVALID))
-				.peek(s -> {
-					if (!VALID_SERVICES.contains(s)) {
-						throw new IllegalArgumentException("Invalid service provided!");
-					}
-				}).collect(Collectors.toCollection(() -> EnumSet.noneOf(service.class)));
+		this.ServiceTypes = Utils.rationalizedServices(services);
 	}
 
 	@Override
@@ -146,12 +121,12 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return Stream.of(
-				ofNullable(services.contains(service.CRYPTO) ? canonicalCryptoOps() : null),
-				ofNullable(services.contains(service.CONSENSUS) ? canonicalTopicOps() : null),
-				ofNullable(services.contains(service.TOKEN) ? canonicalTokenOps() : null),
-				ofNullable(services.contains(service.FILE) ? canonicalFileOps() : null),
-				ofNullable(services.contains(service.CONTRACT) ? canonicalContractOps() : null),
-				ofNullable(services.contains(service.SCHEDULED) ? canonicalScheduleOps() : null)
+				ofNullable(ServiceTypes.contains(Utils.ServiceType.CRYPTO) ? canonicalCryptoOps() : null),
+				ofNullable(ServiceTypes.contains(Utils.ServiceType.CONSENSUS) ? canonicalTopicOps() : null),
+				ofNullable(ServiceTypes.contains(Utils.ServiceType.TOKEN) ? canonicalTokenOps() : null),
+				ofNullable(ServiceTypes.contains(Utils.ServiceType.FILE) ? canonicalFileOps() : null),
+				ofNullable(ServiceTypes.contains(Utils.ServiceType.CONTRACT) ? canonicalContractOps() : null),
+				ofNullable(ServiceTypes.contains(Utils.ServiceType.SCHEDULED) ? canonicalScheduleOps() : null)
 		).flatMap(Optional::stream).collect(toList());
 	}
 
@@ -168,7 +143,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 								.balance(10_000_000_000L),
 						fileCreate("contractFile")
 								.payingWith("payer")
-								.path("resources/CreateTrivial.bin")
+								.fromResource("contract/bytecodes/CreateTrivial.bin")
 				)
 				.when(
 						contractCreate("testContract")

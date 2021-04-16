@@ -1,4 +1,18 @@
 networks:
+  devops:
+    bootstrap: 2
+    defaultNode: 3
+    ensureScenarioPayerHbars: 10000
+    nodes:
+    - {account: 3, ipv4Addr: 35.196.138.70}
+    scenarioPayer: 1043
+    scenarios:
+      sysFilesDown:
+        evalMode: snapshot
+        numsToFetch: [122]
+      sysFilesUp:
+        updates:
+        - {num: 122, payer: 2}
   largeperfnet:
     bootstrap: 2
     defaultNode: 3
@@ -16,10 +30,25 @@ networks:
   perfnet:
     bootstrap: 2
     defaultNode: 3
-    ensureScenarioPayerHbars: 25
+    ensureScenarioPayerHbars: 10000
     nodes:
     - {account: 3, ipv4Addr: 34.74.82.254}
-    scenarioPayer: 1021
+    scenarioPayer: 1072
+    scenarios:
+      sysFilesDown:
+        evalMode: snapshot
+        numsToFetch: [121, 122]
+      sysFilesUp:
+        updates:
+        - {num: 121, payer: 2}
+        - {num: 122, payer: 2}
+  integration:
+    bootstrap: 2
+    defaultNode: 3
+    ensureScenarioPayerHbars: 10000
+    nodes:
+    - {account: 3, ipv4Addr: 34.74.191.8}
+    scenarioPayer: 2415
     scenarios:
       sysFilesDown:
         evalMode: snapshot
@@ -27,29 +56,6 @@ networks:
       sysFilesUp:
         updates:
         - {num: 121, payer: 2}
-  integration:
-    bootstrap: 2
-    defaultNode: 3
-    ensureScenarioPayerHbars: 25
-    nodes:
-    - {account: 3, ipv4Addr: 35.196.146.2}
-    - {account: 4, ipv4Addr: 35.245.91.14}
-    - {account: 5, ipv4Addr: 34.67.95.76}
-    - {account: 6, ipv4Addr: 35.203.145.150}
-    - {account: 7, ipv4Addr: 34.94.112.161}
-    - {account: 8, ipv4Addr: 34.95.37.183}
-    - {account: 9, ipv4Addr: 34.76.213.6}
-    - {account: 10, ipv4Addr: 34.89.53.144}
-    - {account: 11, ipv4Addr: 35.198.144.75}
-    - {account: 12, ipv4Addr: 34.90.15.85}
-    - {account: 13, ipv4Addr: 34.92.29.237}
-    - {account: 14, ipv4Addr: 35.194.216.81}
-    - {account: 15, ipv4Addr: 34.84.108.224}
-    scenarioPayer: 7378
-    scenarios:
-      sysFilesDown:
-        evalMode: snapshot
-        numsToFetch: [121]
   previewtestnet:
     bootstrap: 2
     defaultNode: 3
@@ -83,7 +89,7 @@ networks:
     scenarios:
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [111]
+        numsToFetch: [121]
   mainnet:
     bootstrap: 950
     defaultNode: 3

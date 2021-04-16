@@ -63,7 +63,7 @@ public class RecordStreamVerification extends UtilOp {
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		NodeAddressBook addressBook = downloadBook(spec);
+		var addressBook = downloadBook(spec);
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier(addressBook);
 		Set<String> uniqRecordFiles = allRecordFilesFor(verifier.nodes());
 		Map<String, List<File>> sigFilesAvail = uniqRecordFiles

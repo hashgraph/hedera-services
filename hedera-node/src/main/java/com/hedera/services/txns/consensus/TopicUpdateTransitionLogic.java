@@ -23,6 +23,7 @@ package com.hedera.services.txns.consensus;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -40,13 +41,12 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.state.submerkle.RichInstant.fromGrpc;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class TopicUpdateTransitionLogic implements TransitionLogic {
-	protected static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
+	private static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
 
 	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK =
 			this::validatePreSignatureValidation;
@@ -196,7 +196,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			if (designatesAccountRemoval(op.getAutoRenewAccount())) {
 				topic.setAutoRenewAccountId(null);
 			} else {
-				topic.setAutoRenewAccountId(ofNullableAccountId(op.getAutoRenewAccount()));
+				topic.setAutoRenewAccountId(EntityId.fromGrpcAccountId(op.getAutoRenewAccount()));
 			}
 		}
 	}

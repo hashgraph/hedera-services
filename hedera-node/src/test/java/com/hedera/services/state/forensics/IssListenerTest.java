@@ -19,39 +19,34 @@ package com.hedera.services.state.forensics;
  * ‍
  */
 
-import com.hedera.services.ServicesMain;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.events.Event;
-import com.swirlds.common.merkle.io.MerkleDataOutputStream;
-import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterEach;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.File;
+import javax.inject.Inject;
 import java.time.Instant;
-import java.util.function.Function;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class IssListenerTest {
 	long selfId = 1, otherId = 2, round = 1_234_567, numConsEvents = 111;
 	NodeId self = new NodeId(false, selfId);
@@ -61,66 +56,29 @@ class IssListenerTest {
 	String hashHex = Hex.encodeHexString(hash);
 	byte[] sig = "zyx".getBytes();
 	String sigHex = Hex.encodeHexString(sig);
-	// and:
-	byte[] topicRootHash = "sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes();
-	String trHashHex = Hex.encodeHexString(topicRootHash);
-	byte[] storageRootHash = "fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes();
-	String srHashHex = Hex.encodeHexString(storageRootHash);
-	byte[] accountsRootHash = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes();
-	String acHashHex = Hex.encodeHexString(accountsRootHash);
-
-	byte[] runningHashLeafHash = "qasdqasdqasdqasdqasdqasdqasdqasdqasdqasdqasdqasd".getBytes();
-	String leafHashHex = Hex.encodeHexString(runningHashLeafHash);
-
-	byte[] runningHashHash = "kqaskqaskqaskqaskqaskqaskqaskqaskqaskqaskqaskqas".getBytes();
-	String runningHashHex = Hex.encodeHexString(runningHashHash);
 
 	Instant consensusTime = Instant.now();
 
-	FCMap topics;
-	FCMap accounts;
-	FCMap storage;
-	Logger mockLog;
-	Platform platform;
-	AddressBook book;
-	IssEventInfo info;
+	@Mock
+	FcmDump fcmDump;
+	@Mock
 	ServicesState state;
-	RunningHash runningHash;
-	RecordsRunningHashLeaf runningHashLeaf;
+	@Mock
+	Platform platform;
+	@Mock
+	AddressBook book;
+	@Mock
+	IssEventInfo info;
 
-	IssListener subject;
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private IssListener subject;
 
 	@BeforeEach
 	public void setup() {
-		info = mock(IssEventInfo.class);
-		book = mock(AddressBook.class);
-		mockLog = mock(Logger.class);
-		platform = mock(Platform.class);
-		// and:
-		accounts = mock(FCMap.class);
-		storage = mock(FCMap.class);
-		topics = mock(FCMap.class);
-		given(accounts.getRootHash()).willReturn(new Hash(accountsRootHash));
-		given(storage.getRootHash()).willReturn(new Hash(storageRootHash));
-		given(topics.getRootHash()).willReturn(new Hash(topicRootHash));
-
-		runningHash = mock(RunningHash.class);
-		runningHashLeaf = new RecordsRunningHashLeaf(runningHash);
-		// and:
-		state = mock(ServicesState.class);
-		given(state.topics()).willReturn(topics);
-		given(state.storage()).willReturn(storage);
-		given(state.accounts()).willReturn(accounts);
-		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
-
-		IssListener.log = mockLog;
-
-		subject = new IssListener(info);
-	}
-
-	@AfterEach
-	public void cleanup() {
-		IssListener.log = LogManager.getLogger(IssListener.class);
+		subject = new IssListener(fcmDump, info);
 	}
 
 	@Test
@@ -130,112 +88,31 @@ class IssListenerTest {
 
 		// when:
 		subject.notifyError(
-				platform,
-				book,
-				state,
-				new Event[0],
-				self,
-				other,
-				round,
-				consensusTime,
-				numConsEvents,
-				sig,
-				hash);
+				platform, book, state, new Event[0], self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:
-
-		String msg = String.format(
+		var desired = String.format(
 				IssListener.ISS_FALLBACK_ERROR_MSG_PATTERN,
 				round,
 				String.valueOf(self),
 				String.valueOf(other));
-		verify(mockLog).warn((String) argThat(msg::equals), any(Exception.class));
+		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desired)));
 	}
 
 	@Test
-	public void logsExpectedIssInfo() throws Exception {
-		// setup:
+	public void logsExpectedIssInfo() {
 		given(info.shouldDumpThisRound()).willReturn(true);
-		// and:
-		MerkleDataOutputStream accountsMerkleOut = mock(MerkleDataOutputStream.class);
-		MerkleDataOutputStream storageMerkleOut = mock(MerkleDataOutputStream.class);
-		MerkleDataOutputStream topicsMerkleOut = mock(MerkleDataOutputStream.class);
-		// and:
-		Function<String, MerkleDataOutputStream> fn =
-				(Function<String, MerkleDataOutputStream>) mock(Function.class);
-		subject.merkleOutFn = fn;
-		// and:
-		InOrder inOrder = inOrder(
-				accounts, storage, topics,
-				accountsMerkleOut, storageMerkleOut, topicsMerkleOut,
-				info);
-
-		// and:
-		given(fn.apply(
-				String.format(IssListener.FC_DUMP_LOC_TPL,
-						ServicesMain.class.getName(), self.getId(), "accounts", round)))
-				.willReturn(accountsMerkleOut);
-		given(fn.apply(
-				String.format(IssListener.FC_DUMP_LOC_TPL,
-						ServicesMain.class.getName(), self.getId(), "storage", round)))
-				.willReturn(storageMerkleOut);
-		given(fn.apply(
-				String.format(IssListener.FC_DUMP_LOC_TPL,
-						ServicesMain.class.getName(), self.getId(), "topics", round)))
-				.willReturn(topicsMerkleOut);
 
 		// when:
 		subject.notifyError(
-				platform,
-				book,
-				state,
-				new Event[0],
-				self,
-				other,
-				round,
-				consensusTime,
-				numConsEvents,
-				sig,
-				hash);
+				platform, book, state, new Event[0], self, other, round, consensusTime, numConsEvents, sig, hash);
 
 		// then:
-		String msg = String.format(
-				IssListener.ISS_ERROR_MSG_PATTERN,
-				round, selfId, otherId, sigHex, hashHex, acHashHex, srHashHex, trHashHex, runningHashLeaf.toString());
-		verify(mockLog).error(msg);
-		// and
-		inOrder.verify(info).alert(consensusTime);
-		// and:
-		inOrder.verify(accountsMerkleOut).writeMerkleTree(accounts);
-		inOrder.verify(accountsMerkleOut).close();
-		inOrder.verify(storageMerkleOut).writeMerkleTree(storage);
-		inOrder.verify(storageMerkleOut).close();
-		inOrder.verify(topicsMerkleOut).writeMerkleTree(topics);
-		inOrder.verify(topicsMerkleOut).close();
-		// and:
-		inOrder.verify(info).decrementRoundsToDump();
-	}
-
-	@Test
-	public void merkleSupplierWorks() {
-		// given:
-		var okPath = "src/test/resources/tmp.nothing";
-
-		// when:
-		var fout = IssListener.merkleOutFn.apply(okPath);
-		// and:
-		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
-
-		// cleanup:
-		(new File(okPath)).delete();
-	}
-
-	@Test
-	public void merkleSupplierFnDoesntBlowUp() {
-		// given:
-		var badPath = "this/path/does/not/exist";
-
-		// then:
-		assertDoesNotThrow(() -> IssListener.merkleOutFn.apply(badPath));
+		var desired = String.format(IssListener.ISS_ERROR_MSG_PATTERN, round, selfId, otherId, sigHex, hashHex);
+		verify(info).alert(consensusTime);
+		verify(info).decrementRoundsToDump();
+		assertThat(logCaptor.errorLogs(), contains(desired));
+		verify(fcmDump).dumpFrom(state, self, round);
+		verify(state).logSummary();
 	}
 }

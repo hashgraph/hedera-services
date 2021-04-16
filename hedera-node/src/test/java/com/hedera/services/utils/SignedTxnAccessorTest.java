@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -50,7 +51,6 @@ public class SignedTxnAccessorTest {
 	@Test
 	public void parsesLegacyCorrectly() throws Exception {
 		// setup:
-		// given:
 		Transaction transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
 				3l, 0l, 0l,
 				100_000_000l,
@@ -64,6 +64,8 @@ public class SignedTxnAccessorTest {
 				.setSigMap(expectedMap)
 				.build();
 		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
+
+		// given:
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(transaction);
 
 		assertEquals(transaction, accessor.getBackwardCompatibleSignedTxn());
@@ -76,7 +78,6 @@ public class SignedTxnAccessorTest {
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash().toByteArray());
 		assertEquals(expectedMap, accessor.getSigMap());
-		assertEquals(ScheduleID.getDefaultInstance(), accessor.getScheduleRef());
 	}
 
 	@Test
@@ -111,6 +112,14 @@ public class SignedTxnAccessorTest {
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()),
 				accessor.getHash().toByteArray());
 		assertEquals(expectedMap, accessor.getSigMap());
-		assertEquals(ScheduleID.getDefaultInstance(), accessor.getScheduleRef());
+	}
+
+	@Test
+	void throwsOnUnsupportedCallToGetScheduleRef() {
+		// given:
+		var subject = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
+		// expect:
+		Assertions.assertThrows(UnsupportedOperationException.class, subject::getScheduleRef);
 	}
 }

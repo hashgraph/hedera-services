@@ -21,7 +21,10 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.TxnAccessor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.function.BiConsumer;
@@ -29,6 +32,8 @@ import java.util.function.BiConsumer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 public class ServicesTxnManager {
+	private static final Logger log = LogManager.getLogger(ServicesTxnManager.class);
+
 	private final Runnable scopedProcessing;
 	private final Runnable scopedRecordStreaming;
 	private final Runnable scopedTriggeredProcessing;
@@ -94,6 +99,7 @@ public class ServicesTxnManager {
 			createdStreamableRecord = true;
 		} catch (Exception commitFailure) {
 			warning.accept(commitFailure, "txn commit");
+			log.error(commitFailure);
 			attemptRollback(accessor, consensusTime, submittingMember, ctx);
 		}
 	}

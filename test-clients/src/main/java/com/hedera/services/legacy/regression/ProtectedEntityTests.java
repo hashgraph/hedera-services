@@ -35,6 +35,8 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
+
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -717,7 +719,6 @@ public class ProtectedEntityTests extends BaseClient {
    * @param entityID file or contract ID to be deleted
    * @param payerAccount
    * @param nodeID
-   * @param fileWacl the wacl of the file to be deleted, it should sign if not null
    * @param expectedPrecheckCode
    * @param expectedPostcheckCode
    * @throws Throwable
@@ -809,7 +810,6 @@ public class ProtectedEntityTests extends BaseClient {
   /**
    * Dynamic restart with freeze API.
    * 
-   * @param entityID file or contract ID to be deleted
    * @param payerAccount
    * @param nodeID
    * @param expectedPrecheckCode

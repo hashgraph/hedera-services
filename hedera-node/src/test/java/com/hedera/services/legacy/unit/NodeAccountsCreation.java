@@ -46,8 +46,6 @@ import org.apache.logging.log4j.Logger;
 public class NodeAccountsCreation {
 	private static final Logger log = LogManager.getLogger(NodeAccountsCreation.class);
 
-	private static long INITIAL_GENESIS_COINS = 5000000000000000000l;
-
 	public static void insertAccount(
 			long balance,
 			String publicKey,

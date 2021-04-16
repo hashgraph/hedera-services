@@ -36,7 +36,6 @@ import com.hedera.services.legacy.TestHelper;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
-import com.hedera.services.legacy.unit.PropertyLoaderTest;
 import com.hedera.services.legacy.unit.StorageKeyNotFoundException;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -85,7 +84,6 @@ import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -109,7 +107,6 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features
  */
 
-@Disabled
 public class SmartContractRequestHandlerMiscTest {
 
   public static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";
@@ -231,9 +228,6 @@ public class SmartContractRequestHandlerMiscTest {
     payerMerkleEntityId.setNum(payerAccount);
     payerMerkleEntityId.setRealm(0);
     payerMerkleEntityId.setShard(0);
-    PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
-        "../../../configuration/dev/application.properties",
-        "../../../configuration/dev/api-permission.properties");
   }
 
   private void createAccount(AccountID payerAccount, long balance)

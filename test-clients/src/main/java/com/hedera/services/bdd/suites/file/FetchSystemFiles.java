@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.file;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -96,11 +95,11 @@ public class FetchSystemFiles extends HapiApiSuite {
 	}
 
 	@FunctionalInterface
-	private interface CheckedParser {
+	public interface CheckedParser {
 		Object parseFrom(byte[] bytes) throws Exception;
 	}
 
-	private Function<byte[], String> unchecked(CheckedParser parser) {
+	public static Function<byte[], String> unchecked(CheckedParser parser) {
 			return bytes -> {
 				try {
 					return parser.parseFrom(bytes).toString();

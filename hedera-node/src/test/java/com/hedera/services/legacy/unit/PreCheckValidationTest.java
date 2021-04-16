@@ -27,6 +27,7 @@ import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
@@ -36,6 +37,8 @@ import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;
 import com.hedera.services.legacy.unit.handler.FileServiceHandler;
+import com.hedera.services.legacy.unit.utils.DummyFunctionalityThrottling;
+import com.hedera.services.legacy.unit.utils.DummyHapiPermissions;
 import com.hedera.services.legacy.util.MockStorageWrapper;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
@@ -46,6 +49,9 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
@@ -195,10 +201,9 @@ class PreCheckValidationTest {
 				new MockAccountNumbers(),
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
-				platformStatus);
-		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
-				"./configuration/dev/application.properties",
-				"./configuration/dev/api-permission.properties");
+				platformStatus,
+				DummyFunctionalityThrottling.throttlingAlways(false),
+				new DummyHapiPermissions());
 		byte[] pubKey = ((EdDSAPublicKey) payerKeyGenerated.getPublic()).getAbyte();
 
 		onboardAccount(payerAccount, pubKey, payerAccountInitialBalance);
@@ -374,7 +379,7 @@ class PreCheckValidationTest {
 		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
 		long correctFee = trBody.getTransactionFee();
 		/* Allow for some tiny variation from not including send/receive thresholds in new BPT calculation. */
-		trBody = trBody.toBuilder().setTransactionFee((long)(.95 * correctFee)).build();
+		trBody = trBody.toBuilder().setTransactionFee((long) (.95 * correctFee)).build();
 		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
 
 		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
@@ -442,8 +447,9 @@ class PreCheckValidationTest {
 				new MockAccountNumbers(),
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
-				platformStatus);
-		localTransactionHandler.setThrottling(function -> true);
+				platformStatus,
+				DummyFunctionalityThrottling.throttlingAlways(true),
+				new DummyHapiPermissions());
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
 		assert (result.getValidity() == ResponseCodeEnum.BUSY);
@@ -488,7 +494,9 @@ class PreCheckValidationTest {
 				new MockAccountNumbers(),
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
-				platformStatus);
+				platformStatus,
+				DummyFunctionalityThrottling.throttlingAlways(false),
+				new DummyHapiPermissions());
 
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);

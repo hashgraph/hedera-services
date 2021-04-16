@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,6 +38,7 @@ import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 public class NewSpecKey extends UtilOp {
 	static final Logger log = LogManager.getLogger(NewSpecKey.class);
 
+	private boolean verboseLoggingOn = false;
 	private final String name;
 	private Optional<KeyType> type = Optional.empty();
 	private Optional<SigControl> shape = Optional.empty();
@@ -47,18 +49,26 @@ public class NewSpecKey extends UtilOp {
 		this.name = name;
 	}
 
+	public NewSpecKey logged() {
+		verboseLoggingOn = true;
+		return this;
+	}
+
 	public NewSpecKey type(KeyType toGen) {
 		type = Optional.of(toGen);
 		return this;
 	}
+
 	public NewSpecKey shape(SigControl control) {
 		shape = Optional.of(control);
 		return this;
 	}
+
 	public NewSpecKey labels(KeyLabel kl) {
 		labels = Optional.of(kl);
 		return this;
 	}
+
 	public NewSpecKey generator(KeyGenerator gen) {
 		generator = Optional.of(gen);
 		return this;
@@ -78,6 +88,15 @@ public class NewSpecKey extends UtilOp {
 			key = spec.keys().generate(type.orElse(KeyType.SIMPLE), keyGen);
 		}
 		spec.registry().saveKey(name, key);
+		if (verboseLoggingOn) {
+			if (type.orElse(KeyType.SIMPLE) == KeyType.SIMPLE) {
+				log.info("Created simple '{}' w/ Ed25519 public key {}",
+						name,
+						Hex.encodeHexString(key.getEd25519().toByteArray()));
+			} else {
+				log.info("Created a complex key...");
+			}
+		}
 		return false;
 	}
 

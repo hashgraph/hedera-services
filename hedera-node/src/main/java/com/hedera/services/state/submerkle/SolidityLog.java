@@ -29,7 +29,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.codec.binary.Hex;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -179,7 +178,7 @@ public class SolidityLog implements SelfSerializable {
 
 	public static SolidityLog fromGrpc(ContractLoginfo grpc) {
 		return new SolidityLog(
-				EntityId.ofNullableContractId(grpc.hasContractID() ? grpc.getContractID() : null),
+				grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null,
 				grpc.getBloom().isEmpty() ? MISSING_BYTES : grpc.getBloom().toByteArray(),
 				grpc.getTopicList().stream().map(ByteString::toByteArray).collect(toList()),
 				grpc.getData().isEmpty() ? MISSING_BYTES : grpc.getData().toByteArray());

@@ -99,7 +99,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -578,99 +577,6 @@ public class SmartContractRequestHandler {
 	}
 
 	/**
-	 * Modify an existing contract
-	 *
-	 * @param transaction
-	 * 		API request to modify the contract
-	 * @param consensusTime
-	 * 		Platform consensus time
-	 * @return Details of contract update result
-	 */
-	public TransactionRecord updateContract(TransactionBody transaction, Instant consensusTime) {
-		TransactionReceipt receipt;
-		ContractUpdateTransactionBody op = transaction.getContractUpdateInstance();
-		ContractID cid = op.getContractID();
-		AccountID id = asAccount(cid);
-		try {
-			MerkleAccount contract = ledger.get(id);
-			if (contract != null) {
-				boolean memoProvided = op.hasMemoWrapper() || op.getMemo().length() > 0;
-				boolean adminKeyExist = Optional.ofNullable(contract.getKey())
-						.map(key -> !key.hasContractID())
-						.orElse(false);
-				if (!adminKeyExist &&
-						(op.hasProxyAccountID() ||
-								op.hasAutoRenewPeriod() || op.hasFileID() || op.hasAdminKey() || memoProvided)) {
-					receipt = getTransactionReceipt(MODIFYING_IMMUTABLE_CONTRACT, exchange.activeRates());
-				} else if (op.hasExpirationTime() && contract.getExpiry() > op.getExpirationTime().getSeconds()) {
-					receipt = getTransactionReceipt(EXPIRATION_REDUCTION_NOT_ALLOWED, exchange.activeRates());
-				} else {
-					HederaAccountCustomizer customizer = new HederaAccountCustomizer();
-					if (op.hasProxyAccountID()) {
-						customizer.proxy(EntityId.ofNullableAccountId(op.getProxyAccountID()));
-					}
-					if (op.hasAutoRenewPeriod()) {
-						customizer.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
-					}
-					if (op.hasExpirationTime()) {
-						customizer.expiry(op.getExpirationTime().getSeconds());
-					}
-					if (memoProvided) {
-						if (op.hasMemoWrapper()) {
-							customizer.memo(op.getMemoWrapper().getValue());
-						} else {
-							customizer.memo(op.getMemo());
-						}
-					}
-					var hasAcceptableAdminKey = true;
-					if (op.hasAdminKey()) {
-						JKey newAdminKey = convertKey(op.getAdminKey(), 1);
-						if (canCustomizeWith(newAdminKey)) {
-							if (newAdminKey.isEmpty()) {
-								/* Make the contract immutable. */
-								customizer.key(new JContractIDKey(
-									cid.getShardNum(),
-									cid.getRealmNum(),
-									cid.getContractNum()));
-							} else {
-								customizer.key(newAdminKey);
-							}
-						} else {
-							hasAcceptableAdminKey = false;
-						}
-					}
-					if (hasAcceptableAdminKey) {
-						ledger.customize(id, customizer);
-						receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
-					} else {
-						receipt = getTransactionReceipt(INVALID_ADMIN_KEY, exchange.activeRates());
-					}
-				}
-			} else {
-				receipt = getTransactionReceipt(FAIL_INVALID, exchange.activeRates());
-			}
-		} catch (Exception ex) {
-			log.warn("Admin key serialization Failed: tx={}", transaction, ex);
-			receipt = getTransactionReceipt(SERIALIZATION_FAILED, exchange.activeRates());
-		}
-
-		return getTransactionRecord(
-				transaction.getTransactionFee(),
-				transaction.getMemo(),
-				transaction.getTransactionID(),
-				getTimestamp(consensusTime),
-				receipt).build();
-	}
-
-	private boolean canCustomizeWith(JKey newAdminKey) {
-		if ((newAdminKey instanceof JKeyList) && newAdminKey.isEmpty()) {
-			return true;
-		} else {
-			return newAdminKey.isValid() && !(newAdminKey instanceof JContractIDKey);
-		}
-	}
-
-	/**
 	 * check if a contract with given contractId exists
 	 *
 	 * @param cid
@@ -699,13 +605,13 @@ public class SmartContractRequestHandler {
 			if (receipt.getStatus().equals(ResponseCodeEnum.SUCCESS)) {
 				AccountID id = asAccount(cid);
 				long oldExpiry = ledger.expiry(id);
-				var entity = EntityId.ofNullableContractId(cid);
+				var entity = EntityId.fromGrpcContractId(cid);
 				entityExpiries.put(entity, oldExpiry);
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(newExpiry);
 				ledger.customizeDeleted(id, customizer);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.warn("Unhandled exception in SystemDelete", e);
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}
@@ -730,7 +636,7 @@ public class SmartContractRequestHandler {
 	public TransactionRecord systemUndelete(TransactionBody txBody, Instant consensusTimestamp) {
 		SystemUndeleteTransactionBody op = txBody.getSystemUndelete();
 		ContractID cid = op.getContractID();
-		var entity = EntityId.ofNullableContractId(cid);
+		var entity = EntityId.fromGrpcContractId(cid);
 		TransactionReceipt receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
 
 		long oldExpiry = 0;
@@ -756,7 +662,7 @@ public class SmartContractRequestHandler {
 			}
 			entityExpiries.remove(entity);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.warn("Unhandled exception in SystemUndelete", e);
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}

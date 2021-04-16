@@ -86,7 +86,6 @@ import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -112,7 +111,6 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features
  */
 
-@Disabled
 public class SmartContractRequestHandlerStorageTest {
   public static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
   public static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";
@@ -635,70 +633,6 @@ public class SmartContractRequestHandlerStorageTest {
       Assert.fail("Error updating contract: parsing transaction body");
     }
     return body;
-  }
-
-  @Test
-  @DisplayName("UpdateContract: Success")
-  public void updateContract() throws Exception {
-    KeyPair adminKeyPair = new KeyPairGenerator().generateKeyPair();
-    byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
-    Key adminPubKey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-
-    byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
-    TransactionBody body = getCreateTransactionBody(0L, 250000L, adminPubKey);
-
-    Instant consensusTime = new Date().toInstant();
-    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-    ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-    ledger.commit();
-    ContractID newContractId = record.getReceipt().getContractID();
-
-    String newMemo = "Changed SmartContractMemo";
-    Duration renewalDuration = RequestBuilder.getDuration(50_000);
-    Timestamp expirationTime = RequestBuilder.getTimestamp(Instant.now().plusSeconds(1_000_000_000L));
-
-    body = getUpdateTransactionBody(newContractId, newMemo, renewalDuration, expirationTime);
-    consensusTime = new Date().toInstant();
-    ledger.begin();
-    record = smartHandler.updateContract(body, consensusTime);
-    ledger.commit();
-
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    var contract = contracts.get(MerkleEntityId.fromContractId(newContractId));
-    Assert.assertEquals(newMemo, contract.getMemo());
-    Assert.assertEquals(renewalDuration.getSeconds(), contract.getAutoRenewSecs());
-    Assert.assertEquals(expirationTime.getSeconds(), contract.getExpiry());
-  }
-
-  @Test
-  @DisplayName("UpdateContract: immutable")
-  public void updateContractImmutable() {
-    byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
-    TransactionBody body = getCreateTransactionBody();
-
-    Instant consensusTime = new Date().toInstant();
-    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-    ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-    ledger.commit();
-    ContractID newContractId = record.getReceipt().getContractID();
-
-    // Information to change
-    String newMemo = "Changed SmartContractMemo";
-    Duration renewalDuration = RequestBuilder.getDuration(50_000);
-    Timestamp expirationTime = RequestBuilder.getTimestamp(Instant.now().plusSeconds(1_000_000_000L));
-    body = getUpdateTransactionBody(newContractId, newMemo, renewalDuration, expirationTime);
-    consensusTime = new Date().toInstant();
-    ledger.begin();
-    record = smartHandler.updateContract(body, consensusTime);
-    ledger.commit();
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT, record.getReceipt().getStatus());
   }
 
   @Test

@@ -53,10 +53,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class TransactionHandlerTest {
-	private Platform platform;
-	private Transaction request;
-	private TransactionID txnId;
-
 	private RecordCache recordCache;
 	private PrecheckVerifier precheckVerifier;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -74,10 +70,6 @@ public class TransactionHandlerTest {
 
 	@BeforeEach
 	public void setUp() {
-		platform = mock(Platform.class);
-		request = mock(Transaction.class);
-		txnId = mock(TransactionID.class);
-
 		recordCache = mock(RecordCache.class);
 		precheckVerifier = mock(PrecheckVerifier.class);
 		accounts = mock(FCMap.class);
@@ -104,10 +96,10 @@ public class TransactionHandlerTest {
 				stateView,
 				basicPrecheck,
 				queryFeeCheck,
-				throttling,
 				new MockAccountNumbers(),
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
-				platformStatus);
+				platformStatus,
+				null);
 	}
 }

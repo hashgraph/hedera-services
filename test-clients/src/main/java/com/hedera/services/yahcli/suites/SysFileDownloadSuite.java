@@ -30,25 +30,15 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 public class SysFileDownloadSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SysFileDownloadSuite.class);
-
-	private final Map<String, Long> NAMES_TO_NUMBERS = Map.ofEntries(
-			Map.entry("book", 101L),
-			Map.entry("details", 102L),
-			Map.entry("rates", 112L),
-			Map.entry("fees", 111L),
-			Map.entry("props", 121L),
-			Map.entry("permissions", 122L));
-	private final Set<Long> VALID_NUMBERS = new HashSet<>(NAMES_TO_NUMBERS.values());
 
 	private final String destDir;
 	private final Map<String, String> specConfig;
@@ -72,7 +62,7 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec downloadSysFiles() {
-		long[] targets = rationalized(sysFilesToDownload);
+		long[] targets = Utils.rationalized(sysFilesToDownload);
 
 		return HapiApiSpec.customHapiSpec("downloadSysFiles").withProperties(
 				specConfig
@@ -87,35 +77,14 @@ public class SysFileDownloadSuite extends HapiApiSuite {
 		String fid = String.format("0.0.%d", fileNum);
 		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
 		String fqLoc = destDir + File.separator + serde.preferredFileName();
-		return getFileContents(fid).saveReadableTo(serde::fromRawFile, fqLoc);
+		return getFileContents(fid)
+				.alertingPre(COMMON_MESSAGES::downloadBeginning)
+				.alertingPost(COMMON_MESSAGES::downloadEnding)
+				.saveReadableTo(serde::fromRawFile, fqLoc);
 	}
 
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
-	}
-
-	private long[] rationalized(String[] sysfiles) {
-		if(Arrays.asList(sysfiles).contains("all")) {
-			return VALID_NUMBERS.stream().mapToLong(Number::longValue).toArray();
-		}
-
-		return Arrays.stream(sysfiles)
-				.map(this::getFileId)
-				.peek(num -> {
-					if (!VALID_NUMBERS.contains(num)) {
-						throw new IllegalArgumentException("No such system file '" + num + "'!");
-					}
-				}).mapToLong(l -> l).toArray();
-	}
-
-	private long getFileId(String file) {
-		long fileId;
-		try {
-			fileId = Long.parseLong(file);
-		} catch (Exception e) {
-			fileId = NAMES_TO_NUMBERS.getOrDefault(file, 0L);
-		}
-		return fileId;
 	}
 }

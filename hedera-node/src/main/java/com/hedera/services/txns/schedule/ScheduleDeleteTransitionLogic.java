@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,50 +38,50 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleDeleteTransitionLogic implements TransitionLogic {
-    private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
+	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
-    private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-    ScheduleStore store;
-    TransactionContext txnCtx;
+	ScheduleStore store;
+	TransactionContext txnCtx;
 
-    public ScheduleDeleteTransitionLogic(
-            ScheduleStore store,
-            TransactionContext txnCtx) {
-        this.store = store;
-        this.txnCtx = txnCtx;
-    }
+	public ScheduleDeleteTransitionLogic(
+			ScheduleStore store,
+			TransactionContext txnCtx) {
+		this.store = store;
+		this.txnCtx = txnCtx;
+	}
 
-    @Override
-    public void doStateTransition() {
-        try {
-            transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
-        } catch (Exception e) {
-            log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
-            txnCtx.setStatus(FAIL_INVALID);
-        }
-    }
+	@Override
+	public void doStateTransition() {
+		try {
+			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
+		} catch (Exception e) {
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			txnCtx.setStatus(FAIL_INVALID);
+		}
+	}
 
-    private void transitionFor(ScheduleDeleteTransactionBody op) {
-        var outcome = store.delete(op.getScheduleID());
-        txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-    }
+	private void transitionFor(ScheduleDeleteTransactionBody op) {
+		var outcome = store.delete(op.getScheduleID());
+		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+	}
 
-    @Override
-    public Predicate<TransactionBody> applicability() {
-        return TransactionBody::hasScheduleDelete;
-    }
+	@Override
+	public Predicate<TransactionBody> applicability() {
+		return TransactionBody::hasScheduleDelete;
+	}
 
-    @Override
-    public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
-        return SYNTAX_CHECK;
-    }
+	@Override
+	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+		return SYNTAX_CHECK;
+	}
 
-    public ResponseCodeEnum validate(TransactionBody txnBody) {
-        ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
-        if (!op.hasScheduleID()) {
-            return INVALID_SCHEDULE_ID;
-        }
-        return OK;
-    }
+	public ResponseCodeEnum validate(TransactionBody txnBody) {
+		ScheduleDeleteTransactionBody op = txnBody.getScheduleDelete();
+		if (!op.hasScheduleID()) {
+			return INVALID_SCHEDULE_ID;
+		}
+		return OK;
+	}
 }
