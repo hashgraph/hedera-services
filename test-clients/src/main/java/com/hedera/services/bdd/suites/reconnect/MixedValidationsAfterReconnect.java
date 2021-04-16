@@ -59,10 +59,6 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 		String lastlyCreatedAccount = "0.0.21003";
 		return defaultHapiSpec("GetAccountBalanceFromAllNodes")
 				.given().when().then(
-						UtilVerbs.withLiveNode("0.0.6")
-								.within(4 * 60, TimeUnit.SECONDS)
-								.loggingAvailabilityEvery(30)
-								.sleepingBetweenRetriesFor(10),
 						balanceSnapshot("senderBalance", sender), // from default node 0.0.3
 						balanceSnapshot("receiverBalance", receiver), // from default node 0.0.3
 						balanceSnapshot("lastlyCreatedAccountBalance", lastlyCreatedAccount), // from default node 0.0.3
