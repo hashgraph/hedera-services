@@ -217,8 +217,6 @@ ${git.signoff}
           <preparationGoals>
             clean 
             license:update-file-header 
-            exec:exec@gen-proto-docs
-            exec:exec@ensure-proto-headers
             verify
             exec:exec@stage-changes
           </preparationGoals>
