@@ -1535,7 +1535,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/Restart
+          result_path: results/6N_1C/BalanceValid
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Balances-Validation-6N-1C"
           requires:
@@ -1558,7 +1558,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/15N_1C/Restart
+          result_path: results/15N_1C/NetDelay
           config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-Comp-NetDelay-15N-1C"
           requires:
@@ -1590,6 +1590,30 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
+
+  GCP-Weekly-Services-Query-Restart-Performance-6N-6C:
+    triggers:
+      - schedule:
+          cron: "0 6 * * 2"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_6C/QueryPerf
+          config_type: "weekly"
+          workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-6N-6C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
 
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:

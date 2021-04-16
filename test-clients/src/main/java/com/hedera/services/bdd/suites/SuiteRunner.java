@@ -89,6 +89,7 @@ import com.hedera.services.bdd.suites.perf.MixedOpsMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.misc.MixedOpsTransactionsSuite;
+import com.hedera.services.bdd.suites.perf.QueryOnlyLoadTest;
 import com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.TokenRelStatusChanges;
@@ -236,6 +237,7 @@ public class SuiteRunner {
 		/* JRS restart tests */
 		put("RestartWithScheduledEntities", aof(new JrsRestartTestTemplate()));
 		/* Load tests. */
+		put("QueryOnlyLoadTest", aof(new QueryOnlyLoadTest()));
 		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
 		put("AccountBalancesLoadTest", aof(new AccountBalancesClientSaveLoadTest()));
 		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
