@@ -120,18 +120,17 @@ public class TransactionHandler {
   public static int getDepth(final GeneratedMessageV3 message) {
         Map<Descriptors.FieldDescriptor, Object> fields = message.getAllFields();
         int depth = 0;
-        for (Descriptors.FieldDescriptor descriptor : fields.keySet()) {
-            Object field = fields.get(descriptor);
-            if (field instanceof GeneratedMessageV3) {
-                GeneratedMessageV3 fieldMessage = (GeneratedMessageV3) field;
-                depth = Math.max(depth, getDepth(fieldMessage) + 1);
-            } else if (field instanceof List) {
-                for (Object ele : (List) field) {
-                    if (ele instanceof GeneratedMessageV3) {
-                        depth = Math.max(depth, getDepth((GeneratedMessageV3) ele) + 1);
-                    }
-                }
+        for (var field : fields.values()) {
+          if (field instanceof GeneratedMessageV3) {
+            GeneratedMessageV3 fieldMessage = (GeneratedMessageV3) field;
+            depth = Math.max(depth, getDepth(fieldMessage) + 1);
+          } else if (field instanceof List) {
+            for (Object ele : (List) field) {
+              if (ele instanceof GeneratedMessageV3) {
+                depth = Math.max(depth, getDepth((GeneratedMessageV3) ele) + 1);
+              }
             }
+          }
         }
         return depth;
     }

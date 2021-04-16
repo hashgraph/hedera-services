@@ -94,6 +94,7 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
+import com.hedera.services.state.exports.ToStringAccountsExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
@@ -528,6 +529,7 @@ public class ServicesContextTest {
 		assertThat(ctx.sysFileCallbacks(), instanceOf(SysFileCallbacks.class));
 		assertThat(ctx.networkCtxManager(), instanceOf(NetworkCtxManager.class));
 		assertThat(ctx.hapiOpPermissions(), instanceOf(HapiOpPermissions.class));
+		assertThat(ctx.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
@@ -535,7 +537,6 @@ public class ServicesContextTest {
 		assertThat(ctx.contracts(), instanceOf(SmartContractRequestHandler.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
-		assertNotNull(ctx.accountsExporter());
 	}
 
 	@Test

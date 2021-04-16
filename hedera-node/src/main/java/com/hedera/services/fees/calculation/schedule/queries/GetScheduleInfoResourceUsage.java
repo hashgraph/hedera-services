@@ -78,7 +78,7 @@ public class GetScheduleInfoResourceUsage implements QueryResourceUsageEstimator
 					.setScheduledTxn(info.getScheduledTransactionBody())
 					.setMemo(info.getMemo())
 					.setNumSigners(info.getSigners().getKeysCount())
-					.setResolved(info.hasExpirationTime() || info.hasDeletionTime());
+					.setResolved(info.hasExecutionTime() || info.hasDeletionTime());
 			if (info.hasAdminKey()) {
 				scheduleCtxBuilder.setAdminKey(info.getAdminKey());
 			} else {

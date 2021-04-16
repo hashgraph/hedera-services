@@ -99,7 +99,7 @@ class BootstrapPropertiesTest {
 			entry("grpc.port", 50211),
 			entry("grpc.tlsPort", 50212),
 			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
-			entry("hedera.exportAccountsOnStartup", true),
+			entry("hedera.exportAccountsOnStartup", false),
 			entry("hedera.numReservedSystemEntities", 1_000L),
 			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),

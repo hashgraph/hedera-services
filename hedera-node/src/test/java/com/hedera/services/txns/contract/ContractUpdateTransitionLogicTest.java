@@ -22,8 +22,12 @@ package com.hedera.services.txns.contract;
 
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederLedgerTokensTest;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,17 +40,18 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -57,39 +62,81 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
-public class ContractUpdateTransitionLogicTest {
+class ContractUpdateTransitionLogicTest {
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	private long customAutoRenewPeriod = 100_001L;
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+	final private AccountID targetId = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private String memo = "Who, me?";
 
+	private long customAutoRenewPeriod = 100_001L;
+
 	private Instant consensusTime;
+	private HederaLedger ledger;
+	private MerkleAccount contract = new MerkleAccount();
 	private OptionValidator validator;
-	private ContractUpdateTransitionLogic.LegacyUpdater delegate;
+	private HederaAccountCustomizer customizer;
+	private UpdateCustomizerFactory customizerFactory;
 	private TransactionBody contractUpdateTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	FCMap<MerkleEntityId, MerkleAccount> contracts;
-	ContractUpdateTransitionLogic subject;
+	private FCMap<MerkleEntityId, MerkleAccount> contracts;
+	private ContractUpdateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
 		consensusTime = Instant.now();
 
-		delegate = mock(ContractUpdateTransitionLogic.LegacyUpdater.class);
+		ledger = mock(HederaLedger.class);
+		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
+		customizerFactory = mock(UpdateCustomizerFactory.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
 
-		subject = new ContractUpdateTransitionLogic(delegate, validator, txnCtx, () -> contracts);
+		subject = new ContractUpdateTransitionLogic(ledger, validator, txnCtx, customizerFactory, () -> contracts);
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void abortsIfCustomizerUnhappy() {
+		// setup:
+		customizer = mock(HederaAccountCustomizer.class);
+
+		givenValidTxnCtx();
+		given(customizerFactory.customizerFor(contract, contractUpdateTxn.getContractUpdateInstance()))
+				.willReturn(Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger, never()).customize(targetId, customizer);
+		verify(txnCtx).setStatus(MODIFYING_IMMUTABLE_CONTRACT);
+	}
+
+	@Test
+	void runsHappyPath() {
+		// setup:
+		customizer = mock(HederaAccountCustomizer.class);
+
+		givenValidTxnCtx();
+		given(customizerFactory.customizerFor(contract, contractUpdateTxn.getContractUpdateInstance()))
+				.willReturn(Pair.of(Optional.of(customizer), OK));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger).customize(targetId, customizer);
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -98,7 +145,7 @@ public class ContractUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidMemoInSyntaxCheck() {
+	void rejectsInvalidMemoInSyntaxCheck() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
@@ -108,47 +155,7 @@ public class ContractUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void capturesUnsuccessfulUpdate() {
-		// setup:
-		TransactionRecord updateRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(MODIFYING_IMMUTABLE_CONTRACT)
-						.build())
-				.build();
-
-		givenValidTxnCtx();
-		// and:
-		given(delegate.perform(contractUpdateTxn, consensusTime)).willReturn(updateRec);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(MODIFYING_IMMUTABLE_CONTRACT);
-	}
-
-	@Test
-	public void followsHappyPathWithOverrides() {
-		// setup:
-		TransactionRecord updateRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(SUCCESS)
-						.build())
-				.build();
-
-		givenValidTxnCtx();
-		// and:
-		given(delegate.perform(contractUpdateTxn, consensusTime)).willReturn(updateRec);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(SUCCESS);
-	}
-
-	@Test
-	public void acceptsOkSyntax() {
+	void acceptsOkSyntax() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -156,7 +163,7 @@ public class ContractUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsOmittedAutoRenew() {
+	void acceptsOmittedAutoRenew() {
 		givenValidTxnCtx(false);
 
 		// expect:
@@ -164,7 +171,7 @@ public class ContractUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidCid() {
+	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
@@ -174,7 +181,7 @@ public class ContractUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidAutoRenew() {
+	void rejectsInvalidAutoRenew() {
 		// setup:
 		customAutoRenewPeriod = -1;
 
@@ -185,26 +192,13 @@ public class ContractUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsOutOfRangeAutoRenew() {
+	void rejectsOutOfRangeAutoRenew() {
 		givenValidTxnCtx();
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
 		// expect:
 		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.syntaxCheck().apply(contractUpdateTxn));
-	}
-
-	@Test
-	public void translatesUnknownException() {
-		givenValidTxnCtx();
-
-		given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	private void givenValidTxnCtx() {
@@ -227,6 +221,7 @@ public class ContractUpdateTransitionLogicTest {
 		contractUpdateTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(contracts.get(MerkleEntityId.fromContractId(target))).willReturn(contract);
 	}
 
 	private TransactionID ourTxnId() {

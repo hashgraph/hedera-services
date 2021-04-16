@@ -108,8 +108,9 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	}
 
 	public void checkHashesAgainstDiskContents() {
-		for (FileID fid : fileHashes.keySet()) {
-			byte[] expectedHash = fileHashes.get(fid);
+		for (var entry : fileHashes.entrySet()) {
+			var fid = entry.getKey();
+			byte[] expectedHash = entry.getValue();
 			byte[] actualHash = diskContentHash(fid);
 			if (!Arrays.equals(expectedHash, actualHash)) {
 				log.error(
@@ -285,8 +286,8 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 
 	private boolean allFileHashesMatch(Map<FileID, byte[]> a, Map<FileID, byte[]> b) {
 		if (a.keySet().equals(b.keySet())) {
-			for (FileID fid : a.keySet()) {
-				if (!Arrays.equals(a.get(fid), b.get(fid))) {
+			for (var aEntry : a.entrySet()) {
+				if (!Arrays.equals(aEntry.getValue(), b.get(aEntry.getKey()))) {
 					return false;
 				}
 			}
