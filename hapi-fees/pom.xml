@@ -74,18 +74,6 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>gen-proto-docs</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-          <execution>
-            <id>ensure-proto-headers</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-          <execution>
             <id>stage-changes</id>
             <configuration>
               <executable>/bin/sh</executable>
