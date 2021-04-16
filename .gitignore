@@ -39,9 +39,16 @@ hs_err_pid*
 !hapi-proto/gen-proto-docs.sh
 !hedera-node/data/backup/*.sh
 !hedera-node/configuration/compose/init.db/*.sh
+!test-clients/yahcli/run/*.sh
+!test-clients/yahcli/run/test/local/*.sh
 *.json
+!hapi-utils/src/test/resources/bootstrap/*.json
 !hedera-node/src/test/resources/legacyAccounts.json
+!hedera-node/src/test/resources/bootstrap/*.json
+!hedera-node/src/main/resources/*.json
 !test-clients/src/main/resource/FeeSchedule.json
+!test-clients/src/main/resource/testSystemFiles/*.json
+!test-clients/yahcli/run/test/local/assets/*.json
 .circleci/*.yml-excerpt
 hedera-node/temp/
 hedera-node/*.csv

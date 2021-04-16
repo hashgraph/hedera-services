@@ -26,6 +26,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.legacy.unit.utils.DummyHapiPermissions;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -65,6 +66,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -78,10 +80,7 @@ class QueryValidationTest {
 	}
 
 	long payerAccountInitialBalance = 100000;
-	private RecordCache recordCache;
 	private FCMap<MerkleEntityId, MerkleAccount> map = new FCMap<>();
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
-	;
 	private AccountID nodeAccount =
 			AccountID.newBuilder().setAccountNum(3).setRealmNum(0).setShardNum(0).build();
 	private AccountID payerAccount =
@@ -116,9 +115,6 @@ class QueryValidationTest {
 
 	@BeforeAll
 	void initializeState() throws Exception {
-		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
-				"./configuration/dev/application.properties",
-				"./configuration/dev/api-permission.properties");
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
@@ -132,7 +128,8 @@ class QueryValidationTest {
 				new MockAccountNumbers(),
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies),
-				platformStatus);
+				platformStatus,
+				new DummyHapiPermissions());
 		transactionHandler.setBasicPrecheck(
 				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()));
 		byte[] pubKey = ((EdDSAPublicKey) payerKeyGenerated.getPublic()).getAbyte();
@@ -160,16 +157,18 @@ class QueryValidationTest {
 				transferTransaction, ResponseType.ANSWER_ONLY);
 
 		ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
-		assert (result == ResponseCodeEnum.OK);
+		assertEquals(OK, result);
 	}
 
 	@Test
 	void testValidateGetInfoQuery_validateQuery_negative() throws Exception {
+		transactionHandler.setHapiOpPermissions(new DummyHapiPermissions(ResponseCodeEnum.NOT_SUPPORTED));
 		Transaction transferTransaction = createQueryHeaderTransfer(negetiveAccountNo);
 		Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(negetiveAccountNo,
 				transferTransaction, ResponseType.ANSWER_ONLY);
 
 		ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
-		assertEquals(result, ResponseCodeEnum.NOT_SUPPORTED);
+		assertEquals(ResponseCodeEnum.NOT_SUPPORTED, result);
+		transactionHandler.setHapiOpPermissions(new DummyHapiPermissions());
 	}
 }

@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	static final Logger log = LogManager.getLogger(HapiCryptoUpdate.class);
 
+	private boolean useContractKey = false;
 	private final String account;
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
@@ -107,6 +108,11 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		return this;
 	}
 
+	public HapiCryptoUpdate usingContractKey() {
+		useContractKey = true;
+		return this;
+	}
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoUpdate;
@@ -136,7 +142,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 								builder.setProxyAccountID(proxyId);
 							});
 							updSigRequired.ifPresent(u -> builder.setReceiverSigRequiredWrapper(BoolValue.of(u)));
-							updKey.ifPresent(k -> builder.setKey(k));
+							if (useContractKey) {
+								builder.setKey(Key.newBuilder()
+										.setContractID(HapiPropertySource.asContract("0.0.1234")));
+							} else {
+								updKey.ifPresent(builder::setKey);
+							}
 							entityMemo.ifPresent(m -> builder.setMemo(StringValue.newBuilder().setValue(m).build()));
 							sendThreshold.ifPresent(v ->
 									builder.setSendRecordThresholdWrapper(

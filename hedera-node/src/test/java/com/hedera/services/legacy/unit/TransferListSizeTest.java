@@ -299,7 +299,7 @@ public class TransferListSizeTest {
     MerkleAccount mv = new MerkleAccount();
     mv.setBalance(balance);
     Key accountKey = ComplexKeyManager
-        .genComplexKey(ComplexKeyManager.SUPPORTE_KEY_TYPES.single.name());
+        .genComplexKey(ComplexKeyManager.SUPPORTED_KEY_TYPES.single.name());
     JKey jkey = JKey.convertKey(accountKey, 1);
     mv.setKey(jkey);
     fcMap.put(mk, mv);

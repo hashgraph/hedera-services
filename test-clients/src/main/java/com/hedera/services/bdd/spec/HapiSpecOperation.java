@@ -94,6 +94,7 @@ public abstract class HapiSpecOperation {
 
 	protected boolean omitTxnId = false;
 	protected boolean loggingOff = false;
+	protected boolean yahcliLogger = false;
 	protected boolean suppressStats = false;
 	protected boolean omitNodeAccount = false;
 	protected boolean verboseLoggingOn = false;

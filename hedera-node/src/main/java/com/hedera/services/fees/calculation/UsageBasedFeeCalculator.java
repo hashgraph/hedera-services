@@ -22,10 +22,10 @@ package com.hedera.services.fees.calculation;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.TxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -65,6 +65,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
 
 	private final HbarCentExchange exchange;
+	private final FeeMultiplierSource feeMultiplierSource;
 	private final UsagePricesProvider usagePrices;
 	private final List<QueryResourceUsageEstimator> queryUsageEstimators;
 	private final Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
@@ -72,11 +73,13 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	public UsageBasedFeeCalculator(
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
+			FeeMultiplierSource feeMultiplierSource,
 			List<QueryResourceUsageEstimator> queryUsageEstimators,
 			Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
 	) {
 		this.exchange = exchange;
 		this.usagePrices = usagePrices;
+		this.feeMultiplierSource = feeMultiplierSource;
 		this.queryUsageEstimators = queryUsageEstimators;
 		this.txnUsageEstimators = txnUsageEstimators;
 	}
@@ -199,7 +202,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		var usageEstimator = getTxnUsageEstimator(accessor);
 		try {
 			FeeData metrics = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
-			return FeeBuilder.getFeeObject(prices, metrics, rate);
+			return FeeBuilder.getFeeObject(prices, metrics, rate, feeMultiplierSource.currentMultiplier());
 		} catch (InvalidTxBodyException e) {
 			log.warn(
 					"Argument accessor={} malformed for implied estimator {}!",

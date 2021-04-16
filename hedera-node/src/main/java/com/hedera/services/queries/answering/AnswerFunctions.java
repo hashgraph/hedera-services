@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class AnswerFunctions {
-	public static final Logger log = LogManager.getLogger(AnswerFunctions.class);
+	private static final Logger log = LogManager.getLogger(AnswerFunctions.class);
 
 	public List<TransactionRecord> accountRecords(StateView view, Query query) {
 		CryptoGetAccountRecordsQuery op = query.getCryptoGetAccountRecords();

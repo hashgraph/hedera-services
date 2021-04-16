@@ -22,6 +22,9 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -30,20 +33,19 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,12 +59,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith(LogCaptureExtension.class)
 public class MerkleDiskFsTest {
-	MerkleDiskFs subject;
+	@Inject
+	private LogCaptor logCaptor;
+	@LoggingSubject
+	private MerkleDiskFs subject;
+
 	AccountID nodeAccount = AccountID.newBuilder().setAccountNum(3).build();
 	FileID file150 = asFile("0.0.150");
 	byte[] origContents = "Where, like a pillow on a bed /".getBytes();
@@ -144,10 +150,9 @@ public class MerkleDiskFsTest {
 		assertArrayEquals(origFileHash, subject.diskContentHash(file150));
 		assertArrayEquals(origContents, subject.contentsOf(file150));
 
-		MerkleDiskFs.log = mock(Logger.class);
 		subject.checkHashesAgainstDiskContents();
 
-		verify(MerkleDiskFs.log, never()).error(any(String.class));
+		Assertions.assertTrue(logCaptor.errorLogs().isEmpty());
 		// and:
 		verify(writer).allBytesTo(subject.pathToContentsOf(file150), origContents);
 	}
@@ -176,9 +181,6 @@ public class MerkleDiskFsTest {
 	@Test
 	public void fileNotExistDebugEnabled() throws IOException {
 		// setup:
-		Logger log = mock(Logger.class);
-		given(log.isDebugEnabled()).willReturn(true);
-		MerkleDiskFs.log = log;
 		subject = new MerkleDiskFs("this/doesnt/exist", asLiteralString(nodeAccount));
 
 		given(getter.allBytesFrom(any())).willThrow(IOException.class);

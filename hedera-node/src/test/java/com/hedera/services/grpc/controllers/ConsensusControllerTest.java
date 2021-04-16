@@ -68,7 +68,7 @@ class ConsensusControllerTest {
 
 		// expect:
 		verify(hcsAnswers).topicInfo();
-		verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.TokenGetInfo);
+		verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.ConsensusGetTopicInfo);
 	}
 
 	@Test

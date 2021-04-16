@@ -89,14 +89,14 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cannotSetThresholdNegative(),
 						updateWithEmptyKeyFails(),
 						updateFailsIfMissingSigs(),
-						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign()
+						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+						updateFailsWithContractKey(),
 				}
 		);
 	}
 
 
-
-	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(){
+	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
 		String sysAccount = "0.0.977";
 		String randomAccount = "randomAccount";
 		String firstKey = "firstKey";
@@ -188,6 +188,17 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.sigControl(forKey(TARGET_KEY, ENOUGH_OVERLAPPING_SIGS))
 								.receiverSigRequired(true)
 								.hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec updateFailsWithContractKey() {
+		return defaultHapiSpec("UpdateFailsWithContractKey")
+				.given(
+						cryptoCreate(TARGET_ACCOUNT)
+				).when().then(
+						cryptoUpdate(TARGET_ACCOUNT)
+								.usingContractKey()
+								.hasKnownStatus(INVALID_SIGNATURE)
 				);
 	}
 

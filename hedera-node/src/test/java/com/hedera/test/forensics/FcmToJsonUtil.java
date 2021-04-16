@@ -20,6 +20,8 @@ package com.hedera.test.forensics;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -29,6 +31,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.test.forensics.domain.PojoFs;
 import com.hedera.test.forensics.domain.PojoLedger;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -60,6 +63,36 @@ public class FcmToJsonUtil {
 			"/Users/tinkerm/Dev/hgn2/services-hedera/hedera-node/forensics/iss-demo/1/topics-round12.fcm",
 			"/Users/tinkerm/Dev/hgn2/services-hedera/hedera-node/forensics/iss-demo/2/topics-round12.fcm"
 	);
+
+	@Test
+	void convertStorageToJson() throws Exception {
+		String[] round60Locs = {
+//				"/Users/tinkerm/Dev/hgn3/hedera-services/hedera-node/n0-storage-round60.fcm",
+				"/Users/tinkerm/Dev/hgn3/hedera-services/hedera-node/n1-storage-round60.fcm",
+//				"/Users/tinkerm/Dev/hgn3/hedera-services/hedera-node/n2-storage-round60.fcm",
+//				"/Users/tinkerm/Dev/hgn3/hedera-services/hedera-node/n3-storage-round60.fcm",
+		};
+
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMInternalNode.class, FCMInternalNode::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMap.class, FCMap::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMTree.class, FCMTree::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleBlobMeta.class, MerkleBlobMeta::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleOptionalBlob.class, MerkleOptionalBlob::new));
+
+		for (String dumpLoc : round60Locs) {
+			System.out.println("Reading " + dumpLoc);
+			PojoFs.fromDisk(dumpLoc).asJsonTo(jsonSuffixed(dumpLoc));
+		}
+	}
 
 	@Test
 	public void convertAccountsToJson() throws Exception {

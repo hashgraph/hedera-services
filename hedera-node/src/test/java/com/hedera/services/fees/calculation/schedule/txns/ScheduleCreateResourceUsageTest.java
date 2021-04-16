@@ -68,7 +68,7 @@ public class ScheduleCreateResourceUsageTest {
         given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, props.scheduledTxExpiryTimeSecs()))
                 .willReturn(expected);
 
-        subject = new ScheduleCreateResourceUsage(props, scheduleOpsUsage);
+        subject = new ScheduleCreateResourceUsage(scheduleOpsUsage, props);
     }
 
     @Test

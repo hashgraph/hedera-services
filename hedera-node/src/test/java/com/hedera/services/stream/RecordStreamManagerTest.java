@@ -22,18 +22,25 @@ package com.hedera.services.stream;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThread;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import javax.inject.Inject;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,9 +52,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(LogCaptureExtension.class)
 public class RecordStreamManagerTest {
 	private static final Platform platform = mock(Platform.class);
-	private static final Logger mockLog = mock(Logger.class);
 
 	private static final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
 
@@ -71,6 +78,11 @@ public class RecordStreamManagerTest {
 
 	private static NodeLocalProperties disabledProps;
 	private static NodeLocalProperties enabledProps;
+
+	@Inject
+	private LogCaptor logCaptor;
+	@LoggingSubject
+	private RecordStreamManager recordStreamManager;
 
 	@BeforeAll
 	public static void init() throws Exception {
@@ -127,7 +139,7 @@ public class RecordStreamManagerTest {
 
 	@Test
 	public void addRecordStreamObjectTest() throws InterruptedException {
-		RecordStreamManager recordStreamManager = new RecordStreamManager(
+		recordStreamManager = new RecordStreamManager(
 				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 		assertFalse(recordStreamManager.getInFreeze(),
 				"inFreeze should be false after initialization");
@@ -172,19 +184,19 @@ public class RecordStreamManagerTest {
 	@Test
 	public void setInFreezeTest() {
 		MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
-		RecordStreamManager recordStreamManager = new RecordStreamManager(
-				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
-		RecordStreamManager.LOGGER = mockLog;
+		recordStreamManager = new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
 		recordStreamManager.setInFreeze(false);
-		verify(mockLog).info("RecordStream inFreeze is set to be {} ", false);
 		assertFalse(recordStreamManager.getInFreeze());
 
 		recordStreamManager.setInFreeze(true);
 
-		verify(mockLog).info("RecordStream inFreeze is set to be {} ", true);
 		assertTrue(recordStreamManager.getInFreeze());
 		// multiStreamMock should be closed when inFreeze is true;
 		verify(multiStreamMock).close();
+		// and:
+		assertThat(logCaptor.infoLogs(), contains(
+				"RecordStream inFreeze is set to be false",
+				"RecordStream inFreeze is set to be true"));
 	}
 }

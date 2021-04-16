@@ -20,6 +20,7 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,6 +65,7 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.rates.nextCentEquiv", 15),
 			entry("bootstrap.rates.nextExpiry", 4102444800L),
 			entry("bootstrap.system.entityExpiry", 4102444800L),
+			entry("bootstrap.throttleDefsJson.resource", "throttles.json"),
 			entry("accounts.addressBookAdmin", 55L),
 			entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
 			entry("balances.exportEnabled", true),
@@ -81,16 +83,23 @@ class BootstrapPropertiesTest {
 			entry("contracts.localCall.estRetBytes", 32),
 			entry("contracts.maxGas", 300000),
 			entry("contracts.maxStorageKb", 1024),
+			entry("dev.onlyDefaultNodeListens", true),
+			entry("dev.defaultListeningNodeAccount", "0.0.3"),
+			entry("fees.percentCongestionMultipliers", CongestionMultipliers.from("90,10x,95,25x,99,100x")),
+			entry("fees.minCongestionPeriod", 60),
 			entry("files.addressBook", 101L),
 			entry("files.diskFsBaseDir.path", "data/diskFs/"),
 			entry("files.networkProperties", 121L),
 			entry("files.exchangeRates", 112L),
 			entry("files.feeSchedules", 111L),
 			entry("files.hapiPermissions", 122L),
+			entry("files.throttleDefinitions", 123L),
 			entry("files.nodeDetails", 102L),
 			entry("files.softwareUpdateZip", 150L),
 			entry("grpc.port", 50211),
 			entry("grpc.tlsPort", 50212),
+			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
+			entry("hedera.exportAccountsOnStartup", false),
 			entry("hedera.numReservedSystemEntities", 1_000L),
 			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),
@@ -113,6 +122,16 @@ class BootstrapPropertiesTest {
 			entry("ledger.autoRenewPeriod.maxDuration", 8000001L),
 			entry("ledger.autoRenewPeriod.minDuration", 6999999L),
 			entry("ledger.schedule.txExpiryTimeSecs", 1800),
+			entry("netty.mode", Profile.PROD),
+			entry("netty.prod.flowControlWindow", 10240),
+			entry("netty.prod.maxConcurrentCalls", 10),
+			entry("netty.prod.maxConnectionAge", 15L),
+			entry("netty.prod.maxConnectionAgeGrace", 5L),
+			entry("netty.prod.maxConnectionIdle", 10L),
+			entry("netty.prod.keepAliveTime", 10L),
+			entry("netty.prod.keepAliveTimeout", 3L),
+			entry("netty.tlsCrt.path", "hedera.crt"),
+			entry("netty.tlsKey.path", "hedera.key"),
 			entry("precheck.account.maxLookupRetries", 10),
 			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
 			entry("queries.blob.lookupRetries", 3),

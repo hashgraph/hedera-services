@@ -21,11 +21,14 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.crypto.CryptoCreateTransitionLogic;
+import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -38,48 +41,55 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractUpdateTransitionLogic.class);
 
-	private final LegacyUpdater delegate;
+	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final UpdateCustomizerFactory customizerFactory;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	public ContractUpdateTransitionLogic(
-			LegacyUpdater delegate,
+			HederaLedger ledger,
 			OptionValidator validator,
 			TransactionContext txnCtx,
+			UpdateCustomizerFactory customizerFactory,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
 	) {
-		this.delegate = delegate;
+		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.contracts = contracts;
-	}
-
-	@FunctionalInterface
-	public interface LegacyUpdater {
-		TransactionRecord perform(TransactionBody txn, Instant consensusTime);
+		this.customizerFactory = customizerFactory;
 	}
 
 	@Override
 	public void doStateTransition() {
 		try {
 			var contractUpdateTxn = txnCtx.accessor().getTxn();
+			var op = contractUpdateTxn.getContractUpdateInstance();
+			var id = op.getContractID();
+			var target = contracts.get().get(fromContractId(id));
 
-			var legacyRecord = delegate.perform(contractUpdateTxn, txnCtx.consensusTime());
-
-			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
+			var result = customizerFactory.customizerFor(target, op);
+			var customizer = result.getLeft();
+			if (customizer.isPresent()) {
+				ledger.customize(asAccount(id), customizer.get());
+				txnCtx.setStatus(SUCCESS);
+			} else {
+				txnCtx.setStatus(result.getRight());
+			}
 		} catch (Exception e) {
 			log.warn("Avoidable exception!", e);
 			txnCtx.setStatus(FAIL_INVALID);

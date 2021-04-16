@@ -74,6 +74,9 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 	Optional<Function<HapiApiSpec, ByteString>> expContentFn = Optional.empty();
 	Optional<UnaryOperator<byte[]>> afterBytesTransform = Optional.empty();
 
+	Optional<Consumer<FileID>> preQueryCb = Optional.empty();
+	Optional<Consumer<Response>> postQueryCb = Optional.empty();
+
 	private FileID fileId;
 
 	@Override
@@ -88,6 +91,16 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 
 	public HapiGetFileContents(String fileName) {
 		this.fileName = fileName;
+	}
+
+	public HapiGetFileContents alertingPre(Consumer<FileID> cb) {
+		preQueryCb = Optional.of(cb);
+		return this;
+	}
+
+	public HapiGetFileContents alertingPost(Consumer<Response> cb) {
+		postQueryCb = Optional.of(cb);
+		return this;
 	}
 
 	public HapiGetFileContents saveTo(String path) {
@@ -148,7 +161,9 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 	@Override
 	protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		Query query = getFileContentQuery(spec, payment, false);
+		preQueryCb.ifPresent(cb -> cb.accept(fileId));
 		response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
+		postQueryCb.ifPresent(cb -> cb.accept(response));
 		byte[] bytes = response.getFileGetContents().getFileContents().getContents().toByteArray();
 		if (verboseLoggingOn) {
 			var len = response.getFileGetContents().getFileContents().getContents().size();

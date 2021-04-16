@@ -65,6 +65,7 @@ class SystemOpPoliciesTest {
 		assertTrue(subject.canPerformNonCryptoUpdate(2, 112));
 		assertTrue(subject.canPerformNonCryptoUpdate(2, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(2, 122));
+		assertTrue(subject.canPerformNonCryptoUpdate(2, 123));
 		assertTrue(subject.canPerformNonCryptoUpdate(2, 150));
 	}
 
@@ -77,6 +78,7 @@ class SystemOpPoliciesTest {
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 112));
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 122));
+		assertTrue(subject.canPerformNonCryptoUpdate(50, 123));
 		assertTrue(subject.canPerformNonCryptoUpdate(50, 150));
 	}
 
@@ -87,6 +89,7 @@ class SystemOpPoliciesTest {
 		assertTrue(subject.canPerformNonCryptoUpdate(55, 102));
 		assertTrue(subject.canPerformNonCryptoUpdate(55, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(55, 122));
+		assertTrue(subject.canPerformNonCryptoUpdate(55, 123));
 		assertFalse(subject.canPerformNonCryptoUpdate(55, 111));
 		assertFalse(subject.canPerformNonCryptoUpdate(55, 112));
 		assertFalse(subject.canPerformNonCryptoUpdate(55, 150));
@@ -100,6 +103,7 @@ class SystemOpPoliciesTest {
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 102));
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 121));
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 122));
+		assertFalse(subject.canPerformNonCryptoUpdate(56, 123));
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 112));
 		assertFalse(subject.canPerformNonCryptoUpdate(56, 150));
 	}
@@ -109,6 +113,7 @@ class SystemOpPoliciesTest {
 		// expect:
 		assertTrue(subject.canPerformNonCryptoUpdate(57, 121));
 		assertTrue(subject.canPerformNonCryptoUpdate(57, 122));
+		assertTrue(subject.canPerformNonCryptoUpdate(57, 123));
 		assertTrue(subject.canPerformNonCryptoUpdate(57, 112));
 		assertFalse(subject.canPerformNonCryptoUpdate(57, 111));
 		assertFalse(subject.canPerformNonCryptoUpdate(57, 101));

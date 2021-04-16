@@ -26,9 +26,7 @@
     <ant-contrib.version>1.0b3</ant-contrib.version>
     <ant-nodeps.version>1.8.1</ant-nodeps.version>
 
-    <commons-io.version>2.1</commons-io.version>
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
-    <swirlds.version>0.9.0</swirlds.version>
   </properties>
 
   <build>
@@ -278,27 +276,37 @@
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-platform-core</artifactId>
-      <version>${swirlds.version}</version>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcmap</artifactId>
-      <version>${swirlds.version}</version>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcqueue</artifactId>
-      <version>${swirlds.version}</version>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
       <artifactId>swirlds-common</artifactId>
-      <version>${swirlds.version}</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>ethereumj-core</artifactId>
       <version>${ethereum-core.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>leveldbjni-all</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>rocksdbjni</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>solcJ-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -307,11 +315,14 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>${commons-io.version}</version>
     </dependency>
     <dependency>
       <groupId>net.i2p.crypto</groupId>
       <artifactId>eddsa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.annotation</groupId>
@@ -374,11 +385,6 @@
       <id>central</id>
       <name>bintray</name>
       <url>https://jcenter.bintray.com</url>
-    </repository>
-    <repository>
-      <id>Ethereum</id>
-      <name>Ethereum</name>
-      <url>https://dl.bintray.com/ethereum/maven/</url>
     </repository>
   </repositories>
   <profiles>

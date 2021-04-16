@@ -21,7 +21,7 @@ package com.hedera.services.legacy.unit;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.utils.TransactionValidationUtils;
+import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.Platform;
 import com.swirlds.common.internal.SettingsCommon;
@@ -41,7 +41,7 @@ public class CheckTransactionSizeTest {
 		byte[] bytes = new byte[Platform.getTransactionMaxBytes()];
 		Transaction transaction = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bytes)).build();
 		assert Platform.getTransactionMaxBytes() < transaction.toByteArray().length;
-		Assert.assertFalse(TransactionValidationUtils.validateTxSize(transaction));
+		Assert.assertFalse(TransactionHandler.validateTxSize(transaction));
 	}
 
 	@Test
@@ -51,6 +51,6 @@ public class CheckTransactionSizeTest {
 		byte[] bytes = new byte[Platform.getTransactionMaxBytes() - 30];
 		Transaction transaction = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bytes)).build();
 		assert Platform.getTransactionMaxBytes() > transaction.toByteArray().length;
-		Assert.assertTrue(TransactionValidationUtils.validateTxSize(transaction));
+		Assert.assertTrue(TransactionHandler.validateTxSize(transaction));
 	}
 }
