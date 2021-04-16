@@ -9,9 +9,9 @@ package com.hedera.services.yahcli.commands.files;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,20 +20,22 @@ package com.hedera.services.yahcli.commands.files;
  * ‍
  */
 
-import com.hedera.services.yahcli.config.ConfigManager;
 import com.hedera.services.yahcli.suites.SysFileUploadSuite;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static com.hedera.services.yahcli.commands.files.SysFilesCommand.configFrom;
+import static com.hedera.services.yahcli.commands.files.SysFilesCommand.resolvedDir;
 
 @CommandLine.Command(
 		name = "upload",
-		subcommands = { CommandLine.HelpCommand.class },
+		subcommands = { picocli.CommandLine.HelpCommand.class },
 		description = "Upload a system file")
 public class SysFileUploadCommand implements Callable<Integer> {
+	public static AtomicReference<String> activeSrcDir = new AtomicReference<>();
+
 	@CommandLine.ParentCommand
 	SysFilesCommand sysFilesCommand;
 
@@ -45,29 +47,21 @@ public class SysFileUploadCommand implements Callable<Integer> {
 	@CommandLine.Parameters(
 			arity = "1",
 			paramLabel = "<sysfile>",
-			description = "system file name (one of \n" +
-					" Full names ['addressBook.json', 'nodeDetails.json', 'feeSchedules.json', 'exchangeRates.json'," +
-					" 'application.properties', 'api-permission.properties'] \n" +
-					" Short handles ['book', 'details', 'fees', 'rates', 'props', 'permissions'] \n" +
-					" File numbers ['101', '102'', '111', '112', '121', '122'])")
+			description = "one of " +
+					"{ address-book, node-details, fees, rates, props, permissions, throttles } (or " +
+					"{ 101, 102, 111, 112, 121, 122, 123 })")
 	String sysFile;
 
 	@Override
 	public Integer call() throws Exception {
-		var config = ConfigManager.from(sysFilesCommand.getYahcli());
-		config.assertNoMissingDefaults();
-		COMMON_MESSAGES.printGlobalInfo(config);
-
-		if (srcDir.startsWith("{network}")) {
-			srcDir = config.getTargetName() + File.separator + "sysfiles";
-		}
-		if (srcDir.endsWith(File.separator)) {
-			srcDir = srcDir.substring(0, srcDir.length() - 1);
-		}
+		var config = configFrom(sysFilesCommand.getYahcli());
+		srcDir = resolvedDir(srcDir, config);
+		activeSrcDir.set(srcDir);
 
 		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile);
 		delegate.runSuiteSync();
 
 		return 0;
 	}
+
 }

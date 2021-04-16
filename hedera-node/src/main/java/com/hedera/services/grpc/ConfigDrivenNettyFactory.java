@@ -35,6 +35,7 @@ import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static io.netty.handler.ssl.SupportedCipherSuiteFilter.INSTANCE;
 
@@ -58,15 +59,16 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 
 	@Override
 	public NettyServerBuilder builderFor(int port, boolean sslEnabled) throws FileNotFoundException, SSLException {
-		var activeProfile = nodeProperties.nettyMode();
+		var activeProfile = nodeProperties.activeProfile();
+		var nettyMode = (activeProfile == DEV) ? DEV : nodeProperties.nettyMode();
 
 		log.info("Configuring a Netty server on port {} (TLS {}) for {} environment",
 				port,
 				(sslEnabled ? "ON" : "OFF"),
-				activeProfile);
+				nettyMode);
 
 		var builder = NettyServerBuilder.forPort(port);
-		if (activeProfile == PROD) {
+		if (nettyMode == PROD) {
 			configureProd(builder);
 		}
 		if (sslEnabled) {

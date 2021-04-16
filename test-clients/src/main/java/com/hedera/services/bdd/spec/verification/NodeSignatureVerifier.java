@@ -20,8 +20,9 @@ package com.hedera.services.bdd.spec.verification;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AddressBook;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hedera.services.legacy.core.HexUtils;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -65,11 +66,11 @@ public class NodeSignatureVerifier {
 
 	Map<String, PublicKey> accountKeys = new HashMap<>();
 
-	public NodeSignatureVerifier(AddressBook addressBook) {
+	public NodeSignatureVerifier(NodeAddressBook addressBook) {
 		initKeysFrom(addressBook);
 	}
 
-	private void initKeysFrom(AddressBook addressBook) {
+	private void initKeysFrom(NodeAddressBook addressBook) {
 		for (NodeAddress nodeAddress : addressBook.getNodeAddressList()) {
 			String account = new String(nodeAddress.getMemo().toByteArray());
 			try {

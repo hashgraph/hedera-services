@@ -34,6 +34,7 @@ import java.io.FileNotFoundException;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,6 +85,23 @@ class ConfigDrivenNettyFactoryTest {
 		verify(nodeLocalProperties).nettyMaxConnectionIdle();
 		verify(nodeLocalProperties).nettyMaxConcurrentCalls();
 		verify(nodeLocalProperties).nettyFlowControlWindow();
+	}
+
+	@Test
+	void interpretsDevProfileActiveAsDisablingProdNetty() throws FileNotFoundException, SSLException {
+		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+
+		// when:
+		subject.builderFor(port, false);
+
+		// then:
+		verify(nodeLocalProperties, never()).nettyProdKeepAliveTime();
+		verify(nodeLocalProperties, never()).nettyProdKeepAliveTimeout();
+		verify(nodeLocalProperties, never()).nettyMaxConnectionAge();
+		verify(nodeLocalProperties, never()).nettyMaxConnectionAgeGrace();
+		verify(nodeLocalProperties, never()).nettyMaxConnectionIdle();
+		verify(nodeLocalProperties, never()).nettyMaxConcurrentCalls();
+		verify(nodeLocalProperties, never()).nettyFlowControlWindow();
 	}
 
 	@Test

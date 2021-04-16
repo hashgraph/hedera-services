@@ -24,4 +24,8 @@ public interface SysFileSerde<T> {
 	T fromRawFile(byte[] bytes);
 	byte[] toRawFile(T styledFile);
 	String preferredFileName();
+
+	default byte[] toValidatedRawFile(T styledFile) {
+		return toRawFile(styledFile);
+	}
 }
