@@ -255,6 +255,7 @@ import com.hedera.services.txns.contract.ContractDeleteTransitionLogic;
 import com.hedera.services.txns.contract.ContractSysDelTransitionLogic;
 import com.hedera.services.txns.contract.ContractSysUndelTransitionLogic;
 import com.hedera.services.txns.contract.ContractUpdateTransitionLogic;
+import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.crypto.CryptoCreateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoDeleteTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
@@ -1209,7 +1210,7 @@ public class ServicesContext {
 								hfs(), contracts()::createContract, this::seqNo, validator(), txnCtx()))),
 				entry(ContractUpdate,
 						List.of(new ContractUpdateTransitionLogic(
-								contracts()::updateContract, validator(), txnCtx(), this::accounts))),
+								ledger(), validator(), txnCtx(), new UpdateCustomizerFactory(), this::accounts))),
 				entry(ContractDelete,
 						List.of(new ContractDeleteTransitionLogic(
 								contracts()::deleteContract, validator(), txnCtx(), this::accounts))),
