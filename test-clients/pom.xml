@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.13.0-alpha.3-SNAPSHOT</version>
+    <version>0.13.0-rc.1-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -295,12 +295,12 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-utils</artifactId>
-      <version>0.13.0-alpha.3-SNAPSHOT</version>
+      <version>0.13.0-rc.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.13.0-alpha.3-SNAPSHOT</version>
+      <version>0.13.0-rc.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -311,6 +311,20 @@
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>ethereumj-core</artifactId>
       <version>${ethereum-core.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>leveldbjni-all</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>rocksdbjni</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ethereum</groupId>
+          <artifactId>solcJ-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
