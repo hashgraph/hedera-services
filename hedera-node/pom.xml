@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.13.0-rc.2-SNAPSHOT</version>
+    <version>0.13.0-rc.3-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -25,8 +25,6 @@
     <git-commit-id.version>2.2.4</git-commit-id.version>
     <ant-contrib.version>1.0b3</ant-contrib.version>
     <ant-nodeps.version>1.8.1</ant-nodeps.version>
-
-    <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
   </properties>
 
   <build>
@@ -36,18 +34,6 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
-          <execution>
-            <id>gen-proto-docs</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-          <execution>
-            <id>ensure-proto-headers</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
           <execution>
             <id>stage-changes</id>
             <configuration>
@@ -189,46 +175,6 @@
           </execution>
           <execution>
             <phase>generate-resources</phase>
-            <id>ensure-application-properties</id>
-            <configuration>
-              <target>
-                <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
-                <if>
-                  <not>
-                    <available file="data/config/api-permission.properties" />
-                  </not>
-                  <then>
-                    <copy file="configuration/dev/api-permission.properties" tofile="data/config/api-permission.properties" />
-                  </then>
-                </if>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-          <execution>
-            <phase>generate-resources</phase>
-            <id>ensure-api-permission-properties</id>
-            <configuration>
-              <target>
-                <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
-                <if>
-                  <not>
-                    <available file="data/config/application.properties" />
-                  </not>
-                  <then>
-                    <copy file="configuration/dev/application.properties" tofile="data/config/application.properties" />
-                  </then>
-                </if>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-          <execution>
-            <phase>generate-resources</phase>
             <id>empty-swirlds-jar-for-old-build-scripts</id>
             <configuration>
               <tasks>
@@ -266,12 +212,12 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.13.0-rc.2-SNAPSHOT</version>
+      <version>0.13.0-rc.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-utils</artifactId>
-      <version>0.13.0-rc.2-SNAPSHOT</version>
+      <version>0.13.0-rc.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.swirlds</groupId>
@@ -292,7 +238,6 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>ethereumj-core</artifactId>
-      <version>${ethereum-core.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.ethereum</groupId>
@@ -398,6 +343,78 @@
             <configuration>
               <skip>true</skip>
             </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>devSetup</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>1.8</version>
+            <executions>
+              <execution>
+                <phase>generate-resources</phase>
+                <id>ensure-application-properties</id>
+                <configuration>
+                  <target>
+                    <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
+                    <if>
+                      <not>
+                        <available file="data/config/api-permission.properties" />
+                      </not>
+                      <then>
+                        <copy file="configuration/dev/api-permission.properties" tofile="data/config/api-permission.properties" />
+                      </then>
+                    </if>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+              <execution>
+                <phase>generate-resources</phase>
+                <id>ensure-api-permission-properties</id>
+                <configuration>
+                  <target>
+                    <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
+                    <if>
+                      <not>
+                        <available file="data/config/application.properties" />
+                      </not>
+                      <then>
+                        <copy file="configuration/dev/application.properties" tofile="data/config/application.properties" />
+                      </then>
+                    </if>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId>ant-contrib</groupId>
+                <artifactId>ant-contrib</artifactId>
+                <version>${ant-contrib.version}</version>
+                <exclusions>
+                  <exclusion>
+                    <groupId>ant</groupId>
+                    <artifactId>ant</artifactId>
+                  </exclusion>
+                </exclusions>
+              </dependency>
+              <dependency>
+                <groupId>org.apache.ant</groupId>
+                <artifactId>ant-nodeps</artifactId>
+                <version>${ant-nodeps.version}</version>
+              </dependency>
+            </dependencies>
           </plugin>
         </plugins>
       </build>
