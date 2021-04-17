@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,19 +20,17 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
  * ‍
  */
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class StandardSerdes {
-	public static final Map<Long, SysFileSerde<String>> SYS_FILE_SERDES = Collections.unmodifiableMap(
-			Map.of(
-					101l, new AddrBkJsonToGrpcBytes(),
-					102l, new NodesJsonToGrpcBytes(),
-					111l, new FeesJsonToGrpcBytes(),
-					112l, new XRatesJsonToGrpcBytes(),
-					121l, new JutilPropsToSvcCfgBytes("application.properties"),
-					122l, new JutilPropsToSvcCfgBytes("api-permission.properties")
-			)
-	);
-
+	public static final Map<Long, SysFileSerde<String>> SYS_FILE_SERDES = new HashMap<>() {{
+		put(101L, new AddrBkJsonToGrpcBytes());
+		put(102L, new NodesJsonToGrpcBytes());
+		put(111L, new FeesJsonToGrpcBytes());
+		put(112L, new XRatesJsonToGrpcBytes());
+		put(121L, new JutilPropsToSvcCfgBytes("application.properties"));
+		put(122L, new JutilPropsToSvcCfgBytes("api-permission.properties"));
+		put(123L, new ThrottlesJsonToGrpcBytes());
+	}};
 }

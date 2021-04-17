@@ -58,6 +58,7 @@ import com.hedera.services.bdd.suites.file.FileDeleteSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
+import com.hedera.services.bdd.suites.file.ValidateNewAddressBook;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
@@ -88,6 +89,7 @@ import com.hedera.services.bdd.suites.perf.MixedOpsMemoPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.misc.MixedOpsTransactionsSuite;
+import com.hedera.services.bdd.suites.perf.QueryOnlyLoadTest;
 import com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.TokenRelStatusChanges;
@@ -235,6 +237,7 @@ public class SuiteRunner {
 		/* JRS restart tests */
 		put("RestartWithScheduledEntities", aof(new JrsRestartTestTemplate()));
 		/* Load tests. */
+		put("QueryOnlyLoadTest", aof(new QueryOnlyLoadTest()));
 		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
 		put("AccountBalancesLoadTest", aof(new AccountBalancesClientSaveLoadTest()));
 		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
@@ -354,6 +357,8 @@ public class SuiteRunner {
 		put("CryptoTransferThenFreezeTest", aof(new CryptoTransferThenFreezeTest()));
 		put("MixedOpsTransactionsSuite", aof(new MixedOpsTransactionsSuite()));
 		put("MixedOpsLoadTest", aof(new MixedOpsLoadTest()));
+		/* Validate new AddressBook */
+		put("ValidateNewAddressBook", aof(new ValidateNewAddressBook()));
 	}};
 
 	static boolean runAsync;

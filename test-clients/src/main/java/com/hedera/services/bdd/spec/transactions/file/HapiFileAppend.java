@@ -24,8 +24,10 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -53,8 +55,21 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 	Optional<Supplier<byte[]>> contentsSupplier = Optional.empty();
 	Optional<String> path = Optional.empty();
 
+	Optional<Consumer<FileID>> preAppendCb = Optional.empty();
+	Optional<Consumer<ResponseCodeEnum>> postAppendCb = Optional.empty();
+
 	public HapiFileAppend(String file) {
 		this.file = file;
+	}
+
+	public HapiFileAppend alertingPre(Consumer<FileID> preCb) {
+		preAppendCb = Optional.of(preCb);
+		return this;
+	}
+
+	public HapiFileAppend alertingPost(Consumer<ResponseCodeEnum> postCb) {
+		postAppendCb = Optional.of(postCb);
+		return this;
 	}
 
 	public HapiFileAppend content(byte[] data) {
@@ -94,6 +109,7 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 						builder.setFileID(fid);
 						contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
 					});
+		preAppendCb.ifPresent(cb -> cb.accept(fid));
 		return b -> b.setFileAppend(opBody);
 	}
 
@@ -118,6 +134,11 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 				spec -> spec.registry().getKey(effectivePayer(spec)),
 				spec -> spec.registry().getKey(file)
 		);
+	}
+
+	@Override
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		postAppendCb.ifPresent(cb -> cb.accept(actualStatus));
 	}
 
 	@Override

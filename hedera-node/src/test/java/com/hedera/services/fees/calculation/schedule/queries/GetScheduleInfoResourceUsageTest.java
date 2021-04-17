@@ -125,6 +125,36 @@ public class GetScheduleInfoResourceUsageTest {
     }
 
     @Test
+    public void calculatesFeeDataAsResolvedIfExecuted() {
+        // setup:
+        info = info.toBuilder()
+                .clearDeletionTime()
+                .setExecutionTime(RichInstant.fromJava(resolutionTime).toGrpc())
+                .build();
+
+        ArgumentCaptor<ExtantScheduleContext> captor = ArgumentCaptor.forClass(ExtantScheduleContext.class);
+
+        // setup:
+        var query = scheduleInfoQuery(target);
+
+        given(scheduleOpsUsage.scheduleInfoUsage(eq(query), captor.capture())).willReturn(expected);
+
+        // when:
+        var usage = subject.usageGiven(query, view);
+
+        // then:
+        verify(view).infoForSchedule(target);
+        assertSame(expected, usage);
+        // and:
+        var ctx = captor.getValue();
+        assertEquals(adminKey, ctx.adminKey());
+        assertEquals(info.getSigners().getKeysCount(), ctx.numSigners());
+        assertTrue(ctx.isResolved());
+        assertEquals(info.getScheduledTransactionBody(), ctx.scheduledTxn());
+        assertEquals(info.getMemo(), ctx.memo());
+    }
+
+    @Test
     public void calculatesFeeDataScheduleNotPresent() {
         // given:
         given(view.infoForSchedule(target)).willReturn(Optional.empty());

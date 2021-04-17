@@ -53,6 +53,8 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt durationCreateTokenAssociation = OptionalInt.empty();
 	public static OptionalInt durationTokenTransfer = OptionalInt.empty();
 	public static OptionalInt testTreasureStartAccount = OptionalInt.empty();
+	public static OptionalInt totalTokenAssociations = OptionalInt.empty();
+	public static OptionalInt totalScheduled = OptionalInt.empty();
 	public static OptionalInt totalTestTokenAccounts = OptionalInt.empty();
 	public static OptionalInt memoLength = OptionalInt.of(DEFAULT_MEMO_LENGTH);
 
@@ -129,6 +131,12 @@ public class LoadTest extends HapiApiSuite {
 						? durationTokenTransfer::getAsInt : settings::getDurationTokenTransfer)
 				.setTotalTestTokenAccounts(totalTestTokenAccounts.isPresent()
 						? totalTestTokenAccounts::getAsInt : settings::getTotalTestTokenAccounts)
+				.setTotalTestTopics(totalTestTopics.isPresent()
+						? totalTestTopics::getAsInt : settings::getTotalTopics)
+				.setTotalScheduled(totalScheduled.isPresent()
+						? totalScheduled::getAsInt : settings::getTotalScheduled)
+				.setTotalTokenAssociations(totalTokenAssociations.isPresent()
+						? totalTokenAssociations::getAsInt : settings::getTotalTokenAssociations)
 				.setTestTreasureStartAccount(testTreasureStartAccount.isPresent()
 						? testTreasureStartAccount::getAsInt : settings::getTestTreasureStartAccount)
 				.setHCSSubmitMessageSize(hcsSubmitMessage.isPresent()

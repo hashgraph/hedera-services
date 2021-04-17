@@ -37,7 +37,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Optional;
 
 public class SpecKeyFromMnemonic extends UtilOp {
-	static final Logger log = LogManager.getLogger(SpecKeyFromMnemonic.class);
+	private static final Logger log = LogManager.getLogger(SpecKeyFromMnemonic.class);
 
 	private final String name;
 	private final String mnemonic;
@@ -57,16 +57,25 @@ public class SpecKeyFromMnemonic extends UtilOp {
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
 		byte[] seed = Bip0032.seedFrom(mnemonic);
 		byte[] privateKey = Bip0032.privateKeyFrom(seed);
+		createAndLinkSimpleKey(spec, privateKey, name, linkedId, log);
+		return false;
+	}
+
+	static void createAndLinkSimpleKey(
+			HapiApiSpec spec,
+			byte[] privateKey,
+			String name,
+			Optional<String> linkedId,
+			Logger logToUse) {
 		var params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
 		var privateKeySpec = new EdDSAPrivateKeySpec(privateKey, params);
 		var pk = new EdDSAPrivateKey(privateKeySpec);
 		var pubKeyHex = Hex.encodeHexString(pk.getAbyte());
-		log.info("Hex-encoded public key: " + pubKeyHex);
+		logToUse.info("Hex-encoded public key: " + pubKeyHex);
 		var key = Ed25519Factory.populatedFrom(pk.getAbyte());
 		spec.registry().saveKey(name, key);
 		spec.keys().incorporate(name, pubKeyHex, pk, KeyShape.SIMPLE);
 		linkedId.ifPresent(s -> spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s)));
-		return false;
 	}
 
 	@Override

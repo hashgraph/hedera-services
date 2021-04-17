@@ -21,11 +21,10 @@ package com.hedera.services.bdd.suites.file;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.AddressBook;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,13 +64,13 @@ public class FetchSystemFiles extends HapiApiSuite {
 				)).given().when().then(
 						getFileContents(NODE_DETAILS)
 								.saveTo(path("nodeDetails.bin"))
-								.saveReadableTo(unchecked(AddressBook::parseFrom), path("nodeDetails.txt")),
+								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
 						getFileContents(ADDRESS_BOOK)
 								.saveTo(path("addressBook.bin"))
-								.saveReadableTo(unchecked(AddressBook::parseFrom), path("addressBook.txt")),
+								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt")),
 						getFileContents(NODE_DETAILS)
 								.saveTo(path("nodeDetails.bin"))
-								.saveReadableTo(unchecked(AddressBook::parseFrom), path("nodeDetails.txt")),
+								.saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
 						getFileContents(EXCHANGE_RATES)
 								.saveTo(path("exchangeRates.bin"))
 								.saveReadableTo(unchecked(ExchangeRateSet::parseFrom), path("exchangeRates.txt")),
@@ -96,11 +95,11 @@ public class FetchSystemFiles extends HapiApiSuite {
 	}
 
 	@FunctionalInterface
-	private interface CheckedParser {
+	public interface CheckedParser {
 		Object parseFrom(byte[] bytes) throws Exception;
 	}
 
-	private Function<byte[], String> unchecked(CheckedParser parser) {
+	public static Function<byte[], String> unchecked(CheckedParser parser) {
 			return bytes -> {
 				try {
 					return parser.parseFrom(bytes).toString();

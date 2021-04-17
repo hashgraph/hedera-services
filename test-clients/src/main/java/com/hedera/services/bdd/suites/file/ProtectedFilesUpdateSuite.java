@@ -32,9 +32,8 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
-import com.hederahashgraph.api.proto.java.AddressBook;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.AddressBook;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
@@ -53,7 +52,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	private final ObjectMapper mapper = new ObjectMapper();
@@ -365,7 +364,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	private byte[] extendedBioAddressBook(byte[] contents, String targetMemo, String replaceMemo) {
 		var r = new SplittableRandom();
 		try {
-			var book = AddressBook.parseFrom(contents);
+			var book = NodeAddressBook.parseFrom(contents);
 			var builder = book.toBuilder();
 			byte[] randCertHash = new byte[32];
 			long nodeId = 0;
@@ -396,7 +395,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 	private byte[] extendedBioNodeDetails(byte[] contents, String targetMemo, String replaceMemo) {
 		var r = new SplittableRandom();
 		try {
-			var book = AddressBook.parseFrom(contents);
+			var book = NodeAddressBook.parseFrom(contents);
 			var builder = book.toBuilder();
 			byte[] randPubKey = new byte[422];
 			long nodeId = 0;

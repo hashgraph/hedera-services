@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.state.submerkle.EntityId.ofNullableFileId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcFileId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -87,7 +87,7 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 				info.setDeleted(true);
 				info.setExpiry(newExpiry);
 				hfs.setattr(tbd, info);
-				expiries.put(ofNullableFileId(tbd), oldExpiry);
+				expiries.put(fromGrpcFileId(tbd), oldExpiry);
 			}
 			txnCtx.setStatus(SUCCESS);
 		} catch (Exception unknown) {

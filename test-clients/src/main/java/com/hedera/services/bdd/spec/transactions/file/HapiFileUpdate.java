@@ -35,16 +35,19 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.file.ExtantFileContext;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -93,6 +96,9 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 	private Optional<Set<String>> propDeletions = Optional.empty();
 	private Optional<Map<String, String>> propOverrides = Optional.empty();
 	private Optional<Function<HapiApiSpec, ByteString>> contentFn = Optional.empty();
+
+	Optional<Consumer<FileID>> preUpdateCb = Optional.empty();
+	Optional<Consumer<ResponseCodeEnum>> postUpdateCb = Optional.empty();
 
 	public HapiFileUpdate(String file) {
 		this.file = file;
@@ -196,13 +202,25 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		useBadlyEncodedWacl = true;
 		return this;
 	}
+
 	public HapiFileUpdate useEmptyWacl() {
 		useEmptyWacl = true;
 		return this;
 	}
 
+	public HapiFileUpdate alertingPre(Consumer<FileID> preCb) {
+		preUpdateCb = Optional.of(preCb);
+		return this;
+	}
+
+	public HapiFileUpdate alertingPost(Consumer<ResponseCodeEnum> postCb) {
+		postUpdateCb = Optional.of(postCb);
+		return this;
+	}
+
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		postUpdateCb.ifPresent(cb -> cb.accept(actualStatus));
 		if (actualStatus != ResponseCodeEnum.SUCCESS) {
 			return;
 		}
@@ -223,7 +241,6 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		if (verboseLoggingOn) {
 			log.info("Updated file  {} with ID {}.", file, lastReceipt.getFileID());
 		}
-
 	}
 
 	@Override
@@ -288,6 +305,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 							newLifetime.ifPresent(s -> builder.setExpirationTime(TxnFactory.expiryGiven(s)));
 						}
 				);
+		preUpdateCb.ifPresent(cb -> cb.accept(fid));
 		return builder -> builder.setFileUpdate(opBody);
 	}
 

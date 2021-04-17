@@ -24,8 +24,11 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.files.SysFileCallbacks;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -34,21 +37,20 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import com.swirlds.common.AddressBook;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
@@ -95,12 +97,12 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	@Override
 	public void createAddressBookIfMissing() {
-		writeFromBookIfMissing(fileNumbers.addressBook(), this::bioAndIpv4Contents);
+		writeFromBookIfMissing(fileNumbers.addressBook(), this::platformAddressBookToGrpc);
 	}
 
 	@Override
 	public void createNodeDetailsIfMissing() {
-		writeFromBookIfMissing(fileNumbers.nodeDetails(), this::bioAndPubKeyContents);
+		writeFromBookIfMissing(fileNumbers.nodeDetails(), this::platformAddressBookToGrpc);
 	}
 
 	@Override
@@ -270,6 +272,8 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 									.setValue(String.valueOf(entry.getValue()))));
 			log.info(sb.toString());
 			return config.build().toByteArray();
+		} catch (NoSuchFileException ignore) {
+			return ServicesConfigurationList.getDefaultInstance().toByteArray();
 		}
 	}
 
@@ -287,38 +291,31 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		}
 	}
 
-	private byte[] bioAndIpv4Contents() {
-		var basics = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
+	private byte[] platformAddressBookToGrpc() {
+		var basics = com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
-				.map(address ->
-						basicBioEntryFrom(address)
-								.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
-								.build())
+				.map(address ->	basicBioEntryFrom(address).build())
 				.forEach(basics::addNodeAddress);
 		return basics.build().toByteArray();
 	}
 
-	private byte[] bioAndPubKeyContents() {
-		var details = com.hederahashgraph.api.proto.java.AddressBook.newBuilder();
-		LongStream.range(0, currentBook.getSize())
-				.mapToObj(currentBook::getAddress)
-				.map(address ->
-						basicBioEntryFrom(address)
-								.setRSAPubKey(MiscUtils.commonsBytesToHex(address.getSigPublicKey().getEncoded()))
-								.build())
-				.forEach(details::addNodeAddress);
-		return details.build().toByteArray();
-	}
-
 	private NodeAddress.Builder basicBioEntryFrom(Address address) {
 		var builder = NodeAddress.newBuilder()
+				.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
+				.setPortno(address.getPortExternalIpv4())
+				.setRSAPubKey(MiscUtils.commonsBytesToHex(address.getSigPublicKey().getEncoded()))
 				.setNodeId(address.getId())
+				.setStake(address.getStake())
 				.setMemo(ByteString.copyFromUtf8(address.getMemo()));
+		var serviceEndpoint = ServiceEndpoint.newBuilder()
+				.setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))
+				.setPort(address.getPortExternalIpv4());
+		builder.addServiceEndpoint(serviceEndpoint);
 		try {
 			builder.setNodeAccountId(EntityIdUtils.accountParsedFromString(address.getMemo()));
-		} catch (Exception ignore) {
-			log.warn(ignore.getMessage());
+		} catch (Exception e) {
+			log.warn("Address for node {} had memo {}, not a parseable account!", address.getId(), address.getMemo());
 		}
 		return builder;
 	}

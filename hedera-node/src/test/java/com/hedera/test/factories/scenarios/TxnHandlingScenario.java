@@ -27,7 +27,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
@@ -49,7 +48,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
 
 import java.time.Instant;
@@ -289,7 +287,7 @@ public interface TxnHandlingScenario {
 		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER))
 				.willAnswer(inv -> {
 					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
-					entity.setPayer(EntityId.ofNullableAccountId(DILIGENT_SIGNING_PAYER));
+					entity.setPayer(EntityId.fromGrpcAccountId(DILIGENT_SIGNING_PAYER));
 					return entity;
 				});
 
@@ -298,7 +296,7 @@ public interface TxnHandlingScenario {
 		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER))
 				.willAnswer(inv -> {
 					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
-					entity.setPayer(EntityId.ofNullableAccountId(MISSING_ACCOUNT));
+					entity.setPayer(EntityId.fromGrpcAccountId(MISSING_ACCOUNT));
 					return entity;
 				});
 

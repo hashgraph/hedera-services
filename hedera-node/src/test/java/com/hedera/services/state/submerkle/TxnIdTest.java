@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verify;
 @RunWith(JUnitPlatform.class)
 class TxnIdTest {
 	private AccountID payer = IdUtils.asAccount("0.0.75231");
-	private EntityId fcPayer = EntityId.ofNullableAccountId(payer);
+	private EntityId fcPayer = EntityId.fromGrpcAccountId(payer);
 	private Timestamp validStart = Timestamp.newBuilder()
 			.setSeconds(1_234_567L)
 			.setNanos(89)

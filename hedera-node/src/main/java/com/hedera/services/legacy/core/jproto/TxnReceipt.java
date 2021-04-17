@@ -297,14 +297,12 @@ public class TxnReceipt implements SelfSerializable {
 
 	public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
 		String status = grpc.getStatus() != null ? grpc.getStatus().name() : null;
-		EntityId accountId =
-				grpc.hasAccountID() ? EntityId.ofNullableAccountId(grpc.getAccountID()) : null;
-		EntityId jFileID = grpc.hasFileID() ? EntityId.ofNullableFileId(grpc.getFileID()) : null;
-		EntityId jContractID =
-				grpc.hasContractID() ? EntityId.ofNullableContractId(grpc.getContractID()) : null;
-		EntityId topicId = grpc.hasTopicID() ? EntityId.ofNullableTopicId(grpc.getTopicID()) : null;
-		EntityId tokenId = grpc.hasTokenID() ? EntityId.ofNullableTokenId(grpc.getTokenID()) : null;
-		EntityId scheduleId = grpc.hasScheduleID() ? EntityId.ofNullableScheduleId(grpc.getScheduleID()) : null;
+		EntityId accountId = grpc.hasAccountID() ? EntityId.fromGrpcAccountId(grpc.getAccountID()) : null;
+		EntityId jFileID = grpc.hasFileID() ? EntityId.fromGrpcFileId(grpc.getFileID()) : null;
+		EntityId jContractID = grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null;
+		EntityId topicId = grpc.hasTopicID() ? EntityId.fromGrpcTopicId(grpc.getTopicID()) : null;
+		EntityId tokenId = grpc.hasTokenID() ? EntityId.fromGrpcTokenId(grpc.getTokenID()) : null;
+		EntityId scheduleId = grpc.hasScheduleID() ? EntityId.fromGrpcScheduleId(grpc.getScheduleID()) : null;
 		long runningHashVersion = Math.max(MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
 		long newTotalSupply = grpc.getNewTotalSupply();
 		TxnId scheduledTxnId = grpc.hasScheduledTransactionID()

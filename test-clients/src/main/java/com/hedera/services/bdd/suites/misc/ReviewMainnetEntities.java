@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.misc;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,6 +50,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromLiteral;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 public class ReviewMainnetEntities extends HapiApiSuite {
@@ -66,9 +68,31 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 //						doSomething(),
 //						oneOfEveryTokenTxn(),
 //						customPayerOp(),
-						previewnetCryptoCreatePrice(),
+//						previewnetCryptoCreatePrice(),
+						stablenetCreateAccountWithExplicitKey(),
 				}
 		);
+	}
+
+	public HapiApiSpec stablenetCreateAccountWithExplicitKey() {
+		String explicit = "<SECRET>";
+		String testVectorKey = "testVectorKey";
+
+		return customHapiSpec("StablenetCreateAccountWithExplicitKey")
+				.withProperties(Map.of(
+						"nodes", "34.94.106.61",
+						"default.payer", "0.0.50",
+						"default.payer.pemKeyLoc", "stabletestnet-account50.pem",
+						"default.payer.pemKeyPassphrase", "<SECRET>"
+				))
+				.given(
+						keyFromLiteral(testVectorKey, explicit)
+				).when().then(
+						cryptoCreate("another")
+								.balance(1L)
+								.receiverSigRequired(true)
+								.key(testVectorKey)
+				);
 	}
 
 	public HapiApiSpec previewnetCryptoCreatePrice() {

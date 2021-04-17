@@ -20,10 +20,21 @@ package com.hedera.services.yahcli;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
+import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.props.MapPropertySource;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
-import com.hedera.services.yahcli.commands.accounts.BalanceCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
+import com.hedera.services.yahcli.suites.BalanceSuite;
+import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
+import com.hedera.services.yahcli.suites.SysFileUploadSuite;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -32,6 +43,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Spec;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 @Command(
@@ -44,18 +56,20 @@ import java.util.concurrent.Callable;
 		},
 		description = "Perform operations against well-known entities on a Hedera Services network")
 public class Yahcli implements Callable<Integer> {
+	private static final Logger log = LogManager.getLogger(Yahcli.class);
+
 	public static final long NO_FIXED_FEE = Long.MIN_VALUE;
 
 	@Spec
 	CommandSpec spec;
 
 	@Option(names = { "-f", "--fixed-fee" },
-			paramLabel = "fee to offer",
+			paramLabel = "fee",
 			defaultValue = "" + NO_FIXED_FEE)
 	Long fixedFee;
 
 	@Option(names = { "-n", "--network" },
-			paramLabel = "target network")
+			paramLabel = "network")
 	String net;
 
 	@Option(names = { "-p", "--payer" },
@@ -63,7 +77,7 @@ public class Yahcli implements Callable<Integer> {
 	String payer;
 
 	@Option(names = { "-c", "--config" },
-			paramLabel = "yahcli config YAML",
+			paramLabel = "config YAML",
 			defaultValue = "config.yml")
 	String configLoc;
 
@@ -73,6 +87,7 @@ public class Yahcli implements Callable<Integer> {
 	}
 
 	public static void main(String... args) {
+		setLogLevelsToLessNoisy();
 		int rc = new CommandLine(new Yahcli()).execute(args);
 		System.exit(rc);
 	}
@@ -95,5 +110,23 @@ public class Yahcli implements Callable<Integer> {
 
 	public Long getFixedFee() {
 		return fixedFee;
+	}
+
+	private static void setLogLevelsToLessNoisy() {
+		List.of(
+				BalanceSuite.class,
+				SysFileUploadSuite.class,
+				SysFileDownloadSuite.class,
+				MapPropertySource.class,
+				HapiApiClients.class,
+				FeesAndRatesProvider.class,
+				HapiQueryOp.class,
+				HapiGetFileContents.class,
+				HapiApiSpec.class
+		).forEach(Yahcli::setToLessNoisy);
+	}
+
+	private static void setToLessNoisy(Class<?> cls) {
+		((org.apache.logging.log4j.core.Logger)LogManager.getLogger(cls)).setLevel(Level.WARN);
 	}
 }

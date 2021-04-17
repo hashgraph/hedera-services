@@ -161,6 +161,9 @@
               <finalName>yahcli</finalName>
               <appendAssemblyId>false</appendAssemblyId>
               <archive>
+                <manifestEntries>
+                  <Multi-Release>true</Multi-Release>
+                </manifestEntries>
                 <manifest>
                   <mainClass>com.hedera.services.yahcli.Yahcli</mainClass>
                 </manifest>
