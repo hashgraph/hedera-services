@@ -157,6 +157,7 @@
     <commons-io.version>2.1</commons-io.version>
     <commons-codec.version>1.11</commons-codec.version>
     <eddsa.version>0.3.0</eddsa.version>
+    <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
     <grpc.version>1.33.0</grpc.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
@@ -217,8 +218,6 @@ ${git.signoff}
           <preparationGoals>
             clean 
             license:update-file-header 
-            exec:exec@gen-proto-docs
-            exec:exec@ensure-proto-headers
             verify
             exec:exec@stage-changes
           </preparationGoals>
@@ -502,6 +501,11 @@ ${git.signoff}
         <groupId>net.i2p.crypto</groupId>
         <artifactId>eddsa</artifactId>
         <version>${eddsa.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.hedera.hashgraph</groupId>
+        <artifactId>ethereumj-core</artifactId>
+        <version>${ethereum-core.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

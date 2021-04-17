@@ -2113,7 +2113,7 @@ jobs:
           name: mvn install
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-               'mvn --no-transfer-progress clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
+               'mvn --no-transfer-progress clean install -DskipTests -PdevSetup | tee /repo/test-clients/output/hapi-client.log'
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |
@@ -2159,7 +2159,7 @@ jobs:
       - run:
           name: Run Mainnet Migration test
           command: |
-            cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
+            cd /repo ; mvn --no-transfer-progress clean install -DskipTests -PdevSetup;
             cd /swirlds-platform/regression;
             ./regression_services_circleci.sh configs/services/daily/13N_13C/AWS-Services-Daily-MainnetMigration-13N-1C.json /repo
 
@@ -2221,7 +2221,7 @@ jobs:
       - run:
           name: Build hedera-services repo
           command: |
-                mvn --no-transfer-progress clean install -DskipTests;
+                mvn --no-transfer-progress clean install -DskipTests -PdevSetup;
       - run:
           name: Checkout swirlds-platform repos and build
           command: |

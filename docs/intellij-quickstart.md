@@ -28,17 +28,13 @@ Make sure you are using OpenJDK12 as the project SDK:
     <img src="./assets/sdk-12.png"/>
 </p>
 
-Open the Maven tool window, and run `mvn install` in the root project:
-
-<p>
-    <img src="./assets/top-level-modules.png"/>
-</p>
+Open the Maven tool window, and run `mvn install -PdevSetup` in the root project:
 
 This will both, 
 <ol>
   <li>Build the <i>hedera-node/data/apps/HederaNode.jar</i>; and,
   <li>Populate your <i>hedera-node/data/config</i> directory with 
-  default versions of the <i>application.properties</i> and 
+  dev-appropriate versions of the <i>application.properties</i> and 
   <i>api-permission.properties</i> files that are used to bootstrap 
   a new Hedera Services network.
 </ol>
