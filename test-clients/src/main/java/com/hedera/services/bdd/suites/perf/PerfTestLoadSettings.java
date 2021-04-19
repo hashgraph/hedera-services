@@ -38,6 +38,8 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_TOTAL_TEST_TOKENS = 1;
 	public static final int DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS = 2;
 	public static final int DEFAULT_TEST_TREASURE_START_ACCOUNT = 1001;
+	public static final int DEFAULT_TOTAL_TOKEN_ASSOCIATIONS = 0;
+	public static final int DEFAULT_TOTAL_SCHEDULED = 0;
 	public static final int DEFAULT_TOTAL_CLIENTS = 1;
 	public static final int DEFAULT_MEMO_LENGTH = 25;
 	public static final int DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION = 60; // in seconds
@@ -94,6 +96,10 @@ public class PerfTestLoadSettings {
 	 *  The duration for client account balances test to do token transfer randomly
 	 *  */
 	private int durationTokenTransfer = DEFAULT_DURATION_TOKEN_TRANSFER;
+	/** Total token associations in the saved state file  */
+	private int totalTokenAssociations = DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
+	/** Total scheduled transactions in the saved state file  */
+	private int totalScheduled = DEFAULT_TOTAL_SCHEDULED;
 
 
 	private HapiPropertySource ciProps = null;
@@ -159,7 +165,12 @@ public class PerfTestLoadSettings {
 	public int getTotalTestTokenAccounts() { return totalTestTokenAccounts; }
 	public int getDurationCreateTokenAssociation() { return durationCreateTokenAssociation; }
 	public int getDurationTokenTransfer() { return durationTokenTransfer; }
-
+	public int getTotalTokenAssociations() {
+		return totalTokenAssociations;
+	}
+	public int getTotalScheduled() {
+		return totalScheduled;
+	}
 
 	public int getTestTreasureStartAccount() { return testTreasureStartAccount; }
 	public int getIntProperty(String property, int defaultValue) {
@@ -224,11 +235,18 @@ public class PerfTestLoadSettings {
 			hcsSubmitMessageSize = ciProps.getInteger("messageSize");
 		}
 		if (ciProps.has("messageSizeVar")) {
-			hcsSubmitMessageSize = ciProps.getInteger("messageSizeVar");
+			hcsSubmitMessageSizeVar = ciProps.getInteger("messageSizeVar");
 		}
 		if (ciProps.has("memoLength")) {
 			memoLength = ciProps.getInteger("memoLength");
 		}
+		if (ciProps.has("totalTokenAssociations")) {
+			totalTokenAssociations = ciProps.getInteger("totalTokenAssociations");
+		}
+		if (ciProps.has("totalScheduled")) {
+			totalScheduled = ciProps.getInteger("totalScheduled");
+		}
+
 	}
 
 	@Override
@@ -251,6 +269,8 @@ public class PerfTestLoadSettings {
 				.add("submitMessageSize", hcsSubmitMessageSize)
 				.add("submitMessageSizeVar", hcsSubmitMessageSizeVar)
 				.add("memoLength", memoLength)
+				.add("totalTokenAssociations", totalTokenAssociations)
+				.add("totalScheduledTransactions", totalScheduled)
 				.toString();
 	}
 }
