@@ -20,9 +20,16 @@ package com.hedera.services.yahcli.config;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.persistence.SpecKey;
+
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.Optional;
+
+import static com.hedera.services.bdd.spec.persistence.SpecKey.readFirstKpFromPem;
 
 public class ConfigUtils {
 	public static String asId(String entity) {
@@ -51,7 +58,7 @@ public class ConfigUtils {
 		return Optional.empty();
 	}
 
-	public static Optional<File> passFileFor(File pemFile) {
+	static Optional<File> passFileFor(File pemFile) {
 		var absPath = pemFile.getAbsolutePath();
 		var passFile = new File(absPath.replace(".pem", ".pass"));
 		return passFile.exists() ? Optional.of(passFile) : Optional.empty();
@@ -66,10 +73,49 @@ public class ConfigUtils {
 		}
 	}
 
-	public static void fileExists(String filePath) {
-		File f = new File(filePath);
-		if(!f.exists()) {
-			throw new IllegalStateException("File not found: " + filePath);
+	static Optional<String> promptForPassphrase(String pemLoc, String prompt, int maxAttempts) {
+		var pemFile = new File(pemLoc);
+		String fullPrompt = prompt + ": ";
+		char[] passphrase;
+		while (maxAttempts-- > 0) {
+			passphrase = readCandidate(fullPrompt);
+			var asString = new String(passphrase);
+			if (unlocks(pemFile, asString)) {
+				return Optional.of(asString);
+			} else {
+				if (maxAttempts > 0) {
+					System.out.println(
+							"Sorry, that isn't it! (Don't worry, still " + maxAttempts + " attempts remaining.)");
+				} else {
+					return Optional.empty();
+				}
+			}
+		}
+		throw new AssertionError("Impossible!");
+	}
+
+	static boolean unlocks(File keyFile, String passphrase) {
+		try {
+			readFirstKpFromPem(keyFile, passphrase);
+			return true;
+		} catch (Exception ignore) {
+			return false;
 		}
 	}
+
+	private static char[] readCandidate(String prompt) {
+		System.out.print(prompt);
+		System.out.flush();
+		if (System.console() != null) {
+			return System.console().readPassword();
+		} else {
+			var reader = new BufferedReader(new InputStreamReader(System.in));
+			try {
+				return reader.readLine().toCharArray();
+			} catch (IOException e) {
+				return new char[0];
+			}
+		}
+	}
+
 }

@@ -29,6 +29,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import picocli.CommandLine;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -38,6 +39,8 @@ import java.util.Optional;
 
 import static com.hedera.services.yahcli.config.ConfigUtils.asId;
 import static com.hedera.services.yahcli.config.ConfigUtils.isLiteral;
+import static com.hedera.services.yahcli.config.ConfigUtils.promptForPassphrase;
+import static com.hedera.services.yahcli.config.ConfigUtils.unlocks;
 import static java.util.stream.Collectors.toList;
 
 public class ConfigManager {
@@ -89,20 +92,27 @@ public class ConfigManager {
 		}
 		var keyFile = optKeyFile.get();
 		if (keyFile.getAbsolutePath().endsWith("pem")) {
+			Optional<String> finalPassphrase = Optional.empty();
 			var optPassFile = ConfigUtils.passFileFor(keyFile);
-			if (optPassFile.isEmpty()) {
-				fail(String.format("No password file available for PEM %s!", keyFile.getName()));
+			if (optPassFile.isPresent()) {
+				try {
+					finalPassphrase = Optional.of(Files.readString(optPassFile.get().toPath()).trim());
+				} catch (IOException e) {
+					System.out.println(String.format(
+							"Password file inaccessible for PEM %s ('%s')!",
+							keyFile.getName(),
+							e.getMessage()));
+				}
 			}
-			try {
-				var pass = Files.readString(optPassFile.get().toPath());
-				specConfig.put("default.payer.pemKeyLoc", keyFile.getPath());
-				specConfig.put("default.payer.pemKeyPassphrase", pass.trim());
-			} catch (IOException e) {
-				fail(String.format(
-						"Password file inaccessible for PEM %s ('%s')!",
-						keyFile.getName(),
-						e.getMessage()));
+			if (!isValid(keyFile, finalPassphrase)) {
+				var prompt = "Please enter the passphrase for key file " + keyFile;
+				finalPassphrase = promptForPassphrase(keyFile.getPath(), prompt, 3);
 			}
+			if (!isValid(keyFile, finalPassphrase)) {
+				fail(String.format("No valid passphrase could be obtained for PEM %s!", keyFile.getName()));
+			}
+			specConfig.put("default.payer.pemKeyLoc", keyFile.getPath());
+			specConfig.put("default.payer.pemKeyPassphrase", finalPassphrase.get());
 		} else {
 			try {
 				var mnemonic = Files.readString(keyFile.toPath());
@@ -111,6 +121,10 @@ public class ConfigManager {
 				fail(String.format("Mnemonic file %s is inaccessible!", keyFile.getPath()));
 			}
 		}
+	}
+
+	private boolean isValid(File keyFile, Optional<String> passphrase) {
+		return passphrase.isPresent() && unlocks(keyFile, passphrase.get());
 	}
 
 	private String keysLoc() {
