@@ -1311,11 +1311,11 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "35 4 * * *"
+          cron: "50 4 * * *"
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1428,11 +1428,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "20 5 * * *"
+          cron: "35 5 * * *"
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1453,11 +1453,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
-          cron: "35 5 * * *"
+          cron: "50 5 * * *"
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - build-platform-and-services
       - update-start-up-key:
@@ -1502,11 +1502,11 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "5 6 * * *"
+          cron: "20 6 * * *"
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1525,11 +1525,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "50 6 * * *"
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1571,11 +1571,11 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "35 6 * * *"
+          cron: "50 6 * * *"
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1594,11 +1594,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "35 6 * * 3,0"
+          cron: "50 6 * * 3,0"
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1617,11 +1617,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
     triggers:
       - schedule:
-          cron: "30 4 * * 3,0"
+          cron: "45 4 * * 3,0"
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1640,11 +1640,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
       - schedule:
-          cron: "5 7 * * *"
+          cron: "20 7 * * *"
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1667,7 +1667,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - master
+                  - release/0.13
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1732,7 +1732,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - master
+                  - release/0.13
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1804,7 +1804,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1880,7 +1880,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - aws-summary:
           context: Slack
@@ -1892,7 +1892,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - release/0.13
     jobs:
       - fast-build-artifact:
           context: Slack
