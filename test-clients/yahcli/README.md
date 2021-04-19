@@ -3,12 +3,14 @@ Yahcli (Yet Another Hedera Command Line Interface) is able to perform the
 listed actions against a specified network.
 
 1. Account Operations
-    - Check balances for one or more accounts.
+  - Check balances for one or more accounts.
 2. System File Operations
-    - Download one or more system files.
-    - Upload a system file.
-3. Fees Operations
-    - Run examples of all "canonical" transactions and queries, reporting the fees charged.
+  - Download one or more system files.
+  - Upload a system file.
+3. Fee Snapshot Operations
+  - Run examples of all "canonical" transactions and queries, reporting the fees charged.
+4. Post-Upgrade Validations
+  - "Smoke test" one or more services
 
 # Setting up the working directory 
 
@@ -236,4 +238,10 @@ java.lang.IllegalStateException: Deprecated memo field cannot be set to 'This no
 	at com.hedera.services.yahcli.suites.SysFileUploadSuite.uploadSysFiles(SysFileUploadSuite.java:70)
 	at com.hedera.services.yahcli.suites.SysFileUploadSuite.getSpecsInSuite(SysFileUploadSuite.java:65)
 ...
+```
+
+## Validating the scheduled transactions service
+
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 validate scheduling
 ```

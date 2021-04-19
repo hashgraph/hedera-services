@@ -20,7 +20,7 @@ package com.hedera.services.yahcli.config;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.persistence.SpecKey;
+import com.hedera.services.yahcli.Yahcli;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.persistence.SpecKey.readFirstKpFromPem;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 public class ConfigUtils {
 	public static String asId(String entity) {
@@ -118,4 +119,10 @@ public class ConfigUtils {
 		}
 	}
 
+	public static ConfigManager configFrom(Yahcli yahcli) throws IOException {
+		var config = ConfigManager.from(yahcli);
+		config.assertNoMissingDefaults();
+		COMMON_MESSAGES.printGlobalInfo(config);
+		return config;
+	}
 }

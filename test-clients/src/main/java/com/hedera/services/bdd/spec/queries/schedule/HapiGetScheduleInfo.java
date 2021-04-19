@@ -55,6 +55,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	}
 
 	boolean shouldBeExecuted = false;
+	boolean shouldNotBeExecuted = false;
 	boolean shouldBeDeleted = false;
 	boolean checkForRecordedScheduledTxn = false;
 	Optional<String> deletionTxn = Optional.empty();
@@ -75,6 +76,11 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
 	public HapiGetScheduleInfo isExecuted() {
 		shouldBeExecuted = true;
+		return this;
+	}
+
+	public HapiGetScheduleInfo isNotExecuted() {
+		shouldNotBeExecuted = true;
 		return this;
 	}
 
@@ -160,6 +166,10 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
 		if (shouldBeExecuted) {
 			Assert.assertTrue("Wasn't already executed!", actualInfo.hasExecutionTime());
+		}
+
+		if (shouldNotBeExecuted) {
+			Assert.assertFalse("Was already executed!", actualInfo.hasExecutionTime());
 		}
 
 		if (deletionTxn.isPresent()) {

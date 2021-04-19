@@ -28,7 +28,7 @@ import picocli.CommandLine.ParentCommand;
 
 import java.util.concurrent.Callable;
 
-import static com.hedera.services.yahcli.commands.files.SysFilesCommand.configFrom;
+import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
 @Command(
 		name = "download",
