@@ -1954,7 +1954,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - /.*-PERF/
+                  - 01279-M-ImproveYahcli
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
