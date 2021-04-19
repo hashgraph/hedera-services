@@ -62,7 +62,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 				.given(
 						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.unavailableNode(),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
@@ -73,16 +73,16 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 								.validDurationSecs(180)
 								.via(transactionId),
 						getAccountBalance(GENESIS)
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.unavailableNode()
 				)
 				.then(
-						withLiveNode("0.0.6")
+						withLiveNode("0.0.8")
 								.within(60, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(10)
 								.sleepingBetweenRetriesFor(5),
 						UtilVerbs.sleepFor(30 * 1000),
-						withLiveNode("0.0.6")
+						withLiveNode("0.0.8")
 								.within(60, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(10)
 								.sleepingBetweenRetriesFor(5),
@@ -90,7 +90,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 								.txnId(transactionId)
 								.validDurationSecs(180)
 								.hasPrecheck(DUPLICATE_TRANSACTION)
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 				);
 	}
 
