@@ -69,7 +69,7 @@ public class CreateTopicsBeforeReconnect extends HapiApiSuite {
 		}
 
 		return createTopic("topic" + topic)
-				.noLogging()
+				.logging()
 				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 				.deferStatusResolution();
 	}
