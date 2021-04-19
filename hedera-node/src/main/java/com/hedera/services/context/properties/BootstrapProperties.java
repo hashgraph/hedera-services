@@ -168,7 +168,6 @@ public class BootstrapProperties implements PropertySource {
 			"accounts.systemUndeleteAdmin",
 			"accounts.treasury",
 			"files.addressBook",
-			"files.diskFsBaseDir.path",
 			"files.networkProperties",
 			"files.exchangeRates",
 			"files.feeSchedules",
