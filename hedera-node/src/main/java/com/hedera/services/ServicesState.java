@@ -214,7 +214,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
 		var bootstrapProps = new BootstrapProperties();
-		var diskFsBaseDirPath = bootstrapProps.getStringProperty("files.diskFsBaseDir.path");
 		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
 		try {
 			ctx = CONTEXTS.lookup(nodeId.getId());
@@ -233,8 +232,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.ACCOUNTS, new FCMap<>());
 			setChild(ChildIndices.TOKENS, new FCMap<>());
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
-			setChild(ChildIndices.DISK_FS,
-					new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
+			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
@@ -244,8 +242,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			constructed from state with this node's account, which the DiskFs will use to scope the
 			path to its disk-based storage. */
 			var restoredDiskFs = diskFs();
-			restoredDiskFs.setFsBaseDir(diskFsBaseDirPath);
-			restoredDiskFs.setFsNodeScopedDir(asLiteralString(ctx.nodeAccount()));
 			if (!skipDiskFsHashCheck) {
 				restoredDiskFs.checkHashesAgainstDiskContents();
 			}
@@ -265,11 +261,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		// set records initialHash
 		ctx.setRecordsInitialHash(runningHashLeaf().getRunningHash().getHash());
 
-		if (initWithMerkle) {
-			// only digest when initialize with Merkle state
-			merkleDigest.accept(this);
-			logSummary();
-		}
+		logSummary();
 
 		initializeContext(ctx);
 		CONTEXTS.store(ctx);

@@ -26,14 +26,12 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.AfterEach;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,8 +48,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -63,13 +62,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
-public class MerkleDiskFsTest {
+class MerkleDiskFsTest {
 	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private MerkleDiskFs subject;
 
-	AccountID nodeAccount = AccountID.newBuilder().setAccountNum(3).build();
 	FileID file150 = asFile("0.0.150");
 	byte[] origContents = "Where, like a pillow on a bed /".getBytes();
 	byte[] origFileHash = null;
@@ -88,40 +86,30 @@ public class MerkleDiskFsTest {
 
 		Map<FileID, byte[]> hashes = new HashMap<>();
 		hashes.put(IdUtils.asFile("0.0.150"), origFileHash);
-		subject = new MerkleDiskFs(
-				hashes,
-				MOCK_DISKFS_DIR,
-				asLiteralString(nodeAccount));
+		subject = new MerkleDiskFs(hashes);
 
 		getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
-		MerkleDiskFs.bytesHelper = getter;
+		subject.setBytesHelper(getter);
 		writer = mock(MerkleDiskFs.ThrowingBytesWriter.class);
-		MerkleDiskFs.writeHelper = writer;
+		subject.setWriteHelper(writer);
 
 		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willReturn(origContents);
 	}
 
-	@AfterEach
-	private void cleanup() {
-		MerkleDiskFs.writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
-		MerkleDiskFs.bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
-	}
-
 	@Test
 	public void helpersSanityCheck() throws IOException {
-		// setup:
-		cleanup();
-
 		// given:
 		String tmpBase = MOCK_DISKFS_DIR + File.separator + "a" + File.separator + "b" + File.separator;
 		Path tmpLoc = Paths.get(tmpBase + "c.txt");
 		byte[] tmpMsg = "Testing-1-2-3".getBytes();
+		// and:
+		var subject = new MerkleDiskFs();
 
 		// when:
-		MerkleDiskFs.writeHelper.allBytesTo(tmpLoc, tmpMsg);
+		subject.getWriteHelper().allBytesTo(tmpLoc, tmpMsg);
 
 		// then:
-		assertArrayEquals(tmpMsg, MerkleDiskFs.bytesHelper.allBytesFrom(tmpLoc));
+		assertArrayEquals(tmpMsg, subject.getBytesHelper().allBytesFrom(tmpLoc));
 
 		// cleanup:
 		tmpLoc.toFile().delete();
@@ -135,12 +123,25 @@ public class MerkleDiskFsTest {
 	public void toStringWorks() {
 		// expect:
 		assertEquals(
-				"MerkleDiskFs{baseDir=" + MOCK_DISKFS_DIR
-						+ ", nodeScopedDir=" + asLiteralString(nodeAccount)
-						+ ", fileHashes=[0.0.150 :: " + CommonUtils.hex(origFileHash) + "]"
-						+ "}",
-				subject.toString()
-		);
+				"MerkleDiskFs{fileHashes=[0.0.150 :: " + CommonUtils.hex(origFileHash) + "]}",
+				subject.toString());
+	}
+
+	@Test
+	public void checkLogsErrorOnMismatch() throws Exception {
+		// setup:
+		subject.put(file150, origContents);
+		assertArrayEquals(origFileHash, subject.diskContentHash(file150));
+		assertArrayEquals(origContents, subject.contentsOf(file150));
+
+		// and now:
+		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willReturn(newContents);
+
+		subject.checkHashesAgainstDiskContents();
+
+		assertThat(
+				logCaptor.errorLogs(),
+				contains(Matchers.startsWith("State hash doesn't match disk hash for content of '0.0.150'")));
 	}
 
 	@Test
@@ -171,17 +172,9 @@ public class MerkleDiskFsTest {
 	@Test
 	public void fileNotExistNoDebug() throws IOException {
 		// setup:
-		subject = new MerkleDiskFs("this/doesnt/exist", asLiteralString(nodeAccount));
-
-		given(getter.allBytesFrom(any())).willThrow(IOException.class);
-
-		Assertions.assertSame(MerkleDiskFs.MISSING_CONTENT, subject.contentsOf(file150));
-	}
-
-	@Test
-	public void fileNotExistDebugEnabled() throws IOException {
-		// setup:
-		subject = new MerkleDiskFs("this/doesnt/exist", asLiteralString(nodeAccount));
+		subject = new MerkleDiskFs();
+		// and:
+		subject.setBytesHelper(getter);
 
 		given(getter.allBytesFrom(any())).willThrow(IOException.class);
 
@@ -207,7 +200,7 @@ public class MerkleDiskFsTest {
 		// setup:
 		byte[] expectedBytes = "ABCDEFGH".getBytes();
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
-		MerkleDiskFs.bytesHelper = getter;
+		subject.setBytesHelper(getter);
 
 		given(getter.allBytesFrom(subject.pathToContentsOf(file150))).willReturn(expectedBytes);
 		// and:
@@ -227,7 +220,7 @@ public class MerkleDiskFsTest {
 	public void serializePropagatesException() throws IOException {
 		// setup:
 		MerkleDiskFs.ThrowingBytesGetter getter = mock(MerkleDiskFs.ThrowingBytesGetter.class);
-		MerkleDiskFs.bytesHelper = getter;
+		subject.setBytesHelper(getter);
 		// and:
 		var out = mock(SerializableDataOutputStream.class);
 
@@ -260,7 +253,7 @@ public class MerkleDiskFsTest {
 				.willReturn(150L);
 		given(fin.readByteArray(48)).willReturn(origFileHash);
 		// and:
-		var read = new MerkleDiskFs(MOCK_DISKFS_DIR, asLiteralString(nodeAccount));
+		var read = new MerkleDiskFs();
 
 		// when:
 		read.deserializeAbbreviated(fin, expectedHash, MerkleDiskFs.MERKLE_VERSION);
@@ -285,7 +278,9 @@ public class MerkleDiskFsTest {
 				.willReturn(150L);
 		given(fin.readByteArray(MerkleDiskFs.MAX_FILE_BYTES)).willReturn(origContents);
 		// and:
-		var read = new MerkleDiskFs(MOCK_DISKFS_DIR, asLiteralString(nodeAccount));
+		var read = new MerkleDiskFs();
+		read.setBytesHelper(getter);
+		read.setWriteHelper(writer);
 
 		// when:
 		read.deserialize(fin, MerkleDiskFs.MERKLE_VERSION);
