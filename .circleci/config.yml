@@ -1315,7 +1315,7 @@ workflows:
           filters:
             branches:
               only:
-                - 0.9.1-sdk-integration
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
