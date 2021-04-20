@@ -1308,6 +1308,25 @@ executors:
     working_directory: /repo
 
 workflows:
+  GCP-Personal-Dev:
+    jobs:
+      - build-platform-and-services:
+          - filters:
+              branches:
+                only:
+                  - your_branch_name
+      - jrs-regression:
+          context: Slack
+          result_path: results/Personal
+          config_type: "personal"
+          workflow-name: "your_personal_json_config"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
