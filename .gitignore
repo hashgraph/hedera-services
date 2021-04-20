@@ -5,7 +5,6 @@
 !hedera-node/data/onboard/devGenesisKeypair.pem
 !test-clients/yahcli/localhost/keys/*.pem
 !test-clients/yahcli/localhost/keys/*.pass
-!test-clients/yahcli/localhost/keys/*.words
 
 # Yahcli
 test-clients/yahcli/assets/yahcli.jar

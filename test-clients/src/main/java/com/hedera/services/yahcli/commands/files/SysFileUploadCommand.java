@@ -37,12 +37,12 @@ public class SysFileUploadCommand implements Callable<Integer> {
 	public static AtomicReference<String> activeSrcDir = new AtomicReference<>();
 
 	@CommandLine.ParentCommand
-	SysFilesCommand sysFilesCommand;
+	private SysFilesCommand sysFilesCommand;
 
 	@CommandLine.Option(names = { "-s", "--source-dir" },
 			paramLabel = "source directory",
 			defaultValue = "{network}/sysfiles/")
-	String srcDir;
+	private String srcDir;
 
 	@CommandLine.Parameters(
 			arity = "1",
@@ -50,7 +50,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			description = "one of " +
 					"{ address-book, node-details, fees, rates, props, permissions, throttles } (or " +
 					"{ 101, 102, 111, 112, 121, 122, 123 })")
-	String sysFile;
+	private String sysFile;
 
 	@Override
 	public Integer call() throws Exception {
@@ -63,5 +63,4 @@ public class SysFileUploadCommand implements Callable<Integer> {
 
 		return 0;
 	}
-
 }

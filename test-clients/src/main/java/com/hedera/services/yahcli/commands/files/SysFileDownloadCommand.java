@@ -36,12 +36,12 @@ import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 		description = "Download system files")
 public class SysFileDownloadCommand implements Callable<Integer> {
 	@ParentCommand
-	SysFilesCommand sysFilesCommand;
+	private SysFilesCommand sysFilesCommand;
 
 	@CommandLine.Option(names = { "-d", "--dest-dir" },
 			paramLabel = "destination directory",
 			defaultValue = "{network}/sysfiles/")
-	String destDir;
+	private String destDir;
 
 	@Parameters(
 			arity = "1..*",
@@ -49,7 +49,7 @@ public class SysFileDownloadCommand implements Callable<Integer> {
 			description = "one or more from " +
 					"{ address-book, node-details, fees, rates, props, permissions, throttles } (or " +
 					"{ 101, 102, 111, 112, 121, 122, 123 })---or 'all'")
-	String[] sysFiles;
+	private String[] sysFiles;
 
 	@Override
 	public Integer call() throws Exception {

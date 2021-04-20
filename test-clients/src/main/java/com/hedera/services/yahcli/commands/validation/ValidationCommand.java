@@ -21,7 +21,6 @@ package com.hedera.services.yahcli.commands.validation;
  */
 
 import com.hedera.services.yahcli.Yahcli;
-import com.hedera.services.yahcli.output.CommonMessages;
 import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -38,6 +37,7 @@ import java.util.concurrent.Callable;
 
 import static com.hedera.services.bdd.spec.persistence.EntityManager.accountLoc;
 import static com.hedera.services.bdd.spec.persistence.EntityManager.scheduleLoc;
+import static com.hedera.services.bdd.spec.persistence.EntityManager.topicLoc;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
@@ -49,23 +49,25 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 		description = "Perform system file operations")
 public class ValidationCommand implements Callable<Integer> {
 	public static final String PAYER = "yahcliPayer";
+	public static final String TOPIC = "yahcliTopic";
 	public static final String SENDER = "yahcliSender";
 	public static final String RECEIVER = "yahcliReceiver";
 	public static final String MUTABLE_SCHEDULE = "yahcliMutablePendingXfer";
 	public static final String IMMUTABLE_SCHEDULE = "yahcliImmutablePendingXfer";
 
-	public static final String checkBoxed(String achievement)  {
-		return "[X] " + achievement;
-	}
-
 	@ParentCommand
-	Yahcli yahcli;
+	private Yahcli yahcli;
 
 	@CommandLine.Parameters(
 			arity = "1..*",
 			paramLabel = "<services>",
 			description = "one or more from { crypto, file, contract, consensus, token, scheduling }; or 'all'")
 	private String[] services;
+
+	@CommandLine.Option(
+			names = { "-r", "--reset-entities" },
+			defaultValue = "false")
+	private Boolean shouldResetEntities;
 
 	@Override
 	public Integer call() throws Exception {
@@ -86,18 +88,30 @@ public class ValidationCommand implements Callable<Integer> {
 
 	private void validateScheduling(Map<String, String> specConfig) {
 		var persistenceDir = specConfig.get("persistentEntities.dir.path");
-		ensureNoTemplatesExistFor(new String[] {
-				scheduleLoc(persistenceDir, yaml(MUTABLE_SCHEDULE)),
-				scheduleLoc(persistenceDir, yaml(IMMUTABLE_SCHEDULE))
-		});
-		ensureTemplatesExistFor(new String[] {
+		ensureNoTemplatesExistFor(alwaysResetScheduleEntities(persistenceDir));
+		if (shouldResetEntities) {
+			ensureNoTemplatesExistFor(usuallyPersistentScheduleEntities(persistenceDir));
+		}
+		ensureTemplatesExistFor(usuallyPersistentScheduleEntities(persistenceDir));
+		new SchedulesValidationSuite(specConfig).runSuiteSync();
+	}
+
+	private String[] usuallyPersistentScheduleEntities(String persistenceDir) {
+		return new String[] {
 				accountLoc(persistenceDir, yaml(PAYER)),
 				accountLoc(persistenceDir, yaml(SENDER)),
 				accountLoc(persistenceDir, yaml(RECEIVER)),
+				topicLoc(persistenceDir, yaml(TOPIC)),
 				scheduleLoc(persistenceDir, yaml(MUTABLE_SCHEDULE)),
 				scheduleLoc(persistenceDir, yaml(IMMUTABLE_SCHEDULE))
-		});
-		new SchedulesValidationSuite(specConfig).runSuiteSync();
+		};
+	}
+
+	private String[] alwaysResetScheduleEntities(String persistenceDir) {
+		return new String[] {
+				scheduleLoc(persistenceDir, yaml(MUTABLE_SCHEDULE)),
+				scheduleLoc(persistenceDir, yaml(IMMUTABLE_SCHEDULE))
+		};
 	}
 
 	private String yaml(String entity) {
@@ -160,5 +174,9 @@ public class ValidationCommand implements Callable<Integer> {
 
 	public Yahcli getYahcli() {
 		return yahcli;
+	}
+
+	public static final String checkBoxed(String achievement)  {
+		return "[X] " + achievement;
 	}
 }

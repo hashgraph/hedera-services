@@ -22,11 +22,15 @@ package com.hedera.services.yahcli.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,16 +38,35 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.adminKeyFor;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.submitKeyFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.IMMUTABLE_SCHEDULE;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.MUTABLE_SCHEDULE;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.PAYER;
+import static com.hedera.services.yahcli.commands.validation.ValidationCommand.SENDER;
+import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TOPIC;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.checkBoxed;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 
 public class SchedulesValidationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SchedulesValidationSuite.class);
@@ -62,23 +85,81 @@ public class SchedulesValidationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec validateScheduling() {
-		return HapiApiSpec.customHapiSpec("ValidateScheduling").withProperties(specConfig)
+		String inSpecSchedule = "forImmediateExecution";
+		AtomicLong seqNo = new AtomicLong();
+
+		return customHapiSpec("ValidateScheduling").withProperties(specConfig)
 				.given(
 						getScheduleInfo(MUTABLE_SCHEDULE)
 								.payingWith(PAYER)
 								.isNotExecuted()
 								.hasEntityMemo("When love with one another so / Inter-animates two souls")
 								.hasAdminKey(MUTABLE_SCHEDULE),
-						logIt(checkBoxed(MUTABLE_SCHEDULE + " exists as expected")),
 						getScheduleInfo(IMMUTABLE_SCHEDULE)
 								.payingWith(PAYER)
 								.isNotExecuted()
-								.hasEntityMemo("When love with one another so / Inter-animates two souls")
-								.hasAdminKey(MUTABLE_SCHEDULE),
-						logIt(checkBoxed(IMMUTABLE_SCHEDULE + " exists as expected"))
+								.hasEntityMemo(
+										"That abler soul, which thence doth flow / Defects of loneliness controls"),
+						getTopicInfo(TOPIC).savingSeqNoTo(seqNo::set),
+						scheduleDelete(IMMUTABLE_SCHEDULE)
+								.payingWith(PAYER)
+								.hasKnownStatus(SCHEDULE_IS_IMMUTABLE),
+						logIt(checkBoxed("Schedule creation looks good"))
 				).when(
-
+						scheduleDelete(MUTABLE_SCHEDULE)
+								.signedBy(PAYER)
+								.payingWith(PAYER)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						scheduleDelete(MUTABLE_SCHEDULE)
+								.signedBy(PAYER, adminKeyFor(MUTABLE_SCHEDULE))
+								.payingWith(PAYER),
+						scheduleSign(MUTABLE_SCHEDULE)
+								.alsoSigningWith(SENDER)
+								.payingWith(PAYER)
+								.hasKnownStatus(SCHEDULE_ALREADY_DELETED),
+						scheduleSign(IMMUTABLE_SCHEDULE)
+								.alsoSigningWith(SENDER)
+								.savingScheduledTxnId()
+								.payingWith(PAYER),
+						scheduleCreate(inSpecSchedule,
+								submitMessageTo(TOPIC).message("We then who are this new soul know")
+						)
+								.payingWith(PAYER)
+								.adminKey(adminKeyFor(MUTABLE_SCHEDULE))
+								.alsoSigningWith(submitKeyFor(TOPIC))
+								.withEntityMemo("Of what we are composed and made")
+								.savingExpectedScheduledTxnId(),
+						scheduleCreate(inSpecSchedule,
+								submitMessageTo(TOPIC).message("We then who are this new soul know")
+						)
+								.payingWith(PAYER)
+								.designatingPayer(PAYER)
+								.adminKey(adminKeyFor(MUTABLE_SCHEDULE))
+								.alsoSigningWith(submitKeyFor(TOPIC))
+								.withEntityMemo("Of what we are composed and made")
+								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED),
+						scheduleDelete(inSpecSchedule)
+								.signedBy(PAYER, adminKeyFor(MUTABLE_SCHEDULE))
+								.payingWith(PAYER)
+								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
+						logIt(checkBoxed("Schedule management and execution look good"))
 				).then(
+						getTopicInfo(TOPIC)
+								.payingWith(PAYER)
+								.hasSeqNo(() -> seqNo.get() + 1)
+								.logged(),
+						getScheduleInfo(inSpecSchedule)
+								.payingWith(PAYER)
+								.isExecuted(),
+						getTxnRecord(correspondingScheduledTxnId(IMMUTABLE_SCHEDULE))
+								.payingWith(PAYER)
+								.logged()
+								.assertingNothingAboutHashes(),
+						getTxnRecord(correspondingScheduledTxnId(inSpecSchedule))
+								.payingWith(PAYER)
+								.logged()
+								.assertingNothingAboutHashes(),
+						logIt(checkBoxed("Schedule records look good"))
 				);
 	}
 

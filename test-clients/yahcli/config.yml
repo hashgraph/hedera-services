@@ -9,3 +9,7 @@ networks:
   stabletestnet:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 34.94.106.61 }
+  mainnet:
+    defaultPayer: 950
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 35.237.200.180 }

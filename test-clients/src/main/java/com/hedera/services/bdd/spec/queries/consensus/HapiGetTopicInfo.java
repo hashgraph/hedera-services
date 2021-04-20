@@ -35,6 +35,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -58,6 +60,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 	private Optional<String> submitKey = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private boolean saveRunningHash = false;
+	private Optional<LongConsumer> seqNoInfoObserver = Optional.empty();
 
 	public HapiGetTopicInfo(String topic) {
 		this.topic = topic;
@@ -112,8 +115,14 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		autoRenewAccount = Optional.of(exp);
 		return this;
 	}
+
 	public HapiGetTopicInfo saveRunningHash() {
 		saveRunningHash = true;
+		return this;
+	}
+
+	public HapiGetTopicInfo savingSeqNoTo(LongConsumer consumer) {
+		seqNoInfoObserver = Optional.of(consumer);
 		return this;
 	}
 
@@ -142,6 +151,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 			seqNo = OptionalLong.of(seqNoFn.get().getAsLong());
 		}
 		seqNo.ifPresent(exp -> assertEquals("Bad sequence number!", exp, info.getSequenceNumber()));
+		seqNoInfoObserver.ifPresent(obs -> obs.accept(info.getSequenceNumber()));
 		runningHashEntry.ifPresent(entry -> runningHash = Optional.of(spec.registry().getBytes(entry)));
 		runningHash.ifPresent(exp -> assertArrayEquals("Bad running hash!", exp,
 				info.getRunningHash().toByteArray()));

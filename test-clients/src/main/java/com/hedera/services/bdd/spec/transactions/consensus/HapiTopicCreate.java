@@ -189,7 +189,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(
 					String.format(
-							"Created token '%s' with id '0.0.%d'.", topic, lastReceipt.getTopicID().getTopicNum()));
+							"Created topic '%s' with id '0.0.%d'.", topic, lastReceipt.getTopicID().getTopicNum()));
 			log.info(banner);
 		}
 	}
