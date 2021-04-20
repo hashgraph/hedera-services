@@ -44,7 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 public class CreateTokensBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateTokensBeforeReconnect.class);
 
-	private static final int TOKEN_CREATION_LIMIT = 100000;
+	private static final int TOKEN_CREATION_LIMIT = 300000;
 	private static final int TOKEN_CREATION_RECONNECT_TPS = 120;
 	private static final int DEFAULT_TOKEN_THREADS_FOR_RECONNECT_TESTS = 10;
 
