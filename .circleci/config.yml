@@ -1641,13 +1641,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
     triggers:
       - schedule:
-#          cron: "30 4 * * 3,0"
-          cron: "42 1 * * *"
+          cron: "30 4 * * 3,0"
           filters:
             branches:
               only:
-#                - master
-                - 01268-D-6N-perf-platform-not-active-error
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1667,12 +1665,11 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-#          cron: "0 8 * * 3,0"
-          cron: "45 1 * * *"
+          cron: "30 8 * * 3,0"
           filters:
             branches:
               only:
-                - 01268-D-6N-perf-platform-not-active-error
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1982,7 +1979,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 01268-D-6N-perf-platform-not-active-error
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
@@ -2259,7 +2255,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01268-D-6N-perf-platform-not-active-error
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
