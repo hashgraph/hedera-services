@@ -1314,7 +1314,7 @@ workflows:
           filters:
             branches:
               only:
-                - 1270-M-additional-reconnect-scenarios
+                - disable-1270-M-additional-reconnect-scenarios
       - jrs-regression:
           context: Slack
           result_path: results/Personal
@@ -1683,11 +1683,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "45 15 * * *"
+          cron: "5 7 * * *"
           filters:
             branches:
               only:
-                - 1270-M-additional-reconnect-scenarios
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1710,7 +1710,7 @@ workflows:
           filters:
             branches:
               only:
-                - 1270-M-additional-reconnect-scenarios
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
