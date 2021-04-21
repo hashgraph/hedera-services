@@ -21,7 +21,9 @@ package com.hedera.services.yahcli.commands.validation;
  */
 
 import com.hedera.services.yahcli.Yahcli;
+import com.hedera.services.yahcli.suites.PayerFundingSuite;
 import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
+import com.hedera.services.yahcli.suites.TokenValidationSuite;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
@@ -37,6 +39,7 @@ import java.util.concurrent.Callable;
 
 import static com.hedera.services.bdd.spec.persistence.EntityManager.accountLoc;
 import static com.hedera.services.bdd.spec.persistence.EntityManager.scheduleLoc;
+import static com.hedera.services.bdd.spec.persistence.EntityManager.tokenLoc;
 import static com.hedera.services.bdd.spec.persistence.EntityManager.topicLoc;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
@@ -50,8 +53,10 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 public class ValidationCommand implements Callable<Integer> {
 	public static final String PAYER = "yahcliPayer";
 	public static final String TOPIC = "yahcliTopic";
+	public static final String TOKEN = "yahcliToken";
 	public static final String SENDER = "yahcliSender";
 	public static final String RECEIVER = "yahcliReceiver";
+	public static final String TREASURY = "yahcliTreasury";
 	public static final String MUTABLE_SCHEDULE = "yahcliMutablePendingXfer";
 	public static final String IMMUTABLE_SCHEDULE = "yahcliImmutablePendingXfer";
 
@@ -69,6 +74,11 @@ public class ValidationCommand implements Callable<Integer> {
 			defaultValue = "false")
 	private Boolean shouldResetEntities;
 
+	@CommandLine.Option(
+			names = { "-b", "--payer-balance" },
+			defaultValue = "10000000000")
+	private Long guaranteedPayerBalance;
+
 	@Override
 	public Integer call() throws Exception {
 		var config = configFrom(yahcli);
@@ -79,11 +89,45 @@ public class ValidationCommand implements Callable<Integer> {
 
 		COMMON_MESSAGES.beginBanner("\uD83D\uDD25", "validation of " + Arrays.toString(services));
 
+		ensurePayerBalance(specConfig);
+
 		if (isSchedulingRequested()) {
 			validateScheduling(specConfig);
 		}
 
+		if (isTokenRequested()) {
+			validateTokens(specConfig);
+		}
+
 		return 0;
+	}
+
+	private void validateTokens(Map<String, String> specConfig) {
+		var persistenceDir = specConfig.get("persistentEntities.dir.path");
+		if (shouldResetEntities) {
+			ensureNoTemplatesExistFor(usuallyPersistentTokenEntities(persistenceDir));
+		}
+		ensureTemplatesExistFor(usuallyPersistentTokenEntities(persistenceDir));
+		new TokenValidationSuite(specConfig).runSuiteSync();
+	}
+
+	private String[] usuallyPersistentTokenEntities(String persistenceDir) {
+		return new String[] {
+				accountLoc(persistenceDir, yaml(PAYER)),
+				tokenLoc(persistenceDir, yaml(TOKEN)),
+				accountLoc(persistenceDir, yaml(TREASURY)),
+				accountLoc(persistenceDir, yaml(RECEIVER)),
+		};
+	}
+
+	private void ensurePayerBalance(Map<String, String> specConfig) {
+		var persistenceDir = specConfig.get("persistentEntities.dir.path");
+		var persistent = new String[] { accountLoc(persistenceDir, yaml(PAYER)) };
+		if (shouldResetEntities) {
+			ensureNoTemplatesExistFor(persistent);
+		}
+		ensureTemplatesExistFor(persistent);
+		new PayerFundingSuite(guaranteedPayerBalance, specConfig).runSuiteSync();
 	}
 
 	private void validateScheduling(Map<String, String> specConfig) {

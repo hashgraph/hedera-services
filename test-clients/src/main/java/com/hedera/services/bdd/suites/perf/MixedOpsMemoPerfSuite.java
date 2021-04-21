@@ -134,7 +134,7 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 						.deferStatusResolution(),
 				getTokenInfo(TARGET_TOKEN+"Info")
 						.payingWith(GENESIS)
-						.hasRegisteredMemo(TOKEN_MEMO)
+						.hasEntityMemo(TOKEN_MEMO)
 						.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
 						.hasCostAnswerPrecheckFrom(permissiblePrechecks)
 						.noLogging(),

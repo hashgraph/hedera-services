@@ -92,22 +92,7 @@ public class ConfigManager {
 		}
 		var keyFile = optKeyFile.get();
 		if (keyFile.getAbsolutePath().endsWith("pem")) {
-			Optional<String> finalPassphrase = Optional.empty();
-			var optPassFile = ConfigUtils.passFileFor(keyFile);
-			if (optPassFile.isPresent()) {
-				try {
-					finalPassphrase = Optional.of(Files.readString(optPassFile.get().toPath()).trim());
-				} catch (IOException e) {
-					System.out.println(String.format(
-							"Password file inaccessible for PEM %s ('%s')!",
-							keyFile.getName(),
-							e.getMessage()));
-				}
-			}
-			if (!isValid(keyFile, finalPassphrase)) {
-				var prompt = "Please enter the passphrase for key file " + keyFile;
-				finalPassphrase = promptForPassphrase(keyFile.getPath(), prompt, 3);
-			}
+			Optional<String> finalPassphrase = getFinalPassphrase(keyFile);
 			if (!isValid(keyFile, finalPassphrase)) {
 				fail(String.format("No valid passphrase could be obtained for PEM %s!", keyFile.getName()));
 			}
@@ -121,6 +106,30 @@ public class ConfigManager {
 				fail(String.format("Mnemonic file %s is inaccessible!", keyFile.getPath()));
 			}
 		}
+	}
+
+	private Optional<String> getFinalPassphrase(File keyFile) {
+		String fromEnv;
+		if ((fromEnv = System.getenv("YAHCLI_PASSPHRASE")) != null) {
+			return Optional.of(fromEnv);
+		}
+		Optional<String> finalPassphrase = Optional.empty();
+		var optPassFile = ConfigUtils.passFileFor(keyFile);
+		if (optPassFile.isPresent()) {
+			try {
+				finalPassphrase = Optional.of(Files.readString(optPassFile.get().toPath()).trim());
+			} catch (IOException e) {
+				System.out.println(String.format(
+						"Password file inaccessible for PEM %s ('%s')!",
+						keyFile.getName(),
+						e.getMessage()));
+			}
+		}
+		if (!isValid(keyFile, finalPassphrase)) {
+			var prompt = "Please enter the passphrase for key file " + keyFile;
+			finalPassphrase = promptForPassphrase(keyFile.getPath(), prompt, 3);
+		}
+		return finalPassphrase;
 	}
 
 	private boolean isValid(File keyFile, Optional<String> passphrase) {
