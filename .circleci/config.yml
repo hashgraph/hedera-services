@@ -1641,11 +1641,13 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
     triggers:
       - schedule:
-          cron: "30 4 * * 3,0"
+#          cron: "30 4 * * 3,0"
+          cron: "42 1 * * *"
           filters:
             branches:
               only:
-                - master
+#                - master
+                - 01268-D-6N-perf-platform-not-active-error
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1654,6 +1656,31 @@ workflows:
           result_path: results/6N_6C/Performance
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+
+  GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
+    triggers:
+      - schedule:
+#          cron: "0 8 * * 3,0"
+          cron: "45 1 * * *"
+          filters:
+            branches:
+              only:
+                - 01268-D-6N-perf-platform-not-active-error
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_6C/Performance
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-HTS-Restart-Performance-6N-6C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1955,6 +1982,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
+                  - 01268-D-6N-perf-platform-not-active-error
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
@@ -2231,7 +2259,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 01268-D-6N-perf-platform-not-active-error
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
