@@ -49,7 +49,6 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
-import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
@@ -63,7 +62,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -71,7 +69,6 @@ import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -85,13 +82,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	static final int RELEASE_0110_VERSION = 5;
 	static final int RELEASE_0120_VERSION = 6;
 	static final int RELEASE_0130_VERSION = 7;
-	static final int MERKLE_VERSION = RELEASE_0130_VERSION;
+	static final int RELEASE_0140_VERSION = 8;
+	static final int MERKLE_VERSION = RELEASE_0140_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static final String UNSUPPORTED_VERSION_MSG_TPL = "Argument 'version=%d' is invalid!";
 
 	static Function<String, byte[]> hashReader = RecordStream::readPrevFileHash;
-	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
 	NodeId nodeId = null;
@@ -116,6 +113,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int NUM_0110_CHILDREN = 10;
 		static final int NUM_0120_CHILDREN = 10;
 		static final int NUM_0130_CHILDREN = 10;
+		static final int NUM_0140_CHILDREN = 10;
 	}
 
 	ServicesContext ctx;
@@ -124,7 +122,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	public ServicesState(List<MerkleNode> children) {
-		super(ChildIndices.NUM_0130_CHILDREN);
+		super(ChildIndices.NUM_0140_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -151,6 +149,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public int getMinimumChildCount(int version) {
 		switch (version) {
+			case RELEASE_0140_VERSION:
+				return ChildIndices.NUM_0140_CHILDREN;
 			case RELEASE_0130_VERSION:
 				return ChildIndices.NUM_0130_CHILDREN;
 			case RELEASE_0120_VERSION:
@@ -220,9 +220,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
-		boolean initWithMerkle = true;
-		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN) {
-			initWithMerkle = false;
+		if (getNumberOfChildren() < ChildIndices.NUM_0130_CHILDREN) {
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX,
@@ -237,28 +235,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 
-			/* In a network where two or more nodes run on the same computer, each node's disk-based
-			file system must use a different path. So we update the object that Platform
-			constructed from state with this node's account, which the DiskFs will use to scope the
-			path to its disk-based storage. */
 			var restoredDiskFs = diskFs();
 			if (!skipDiskFsHashCheck) {
 				restoredDiskFs.checkHashesAgainstDiskContents();
 			}
 		}
 
-		if (getNumberOfChildren() < ChildIndices.NUM_0110_CHILDREN
-				|| runningHashLeaf().getRunningHash().getHash().equals(emptyHash)) {
-			// read file hash from the last record stream .rcd_sig file and set it as initial value of
-			// records running Hash
+		if (getNumberOfChildren() < ChildIndices.NUM_0140_CHILDREN || runningHashIsEmpty()) {
+			/* Initialize running hash from the last record stream .rcd_sig file on disk */
 			byte[] lastHash = hashReader.apply(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties()));
-			ImmutableHash hash = new ImmutableHash(lastHash);
-			final RunningHash runningHash = new RunningHash();
-			runningHash.setHash(hash);
+			RunningHash runningHash = new RunningHash();
+			runningHash.setHash(new ImmutableHash(lastHash));
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));
 		}
-		log.info("initial Hash in RecordsRunningHashLeaf: {}", () -> runningHashLeaf().getRunningHash().getHash());
-		// set records initialHash
 		ctx.setRecordsInitialHash(runningHashLeaf().getRunningHash().getHash());
 
 		logSummary();
@@ -267,8 +256,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		CONTEXTS.store(ctx);
 
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
-		log.info("ServicesState init with {} accounts", () -> this.accounts().size());
-		log.info("ServicesState init with {} topics", () -> this.topics().size());
+	}
+
+	private boolean runningHashIsEmpty() {
+		return runningHashLeaf().getRunningHash().getHash().equals(emptyHash);
 	}
 
 	private void initializeContext(final ServicesContext ctx) {

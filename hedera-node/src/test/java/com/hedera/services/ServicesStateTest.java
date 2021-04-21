@@ -101,6 +101,7 @@ import static com.hedera.services.ServicesState.RELEASE_0100_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0110_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0120_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0130_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_0140_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_070_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
@@ -185,7 +186,6 @@ class ServicesStateTest {
 	private void setup() {
 		CONTEXTS.clear();
 		mockDigest = (Consumer<MerkleNode>) mock(Consumer.class);
-		ServicesState.merkleDigest = mockDigest;
 		blobStore = mock(BinaryObjectStore.class);
 		mockBlobStoreSupplier = (Supplier<BinaryObjectStore>) mock(Supplier.class);
 		given(mockBlobStoreSupplier.get()).willReturn(blobStore);
@@ -314,6 +314,7 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_0110_CHILDREN, subject.getMinimumChildCount(RELEASE_0110_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0120_CHILDREN, subject.getMinimumChildCount(RELEASE_0120_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0130_CHILDREN, subject.getMinimumChildCount(RELEASE_0130_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_0140_CHILDREN, subject.getMinimumChildCount(RELEASE_0140_VERSION));
 
 		Throwable throwable = assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(invalidVersion));
@@ -465,9 +466,6 @@ class ServicesStateTest {
 
 		// then:
 		verify(diskFs, never()).checkHashesAgainstDiskContents();
-
-		// cleanup:
-		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	}
 
 	@Test
@@ -513,15 +511,9 @@ class ServicesStateTest {
 				logCaptor.infoLogs(),
 				contains(
 						equalTo("Init called on Services node 1 WITH Merkle saved state"),
-						startsWith("initial Hash in RecordsRunningHashLeaf"),
 						startsWith("[SwirldState Hashes]"),
 						startsWith("Mock for MerkleNetworkContext"),
-						equalTo("--> Context initialized accordingly on Services node 1"),
-						equalTo("ServicesState init with 0 accounts"),
-						equalTo("ServicesState init with 0 topics")));
-
-		// cleanup:
-		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
+						equalTo("--> Context initialized accordingly on Services node 1")));
 	}
 
 	@Test
@@ -783,7 +775,6 @@ class ServicesStateTest {
 	@AfterEach
 	public void cleanup() {
 		CONTEXTS.clear();
-		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 		ServicesState.blobStoreSupplier = BinaryObjectStore::getInstance;
 	}
 }
