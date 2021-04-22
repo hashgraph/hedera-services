@@ -89,6 +89,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
 import javax.inject.Inject;
+import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -125,6 +126,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.times;
 
 
@@ -477,6 +479,38 @@ class ServicesStateTest {
 		verify(diskFs, times(1)).migrateLegacyDiskFsFromV13LocFor(
 				MerkleDiskFs.DISK_FS_ROOT_DIR,
 				"0.0.3");
+	}
+
+	@Test
+	public void justWarnOnFailedDiskFsMigration() {
+		// setup:
+		given(ctx.nodeAccount()).willReturn(IdUtils.asAccount("0.0.3"));
+		willThrow(UncheckedIOException.class).given(diskFs).migrateLegacyDiskFsFromV13LocFor(
+				MerkleDiskFs.DISK_FS_ROOT_DIR, "0.0.3");
+		CONTEXTS.store(ctx);
+		// and:
+		subject.skipDiskFsHashCheck = true;
+		// and:
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
+		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
+		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
+
+		// when:
+		subject.init(platform, book);
+		// and when:
+		given(networkCtx.getStateVersion()).willReturn(ServicesState.MERKLE_VERSION);
+		subject.init(platform, book);
+
+		// then:
+		assertThat(logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Legacy diskFs directory not migrated, was it missing?")));
 	}
 
 	@Test
