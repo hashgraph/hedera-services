@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,9 @@ package com.hedera.services.bdd.suites.schedule;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -31,21 +33,34 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleExecutionSpecs extends HapiApiSuite {
@@ -67,12 +82,15 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				suiteSetup(),
-				executionWithDefaultPayerWorks(),
-                executionWithCustomPayerWorks(),
-                executionWithDefaultPayerButNoFundsFails(),
-                executionWithCustomPayerButNoFundsFails(),
-				suiteCleanup(),
+//				suiteSetup(),
+//				executionWithDefaultPayerWorks(),
+//				executionWithCustomPayerWorks(),
+//				executionWithDefaultPayerButNoFundsFails(),
+//				executionWithCustomPayerButNoFundsFails(),
+//				executionTriggersWithWeirdlyRepeatedKey(),
+//				executionTriggersWithWeirdlyRepeatedKey(),
+				executionTriggersOnceTopicHasSatisfiedSubmitKey(),
+//				suiteCleanup(),
 		});
 	}
 
@@ -87,6 +105,79 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteSetup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+				);
+	}
+
+	public HapiApiSpec executionTriggersOnceTopicHasSatisfiedSubmitKey() {
+		String adminKey = "admin", submitKey = "submit";
+		String mutableTopic = "XXX";
+		String schedule = "deferredSubmitMsg";
+
+		return defaultHapiSpec("ExecutionTriggersOnceTopicHasNoSubmitKey")
+				.given(
+						newKeyNamed(adminKey),
+						newKeyNamed(submitKey),
+						createTopic(mutableTopic)
+								.adminKeyName(adminKey)
+								.submitKeyName(submitKey),
+						cryptoCreate("somebody"),
+						scheduleCreate(schedule,
+								submitMessageTo(mutableTopic)
+										.message("Little did they care who danced between / " +
+												"And little she by whom her dance was seen")
+						)
+								.designatingPayer("somebody")
+								.payingWith(DEFAULT_PAYER)
+								.alsoSigningWith("somebody")
+								.via("creation"),
+						getTopicInfo(mutableTopic).hasSeqNo(0L)
+				).when(
+						scheduleSign(schedule)
+								.alsoSigningWith(adminKey)
+								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
+						updateTopic(mutableTopic).submitKey("somebody"),
+						scheduleSign(schedule)
+				).then(
+						getScheduleInfo(schedule).isExecuted(),
+						getTopicInfo(mutableTopic).hasSeqNo(1L)
+				);
+	}
+
+
+	public HapiApiSpec executionTriggersWithWeirdlyRepeatedKey() {
+		String schedule = "dupKeyXfer";
+
+		return defaultHapiSpec("ExecutionTriggersWithWeirdlyRepeatedKey")
+				.given(
+						cryptoCreate("weirdlyPopularKey"),
+						cryptoCreate("sender1").key("weirdlyPopularKey").balance(1L),
+						cryptoCreate("sender2").key("weirdlyPopularKey").balance(1L),
+						cryptoCreate("sender3").key("weirdlyPopularKey").balance(1L),
+						cryptoCreate("receiver").balance(0L),
+						scheduleCreate(
+								schedule,
+								cryptoTransfer(
+										tinyBarsFromTo("sender1", "receiver", 1L),
+										tinyBarsFromTo("sender2", "receiver", 1L),
+										tinyBarsFromTo("sender3", "receiver", 1L)
+								)
+						)
+								.payingWith(DEFAULT_PAYER)
+								.via("creation")
+				).when(
+						scheduleSign(schedule)
+								.alsoSigningWith("weirdlyPopularKey")
+				).then(
+						getScheduleInfo(schedule).isExecuted(),
+						getAccountBalance("sender1").hasTinyBars(0L),
+						getAccountBalance("sender2").hasTinyBars(0L),
+						getAccountBalance("sender3").hasTinyBars(0L),
+						getAccountBalance("receiver").hasTinyBars(3L),
+						scheduleSign(schedule)
+								.via("repeatedSigning")
+								.alsoSigningWith("weirdlyPopularKey")
+								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
+						getTxnRecord("repeatedSigning").logged()
 				);
 	}
 
