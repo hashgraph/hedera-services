@@ -68,7 +68,6 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
 
-	private static final String DISK_FS_ROOT_DIR = "data/diskFs/";
 	static final byte[] MISSING_CONTENT = new byte[0];
 
 	static final int HASH_BYTES = 48;
@@ -78,6 +77,8 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	private Map<FileID, byte[]> fileHashes = new HashMap<>();
 	private ThrowingBytesGetter bytesHelper = p -> FileUtils.readFileToByteArray(p.toFile());
 	private ThrowingBytesWriter writeHelper = (p, c) -> FileUtils.writeByteArrayToFile(p.toFile(), c);
+
+	public static final String DISK_FS_ROOT_DIR = "data/diskFs/";
 
 	/* --- RuntimeConstructable --- */
 	public MerkleDiskFs() {
@@ -109,6 +110,23 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 						hex(actualHash));
 			}
 		}
+	}
+
+	public void migrateLegacyDiskFsFromV13LocFor(String fsBaseDir, String fsNodeScopedDir) {
+		for (var fid : fileHashes.keySet()) {
+			try {
+				var legacyPath = pre0130PathToContentsOf(fid, fsBaseDir, fsNodeScopedDir);
+				var f = legacyPath.toFile();
+				byte[] contents = bytesHelper.allBytesFrom(legacyPath);
+				writeHelper.allBytesTo(pathToContentsOf(fid), contents);
+				f.delete();
+			} catch (IOException e) {
+				log.error("Failed to migrate from legacy disk-based file system!", e);
+				throw new UncheckedIOException(e);
+			}
+		}
+		var nowEmptyLegacyDir = fsBaseDir + File.separator + fsNodeScopedDir;
+		new File(nowEmptyLegacyDir).delete();
 	}
 
 	public byte[] diskContentHash(FileID fid) {
@@ -283,6 +301,14 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 
 	Path pathToContentsOf(FileID fid) {
 		return Paths.get(String.format("%sFile%s", separatorSuffixed(DISK_FS_ROOT_DIR), asLiteralString(fid)));
+	}
+
+	Path pre0130PathToContentsOf(FileID fid, String fsBaseDir, String fsNodeScopedDir) {
+		return Paths.get(String.format(
+				"%s%sFile%s",
+				separatorSuffixed(fsBaseDir),
+				separatorSuffixed(fsNodeScopedDir),
+				asLiteralString(fid)));
 	}
 
 	private String separatorSuffixed(String dir) {

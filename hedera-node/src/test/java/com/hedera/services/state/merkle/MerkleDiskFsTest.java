@@ -41,6 +41,7 @@ import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -53,6 +54,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,16 +70,17 @@ class MerkleDiskFsTest {
 	@LoggingSubject
 	private MerkleDiskFs subject;
 
-	FileID file150 = asFile("0.0.150");
-	byte[] origContents = "Where, like a pillow on a bed /".getBytes();
-	byte[] origFileHash = null;
-	byte[] newContents = "A pregnant bank swelled up to rest /".getBytes();
-	byte[] newFileHash = null;
+	private String fsNodeScopedDir = "0.0.4";
+	private FileID file150 = asFile("0.0.150");
+	private byte[] origContents = "Where, like a pillow on a bed /".getBytes();
+	private byte[] origFileHash = null;
+	private byte[] newContents = "A pregnant bank swelled up to rest /".getBytes();
+	private byte[] newFileHash = null;
 
-	String MOCK_DISKFS_DIR = "src/test/resources/diskFs";
+	private String MOCK_DISKFS_DIR = "src/test/resources/diskFs";
 
-	MerkleDiskFs.ThrowingBytesGetter getter;
-	MerkleDiskFs.ThrowingBytesWriter writer;
+	private MerkleDiskFs.ThrowingBytesGetter getter;
+	private MerkleDiskFs.ThrowingBytesWriter writer;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -117,6 +120,49 @@ class MerkleDiskFsTest {
 			new File(tmpBase).delete();
 			tmpBase = tmpBase.substring(0, tmpBase.substring(0, tmpBase.length() - 1).lastIndexOf(File.separator) + 1);
 		}
+	}
+
+	@Test
+	void migratesPre0130DiskFs() throws IOException {
+		// setup:
+		String legacyBase = MOCK_DISKFS_DIR;
+		String scopedLegacyBase = legacyBase + File.separator + fsNodeScopedDir;
+		Files.createDirectories(Paths.get(scopedLegacyBase));
+		String legacyFile150Loc = legacyBase + File.separator + fsNodeScopedDir + File.separator + "File0.0.150";
+		Files.write(Paths.get(legacyFile150Loc), "NONSENSE".getBytes());
+
+		given(getter.allBytesFrom(subject.pre0130PathToContentsOf(file150, legacyBase, fsNodeScopedDir)))
+				.willReturn(origContents);
+
+		// when:
+		subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir);
+
+		// then:
+		verify(writer).allBytesTo(subject.pathToContentsOf(file150), origContents);
+
+		// and:
+		var f = new File(legacyFile150Loc);
+		assertFalse(f.exists());
+		var d = new File(scopedLegacyBase);
+		assertFalse(d.exists());
+	}
+
+	@Test
+	void logsErrorsAndPropagatesOnFailedMigration() throws IOException {
+		// setup:
+		String legacyBase = MOCK_DISKFS_DIR;
+		String scopedLegacyBase = legacyBase + File.separator + fsNodeScopedDir;
+
+		given(getter.allBytesFrom(subject.pre0130PathToContentsOf(file150, legacyBase, fsNodeScopedDir)))
+				.willThrow(IOException.class);
+
+		// expect:
+		assertThrows(UncheckedIOException.class,
+				() -> subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir));
+		// and:
+		assertThat(
+				logCaptor.errorLogs(),
+				contains(Matchers.startsWith("Failed to migrate from legacy disk-based file system!")));
 	}
 
 	@Test

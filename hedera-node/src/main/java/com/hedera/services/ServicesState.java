@@ -41,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.blob.BinaryObjectStore;
@@ -69,6 +70,7 @@ import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -236,11 +238,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 
 			var restoredDiskFs = diskFs();
+			if (networkCtx().getStateVersion() < RELEASE_0140_VERSION) {
+				diskFs().migrateLegacyDiskFsFromV13LocFor(
+						MerkleDiskFs.DISK_FS_ROOT_DIR,
+						asLiteralString(ctx.nodeAccount()));
+			}
 			if (!skipDiskFsHashCheck) {
 				restoredDiskFs.checkHashesAgainstDiskContents();
 			}
 		}
 
+		networkCtx().setStateVersion(MERKLE_VERSION);
 		if (getNumberOfChildren() < ChildIndices.NUM_0140_CHILDREN || runningHashIsEmpty()) {
 			/* Initialize running hash from the last record stream .rcd_sig file on disk */
 			byte[] lastHash = hashReader.apply(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties()));
