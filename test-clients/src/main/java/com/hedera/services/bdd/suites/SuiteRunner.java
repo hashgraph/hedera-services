@@ -65,6 +65,8 @@ import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
+import com.hedera.services.bdd.suites.perf.TokenCreatePerfSuite;
+import com.hedera.services.bdd.suites.reconnect.CreateTokensBeforeReconnect;
 import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
@@ -252,6 +254,7 @@ public class SuiteRunner {
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
 		put("CryptoCreatePerfSuite", aof(new CryptoCreatePerfSuite()));
 		put("CreateTopicPerfSuite", aof(new CreateTopicPerfSuite()));
+		put("TokenCreatePerfSuite", aof(new TokenCreatePerfSuite()));
 		put("MixedOpsMemoPerfSuite", aof(new MixedOpsMemoPerfSuite()));
 		put("FileContractMemoPerfSuite", aof(new FileContractMemoPerfSuite()));
 		/* Functional tests - RECONNECT */
@@ -259,6 +262,7 @@ public class SuiteRunner {
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
 		put("SubmitMessagesForReconnect", aof(new SubmitMessagesForReconnect()));
 		put("CreateFilesBeforeReconnect", aof(new CreateFilesBeforeReconnect()));
+		put("CreateTokensBeforeReconnect", aof(new CreateTokensBeforeReconnect()));
 		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
 		put("MixedValidationsAfterReconnect", aof(new MixedValidationsAfterReconnect()));
 		put("UpdateApiPermissionsDuringReconnect", aof(new UpdateApiPermissionsDuringReconnect()));
