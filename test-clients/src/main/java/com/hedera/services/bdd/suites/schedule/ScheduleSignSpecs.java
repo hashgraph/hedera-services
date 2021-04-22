@@ -22,7 +22,10 @@ package com.hedera.services.bdd.suites.schedule;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.ControlForKey;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,9 +34,13 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
@@ -71,18 +78,19 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						suiteSetup(),
-						signFailsDueToDeletedExpiration(),
-						triggersUponAdditionalNeededSig(),
-						sharedKeyWorksAsExpected(),
-						overlappingKeysTreatedAsExpected(),
-						retestsActivationOnSignWithEmptySigMap(),
-						basicSignatureCollectionWorks(),
-						addingSignaturesToNonExistingTxFails(),
-						signalsIrrelevantSig(),
-						signalsIrrelevantSigEvenAfterLinkedEntityUpdate(),
-						triggersUponFinishingPayerSig(),
-						addingSignaturesToExecutedTxFails(),
-						okIfAdminKeyOverlapsWithActiveScheduleKey(),
+//						signFailsDueToDeletedExpiration(),
+//						triggersUponAdditionalNeededSig(),
+//						sharedKeyWorksAsExpected(),
+//						overlappingKeysTreatedAsExpected(),
+//						retestsActivationOnSignWithEmptySigMap(),
+//						basicSignatureCollectionWorks(),
+//						addingSignaturesToNonExistingTxFails(),
+//						signalsIrrelevantSig(),
+//						signalsIrrelevantSigEvenAfterLinkedEntityUpdate(),
+//						triggersUponFinishingPayerSig(),
+//						addingSignaturesToExecutedTxFails(),
+//						okIfAdminKeyOverlapsWithActiveScheduleKey(),
+						scheduleAlreadyExecutedDoesntRepeatTransaction(),
 						suiteCleanup(),
 				}
 		);
@@ -99,6 +107,44 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteSetup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+				);
+	}
+
+	private HapiApiSpec scheduleAlreadyExecutedDoesntRepeatTransaction() {
+		var senderShape = KeyShape.threshOf(2, 3);
+		var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
+		var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
+		var sigThree = senderShape.signedWith(sigs(OFF, OFF, ON));
+		String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey";
+
+		return defaultHapiSpec("ScheduleAlreadyExecutedDoesntRepeatTransaction")
+				.given(
+						newKeyNamed(senderKey).shape(senderShape),
+						cryptoCreate(sender).balance(101L).key(senderKey),
+						cryptoCreate(receiver),
+						scheduleCreate(schedule, cryptoTransfer(
+								tinyBarsFromTo(sender, receiver, 1))
+						)
+								.memo(randomUppercase(100))
+								.designatingPayer(DEFAULT_PAYER),
+						getAccountBalance(sender).hasTinyBars(101)
+				)
+				.when(
+						scheduleSign(schedule)
+								.alsoSigningWith(senderKey)
+								.sigControl(ControlForKey.forKey(senderKey, sigOne)),
+						getAccountBalance(sender).hasTinyBars(101),
+						scheduleSign(schedule)
+								.alsoSigningWith(senderKey)
+								.sigControl(ControlForKey.forKey(senderKey, sigTwo)),
+						getAccountBalance(sender).hasTinyBars(100)
+				)
+				.then(
+						scheduleSign(schedule)
+								.alsoSigningWith(senderKey)
+								.sigControl(ControlForKey.forKey(senderKey, sigThree))
+								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
+						getAccountBalance(sender).hasTinyBars(100)
 				);
 	}
 
