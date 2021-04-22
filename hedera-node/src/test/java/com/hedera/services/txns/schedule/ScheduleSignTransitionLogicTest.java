@@ -213,6 +213,7 @@ public class ScheduleSignTransitionLogicTest {
     @Test
     public void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
+        given(store.get(scheduleId)).willReturn(schedule);
         given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
                 .willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
