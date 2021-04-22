@@ -89,7 +89,7 @@ networks:
     scenarios:
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [121]
+        numsToFetch: [111]
   mainnet:
     bootstrap: 950
     defaultNode: 3

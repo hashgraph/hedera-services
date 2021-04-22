@@ -59,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 public class ScheduleSignSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
@@ -91,6 +92,8 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						addingSignaturesToExecutedTxFails(),
 						okIfAdminKeyOverlapsWithActiveScheduleKey(),
 						scheduleAlreadyExecutedDoesntRepeatTransaction(),
+						receiverSigRequiredUpdateIsRecognized(),
+						scheduleCreateFailsWithMissingAccountInXfer(),
 						suiteCleanup(),
 				}
 		);
@@ -107,6 +110,60 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteSetup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+				);
+	}
+
+	private HapiApiSpec scheduleCreateFailsWithMissingAccountInXfer() {
+		return defaultHapiSpec("scheduleCreateFailsWithMissingAccountInXfer")
+				.given( ) .when( ) .then(
+						scheduleCreate("neverToBe", cryptoTransfer(
+								tinyBarsFromTo(DEFAULT_PAYER, "1.2.3", 1))
+						)
+								.hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS)
+				);
+	}
+
+	private HapiApiSpec receiverSigRequiredUpdateIsRecognized() {
+		var senderShape = KeyShape.threshOf(2, 3);
+		var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
+		var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
+		var sigThree = senderShape.signedWith(sigs(OFF, OFF, ON));
+		String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey";
+
+		return defaultHapiSpec("ReceiverSigRequiredUpdateIsRecognized")
+				.given(
+						newKeyNamed(senderKey).shape(senderShape),
+						cryptoCreate(sender).key(senderKey),
+						cryptoCreate(receiver).balance(0L),
+						scheduleCreate(schedule, cryptoTransfer(
+								tinyBarsFromTo(sender, receiver, 1))
+						)
+								.payingWith(DEFAULT_PAYER)
+								.alsoSigningWith(sender)
+								.sigControl(ControlForKey.forKey(senderKey, sigOne)),
+						getAccountBalance(receiver).hasTinyBars(0L)
+				)
+				.when(
+						cryptoUpdate(receiver).receiverSigRequired(true),
+						scheduleSign(schedule)
+								.alsoSigningWith(senderKey)
+								.sigControl(ControlForKey.forKey(senderKey, sigTwo)),
+						getAccountBalance(receiver).hasTinyBars(0L)
+				)
+				.then(
+						scheduleSign(schedule)
+								.alsoSigningWith(receiver),
+						getAccountBalance(receiver).hasTinyBars(1),
+						scheduleSign(schedule)
+								.alsoSigningWith(senderKey)
+								.sigControl(ControlForKey.forKey(senderKey, sigTwo))
+								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
+						getAccountBalance(receiver).hasTinyBars(1),
+						scheduleSign(schedule)
+								.alsoSigningWith(senderKey)
+								.sigControl(ControlForKey.forKey(senderKey, sigThree))
+								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
+						getAccountBalance(receiver).hasTinyBars(1)
 				);
 	}
 
