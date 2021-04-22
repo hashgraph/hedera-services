@@ -1,0 +1,5 @@
+name: yahcliTopic
+topic:
+  adminKey: {wordsLoc: yahcliAdmin.words}
+  autoRenewAccount: yahcliPayer
+  submitKey: {wordsLoc: yahcliSubmit.words}

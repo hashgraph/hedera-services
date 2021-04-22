@@ -81,8 +81,9 @@ public class NetworkCtxManager {
 	public void loadObservableSysFilesIfNeeded() {
 		if (!systemFilesManager.areObservableFilesLoaded()) {
 			var networkCtxNow = networkCtx.get();
-			log.info("Observable files not yet loaded, doing now with network context {}", networkCtxNow);
+			log.info("Observable files not yet loaded, doing now.");
 			systemFilesManager.loadObservableSystemFiles();
+			log.info("Loaded observable files. {}", networkCtxNow);
 			networkCtxNow.resetWithSavedSnapshots(handleThrottling);
 			feeMultiplierSource.resetExpectations();
 			networkCtxNow.updateWithSavedCongestionStarts(feeMultiplierSource);

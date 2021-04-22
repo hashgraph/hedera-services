@@ -39,6 +39,11 @@ public enum CommonMessages {
 		System.out.println(msg);
 	}
 
+	public void beginBanner(String marker, String name) {
+		var msg = marker + " BEGINNING " + name + " " + marker;
+		System.out.println(msg);
+	}
+
 	public void appendBeginning(FileID target) {
 		var msg = "Appending to the uploaded " + Utils.nameOf(target) + "...";
 		System.out.print(msg);

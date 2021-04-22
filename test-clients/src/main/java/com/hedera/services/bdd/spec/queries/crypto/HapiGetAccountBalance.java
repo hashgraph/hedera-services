@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,11 +43,13 @@ import org.junit.Assert;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,6 +69,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	Optional<Long> expected = Optional.empty();
 	Optional<Supplier<String>> entityFn = Optional.empty();
 	Optional<Function<HapiApiSpec, Function<Long, Optional<String>>>> expectedCondition = Optional.empty();
+	Optional<Map<String, LongConsumer>> tokenBalanceObservers = Optional.empty();
 
 	List<Map.Entry<String, String>> expectedTokenBalances = Collections.EMPTY_LIST;
 
@@ -81,10 +85,12 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		expected = Optional.of(amount);
 		return this;
 	}
+
 	public HapiGetAccountBalance hasTinyBars(Function<HapiApiSpec, Function<Long, Optional<String>>> condition) {
 		expectedCondition = Optional.of(condition);
 		return this;
 	}
+
 	public HapiGetAccountBalance hasTokenBalance(String token, long amount) {
 		if (expectedTokenBalances.isEmpty()) {
 			expectedTokenBalances = new ArrayList<>();
@@ -92,11 +98,20 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount + "-G"));
 		return this;
 	}
+
 	public HapiGetAccountBalance hasTokenBalance(String token, long amount, int decimals) {
 		if (expectedTokenBalances.isEmpty()) {
 			expectedTokenBalances = new ArrayList<>();
 		}
 		expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount + "-" + decimals));
+		return this;
+	}
+
+	public HapiGetAccountBalance savingTokenBalance(String token, LongConsumer obs) {
+		if (tokenBalanceObservers.isEmpty()) {
+			tokenBalanceObservers = Optional.of(new HashMap<>());
+		}
+		tokenBalanceObservers.get().put(token, obs);
 		return this;
 	}
 
@@ -131,13 +146,14 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			Assert.assertEquals("Wrong balance!", expected.get().longValue(), actual);
 		}
 
+		Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
+				response.getCryptogetAccountBalance().getTokenBalancesList()
+						.stream()
+						.collect(Collectors.toMap(
+								TokenBalance::getTokenId,
+								tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
 		if (expectedTokenBalances.size() > 0) {
 			Pair<Long, Integer> defaultTb = Pair.of(0L, 0);
-			Map<TokenID, Pair<Long, Integer>> actualTokenBalances = response.getCryptogetAccountBalance().getTokenBalancesList()
-					.stream()
-					.collect(Collectors.toMap(
-							TokenBalance::getTokenId,
-							tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
 			for (Map.Entry<String, String> tokenBalance : expectedTokenBalances) {
 				var tokenId = asTokenId(tokenBalance.getKey(), spec);
 				String[] expectedParts = tokenBalance.getValue().split("-");
@@ -156,10 +172,18 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			}
 		}
 
-		if(exportAccount && accountID.isPresent()) {
+		if (tokenBalanceObservers.isPresent()) {
+			var observers = tokenBalanceObservers.get();
+			for (var entry : observers.entrySet()) {
+				var id = TxnUtils.asTokenId(entry.getKey(), spec);
+				var obs = entry.getValue();
+				obs.accept(actualTokenBalances.getOrDefault(id, Pair.of(-1L, -1)).getLeft());
+			}
+		}
+
+		if (exportAccount && accountID.isPresent()) {
 			SingleAccountBalances.Builder sab = SingleAccountBalances.newBuilder();
-			List<TokenUnitBalance> tokenUnitBalanceList = new ArrayList<>();
-			tokenUnitBalanceList = response.getCryptogetAccountBalance().getTokenBalancesList()
+			List<TokenUnitBalance> tokenUnitBalanceList = response.getCryptogetAccountBalance().getTokenBalancesList()
 					.stream()
 					.map(a -> TokenUnitBalance.newBuilder()
 							.setTokenId(a.getTokenId())
@@ -187,7 +211,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			if (!loggingOff) {
 				log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance + " tinyBars (" + hBars + "ħ)");
 			}
-			if(yahcliLogger) {
+			if (yahcliLogger) {
 				System.out.println(String.format("%20s | %20d |", entity, balance));
 			}
 		}

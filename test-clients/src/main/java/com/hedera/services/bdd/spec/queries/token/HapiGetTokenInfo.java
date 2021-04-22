@@ -103,7 +103,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedId = Optional.of(token);
 		return this;
 	}
-	public HapiGetTokenInfo hasRegisteredMemo(String memo) {
+	public HapiGetTokenInfo hasEntityMemo(String memo) {
 		expectedMemo = Optional.of(memo);
 		return this;
 	}

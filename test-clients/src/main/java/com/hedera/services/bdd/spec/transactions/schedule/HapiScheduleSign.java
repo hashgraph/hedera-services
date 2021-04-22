@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -45,7 +46,9 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asScheduleId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	private static final Logger log = LogManager.getLogger(HapiScheduleSign.class);
@@ -53,6 +56,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	private final String schedule;
 	private List<String> signatories = Collections.emptyList();
 	private boolean ignoreMissing = false;
+	private boolean saveScheduledTxnId = false;
 
 	public HapiScheduleSign(String schedule) {
 		this.schedule = schedule;
@@ -65,6 +69,11 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
 	public HapiScheduleSign ignoreIfMissing() {
 		ignoreMissing = true;
+		return this;
+	}
+
+	public HapiScheduleSign savingScheduledTxnId() {
+		saveScheduledTxnId = true;
 		return this;
 	}
 
@@ -101,6 +110,16 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
 		return spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls)::signSchedule;
+	}
+
+	@Override
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (actualStatus != SUCCESS) {
+			return;
+		}
+		if (saveScheduledTxnId) {
+			spec.registry().saveTxnId(correspondingScheduledTxnId(schedule), lastReceipt.getScheduledTransactionID());
+		}
 	}
 
 	@Override
