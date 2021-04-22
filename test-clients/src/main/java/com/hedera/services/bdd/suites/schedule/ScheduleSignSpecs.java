@@ -93,7 +93,6 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						okIfAdminKeyOverlapsWithActiveScheduleKey(),
 						scheduleAlreadyExecutedDoesntRepeatTransaction(),
 						receiverSigRequiredUpdateIsRecognized(),
-						scheduleCreateFailsWithMissingAccountInXfer(),
 						suiteCleanup(),
 				}
 		);
@@ -110,16 +109,6 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteSetup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
-				);
-	}
-
-	private HapiApiSpec scheduleCreateFailsWithMissingAccountInXfer() {
-		return defaultHapiSpec("scheduleCreateFailsWithMissingAccountInXfer")
-				.given( ) .when( ) .then(
-						scheduleCreate("neverToBe", cryptoTransfer(
-								tinyBarsFromTo(DEFAULT_PAYER, "1.2.3", 1))
-						)
-								.hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS)
 				);
 	}
 
