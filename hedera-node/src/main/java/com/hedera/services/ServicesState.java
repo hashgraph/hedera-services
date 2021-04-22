@@ -41,7 +41,6 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.blob.BinaryObjectStore;
@@ -61,6 +60,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Function;
@@ -239,9 +239,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 			var restoredDiskFs = diskFs();
 			if (networkCtx().getStateVersion() < RELEASE_0140_VERSION) {
-				diskFs().migrateLegacyDiskFsFromV13LocFor(
-						MerkleDiskFs.DISK_FS_ROOT_DIR,
-						asLiteralString(ctx.nodeAccount()));
+				try {
+					restoredDiskFs.migrateLegacyDiskFsFromV13LocFor(
+							MerkleDiskFs.DISK_FS_ROOT_DIR,
+							asLiteralString(ctx.nodeAccount()));
+				} catch (UncheckedIOException expectedNonFatal) {
+					log.warn("Legacy diskFs directory not migrated, was it missing?", expectedNonFatal);
+				}
 			}
 			if (!skipDiskFsHashCheck) {
 				restoredDiskFs.checkHashesAgainstDiskContents();
