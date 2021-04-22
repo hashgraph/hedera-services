@@ -137,13 +137,9 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		try {
 			return bytesHelper.allBytesFrom(pathToContentsOf(fid));
 		} catch (IOException e) {
-			if(log.isDebugEnabled()) {
-				log.warn("Not able to read '{}' @ {}!", asLiteralString(fid), pathToContentsOf(fid), e);
-			}
-			else {
-				log.warn("Not able to read '{}' @ {}!", asLiteralString(fid), pathToContentsOf(fid));
-			}
-			return MISSING_CONTENT;
+			/* This is almost certainly not a recoverable failure; a file is probably missing from disk. */
+			log.error("Not able to read '{}' @ {}!", asLiteralString(fid), pathToContentsOf(fid));
+			throw new UncheckedIOException(e);
 		}
 	}
 
@@ -235,11 +231,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeInt(fileHashes.size());
 		serializeFidInfo(out, fid -> {
-			try {
-				return bytesHelper.allBytesFrom(pathToContentsOf(fid));
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+			return contentsOf(fid);
 		});
 	}
 
