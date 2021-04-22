@@ -3,12 +3,14 @@ Yahcli (Yet Another Hedera Command Line Interface) is able to perform the
 listed actions against a specified network.
 
 1. Account Operations
-    - Check balances for one or more accounts.
+  - Check balances for one or more accounts.
 2. System File Operations
-    - Download one or more system files.
-    - Upload a system file.
-3. Fees Operations
-    - Run examples of all "canonical" transactions and queries, reporting the fees charged.
+  - Download one or more system files.
+  - Upload a system file.
+3. Fee Snapshot Operations
+  - Run examples of all "canonical" transactions and queries, reporting the fees charged.
+4. Post-Upgrade Validations
+  - "Smoke test" one or more services
 
 # Setting up the working directory 
 
@@ -49,19 +51,27 @@ networks:
 ```
 
 For each network we add, we need a _{network}/keys/_ folder 
-that contains a `account{num}.pem` and `account{num}.pass` 
-pair for each account we will use with that network (where  
-`account{num}.pass` contains the passphrase for the 
-`account{num}.pem` file---or is empty if there is no passphrase 
-for the PEM file).
+that contains a `account{num}.pem` for each account we will 
+use with that network. :guard: &nbsp; If there is no corresponding
+`account{num}.pass` for a PEM file, please be prepared to enter 
+the passphrase interactively in the console. For example,
+```
+$ docker run -it -v $(pwd):/launch yahcli:0.1.0 -p 2 sysfiles download all 
+Targeting localhost, paying with 0.0.2
+Please enter the passphrase for key file localhost/keys/account2.pem: 
+```
 
-**IMPORTANT:** Support for multisig accounts is not yet implemented.
+**IMPORTANT** Without the `-it` flags above, Docker will not attach
+STDIN as a TTY, and you will either not be prompted for the passphrase;
+or (given just `-i`) your passphrase will appear in clear text.
+
+Note that yahcli does not currently support multisig accounts.
 
 # Running commands
 
 To list all available commands, we run:
 ```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 help
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 help
 Usage: yahcli [-c=config YAML] [-f=fee] [-n=network] [-p=payer] [COMMAND]
 Perform operations against well-known entities on a Hedera Services network
   -c, --config=config YAML
@@ -80,7 +90,7 @@ when running against this network.
 
 To download the fee schedules from previewnet given the config above, we run:
 ```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -p 2 -n previewnet sysfiles download fees
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -p 2 -n previewnet sysfiles download fees
 Targeting previewnet, paying with 0.0.2
 Downloading the fees...OK
 $ ls previewnet/sysfiles/
@@ -93,7 +103,7 @@ The fee schedules were downloaded in JSON form to _previewnet/sysfiles/feeSchedu
 To see more options for the `download` subcommand (including a custom download directory), 
 we run:
 ```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 sysfiles download help
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 sysfiles download help
 Usage: yahcli sysfiles download [-d=destination directory] <sysfiles>...
                                 [COMMAND]
 Download system files
@@ -107,7 +117,7 @@ The remaining sections of this document focus on specific use cases.
 
 ## Getting account balances
 ```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n previewnet -p 2 accounts balance 56 50
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n previewnet -p 2 accounts balance 56 50
 Targeting previewnet, paying with 0.0.2
 ---------------------|----------------------|
           Account Id |              Balance |
@@ -138,7 +148,7 @@ localhost
 
 We first download the existing address book,
 ```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 sysfiles download address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 sysfiles download address-book
 Targeting localhost, paying with 0.0.2
 Downloading the address-book...OK
 ```
@@ -171,13 +181,13 @@ files, respectively.
 
 And now we upload the new address book, this time using the address book admin `0.0.55` as the payer:
 ```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 55 sysfiles upload address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 55 sysfiles upload address-book
 ```
 
 Finally we re-download the book to see that the hex-encoded cert hash 
 and RSA public key were uploaded as expected:
 ```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 sysfiles download address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 sysfiles download address-book
 Targeting localhost, paying with 0.0.2
 Downloading the address-book...OK
 $ tail -17 localhost/sysfiles/addressBook.json 
@@ -219,7 +229,7 @@ values. Suppose we try to update the address book again, changing the
 We then get a messy error and the update aborts before sending
 any `FileUpdate` transaction to the network:
 ```
-$ docker run -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 55 sysfiles upload address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 55 sysfiles upload address-book
 Targeting localhost, paying with 0.0.55
 java.lang.IllegalStateException: Deprecated memo field cannot be set to 'This node is the best!'
 	at com.hedera.services.bdd.suites.utils.sysfiles.serdes.AddrBkJsonToGrpcBytes.toValidatedRawFile(AddrBkJsonToGrpcBytes.java:70)
@@ -228,4 +238,10 @@ java.lang.IllegalStateException: Deprecated memo field cannot be set to 'This no
 	at com.hedera.services.yahcli.suites.SysFileUploadSuite.uploadSysFiles(SysFileUploadSuite.java:70)
 	at com.hedera.services.yahcli.suites.SysFileUploadSuite.getSpecsInSuite(SysFileUploadSuite.java:65)
 ...
+```
+
+## Validating the scheduled transactions service
+
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.0 -n localhost -p 2 validate scheduling
 ```

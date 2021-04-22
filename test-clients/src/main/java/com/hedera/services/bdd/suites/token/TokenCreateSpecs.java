@@ -216,7 +216,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						getTokenInfo("primary")
 								.logged()
 								.hasRegisteredId("primary")
-								.hasRegisteredMemo(memo)
+								.hasEntityMemo(memo)
 								.hasName(saltedName)
 								.hasTreasury(TOKEN_TREASURY)
 								.hasAutoRenewPeriod(A_HUNDRED_SECONDS)

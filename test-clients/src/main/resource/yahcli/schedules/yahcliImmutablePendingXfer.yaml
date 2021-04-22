@@ -1,0 +1,4 @@
+name: yahcliImmutablePendingXfer
+schedule:
+  memo: That abler soul, which thence doth flow / Defects of loneliness controls
+  simpleXfer: {amount: 1, from: yahcliSender, to: yahcliReceiver}
