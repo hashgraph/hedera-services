@@ -29,27 +29,39 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class EntityRemovalRecordTest {
+public class AutoRenewalRecordTest {
 	@Test
-	public void shouldGenerateCorrectEntityRemovalRecord() {
-		var accountRemoved = IdUtils.asAccount("1.2.3");
+	public void shouldGenerateCorrectAutoRenewalRecord() {
+		var accountRenewed = IdUtils.asAccount("1.2.3");
 		var autoRenewAccount = IdUtils.asAccount("4.5.6");
 		long consensusSeconds = 1_234_567L;
 		long consensusNanos = 890L;
-		var removedAt = Instant.ofEpochSecond(consensusSeconds).plusNanos(consensusNanos);
-		var record = EntityRemovalRecord.generatedFor(accountRemoved, removedAt, autoRenewAccount);
+		long fee = 9_876_543L;
+		long newExpirationTime = 2_345_678L;
+		var feeCollector = IdUtils.asAccount("7.8.9");
+		var renewedAt = Instant.ofEpochSecond(consensusSeconds).plusNanos(consensusNanos);
+		var record = AutoRenewalRecord.generatedFor(accountRenewed, renewedAt, autoRenewAccount,
+				fee, newExpirationTime, feeCollector);
 
-		assertEquals(accountRemoved, record.getReceipt().getAccountID());
+		assertEquals(accountRenewed, record.getReceipt().getAccountID());
 		assertTrue(record.getTransactionHash().isEmpty());
 		assertEquals(consensusSeconds, record.getConsensusTimestamp().getSeconds());
 		assertEquals(consensusNanos, record.getConsensusTimestamp().getNanos());
 		assertEquals(autoRenewAccount, record.getTransactionID().getAccountID());
 		assertFalse(record.getTransactionID().hasTransactionValidStart());
-		assertEquals("Entity 1.2.3 was automatically deleted.", record.getMemo());
-		assertEquals(0L, record.getTransactionFee());
+		assertEquals("Entity 1.2.3 was automatically renewed. New expiration time: 2345678.", record.getMemo());
+		assertEquals(fee, record.getTransactionFee());
 		assertFalse(record.hasContractCallResult());
 		assertFalse(record.hasContractCreateResult());
-		assertFalse(record.hasTransferList());
+		assertTrue(record.hasTransferList());
+		var transferList = record.getTransferList();
+		assertEquals(2, transferList.getAccountAmountsCount());
+		var payerAmount = transferList.getAccountAmounts(0);
+		var payeeAmount = transferList.getAccountAmounts(1);
+		assertEquals(autoRenewAccount, payerAmount.getAccountID());
+		assertEquals(-1 * fee, payerAmount.getAmount());
+		assertEquals(feeCollector, payeeAmount.getAccountID());
+		assertEquals(fee, payeeAmount.getAmount());
 		assertEquals(0, record.getTokenTransferListsCount());
 		assertFalse(record.hasScheduleRef());
 	}
