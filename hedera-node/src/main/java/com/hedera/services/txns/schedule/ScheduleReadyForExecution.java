@@ -27,7 +27,9 @@ import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
-public abstract class ScheduleReadyForExecution {
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
+public class ScheduleReadyForExecution {
 	protected final ScheduleStore store;
 	protected final TransactionContext txnCtx;
 
@@ -37,16 +39,19 @@ public abstract class ScheduleReadyForExecution {
 	}
 
 	ResponseCodeEnum processExecution(ScheduleID id) throws InvalidProtocolBufferException {
+		var executionStatus = store.markAsExecuted(id);
+		if (executionStatus != OK) {
+			return executionStatus;
+		}
+
 		var schedule = store.get(id);
 		var transaction = schedule.asSignedTxn();
-
 		txnCtx.trigger(
 				new TriggeredTxnAccessor(
 						transaction.toByteArray(),
 						schedule.effectivePayer().toGrpcAccountId(),
 						id));
-
-		return store.markAsExecuted(id);
+		return OK;
 	}
 
 	@FunctionalInterface

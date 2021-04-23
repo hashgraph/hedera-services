@@ -39,6 +39,8 @@ import java.util.function.Predicate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution implements TransitionLogic {
@@ -76,12 +78,22 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
 			SignatureMap sigMap,
 			ScheduleSignTransactionBody op
 	) throws InvalidProtocolBufferException {
+		var scheduleId = op.getScheduleID();
+		var origSchedule = store.get(scheduleId);
+		if (origSchedule.isExecuted()) {
+			txnCtx.setStatus(SCHEDULE_ALREADY_EXECUTED);
+			return;
+		}
+		if (origSchedule.isDeleted()) {
+			txnCtx.setStatus(SCHEDULE_ALREADY_DELETED);
+			return;
+		}
+
 		var validScheduleKeys = classifier.validScheduleKeys(
 				List.of(txnCtx.activePayerKey()),
 				sigMap,
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);
-		var scheduleId = op.getScheduleID();
 		var signingOutcome = replSigningsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
 
 		var outcome = signingOutcome.getLeft();
