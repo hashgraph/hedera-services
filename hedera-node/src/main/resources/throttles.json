@@ -2,11 +2,12 @@
     "buckets": [
         {
             "name": "ThroughputLimits",
-            "burstPeriod": 1,
+            "burstPeriod": 3,
             "throttleGroups": [
                 {
                     "opsPerSec": 10000,
                     "operations": [
+                        "ScheduleCreate",
                         "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords",
                         "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo",
                         "TokenGetInfo",
@@ -22,9 +23,12 @@
                     "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
                 },
                 {
+                    "opsPerSec": 100,
+                    "operations": [ "ScheduleSign" ]
+                },
+                {
                     "opsPerSec": 3000,
                     "operations": [
-                        "ScheduleSign", 
                         "TokenCreate", "TokenDelete", "TokenMint", "TokenBurn", "TokenUpdate", "TokenAssociateToAccount", "TokenAccountWipe",
                         "TokenDissociateFromAccount","TokenFreezeAccount", "TokenUnfreezeAccount", "TokenGrantKycToAccount", "TokenRevokeKycFromAccount"
                     ]
@@ -33,7 +37,7 @@
         },
         {
             "name": "PriorityReservations",
-            "burstPeriod": 1,
+            "burstPeriod": 3,
             "throttleGroups": [
                 {
                     "opsPerSec": 10,
@@ -43,7 +47,7 @@
         },
         {
             "name": "CreationLimits",
-            "burstPeriod": 10,
+            "burstPeriod": 15,
             "throttleGroups": [
                 {
                     "opsPerSec": 2,
