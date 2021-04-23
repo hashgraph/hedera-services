@@ -166,7 +166,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						withOpContext( (spec, log) -> {
 							log.info("Now get all {} accounts created and save them", totalAccounts);
 							AccountID acctID = AccountID.getDefaultInstance();
-							for(int i = 0; i < totalAccounts; i++ ) {
+							for(int i = 1; i <= totalAccounts; i++ ) {
 								String acctName = ACCT_NAME_PREFIX + i;
 								// Make sure the named account was created before query its balances.
 								try {

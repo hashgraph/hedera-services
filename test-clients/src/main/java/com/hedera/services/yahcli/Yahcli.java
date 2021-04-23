@@ -29,7 +29,9 @@ import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
+import com.hedera.services.yahcli.commands.validation.ValidationCommand;
 import com.hedera.services.yahcli.suites.BalanceSuite;
+import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
 import com.hedera.services.yahcli.suites.SysFileUploadSuite;
 import org.apache.logging.log4j.Level;
@@ -52,6 +54,7 @@ import java.util.concurrent.Callable;
 				HelpCommand.class,
 				AccountsCommand.class,
 				SysFilesCommand.class,
+				ValidationCommand.class,
 				FeesCommand.class
 		},
 		description = "Perform operations against well-known entities on a Hedera Services network")
@@ -117,6 +120,7 @@ public class Yahcli implements Callable<Integer> {
 				BalanceSuite.class,
 				SysFileUploadSuite.class,
 				SysFileDownloadSuite.class,
+				SchedulesValidationSuite.class,
 				MapPropertySource.class,
 				HapiApiClients.class,
 				FeesAndRatesProvider.class,
