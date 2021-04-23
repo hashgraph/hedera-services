@@ -121,7 +121,8 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 				writeHelper.allBytesTo(pathToContentsOf(fid), contents);
 				f.delete();
 			} catch (IOException e) {
-				log.error("Failed to migrate from legacy disk-based file system!", e);
+				//TODO : Mark this log as an error in 0.15.0 if MerkleDiskFs is used for Update
+				log.warn("Failed to migrate from legacy disk-based file system!", e);
 				throw new UncheckedIOException(e);
 			}
 		}
