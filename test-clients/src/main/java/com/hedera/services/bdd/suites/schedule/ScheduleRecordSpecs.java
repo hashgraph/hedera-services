@@ -240,7 +240,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 				);
 	}
 
-	private TransactionID scheduledVersionOf(TransactionID txnId) {
+	static TransactionID scheduledVersionOf(TransactionID txnId) {
 		return txnId.toBuilder().setScheduled(true).build();
 	}
 

@@ -22,12 +22,12 @@ package com.hedera.services.bdd.suites.schedule;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -37,9 +37,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
-import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
@@ -48,20 +46,29 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs.scheduledVersionOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
@@ -82,15 +89,20 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				suiteSetup(),
-//				executionWithDefaultPayerWorks(),
-//				executionWithCustomPayerWorks(),
-//				executionWithDefaultPayerButNoFundsFails(),
-//				executionWithCustomPayerButNoFundsFails(),
-//				executionTriggersWithWeirdlyRepeatedKey(),
-//				executionTriggersWithWeirdlyRepeatedKey(),
+				suiteSetup(),
+				executionWithDefaultPayerWorks(),
+				executionWithCustomPayerWorks(),
+				executionWithDefaultPayerButNoFundsFails(),
+				executionWithCustomPayerButNoFundsFails(),
+				executionTriggersWithWeirdlyRepeatedKey(),
+				executionTriggersWithWeirdlyRepeatedKey(),
 				executionTriggersOnceTopicHasSatisfiedSubmitKey(),
-//				suiteCleanup(),
+				scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned(),
+				scheduledSubmitFailedWithInvalidChunkNumberStillPaysServiceFeeButHasNoImpact(),
+				scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact(),
+				scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled(),
+				scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact(),
+				suiteCleanup(),
 		});
 	}
 
@@ -105,6 +117,238 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteSetup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+				);
+	}
+
+	private HapiApiSpec scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact() {
+		String immutableTopic = "XXX";
+		String validSchedule = "withValidSize";
+		String invalidSchedule = "withInvalidSize";
+		String schedulePayer = "somebody";
+		String successTxn = "good", failedTxn = "bad";
+		AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
+		AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
+		var maxValidLen = HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.message.maxBytesAllowed");
+
+		return defaultHapiSpec("ScheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact")
+				.given(
+						createTopic(immutableTopic),
+						cryptoCreate(schedulePayer)
+				).when(
+						scheduleCreate(validSchedule,
+								submitMessageTo(immutableTopic)
+										.message(TxnUtils.randomUppercase(maxValidLen))
+						)
+								.designatingPayer(schedulePayer)
+								.via(successTxn)
+								.signedBy(DEFAULT_PAYER, schedulePayer),
+						getTopicInfo(immutableTopic).hasSeqNo(1L),
+						getTxnRecord(successTxn).scheduled()
+								.logged()
+								.revealingDebitsTo(successFeesObs::set),
+						scheduleCreate(invalidSchedule,
+								submitMessageTo(immutableTopic)
+										.message(TxnUtils.randomUppercase(maxValidLen + 1))
+						)
+								.designatingPayer(schedulePayer)
+								.via(failedTxn)
+								.signedBy(DEFAULT_PAYER, schedulePayer)
+				).then(
+						getTopicInfo(immutableTopic).hasSeqNo(1L),
+						getTxnRecord(failedTxn).scheduled()
+								.hasPriority(recordWith().status(MESSAGE_SIZE_TOO_LARGE))
+								.revealingDebitsTo(failureFeesObs::set),
+						assertionsHold((spec, opLog) ->
+								assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0))
+				);
+	}
+
+	private HapiApiSpec scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact() {
+		String immutableTopic = "XXX";
+		String validSchedule = "withValidChunkTxnId";
+		String invalidSchedule = "withInvalidChunkTxnId";
+		String schedulePayer = "somebody";
+		String successTxn = "good", failedTxn = "bad";
+		AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
+		AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
+		AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
+		AtomicReference<TransactionID> irrelevantTxnId = new AtomicReference<>();
+
+		return defaultHapiSpec("ScheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact")
+				.given(
+						createTopic(immutableTopic),
+						cryptoCreate(schedulePayer)
+				).when(
+						withOpContext((spec, opLog) -> {
+							var subOp = usableTxnIdNamed(successTxn).payerId(schedulePayer);
+							var secondSubOp = usableTxnIdNamed("wontWork").payerId(schedulePayer);
+							allRunFor(spec, subOp, secondSubOp);
+							initialTxnId.set(spec.registry().getTxnId(successTxn));
+							irrelevantTxnId.set(spec.registry().getTxnId("wontWork"));
+						}),
+						sourcing(() -> scheduleCreate(validSchedule,
+								submitMessageTo(immutableTopic)
+										.chunkInfo(
+												3,
+												1,
+												scheduledVersionOf(initialTxnId.get()))
+								)
+										.txnId(successTxn)
+										.logged()
+										.signedBy(schedulePayer)
+						),
+						getTopicInfo(immutableTopic).hasSeqNo(1L),
+						getTxnRecord(successTxn).scheduled()
+								.logged()
+								.revealingDebitsTo(successFeesObs::set),
+						sourcing(() -> scheduleCreate(invalidSchedule,
+								submitMessageTo(immutableTopic)
+										.chunkInfo(
+												3,
+												1,
+												scheduledVersionOf(irrelevantTxnId.get()))
+								)
+										.designatingPayer(schedulePayer)
+										.via(failedTxn)
+										.logged()
+										.signedBy(DEFAULT_PAYER, schedulePayer)
+						)
+				).then(
+						getTopicInfo(immutableTopic).hasSeqNo(1L),
+						getTxnRecord(failedTxn).scheduled()
+								.hasPriority(recordWith().status(INVALID_CHUNK_TRANSACTION_ID))
+								.revealingDebitsTo(failureFeesObs::set),
+						assertionsHold((spec, opLog) -> Assert.assertEquals(successFeesObs.get(), failureFeesObs.get()))
+				);
+	}
+
+	private HapiApiSpec scheduledSubmitFailedWithInvalidChunkNumberStillPaysServiceFeeButHasNoImpact() {
+		String immutableTopic = "XXX";
+		String validSchedule = "withValidChunkNumber";
+		String invalidSchedule = "withInvalidChunkNumber";
+		String schedulePayer = "somebody";
+		String successTxn = "good", failedTxn = "bad";
+		AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
+		AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
+		AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
+
+		return defaultHapiSpec("ScheduledSubmitFailedWithInvalidChunkNumberStillPaysServiceFeeButHasNoImpact")
+				.given(
+						createTopic(immutableTopic),
+						cryptoCreate(schedulePayer)
+				).when(
+						withOpContext((spec, opLog) -> {
+							var subOp = usableTxnIdNamed(successTxn).payerId(schedulePayer);
+							allRunFor(spec, subOp);
+							initialTxnId.set(spec.registry().getTxnId(successTxn));
+						}),
+						sourcing(() -> scheduleCreate(validSchedule,
+								submitMessageTo(immutableTopic)
+										.chunkInfo(
+												3,
+												1,
+												scheduledVersionOf(initialTxnId.get()))
+								)
+										.txnId(successTxn)
+										.logged()
+										.signedBy(schedulePayer)
+						),
+						getTopicInfo(immutableTopic).hasSeqNo(1L),
+						getTxnRecord(successTxn).scheduled()
+								.logged()
+								.revealingDebitsTo(successFeesObs::set),
+						scheduleCreate(invalidSchedule,
+								submitMessageTo(immutableTopic)
+										.chunkInfo(3, 111, schedulePayer)
+						)
+								.via(failedTxn)
+								.logged()
+								.payingWith(schedulePayer)
+				).then(
+						getTopicInfo(immutableTopic).hasSeqNo(1L),
+						getTxnRecord(failedTxn).scheduled()
+								.hasPriority(recordWith().status(INVALID_CHUNK_NUMBER))
+								.revealingDebitsTo(failureFeesObs::set),
+						assertionsHold((spec, opLog) -> Assert.assertEquals(successFeesObs.get(), failureFeesObs.get()))
+				);
+	}
+
+	private HapiApiSpec scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled() {
+		String civilianPayer = "somebody";
+		AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
+		AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
+
+		return defaultHapiSpec("ScheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled")
+				.given(
+						cryptoCreate(civilianPayer),
+						createTopic("fascinating")
+				).when(
+						scheduleCreate("yup",
+								submitMessageTo("fascinating")
+										.message("Little did they care who danced between / " +
+												"And little she by whom her dance was seen")
+						)
+								.payingWith(civilianPayer)
+								.via("creation"),
+						scheduleCreate("nope",
+								submitMessageTo("1.2.3")
+										.message("Little did they care who danced between / " +
+												"And little she by whom her dance was seen")
+						)
+								.payingWith(civilianPayer)
+								.via("nothingShouldBeCreated")
+								.hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS)
+				).then(
+						getTxnRecord("creation")
+								.revealingDebitsTo(successFeesObs::set),
+						getTxnRecord("nothingShouldBeCreated")
+								.revealingDebitsTo(failureFeesObs::set)
+								.logged(),
+						assertionsHold((spec, opLog) ->
+								assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0))
+				);
+	}
+
+	private void assertBasicallyIdentical(
+			Map<AccountID, Long> aFees,
+			Map<AccountID, Long> bFees,
+			double allowedPercentDeviation
+	) {
+		Assert.assertEquals(aFees.keySet(), bFees.keySet());
+		for (var id : aFees.keySet()) {
+			long a = aFees.get(id);
+			long b = bFees.get(id);
+			Assert.assertEquals(100.0, (1.0 * a) / b * 100.0, allowedPercentDeviation);
+		}
+	}
+
+	private HapiApiSpec scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned() {
+		String adminKey = "admin";
+		String mutableTopic = "XXX";
+		String postDeleteSchedule = "deferredTooLongSubmitMsg";
+		String schedulePayer = "somebody";
+		String failedTxn = "deleted";
+
+		return defaultHapiSpec("ScheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned")
+				.given(
+						newKeyNamed(adminKey),
+						createTopic(mutableTopic)
+								.adminKeyName(adminKey),
+						cryptoCreate(schedulePayer),
+						scheduleCreate(postDeleteSchedule,
+								submitMessageTo(mutableTopic)
+										.message("Little did they care who danced between / " +
+												"And little she by whom her dance was seen")
+						)
+								.designatingPayer(schedulePayer)
+								.payingWith(DEFAULT_PAYER)
+								.via(failedTxn)
+				).when(
+						deleteTopic(mutableTopic)
+				).then(
+						scheduleSign(postDeleteSchedule)
+								.alsoSigningWith(schedulePayer)
+								.hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS)
 				);
 	}
 
