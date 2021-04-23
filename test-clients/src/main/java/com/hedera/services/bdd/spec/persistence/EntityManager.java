@@ -70,6 +70,34 @@ public class EntityManager {
 		KEYS_SUBDIR, TOKENS_SUBDIR, TOPICS_SUBDIR, ACCOUNTS_SUBDIR, SCHEDULES_SUBDIR, FILES_SUBDIR, CONTRACTS_SUBDIR
 	};
 
+	public static String accountLoc(String base, String name) {
+		return typedLoc(ACCOUNTS_SUBDIR, base, name);
+	}
+
+	public static String tokenLoc(String base, String name) {
+		return typedLoc(TOKENS_SUBDIR, base, name);
+	}
+
+	public static String fileLoc(String base, String name) {
+		return typedLoc(FILES_SUBDIR, base, name);
+	}
+
+	public static String contractLoc(String base, String name) {
+		return typedLoc(CONTRACTS_SUBDIR, base, name);
+	}
+
+	public static String topicLoc(String base, String name) {
+		return typedLoc(TOPICS_SUBDIR, base, name);
+	}
+
+	public static String scheduleLoc(String base, String name) {
+		return typedLoc(SCHEDULES_SUBDIR, base, name);
+	}
+
+	private static String typedLoc(String type, String base, String name) {
+		return base + File.separator + type + File.separator + name;
+	}
+
 	public boolean init() {
 		var parentEntitiesDir = spec.setup().persistentEntitiesDir();
 		log.info("Top-level entities @ {}", parentEntitiesDir);

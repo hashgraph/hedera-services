@@ -46,9 +46,12 @@ import static java.util.stream.Collectors.toList;
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
+	static final int UNRECORDED_STATE_VERSION = -1;
+
 	static final int PRE_RELEASE_0130_VERSION = 1;
 	static final int RELEASE_0130_VERSION = 2;
-	static final int MERKLE_VERSION = RELEASE_0130_VERSION;
+	static final int RELEASE_0140_VERSION = 3;
+	static final int MERKLE_VERSION = RELEASE_0140_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final RichInstant[] NO_CONGESTION_STARTS = new RichInstant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -59,14 +62,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
 
-	RichInstant consensusTimeOfLastHandledTxn;
-	RichInstant[] congestionLevelStarts = NO_CONGESTION_STARTS;
-	ExchangeRates midnightRates;
-	SequenceNumber seqNo;
-	DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
+	private int stateVersion = UNRECORDED_STATE_VERSION;
+	private RichInstant[] congestionLevelStarts = NO_CONGESTION_STARTS;
+	private ExchangeRates midnightRates;
+	private RichInstant consensusTimeOfLastHandledTxn;
+	private SequenceNumber seqNo;
+	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 
 	public MerkleNetworkContext() {
-		/* RuntimeConstructable */
+		/* No-op for RuntimeConstructable facility; will be followed by a call to deserialize. */
 	}
 
 	public MerkleNetworkContext(
@@ -84,13 +88,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			SequenceNumber seqNo,
 			ExchangeRates midnightRates,
 			DeterministicThrottle.UsageSnapshot[] usageSnapshots,
-			RichInstant[] congestionStartPeriods
+			RichInstant[] congestionStartPeriods,
+			int stateVersion
 	) {
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
 		this.seqNo = seqNo;
 		this.midnightRates = midnightRates;
 		this.usageSnapshots = usageSnapshots;
 		this.congestionLevelStarts = congestionStartPeriods;
+		this.stateVersion = stateVersion;
 	}
 
 	public void updateSnapshotsFrom(FunctionalityThrottling throttling) {
@@ -154,7 +160,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				seqNo.copy(),
 				midnightRates.copy(),
 				usageSnapshots,
-				congestionLevelStarts);
+				congestionLevelStarts,
+				stateVersion);
 	}
 
 	@Override
@@ -185,6 +192,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				}
 			}
 		}
+		if (version >= RELEASE_0140_VERSION) {
+			stateVersion = in.readInt();
+		}
 	}
 
 	@Override
@@ -203,6 +213,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		for (var congestionStart : congestionLevelStarts) {
 			serdes.writeNullableInstant(congestionStart, out);
 		}
+		out.writeInt(stateVersion);
 	}
 
 	public Instant consensusTimeOfLastHandledTxn() {
@@ -229,7 +240,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public String toString() {
-		var sb = new StringBuilder("The network context is,")
+		var sb = new StringBuilder("The network context (state version ")
+				.append(stateVersion == UNRECORDED_STATE_VERSION ? "<N/A>" : stateVersion)
+				.append(") is,")
 				.append("\n  Consensus time of last handled transaction :: ")
 				.append(reprOf(consensusTimeOfLastHandledTxn))
 				.append("\n  Midnight rate set                          :: ")
@@ -290,10 +303,38 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return Optional.ofNullable(consensusTime)
 				.map(RichInstant::toJava)
 				.map(Object::toString)
-				.orElse("<NEVER>");
+				.orElse("<N/A>");
 	}
 
-	RichInstant[] congestionLevelStarts() {
+	void setCongestionLevelStarts(RichInstant[] congestionLevelStarts) {
+		this.congestionLevelStarts = congestionLevelStarts;
+	}
+
+	RichInstant[] getCongestionLevelStarts() {
 		return congestionLevelStarts;
+	}
+
+	RichInstant getConsensusTimeOfLastHandledTxn() {
+		return consensusTimeOfLastHandledTxn;
+	}
+
+	DeterministicThrottle.UsageSnapshot[] getUsageSnapshots() {
+		return usageSnapshots;
+	}
+
+	SequenceNumber getSeqNo() {
+		return seqNo;
+	}
+
+	public ExchangeRates getMidnightRates() {
+		return midnightRates;
+	}
+
+	public int getStateVersion() {
+		return stateVersion;
+	}
+
+	public void setStateVersion(int stateVersion) {
+		this.stateVersion = stateVersion;
 	}
 }

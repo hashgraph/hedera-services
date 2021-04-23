@@ -50,9 +50,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
 	static final Logger log = LogManager.getLogger(HapiScheduleDelete.class);
 
-	private static final int defaultScheduleTxnExpiry = HapiSpecSetup.getDefaultNodeProps()
-			.getInteger("ledger.schedule.txExpiryTimeSecs");
-
 	private String schedule;
 
 	public HapiScheduleDelete(String schedule) {

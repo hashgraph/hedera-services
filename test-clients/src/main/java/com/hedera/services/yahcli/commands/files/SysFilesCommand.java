@@ -45,13 +45,6 @@ public class SysFilesCommand implements Callable<Integer> {
 	@ParentCommand
 	Yahcli yahcli;
 
-	static ConfigManager configFrom(Yahcli yahcli) throws IOException {
-		var config = ConfigManager.from(yahcli);
-		config.assertNoMissingDefaults();
-		COMMON_MESSAGES.printGlobalInfo(config);
-		return config;
-	}
-
 	static String resolvedDir(String literal, ConfigManager config) {
 		if (literal.startsWith("{network}")) {
 			literal = config.getTargetName() + File.separator + "sysfiles";
