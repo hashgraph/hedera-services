@@ -162,7 +162,7 @@ class MerkleDiskFsTest {
 				() -> subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir));
 		// and:
 		assertThat(
-				logCaptor.errorLogs(),
+				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Failed to migrate from legacy disk-based file system!")));
 	}
 
