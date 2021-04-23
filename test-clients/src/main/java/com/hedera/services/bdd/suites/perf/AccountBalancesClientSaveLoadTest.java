@@ -21,9 +21,12 @@ package com.hedera.services.bdd.suites.perf;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -61,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -135,7 +139,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 								.maxOpsPerSec(() -> settings.getTps())
 								.maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
 
-						sleepFor(20 * SECOND),
+						sleepFor(10 * SECOND),
 
 						sourcing(() -> runWithProvider(tokensCreate(settings))
 								.lasting(() -> totalTestTokens / ESTIMATED_TOKEN_CREATION_RATE + 10,
@@ -160,13 +164,21 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 				).then(
 						sleepFor(10 * SECOND),
 						withOpContext( (spec, log) -> {
-							log.info("Now get all {} accounts created and save it in spec", totalAccounts);
-							for(int i = totalAccounts - 1; i >=0; i-- ) {
-								var op = getAccountBalance(ACCT_NAME_PREFIX + i)
+							log.info("Now get all {} accounts created and save them", totalAccounts);
+							AccountID acctID = AccountID.getDefaultInstance();
+							for(int i = 1; i <= totalAccounts; i++ ) {
+								String acctName = ACCT_NAME_PREFIX + i;
+								// Make sure the named account was created before query its balances.
+								try {
+									acctID = spec.registry().getAccountID(acctName);
+								} catch (RegistryNotFound e) {
+									log.info(acctName + " was not created successfully.");
+									continue;
+								}
+								var op = getAccountBalance(HapiPropertySource.asAccountString(acctID))
 										.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
 										.persists(true)
 										.noLogging();
-
 								allRunFor(spec, op);
 							}
 						}),
@@ -188,7 +200,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 		log.info("Total accounts: {}", totalAccounts);
 		log.info("Total tokens: {}", totalTestTokens);
 
-		AtomicInteger createdSofar = new AtomicInteger(0);
+		AtomicInteger moreToCreate = new AtomicInteger(totalAccounts );
 
 		return spec -> new OpProvider() {
 			@Override
@@ -200,18 +212,23 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 			@Override
 			public Optional<HapiSpecOperation> get() {
 				int next;
-				if ((next = createdSofar.getAndIncrement()) >= totalAccounts) {
+				next = moreToCreate.getAndDecrement();
+				if (next <= 0) {
 					return Optional.empty();
 				}
 
-				var op =  cryptoCreate(String.format("%s%s",ACCT_NAME_PREFIX , next))
-						.balance((long)(r.nextInt((int)ONE_HBAR) * 1000 + MIN_ACCOUNT_BALANCE))
+				var op =  cryptoCreate(String.format("%s%d",ACCT_NAME_PREFIX , next))
+						.balance((long)(r.nextInt((int)ONE_HBAR) + MIN_ACCOUNT_BALANCE))
 						.key(GENESIS)
 						.fee(ONE_HUNDRED_HBARS)
 						.withRecharging()
 						.rechargeWindow(30)
+						.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK, INSUFFICIENT_TX_FEE)
+						.hasKnownStatusFrom(SUCCESS,INVALID_SIGNATURE)
 						.noLogging()
 						.deferStatusResolution();
+
 				return Optional.of(op);
 			}
 		};
@@ -230,7 +247,8 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 			@Override
 			public Optional<HapiSpecOperation> get() {
 				int next;
-				if ((next = createdSofar.getAndIncrement()) >= totalTestTokens) {
+				next = createdSofar.getAndIncrement();
+				if (next >= totalTestTokens) {
 					return Optional.empty();
 				}
 				var payingTreasury = String.format(ACCT_NAME_PREFIX + next);
