@@ -1453,11 +1453,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
-          cron: "35 21 * * *"
+          cron: "35 5 * * *"
           filters:
             branches:
               only:
-                - mark-diskFs-missing-as-warn
+                - master
     jobs:
       - build-platform-and-services
       - update-start-up-key:
@@ -2653,10 +2653,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
