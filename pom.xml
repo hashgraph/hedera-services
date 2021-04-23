@@ -3,7 +3,7 @@
 
   <groupId>com.hedera.hashgraph</groupId>
   <artifactId>hedera-services</artifactId>
-  <version>0.13.0-rc.3-SNAPSHOT</version>
+  <version>0.13.1-SNAPSHOT</version>
   <description>
     Hedera Services (crypto, file, contract, consensus) on the Platform
   </description>

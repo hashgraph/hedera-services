@@ -47,6 +47,7 @@ import static com.hedera.services.txns.schedule.SigMapScheduleClassifierTest.pre
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -59,6 +60,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 public class ScheduleSignTransitionLogicTest {
     private ScheduleStore store;
@@ -145,19 +147,35 @@ public class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    public void relaysAlreadyExecuted() throws InvalidProtocolBufferException {
+    public void abortsImmediatelyIfScheduleIsExecuted() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
-        given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-        given(executor.doProcess(scheduleId)).willReturn(SCHEDULE_ALREADY_EXECUTED);
+        given(schedule.isExecuted()).willReturn(true);
 
         // when:
         subject.doStateTransition();
 
         // and:
-        verify(txnCtx).setScheduledTxnId(scheduledTxnId);
-        verify(executor).doProcess(scheduleId);
+		verifyNoInteractions(classifier);
+        verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
+        verify(executor, never()).doProcess(scheduleId);
         verify(txnCtx).setStatus(SCHEDULE_ALREADY_EXECUTED);
+    }
+
+    @Test
+    public void abortsImmediatelyIfScheduleIsDeleted() throws InvalidProtocolBufferException {
+        givenValidTxnCtx();
+        given(store.get(scheduleId)).willReturn(schedule);
+        given(schedule.isDeleted()).willReturn(true);
+
+        // when:
+        subject.doStateTransition();
+
+        // and:
+        verifyNoInteractions(classifier);
+        verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
+        verify(executor, never()).doProcess(scheduleId);
+        verify(txnCtx).setStatus(SCHEDULE_ALREADY_DELETED);
     }
 
     @Test
@@ -195,6 +213,7 @@ public class ScheduleSignTransitionLogicTest {
     @Test
     public void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
+        given(store.get(scheduleId)).willReturn(schedule);
         given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
                 .willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
