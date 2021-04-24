@@ -1525,11 +1525,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "50 6 * * *"
+          cron: "30 1 * * *"
           filters:
             branches:
               only:
-                - release/0.13
+                - run-accountbalances-validation-repeatedly
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1931,6 +1931,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
+                  - run-accountbalances-validation-repeatedly
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
@@ -2207,7 +2208,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 01000-D-acctBalances-valid-enhancement
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
