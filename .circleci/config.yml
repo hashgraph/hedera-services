@@ -1661,6 +1661,30 @@ workflows:
             - attach_workspace:
                 at: /
 
+
+  GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
+    triggers:
+      - schedule:
+          cron: "30 8 * * 3,0"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_6C/Performance
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-HTS-Restart-Performance-6N-6C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Comp-Reconnect-4N-1C:
     triggers:
       - schedule:
