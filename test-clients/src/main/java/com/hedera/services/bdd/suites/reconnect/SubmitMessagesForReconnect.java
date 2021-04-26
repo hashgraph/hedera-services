@@ -69,8 +69,6 @@ public class SubmitMessagesForReconnect extends HapiApiSuite {
 						.message(randomUtf8Bytes(100))
 						.logging()
 						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-						.hasKnownStatusFrom(SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE
-								,UNKNOWN,TRANSACTION_EXPIRED, MESSAGE_SIZE_TOO_LARGE)
 						.deferStatusResolution()
 		};
 
