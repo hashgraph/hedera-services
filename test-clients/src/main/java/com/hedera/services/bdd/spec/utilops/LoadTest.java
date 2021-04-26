@@ -143,6 +143,8 @@ public class LoadTest extends HapiApiSuite {
 						? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
 				.setHCSSubmitMessageSizeVar(hcsSubmitMessageSizeVar.isPresent()
 						? hcsSubmitMessageSizeVar::getAsInt	: settings::getHcsSubmitMessageSizeVar)
+				.setInitialBalance(initialBalance.isPresent()
+						? initialBalance::getAsLong	: settings::getInitialBalance)
 				.lasting(
 						(testDurationMinutes.isPresent() ?
 								LoadTest::getTestDurationMinutes :

@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 
 import static com.google.common.base.Stopwatch.createStarted;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_MILLION_HBARS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -78,6 +79,7 @@ public class RunLoadTest extends UtilOp {
 	private IntSupplier durationTokenTransfer = () -> DEFAULT_DURATION_TOKEN_TRANSFER;
 	private IntSupplier totalTokenAssociations = () -> DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
 	private IntSupplier totalScheduled = () -> DEFAULT_TOTAL_SCHEDULED;
+	private LongSupplier initialBalance = () -> ONE_MILLION_HBARS;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
 
@@ -160,6 +162,11 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest setHCSSubmitMessageSizeVar(IntSupplier submitMessageSizeVar) {
 		this.hcsSubmitMessageSizeVar = submitMessageSizeVar;
+		return this;
+	}
+
+	public RunLoadTest setInitialBalance(LongSupplier initialBalance) {
+		this.initialBalance = initialBalance;
 		return this;
 	}
 
