@@ -28,7 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
-import javafx.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -113,7 +113,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	public void addNewEntities() {
 		for (var expiringEntity : txnCtx.expiringEntities()) {
 			expiries.trackEntity(
-					new Pair<>(expiringEntity.id().num(), expiringEntity.consumer()),
+					Pair.of(expiringEntity.id().num(), expiringEntity.consumer()),
 					expiringEntity.expiry());
 		}
 	}
