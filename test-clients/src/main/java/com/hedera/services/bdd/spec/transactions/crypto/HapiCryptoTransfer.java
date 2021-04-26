@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,6 +50,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
@@ -69,12 +71,14 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = null;
 	private static final Function<HapiApiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
-	private static final int DEFAULT_TOKEN_TRANSFER_USAGE_MULTIPLIER = 60;
 
 	private boolean logResolvedStatus = false;
+	private boolean breakNetZeroTokenChangeInvariant = false;
 
-	private Function<HapiApiSpec, TransferList> hbarOnlyProvider = MISSING_HBAR_ONLY_PROVIDER;
 	private List<TokenMovement> tokenAwareProviders = MISSING_TOKEN_AWARE_PROVIDERS;
+	private Function<HapiApiSpec, TransferList> hbarOnlyProvider = MISSING_HBAR_ONLY_PROVIDER;
+	private Optional<String> tokenWithEmptyTransferAmounts = Optional.empty();
+	private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -83,6 +87,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	public HapiCryptoTransfer showingResolvedStatus() {
 		logResolvedStatus = true;
+		return this;
+	}
+
+	public HapiCryptoTransfer breakingNetZeroInvariant() {
+		breakNetZeroTokenChangeInvariant = true;
 		return this;
 	}
 
@@ -123,6 +132,17 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	public HapiCryptoTransfer(TokenMovement... sources) {
 		this.tokenAwareProviders = List.of(sources);
+	}
+
+
+	public HapiCryptoTransfer withEmptyTokenTransfers(String token) {
+		tokenWithEmptyTransferAmounts = Optional.of(token);
+		return this;
+	}
+
+	public HapiCryptoTransfer appendingTokenFromTo(String token, String from, String to, long amount) {
+		appendedFromTo = Optional.of(Pair.of(new String[] { token, from, to }, amount));
+		return this;
 	}
 
 	@Override
@@ -170,10 +190,49 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 										b.addTokenTransfers(scopedXfers);
 									}
 								}
+								misconfigureIfRequested(b, spec);
 							}
 						}
 				);
 		return builder -> builder.setCryptoTransfer(opBody);
+	}
+
+	private void misconfigureIfRequested(CryptoTransferTransactionBody.Builder b, HapiApiSpec spec) {
+		if (tokenWithEmptyTransferAmounts.isPresent()) {
+			var empty = tokenWithEmptyTransferAmounts.get();
+			var emptyToken = TxnUtils.asTokenId(empty, spec);
+			var emptyList = TokenTransferList.newBuilder()
+					.setToken(emptyToken);
+			b.addTokenTransfers(emptyList);
+		}
+		if (appendedFromTo.isPresent()) {
+			var extra = appendedFromTo.get();
+			var involved = extra.getLeft();
+			var token = TxnUtils.asTokenId(involved[0], spec);
+			var sender = TxnUtils.asId(involved[1], spec);
+			var receiver = TxnUtils.asId(involved[2], spec);
+			var amount = extra.getRight();
+			var appendList = TokenTransferList.newBuilder()
+					.setToken(token)
+					.addTransfers(AccountAmount.newBuilder()
+							.setAccountID(sender)
+							.setAmount(-amount))
+					.addTransfers(AccountAmount.newBuilder()
+							.setAccountID(receiver)
+							.setAmount(+amount));
+			b.addTokenTransfers(appendList);
+		}
+		if (breakNetZeroTokenChangeInvariant && b.getTokenTransfersCount() > 0) {
+			for (int i = 0, n = b.getTokenTransfersCount(); i < n; i++) {
+				var changesHere = b.getTokenTransfersBuilder(i);
+				if (changesHere.getTransfersCount() > 0) {
+					var mutated = changesHere.getTransfersBuilder(0);
+					mutated.setAmount(mutated.getAmount() + 1_234);
+					b.setTokenTransfers(i, changesHere);
+					break;
+				}
+			}
+		}
 	}
 
 	@Override
