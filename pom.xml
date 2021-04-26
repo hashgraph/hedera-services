@@ -3,7 +3,7 @@
 
   <groupId>com.hedera.hashgraph</groupId>
   <artifactId>hedera-services</artifactId>
-  <version>0.13.2-SNAPSHOT</version>
+  <version>0.13.3-SNAPSHOT</version>
   <description>
     Hedera Services (crypto, file, contract, consensus) on the Platform
   </description>
@@ -180,7 +180,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <project.build.outputTimestamp>2021-04-23T17:18:13Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2021-04-23T20:11:44Z</project.build.outputTimestamp>
   </properties>
 
   <modules>
