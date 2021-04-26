@@ -1683,11 +1683,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "5 7 * * *"
+          cron: "45 19 * * *"
           filters:
             branches:
               only:
-                - master
+                - 1270-M-additional-reconnect-scenarios
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1703,22 +1703,45 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-MultiNode-Reconnect-15N-1C:
+  GCP-Daily-Services-Global-3NReconnect-15N-1C:
     triggers:
       - schedule:
-          cron: "45 15 * * *"
+          cron: "45 19 * * *"
           filters:
             branches:
               only:
-                - master
+                - 1270-M-additional-reconnect-scenarios
     jobs:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/15N_1C/MultiNodeReconnect
+          result_path: results/15N_1C/Global3NReconnect
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-MultiNodeReconnect-15N-1C"
+          workflow-name: "GCP-Daily-Services-Global-3NReconnect-15N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-3NReconnect-15N-1C:
+    triggers:
+      - schedule:
+          cron: "50 19 * * *"
+          filters:
+            branches:
+              only:
+                - 1270-M-additional-reconnect-scenarios
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/15N_1C/3NReconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-3NReconnect-15N-1C"
           requires:
             - build-platform-and-services
           pre-steps:
