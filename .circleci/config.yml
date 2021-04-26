@@ -1314,12 +1314,12 @@ workflows:
           filters:
             branches:
               only:
-                - disable-1270-M-additional-reconnect-scenarios
+                - developers-branch-to-run-tests
       - jrs-regression:
           context: Slack
           result_path: results/Personal
           config_type: "personal"
-          workflow-name: "GCP-Personal-Neeha-4N"
+          workflow-name: "GCP-Personal-DevName"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1683,11 +1683,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "45 19 * * *"
+          cron: "5 7 * * *"
           filters:
             branches:
               only:
-                - 1270-M-additional-reconnect-scenarios
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1706,11 +1706,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-1C:
     triggers:
       - schedule:
-          cron: "45 19 * * *"
+          cron: "15 7 * * *"
           filters:
             branches:
               only:
-                - 1270-M-additional-reconnect-scenarios
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1729,11 +1729,11 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-1C:
     triggers:
       - schedule:
-          cron: "50 19 * * *"
+          cron: "15 8 * * *"
           filters:
             branches:
               only:
-                - 1270-M-additional-reconnect-scenarios
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2296,7 +2296,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 1270-D-additional-reconnect-scenarios;
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2718,10 +2718,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""

@@ -118,7 +118,6 @@ public class CryptoTransferLoadTest extends LoadTest {
 						reduceFeeFor(CryptoTransfer, 2L, 3L, 3L),
 						cryptoCreate("sender")
 								.balance((balance) -> settings.getInitialBalance())
-								.logging()
 								.withRecharging()
 								.key(GENESIS)
 								.rechargeWindow(3)

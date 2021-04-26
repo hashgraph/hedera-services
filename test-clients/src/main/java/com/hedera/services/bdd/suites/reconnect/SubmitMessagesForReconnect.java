@@ -67,7 +67,7 @@ public class SubmitMessagesForReconnect extends HapiApiSuite {
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
 				submitMessageTo("0.0.30000")
 						.message(randomUtf8Bytes(100))
-						.logging()
+						.noLogging()
 						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 						.deferStatusResolution()
 		};

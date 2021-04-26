@@ -255,7 +255,6 @@ public class SuiteRunner {
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
 		put("CryptoCreatePerfSuite", aof(new CryptoCreatePerfSuite()));
 		put("CreateTopicPerfSuite", aof(new CreateTopicPerfSuite()));
-		put("TokenCreatePerfSuite", aof(new TokenCreatePerfSuite()));
 		put("MixedOpsMemoPerfSuite", aof(new MixedOpsMemoPerfSuite()));
 		put("FileContractMemoPerfSuite", aof(new FileContractMemoPerfSuite()));
 		/* Functional tests - RECONNECT */
