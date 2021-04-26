@@ -48,7 +48,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_MEMO_LENGTH = 25;
 	public static final int DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION = 60; // in seconds
 	public static final int DEFAULT_DURATION_TOKEN_TRANSFER = 60; // in seconds
-	public static final long DEFAULT_INITIAL_BALANCE = ONE_MILLION_HBARS; // in seconds
+	public static final long DEFAULT_INITIAL_BALANCE = ONE_MILLION_HBARS;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
