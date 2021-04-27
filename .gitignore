@@ -9,6 +9,10 @@
 # Yahcli
 test-clients/yahcli/assets/yahcli.jar
 test-clients/yahcli/localhost/sysfiles
+test-clients/yahcli/localhost/accounts
+test-clients/yahcli/localhost/tokens
+test-clients/yahcli/localhost/topics
+test-clients/yahcli/cost-snapshots
 
 # VIM
 *.sw*
@@ -24,6 +28,7 @@ compose-network/
 # Logs/crash data
 logs/
 test-clients/devops-utils/validation-scenarios/logs/
+test-clients/cost-snapshots
 *.log
 hs_err_pid*
 
@@ -45,6 +50,7 @@ hs_err_pid*
 !hedera-node/src/test/resources/legacyAccounts.json
 !hedera-node/src/test/resources/bootstrap/*.json
 !hedera-node/src/main/resources/*.json
+!hedera-node/configuration/**/*.json
 !test-clients/src/main/resource/FeeSchedule.json
 !test-clients/src/main/resource/testSystemFiles/*.json
 !test-clients/yahcli/run/test/local/assets/*.json
