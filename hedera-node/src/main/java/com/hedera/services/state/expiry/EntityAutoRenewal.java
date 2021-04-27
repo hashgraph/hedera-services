@@ -37,16 +37,29 @@ public class EntityAutoRenewal {
 	}
 
 	public void execute(Instant consensusTime) {
-		AccountID accountID = AccountID.newBuilder()
+		AccountID.Builder accountBuilder = AccountID.newBuilder()
 				.setShardNum(0L)
-				.setRealmNum(0L)
+				.setRealmNum(0L);
+		AccountID accountID = accountBuilder
 				.setAccountNum(1001L)
 				.build();
-		ctx.backingAccounts().remove(accountID);
-		Instant actionTime = consensusTime.plusNanos(1L);
-		var record = EntityRemovalRecord.generatedFor(accountID, actionTime, accountID);
-		var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
-		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
-		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+		AccountID feeCollector = accountBuilder
+				.setAccountNum(98L)
+				.build();
+		var backingAccounts = ctx.backingAccounts();
+//		backingAccounts.remove(accountID);
+		if (backingAccounts.contains(accountID)) {
+			var merkleAccount = backingAccounts.getRef(accountID);
+			long autoRenewSecs = merkleAccount.getAutoRenewSecs();
+			long expiry = merkleAccount.getExpiry();
+			long newExpiry = expiry + autoRenewSecs;
+			merkleAccount.setExpiry(newExpiry);
+			Instant actionTime = consensusTime.plusNanos(1L);
+//			var record = EntityRemovalRecord.generatedFor(accountID, actionTime, accountID);
+			var record = AutoRenewalRecord.generatedFor(accountID, actionTime, accountID, 0L, newExpiry, feeCollector);
+			var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
+			ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
+			ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+		}
 	}
 }
