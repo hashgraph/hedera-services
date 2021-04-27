@@ -193,6 +193,7 @@ import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.AccountsExporter;
@@ -436,6 +437,7 @@ public class ServicesContext {
 	private ProcessLogic logic;
 	private QueryFeeCheck queryFeeCheck;
 	private HederaNumbers hederaNums;
+	private EntityAutoRenewal entityAutoRenewal;
 	private ExpiryManager expiries;
 	private FeeCalculator fees;
 	private FeeExemptions exemptions;
@@ -1421,6 +1423,13 @@ public class ServicesContext {
 			scheduleStore().setHederaLedger(ledger);
 		}
 		return ledger;
+	}
+
+	public EntityAutoRenewal entityAutoRenewal() {
+		if (entityAutoRenewal == null) {
+			entityAutoRenewal = new EntityAutoRenewal(this);
+		}
+		return entityAutoRenewal;
 	}
 
 	public ExpiryManager expiries() {

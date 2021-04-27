@@ -46,6 +46,7 @@ import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -103,6 +104,9 @@ public class AwareProcessLogic implements ProcessLogic {
 			if (ctx.txnCtx().triggeredTxn() != null) {
 				TxnAccessor scopedAccessor = ctx.txnCtx().triggeredTxn();
 				txnManager.process(scopedAccessor, consensusTime, submittingMember, ctx);
+			}
+			if (accessor.getFunction().equals(CryptoTransfer)) {
+				ctx.entityAutoRenewal().execute(consensusTime);
 			}
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
