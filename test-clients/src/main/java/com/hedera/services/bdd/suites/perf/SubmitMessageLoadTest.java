@@ -148,7 +148,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "4000",
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0")),
 						reduceFeeFor(ConsensusSubmitMessage, 2L, 3L, 3L),
-						cryptoCreate("sender").balance(settings.getInitialBalance())
+						cryptoCreate("sender").balance(ignore -> settings.getInitialBalance())
 								.withRecharging()
 								.rechargeWindow(3)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
