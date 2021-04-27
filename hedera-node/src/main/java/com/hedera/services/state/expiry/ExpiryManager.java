@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
-import javafx.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -95,7 +95,8 @@ public class ExpiryManager {
 
 		var expiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
 		schedules.forEach((id, schedule) -> {
-			var pair = new Pair<Long, Consumer<EntityId>>(id.getNum(), scheduleStore::expire);
+			Consumer<EntityId> consumer = scheduleStore::expire;
+			var pair = Pair.of(id.getNum(), consumer);
 			expiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
 		});
 
