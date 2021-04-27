@@ -42,9 +42,11 @@ import java.util.EnumMap;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,11 +55,8 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class DeterministicThrottlingTest {
-	int n = 2;
-	int aTps = 6, bTps = 12;
-	DeterministicThrottle a = DeterministicThrottle.withTps(aTps);
-	DeterministicThrottle b = DeterministicThrottle.withTps(bTps);
-	Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
+	private int n = 2;
+	private Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
 
 	@Inject
 	private LogCaptor logCaptor;
@@ -90,6 +89,21 @@ class DeterministicThrottlingTest {
 		assertFalse(ans);
 		assertEquals( 2500 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
 		assertEquals( BucketThrottle.capacityUnitsPerTxn(), bNow.used());
+	}
+
+	@Test
+	void logsErrorOnBadBucketButDoesntFail() throws IOException {
+		// given:
+		var defs = SerdeUtils.pojoDefs("bootstrap/insufficient-capacity-throttles.json");
+
+		// expect:
+		assertDoesNotThrow(() -> subject.rebuildFor(defs));
+		// and:
+		assertEquals(1, subject.activeThrottlesFor(CryptoGetAccountBalance).size());
+		// and:
+		assertThat(logCaptor.errorLogs(),
+				contains("When constructing bucket 'A' from state: NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION :: " +
+						"Bucket A contains an unsatisfiable milliOpsPerSec with 2 nodes!"));
 	}
 
 	@Test
@@ -147,7 +161,7 @@ class DeterministicThrottlingTest {
 	@Test
 	public void shouldAllowWithEnoughCapacity() {
 		// setup:
-		subject.functionReqs = reqsManager();
+		subject.setFunctionReqs(reqsManager());
 
 		given(manager.allReqsMetAt(consensusNow)).willReturn(true);
 
