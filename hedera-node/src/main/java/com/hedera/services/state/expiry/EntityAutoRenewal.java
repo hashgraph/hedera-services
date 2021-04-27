@@ -61,5 +61,6 @@ public class EntityAutoRenewal {
 			ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
 			ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
 		}
+		backingAccounts.flushMutableRefs();
 	}
 }
