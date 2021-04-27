@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
 import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
@@ -65,6 +66,7 @@ import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
+import com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect;
 import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
@@ -268,6 +270,7 @@ public class SuiteRunner {
 		put("ValidateFeeScheduleStateAfterReconnect", aof(new ValidateFeeScheduleStateAfterReconnect()));
 		put("ValidateExchangeRateStateAfterReconnect", aof(new ValidateExchangeRateStateAfterReconnect()));
 		put("UpdateAllProtectedFilesDuringReconnect", aof(new UpdateAllProtectedFilesDuringReconnect()));
+		put("AutoRenewEntitiesForReconnect", aof( new AutoRenewEntitiesForReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
@@ -319,6 +322,8 @@ public class SuiteRunner {
 		put("SmartContractInlineAssemblyCheck", aof(new SmartContractInlineAssemblySpec()));
 		put("SmartContractSelfDestructSpec", aof(new SmartContractSelfDestructSpec()));
 		put("SmartContractPaySpec", aof(new SmartContractPaySpec()));
+		/* Functional tests - AUTORENEW */
+		put("AccountAutoRenewalSuite", aof(new AccountAutoRenewalSuite()));
 		/* Functional tests - MIXED (record emphasis) */
 		put("ThresholdRecordCreationSpecs", aof(new RecordCreationSuite()));
 		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));
