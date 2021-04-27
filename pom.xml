@@ -151,7 +151,7 @@
     <maven-surefire.version>2.22.2</maven-surefire.version>
     <maven-dependency.version>3.1.1</maven-dependency.version>
     <maven-versions.version>2.8.1</maven-versions.version>
-    <commons-io.version>2.1</commons-io.version>
+    <commons-io.version>2.7</commons-io.version>
 
     <!-- Dependency properties -->
     <commons-io.version>2.1</commons-io.version>
