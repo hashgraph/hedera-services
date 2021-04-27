@@ -47,13 +47,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.swirlds.common.AddressBook;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -64,11 +65,14 @@ import static com.swirlds.common.Address.ipString;
 
 public class HfsSystemFilesManager implements SystemFilesManager {
 	private static final Logger log = LogManager.getLogger(HfsSystemFilesManager.class);
-	private static final String PROPERTIES_TAG = "properties";
-	private static final String PERMISSIONS_TAG = "API permissions";
-	private static final String EXCHANGE_RATES_TAG = "exchange rates";
-	private static final String FEE_SCHEDULES_TAG = "fee schedules";
-	private static final String THROTTLE_DEFINITIONS_TAG = "throttle definitions";
+	private static final String PROPERTIES_SYS_FILE_NAME = "properties";
+	private static final String PERMISSIONS_SYS_FILE_NAME = "API permissions";
+	private static final String EXCHANGE_RATES_SYS_FILE_NAME = "exchange rates";
+	private static final String FEE_SCHEDULES_SYS_FILE_NAME = "fee schedules";
+	private static final String THROTTLE_DEFINITIONS_SYS_FILE_NAME = "throttle definitions";
+
+	private String propsSysFileDefaultResource = "application.properties";
+	private String permsSysFileDefaultResource = "api-permission.properties";
 
 	private JKey systemKey;
 	private boolean filesLoaded = false;
@@ -77,7 +81,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private final PropertySource properties;
 	private final TieredHederaFs hfs;
 	private final Supplier<JKey> keySupplier;
-	private SysFileCallbacks callbacks;
+	private final SysFileCallbacks callbacks;
 
 	public HfsSystemFilesManager(
 			AddressBook currentBook,
@@ -109,8 +113,9 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	public void loadApiPermissions() {
 		loadConfigWithJutilPropsFallback(
 				fileNumbers.apiPermissions(),
-				PERMISSIONS_TAG,
+				PERMISSIONS_SYS_FILE_NAME,
 				"bootstrap.hapiPermissions.path",
+				permsSysFileDefaultResource,
 				callbacks.permissionsCb());
 	}
 
@@ -118,8 +123,9 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	public void loadApplicationProperties() {
 		loadConfigWithJutilPropsFallback(
 				fileNumbers.applicationProperties(),
-				PROPERTIES_TAG,
+				PROPERTIES_SYS_FILE_NAME,
 				"bootstrap.networkProperties.path",
+				propsSysFileDefaultResource,
 				callbacks.propertiesCb());
 	}
 
@@ -127,7 +133,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	public void loadExchangeRates() {
 		loadProtoWithSupplierFallback(
 				fileNumbers.exchangeRates(),
-				EXCHANGE_RATES_TAG,
+				EXCHANGE_RATES_SYS_FILE_NAME,
 				callbacks.exchangeRatesCb(),
 				ExchangeRateSet::parseFrom,
 				() -> defaultRates().toByteArray());
@@ -137,7 +143,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	public void loadFeeSchedules() {
 		loadProtoWithSupplierFallback(
 				fileNumbers.feeSchedules(),
-				FEE_SCHEDULES_TAG,
+				FEE_SCHEDULES_SYS_FILE_NAME,
 				callbacks.feeSchedulesCb(),
 				CurrentAndNextFeeSchedule::parseFrom,
 				() -> defaultSchedules().toByteArray());
@@ -147,7 +153,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	public void loadThrottleDefinitions() {
 		loadProtoWithSupplierFallback(
 				fileNumbers.throttleDefinitions(),
-				THROTTLE_DEFINITIONS_TAG,
+				THROTTLE_DEFINITIONS_SYS_FILE_NAME,
 				callbacks.throttlesCb(),
 				ThrottleDefinitions::parseFrom,
 				() -> defaultThrottles().toByteArray());
@@ -184,6 +190,11 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	@FunctionalInterface
 	private interface GrpcParser<T> {
 		T parseFrom(byte[] data) throws InvalidProtocolBufferException;
+	}
+
+	@FunctionalInterface
+	private interface ThrowingStreamProvider {
+		InputStream get() throws IOException;
 	}
 
 	private <T> T loadFrom(FileID disFid, String resource, GrpcParser<T> parser) {
@@ -235,46 +246,92 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private void loadConfigWithJutilPropsFallback(
-			long disNum,
-			String resource,
-			String jutilLocProp,
+			long sysFileNum,
+			String sysFileName,
+			String externalLocProp,
+			String defaultResource,
 			Consumer<ServicesConfigurationList> onSuccess
 	) {
-		var disFid = fileNumbers.toFid(disNum);
-		if (!hfs.exists(disFid)) {
+		final var sysFileFid = fileNumbers.toFid(sysFileNum);
+		if (!hfs.exists(sysFileFid)) {
 			bootstrapInto(
-					disFid,
-					resource,
+					sysFileFid,
+					sysFileName,
 					() -> asSerializedConfig(
-							resource,
-							properties.getStringProperty(jutilLocProp)));
+							sysFileName,
+							properties.getStringProperty(externalLocProp),
+							defaultResource,
+							errorLogIfAnyForFailureToLoad(sysFileName)));
 		}
-		var config = loadFrom(disFid, resource, ServicesConfigurationList::parseFrom);
+		final var config = loadFrom(sysFileFid, sysFileName, ServicesConfigurationList::parseFrom);
 		onSuccess.accept(config);
 	}
 
-	private byte[] asSerializedConfig(String resource, String propsLoc) throws IOException {
-		try (InputStream fin = Files.newInputStream(Paths.get(propsLoc))) {
-			var jutilProps = new Properties();
-			jutilProps.load(fin);
-			var config = ServicesConfigurationList.newBuilder();
-			var sb = new StringBuilder(String.format("Bootstrapping network %s from '%s':", resource, propsLoc));
-			jutilProps.entrySet()
-					.stream()
-					.sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
-					.peek(entry -> sb.append(String.format(
-							"\n  %s=%s",
-							String.valueOf(entry.getKey()),
-							String.valueOf(entry.getValue()))))
-					.forEach(entry ->
-							config.addNameValue(Setting.newBuilder()
-									.setName(String.valueOf(entry.getKey()))
-									.setValue(String.valueOf(entry.getValue()))));
+	private String errorLogIfAnyForFailureToLoad(String sysFileName) {
+		return PERMISSIONS_SYS_FILE_NAME.equals(sysFileName)
+				? "Could not bootstrap permissions, only superusers will be able to perform HAPI operations!"
+				: "Could not bootstrap properties, likely benign but should resources should be double-checked!";
+	}
+
+	private byte[] asSerializedConfig(
+			String sysFileName,
+			String externalPropsLoc,
+			String defaultResource,
+			String errorLog
+	) {
+		final var externalSrcMsg = String.format("Bootstrapping %s from '%s':", sysFileName, externalPropsLoc);
+		final var resourceSrcMsg = String.format("Bootstrapping %s from resource '%s':", sysFileName, defaultResource);
+
+		return configBytesFrom(
+				() -> Files.newInputStream(Paths.get(externalPropsLoc)),
+				externalSrcMsg
+		)
+				.or(() ->
+						configBytesFrom(
+								() -> {
+									var in = HfsSystemFilesManager.class.getClassLoader()
+											.getResourceAsStream(defaultResource);
+									if (in == null) {
+										throw new IOException("Could not load resource '" + defaultResource + "'");
+									}
+									return in;
+								},
+								resourceSrcMsg
+						)
+				).or(() -> {
+							log.error(errorLog);
+							return Optional.of(ServicesConfigurationList.getDefaultInstance().toByteArray());
+						}
+				).get();
+	}
+
+	private Optional<byte[]> configBytesFrom(ThrowingStreamProvider inProvider, String baseMsg) {
+		try (var in = inProvider.get()) {
+			final var jutilProps = new Properties();
+			jutilProps.load(in);
+			final var config = ServicesConfigurationList.newBuilder();
+			final var sb = new StringBuilder(baseMsg);
+			mapOrderedJutilProps(jutilProps, sb, config);
 			log.info(sb.toString());
-			return config.build().toByteArray();
-		} catch (NoSuchFileException ignore) {
-			return ServicesConfigurationList.getDefaultInstance().toByteArray();
+			return Optional.of(config.build().toByteArray());
+		} catch (IOException ignore) {
+			return Optional.empty();
 		}
+	}
+
+	static void mapOrderedJutilProps(Properties jutilProps, StringBuilder intoSb,
+			ServicesConfigurationList.Builder config) {
+		jutilProps.entrySet()
+				.stream()
+				.sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
+				.peek(entry -> intoSb.append(String.format(
+						"\n  %s=%s",
+						String.valueOf(entry.getKey()),
+						String.valueOf(entry.getValue()))))
+				.forEach(entry ->
+						config.addNameValue(Setting.newBuilder()
+								.setName(String.valueOf(entry.getKey()))
+								.setValue(String.valueOf(entry.getValue()))));
 	}
 
 	private HFileMeta systemFileInfo() {
@@ -295,7 +352,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		var basics = com.hederahashgraph.api.proto.java.NodeAddressBook.newBuilder();
 		LongStream.range(0, currentBook.getSize())
 				.mapToObj(currentBook::getAddress)
-				.map(address ->	basicBioEntryFrom(address).build())
+				.map(address -> basicBioEntryFrom(address).build())
 				.forEach(basics::addNodeAddress);
 		return basics.build().toByteArray();
 	}
@@ -303,7 +360,6 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private NodeAddress.Builder basicBioEntryFrom(Address address) {
 		var builder = NodeAddress.newBuilder()
 				.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
-				.setPortno(address.getPortExternalIpv4())
 				.setRSAPubKey(MiscUtils.commonsBytesToHex(address.getSigPublicKey().getEncoded()))
 				.setNodeId(address.getId())
 				.setStake(address.getStake())
@@ -361,5 +417,13 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 			systemKey = keySupplier.get();
 		}
 		return systemKey;
+	}
+
+	void setPermsSysFileDefaultResource(String permsSysFileDefaultResource) {
+		this.permsSysFileDefaultResource = permsSysFileDefaultResource;
+	}
+
+	public void setPropsSysFileDefaultResource(String propsSysFileDefaultResource) {
+		this.propsSysFileDefaultResource = propsSysFileDefaultResource;
 	}
 }

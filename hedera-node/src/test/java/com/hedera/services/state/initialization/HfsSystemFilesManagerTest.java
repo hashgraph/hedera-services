@@ -30,6 +30,9 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -48,7 +51,9 @@ import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -68,19 +73,23 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
+@ExtendWith(LogCaptureExtension.class)
 class HfsSystemFilesManagerTest {
-	private String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
-	private String bootstrapJutilPropsLoc = "src/test/resources/bootstrap.properties";
-	private String bootstrapJutilPermsLoc = "src/test/resources/permission-bootstrap.properties";
+	private final String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
+	private final String bootstrapJutilPropsLoc = "src/test/resources/bootstrap.properties";
+	private final String bootstrapJutilPermsLoc = "src/test/resources/permission-bootstrap.properties";
+	private final String nonexistentBootstrapJutilLoc = "nowhere";
 
-	private byte[] nonsense = "NONSENSE".getBytes();
-	private ServicesConfigurationList fromState = ServicesConfigurationList.newBuilder()
+	private final byte[] nonsense = "NONSENSE".getBytes();
+	private final ServicesConfigurationList fromState = ServicesConfigurationList.newBuilder()
 			.addNameValue(Setting.newBuilder()
 					.setName("stateName")
 					.setValue("stateValue"))
 			.build();
-	private ServicesConfigurationList fromBootstrapFile = ServicesConfigurationList.newBuilder()
+	private final ServicesConfigurationList fromBootstrapFile = ServicesConfigurationList.newBuilder()
 			.addNameValue(Setting.newBuilder()
 					.setName("bootstrapNameA")
 					.setValue("bootstrapValueA"))
@@ -88,46 +97,47 @@ class HfsSystemFilesManagerTest {
 					.setName("bootstrapNameB")
 					.setValue("bootstrapValueB"))
 			.build();
-	private FileID bookId = expectedFid(101);
-	private FileID detailsId = expectedFid(102);
-	private FileID appPropsId = expectedFid(121);
-	private FileID apiPermsId = expectedFid(122);
-	private FileID throttlesId = expectedFid(123);
-	private FileID schedulesId = expectedFid(111);
-	private FileID ratesId = expectedFid(112);
+	private final FileID bookId = expectedFid(101);
+	private final FileID detailsId = expectedFid(102);
+	private final FileID appPropsId = expectedFid(121);
+	private final FileID apiPermsId = expectedFid(122);
+	private final FileID throttlesId = expectedFid(123);
+	private final FileID schedulesId = expectedFid(111);
+	private final FileID ratesId = expectedFid(112);
 
-	private long expiry = 1_234_567_890L;
-	private long nextExpiry = 2_234_567_890L;
-	private int curCentEquiv = 1;
-	private int curHbarEquiv = 12;
-	private int nxtCentEquiv = 2;
-	private int nxtHbarEquiv = 31;
+	private final long expiry = 1_234_567_890L;
+	private final long nextExpiry = 2_234_567_890L;
+	private final int curCentEquiv = 1;
+	private final int curHbarEquiv = 12;
+	private final int nxtCentEquiv = 2;
+	private final int nxtHbarEquiv = 31;
 	private Map<FileID, byte[]> data;
 	private Map<FileID, HFileMeta> metadata;
 	private JKey masterKey;
-	private byte[] aIpv4, bIpv4;
 	private byte[] aKeyEncoding = "not-really-A-key".getBytes();
 	private byte[] bKeyEncoding = "not-really-B-key".getBytes();
-	private String memoA, memoB;
-	Address addressA, addressB;
-	PublicKey keyA, keyB;
-	AddressBook currentBook;
-	HFileMeta expectedInfo;
-	TieredHederaFs hfs;
-	MerkleDiskFs diskFs;
-	MockFileNumbers fileNumbers;
-	PropertySource properties;
-	Consumer<ServicesConfigurationList> propertiesCb;
-	Consumer<ServicesConfigurationList> permissionsCb;
-	Consumer<ExchangeRateSet> ratesCb;
-	Consumer<ThrottleDefinitions> throttlesCb;
-	Consumer<CurrentAndNextFeeSchedule> schedulesCb;
-	SysFileCallbacks callbacks;
+	private AddressBook currentBook;
+	private HFileMeta expectedInfo;
+	private TieredHederaFs hfs;
+	private MerkleDiskFs diskFs;
+	private MockFileNumbers fileNumbers;
+	private Consumer<ServicesConfigurationList> propertiesCb;
+	private Consumer<ServicesConfigurationList> permissionsCb;
+	private Consumer<ExchangeRateSet> ratesCb;
+	private Consumer<ThrottleDefinitions> throttlesCb;
+	private Consumer<CurrentAndNextFeeSchedule> schedulesCb;
+	private SysFileCallbacks callbacks;
 
-	HfsSystemFilesManager subject;
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private HfsSystemFilesManager subject;
+	private PropertySource properties;
 
 	@BeforeEach
-	private void setup() throws Exception {
+	@SuppressWarnings("unchecked")
+	void setup() throws Exception {
 		masterKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKey();
 		expectedInfo = new HFileMeta(
 				false,
@@ -136,21 +146,21 @@ class HfsSystemFilesManagerTest {
 								.addKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())).build()),
 				expiry);
 
-		keyA = mock(PublicKey.class);
+		PublicKey keyA = mock(PublicKey.class);
 		given(keyA.getEncoded()).willReturn(aKeyEncoding);
-		addressA = mock(Address.class);
-		aIpv4 = new byte[] { (byte) 1, (byte) 2, (byte) 3, (byte) 4 };
-		memoA = "A new memo that is not the node account ID.";
+		Address addressA = mock(Address.class);
+		byte[] aIpv4 = new byte[] { (byte) 1, (byte) 2, (byte) 3, (byte) 4 };
+		String memoA = "A new memo that is not the node account ID.";
 		given(addressA.getId()).willReturn(111L);
 		given(addressA.getMemo()).willReturn(memoA);
 		given(addressA.getAddressExternalIpv4()).willReturn(aIpv4);
 		given(addressA.getSigPublicKey()).willReturn(keyA);
 
-		keyB = mock(PublicKey.class);
+		PublicKey keyB = mock(PublicKey.class);
 		given(keyB.getEncoded()).willReturn(bKeyEncoding);
-		addressB = mock(Address.class);
-		bIpv4 = new byte[] { (byte) 2, (byte) 3, (byte) 4, (byte) 5 };
-		memoB = "0.0.3";
+		Address addressB = mock(Address.class);
+		byte[] bIpv4 = new byte[] { (byte) 2, (byte) 3, (byte) 4, (byte) 5 };
+		String memoB = "0.0.3";
 		given(addressB.getId()).willReturn(222L);
 		given(addressB.getMemo()).willReturn(memoB);
 		given(addressB.getAddressExternalIpv4()).willReturn(bIpv4);
@@ -174,28 +184,17 @@ class HfsSystemFilesManagerTest {
 		given(diskFs.contains(fileNumbers.toFid(111))).willReturn(false);
 
 		properties = mock(PropertySource.class);
-		given(properties.getStringProperty("bootstrap.hapiPermissions.path"))
-				.willReturn(bootstrapJutilPermsLoc);
-		given(properties.getStringProperty("bootstrap.networkProperties.path"))
-				.willReturn(bootstrapJutilPropsLoc);
-		given(properties.getLongProperty("bootstrap.system.entityExpiry"))
-				.willReturn(expiry);
-		given(properties.getIntProperty("bootstrap.rates.currentHbarEquiv"))
-				.willReturn(curHbarEquiv);
-		given(properties.getIntProperty("bootstrap.rates.currentCentEquiv"))
-				.willReturn(curCentEquiv);
-		given(properties.getLongProperty("bootstrap.rates.currentExpiry"))
-				.willReturn(expiry);
-		given(properties.getIntProperty("bootstrap.rates.nextHbarEquiv"))
-				.willReturn(nxtHbarEquiv);
-		given(properties.getIntProperty("bootstrap.rates.nextCentEquiv"))
-				.willReturn(nxtCentEquiv);
-		given(properties.getLongProperty("bootstrap.rates.nextExpiry"))
-				.willReturn(nextExpiry);
-		given(properties.getStringProperty("bootstrap.feeSchedulesJson.resource"))
-				.willReturn("R4FeeSchedule.json");
-		given(properties.getStringProperty("bootstrap.throttleDefsJson.resource"))
-				.willReturn("bootstrap/throttles.json");
+		given(properties.getStringProperty("bootstrap.hapiPermissions.path")).willReturn(bootstrapJutilPermsLoc);
+		given(properties.getStringProperty("bootstrap.networkProperties.path")).willReturn(bootstrapJutilPropsLoc);
+		given(properties.getLongProperty("bootstrap.system.entityExpiry")).willReturn(expiry);
+		given(properties.getIntProperty("bootstrap.rates.currentHbarEquiv")).willReturn(curHbarEquiv);
+		given(properties.getIntProperty("bootstrap.rates.currentCentEquiv")).willReturn(curCentEquiv);
+		given(properties.getLongProperty("bootstrap.rates.currentExpiry")).willReturn(expiry);
+		given(properties.getIntProperty("bootstrap.rates.nextHbarEquiv")).willReturn(nxtHbarEquiv);
+		given(properties.getIntProperty("bootstrap.rates.nextCentEquiv")).willReturn(nxtCentEquiv);
+		given(properties.getLongProperty("bootstrap.rates.nextExpiry")).willReturn(nextExpiry);
+		given(properties.getStringProperty("bootstrap.feeSchedulesJson.resource")).willReturn("R4FeeSchedule.json");
+		given(properties.getStringProperty("bootstrap.throttleDefsJson.resource")).willReturn("bootstrap/throttles.json");
 
 		ratesCb = mock(Consumer.class);
 		schedulesCb = mock(Consumer.class);
@@ -209,7 +208,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void loadsEverything() {
+	void loadsEverything() {
 		// setup:
 		SystemFilesManager sub = mock(SystemFilesManager.class);
 
@@ -228,7 +227,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void canMarkFilesNotLoaded() {
+	void canMarkFilesNotLoaded() {
 		// setup:
 		subject.setObservableFilesLoaded();
 
@@ -243,7 +242,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void tracksFileLoading() {
+	void tracksFileLoading() {
 		// expect:
 		assertFalse(subject.areObservableFilesLoaded());
 
@@ -255,7 +254,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void doesntCreateAddressBookIfPresent() {
+	void doesntCreateAddressBookIfPresent() {
 		given(hfs.exists(bookId)).willReturn(true);
 
 		// when:
@@ -270,7 +269,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void createsAddressBookIfMissing() {
+	void createsAddressBookIfMissing() {
 		// setup:
 		com.hederahashgraph.api.proto.java.NodeAddressBook expectedBook = legacyBookConstruction(currentBook);
 
@@ -290,7 +289,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void createsNodeDetailsIfMissing() {
+	void createsNodeDetailsIfMissing() {
 		// setup:
 		var expectedDetails = legacyBookConstruction(currentBook);
 
@@ -307,7 +306,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void createsEmptyUpdateFeatureFile() {
+	void createsEmptyUpdateFeatureFile() {
 		FileID file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
 
 		// setup:
@@ -323,7 +322,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void loadsPropsFromHfsIfAvailable() {
+	void loadsPropsFromHfsIfAvailable() {
 		given(hfs.exists(appPropsId)).willReturn(true);
 		given(hfs.cat(appPropsId)).willReturn(fromState.toByteArray());
 		given(callbacks.propertiesCb()).willReturn(propertiesCb);
@@ -337,7 +336,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void loadsPermsFromHfsIfAvailable() {
+	void loadsPermsFromHfsIfAvailable() {
 		given(hfs.exists(apiPermsId)).willReturn(true);
 		given(hfs.cat(apiPermsId)).willReturn(fromState.toByteArray());
 		given(callbacks.permissionsCb()).willReturn(permissionsCb);
@@ -351,7 +350,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void loadsRatesFromHfsIfAvailable() {
+	void loadsRatesFromHfsIfAvailable() {
 		given(hfs.exists(ratesId)).willReturn(true);
 		given(hfs.cat(ratesId)).willReturn(expectedDefaultRates().toByteArray());
 		given(callbacks.exchangeRatesCb()).willReturn(ratesCb);
@@ -365,7 +364,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void createsRatesFromPropsIfMissing() {
+	void createsRatesFromPropsIfMissing() {
 		given(hfs.exists(ratesId)).willReturn(false);
 		given(hfs.cat(ratesId)).willReturn(expectedDefaultRates().toByteArray());
 		given(callbacks.exchangeRatesCb()).willReturn(ratesCb);
@@ -385,7 +384,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void loadsSchedulesFromHfsIfAvailable() throws IOException {
+	void loadsSchedulesFromHfsIfAvailable() throws IOException {
 		// setup:
 		byte[] schedules = Files.readAllBytes(Paths.get(R4_FEE_SCHEDULE_REPR_PATH));
 		var proto = CurrentAndNextFeeSchedule.parseFrom(schedules);
@@ -403,7 +402,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void loadsThrottlesFromHfsIfAvailable() throws IOException {
+	void loadsThrottlesFromHfsIfAvailable() throws IOException {
 		// setup:
 		var proto = SerdeUtils.protoDefs("bootstrap/throttles.json");
 		byte[] throttleBytes = proto.toByteArray();
@@ -421,7 +420,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void createsThrottlesFromResourceIfMissing() throws IOException {
+	void createsThrottlesFromResourceIfMissing() throws IOException {
 		// setup:
 		var proto = SerdeUtils.protoDefs("bootstrap/throttles.json");
 		byte[] throttleBytes = proto.toByteArray();
@@ -444,7 +443,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void createsSchedulesFromResourcesIfMissing() throws IOException {
+	void createsSchedulesFromResourcesIfMissing() throws IOException {
 		// setup:
 		byte[] schedules = Files.readAllBytes(Paths.get(R4_FEE_SCHEDULE_REPR_PATH));
 
@@ -466,7 +465,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void bootstrapsPropsAsEmptyConfigListIfNoDiskProperties() throws IOException {
+	void bootstrapsPropsAsEmptyConfigListIfNoDiskProperties() {
 		// setup:
 		var emptyConfig = ServicesConfigurationList.getDefaultInstance();
 
@@ -491,7 +490,96 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void bootstrapsPropsFromDiskOnNetworkStartup() throws IOException {
+	void bootstrapsPermissionsAsDefaultConfigListIfNoDiskProperties() throws IOException {
+		// setup:
+		var defaultPermissions = defaultApiPermissionsFromResource();
+
+		given(properties.getStringProperty("bootstrap.hapiPermissions.path"))
+				.willReturn(nonexistentBootstrapJutilLoc);
+		given(hfs.exists(apiPermsId)).willReturn(false);
+		given(hfs.cat(apiPermsId)).willReturn(defaultPermissions.toByteArray());
+		given(callbacks.permissionsCb()).willReturn(permissionsCb);
+
+		// when:
+		subject.loadApiPermissions();
+
+		// then:
+		verify(hfs).exists(apiPermsId);
+		// and:
+		verify(metadata).put(
+				argThat(apiPermsId::equals),
+				argThat(info -> expectedInfo.toString().equals(info.toString())));
+		verify(data).put(
+				argThat(apiPermsId::equals),
+				argThat((byte[] bytes) -> Arrays.equals(defaultPermissions.toByteArray(), bytes)));
+		// and:
+		verify(permissionsCb).accept(defaultPermissions);
+	}
+
+	@Test
+	void bootstrapsPermissionsAsEmptyConfigListIfNoDiskPropertiesAndNoResourceWithErrorLog() {
+		// setup:
+		var emptyPermissions = ServicesConfigurationList.getDefaultInstance();
+		subject.setPermsSysFileDefaultResource("not-a-real-resource");
+
+		given(properties.getStringProperty("bootstrap.hapiPermissions.path"))
+				.willReturn(nonexistentBootstrapJutilLoc);
+		given(hfs.exists(apiPermsId)).willReturn(false);
+		given(hfs.cat(apiPermsId)).willReturn(emptyPermissions.toByteArray());
+		given(callbacks.permissionsCb()).willReturn(permissionsCb);
+
+		// when:
+		subject.loadApiPermissions();
+
+		// then:
+		verify(hfs).exists(apiPermsId);
+		// and:
+		verify(metadata).put(
+				argThat(apiPermsId::equals),
+				argThat(info -> expectedInfo.toString().equals(info.toString())));
+		verify(data).put(
+				argThat(apiPermsId::equals),
+				argThat((byte[] bytes) -> Arrays.equals(emptyPermissions.toByteArray(), bytes)));
+		// and:
+		verify(permissionsCb).accept(emptyPermissions);
+		// and:
+		assertThat(logCaptor.errorLogs(), contains(
+				"Could not bootstrap permissions, only superusers will be able to perform HAPI operations!"));
+	}
+
+	@Test
+	void bootstrapsPropsAsEmptyConfigListIfNoDiskPropertiesAndNoResourceWithErrorLog() {
+		// setup:
+		var emptyProps = ServicesConfigurationList.getDefaultInstance();
+		subject.setPropsSysFileDefaultResource("not-a-real-resource");
+
+		given(properties.getStringProperty("bootstrap.networkProperties.path"))
+				.willReturn(nonexistentBootstrapJutilLoc);
+		given(hfs.exists(appPropsId)).willReturn(false);
+		given(hfs.cat(appPropsId)).willReturn(emptyProps.toByteArray());
+		given(callbacks.propertiesCb()).willReturn(propertiesCb);
+
+		// when:
+		subject.loadApplicationProperties();
+
+		// then:
+		verify(hfs).exists(appPropsId);
+		// and:
+		verify(metadata).put(
+				argThat(appPropsId::equals),
+				argThat(info -> expectedInfo.toString().equals(info.toString())));
+		verify(data).put(
+				argThat(appPropsId::equals),
+				argThat((byte[] bytes) -> Arrays.equals(emptyProps.toByteArray(), bytes)));
+		// and:
+		verify(propertiesCb).accept(emptyProps);
+		// and:
+		assertThat(logCaptor.errorLogs(), contains(
+				"Could not bootstrap properties, likely benign but should resources should be double-checked!"));
+	}
+
+	@Test
+	void bootstrapsPropsFromDiskOnNetworkStartup() throws IOException {
 		// setup:
 		var jutilProps = new Properties();
 		fromBootstrapFile.getNameValueList().forEach(setting ->
@@ -522,7 +610,7 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
-	public void throwsIseOnNonsenseStateProperties() {
+	void throwsIseOnNonsenseStateProperties() {
 		given(hfs.exists(appPropsId)).willReturn(true);
 		given(hfs.cat(appPropsId)).willReturn(nonsense);
 
@@ -549,7 +637,6 @@ class HfsSystemFilesManagerTest {
 			String memo = address.getMemo();
 			NodeAddress.Builder nodeAddress = NodeAddress.newBuilder()
 					.setIpAddress(ByteString.copyFromUtf8(nodeIPStr))
-					.setPortno(address.getPortExternalIpv4())
 					.setMemo(ByteString.copyFromUtf8(memo))
 					.setRSAPubKey(MiscUtils.commonsBytesToHex(publicKey.getEncoded()))
 					.setNodeId(address.getId())
@@ -586,5 +673,16 @@ class HfsSystemFilesManagerTest {
 				.setHbarEquiv(hbar)
 				.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expiry))
 				.build();
+	}
+
+	private ServicesConfigurationList defaultApiPermissionsFromResource() throws IOException {
+		final var builder = ServicesConfigurationList.newBuilder();
+		final var loader = HfsSystemFilesManager.class.getClassLoader();
+		try (var in = loader.getResourceAsStream("api-permission.properties")) {
+			final var permissions = new Properties();
+			permissions.load(in);
+			HfsSystemFilesManager.mapOrderedJutilProps(permissions, new StringBuilder(), builder);
+		}
+		return builder.build();
 	}
 }

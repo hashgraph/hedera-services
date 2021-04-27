@@ -76,7 +76,7 @@ public class ScreenedNodeFileProps implements PropertySource {
 
 	static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
 
-	Map<String, Object> fromFile = new HashMap<>();
+	private Map<String, Object> fromFile = new HashMap<>();
 
 	public ScreenedNodeFileProps() {
 		loadFrom(LEGACY_NODE_PROPS_LOC, false);
@@ -136,5 +136,9 @@ public class ScreenedNodeFileProps implements PropertySource {
 	@Override
 	public Set<String> allPropertyNames() {
 		return fromFile.keySet();
+	}
+
+	Map<String, Object> getFromFile() {
+		return fromFile;
 	}
 }

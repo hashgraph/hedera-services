@@ -147,8 +147,6 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void contextDrivenInit() {
-		checkPropertySources();
-		log.info("Property sources are available.");
 		initSystemFiles();
 		log.info("System files rationalized.");
 		createSystemAccountsIfNeeded();
@@ -237,10 +235,6 @@ public class ServicesMain implements SwirldMain {
 
 	private void initializeStats() {
 		ctx.statsManager().initializeFor(ctx.platform());
-	}
-
-	private void checkPropertySources() {
-		ctx.propertySources().assertSourcesArePresent();
 	}
 
 	private void configurePlatform() {
