@@ -172,6 +172,24 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		};
 	}
 
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithInvalidAmounts(String from, String to, long amount) {
+		return tinyBarsFromToWithInvalidAmounts(from, to, ignore -> amount);
+	}
+
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithInvalidAmounts(
+			String from, String to, Function<HapiApiSpec, Long> amountFn) {
+		return spec -> {
+			long amount = amountFn.apply(spec);
+			AccountID toAccount = asId(to, spec);
+			AccountID fromAccount = asId(from, spec);
+			return TransferList.newBuilder()
+					.addAllAccountAmounts(Arrays.asList(
+							AccountAmount.newBuilder().setAccountID(toAccount).setAmount(amount).build(),
+							AccountAmount.newBuilder().setAccountID(fromAccount).setAmount(
+									-1L * amount + 1L).build())).build();
+		};
+	}
+
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		CryptoTransferTransactionBody opBody = spec.txns()

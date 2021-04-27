@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -114,7 +115,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				executionWithCustomPayerWorks(),
 				executionWithDefaultPayerButNoFundsFails(),
 				executionWithCustomPayerButNoFundsFails(),
-				executionTriggersWithWeirdlyRepeatedKey(),
+				executionWithInvalidAccountAmountsFails(),
 				executionTriggersWithWeirdlyRepeatedKey(),
 				executionTriggersOnceTopicHasSatisfiedSubmitKey(),
 				scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned(),
@@ -1011,6 +1012,46 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							Assert.assertEquals("Scheduled transaction should not be successful!",
 									INSUFFICIENT_PAYER_BALANCE,
+									triggeredTx.getResponseRecord().getReceipt().getStatus());
+						})
+				);
+	}
+
+	public HapiApiSpec executionWithInvalidAccountAmountsFails(){
+		long transferAmount = 100;
+		long senderBalance = 1000L;
+		long payingAccountBalance = 1_000_000L;
+		long noBalance = 0L;
+		return defaultHapiSpec("ExecutionWithInvalidAccountAmountsFails")
+				.given(
+						cryptoCreate("payingAccount").balance(payingAccountBalance),
+						cryptoCreate("sender").balance(senderBalance),
+						cryptoCreate("receiver").balance(noBalance),
+						scheduleCreate(
+								"failedXfer",
+								cryptoTransfer(
+										tinyBarsFromToWithInvalidAmounts("sender", "receiver", transferAmount)
+								)
+						)
+								.designatingPayer("payingAccount")
+								.via("createTx")
+				)
+				.when(
+						scheduleSign("failedXfer")
+								.alsoSigningWith("sender", "payingAccount")
+								.via("signTx")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getAccountBalance("sender").hasTinyBars(senderBalance),
+						getAccountBalance("receiver").hasTinyBars(noBalance),
+						withOpContext((spec, opLog) -> {
+							var triggeredTx = getTxnRecord("createTx").scheduled();
+
+							allRunFor(spec, triggeredTx);
+
+							Assert.assertEquals("Scheduled transaction should not be successful!",
+									INVALID_ACCOUNT_AMOUNTS,
 									triggeredTx.getResponseRecord().getReceipt().getStatus());
 						})
 				);
