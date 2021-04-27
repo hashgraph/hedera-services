@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -59,7 +60,8 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				accountAutoRemoval(),
 				accountAutoRenewal(),
 				maxNumberOfEntitiesToRenewOrDeleteWorks(),
-				numberOfEntitiesToScanWorks()
+				numberOfEntitiesToScanWorks(),
+				autoDeleteAfterGracePeriod()
 		);
 	}
 
@@ -196,6 +198,31 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 										.expiry(newExpirationTime, 5L)
 										.balanceLessThan(initialBalance)
 								).logged()
+				);
+	}
+
+	private HapiApiSpec autoDeleteAfterGracePeriod() {
+		String autoDeleteAccount = "autoDeleteAccount";
+		int autoRenewSecs = 10;
+		int gracePeriod = 120;
+		return defaultHapiSpec("AutoDeleteAfterGracePeriod")
+				.given(
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
+								.overridingProps(Map.of(
+										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
+										"autorenew.gracePeriod", String.valueOf(gracePeriod),
+										"autorenew.numberOfEntitiesToScan", "100",
+										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
+								.erasingProps(Set.of("minimumAutoRenewDuration")),
+						cryptoCreate(autoDeleteAccount).autoRenewSecs(autoRenewSecs).balance(0L)
+				).when(
+						sleepFor(15 * 1000),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction1"),
+						getAccountBalance(autoDeleteAccount),
+						sleepFor(120 * 1000),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction2")
+				).then(
+						getAccountBalance(autoDeleteAccount).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
 				);
 	}
 
