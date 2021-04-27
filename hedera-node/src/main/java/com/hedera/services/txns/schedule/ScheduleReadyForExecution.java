@@ -29,6 +29,14 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+/**
+ * Defines a class to handle scheduled transaction execution
+ * once the scheduled transaction is signed by the required
+ * number of parties.
+ *
+ * @author Michael Tinker
+ * @author Abhishek Pandey
+ */
 public class ScheduleReadyForExecution {
 	protected final ScheduleStore store;
 	protected final TransactionContext txnCtx;
@@ -38,14 +46,22 @@ public class ScheduleReadyForExecution {
 		this.txnCtx = context;
 	}
 
+	/**
+	 * Given a ScheduleId, check if the underlying transaction
+	 * is already executed/deleted before attempting to execute.
+	 *
+	 * @param id The id of the scheduled transaction.
+	 *
+	 * @return the response code from executing the inner scheduled transaction
+	 */
 	ResponseCodeEnum processExecution(ScheduleID id) throws InvalidProtocolBufferException {
-		var executionStatus = store.markAsExecuted(id);
+		final var executionStatus = store.markAsExecuted(id);
 		if (executionStatus != OK) {
 			return executionStatus;
 		}
 
-		var schedule = store.get(id);
-		var transaction = schedule.asSignedTxn();
+		final var schedule = store.get(id);
+		final var transaction = schedule.asSignedTxn();
 		txnCtx.trigger(
 				new TriggeredTxnAccessor(
 						transaction.toByteArray(),
