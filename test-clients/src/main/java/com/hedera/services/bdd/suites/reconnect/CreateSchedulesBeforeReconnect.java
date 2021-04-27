@@ -65,8 +65,8 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 	}
 
 	private synchronized HapiSpecOperation generateScheduleCreateOperation() {
-		final long token = scheduleNumber.getAndIncrement();
-		if (token >= SCHEDULE_CREATION_LIMIT) {
+		final long schedule = scheduleNumber.getAndIncrement();
+		if (schedule >= SCHEDULE_CREATION_LIMIT) {
 			return getVersionInfo()
 					.noLogging();
 		}
@@ -80,11 +80,11 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 
 		return scheduleCreate("schedule-" + getHostName() + "-" +
 						scheduleNumber.getAndIncrement(),
-				cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1))
+				cryptoTransfer(tinyBarsFromTo("scheduleSender", "scheduleReceiver", 1))
 		)
 				.signedBy(DEFAULT_PAYER)
 				.fee(ONE_HUNDRED_HBARS)
-				.alsoSigningWith("sender")
+				.alsoSigningWith("scheduleSender")
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 				.hasAnyKnownStatus()
 				.deferStatusResolution()
