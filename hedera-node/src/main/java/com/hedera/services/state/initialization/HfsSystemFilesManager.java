@@ -270,7 +270,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private String errorLogIfAnyForFailureToLoad(String sysFileName) {
 		return PERMISSIONS_SYS_FILE_NAME.equals(sysFileName)
 				? "Could not bootstrap permissions, only superusers will be able to perform HAPI operations!"
-				: "Could not bootstrap properties, likely benign but should resources should be double-checked!";
+				: "Could not bootstrap properties, likely benign but resources should be double-checked!";
 	}
 
 	private byte[] asSerializedConfig(

@@ -575,7 +575,7 @@ class HfsSystemFilesManagerTest {
 		verify(propertiesCb).accept(emptyProps);
 		// and:
 		assertThat(logCaptor.errorLogs(), contains(
-				"Could not bootstrap properties, likely benign but should resources should be double-checked!"));
+				"Could not bootstrap properties, likely benign but resources should be double-checked!"));
 	}
 
 	@Test
