@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.reconnect;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,6 +30,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -42,6 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
@@ -56,6 +59,7 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidateTokensStateAfterReconnect.class);
 	public static final String reconnectingNode = "0.0.8";
 	public static final String nonReconnectingNode = "0.0.3";
+	private static final long TOKEN_INITIAL_SUPPLY = 500;
 
 	public static void main(String... args) {
 		new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
@@ -75,7 +79,7 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 		String supplyKey = "supplyKey";
 		String freezeKey = "freezeKey";
 		String adminKey = "adminKey";
-
+		String newAdminKey = "newAdminKey";
 
 		return customHapiSpec("ValidateTokensAfterReconnect")
 				.withProperties(Map.of(
@@ -87,6 +91,7 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 						newKeyNamed(supplyKey),
 						newKeyNamed(freezeKey),
 						newKeyNamed(adminKey),
+						newKeyNamed(newAdminKey),
 						cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS).logging(),
 						cryptoCreate(anotherAccount).balance(ONE_HUNDRED_HBARS).logging()
 				)
@@ -98,38 +103,52 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 						tokenCreate(tokenToBeQueried)
 								.freezeKey(freezeKey)
 								.supplyKey(supplyKey)
-								.initialSupply(ONE_HUNDRED_HBARS)
-								.treasury(TOKEN_TREASURY).logging(),
+								.initialSupply(TOKEN_INITIAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(adminKey)
+								.logging(),
 						tokenCreate(anotherToken)
 								.freezeKey(freezeKey)
 								.supplyKey(supplyKey)
-								.initialSupply(1)
-								.treasury(TOKEN_TREASURY).logging(),
+								.initialSupply(TOKEN_INITIAL_SUPPLY)
+								.adminKey(adminKey)
+								.treasury(TOKEN_TREASURY)
+								.logging(),
 
 						/* Some token operations*/
-						tokenAssociate(anotherAccount, tokenToBeQueried).logging(),
-						tokenAssociate(anotherAccount, anotherToken).logging(),
-						cryptoTransfer(moving(1, tokenToBeQueried).between(TOKEN_TREASURY, anotherAccount)).logging(),
-						cryptoTransfer(moving(1, tokenToBeQueried).between(TOKEN_TREASURY, anotherAccount)).logging(),
-						cryptoTransfer(moving(1, tokenToBeQueried).between(TOKEN_TREASURY, anotherAccount)).logging(),
+						getTokenInfo(tokenToBeQueried).logged(),
+						getTokenInfo(anotherToken).logged(),
+
 						tokenUpdate(tokenToBeQueried)
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(TOKEN_TREASURY)
-								.adminKey(adminKey).logging(),
-						mintToken(tokenToBeQueried, 100).logging()
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(DEFAULT_PAYER),
-						mintToken(anotherToken, 100).logging()
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(DEFAULT_PAYER),
-						burnToken(anotherToken, 1)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(DEFAULT_PAYER).logging(),
-						burnToken(tokenToBeQueried, 1)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(DEFAULT_PAYER).logging(),
+								.adminKey(newAdminKey).logging(),
+
+						tokenAssociate(anotherAccount, tokenToBeQueried, anotherToken).logging(),
+						blockingOrder(
+								IntStream.range(0, 10).mapToObj(i ->
+										cryptoTransfer(moving(1, tokenToBeQueried)
+												.between(TOKEN_TREASURY, anotherAccount))
+												.logging())
+										.toArray(HapiSpecOperation[]::new)
+						),
+						blockingOrder(
+								IntStream.range(0, 5).mapToObj(i ->
+										mintToken(tokenToBeQueried, 100).logging())
+										.toArray(HapiSpecOperation[]::new)
+						),
+						blockingOrder(
+								IntStream.range(0, 5).mapToObj(i ->
+										mintToken(anotherToken, 100).logging())
+										.toArray(HapiSpecOperation[]::new)
+						),
+
+						burnToken(anotherToken, 1).logging(),
+						burnToken(tokenToBeQueried, 1).logging(),
 						cryptoDelete(TOKEN_TREASURY)
 								.hasKnownStatus(ACCOUNT_IS_TREASURY).logging(),
+						getTokenInfo(tokenToBeQueried).logged(),
+						getTokenInfo(anotherToken).logged(),
 						/* end token operations */
 
 						getAccountBalance(GENESIS)
@@ -147,23 +166,27 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 								.hasAdminKey(adminKey)
 								.hasFreezeKey(freezeKey)
 								.hasSupplyKey(supplyKey)
-								.hasTotalSupply(70).logging(),
+								.hasTotalSupply(999)
+								.logging(),
 						getTokenInfo(tokenToBeQueried)
 								.setNode(nonReconnectingNode)
 								.hasAdminKey(adminKey)
 								.hasFreezeKey(freezeKey)
 								.hasSupplyKey(supplyKey)
-								.hasTotalSupply(70).logging(),
+								.hasTotalSupply(999)
+								.logging(),
 						getTokenInfo(anotherToken)
 								.setNode(reconnectingNode)
 								.hasFreezeKey(freezeKey)
 								.hasSupplyKey(supplyKey)
-								.hasTotalSupply(31).logging(),
+								.hasTotalSupply(999)
+								.logging(),
 						getTokenInfo(anotherToken)
 								.setNode(nonReconnectingNode)
 								.hasFreezeKey(freezeKey)
 								.hasSupplyKey(supplyKey)
-								.hasTotalSupply(31).logging(),
+								.hasTotalSupply(999)
+								.logging(),
 						cryptoDelete(TOKEN_TREASURY)
 								.hasKnownStatus(ACCOUNT_IS_TREASURY)
 				);
