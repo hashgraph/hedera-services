@@ -28,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -37,13 +38,19 @@ import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PE
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_MINS_FOR_RECONNECT_TESTS;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_THREADS_FOR_RECONNECT_TESTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
 public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateSchedulesBeforeReconnect.class);
@@ -65,18 +72,10 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 	}
 
 	private synchronized HapiSpecOperation generateScheduleCreateOperation() {
-		final long schedule = scheduleNumber.getAndIncrement();
-		if (schedule >= SCHEDULE_CREATION_LIMIT) {
+		if (scheduleNumber.getAndIncrement() > SCHEDULE_CREATION_LIMIT) {
 			return getVersionInfo()
 					.noLogging();
 		}
-		cryptoCreate("scheduleSender")
-				.balance(initialBalance.getAsLong())
-				.key(GENESIS)
-				.deferStatusResolution();
-		cryptoCreate("scheduleReceiver")
-				.key(GENESIS)
-				.deferStatusResolution();
 
 		return scheduleCreate("schedule-" + getHostName() + "-" +
 						scheduleNumber.getAndIncrement(),
@@ -89,7 +88,8 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 				.hasAnyKnownStatus()
 				.deferStatusResolution()
 				.adminKey(DEFAULT_PAYER)
-				.noLogging();
+				.logging()
+				.advertisingCreation();
 	}
 
 	private HapiApiSpec runCreateSchedules() {
@@ -104,9 +104,49 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 
 		return defaultHapiSpec("RunCreateSchedules")
 				.given(
-						logIt(ignore -> settings.toString())
-				).when()
+						scheduleOpsEnablement(),
+						logIt(ignore -> settings.toString()),
+						cryptoCreate("scheduleSender")
+								.balance(initialBalance.getAsLong())
+								.key(GENESIS)
+								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+								.deferStatusResolution(),
+						cryptoCreate("scheduleReceiver")
+								.key(GENESIS)
+								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+								.deferStatusResolution(),
+						sleepFor(10000),
+						scheduleCreate("schedule-" + getHostName() + "-" + scheduleNumber.getAndIncrement(),
+								cryptoTransfer(tinyBarsFromTo("scheduleSender", "scheduleReceiver", 1))
+						)
+								.signedBy(DEFAULT_PAYER)
+								.fee(ONE_HUNDRED_HBARS)
+								.alsoSigningWith("scheduleSender")
+								.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+								.hasAnyKnownStatus()
+								.deferStatusResolution()
+								.adminKey(DEFAULT_PAYER)
+								.logging().advertisingCreation()
+				).when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of(
+										"ledger.schedule.txExpiryTimeSecs", "" + 60
+								)),
+						sleepFor(10000)
+				)
 				.then(
+						scheduleCreate("schedule-" + getHostName() + "-" + scheduleNumber.getAndIncrement(),
+								cryptoTransfer(tinyBarsFromTo("scheduleSender", "scheduleReceiver", 1))
+						)
+								.signedBy(DEFAULT_PAYER)
+								.fee(ONE_HUNDRED_HBARS)
+								.alsoSigningWith("scheduleSender")
+								.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+								.hasAnyKnownStatus()
+								.deferStatusResolution()
+								.adminKey(DEFAULT_PAYER)
+								.logging().advertisingCreation(),
 						defaultLoadTest(createBurst, settings)
 				);
 	}
