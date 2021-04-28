@@ -115,6 +115,7 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo,
+				1000L,
 				midnightRateSet,
 				usageSnapshots,
 				richCongestionStarts(),

@@ -201,7 +201,7 @@ public class ServicesContextTest {
 		accounts = mock(FCMap.class);
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
-		networkCtx = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, midnightRates);
+		networkCtx = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, 1000L, midnightRates);
 		state = mock(ServicesState.class);
 		given(state.networkCtx()).willReturn(networkCtx);
 		given(state.accounts()).willReturn(accounts);
