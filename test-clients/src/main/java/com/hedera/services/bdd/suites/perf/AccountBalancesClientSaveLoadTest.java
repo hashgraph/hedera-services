@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
@@ -128,14 +129,17 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 
 	private HapiApiSpec runAccountBalancesClientSaveLoadTest() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
+		var throttlesForJRS = protoDefsFromResource("testSystemFiles/throttles-for-jrs-test.json");
 		return defaultHapiSpec("AccountBalancesClientSaveLoadTest" )
 				.given(
 						tokenOpsEnablement(),
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of("balances.exportPeriodSecs", "60"))
-
+								.overridingProps(Map.of("balances.exportPeriodSecs", "60")),
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.contents(throttlesForJRS.toByteArray())
 				).when(
 						sourcing(() -> runWithProvider(accountsCreate(settings))
 								.lasting(() -> totalAccounts / ESTIMATED_CRYPTO_CREATION_RATE + 10,

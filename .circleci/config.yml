@@ -1525,11 +1525,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "48 4 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
-                - 01295-acctBalance-file-missing
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2255,7 +2255,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01000-D-acctBalances-valid-enhancement
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
