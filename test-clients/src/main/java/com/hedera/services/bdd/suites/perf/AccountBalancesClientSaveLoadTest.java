@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +47,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -129,7 +131,10 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 		return defaultHapiSpec("AccountBalancesClientSaveLoadTest" )
 				.given(
 						tokenOpsEnablement(),
-						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("balances.exportPeriodSecs", "60"))
 
 				).when(
 						sourcing(() -> runWithProvider(accountsCreate(settings))
