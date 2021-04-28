@@ -20,51 +20,160 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.queries.meta.GetVersionInfoAnswer;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
-import static org.junit.jupiter.api.Assertions.*;
+import javax.inject.Inject;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ExtendWith(LogCaptureExtension.class)
 class SemanticVersionsTest {
-	SemanticVersion expectedVersions = SemanticVersion.newBuilder()
-			.setMajor(0)
-			.setMinor(4)
-			.setPatch(0)
+	private static final SemanticVersion FROZEN_PROTO_SEMVER = SemanticVersion.newBuilder()
+			.setMajor(1)
+			.setMinor(2)
+			.setPatch(4)
+			.setPreReleaseVersion("zeta.123")
+			.setBuildMetadata("2b26be40")
 			.build();
-	SemanticVersions subject;
+	private static final SemanticVersion FROZEN_SERVICES_SEMVER = SemanticVersion.newBuilder()
+			.setMajor(4)
+			.setMinor(2)
+			.setPatch(1)
+			.setPreReleaseVersion("alpha.0.1.0")
+			.setBuildMetadata("04eb62b2")
+			.build();
+
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private SemanticVersions subject;
 
 	@BeforeEach
-	private void setup() throws Throwable {
-		SemanticVersions.VERSION_INFO_RESOURCE = "frozenVersion.properties";
-
+	void setUp() {
 		subject = new SemanticVersions();
-
-		SemanticVersions.knownActive.set(null);
 	}
 
 	@Test
-	public void recognizesAvailableResource() {
+	void canParseFullSemver() {
+		// given:
+		var literal = "1.2.4-alpha.1+2b26be40";
+		// and:
+		var expected = SemanticVersion.newBuilder()
+				.setMajor(1)
+				.setMinor(2)
+				.setPatch(4)
+				.setPreReleaseVersion("alpha.1")
+				.setBuildMetadata("2b26be40")
+				.build();
+
+		// when:
+		var actual = subject.asSemVer(literal);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void canParseWithoutBuildMeta() {
+		// given:
+		var literal = "1.2.4-alpha.1";
+		// and:
+		var expected = SemanticVersion.newBuilder()
+				.setMajor(1)
+				.setMinor(2)
+				.setPatch(4)
+				.setPreReleaseVersion("alpha.1")
+				.build();
+
+		// when:
+		var actual = subject.asSemVer(literal);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void canParseWithoutJustReqFields() {
+		// given:
+		var literal = "1.2.4";
+		// and:
+		var expected = SemanticVersion.newBuilder()
+				.setMajor(1)
+				.setMinor(2)
+				.setPatch(4)
+				.build();
+
+		// when:
+		var actual = subject.asSemVer(literal);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void canParseWithoutJustBuildMeta() {
+		// given:
+		var literal = "1.2.4+2b26be40";
+		// and:
+		var expected = SemanticVersion.newBuilder()
+				.setMajor(1)
+				.setMinor(2)
+				.setPatch(4)
+				.setBuildMetadata("2b26be40")
+				.build();
+
+		// when:
+		var actual = subject.asSemVer(literal);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void throwsIseWithInvalidLiteral() {
+		// given:
+		var literal = "1.2..4+2b26be40";
+
+		// expect:
+		Assertions.assertThrows(IllegalArgumentException.class, () -> subject.asSemVer(literal));
+	}
+
+	@Test
+	void recognizesAvailableResource() {
+		// setup:
+		subject = new SemanticVersions();
+		subject.setVersionInfoResource("frozen-semantic-version.properties");
+
 		// when:
 		var versions = subject.getDeployed();
 
 		// then:
-		assertEquals(expectedVersions, versions.get().protoSemVer());
-		assertEquals(expectedVersions, versions.get().hederaSemVer());
+		assertEquals(FROZEN_PROTO_SEMVER, versions.get().protoSemVer());
+		assertEquals(FROZEN_SERVICES_SEMVER, versions.get().hederaSemVer());
 	}
 
 	@Test
-	public void recognizesUnavailableResource() {
-		// setup:
-		SemanticVersions.VERSION_INFO_RESOURCE = "nonsense.properties";
+	void warnsOfUnavailableSemversAndUsesEmpty() {
+		// given:
+		var shouldBeEmpty = subject.fromResource("nonExistent.properties", "w/e", "n/a");
+		// and:
+		var desiredPrefix = "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a'). " +
+				"Version info will be unavailable!";
 
-		// then:
-		assertTrue(subject.getDeployed().isEmpty());
-
-		// cleanup:
-		SemanticVersions.VERSION_INFO_RESOURCE = "frozenVersion.properties";
+		// expect:
+		assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.hederaSemVer());
+		assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.protoSemVer());
+		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desiredPrefix)));
 	}
 }
