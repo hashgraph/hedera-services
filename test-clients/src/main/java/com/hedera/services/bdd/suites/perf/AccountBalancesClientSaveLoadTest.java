@@ -129,7 +129,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 
 	private HapiApiSpec runAccountBalancesClientSaveLoadTest() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
-		var throttlesForJRS = protoDefsFromResource("testSystemFiles/throttles-for-jrs-test.json");
+		var throttlesForJRS = protoDefsFromResource("testSystemFiles/throttles-for-acct-balances-tests.json");
 		return defaultHapiSpec("AccountBalancesClientSaveLoadTest" )
 				.given(
 						tokenOpsEnablement(),
