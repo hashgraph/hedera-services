@@ -844,6 +844,8 @@ public class ValidationScenarios extends HapiApiSuite {
 									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer()))
 					).when().then(
 							getVersionInfo()
+									.hasProtoSemVer(hapiProto[0], hapiProto[1], hapiProto[2])
+									.hasServicesSemVer(services[0], services[1], services[2])
 									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 					);

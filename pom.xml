@@ -146,7 +146,6 @@
     <!-- Plugin custom properties -->
     <maven-jar.version>3.2.0</maven-jar.version>
     <maven-source.version>3.2.0</maven-source.version>
-    <maven-resources.version>3.2.0</maven-resources.version>
     <maven-license.version>2.0.0</maven-license.version>
     <maven-compiler.version>3.8.1</maven-compiler.version>
     <maven-surefire.version>2.22.2</maven-surefire.version>
@@ -162,7 +161,7 @@
     <grpc.version>1.33.0</grpc.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-    <hapi-proto.version>0.14.0-SNAPSHOT</hapi-proto.version>
+    <hapi-proto.version>0.13.0-rc.1</hapi-proto.version>
     <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.13.2</log4j.version>
     <netty.version>4.1.51.Final</netty.version>
@@ -319,11 +318,6 @@ ${git.signoff}
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
-          <version>${maven-source.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-resources-plugin</artifactId>
           <version>${maven-source.version}</version>
         </plugin>
         <plugin>

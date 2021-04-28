@@ -41,9 +41,8 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetVersionInfo.class);
 
-	private boolean assertNoDegenSemvers = false;
-	private Optional<SemanticVersion> expectedProto = Optional.empty();
-	private Optional<SemanticVersion> expectedServices = Optional.empty();
+	Optional<SemanticVersion> expectedProto = Optional.empty();
+	Optional<SemanticVersion> expectedServices = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -56,17 +55,28 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 	}
 
 	public HapiGetVersionInfo hasProtoSemVer(SemanticVersion sv) {
-		expectedProto = Optional.of(sv);
-		return this;
+		return hasProtoSemVer(sv.getMajor(), sv.getMinor(), sv.getPatch());
 	}
 
 	public HapiGetVersionInfo hasServicesSemVer(SemanticVersion sv) {
-		expectedServices = Optional.of(sv);
+		return hasServicesSemVer(sv.getMajor(), sv.getMinor(), sv.getPatch());
+	}
+
+	public HapiGetVersionInfo hasProtoSemVer(int major, int minor, int patch) {
+		expectedProto = Optional.of(SemanticVersion.newBuilder()
+				.setMajor(major)
+				.setMinor(minor)
+				.setPatch(patch)
+				.build());
 		return this;
 	}
 
-	public HapiGetVersionInfo hasNoDegenerateSemvers() {
-		assertNoDegenSemvers = true;
+	public HapiGetVersionInfo hasServicesSemVer(int major, int minor, int patch) {
+		expectedServices = Optional.of(SemanticVersion.newBuilder()
+				.setMajor(major)
+				.setMinor(minor)
+				.setPatch(patch)
+				.build());
 		return this;
 	}
 
@@ -86,11 +96,6 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 					expectedServices.get(),
 					actualServices);
 		}
-		if (assertNoDegenSemvers) {
-			var degenSemver = SemanticVersion.getDefaultInstance();
-			Assert.assertNotEquals(degenSemver, actualProto);
-			Assert.assertNotEquals(degenSemver, actualServices);
-		}
 	}
 
 	@Override
@@ -99,29 +104,16 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 		response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);
 		var info = response.getNetworkGetVersionInfo();
 		if (verboseLoggingOn) {
-			log.info("Versions :: HAPI protobufs @ "
-							+ asReadable(info.getHapiProtoVersion())
-							+ ", Hedera Services @ "
-							+ asReadable(info.getHederaServicesVersion()));
+			log.info("Versions :: " +
+					String.format("HAPI Proto @ %d.%d.%d, ",
+							info.getHapiProtoVersion().getMajor(),
+							info.getHapiProtoVersion().getMinor(),
+							info.getHapiProtoVersion().getPatch()) +
+					String.format("Heder Services @ %d.%d.%d, ",
+							info.getHederaServicesVersion().getMajor(),
+							info.getHederaServicesVersion().getMinor(),
+							info.getHederaServicesVersion().getPatch()));
 		}
-	}
-
-	private String asReadable(SemanticVersion semver) {
-		var sb = new StringBuilder()
-				.append(semver.getMajor()).append(".")
-				.append(semver.getMinor()).append(".")
-				.append(semver.getPatch());
-		var preRelease = semver.getPreReleaseVersion();
-		if (!preRelease.isBlank()) {
-			sb.append("-").append(preRelease);
-		}
-
-		var buildMeta = semver.getBuildMetadata();
-		if (!buildMeta.isBlank()) {
-			sb.append("+").append(buildMeta);
-		}
-
-		return sb.toString();
 	}
 
 	@Override

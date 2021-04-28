@@ -58,32 +58,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>with-filtering</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>resources</goal>
-            </goals>
-            <configuration>
-              <propertiesEncoding>ISO-8859-1</propertiesEncoding>
-              <resources>
-                <resource>
-                  <directory>src/main/resources</directory>
-                  <excludes>
-                    <!-- VIM swap files -->
-                    <exclude>**/*.sw*</exclude>
-                  </excludes>
-                  <filtering>true</filtering>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
