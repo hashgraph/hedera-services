@@ -48,6 +48,9 @@ public class EntityAutoRenewal {
 		long numberOfEntitiesRenewedOrDeleted = 0;
 		for (long i = 1; i <= props.autoRenewNumberOfEntitiesToScan(); i++) {
 			lastScannedEntity++;
+			if (lastScannedEntity >= ctx.seqNo().current()) {
+				lastScannedEntity = ctx.hederaNums().numReservedSystemEntities() + 1;
+			}
 			AccountID accountID = accountBuilder
 					.setAccountNum(lastScannedEntity)
 					.build();
