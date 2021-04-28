@@ -78,6 +78,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
@@ -125,6 +127,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				executionWithCustomPayerButNoFundsFails(),
 				executionWithInvalidAccountAmountsFails(),
 				executionWithTransferListSizeExceedFails(),
+				executionWithTokenTransferListSizeExceedFails(),
+				executionWithCryptoInsufficientAccountBalanceFails(),
+				executionWithTokenInsufficientAccountBalanceFails(),
 				executionTriggersWithWeirdlyRepeatedKey(),
 				executionTriggersOnceTopicHasSatisfiedSubmitKey(),
 				scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned(),
@@ -147,9 +152,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private HapiApiSpec suiteCleanup() {
 		return defaultHapiSpec("suiteCleanup")
 				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry),
-						overriding("ledger.transfers.maxLen", defaultMaxTransferLen),
-						overriding("ledger.tokenTransfers.maxLen", defaultMaxTokenTransferLen)
+						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
 				);
 	}
 
@@ -1028,6 +1031,77 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec executionWithCryptoInsufficientAccountBalanceFails() {
+		long noBalance = 0L;
+		long senderBalance = 100L;
+		long transferAmount = 101L;
+		long payerBalance = 1_000_000L;
+		return defaultHapiSpec("ExecutionWithCryptoInsufficientAccountBalanceFails")
+				.given(
+						cryptoCreate("payingAccount").balance(payerBalance),
+						cryptoCreate("sender").balance(senderBalance),
+						cryptoCreate("receiver").balance(noBalance),
+						scheduleCreate(
+								"failedXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiver", transferAmount)
+								)
+						)
+								.designatingPayer("payingAccount")
+								.via("createTx")
+				).when(
+						scheduleSign("failedXfer")
+								.alsoSigningWith("sender", "payingAccount")
+								.via("signTx")
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getAccountBalance("sender").hasTinyBars(senderBalance),
+						getAccountBalance("receiver").hasTinyBars(noBalance),
+						withOpContext((spec, opLog) -> {
+							var triggeredTx = getTxnRecord("createTx").scheduled();
+
+							allRunFor(spec, triggeredTx);
+
+							Assert.assertEquals("Scheduled transaction should not be successful!",
+									INSUFFICIENT_ACCOUNT_BALANCE,
+									triggeredTx.getResponseRecord().getReceipt().getStatus());
+						})
+				);
+	}
+
+	public HapiApiSpec executionWithTokenInsufficientAccountBalanceFails() {
+		String xToken = "XXX";
+		String invalidSchedule = "withInsufficientTokenTransfer";
+		String schedulePayer = "somebody", xTreasury = "xt", civilian = "xa";
+		String failedTxn = "bad";
+		return defaultHapiSpec("ExecutionWithTokenInsufficientAccountBalanceFails")
+				.given(
+						newKeyNamed("admin"),
+						cryptoCreate(schedulePayer),
+						cryptoCreate(xTreasury),
+						cryptoCreate(civilian),
+						tokenCreate(xToken)
+								.treasury(xTreasury)
+								.initialSupply(100)
+								.adminKey("admin"),
+						tokenAssociate(civilian, xToken)
+				).when(
+						scheduleCreate(invalidSchedule,
+								cryptoTransfer(
+										moving(101, xToken).between(xTreasury, civilian)
+								)
+										.memo(randomUppercase(100))
+						)
+								.via(failedTxn)
+								.alsoSigningWith(xTreasury, schedulePayer)
+								.designatingPayer(schedulePayer)
+				).then(
+						getTxnRecord(failedTxn).scheduled()
+								.hasPriority(recordWith().status(INSUFFICIENT_TOKEN_BALANCE)),
+						getAccountBalance(xTreasury).hasTokenBalance(xToken, 100)
+				);
+	}
+
 	public HapiApiSpec executionWithInvalidAccountAmountsFails(){
 		long transferAmount = 100;
 		long senderBalance = 1000L;
@@ -1100,6 +1174,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.hasKnownStatus(SUCCESS)
 				)
 				.then(
+						overriding("ledger.transfers.maxLen", defaultMaxTransferLen),
 						getAccountBalance("sender").hasTinyBars(senderBalance),
 						getAccountBalance("receiverA").hasTinyBars(noBalance),
 						getAccountBalance("receiverB").hasTinyBars(noBalance),
@@ -1113,6 +1188,45 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 									TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
 									triggeredTx.getResponseRecord().getReceipt().getStatus());
 						})
+				);
+	}
+
+	public HapiApiSpec executionWithTokenTransferListSizeExceedFails(){
+		String xToken = "XXX";
+		String invalidSchedule = "withMaxTokenTransfer";
+		String schedulePayer = "somebody", xTreasury = "xt", civilianA = "xa", civilianB = "xb";
+		String failedTxn = "bad";
+
+		return defaultHapiSpec("ExecutionWithTokenTransferListSizeExceedFails")
+				.given(
+						overriding("ledger.tokenTransfers.maxLen", "" + MAX_TOKEN_TRANSFER_LENGTH),
+						newKeyNamed("admin"),
+						cryptoCreate(schedulePayer),
+						cryptoCreate(xTreasury),
+						cryptoCreate(civilianA),
+						cryptoCreate(civilianB),
+						tokenCreate(xToken)
+								.treasury(xTreasury)
+								.initialSupply(100)
+								.adminKey("admin"),
+						tokenAssociate(civilianA, xToken),
+						tokenAssociate(civilianB, xToken)
+				).when(
+						scheduleCreate(invalidSchedule,
+								cryptoTransfer(
+										moving(1, xToken).between(xTreasury, civilianA),
+										moving(1, xToken).between(xTreasury, civilianB)
+								)
+										.memo(randomUppercase(100))
+						)
+								.via(failedTxn)
+								.alsoSigningWith(xTreasury, schedulePayer)
+								.designatingPayer(schedulePayer)
+				).then(
+						overriding("ledger.tokenTransfers.maxLen", defaultMaxTokenTransferLen),
+						getTxnRecord(failedTxn).scheduled()
+								.hasPriority(recordWith().status(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)),
+						getAccountBalance(xTreasury).hasTokenBalance(xToken, 100)
 				);
 	}
 
