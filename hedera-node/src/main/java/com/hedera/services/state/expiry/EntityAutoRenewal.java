@@ -50,21 +50,28 @@ public class EntityAutoRenewal {
 			AccountID accountID = accountBuilder
 					.setAccountNum(lastScannedEntity + i)
 					.build();
-//		backingAccounts.remove(accountID);
 			if (backingAccounts.contains(accountID)) {
 				var merkleAccount = backingAccounts.getRef(accountID);
-				long autoRenewSecs = merkleAccount.getAutoRenewSecs();
 				long expiry = merkleAccount.getExpiry();
-				long newExpiry = expiry + autoRenewSecs;
-				merkleAccount.setExpiry(newExpiry);
-				Instant actionTime = consensusTime.plusNanos(1L);
-//			var record = EntityRemovalRecord.generatedFor(accountID, actionTime, accountID);
-				var record = AutoRenewalRecord.generatedFor(accountID, actionTime, accountID, 0L, newExpiry,
-						feeCollector);
-				var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
-				ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
-				ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
-				numberOfEntitiesRenewedOrDeleted++;
+				if (expiry <= consensusTime.getEpochSecond()) {
+					numberOfEntitiesRenewedOrDeleted++;
+					long balance = merkleAccount.getBalance();
+					long newExpiry = expiry;
+					if (0 == balance) {
+						backingAccounts.remove(accountID);
+					} else {
+						long autoRenewSecs = merkleAccount.getAutoRenewSecs();
+						newExpiry = expiry + autoRenewSecs;
+						merkleAccount.setExpiry(newExpiry);
+					}
+					Instant actionTime = consensusTime.plusNanos(numberOfEntitiesRenewedOrDeleted);
+					var record = (0 == balance)
+							? EntityRemovalRecord.generatedFor(accountID, actionTime, accountID)
+							: AutoRenewalRecord.generatedFor(accountID, actionTime, accountID, 0L, newExpiry, feeCollector);
+					var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
+					ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
+					ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+				}
 			}
 			if (numberOfEntitiesRenewedOrDeleted >= props.autoRenewMaxNumberOfEntitiesToRenewOrDelete()) {
 				break;
