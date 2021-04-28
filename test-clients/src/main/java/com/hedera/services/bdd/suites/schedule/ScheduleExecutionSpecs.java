@@ -90,13 +90,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 
 public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
 	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
+	private static final int MAX_TRANSFER_LENGTH = 1;
+	private static final int MAX_TOKEN_TRANSFER_LENGTH = 1;
 
 	private static final String defaultTxExpiry =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
+	private static final String defaultMaxTransferLen =
+			HapiSpecSetup.getDefaultNodeProps().get("ledger.transfers.maxLen");
+	private static final String defaultMaxTokenTransferLen =
+			HapiSpecSetup.getDefaultNodeProps().get("ledger.tokenTransfers.maxLen");
 
 	public static void main(String... args) {
 		new ScheduleExecutionSpecs().runSuiteSync();
@@ -116,6 +124,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				executionWithDefaultPayerButNoFundsFails(),
 				executionWithCustomPayerButNoFundsFails(),
 				executionWithInvalidAccountAmountsFails(),
+				executionWithTransferListSizeExceedFails(),
 				executionTriggersWithWeirdlyRepeatedKey(),
 				executionTriggersOnceTopicHasSatisfiedSubmitKey(),
 				scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned(),
@@ -138,7 +147,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private HapiApiSpec suiteCleanup() {
 		return defaultHapiSpec("suiteCleanup")
 				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
+						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry),
+						overriding("ledger.transfers.maxLen", defaultMaxTransferLen),
+						overriding("ledger.tokenTransfers.maxLen", defaultMaxTokenTransferLen)
 				);
 	}
 
@@ -1052,6 +1063,54 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 							Assert.assertEquals("Scheduled transaction should not be successful!",
 									INVALID_ACCOUNT_AMOUNTS,
+									triggeredTx.getResponseRecord().getReceipt().getStatus());
+						})
+				);
+	}
+
+	public HapiApiSpec executionWithTransferListSizeExceedFails(){
+		long transferAmount = 1L;
+		long senderBalance = 1000L;
+		long payingAccountBalance = 1_000_000L;
+		long noBalance = 0L;
+
+		return defaultHapiSpec("ExecutionWithTransferListSizeExceedFails")
+				.given(
+						overriding("ledger.transfers.maxLen", "" + MAX_TRANSFER_LENGTH),
+						cryptoCreate("payingAccount").balance(payingAccountBalance),
+						cryptoCreate("sender").balance(senderBalance),
+						cryptoCreate("receiverA").balance(noBalance),
+						cryptoCreate("receiverB").balance(noBalance),
+						cryptoCreate("receiverC").balance(noBalance),
+						scheduleCreate(
+								"failedXfer",
+								cryptoTransfer(
+										tinyBarsFromTo("sender", "receiverA", transferAmount),
+										tinyBarsFromTo("sender", "receiverB", transferAmount),
+										tinyBarsFromTo("sender", "receiverC", transferAmount)
+								)
+						)
+								.designatingPayer("payingAccount")
+								.via("createTx")
+				)
+				.when(
+						scheduleSign("failedXfer")
+								.alsoSigningWith("sender", "payingAccount")
+								.via("signTx")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						getAccountBalance("sender").hasTinyBars(senderBalance),
+						getAccountBalance("receiverA").hasTinyBars(noBalance),
+						getAccountBalance("receiverB").hasTinyBars(noBalance),
+						getAccountBalance("receiverC").hasTinyBars(noBalance),
+						withOpContext((spec, opLog) -> {
+							var triggeredTx = getTxnRecord("createTx").scheduled();
+
+							allRunFor(spec, triggeredTx);
+
+							Assert.assertEquals("Scheduled transaction should not be successful!",
+									TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
 									triggeredTx.getResponseRecord().getReceipt().getStatus());
 						})
 				);
