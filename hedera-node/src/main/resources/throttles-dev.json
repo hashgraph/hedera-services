@@ -46,7 +46,7 @@
             "burstPeriod": 10,
             "throttleGroups": [
                 {
-                    "opsPerSec": 20000,
+                    "opsPerSec": 2000,
                     "operations": [ "CryptoCreate" ]
                 },
                 {

@@ -1525,11 +1525,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "0 0,2,4,6,8,12,14,16,18,20,22 * * *"
+          cron: "16 3 * * *"
           filters:
             branches:
               only:
-                - X-run-accountbalances-validation-repeatedly
+                - run-accountbalances-validation-repeatedly
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1931,7 +1931,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - run-accountbalances-validation-repeatedly
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud

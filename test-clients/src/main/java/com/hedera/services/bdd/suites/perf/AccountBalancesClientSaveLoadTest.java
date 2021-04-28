@@ -134,7 +134,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of("balances.exportPeriodSecs", "120"))
+								.overridingProps(Map.of("balances.exportPeriodSecs", "60"))
 						).when(
 						sourcing(() -> runWithProvider(accountsCreate(settings))
 								.lasting(() -> totalAccounts / ESTIMATED_CRYPTO_CREATION_RATE + 10,
