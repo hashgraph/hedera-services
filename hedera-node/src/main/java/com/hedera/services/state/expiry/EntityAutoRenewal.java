@@ -45,14 +45,13 @@ public class EntityAutoRenewal {
 		AccountID.Builder accountBuilder = feeCollector.toBuilder();
 		var backingAccounts = ctx.backingAccounts();
 		long lastScannedEntity = ctx.hederaNums().numReservedSystemEntities();
-		long numberOfEntitiesToRenewOrDelete = 0;
+		long numberOfEntitiesRenewedOrDeleted = 0;
 		for (long i = 1; i <= props.autoRenewNumberOfEntitiesToScan(); i++) {
 			AccountID accountID = accountBuilder
 					.setAccountNum(lastScannedEntity + i)
 					.build();
 //		backingAccounts.remove(accountID);
 			if (backingAccounts.contains(accountID)) {
-				numberOfEntitiesToRenewOrDelete++;
 				var merkleAccount = backingAccounts.getRef(accountID);
 				long autoRenewSecs = merkleAccount.getAutoRenewSecs();
 				long expiry = merkleAccount.getExpiry();
@@ -65,8 +64,9 @@ public class EntityAutoRenewal {
 				var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
 				ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
 				ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+				numberOfEntitiesRenewedOrDeleted++;
 			}
-			if (numberOfEntitiesToRenewOrDelete >= props.autoRenewMaxNumberOfEntitiesToRenewOrDelete()) {
+			if (numberOfEntitiesRenewedOrDeleted >= props.autoRenewMaxNumberOfEntitiesToRenewOrDelete()) {
 				break;
 			}
 		}
