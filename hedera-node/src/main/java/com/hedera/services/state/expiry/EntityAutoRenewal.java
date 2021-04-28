@@ -37,14 +37,10 @@ public class EntityAutoRenewal {
 	}
 
 	public void execute(Instant consensusTime) {
-		AccountID.Builder accountBuilder = AccountID.newBuilder()
-				.setShardNum(0L)
-				.setRealmNum(0L);
+		AccountID feeCollector = ctx.globalDynamicProperties().fundingAccount();
+		AccountID.Builder accountBuilder = feeCollector.toBuilder();
 		AccountID accountID = accountBuilder
 				.setAccountNum(1001L)
-				.build();
-		AccountID feeCollector = accountBuilder
-				.setAccountNum(98L)
 				.build();
 		var backingAccounts = ctx.backingAccounts();
 //		backingAccounts.remove(accountID);
