@@ -3,9 +3,9 @@
 A Hedera Services network can be configured to automatically increase its 
 fees during extended periods of high congestion. 
 
-An integral `multiplier` determines the size of the increase at any 
-moment; for example, if `multiplier=2` then fees are twice as large. This 
-multiplier can itself also be made to increase as congestion worsens. 
+An integral `multiplier` fixes the size of the increase at any 
+moment; for example, if `multiplier=2` then fees are twice as large. 
+This multiplier can itself also increase as congestion worsens. 
 [Two properties](../../hedera-node/src/main/resources/bootstrap.properties) 
 determine the exact behavior, 
 ```
@@ -28,14 +28,14 @@ operation has been assigned. (By [default](../../hedera-node/src/main/resources/
 The network focuses on the _most full_ bucket. If the most full bucket has `x%` 
 of its capacity used, then congestion is simply taken to be `x%`.
 
-:bangbang:&nbsp; These congestion buckets are "filled" a little bit each 
-time the network handles a consensus transaction; and they "drain" as
-consensus time passes---**not** clock time! So a congestion bucket 
+:information_desk_person:&nbsp; These congestion buckets are "filled" a 
+little bit each time the network handles a consensus transaction; and 
+they "drain" as consensus time passes---**not** clock time! So a congestion bucket 
 **does not** reflect how the HAPI gRPC service on a given node is 
 being throttled; but just the rate at which the network is handling 
 consensus transactions, relative to consensus time.
 
-## The `minCongestionPeriod` property
+## The minCongestionPeriod property
 
 We may not want the network to increase prices because of a very brief
 spike of traffic. The `minCongestionPeriod` gives us this control. It is
@@ -43,7 +43,7 @@ a minimum number of seconds that congestion must stay at a given level
 for that level's `multiplier` to apply. (Note that seconds are the default
 units for any property that represents a duration.)
 
-## The `fees.percentCongestionMultipliers` property 
+## The fees.percentCongestionMultipliers property 
 
 We may want to increase the `multiplier` to different sizes at different 
 levels of sustained congestion. For example, after a minute at `90%` 
@@ -59,7 +59,7 @@ value---e.g. `10x`---is a multiplier. Only integral values are supported.
 arithmetic to eliminate the risk of nodes getting slightly different answers
 from a floating point calculation.)
 
-:information_desk_person: &nbsp; If there is more than one pair in the list,
+:bangbang:&nbsp; If there is more than one pair in the list,
 then both the congestion level and multiplier must strictly increase going 
 from left-to-right. Services will ignore any attempt to set a non-compliant
 value via a `FileUpdate` of file `0.0.121` or a _data/config/application.properties_ override.
