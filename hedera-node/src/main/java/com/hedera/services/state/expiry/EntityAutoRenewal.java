@@ -44,11 +44,12 @@ public class EntityAutoRenewal {
 		AccountID feeCollector = props.fundingAccount();
 		AccountID.Builder accountBuilder = feeCollector.toBuilder();
 		var backingAccounts = ctx.backingAccounts();
-		long lastScannedEntity = ctx.hederaNums().numReservedSystemEntities();
+		long lastScannedEntity = ctx.lastScannedEntity();
 		long numberOfEntitiesRenewedOrDeleted = 0;
 		for (long i = 1; i <= props.autoRenewNumberOfEntitiesToScan(); i++) {
+			lastScannedEntity++;
 			AccountID accountID = accountBuilder
-					.setAccountNum(lastScannedEntity + i)
+					.setAccountNum(lastScannedEntity)
 					.build();
 			if (backingAccounts.contains(accountID)) {
 				var merkleAccount = backingAccounts.getRef(accountID);
@@ -79,5 +80,6 @@ public class EntityAutoRenewal {
 			}
 		}
 		backingAccounts.flushMutableRefs();
+		ctx.updateLastScannedEntity(lastScannedEntity);
 	}
 }

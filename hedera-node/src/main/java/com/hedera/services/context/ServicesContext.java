@@ -1924,6 +1924,14 @@ public class ServicesContext {
 		return state.networkCtx().seqNo();
 	}
 
+	public long lastScannedEntity() {
+		return state.networkCtx().lastScannedEntity();
+	}
+
+	public void updateLastScannedEntity(long lastScannedEntity) {
+		state.networkCtx().updateLastScannedEntity(lastScannedEntity);
+	}
+
 	public ExchangeRates midnightRates() {
 		return state.networkCtx().midnightRates();
 	}

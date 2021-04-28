@@ -334,6 +334,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return seqNo;
 	}
 
+	public long lastScannedEntity() {
+		return lastScannedEntity;
+	}
+
+	public void updateLastScannedEntity(long lastScannedEntity) {
+		this.lastScannedEntity = lastScannedEntity;
+	}
+
 	public ExchangeRates getMidnightRates() {
 		return midnightRates;
 	}
