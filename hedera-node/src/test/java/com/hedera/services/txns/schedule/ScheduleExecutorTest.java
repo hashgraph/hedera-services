@@ -37,13 +37,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class ScheduleReadyForExecutionTest {
+class ScheduleExecutorTest {
 	private ScheduleID id = IdUtils.asSchedule("0.0.1234");
 
 	@Mock
@@ -53,22 +54,22 @@ class ScheduleReadyForExecutionTest {
 	@Mock
 	private MerkleSchedule schedule;
 
-	private ScheduleReadyForExecution subject;
+	private ScheduleExecutor subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ScheduleReadyForExecution(store, txnCtx);
+		subject = new ScheduleExecutor();
 	}
 
 	@Test
-	void triggersIfCanMarkAsExecuted() throws InvalidProtocolBufferException {
+	void triggersIfCanMarkAsExecuted() throws InvalidProtocolBufferException, NullPointerException {
 		given(store.markAsExecuted(id)).willReturn(OK);
 		given(store.get(id)).willReturn(schedule);
 		given(schedule.asSignedTxn()).willReturn(Transaction.getDefaultInstance());
 		given(schedule.effectivePayer()).willReturn(new EntityId(0, 0, 4321));
 
 		// when:
-		var result = subject.processExecution(id);
+		var result = subject.processExecution(id, store, txnCtx);
 
 		// then:
 		verify(txnCtx).trigger(any());
@@ -77,11 +78,19 @@ class ScheduleReadyForExecutionTest {
 	}
 
 	@Test
-	void doesntTriggerUnlessAbleToMarkScheduleExecuted() throws InvalidProtocolBufferException {
+	public void nullArgumentsThrowNullPointerException() throws InvalidProtocolBufferException, NullPointerException {
+		Assertions.assertThrows(
+				NullPointerException.class, () ->
+				subject.processExecution(null, null, null)
+		);
+	}
+
+	@Test
+	void doesntTriggerUnlessAbleToMarkScheduleExecuted() throws InvalidProtocolBufferException, NullPointerException {
 		given(store.markAsExecuted(id)).willReturn(SCHEDULE_ALREADY_EXECUTED);
 
 		// when:
-		var result = subject.processExecution(id);
+		var result = subject.processExecution(id, store, txnCtx);
 
 		// then:
 		verify(txnCtx, never()).trigger(any());

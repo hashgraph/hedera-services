@@ -30,31 +30,26 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
- * Defines a class to handle scheduled transaction execution
- * once the scheduled transaction is signed by the required
- * number of parties.
+ * Defines a final class to handle scheduled transaction execution once the scheduled transaction is signed by the
+ * required number of parties.
  *
  * @author Michael Tinker
  * @author Abhishek Pandey
  */
-public class ScheduleReadyForExecution {
-	protected final ScheduleStore store;
-	protected final TransactionContext txnCtx;
-
-	ScheduleReadyForExecution(ScheduleStore store, TransactionContext context) {
-		this.store = store;
-		this.txnCtx = context;
-	}
-
+public final class ScheduleExecutor {
 	/**
-	 * Given a ScheduleId, check if the underlying transaction
-	 * is already executed/deleted before attempting to execute.
+	 * Given a {@link ScheduleID}, {@link ScheduleStore}, {@link TransactionContext} it first checks if the underlying
+	 * transaction is already executed/deleted before attempting to execute and then returns response code after
+	 * triggering the underlying transaction. A ResponseEnumCode of OK is returned upon successful trigger of the
+	 * inner transaction.
 	 *
 	 * @param id The id of the scheduled transaction.
-	 *
-	 * @return the response code from executing the inner scheduled transaction
+	 * @param store Object to handle scheduled entity type.
+	 * @param context Object to handle inner transaction specific context on a node.
+	 * @return the response code {@link ResponseCodeEnum} from executing the inner scheduled transaction
 	 */
-	ResponseCodeEnum processExecution(ScheduleID id) throws InvalidProtocolBufferException {
+	ResponseCodeEnum processExecution(ScheduleID id, ScheduleStore store, TransactionContext context) throws
+			InvalidProtocolBufferException, NullPointerException {
 		final var executionStatus = store.markAsExecuted(id);
 		if (executionStatus != OK) {
 			return executionStatus;
@@ -62,16 +57,11 @@ public class ScheduleReadyForExecution {
 
 		final var schedule = store.get(id);
 		final var transaction = schedule.asSignedTxn();
-		txnCtx.trigger(
+		context.trigger(
 				new TriggeredTxnAccessor(
 						transaction.toByteArray(),
 						schedule.effectivePayer().toGrpcAccountId(),
 						id));
 		return OK;
-	}
-
-	@FunctionalInterface
-	interface ExecutionProcessor {
-		ResponseCodeEnum doProcess(ScheduleID id) throws InvalidProtocolBufferException;
 	}
 }

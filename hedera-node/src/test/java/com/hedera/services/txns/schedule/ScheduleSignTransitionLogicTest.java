@@ -80,7 +80,7 @@ public class ScheduleSignTransitionLogicTest {
     InHandleActivationHelper activationHelper;
     private SignatureMap sigMap;
     private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
-    private ScheduleReadyForExecution.ExecutionProcessor executor;
+    private ScheduleExecutor executor;
 
     private ScheduleSignTransitionLogic subject;
     private ScheduleID scheduleId = IdUtils.asSchedule("1.2.3");
@@ -90,7 +90,7 @@ public class ScheduleSignTransitionLogicTest {
     private void setup() throws InvalidProtocolBufferException {
         store = mock(ScheduleStore.class);
         accessor = mock(PlatformTxnAccessor.class);
-        executor = mock(ScheduleReadyForExecution.ExecutionProcessor.class);
+        executor = mock(ScheduleExecutor.class);
         activationHelper = mock(InHandleActivationHelper.class);
         txnCtx = mock(TransactionContext.class);
         replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
@@ -100,12 +100,11 @@ public class ScheduleSignTransitionLogicTest {
 
         given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
                 .willReturn(Pair.of(OK, true));
-        given(executor.doProcess(scheduleId)).willReturn(OK);
+        given(executor.processExecution(scheduleId, store, txnCtx)).willReturn(OK);
 
-        subject = new ScheduleSignTransitionLogic(store, txnCtx, activationHelper);
+        subject = new ScheduleSignTransitionLogic(store, txnCtx, activationHelper, executor);
 
         subject.replSigningsWitness = replSigningWitness;
-        subject.executor = executor;
         subject.classifier = classifier;
     }
 
@@ -158,7 +157,7 @@ public class ScheduleSignTransitionLogicTest {
         // and:
 		verifyNoInteractions(classifier);
         verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
-        verify(executor, never()).doProcess(scheduleId);
+        verify(executor, never()).processExecution(scheduleId, store, txnCtx);
         verify(txnCtx).setStatus(SCHEDULE_ALREADY_EXECUTED);
     }
 
@@ -174,7 +173,7 @@ public class ScheduleSignTransitionLogicTest {
         // and:
         verifyNoInteractions(classifier);
         verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
-        verify(executor, never()).doProcess(scheduleId);
+        verify(executor, never()).processExecution(scheduleId, store, txnCtx);
         verify(txnCtx).setStatus(SCHEDULE_ALREADY_DELETED);
     }
 
@@ -189,7 +188,7 @@ public class ScheduleSignTransitionLogicTest {
 
         // and:
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
-		verify(executor).doProcess(scheduleId);
+		verify(executor).processExecution(scheduleId, store, txnCtx);
         verify(txnCtx).setStatus(SUCCESS);
     }
 
@@ -207,7 +206,7 @@ public class ScheduleSignTransitionLogicTest {
         // and:
         verify(txnCtx).setStatus(SUCCESS);
         // and:
-        verify(executor, never()).doProcess(any());
+        verify(executor, never()).processExecution(scheduleId, store, txnCtx);
     }
 
     @Test
@@ -223,7 +222,7 @@ public class ScheduleSignTransitionLogicTest {
         // and:
         verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
         // and:
-        verify(executor, never()).doProcess(any());
+        verify(executor, never()).processExecution(scheduleId, store, txnCtx);
     }
 
     @Test
