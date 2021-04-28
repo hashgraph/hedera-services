@@ -23,6 +23,10 @@ package com.hedera.services.bdd.suites.perf;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 
+import java.util.OptionalLong;
+
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_MILLION_HBARS;
+
 public class PerfTestLoadSettings {
 	public static final int DEFAULT_TPS = 500;
 	public static final int DEFAULT_TOLERANCE_PERCENTAGE = 5;
@@ -44,7 +48,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_MEMO_LENGTH = 25;
 	public static final int DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION = 60; // in seconds
 	public static final int DEFAULT_DURATION_TOKEN_TRANSFER = 60; // in seconds
-
+	public static final long DEFAULT_INITIAL_BALANCE = ONE_MILLION_HBARS;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -100,7 +104,10 @@ public class PerfTestLoadSettings {
 	private int totalTokenAssociations = DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
 	/** Total scheduled transactions in the saved state file  */
 	private int totalScheduled = DEFAULT_TOTAL_SCHEDULED;
-
+	/**
+	 * Initial balance for the Crypto accounts created during LoadTest
+	 */
+	private long initialBalance = DEFAULT_INITIAL_BALANCE;
 
 	private HapiPropertySource ciProps = null;
 
@@ -112,6 +119,8 @@ public class PerfTestLoadSettings {
 		this.mins = mins;
 		this.threads = threads;
 	}
+
+	public long getInitialBalance() { return initialBalance; }
 
 	public int getMemoLength() {
 		return memoLength;
@@ -246,7 +255,9 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("totalScheduled")) {
 			totalScheduled = ciProps.getInteger("totalScheduled");
 		}
-
+		if (ciProps.has("initialBalance")) {
+			initialBalance = ciProps.getLong("initialBalance");
+		}
 	}
 
 	@Override
@@ -271,6 +282,7 @@ public class PerfTestLoadSettings {
 				.add("memoLength", memoLength)
 				.add("totalTokenAssociations", totalTokenAssociations)
 				.add("totalScheduledTransactions", totalScheduled)
+				.add("initialBalance", initialBalance)
 				.toString();
 	}
 }

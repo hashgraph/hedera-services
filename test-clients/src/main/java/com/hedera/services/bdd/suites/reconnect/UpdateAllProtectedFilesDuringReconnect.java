@@ -89,7 +89,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 
 						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.unavailableNode()
 				)
 				.when(
@@ -118,16 +118,16 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 						makeFree(CryptoGetInfo),
 
 						getAccountBalance(GENESIS)
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.unavailableNode()
 				)
 				.then(
-						withLiveNode("0.0.6")
+						withLiveNode("0.0.8")
 								.within(5 * 60, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
 						UtilVerbs.sleepFor(30 * 1000),
-						withLiveNode("0.0.6")
+						withLiveNode("0.0.8")
 								.within(5 * 60, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
@@ -139,36 +139,36 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 								.saveToRegistry(fileInfoRegistry),
 						getFileContents(API_PERMISSIONS)
 								.logged()
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.payingWith(GENESIS)
 								.hasContents(fileInfoRegistry),
 
 						fileUpdate(nonUpdatableFile)
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.fee(ONE_MILLION_HBARS)
 								.hasPrecheck(NOT_SUPPORTED),
 
 						fileCreate("contractFile")
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.payingWith(GENESIS)
 								.path(ContractResources.VALID_BYTECODE_PATH),
 						contractCreate("testContract")
 								.bytecode("contractFile")
 								.autoRenewSecs(15)
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
 
 						cryptoCreate("civilian")
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.fee(ONE_HUNDRED_HBARS)
 								.hasPrecheck(INSUFFICIENT_TX_FEE),
 
 						cryptoCreate("civilian")
-								.setNode("0.0.6"),
+								.setNode("0.0.8"),
 						getAccountInfo("0.0.2")
 								.payingWith("civilian")
 								.nodePayment(0L)
-								.setNode("0.0.6")
+								.setNode("0.0.8")
 								.hasAnswerOnlyPrecheck(OK),
 
 						restoreFileFromRegistry(APP_PROPERTIES, APP_FILE_REGISTRY),

@@ -34,6 +34,7 @@ import java.util.OptionalLong;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_MEMO_LENGTH;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -46,7 +47,7 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt hcsSubmitMessage = OptionalInt.empty();
 	public static OptionalInt hcsSubmitMessageSizeVar = OptionalInt.empty();
 	/** initial balance of account used as sender for performance test transactions */
-	public static OptionalLong initialBalance = OptionalLong.of(ONE_MILLION_HBARS);
+	public static OptionalLong initialBalance = OptionalLong.of(DEFAULT_INITIAL_BALANCE);
 	public static OptionalInt totalTestAccounts = OptionalInt.empty();
 	public static OptionalInt totalTestTopics = OptionalInt.empty();
 	public static OptionalInt totalTestTokens = OptionalInt.empty();
@@ -143,6 +144,7 @@ public class LoadTest extends HapiApiSuite {
 						? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
 				.setHCSSubmitMessageSizeVar(hcsSubmitMessageSizeVar.isPresent()
 						? hcsSubmitMessageSizeVar::getAsInt	: settings::getHcsSubmitMessageSizeVar)
+				.setInitialBalance(settings::getInitialBalance)
 				.lasting(
 						(testDurationMinutes.isPresent() ?
 								LoadTest::getTestDurationMinutes :

@@ -35,21 +35,21 @@ import java.util.function.Supplier;
 
 import static com.google.common.base.Stopwatch.createStarted;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_DURATION_TOKEN_TRANSFER;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_INITIAL_BALANCE;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_MEMO_LENGTH;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_SUBMIT_MESSAGE_SIZE;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_SUBMIT_MESSAGE_SIZE_VAR;
-import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_ACCOUNTS;
-import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_TOPICS;
-import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_MEMO_LENGTH;
-import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_TOKENS;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TEST_TREASURE_START_ACCOUNT;
-import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
-import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_SCHEDULED;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_ACCOUNTS;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_TOKENS;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_TOPICS;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RunLoadTest extends UtilOp {
 	private static final Logger log = LogManager.getLogger(RunLoadTest.class);
@@ -78,6 +78,7 @@ public class RunLoadTest extends UtilOp {
 	private IntSupplier durationTokenTransfer = () -> DEFAULT_DURATION_TOKEN_TRANSFER;
 	private IntSupplier totalTokenAssociations = () -> DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
 	private IntSupplier totalScheduled = () -> DEFAULT_TOTAL_SCHEDULED;
+	private LongSupplier initialBalance = () -> DEFAULT_INITIAL_BALANCE;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
 
@@ -113,7 +114,7 @@ public class RunLoadTest extends UtilOp {
 		return this;
 	}
 
-	public RunLoadTest setTotalTestTopics(IntSupplier totalTestAccounts) {
+	public RunLoadTest setTotalTestTopics(IntSupplier totalTestTopics) {
 		this.totalTestTopics = totalTestTopics;
 		return this;
 	}
@@ -160,6 +161,11 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest setHCSSubmitMessageSizeVar(IntSupplier submitMessageSizeVar) {
 		this.hcsSubmitMessageSizeVar = submitMessageSizeVar;
+		return this;
+	}
+
+	public RunLoadTest setInitialBalance(LongSupplier initialBalance) {
+		this.initialBalance = initialBalance;
 		return this;
 	}
 
