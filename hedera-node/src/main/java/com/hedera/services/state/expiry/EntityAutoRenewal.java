@@ -37,7 +37,11 @@ public class EntityAutoRenewal {
 	}
 
 	public void execute(Instant consensusTime) {
-		AccountID feeCollector = ctx.globalDynamicProperties().fundingAccount();
+		var props = ctx.globalDynamicProperties();
+		if (!props.autoRenewEnabled()) {
+			return;
+		}
+		AccountID feeCollector = props.fundingAccount();
 		AccountID.Builder accountBuilder = feeCollector.toBuilder();
 		AccountID accountID = accountBuilder
 				.setAccountNum(1001L)
