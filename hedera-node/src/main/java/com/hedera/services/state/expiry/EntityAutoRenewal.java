@@ -43,23 +43,27 @@ public class EntityAutoRenewal {
 		}
 		AccountID feeCollector = props.fundingAccount();
 		AccountID.Builder accountBuilder = feeCollector.toBuilder();
-		AccountID accountID = accountBuilder
-				.setAccountNum(1001L)
-				.build();
 		var backingAccounts = ctx.backingAccounts();
+		long lastScannedEntity = ctx.hederaNums().numReservedSystemEntities();
+		for (long i = 1; i <= props.autoRenewNumberOfEntitiesToScan(); i++) {
+			AccountID accountID = accountBuilder
+					.setAccountNum(lastScannedEntity + i)
+					.build();
 //		backingAccounts.remove(accountID);
-		if (backingAccounts.contains(accountID)) {
-			var merkleAccount = backingAccounts.getRef(accountID);
-			long autoRenewSecs = merkleAccount.getAutoRenewSecs();
-			long expiry = merkleAccount.getExpiry();
-			long newExpiry = expiry + autoRenewSecs;
-			merkleAccount.setExpiry(newExpiry);
-			Instant actionTime = consensusTime.plusNanos(1L);
+			if (backingAccounts.contains(accountID)) {
+				var merkleAccount = backingAccounts.getRef(accountID);
+				long autoRenewSecs = merkleAccount.getAutoRenewSecs();
+				long expiry = merkleAccount.getExpiry();
+				long newExpiry = expiry + autoRenewSecs;
+				merkleAccount.setExpiry(newExpiry);
+				Instant actionTime = consensusTime.plusNanos(1L);
 //			var record = EntityRemovalRecord.generatedFor(accountID, actionTime, accountID);
-			var record = AutoRenewalRecord.generatedFor(accountID, actionTime, accountID, 0L, newExpiry, feeCollector);
-			var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
-			ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
-			ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+				var record = AutoRenewalRecord.generatedFor(accountID, actionTime, accountID, 0L, newExpiry,
+						feeCollector);
+				var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
+				ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
+				ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+			}
 		}
 		backingAccounts.flushMutableRefs();
 	}
