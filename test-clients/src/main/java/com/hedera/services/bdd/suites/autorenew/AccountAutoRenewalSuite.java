@@ -39,8 +39,10 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -61,7 +63,8 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				accountAutoRenewal(),
 				maxNumberOfEntitiesToRenewOrDeleteWorks(),
 				numberOfEntitiesToScanWorks(),
-				autoDeleteAfterGracePeriod()
+				autoDeleteAfterGracePeriod(),
+				updateExpiration()
 		);
 	}
 
@@ -223,6 +226,52 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction2")
 				).then(
 						getAccountBalance(autoDeleteAccount).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
+				);
+	}
+
+	/**
+	 * A Hedera entity can have its expiration time extended by anyone, not just by the owner or admin account.
+	 * The expiration time is the only field that can be changed in an update without being signed by the owner or the admin.
+	 * It is also the only field that can be changed while expired (during the grace period).
+	 */
+	private HapiApiSpec updateExpiration() {
+		String autoRenewAccount = "autoRenewAccount";
+		int autoRenewSecs = 10;
+		int gracePeriod = 120;
+		long initialExpirationTime = Instant.now().getEpochSecond() + autoRenewSecs;
+		long newExpirationTime = initialExpirationTime + autoRenewSecs;
+		return defaultHapiSpec("UpdateExpirationTime")
+				.given(
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
+								.overridingProps(Map.of(
+										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
+										"autorenew.gracePeriod", String.valueOf(gracePeriod),
+										"autorenew.numberOfEntitiesToScan", "100",
+										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
+								.erasingProps(Set.of("minimumAutoRenewDuration")),
+						cryptoCreate(autoRenewAccount).autoRenewSecs(autoRenewSecs).balance(0L),
+						cryptoCreate("payer").balance(ONE_HUNDRED_HBARS)
+				)
+				.when(
+						sleepFor(15 * 1000), // autoRenewAccount would have been expired by now
+						// handle transaction to trigger cleanup and autoRenewAccount will be in grace period
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction1"),
+						getAccountBalance(autoRenewAccount).logged(),
+						// when in grace period we can not update anything on autoRenewAccount except for expiration time
+						cryptoUpdate(autoRenewAccount)
+								.entityMemo("dont"),
+						// anyone can extend the expiration time on autoRenewAccount
+						contractUpdate(autoRenewAccount)
+								.newExpirySecs(autoRenewSecs)
+								.payingWith("payer")
+				)
+				.then(
+						getAccountInfo(autoRenewAccount).has(
+								accountWith().expiry(newExpirationTime, 5L)
+						).logged(),
+						getAccountInfo("payer").has(
+								accountWith().balanceLessThan(ONE_HUNDRED_HBARS)
+						).logged()
 				);
 	}
 
