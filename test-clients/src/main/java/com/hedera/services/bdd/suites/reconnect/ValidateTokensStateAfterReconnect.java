@@ -42,6 +42,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
@@ -161,34 +163,47 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
 
+						/* validate tokenInfo between reconnecting node and other nodes match*/
 						getTokenInfo(tokenToBeQueried)
 								.setNode(reconnectingNode)
-								.hasAdminKey(adminKey)
-								.hasFreezeKey(freezeKey)
-								.hasSupplyKey(supplyKey)
+								.hasAdminKey(tokenToBeQueried)
+								.hasFreezeKey(tokenToBeQueried)
+								.hasSupplyKey(tokenToBeQueried)
 								.hasTotalSupply(999)
 								.logging(),
 						getTokenInfo(tokenToBeQueried)
 								.setNode(nonReconnectingNode)
-								.hasAdminKey(adminKey)
-								.hasFreezeKey(freezeKey)
-								.hasSupplyKey(supplyKey)
+								.hasAdminKey(tokenToBeQueried)
+								.hasFreezeKey(tokenToBeQueried)
+								.hasSupplyKey(tokenToBeQueried)
 								.hasTotalSupply(999)
 								.logging(),
 						getTokenInfo(anotherToken)
 								.setNode(reconnectingNode)
-								.hasFreezeKey(freezeKey)
-								.hasSupplyKey(supplyKey)
+								.hasFreezeKey(anotherToken)
+								.hasAdminKey(anotherToken)
+								.hasSupplyKey(anotherToken)
 								.hasTotalSupply(999)
 								.logging(),
 						getTokenInfo(anotherToken)
 								.setNode(nonReconnectingNode)
-								.hasFreezeKey(freezeKey)
-								.hasSupplyKey(supplyKey)
+								.hasFreezeKey(anotherToken)
+								.hasAdminKey(anotherToken)
+								.hasSupplyKey(anotherToken)
 								.hasTotalSupply(999)
 								.logging(),
 						cryptoDelete(TOKEN_TREASURY)
 								.hasKnownStatus(ACCOUNT_IS_TREASURY)
+								.setNode(reconnectingNode),
+
+						/* Should be able to delete treasury only after dissociating the tokens */
+						tokenDelete(tokenToBeQueried).setNode(reconnectingNode),
+						tokenDissociate(TOKEN_TREASURY, tokenToBeQueried).setNode(reconnectingNode),
+						cryptoDelete(TOKEN_TREASURY)
+								.hasKnownStatus(ACCOUNT_IS_TREASURY)
+								.setNode(reconnectingNode),
+						tokenDelete(anotherToken).setNode(reconnectingNode),
+						cryptoDelete(TOKEN_TREASURY)
 				);
 	}
 
