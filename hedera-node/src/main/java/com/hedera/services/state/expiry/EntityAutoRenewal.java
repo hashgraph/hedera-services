@@ -57,6 +57,7 @@ public class EntityAutoRenewal {
 					numberOfEntitiesRenewedOrDeleted++;
 					long balance = merkleAccount.getBalance();
 					long newExpiry = expiry;
+					long fee = 100_000_000L;
 					if (0 == balance) {
 						backingAccounts.remove(accountID);
 					} else {
@@ -67,7 +68,7 @@ public class EntityAutoRenewal {
 					Instant actionTime = consensusTime.plusNanos(numberOfEntitiesRenewedOrDeleted);
 					var record = (0 == balance)
 							? EntityRemovalRecord.generatedFor(accountID, actionTime, accountID)
-							: AutoRenewalRecord.generatedFor(accountID, actionTime, accountID, 0L, newExpiry, feeCollector);
+							: AutoRenewalRecord.generatedFor(accountID, actionTime, accountID, fee, newExpiry, feeCollector);
 					var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
 					ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
 					ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
