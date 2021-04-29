@@ -66,8 +66,9 @@ import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsL
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 
 /**
- * A reconnect test in which  a few tokens are created while the node 0.0.8 is disconnected from the network. Once the
- * node is reconnected the state of tokens is verified on reconnected node and other node
+ * A reconnect test in which a congestion pricing multiplier is updated and triggered while the node 0.0.8 is
+ * disconnected from the network. Once the node is reconnected validate that the congestion pricing is in affect on
+ * reconnected node
  */
 public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidateCongestionPricingAfterReconnect.class);
@@ -167,6 +168,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 												.payingWith(GENESIS)
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR)
+												.setNode(reconnectingNode)
 												.logging())
 										.toArray(HapiSpecOperation[]::new)
 						),
