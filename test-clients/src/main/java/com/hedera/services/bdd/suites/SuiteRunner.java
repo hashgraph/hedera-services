@@ -105,6 +105,7 @@ import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringRec
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateCongestionPricingAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
@@ -276,6 +277,7 @@ public class SuiteRunner {
 		put("UpdateAllProtectedFilesDuringReconnect", aof(new UpdateAllProtectedFilesDuringReconnect()));
 		put("SchedulesExpiryDuringReconnect", aof(new SchedulesExpiryDuringReconnect()));
 		put("ValidateTokensStateAfterReconnect", aof(new ValidateTokensStateAfterReconnect()));
+		put("ValidateCongestionPricingAfterReconnect", aof(new ValidateCongestionPricingAfterReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
