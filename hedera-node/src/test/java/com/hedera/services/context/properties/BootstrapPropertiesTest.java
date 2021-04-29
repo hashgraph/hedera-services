@@ -31,7 +31,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +52,7 @@ class BootstrapPropertiesTest {
 	private String EMPTY_OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
 
 	private static final Map<String, Object> expectedProps = Map.ofEntries(
-			entry("bootstrap.feeSchedulesJson.resource", "FeeSchedule.json"),
+			entry("bootstrap.feeSchedulesJson.resource", "feeSchedules.json"),
 			entry("bootstrap.genesisB64Keystore.keyName", "START_ACCOUNT"),
 			entry("bootstrap.genesisB64Keystore.path", "data/onboard/StartUpAccount.txt"),
 			entry("bootstrap.genesisPemPassphrase.path", "TBD"),
@@ -141,7 +142,7 @@ class BootstrapPropertiesTest {
 			entry("fees.tokenTransferUsageMultiplier", 380),
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
-			entry("scheduling.whitelist", Set.of(CryptoCreate, HederaFunctionality.CryptoTransfer)),
+			entry("scheduling.whitelist", Set.of(CryptoTransfer, ConsensusSubmitMessage)),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),

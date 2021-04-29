@@ -1,0 +1,43 @@
+{
+    "buckets": [
+        {
+            "name": "A",
+            "burstPeriod": 6,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "CryptoTransfer",
+                        "CryptoCreate"
+                    ],
+                    "opsPerSec": 10000
+                },
+                {
+                    "operations": [
+                        "ContractCall"
+                    ],
+                    "milliOpsPerSec": 200
+                },
+                {
+                    "operations": [
+                        "TokenMint"
+                    ],
+                    "opsPerSec": 3000
+                }
+            ]
+        },
+        {
+            "name": "D",
+            "burstPeriod": 4,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "CryptoGetAccountBalance",
+                        "TransactionGetReceipt"
+                    ],
+                    "opsPerSec": 1000000
+                }
+            ]
+        }
+    ]
+}
+

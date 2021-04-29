@@ -13,3 +13,6 @@ networks:
     defaultPayer: 950
     nodes:
       - { id: 0, account: 3, ipv4Addr: 35.237.200.180 }
+  perfnet:
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 146.148.65.62 }

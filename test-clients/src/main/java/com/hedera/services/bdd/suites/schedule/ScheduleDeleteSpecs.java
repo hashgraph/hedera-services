@@ -30,10 +30,12 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
@@ -176,11 +178,12 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec deletingExecutedIsPointless() {
-		return defaultHapiSpec("DeletingExpiredFails")
+		return defaultHapiSpec("DeletingExecutedIsPointless")
 				.given(
+						createTopic("ofGreatInterest"),
 						newKeyNamed("admin"),
 						scheduleCreate("validScheduledTxn",
-								cryptoCreate("newImmediate")
+								submitMessageTo("ofGreatInterest")
 						)
 								.adminKey("admin")
 				).when().then(

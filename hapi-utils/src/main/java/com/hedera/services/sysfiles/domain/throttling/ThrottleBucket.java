@@ -150,7 +150,7 @@ public class ThrottleBucket {
 	) {
 		int opsReq = (int)(mtps / group.impliedMilliOpsPerSec());
 		long capacityReq = capacityRequiredFor(opsReq);
-		if (capacityReq > totalCapacity) {
+		if (capacityReq < 0 || capacityReq > totalCapacity) {
 			throw new IllegalStateException(exceptionMsgFor(
 					NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
 					"Bucket " + name + " contains an unsatisfiable milliOpsPerSec with " + n + " nodes!"));

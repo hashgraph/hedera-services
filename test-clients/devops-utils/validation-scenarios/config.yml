@@ -32,8 +32,8 @@ networks:
     defaultNode: 3
     ensureScenarioPayerHbars: 10000
     nodes:
-    - {account: 3, ipv4Addr: 34.74.82.254}
-    scenarioPayer: 1072
+    - {account: 3, ipv4Addr: 146.148.65.62}
+    scenarioPayer: 6602
     scenarios:
       sysFilesDown:
         evalMode: snapshot

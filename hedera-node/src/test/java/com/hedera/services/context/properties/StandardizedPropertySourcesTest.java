@@ -36,16 +36,14 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-public class StandardizedPropertySourcesTest {
-	Predicate fileSourceExists;
-	PropertySource bootstrapProps;
+class StandardizedPropertySourcesTest {
+	private PropertySource bootstrapProps;
 
-	StandardizedPropertySources subject;
+	private StandardizedPropertySources subject;
 
 	@BeforeEach
 	private void setup() {
 		bootstrapProps = mock(PropertySource.class);
-		fileSourceExists = mock(Predicate.class);
 	}
 
 	@Test
@@ -118,7 +116,7 @@ public class StandardizedPropertySourcesTest {
 	public void usesBootstrapSourceAsApropos() {
 		givenImpliedSubject();
 		// and:
-		subject.nodeProps.fromFile.clear();
+		subject.getNodeProps().getFromFile().clear();
 
 		// when:
 		PropertySource properties = subject.asResolvingSource();
@@ -131,29 +129,7 @@ public class StandardizedPropertySourcesTest {
 		}
 	}
 
-	@Test
-	public void failsOnMissingApiPermissionProps() {
-		given(bootstrapProps.getStringProperty("bootstrap.hapiPermissions.path"))
-				.willReturn("api-permission.properties");
-		// and:
-		given(fileSourceExists.test("api-permission.properties")).willReturn(false);
-		givenImpliedSubject();
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.assertSourcesArePresent());
-		verify(fileSourceExists).test("api-permission.properties");
-	}
-
-	@Test
-	public void uneventfulInitIfSourcesAvailable() {
-		given(fileSourceExists.test(any())).willReturn(true);
-		givenImpliedSubject();
-
-		// expect:
-		assertDoesNotThrow(() -> subject.assertSourcesArePresent());
-	}
-
 	private void givenImpliedSubject() {
-		subject = new StandardizedPropertySources(bootstrapProps, fileSourceExists);
+		subject = new StandardizedPropertySources(bootstrapProps);
 	}
 }

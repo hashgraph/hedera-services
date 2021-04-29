@@ -254,7 +254,6 @@ public class ServicesMainTest {
 		InOrder inOrder = inOrder(
 				systemFilesManager,
 				networkCtxManager,
-				propertySources,
 				platform,
 				stateMigrations,
 				ledgerValidator,
@@ -271,7 +270,6 @@ public class ServicesMainTest {
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		inOrder.verify(propertySources).assertSourcesArePresent();
 		inOrder.verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 		inOrder.verify(stateMigrations).runAllFor(ctx);
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);

@@ -59,7 +59,7 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
 			new AbstractMap.SimpleImmutableEntry<>(SUCCESS_BUT_MISSING_EXPECTED_OPERATION, true);
 	static final Map.Entry<ResponseCodeEnum, Boolean> UNPARSEABLE_VERDICT =
 			new AbstractMap.SimpleImmutableEntry<>(UNPARSEABLE_THROTTLE_DEFINITIONS, false);
-	static final Map.Entry<ResponseCodeEnum, Boolean> DEFAULT_INVALID_VERDICT =
+	private static final Map.Entry<ResponseCodeEnum, Boolean> DEFAULT_INVALID_VERDICT =
 			new AbstractMap.SimpleImmutableEntry<>(INVALID_THROTTLE_DEFINITIONS, false);
 
 	static final int APPLICABLE_PRIORITY = 0;

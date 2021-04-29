@@ -76,7 +76,7 @@ class ScreenedNodeFilePropsTest {
 				"environment",
 				"NumberFormatException"));
 		// and:
-		assertTrue(subject.fromFile.isEmpty());
+		assertTrue(subject.getFromFile().isEmpty());
 	}
 
 	@Test
@@ -109,7 +109,7 @@ class ScreenedNodeFilePropsTest {
 			assertEquals(expectedProps.get(name), subject.getProperty(name));
 		}
 		// and:
-		assertEquals(expectedProps, subject.fromFile);
+		assertEquals(expectedProps, subject.getFromFile());
 		// and:
 		assertEquals(expectedProps.keySet(), subject.allPropertyNames());
 	}
