@@ -1688,7 +1688,7 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "15 16 * * *"
+          cron: "30 19 * * *"
           filters:
             branches:
               only:
@@ -1734,7 +1734,7 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-1C:
     triggers:
       - schedule:
-          cron: "15 16 * * *"
+          cron: "30 19 * * *"
           filters:
             branches:
               only:
