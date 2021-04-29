@@ -1688,11 +1688,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "5 7 * * *"
+          cron: "15 16 * * *"
           filters:
             branches:
               only:
-                - master
+                - fix-reconnect-tests
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1734,11 +1734,11 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-1C:
     triggers:
       - schedule:
-          cron: "15 8 * * *"
+          cron: "15 16 * * *"
           filters:
             branches:
               only:
-                - master
+                - fix-reconnect-tests
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2301,7 +2301,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout fix-reconnect-tests;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
