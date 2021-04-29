@@ -90,7 +90,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec validateCongestionPricing() {
-		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
+		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-6N.json");
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 		String tmpMinCongestionPeriodInSecs = "10";
 		String civilianAccount = "civilian";
@@ -108,7 +108,8 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 
 						cryptoCreate(civilianAccount)
 								.payingWith(GENESIS)
-								.balance(ONE_MILLION_HBARS).logging(),
+								.balance(ONE_MILLION_HBARS)
+								.logging(),
 						fileCreate("bytecode")
 								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
 								.payingWith(GENESIS).logging(),
@@ -126,6 +127,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.setNode(reconnectingNode)
 								.unavailableNode().logging()
 				).when(
+						/* update the multiplier to 10x with a 1% congestion for tmpMinCongestionPeriodInSecs */
 						fileUpdate(APP_PROPERTIES)
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
@@ -139,35 +141,43 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.contents(artificialLimits.toByteArray()).logging(),
 						blockingOrder(
 								IntStream.range(0, 10).mapToObj(i ->
-										contractCall("scMulti")
+										contractCall(oneContract)
 												.payingWith(GENESIS)
 												.fee(ONE_HUNDRED_HBARS)
-												.sending(ONE_HBAR).logging())
+												.sending(ONE_HBAR)
+												.logging())
 										.toArray(HapiSpecOperation[]::new)
-						),
-						contractCall("scMulti")
-								.payingWith("civilian")
-								.fee(ONE_HUNDRED_HBARS)
-								.sending(ONE_HBAR)
-								.via("pricyCall")
-								.logging()
+						)
 				).then(
 						withLiveNode(reconnectingNode)
-								.within(5 * 60, TimeUnit.SECONDS)
+								.within(60, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
-						contractCall("scMulti")
-								.payingWith("civilian")
+
+						contractCall(oneContract)
+								.payingWith(civilianAccount)
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
 								.via("pricyCallAfterReconnect")
 								.setNode(reconnectingNode)
 								.logging(),
+						blockingOrder(
+								IntStream.range(0, 10).mapToObj(i ->
+										contractCall(oneContract)
+												.payingWith(GENESIS)
+												.fee(ONE_HUNDRED_HBARS)
+												.sending(ONE_HBAR)
+												.logging())
+										.toArray(HapiSpecOperation[]::new)
+						),
+
 						getTxnRecord("pricyCallAfterReconnect")
 								.payingWith(GENESIS)
 								.providingFeeTo(tenXPrice::set)
 								.setNode(reconnectingNode)
 								.logging(),
+
+						/* check if the multiplier took effect in the contract call operation */
 						withOpContext((spec, opLog) -> {
 							Assert.assertEquals(
 									"~10x multiplier should be in affect!",
@@ -175,6 +185,8 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 									(1.0 * tenXPrice.get()) / normalPrice.get(),
 									0.1);
 						}),
+
+						/* revert the multiplier before test ends */
 						fileUpdate(THROTTLE_DEFS)
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
@@ -189,7 +201,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 										"fees.minCongestionPeriod", defaultMinCongestionPeriod
 								))
 								.logging(),
-						/* Make sure the multiplier is reset before the next spec runs */
+
 						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
 								.payingWith(GENESIS).logging()
 				);
