@@ -93,7 +93,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 	private HapiApiSpec validateCongestionPricing() {
 		var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-6N.json");
 		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-		String tmpMinCongestionPeriodInSecs = "10";
+		String tmpMinCongestionPeriodInSecs = "5";
 		String civilianAccount = "civilian";
 		String oneContract = "contract";
 
@@ -141,7 +141,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(artificialLimits.toByteArray()).logging(),
 						blockingOrder(
-								IntStream.range(0, 10).mapToObj(i ->
+								IntStream.range(0, 20).mapToObj(i ->
 										contractCall(oneContract)
 												.payingWith(GENESIS)
 												.fee(ONE_HUNDRED_HBARS)
@@ -151,17 +151,9 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 						)
 				).then(
 						withLiveNode(reconnectingNode)
-								.within(60, TimeUnit.SECONDS)
+								.within(5 * 60, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
-
-						contractCall(oneContract)
-								.payingWith(civilianAccount)
-								.fee(ONE_HUNDRED_HBARS)
-								.sending(ONE_HBAR)
-								.via("pricyCallAfterReconnect")
-								.setNode(reconnectingNode)
-								.logging(),
 						blockingOrder(
 								IntStream.range(0, 10).mapToObj(i ->
 										contractCall(oneContract)
@@ -172,6 +164,13 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 												.logging())
 										.toArray(HapiSpecOperation[]::new)
 						),
+						contractCall(oneContract)
+								.payingWith(civilianAccount)
+								.fee(ONE_HUNDRED_HBARS)
+								.sending(ONE_HBAR)
+								.via("pricyCallAfterReconnect")
+								.setNode(reconnectingNode)
+								.logging(),
 
 						getTxnRecord("pricyCallAfterReconnect")
 								.payingWith(GENESIS)
