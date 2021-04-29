@@ -78,7 +78,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	private static final String PROTO_FILE_EXTENSION = ".pb";
 	private static final String CSV_FILE_EXTENSION = ".csv";
 
-	static final Instant NEVER = null;
+	private static final Instant NEVER = null;
+	private static final int ALLOWED_EXPORT_TIME_SKEW = 1;
 	private static final Base64.Encoder encoder = Base64.getEncoder();
 
 	final long expectedFloat;
@@ -113,7 +114,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 	@Override
 	public boolean isTimeToExport(Instant now) {
-		if (periodBegin != NEVER
+		if ( periodBegin != NEVER && now.getEpochSecond() % exportPeriod <= ALLOWED_EXPORT_TIME_SKEW
 				&& now.getEpochSecond() / exportPeriod != periodBegin.getEpochSecond() / exportPeriod) {
 			periodBegin = now;
 			return true;
