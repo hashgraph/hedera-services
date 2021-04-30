@@ -131,7 +131,7 @@
               <appendAssemblyId>false</appendAssemblyId>
               <archive>
                 <manifest>
-                  <mainClass>com.hedera.services.bdd.suites.perf.AdHocTokenTransfers</mainClass>
+                  <mainClass>com.hedera.services.bdd.suites.perf.token.AdHocTokenTransfers</mainClass>
                 </manifest>
               </archive>
               <descriptors>
