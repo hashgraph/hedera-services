@@ -90,7 +90,8 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 								.hasAnyKnownStatus()
 								.deferStatusResolution()
 								.adminKey(DEFAULT_PAYER)
-								.logging().advertisingCreation()
+								.logging()
+								.advertisingCreation()
 								.savingExpectedScheduledTxnId()
 				)
 				.when(
@@ -106,7 +107,8 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 								.hasAnyKnownStatus()
 								.deferStatusResolution()
 								.adminKey(DEFAULT_PAYER)
-								.logging().advertisingCreation()
+								.logging()
+								.advertisingCreation()
 								.savingExpectedScheduledTxnId(),
 
 						scheduleCreate(oneOtherSchedule,
@@ -119,7 +121,8 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 								.hasAnyKnownStatus()
 								.deferStatusResolution()
 								.adminKey(DEFAULT_PAYER)
-								.logging().advertisingCreation()
+								.logging()
+								.advertisingCreation()
 								.savingExpectedScheduledTxnId(),
 
 						getAccountBalance(GENESIS)
