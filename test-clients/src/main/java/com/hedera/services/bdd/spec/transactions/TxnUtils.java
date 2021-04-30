@@ -60,7 +60,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.SplittableRandom;
@@ -286,6 +288,12 @@ public class TxnUtils {
 		TransferList.Builder builder = TransferList.newBuilder();
 		Arrays.stream(specifics).forEach(builder::addAllAccountAmounts);
 		return builder.build();
+	}
+
+	public static Map<AccountID, Long> asDebits(TransferList xfers) {
+		return xfers.getAccountAmountsList().stream()
+				.filter(aa -> aa.getAmount() < 0)
+				.collect(toMap(AccountAmount::getAccountID, AccountAmount::getAmount));
 	}
 
 	public static List<AccountAmount> tinyBarsFromTo(long amount, AccountID from, AccountID to) {
