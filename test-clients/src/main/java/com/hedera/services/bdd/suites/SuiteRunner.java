@@ -76,6 +76,8 @@ import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
 import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTest;
+import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
+import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.topic.CreateTopicPerfSuite;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
@@ -257,6 +259,8 @@ public class SuiteRunner {
 		put("CreateTopicPerfSuite", aof(new CreateTopicPerfSuite()));
 		put("MixedOpsMemoPerfSuite", aof(new MixedOpsMemoPerfSuite()));
 		put("FileContractMemoPerfSuite", aof(new FileContractMemoPerfSuite()));
+		put("MixedSmartContractOpsLoadTest", aof(new MixedSmartContractOpsLoadTest()));
+		put("MixedFileOpsLoadTest", aof(new MixedFileOpsLoadTest()));
 		/* Functional tests - RECONNECT */
 		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
