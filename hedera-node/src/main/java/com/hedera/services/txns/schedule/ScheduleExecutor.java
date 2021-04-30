@@ -26,6 +26,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import org.jetbrains.annotations.NotNull;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -41,14 +42,18 @@ public final class ScheduleExecutor {
 	 * Given a {@link ScheduleID}, {@link ScheduleStore}, {@link TransactionContext} it first checks if the underlying
 	 * transaction is already executed/deleted before attempting to execute and then returns response code after
 	 * triggering the underlying transaction. A ResponseEnumCode of OK is returned upon successful trigger of the
-	 * inner transaction.
+	 * inner transaction. The arguments cannot be null, the return type would always be a proper ResponseEnumCode.
 	 *
-	 * @param id The id of the scheduled transaction.
-	 * @param store Object to handle scheduled entity type.
-	 * @param context Object to handle inner transaction specific context on a node.
+	 * @param id The non null id of the scheduled transaction.
+	 * @param store A non null object to handle scheduled entity type.
+	 * @param context A non null object to handle inner transaction specific context on a node.
 	 * @return the response code {@link ResponseCodeEnum} from executing the inner scheduled transaction
 	 */
-	ResponseCodeEnum processExecution(ScheduleID id, ScheduleStore store, TransactionContext context) throws
+	ResponseCodeEnum processExecution(
+			@NotNull ScheduleID id,
+			@NotNull  ScheduleStore store,
+			@NotNull  TransactionContext context
+	) throws
 			InvalidProtocolBufferException, NullPointerException {
 		final var executionStatus = store.markAsExecuted(id);
 		if (executionStatus != OK) {
