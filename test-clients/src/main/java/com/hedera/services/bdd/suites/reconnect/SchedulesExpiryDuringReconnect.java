@@ -43,10 +43,15 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
+import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.nonReconnectingNode;
+import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.reconnectingNode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
+/**
+ * A reconnect test in which a few schedule transactions are created while the node 0.0.8 is disconnected from the network.
+ * Once the node is reconnected the state of the schedules are verified on reconnected node
+ */
 public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 	private static final String SCHEDULE_EXPIRY_TIME_SECS = "10";
 
@@ -118,21 +123,21 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 								.savingExpectedScheduledTxnId(),
 
 						getAccountBalance(GENESIS)
-								.setNode("0.0.8")
+								.setNode(reconnectingNode)
 								.unavailableNode(),
 
-						cryptoCreate("civilian1").setNode("0.0.3"),
-						cryptoCreate("civilian2").setNode("0.0.3"),
-						cryptoCreate("civilian3").setNode("0.0.3")
+						cryptoCreate("civilian1").setNode(nonReconnectingNode),
+						cryptoCreate("civilian2").setNode(nonReconnectingNode),
+						cryptoCreate("civilian3").setNode(nonReconnectingNode)
 				)
 				.then(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 3))
-								.fee(ONE_HBAR).setNode("0.0.3"),
+								.fee(ONE_HBAR).setNode(nonReconnectingNode),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 3))
-								.fee(ONE_HBAR).setNode("0.0.3"),
+								.fee(ONE_HBAR).setNode(nonReconnectingNode),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 3))
-								.fee(ONE_HBAR).setNode("0.0.3"),
-						withLiveNode("0.0.8")
+								.fee(ONE_HBAR).setNode(nonReconnectingNode),
+						withLiveNode(reconnectingNode)
 								.within(5 * 60, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
@@ -151,13 +156,13 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 								.adminKey(DEFAULT_PAYER)
 								.logging().advertisingCreation(),
 
-						getScheduleInfo(longLastingSchedule).setNode("0.0.8")
+						getScheduleInfo(longLastingSchedule).setNode(reconnectingNode)
 								.hasScheduledTxnIdSavedBy(longLastingSchedule)
 								.hasCostAnswerPrecheck(OK),
-						getScheduleInfo(oneOtherSchedule).setNode("0.0.8")
+						getScheduleInfo(oneOtherSchedule).setNode(reconnectingNode)
 								.hasScheduledTxnIdSavedBy(oneOtherSchedule)
 								.hasCostAnswerPrecheck(OK),
-						getScheduleInfo(soonToBeExpiredSchedule).setNode("0.0.8")
+						getScheduleInfo(soonToBeExpiredSchedule).setNode(reconnectingNode)
 								.hasScheduledTxnIdSavedBy(soonToBeExpiredSchedule)
 								.logging()
 								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID)
