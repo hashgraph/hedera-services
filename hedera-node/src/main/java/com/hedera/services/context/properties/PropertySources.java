@@ -27,6 +27,5 @@ package com.hedera.services.context.properties;
  * @author Michael Tinker
  */
 public interface PropertySources {
-	void assertSourcesArePresent();
 	PropertySource asResolvingSource();
 }

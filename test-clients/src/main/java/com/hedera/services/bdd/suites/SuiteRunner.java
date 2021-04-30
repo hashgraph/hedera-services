@@ -67,6 +67,9 @@ import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect;
+import com.hedera.services.bdd.suites.reconnect.CreateSchedulesBeforeReconnect;
+import com.hedera.services.bdd.suites.reconnect.CreateTokensBeforeReconnect;
+import com.hedera.services.bdd.suites.reconnect.SchedulesExpiryDuringReconnect;
 import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
@@ -261,6 +264,8 @@ public class SuiteRunner {
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
 		put("SubmitMessagesForReconnect", aof(new SubmitMessagesForReconnect()));
 		put("CreateFilesBeforeReconnect", aof(new CreateFilesBeforeReconnect()));
+		put("CreateTokensBeforeReconnect", aof(new CreateTokensBeforeReconnect()));
+		put("CreateSchedulesBeforeReconnect", aof(new CreateSchedulesBeforeReconnect()));
 		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
 		put("MixedValidationsAfterReconnect", aof(new MixedValidationsAfterReconnect()));
 		put("UpdateApiPermissionsDuringReconnect", aof(new UpdateApiPermissionsDuringReconnect()));
@@ -271,6 +276,7 @@ public class SuiteRunner {
 		put("ValidateExchangeRateStateAfterReconnect", aof(new ValidateExchangeRateStateAfterReconnect()));
 		put("UpdateAllProtectedFilesDuringReconnect", aof(new UpdateAllProtectedFilesDuringReconnect()));
 		put("AutoRenewEntitiesForReconnect", aof( new AutoRenewEntitiesForReconnect()));
+		put("SchedulesExpiryDuringReconnect", aof(new SchedulesExpiryDuringReconnect()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));

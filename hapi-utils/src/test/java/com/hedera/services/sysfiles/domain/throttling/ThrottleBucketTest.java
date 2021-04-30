@@ -64,6 +64,18 @@ class ThrottleBucketTest {
 	}
 
 	@Test
+	void failsWhenConstructingMilliOpsThrottlesThatNeverPermitAnOperationAtNodeLevel() throws IOException {
+		// setup:
+		int n = 2;
+		var defs = TestUtils.pojoDefs("bootstrap/insufficient-capacity-throttles.json");
+		// and:
+		var subject = defs.getBuckets().get(0);
+
+		// expect:
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(n));
+	}
+
+	@Test
 	void failsWhenConstructingThrottlesThatNeverPermitAnOperationAtNodeLevel() throws IOException {
 		// setup:
 		int n = 24;

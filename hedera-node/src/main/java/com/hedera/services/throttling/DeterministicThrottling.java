@@ -40,8 +40,8 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	private final IntSupplier capacitySplitSource;
 
-	List<DeterministicThrottle> activeThrottles = Collections.emptyList();
-	EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
+	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
+	private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
 
 	public DeterministicThrottling(IntSupplier capacitySplitSource) {
 		this.capacitySplitSource = capacitySplitSource;
@@ -83,14 +83,18 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		int n = capacitySplitSource.getAsInt();
 		for (var bucket : defs.getBuckets()) {
-			var mapping = bucket.asThrottleMapping(n);
-			var throttle = mapping.getLeft();
-			var reqs = mapping.getRight();
-			for (var req : reqs) {
-				reqLists.computeIfAbsent(req.getLeft(), ignore -> new ArrayList<>())
-						.add(Pair.of(throttle, req.getRight()));
+			try {
+				var mapping = bucket.asThrottleMapping(n);
+				var throttle = mapping.getLeft();
+				var reqs = mapping.getRight();
+				for (var req : reqs) {
+					reqLists.computeIfAbsent(req.getLeft(), ignore -> new ArrayList<>())
+							.add(Pair.of(throttle, req.getRight()));
+				}
+				newActiveThrottles.add(throttle);
+			} catch (IllegalStateException badBucket) {
+				log.error("When constructing bucket '{}' from state: {}", bucket.getName(), badBucket.getMessage());
 			}
-			newActiveThrottles.add(throttle);
 		}
 		EnumMap<HederaFunctionality, ThrottleReqsManager> newFunctionReqs = new EnumMap<>(HederaFunctionality.class);
 		reqLists.forEach((function, reqs) -> newFunctionReqs.put(function, new ThrottleReqsManager(reqs)));
@@ -101,7 +105,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		logResolvedDefinitions();
 	}
 
-	void logResolvedDefinitions() {
+	private void logResolvedDefinitions() {
 		int n = capacitySplitSource.getAsInt();
 		var sb = new StringBuilder("Resolved throttles (after splitting capacity " + n + " ways) - \n");
 		functionReqs.entrySet().stream()
@@ -114,5 +118,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 							.append("\n");
 				});
 		log.info(sb.toString().trim());
+	}
+
+	void setFunctionReqs(EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs) {
+		this.functionReqs = functionReqs;
 	}
 }

@@ -117,14 +117,14 @@ public class CryptoTransferLoadTest extends LoadTest {
 								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "1300000.0")),
 						reduceFeeFor(CryptoTransfer, 2L, 3L, 3L),
 						cryptoCreate("sender")
-								.balance(initialBalance.getAsLong())
+								.balance(ignore -> settings.getInitialBalance())
 								.withRecharging()
 								.key(GENESIS)
-								.rechargeWindow(3)
+								.rechargeWindow(3).logging()
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						cryptoCreate("receiver")
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-						        .key(GENESIS)
+						        .key(GENESIS).logging()
 				).then(
 						defaultLoadTest(transferBurst, settings),
 						getAccountBalance("sender").logged()

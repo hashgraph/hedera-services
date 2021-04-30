@@ -216,7 +216,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
 		var bootstrapProps = new BootstrapProperties();
-		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
+		var properties = new StandardizedPropertySources(bootstrapProps);
 		try {
 			ctx = CONTEXTS.lookup(nodeId.getId());
 		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {

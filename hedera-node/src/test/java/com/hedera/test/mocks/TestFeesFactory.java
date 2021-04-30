@@ -103,8 +103,7 @@ public enum TestFeesFactory {
 		FileFeeBuilder fileFees = new FileFeeBuilder();
 		CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
 		SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
-		PropertySource properties =
-				new StandardizedPropertySources(new BootstrapProperties(), ignore -> true).asResolvingSource();
+		PropertySource properties = new StandardizedPropertySources(new BootstrapProperties()).asResolvingSource();
 		AnswerFunctions answerFunctions = new AnswerFunctions();
 		RecordCache recordCache = new RecordCache(
 				null,

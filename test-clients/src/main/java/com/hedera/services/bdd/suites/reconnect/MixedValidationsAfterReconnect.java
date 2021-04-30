@@ -59,10 +59,6 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 		String lastlyCreatedAccount = "0.0.21003";
 		return defaultHapiSpec("GetAccountBalanceFromAllNodes")
 				.given().when().then(
-						UtilVerbs.withLiveNode("0.0.6")
-								.within(4 * 60, TimeUnit.SECONDS)
-								.loggingAvailabilityEvery(30)
-								.sleepingBetweenRetriesFor(10),
 						balanceSnapshot("senderBalance", sender), // from default node 0.0.3
 						balanceSnapshot("receiverBalance", receiver), // from default node 0.0.3
 						balanceSnapshot("lastlyCreatedAccountBalance", lastlyCreatedAccount), // from default node 0.0.3
@@ -74,11 +70,11 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 								.hasTinyBars(changeFromSnapshot("senderBalance", 0)),
 						getAccountBalance(receiver).logged().setNode("0.0.5")
 								.hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
-						getAccountBalance(sender).logged().setNode("0.0.6")
+						getAccountBalance(sender).logged().setNode("0.0.8")
 								.hasTinyBars(changeFromSnapshot("senderBalance", 0)),
-						getAccountBalance(receiver).logged().setNode("0.0.6")
+						getAccountBalance(receiver).logged().setNode("0.0.8")
 								.hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
-						getAccountBalance(lastlyCreatedAccount).logged().setNode("0.0.6")
+						getAccountBalance(lastlyCreatedAccount).logged().setNode("0.0.8")
 								.hasTinyBars(changeFromSnapshot("lastlyCreatedAccountBalance", 0))
 				);
 	}
@@ -93,12 +89,12 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 				.given(
 						getTopicInfo(topicIdWithMessagesSubmittedTo).logged().saveRunningHash()
 				).when().then(
-						getTopicInfo(firstlyCreatedTopic).logged().setNode("0.0.6")
+						getTopicInfo(firstlyCreatedTopic).logged().setNode("0.0.8")
 								.hasRunningHash(emptyRunningHash),
-						getTopicInfo(lastlyCreatedTopic).logged().setNode("0.0.6")
+						getTopicInfo(lastlyCreatedTopic).logged().setNode("0.0.8")
 								.hasRunningHash(emptyRunningHash),
 						getTopicInfo(invalidTopicId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID),
-						getTopicInfo(topicIdWithMessagesSubmittedTo).logged().setNode("0.0.6")
+						getTopicInfo(topicIdWithMessagesSubmittedTo).logged().setNode("0.0.8")
 								.hasRunningHash(topicIdWithMessagesSubmittedTo)
 				);
 	}
@@ -109,8 +105,8 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 		String invalidFileId = "0.0.42004";
 		return defaultHapiSpec("ValidateFileInfo")
 				.given().when().then(
-						getFileInfo(firstlyCreatedFile).logged().setNode("0.0.6"),
-						getFileInfo(lastlyCreatedFile).logged().setNode("0.0.6"),
+						getFileInfo(firstlyCreatedFile).logged().setNode("0.0.8"),
+						getFileInfo(lastlyCreatedFile).logged().setNode("0.0.8"),
 						getFileInfo(invalidFileId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_FILE_ID)
 				);
 	}

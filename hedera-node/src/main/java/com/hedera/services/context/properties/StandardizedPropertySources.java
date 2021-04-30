@@ -40,24 +40,19 @@ import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTR
 public class StandardizedPropertySources implements PropertySources {
 	public static final Logger log = LogManager.getLogger(StandardizedPropertySources.class);
 
-	public static Supplier<ScreenedNodeFileProps> nodePropertiesSupplier = ScreenedNodeFileProps::new;
-	public static Supplier<ScreenedSysFileProps> dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
+	static Supplier<ScreenedNodeFileProps> nodePropertiesSupplier = ScreenedNodeFileProps::new;
+	static Supplier<ScreenedSysFileProps> dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
 
 	private static final int ISS_RESET_PERIOD_SECS = 30;
 	private static final int ISS_ROUNDS_TO_DUMP = 5;
 
 	private final PropertySource bootstrapProps;
-	private final Predicate<String> fileSourceExists;
 
-	final ScreenedSysFileProps dynamicGlobalProps;
-	final ScreenedNodeFileProps nodeProps;
+	private final ScreenedSysFileProps dynamicGlobalProps;
+	private final ScreenedNodeFileProps nodeProps;
 
-	public StandardizedPropertySources(
-			PropertySource bootstrapProps,
-			Predicate<String> fileSourceExists
-	) {
+	public StandardizedPropertySources( PropertySource bootstrapProps) {
 		this.bootstrapProps = bootstrapProps;
-		this.fileSourceExists = fileSourceExists;
 
 		nodeProps = nodePropertiesSupplier.get();
 		dynamicGlobalProps = dynamicGlobalPropsSupplier.get();
@@ -69,29 +64,14 @@ public class StandardizedPropertySources implements PropertySources {
 	}
 
 	@Override
-	public void assertSourcesArePresent() {
-		assertPropertySourcesExist();
-	}
-
-	private void assertPropertySourcesExist() {
-		assertFileSourceExists(bootstrapProps.getStringProperty("bootstrap.hapiPermissions.path"));
-	}
-
-	private void assertFileSourceExists(String path) {
-		if (!fileSourceExists.test(path)) {
-			throw new IllegalStateException(String.format("Fatal error, no '%s' file exists!", path));
-		}
-	}
-
-	@Override
 	public PropertySource asResolvingSource() {
-		var bootstrap = new SupplierMapPropertySource(sourceMap());
-		var bootstrapPlusNodeProps = new ChainedSources(nodeProps, bootstrap);
+		final var bootstrap = new SupplierMapPropertySource(sourceMap());
+		final var bootstrapPlusNodeProps = new ChainedSources(nodeProps, bootstrap);
 		return new ChainedSources(dynamicGlobalProps, bootstrapPlusNodeProps);
 	}
 
 	private Map<String, Supplier<Object>> sourceMap() {
-		Map<String, Supplier<Object>> source = new HashMap<>();
+		final Map<String, Supplier<Object>> source = new HashMap<>();
 
 		/* Bootstrap properties, which must include defaults for every system property. */
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
@@ -101,5 +81,9 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
 
 		return source;
+	}
+
+	ScreenedNodeFileProps getNodeProps() {
+		return nodeProps;
 	}
 }
