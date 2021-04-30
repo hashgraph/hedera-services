@@ -118,39 +118,38 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 								.logging(),
 
 						/* Some token operations*/
-						getTokenInfo(tokenToBeQueried).logged(),
-						getTokenInfo(anotherToken).logged(),
+						getTokenInfo(tokenToBeQueried),
+						getTokenInfo(anotherToken),
 
 						tokenUpdate(tokenToBeQueried)
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(TOKEN_TREASURY)
-								.adminKey(newAdminKey).logging(),
+								.adminKey(newAdminKey),
 
 						tokenAssociate(anotherAccount, tokenToBeQueried, anotherToken).logging(),
 						blockingOrder(
 								IntStream.range(0, 10).mapToObj(i ->
 										cryptoTransfer(moving(1, tokenToBeQueried)
-												.between(TOKEN_TREASURY, anotherAccount))
-												.logging())
+												.between(TOKEN_TREASURY, anotherAccount)))
 										.toArray(HapiSpecOperation[]::new)
 						),
 						blockingOrder(
 								IntStream.range(0, 5).mapToObj(i ->
-										mintToken(tokenToBeQueried, 100).logging())
+										mintToken(tokenToBeQueried, 100))
 										.toArray(HapiSpecOperation[]::new)
 						),
 						blockingOrder(
 								IntStream.range(0, 5).mapToObj(i ->
-										mintToken(anotherToken, 100).logging())
+										mintToken(anotherToken, 100))
 										.toArray(HapiSpecOperation[]::new)
 						),
 
-						burnToken(anotherToken, 1).logging(),
-						burnToken(tokenToBeQueried, 1).logging(),
+						burnToken(anotherToken, 1),
+						burnToken(tokenToBeQueried, 1),
 						cryptoDelete(TOKEN_TREASURY)
-								.hasKnownStatus(ACCOUNT_IS_TREASURY).logging(),
-						getTokenInfo(tokenToBeQueried).logged(),
-						getTokenInfo(anotherToken).logged(),
+								.hasKnownStatus(ACCOUNT_IS_TREASURY),
+						getTokenInfo(tokenToBeQueried),
+						getTokenInfo(anotherToken),
 						/* end token operations */
 
 						getAccountBalance(GENESIS)

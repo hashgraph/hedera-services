@@ -109,24 +109,24 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 
 						cryptoCreate(civilianAccount)
 								.payingWith(GENESIS)
-								.balance(ONE_MILLION_HBARS)
-								.logging(),
+								.balance(ONE_MILLION_HBARS),
 						fileCreate("bytecode")
 								.path(ContractResources.MULTIPURPOSE_BYTECODE_PATH)
-								.payingWith(GENESIS).logging(),
-						contractCreate(oneContract)
-								.bytecode("bytecode").logging()
 								.payingWith(GENESIS),
+						contractCreate(oneContract)
+								.bytecode("bytecode")
+								.payingWith(GENESIS)
+								.logging(),
 						contractCall(oneContract)
 								.payingWith(civilianAccount)
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
-								.via("cheapCallBeforeCongestionPricing").logging(),
+								.via("cheapCallBeforeCongestionPricing"),
 						getTxnRecord("cheapCallBeforeCongestionPricing")
-								.providingFeeTo(normalPrice::set).logging(),
+								.providingFeeTo(normalPrice::set),
 						getAccountBalance(GENESIS)
 								.setNode(reconnectingNode)
-								.unavailableNode().logging()
+								.unavailableNode()
 				).when(
 						/* update the multiplier to 10x with a 1% congestion for tmpMinCongestionPeriodInSecs */
 						fileUpdate(APP_PROPERTIES)
@@ -135,18 +135,17 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.overridingProps(Map.of(
 										"fees.percentCongestionMultipliers", "1,10x",
 										"fees.minCongestionPeriod", tmpMinCongestionPeriodInSecs
-								)).logging(),
+								)),
 						fileUpdate(THROTTLE_DEFS)
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(artificialLimits.toByteArray()).logging(),
+								.contents(artificialLimits.toByteArray()),
 						blockingOrder(
 								IntStream.range(0, 20).mapToObj(i ->
 										contractCall(oneContract)
 												.payingWith(GENESIS)
 												.fee(ONE_HUNDRED_HBARS)
-												.sending(ONE_HBAR)
-												.logging())
+												.sending(ONE_HBAR))
 										.toArray(HapiSpecOperation[]::new)
 						)
 				).then(
@@ -160,8 +159,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 												.payingWith(GENESIS)
 												.fee(ONE_HUNDRED_HBARS)
 												.sending(ONE_HBAR)
-												.setNode(reconnectingNode)
-												.logging())
+												.setNode(reconnectingNode))
 										.toArray(HapiSpecOperation[]::new)
 						),
 						contractCall(oneContract)
@@ -169,14 +167,12 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.sending(ONE_HBAR)
 								.via("pricyCallAfterReconnect")
-								.setNode(reconnectingNode)
-								.logging(),
+								.setNode(reconnectingNode),
 
 						getTxnRecord("pricyCallAfterReconnect")
 								.payingWith(GENESIS)
 								.providingFeeTo(tenXPrice::set)
-								.setNode(reconnectingNode)
-								.logging(),
+								.setNode(reconnectingNode),
 
 						/* check if the multiplier took effect in the contract call operation */
 						withOpContext((spec, opLog) -> {
@@ -192,19 +188,17 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(defaultThrottles.toByteArray())
-								.setNode(reconnectingNode)
-								.logging(),
+								.setNode(reconnectingNode),
 						fileUpdate(APP_PROPERTIES)
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.overridingProps(Map.of(
 										"fees.percentCongestionMultipliers", defaultCongestionMultipliers,
 										"fees.minCongestionPeriod", defaultMinCongestionPeriod
-								))
-								.logging(),
+								)),
 
 						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
-								.payingWith(GENESIS).logging()
+								.payingWith(GENESIS)
 				);
 	}
 
