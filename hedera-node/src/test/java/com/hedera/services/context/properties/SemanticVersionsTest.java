@@ -42,15 +42,15 @@ class SemanticVersionsTest {
 			.setMajor(1)
 			.setMinor(2)
 			.setPatch(4)
-			.setPreReleaseVersion("zeta.123")
-			.setBuildMetadata("2b26be40")
+			.setPre("zeta.123")
+			.setBuild("2b26be40")
 			.build();
 	private static final SemanticVersion FROZEN_SERVICES_SEMVER = SemanticVersion.newBuilder()
 			.setMajor(4)
 			.setMinor(2)
 			.setPatch(1)
-			.setPreReleaseVersion("alpha.0.1.0")
-			.setBuildMetadata("04eb62b2")
+			.setPre("alpha.0.1.0")
+			.setBuild("04eb62b2")
 			.build();
 
 	@Inject
@@ -73,8 +73,8 @@ class SemanticVersionsTest {
 				.setMajor(1)
 				.setMinor(2)
 				.setPatch(4)
-				.setPreReleaseVersion("alpha.1")
-				.setBuildMetadata("2b26be40")
+				.setPre("alpha.1")
+				.setBuild("2b26be40")
 				.build();
 
 		// when:
@@ -93,7 +93,7 @@ class SemanticVersionsTest {
 				.setMajor(1)
 				.setMinor(2)
 				.setPatch(4)
-				.setPreReleaseVersion("alpha.1")
+				.setPre("alpha.1")
 				.build();
 
 		// when:
@@ -130,7 +130,7 @@ class SemanticVersionsTest {
 				.setMajor(1)
 				.setMinor(2)
 				.setPatch(4)
-				.setBuildMetadata("2b26be40")
+				.setBuild("2b26be40")
 				.build();
 
 		// when:

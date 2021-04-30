@@ -83,10 +83,10 @@ public class SemanticVersions {
 					.setMinor(Integer.parseInt(matcher.group(2)))
 					.setPatch(Integer.parseInt(matcher.group(3)));
 			if (matcher.group(4) != null) {
-				builder.setPreReleaseVersion(matcher.group(4));
+				builder.setPre(matcher.group(4));
 			}
 			if (matcher.group(5) != null) {
-				builder.setBuildMetadata(matcher.group(5));
+				builder.setBuild(matcher.group(5));
 			}
 			return builder.build();
 		} else {

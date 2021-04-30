@@ -111,12 +111,12 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 				.append(semver.getMajor()).append(".")
 				.append(semver.getMinor()).append(".")
 				.append(semver.getPatch());
-		var preRelease = semver.getPreReleaseVersion();
+		var preRelease = semver.getPre();
 		if (!preRelease.isBlank()) {
 			sb.append("-").append(preRelease);
 		}
 
-		var buildMeta = semver.getBuildMetadata();
+		var buildMeta = semver.getBuild();
 		if (!buildMeta.isBlank()) {
 			sb.append("+").append(buildMeta);
 		}
