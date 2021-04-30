@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.perf.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
@@ -32,16 +33,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_LOOKUP_ABI;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class MixedSmartContractOpsLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(MixedSmartContractOpsLoadTest.class);
+
 	private final String CONTRACT_NAME_PREFIX = "testContract";
+	private final String VERBOSE_FILE = "verboseContractFile";
+	private final String VERBOSE_CONTRACT = "verboseContract";
+	private final String LOOKUP_FILE = "lookUpContractFile";
+	private final String LOOKUP_CONTRACT = "lookUpContract";
+	private final String DEPOSIT_MEMO = "deposited some funds ..";
+	private final String civilianAccount = "civilian";
 
 	public static void main(String... args) {
 		parseArgs(args);
@@ -67,6 +80,7 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger createdSoFar = new AtomicInteger(0);
 		final byte[] memo = randomUtf8Bytes(memoLength.getAsInt());
+		final String byteCode = "contractByteCode";
 
 		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
 				contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
@@ -76,27 +90,46 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 						.noLogging()
 						.hasAnyPrecheck()
 						.deferStatusResolution(),
-
-				getContractInfo(CONTRACT_NAME_PREFIX + createdSoFar.get())
-						.hasExpectedInfo(),
-
 				contractUpdate(CONTRACT_NAME_PREFIX + createdSoFar.get())
-						.payingWith(GENESIS)
+						.newMemo(new String(memo)),
+				getContractInfo(CONTRACT_NAME_PREFIX + createdSoFar.get()),
+
+				contractCallLocal(LOOKUP_CONTRACT,
+						BALANCE_LOOKUP_ABI,
+						spec -> new Object[] { spec.registry().getAccountID(civilianAccount).getAccountNum() }
+				).payingWith(GENESIS),
+				contractCall(VERBOSE_CONTRACT, ContractResources.VERBOSE_DEPOSIT_ABI, 1, 0, DEPOSIT_MEMO)
+						.sending(1)
 						.noLogging()
-						.hasAnyPrecheck()
+						.suppressStats(true)
 						.deferStatusResolution()
+						.payingWith(GENESIS)
 		};
-		return defaultHapiSpec("RunMixedFileOps")
+		return defaultHapiSpec("RunMixedSmartContractOps")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				)
 				.when(
-						contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
-								.payingWith(GENESIS)
-								.bytecode("byteCode")
+						cryptoCreate(civilianAccount).balance(ONE_HUNDRED_HBARS),
+
+						fileCreate(LOOKUP_FILE).path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
+						contractCreate(LOOKUP_CONTRACT)
 								.entityMemo(new String(memo))
-								.logged()
+								.bytecode(byteCode)
+								.payingWith(GENESIS)
+								.noLogging()
+								.hasPrecheckFrom(standardPermissiblePrechecks)
+								.deferStatusResolution(),
+
+						fileCreate(VERBOSE_FILE).path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
+						contractCreate(VERBOSE_CONTRACT)
+								.entityMemo(new String(memo))
+								.bytecode(byteCode)
+								.payingWith(GENESIS)
+								.noLogging()
+								.hasPrecheckFrom(standardPermissiblePrechecks)
+								.deferStatusResolution()
 				)
 				.then(
 						defaultLoadTest(mixedOpsBurst, settings)
