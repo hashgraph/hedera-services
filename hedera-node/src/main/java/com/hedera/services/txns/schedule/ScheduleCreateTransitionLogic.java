@@ -51,7 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution implements TransitionLogic {
+public class ScheduleCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateTransitionLogic.class);
 
 	private static final EnumSet<ResponseCodeEnum> ACCEPTABLE_SIGNING_OUTCOMES = EnumSet.of(OK,
@@ -61,7 +61,10 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 	private final InHandleActivationHelper activationHelper;
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-	ExecutionProcessor executor = this::processExecution;
+	private final ScheduleExecutor executor;
+	private final ScheduleStore store;
+	private final TransactionContext txnCtx;
+
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
 
@@ -69,11 +72,17 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 			ScheduleStore store,
 			TransactionContext txnCtx,
 			InHandleActivationHelper activationHelper,
-			OptionValidator validator
-	) {
-		super(store, txnCtx);
+			OptionValidator validator,
+			ScheduleExecutor executor) {
+		this.store = store;
+		this.txnCtx = txnCtx;
 		this.activationHelper = activationHelper;
 		this.validator = validator;
+		this.executor = executor;
+	}
+
+	public ScheduleExecutor getExecutor() {
+		return executor;
 	}
 
 	@Override
@@ -129,7 +138,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 
 		var finalOutcome = OK;
 		if (signingOutcome.getRight()) {
-			finalOutcome = executor.doProcess(scheduleId);
+			finalOutcome = executor.processExecution(scheduleId, store, txnCtx);
 		}
 		completeContextWith(scheduleId, schedule, finalOutcome == OK ? SUCCESS : finalOutcome);
 	}
