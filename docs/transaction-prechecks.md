@@ -1,9 +1,9 @@
 # Hedera prechecks
 
 When a gRPC client submits a [`Transaction`](https://hashgraph.github.io/hedera-protobufs/#Transaction.proto)
-to a Hedera Services node, the node does not, in turn, immediately
-submit the `Transaction` to the Platform to be assigned a consensus
-timestamp (and then handled at that consensus time).
+to a Hedera Services node, the node does not---in turn---immediately
+submit the `Transaction` to the Platform (where it would be assigned 
+a consensus timestamp, and then handled at that consensus time).
 
 Rather, the node first performs a "precheck" on the `Transaction`; and 
 _only_ submits it to the Platform if the precheck passes. Precheck 
@@ -12,17 +12,21 @@ may be broken into five stages, as follows:
   if the top-level `bytes` fields in the `Transaction` are set 
   correctly, are within size limits, and contain a parseable
   gRPC `TransactionBody` that requests exactly one function.
+
   2. :memo:&nbsp; **Syntax checks** confirm that the parsed
   `TransactionBody` has all necessary fields set, including 
   a feasible valid start time and duration.
-  3. :safety_pin:&nbsp; **System checks** test if the network can be 
+
+  3. :shield:&nbsp; **System checks** test if the network can be 
   expected to handle the given `TransactionBody` if it does reach 
   consensus---for example, if the `TransactionID` is believed unique, 
   the requested HAPI function is enabled on the network, and its
+
   [throttle bucket(s)](./throttle-design.md) have capacity.
   4. :moneybag:&nbsp; **Solvency checks** determine if the payer 
   account set in the `TransactionID` is expected to be able to pay the 
   fees for the transaction.
+
   5. :dart:&nbsp; **Semantic checks** test if the specific HAPI
   function requested by the `Transaction` is well-formed.
 The node only performs later checks if the earlier checks pass; and 
