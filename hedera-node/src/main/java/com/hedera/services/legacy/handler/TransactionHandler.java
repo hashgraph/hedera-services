@@ -44,7 +44,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
-import com.hedera.services.txns.validation.BasicPrecheck;
+import com.hedera.services.txns.submission.BasicPrecheck;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TransferListChecks;
 import com.hedera.services.utils.MiscUtils;

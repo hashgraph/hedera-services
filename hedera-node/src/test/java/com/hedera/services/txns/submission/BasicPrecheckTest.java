@@ -1,4 +1,4 @@
-package com.hedera.services.txns.validation;
+package com.hedera.services.txns.submission;
 
 /*-
  * ‌
@@ -21,6 +21,7 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -30,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
-import static com.hedera.services.txns.validation.PureValidationTest.from;
+import static com.hedera.test.utils.TxnUtils.timestampFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
@@ -57,7 +58,7 @@ class BasicPrecheckTest {
 	Instant startTime = Instant.now();
 	TransactionID txnId = TransactionID.newBuilder()
 			.setAccountID(payer)
-			.setTransactionValidStart(from(startTime.getEpochSecond(), startTime.getNano()))
+			.setTransactionValidStart(timestampFrom(startTime.getEpochSecond(), startTime.getNano()))
 			.build();
 	String memo = "Our souls, which to advance their state / Were gone out, hung twixt her and me.";
 	TransactionBody txn;

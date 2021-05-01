@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -81,7 +80,7 @@ public class SignedTxnAccessorTest {
 	}
 
 	@Test
-	public void parseNewTransactionCorrectly() throws Exception {
+	void parseNewTransactionCorrectly() throws Exception {
 		Transaction transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
 				3l, 0l, 0l,
 				100_000_000l,
@@ -112,6 +111,28 @@ public class SignedTxnAccessorTest {
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()),
 				accessor.getHash().toByteArray());
 		assertEquals(expectedMap, accessor.getSigMap());
+	}
+
+	@Test
+	void whatHappensNext() throws Exception {
+		var xferWithTopLevelBodyBytes = RequestBuilder.getCryptoTransferRequest(
+				1234l, 0l, 0l,
+				3l, 0l, 0l,
+				100_000_000l,
+				Timestamp.getDefaultInstance(),
+				Duration.getDefaultInstance(),
+				false,
+				"test memo",
+				5678l, -70000l,
+				5679l, 70000l);
+
+		var body = TransactionBody.parseFrom(xferWithTopLevelBodyBytes.getBodyBytes());
+		var confusedTxn = Transaction.parseFrom(body.toByteArray());
+
+		var confusedAccessor = SignedTxnAccessor.uncheckedFrom(confusedTxn);
+		Timestamp hmm = confusedAccessor.getTxnId().getTransactionValidStart();
+		System.out.println(hmm);
+		System.out.println(confusedAccessor.getFunction());
 	}
 
 	@Test

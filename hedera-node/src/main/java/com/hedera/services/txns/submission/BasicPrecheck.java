@@ -1,4 +1,4 @@
-package com.hedera.services.txns.validation;
+package com.hedera.services.txns.submission;
 
 /*-
  * ‌
@@ -22,6 +22,7 @@ package com.hedera.services.txns.validation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;

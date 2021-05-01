@@ -20,7 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.test.utils.TxnUtils;
 import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
@@ -39,7 +39,7 @@ class PureValidationTest {
 	@Test
 	public void mapsSensibleTimestamp() {
 		// given:
-		var proto = from(now.getEpochSecond(), now.getNano());
+		var proto = TxnUtils.timestampFrom(now.getEpochSecond(), now.getNano());
 
 		// expect:
 		assertEquals(now, PureValidation.asCoercedInstant(proto));
@@ -48,7 +48,7 @@ class PureValidationTest {
 	@Test
 	public void coercesTooSmallTimestamp() {
 		// given:
-		var proto = from(impossiblySmallSecs, impossiblySmallNanos);
+		var proto = TxnUtils.timestampFrom(impossiblySmallSecs, impossiblySmallNanos);
 
 		// expect:
 		assertEquals(Instant.MIN, PureValidation.asCoercedInstant(proto));
@@ -57,16 +57,10 @@ class PureValidationTest {
 	@Test
 	public void coercesTooBigTimestamp() {
 		// given:
-		var proto = from(impossiblyBigSecs, impossiblyBigNanos);
+		var proto = TxnUtils.timestampFrom(impossiblyBigSecs, impossiblyBigNanos);
 
 		// expect:
 		assertEquals(Instant.MAX, PureValidation.asCoercedInstant(proto));
 	}
 
-	public static Timestamp from(long secs, int nanos) {
-		return Timestamp.newBuilder()
-				.setSeconds(secs)
-				.setNanos(nanos)
-				.build();
-	}
 }
