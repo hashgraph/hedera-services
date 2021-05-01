@@ -32,7 +32,7 @@ import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.txns.submission.BasicPrecheck;
+import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -128,8 +128,8 @@ class QueryValidationTest {
 				new StandardExemptions(new MockAccountNumbers(), policies),
 				platformStatus,
 				new DummyHapiPermissions());
-		transactionHandler.setBasicPrecheck(
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()));
+		transactionHandler.setSyntaxPrecheck(
+				new SyntaxPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()));
 		byte[] pubKey = ((EdDSAPublicKey) payerKeyGenerated.getPublic()).getAbyte();
 		onboardAccount(payerAccount, pubKey, payerAccountInitialBalance);
 		onboardAccount(lowBalanceAccount, pubKey, 100L);

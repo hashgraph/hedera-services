@@ -45,7 +45,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.txns.submission.BasicPrecheck;
+import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
@@ -119,7 +119,7 @@ public class TxnHandlerVerifySigRegressionTest {
 				null,
 				TestFeesFactory.FEES_FACTORY.get(),
 				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, mock(NodeLocalProperties.class), null),
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
+				new SyntaxPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accounts),
 				new MockAccountNumbers(),
 				policies,

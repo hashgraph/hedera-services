@@ -37,7 +37,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
-import com.hedera.services.txns.submission.BasicPrecheck;
+import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.fcmap.FCMap;
@@ -59,7 +59,7 @@ public class TransactionHandlerTest {
 	private HbarCentExchange exchange;
 	private FeeCalculator fees;
 	private Supplier<StateView> stateView;
-	private BasicPrecheck basicPrecheck;
+	private SyntaxPrecheck syntaxPrecheck;
 	private QueryFeeCheck queryFeeCheck;
 	private FunctionalityThrottling throttling;
 
@@ -76,7 +76,7 @@ public class TransactionHandlerTest {
 		exchange = mock(HbarCentExchange.class);
 		fees = mock(FeeCalculator.class);
 		stateView = mock(Supplier.class);
-		basicPrecheck = mock(BasicPrecheck.class);
+		syntaxPrecheck = mock(SyntaxPrecheck.class);
 		queryFeeCheck = mock(QueryFeeCheck.class);
 		throttling = mock(FunctionalityThrottling.class);
 
@@ -91,7 +91,7 @@ public class TransactionHandlerTest {
 				txnThrottling,
 				fees,
 				stateView,
-				basicPrecheck,
+				syntaxPrecheck,
 				queryFeeCheck,
 				new MockAccountNumbers(),
 				policies,

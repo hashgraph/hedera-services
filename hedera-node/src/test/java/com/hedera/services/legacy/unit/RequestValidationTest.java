@@ -29,7 +29,7 @@ import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.txns.submission.BasicPrecheck;
+import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestFeesFactory;
@@ -88,7 +88,7 @@ public class RequestValidationTest {
                 null,
                 TestFeesFactory.FEES_FACTORY.get(),
                 () -> StateView.EMPTY_VIEW,
-                new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
+                new SyntaxPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
                 null,
                 new MockAccountNumbers(),
                 policies,

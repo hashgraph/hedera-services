@@ -44,7 +44,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
-import com.hedera.services.txns.submission.BasicPrecheck;
+import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TransferListChecks;
 import com.hedera.services.utils.MiscUtils;
@@ -102,7 +102,7 @@ public class TransactionHandler {
   private FeeCalculator fees;
   private FeeExemptions exemptions;
   private Supplier<StateView> stateView;
-  private BasicPrecheck basicPrecheck;
+  private SyntaxPrecheck syntaxPrecheck;
   private QueryFeeCheck queryFeeCheck;
   private AccountNumbers accountNums;
   private SystemOpPolicies systemOpPolicies;
@@ -149,8 +149,8 @@ public class TransactionHandler {
         return returnFlag;
     }
 
-  public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
-    this.basicPrecheck = basicPrecheck;
+  public void setSyntaxPrecheck(SyntaxPrecheck syntaxPrecheck) {
+    this.syntaxPrecheck = syntaxPrecheck;
   }
 
   public void setFees(FeeCalculator fees) {
@@ -164,7 +164,7 @@ public class TransactionHandler {
           PrecheckVerifier precheckVerifier,
           FeeCalculator fees,
           Supplier<StateView> stateView,
-          BasicPrecheck basicPrecheck,
+          SyntaxPrecheck syntaxPrecheck,
           QueryFeeCheck queryFeeCheck,
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
@@ -179,7 +179,7 @@ public class TransactionHandler {
     this.accounts = accounts;
     this.nodeAccount = nodeAccount;
     this.precheckVerifier = precheckVerifier;
-    this.basicPrecheck = basicPrecheck;
+    this.syntaxPrecheck = syntaxPrecheck;
     this.queryFeeCheck = queryFeeCheck;
     this.accountNums = accountNums;
     this.systemOpPolicies = systemOpPolicies;
@@ -214,7 +214,7 @@ public class TransactionHandler {
           TransactionThrottling txnThrottling,
           FeeCalculator fees,
           Supplier<StateView> stateView,
-          BasicPrecheck basicPrecheck,
+          SyntaxPrecheck syntaxPrecheck,
           QueryFeeCheck queryFeeCheck,
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
@@ -228,7 +228,7 @@ public class TransactionHandler {
     this.precheckVerifier = precheckVerifier;
     this.accounts = accounts;
     this.nodeAccount = nodeAccount;
-    this.basicPrecheck = basicPrecheck;
+    this.syntaxPrecheck = syntaxPrecheck;
     this.txnThrottling = txnThrottling;
     this.queryFeeCheck = queryFeeCheck;
     this.accountNums = accountNums;
@@ -382,7 +382,7 @@ public class TransactionHandler {
     }
 
     if (returnCode == OK) {
-      returnCode = basicPrecheck.validate(txn);
+      returnCode = syntaxPrecheck.validate(txn);
     }
 
     if (returnCode == OK) {

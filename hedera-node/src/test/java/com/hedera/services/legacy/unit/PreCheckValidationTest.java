@@ -47,7 +47,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.txns.submission.BasicPrecheck;
+import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestFeesFactory;
@@ -191,7 +191,7 @@ class PreCheckValidationTest {
 				precheckVerifier,
 				TestFeesFactory.FEES_FACTORY.get(),
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap, nodeProps, null),
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
+				new SyntaxPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
@@ -437,7 +437,7 @@ class PreCheckValidationTest {
 				precheckVerifier,
 				TestFeesFactory.FEES_FACTORY.get(),
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap, mock(NodeLocalProperties.class), null),
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
+				new SyntaxPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
@@ -484,7 +484,7 @@ class PreCheckValidationTest {
 				precheckVerifier,
 				TestFeesFactory.FEES_FACTORY.get(),
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap, mock(NodeLocalProperties.class), null),
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
+				new SyntaxPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,

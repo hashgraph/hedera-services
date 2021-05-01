@@ -50,7 +50,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 
-class BasicPrecheckTest {
+class SyntaxPrecheckTest {
 	int validityBufferOverride = 7;
 	AccountID node = asAccount("0.0.3");
 	AccountID payer = asAccount("0.0.13257");
@@ -66,7 +66,7 @@ class BasicPrecheckTest {
 	OptionValidator validator;
 	GlobalDynamicProperties dynamicProperties;
 
-	BasicPrecheck subject;
+	SyntaxPrecheck subject;
 
 	@BeforeEach
 	private void setup() {
@@ -81,7 +81,7 @@ class BasicPrecheckTest {
 		given(validator.chronologyStatusForTxn(any(), anyLong(), any())).willReturn(OK);
 		given(dynamicProperties.minValidityBuffer()).willReturn(validityBufferOverride);
 
-		subject = new BasicPrecheck(validator, dynamicProperties);
+		subject = new SyntaxPrecheck(validator, dynamicProperties);
 
 		txn = TransactionBody.newBuilder()
 				.setTransactionID(txnId)
