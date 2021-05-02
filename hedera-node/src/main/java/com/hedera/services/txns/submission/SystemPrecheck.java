@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
 public class SystemPrecheck {
-	private static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
+	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
 
 	private final SystemOpPolicies systemOpPolicies;
 	private final HapiOpPermissions hapiOpPermissions;

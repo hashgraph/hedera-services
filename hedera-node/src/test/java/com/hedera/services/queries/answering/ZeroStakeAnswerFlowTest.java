@@ -21,7 +21,6 @@ package com.hedera.services.queries.answering;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -33,8 +32,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.Supplier;
-
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetStakers;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -42,7 +39,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 
@@ -58,8 +54,6 @@ class ZeroStakeAnswerFlowTest {
 	private FunctionalityThrottling throttles;
 	@Mock
 	private AnswerService service;
-
-	TransactionHandler legacyHandler;
 
 	private final Query query = Query.getDefaultInstance();
 	private final Response response = Response.getDefaultInstance();

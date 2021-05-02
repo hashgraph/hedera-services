@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
- * Tests if the specific HAPI function requested by a {@coode Transaction} is well-formed; note
+ * Tests if the specific HAPI function requested by a {@code Transaction} is well-formed; note
  * that these tests are always specific to the requested function and are repeated at consensus.
  *
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md

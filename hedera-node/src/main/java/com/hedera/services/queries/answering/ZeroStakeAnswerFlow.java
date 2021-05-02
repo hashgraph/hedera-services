@@ -21,14 +21,11 @@ package com.hedera.services.queries.answering;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 

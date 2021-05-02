@@ -146,7 +146,6 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
-import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.answering.AnswerFunctions;
@@ -492,7 +491,6 @@ public class ServicesContext {
 	private BlobStorageSource bytecodeDb;
 	private HapiOpPermissions hapiOpPermissions;
 	private TransactionContext txnCtx;
-	private TransactionHandler txns;
 	private ContractController contractsGrpc;
 	private HederaSigningOrder keyOrder;
 	private HederaSigningOrder backedKeyOrder;
@@ -1043,11 +1041,14 @@ public class ServicesContext {
 			if (nodeType() == STAKED_NODE) {
 				answerFlow = new StakedAnswerFlow(
 						fees(),
-						txns(),
 						stateViews(),
 						usagePrices(),
 						hapiThrottling(),
-						submissionManager());
+						submissionManager(),
+						queryHeaderValidity(),
+						transactionPrecheck(),
+						hapiOpPermissions(),
+						queryFeeCheck());
 			} else {
 				answerFlow = new ZeroStakeAnswerFlow(queryHeaderValidity(), stateViews(), hapiThrottling());
 			}
@@ -1809,27 +1810,6 @@ public class ServicesContext {
 			syntaxPrecheck = new SyntaxPrecheck(recordCache(), validator(), globalDynamicProperties());
 		}
 		return syntaxPrecheck;
-	}
-
-	public TransactionHandler txns() {
-		if (txns == null) {
-			txns = new TransactionHandler(
-					recordCache(),
-					precheckVerifier(),
-					this::accounts,
-					nodeAccount(),
-					txnThrottling(),
-					fees(),
-					stateViews(),
-					syntaxPrecheck(),
-					queryFeeCheck(),
-					accountNums(),
-					systemOpPolicies(),
-					exemptions(),
-					platformStatus(),
-					hapiOpPermissions());
-		}
-		return txns;
 	}
 
 	public Console console() {

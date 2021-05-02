@@ -20,109 +20,170 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.AnswerService;
+import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
+import com.hedera.services.txns.submission.SystemPrecheck;
+import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.fee.FeeObject;
-import com.hedera.services.legacy.handler.TransactionHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.LongPredicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
+import static com.hedera.services.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hedera.services.legacy.handler.TransactionHandler.IS_THROTTLE_EXEMPT;
 
 public class StakedAnswerFlow implements AnswerFlow {
 	private static final Logger log = LogManager.getLogger(StakedAnswerFlow.class);
 
-	private static final SignedTxnAccessor defaultAccessor = uncheckedFrom(Transaction.getDefaultInstance());
+	private LongPredicate isThrottleExempt = SystemPrecheck.IS_THROTTLE_EXEMPT;
+	private Supplier<Instant> now = Instant::now;
 
 	private final FeeCalculator fees;
-	private final TransactionHandler legacyHandler;
+	private final QueryFeeCheck queryFeeCheck;
+	private final HapiOpPermissions hapiOpPermissions;
 	private final Supplier<StateView> stateViews;
 	private final UsagePricesProvider resourceCosts;
+	private final QueryHeaderValidity queryHeaderValidity;
+	private final TransactionPrecheck transactionPrecheck;
 	private final FunctionalityThrottling throttles;
 	private final PlatformSubmissionManager submissionManager;
 
 	public StakedAnswerFlow(
 			FeeCalculator fees,
-			TransactionHandler legacyHandler,
 			Supplier<StateView> stateViews,
 			UsagePricesProvider resourceCosts,
 			FunctionalityThrottling throttles,
-			PlatformSubmissionManager submissionManager
+			PlatformSubmissionManager submissionManager,
+			QueryHeaderValidity queryHeaderValidity,
+			TransactionPrecheck transactionPrecheck,
+			HapiOpPermissions hapiOpPermissions,
+			QueryFeeCheck queryFeeCheck
 	) {
 		this.fees = fees;
+		this.queryFeeCheck = queryFeeCheck;
 		this.throttles = throttles;
 		this.stateViews = stateViews;
-		this.legacyHandler = legacyHandler;
 		this.resourceCosts = resourceCosts;
 		this.submissionManager = submissionManager;
+		this.hapiOpPermissions = hapiOpPermissions;
+		this.queryHeaderValidity = queryHeaderValidity;
+		this.transactionPrecheck = transactionPrecheck;
 	}
 
 	@Override
 	public Response satisfyUsing(AnswerService service, Query query) {
 		final var view = stateViews.get();
-		SignedTxnAccessor accessor = service.extractPaymentFrom(query).orElse(defaultAccessor);
-
-		if (shouldThrottle(service, accessor)) {
-			return service.responseGiven(query, view, BUSY);
+		final var headerStatus = queryHeaderValidity.checkHeader(query);
+		if (headerStatus != OK) {
+			return service.responseGiven(query, view, headerStatus);
 		}
 
-		ResponseCodeEnum validity = legacyHandler.validateQuery(query, service.requiresNodePayment(query));
-		if (validity == OK) {
-			validity = service.checkValidity(query, view);
-		}
-		if (validity != OK) {
-			return service.responseGiven(query, view, validity);
-		}
-
-		Timestamp at = accessor.getTxnId().getTransactionValidStart();
-		FeeData usagePrices = resourceCosts.pricesGiven(service.canonicalFunction(), at);
-
-		long cost = 0L;
-		Map<String, Object> queryCtx = new HashMap<>();
-		if (service.requiresNodePayment(query)) {
-			cost = totalOf(fees.computePayment(query, usagePrices, view, at, queryCtx));
-			validity = validatePayment(cost, accessor);
-			if (validity != OK) {
-				return service.responseGiven(query, view, validity, cost);
+		Optional<SignedTxnAccessor> optionalPayment = Optional.empty();
+		final var allegedPayment = service.extractPaymentFrom(query);
+		if (allegedPayment.isPresent()) {
+			final var signedTxn = allegedPayment.get().getBackwardCompatibleSignedTxn();
+			final var paymentCheck = transactionPrecheck.performForQueryPayment(signedTxn);
+			final var paymentStatus = paymentCheck.getLeft().getValidity();
+			if (paymentStatus != OK) {
+				return service.responseGiven(query, view, paymentStatus);
+			} else {
+				optionalPayment = paymentCheck.getRight();
 			}
-			validity = submissionManager.trySubmission(accessor);
-			if (validity != OK) {
-				return service.responseGiven(query, view, validity, cost);
+		}
+
+		final var hygieneStatus = hygieneCheck(query, view, service, optionalPayment);
+		if (hygieneStatus != OK) {
+			return service.responseGiven(query, view, hygieneStatus);
+		}
+
+		final var bestGuessNow = optionalPayment
+				.map(a -> a.getTxnId().getTransactionValidStart())
+				.orElse(asTimestamp(now.get()));
+		final var usagePrices = resourceCosts.pricesGiven(service.canonicalFunction(), bestGuessNow);
+		
+		long fee = 0L;
+		final Map<String, Object> queryCtx = new HashMap<>();
+		if (service.requiresNodePayment(query)) {
+			/* The hygiene check would have aborted if we were missing a payment. */
+			final var payment = optionalPayment.get();
+			fee = totalOf(fees.computePayment(query, usagePrices, view, bestGuessNow, queryCtx));
+			final var paymentStatus = tryToPay(payment, fee);
+			if (paymentStatus != OK) {
+				return service.responseGiven(query, view, paymentStatus, fee);
 			}
 		}
 
 		if (service.needsAnswerOnlyCost(query)) {
-			cost = totalOf(fees.estimatePayment(query, usagePrices, view, at, ANSWER_ONLY));
+			fee = totalOf(fees.estimatePayment(query, usagePrices, view, bestGuessNow, ANSWER_ONLY));
 		}
 
-		return service.responseGiven(query, view, OK, cost, queryCtx);
+		return service.responseGiven(query, view, OK, fee, queryCtx);
 	}
 
-	private boolean shouldThrottle(AnswerService service, SignedTxnAccessor paymentAccessor) {
-		if (IS_THROTTLE_EXEMPT.test(paymentAccessor.getPayer())) {
-			return false;
+	private ResponseCodeEnum tryToPay(SignedTxnAccessor payment, long fee) {
+		final var xfers = payment.getTxn().getCryptoTransfer().getTransfers().getAccountAmountsList();
+		final var feeStatus = queryFeeCheck.nodePaymentValidity(xfers, fee, payment.getTxn().getNodeAccountID());
+		if (feeStatus != OK) {
+			return feeStatus;
+		}
+		return submissionManager.trySubmission(payment);
+	}
+
+	private ResponseCodeEnum hygieneCheck(
+			Query query,
+			StateView view,
+			AnswerService service,
+			Optional<SignedTxnAccessor> optionalPayment
+	) {
+		final var isPaymentRequired = service.requiresNodePayment(query);
+		if (isPaymentRequired && optionalPayment.isEmpty()) {
+			return INSUFFICIENT_TX_FEE;
+		}
+
+		final var screenStatus = systemScreen(service.canonicalFunction(), optionalPayment);
+		if (screenStatus != OK) {
+			return screenStatus;
+		}
+
+		return service.checkValidity(query, view);
+	}
+
+	private ResponseCodeEnum systemScreen(HederaFunctionality function, Optional<SignedTxnAccessor> payment) {
+		AccountID payer = null;
+		if (payment.isPresent()) {
+			payer = payment.get().getPayer();
+			final var permissionStatus = hapiOpPermissions.permissibilityOf(function, payer);
+			if (permissionStatus != OK) {
+				return permissionStatus;
+			}
+		}
+
+		if (payer == null || !isThrottleExempt.test(payer.getAccountNum())) {
+			return throttles.shouldThrottle(function) ? BUSY : OK;
 		} else {
-			return throttles.shouldThrottle(service.canonicalFunction());
+			return OK;
 		}
 	}
 
@@ -130,17 +191,11 @@ public class StakedAnswerFlow implements AnswerFlow {
 		return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
 	}
 
-	private ResponseCodeEnum validatePayment(long requiredPayment, SignedTxnAccessor accessor) {
-		if (requiredPayment > 0) {
-			ResponseCodeEnum validity =
-					legacyHandler.validateTransactionPreConsensus(accessor.getBackwardCompatibleSignedTxn(), true)
-							.getValidity();
-			if (validity == OK) {
-				validity = legacyHandler.nodePaymentValidity(accessor.getBackwardCompatibleSignedTxn(), requiredPayment);
-			}
-			return validity;
-		} else {
-			return OK;
-		}
+	void setIsThrottleExempt(LongPredicate isThrottleExempt) {
+		this.isThrottleExempt = isThrottleExempt;
+	}
+
+	public void setNow(Supplier<Instant> now) {
+		this.now = now;
 	}
 }
