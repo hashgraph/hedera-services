@@ -22,6 +22,7 @@ package com.hedera.services.txns.submission;
 
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -41,26 +42,29 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.swirlds.common.PlatformStatus.ACTIVE;
 
-public class Precheck {
-	private final SyntaxPrecheck syntaxPrecheck;
-	private final SemanticPrecheck semanticPrecheck;
-	private final StructuralPrecheck structuralPrecheck;
+/**
+ * Implements the appropriate stages of precheck for a transaction to be submitted to the
+ * network, either a top-level transaction or a {@code CryptoTransfer} query payment.
+ *
+ * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
+ */
+public class TransactionPrecheck {
+	private final QueryFeeCheck queryFeeCheck;
+	private final StagedPrechecks stagedPrechecks;
 	private final CurrentPlatformStatus currentPlatformStatus;
 
-	private static final EnumSet<PrecheckCharacteristics> TOP_LEVEL_CHARACTERISTICS =
-			EnumSet.of(PrecheckCharacteristics.SHOULD_INCLUDE_SYSTEM_CHECKS);
-	private static final EnumSet<PrecheckCharacteristics> QUERY_PAYMENT_CHARACTERISTICS =
-			EnumSet.of(PrecheckCharacteristics.MUST_BE_CRYPTO_TRANSFER);
+	private static final EnumSet<Characteristics> TOP_LEVEL_CHARACTERISTICS =
+			EnumSet.of(Characteristics.MUST_PASS_SYSTEM_SCREEN);
+	private static final EnumSet<Characteristics> QUERY_PAYMENT_CHARACTERISTICS =
+			EnumSet.of(Characteristics.MUST_BE_CRYPTO_TRANSFER);
 
-	public Precheck(
-			SyntaxPrecheck syntaxPrecheck,
-			SemanticPrecheck semanticPrecheck,
-			StructuralPrecheck structuralPrecheck,
+	public TransactionPrecheck(
+			QueryFeeCheck queryFeeCheck,
+			StagedPrechecks stagedPrechecks,
 			CurrentPlatformStatus currentPlatformStatus
 	) {
-		this.syntaxPrecheck = syntaxPrecheck;
-		this.semanticPrecheck = semanticPrecheck;
-		this.structuralPrecheck = structuralPrecheck;
+		this.queryFeeCheck = queryFeeCheck;
+		this.stagedPrechecks = stagedPrechecks;
 		this.currentPlatformStatus = currentPlatformStatus;
 	}
 
@@ -69,53 +73,78 @@ public class Precheck {
 	}
 
 	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performForQueryPayment(Transaction signedTxn) {
-		return performance(signedTxn, QUERY_PAYMENT_CHARACTERISTICS);
+		final var prelim = performance(signedTxn, QUERY_PAYMENT_CHARACTERISTICS);
+		final var prelimOutcome = prelim.getLeft();
+		if (prelimOutcome.getValidity() != OK) {
+			return prelim;
+		}
+
+		final var xferTxn = prelim.getRight().get().getTxn();
+		final var xfersStatus = queryFeeCheck.validateQueryPaymentTransfers(xferTxn);
+		if (xfersStatus != OK) {
+			return failureFor(new TxnValidityAndFeeReq(xfersStatus, prelimOutcome.getRequiredFee()));
+		}
+		return prelim;
 	}
 
 	private Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performance(
 			Transaction signedTxn,
-			EnumSet<PrecheckCharacteristics> characteristics
+			EnumSet<Characteristics> characteristics
 	) {
 		if (currentPlatformStatus.get() != ACTIVE) {
 			return WELL_KNOWN_FLAWS.get(PLATFORM_NOT_ACTIVE);
 		}
 
-		/* Structure */
-		final var structuralAssessment = structuralPrecheck.assess(signedTxn);
+		final var structuralAssessment = stagedPrechecks.assessStructure(signedTxn);
 		if (structuralAssessment.getLeft().getValidity() != OK) {
 			return structuralAssessment;
 		}
 
+		/* We can now safely proceed to the next four stages of precheck. */
 		final var accessor = structuralAssessment.getRight().get();
 		final var txn = accessor.getTxn();
 
-		/* Syntax */
-		final var syntaxStatus = syntaxPrecheck.validate(txn);
+		final var syntaxStatus = stagedPrechecks.validateSyntax(txn);
 		if (syntaxStatus != OK) {
 			return responseForFlawed(syntaxStatus);
 		}
 
-		/* Semantics */
 		final var semanticStatus = checkSemantics(accessor.getFunction(), txn, characteristics);
 		if (semanticStatus != OK) {
 			return responseForFlawed(semanticStatus);
 		}
 
-		throw new AssertionError("Not implemented!");
+		final var solvencyStatus = stagedPrechecks.assessSolvency(accessor);
+		if (solvencyStatus.getValidity() != OK) {
+			return failureFor(solvencyStatus);
+		}
+
+		if (characteristics.contains(Characteristics.MUST_PASS_SYSTEM_SCREEN)) {
+			final var systemStatus = stagedPrechecks.systemScreen(accessor);
+			if (systemStatus != OK) {
+				return failureFor(new TxnValidityAndFeeReq(systemStatus, solvencyStatus.getRequiredFee()));
+			}
+		}
+
+		return Pair.of(solvencyStatus, Optional.of(accessor));
+	}
+
+	private Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> failureFor(TxnValidityAndFeeReq feeReqStatus) {
+		return Pair.of(feeReqStatus, Optional.empty());
 	}
 
 	private ResponseCodeEnum checkSemantics(
 			HederaFunctionality function,
 			TransactionBody txn,
-			EnumSet<PrecheckCharacteristics> characteristics
+			EnumSet<Characteristics> characteristics
 	) {
-		return characteristics.contains(PrecheckCharacteristics.MUST_BE_CRYPTO_TRANSFER)
-				? semanticPrecheck.validate(CryptoTransfer, txn, INSUFFICIENT_TX_FEE)
-				: semanticPrecheck.validate(function, txn, NOT_SUPPORTED);
+		return characteristics.contains(Characteristics.MUST_BE_CRYPTO_TRANSFER)
+				? stagedPrechecks.validateSemantics(CryptoTransfer, txn, INSUFFICIENT_TX_FEE)
+				: stagedPrechecks.validateSemantics(function, txn, NOT_SUPPORTED);
 	}
 
-	private enum PrecheckCharacteristics {
+	private enum Characteristics {
 		MUST_BE_CRYPTO_TRANSFER,
-		SHOULD_INCLUDE_SYSTEM_CHECKS
+		MUST_PASS_SYSTEM_SCREEN
 	}
 }

@@ -1,4 +1,4 @@
-# Hedera prechecks
+# Transaction prechecks
 
 When a gRPC client submits a [`Transaction`](https://hashgraph.github.io/hedera-protobufs/#Transaction.proto)
 to a Hedera Services node, the node does not---in turn---immediately
@@ -8,31 +8,32 @@ a consensus timestamp, and then handled at that consensus time).
 Rather, the node first performs a "precheck" on the `Transaction` and 
 _only_ submits it to the Platform if the precheck passes. Precheck 
 may be broken into five stages, as follows:
-  1. **Structural checks** &nbsp;:building_construction:&nbsp; Test 
+  1. :building_construction:&nbsp;&nbsp;**Structural checks** test 
   if the top-level `bytes` fields in the `Transaction` are set 
   correctly, are within size limits, and contain a parseable
-  gRPC `TransactionBody` that requests exactly one function
-  supported by the network.
+  gRPC [`TransactionBody`](https://hashgraph.github.io/hedera-protobufs/#TransactionBody.proto) 
+  that requests exactly one function supported by the network.
 
-  2. **Syntax checks** &nbsp;:memo:&nbsp; Confirm that the parsed
+  2. :memo:&nbsp;&nbsp; **Syntax checks** confirm that the parsed
   `TransactionBody` has all necessary fields set, including 
   a feasible valid start time and duration; and has a
   `TransactionID` that is believed to be unique.
 
-  3. **Semantic checks** &nbsp;:dart:&nbsp; Test if the specific HAPI
+  3. :dart:&nbsp;&nbsp; **Semantic checks** test if the specific HAPI
   function requested by the `Transaction` is well-formed; note
   that these tests are always specific to the requested function, 
   and are repeated at consensus.
 
-  4. **Solvency checks** &nbsp;:moneybag:&nbsp; Determine if the payer 
+  4. :moneybag:&nbsp;&nbsp; **Solvency checks** determine if the payer 
   account set in the `TransactionID` is expected to be both 
   willing and able to pay the transaction fees.
 
-  5. **System checks** &nbsp;:shield:&nbsp; Test if the network can be 
+  5. :shield:&nbsp;&nbsp; **System checks** test if the network can be 
   expected to handle the given `TransactionBody` if it does reach 
   consensus---that is, if the requested HAPI function is enabled 
-  on the network, and its [throttle bucket(s)](./throttle-design.md) 
-  has capacity.
+  on the network, the payer 
+  [has the required privileges](./privileged-transactions.md) to use it, 
+  and its [throttle bucket(s)](./throttle-design.md) has capacity.
 
 The node only performs later checks if the earlier checks pass; and 
 it performs no checks at all if the Platform is in maintenance mode, 
@@ -43,10 +44,10 @@ In this document, we cover all the response codes that a gRPC client
 can receive due to a failure in any of the stages of precheck, _except_
 the third. We do not cover failed semantic prechecks for two reasons.
 First, they are usually specific enough to be self-explanatory (e.g.,  
-`ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS`); and, second, are likely to be 
-removed in future releases as Hedera client libraries are enhanced to 
-perform such checks before any network interaction occurs. (Of course 
-these checks will always be enforced at consensus! :guard:)
+`ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS`); and, second, they are likely to 
+be removed from precheck in future releases as Hedera client libraries 
+are enhanced to perform these checks before any network interaction occurs. 
+(Of course the checks will always be enforced at consensus! :guard:)
 
 ## A comment on queries
 It is important to understand that the header of any non-free `Query` 
@@ -59,8 +60,8 @@ precheck performed on the query's enclosed `CryptoTransfer`.
 
 ## :building_construction:&nbsp; Failed structural checks
 - `INVALID_TRANSACTION`
-  * The top-level `Transaction` used both a deprecated field _and_ 
-    the `signedTransactionBytes` field.
+  * The `Transaction` used both a deprecated top-level field (that is,
+    either `bodyBytes` or `sigMap`) _and_ the `signedTransactionBytes` field.
 - `INVALID_TRANSACTION_BODY`
   * No `TransactionBody` could be parsed from the top-level `Transaction`; or,
   * The parsed `TransactionBody` did not have any function-specific body set.
@@ -68,7 +69,7 @@ precheck performed on the query's enclosed `CryptoTransfer`.
   * The serialized size of the `Transaction` exceeded 6144 bytes,
     which is the maximum allowed by the Platform.
 - `TRANSACTION_TOO_MANY_LAYERS`
-  * The deserialized `TransactionBody` contained an excessively nested 
+  * The deserialized `TransactionBody` contained an overly nested 
     complex key (roughly 20+ levels of nested `ThesholdKey`s).
 
 ## :memo:&nbsp; Failed syntax checks

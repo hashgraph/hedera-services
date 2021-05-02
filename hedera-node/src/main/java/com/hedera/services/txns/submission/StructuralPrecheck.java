@@ -39,9 +39,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OV
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
 
 /**
- * Tests if the top-level {@code bytes} fields in a gRPC {@code Transaction} are set correctly,
- * are within size limits, and contain a parseable {@code TransactionBody}. For more information,
- * please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
+ * Tests if the top-level {@code bytes} fields in the {@code Transaction} are set correctly,
+ * are within size limits, and contain a parseable gRPC {@code TransactionBody} that
+ * requests exactly one function supported by the network.
+ *
+ * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
 public class StructuralPrecheck {
 	private static final TxnValidityAndFeeReq OK_STRUCTURALLY = new TxnValidityAndFeeReq(OK);
