@@ -99,10 +99,10 @@ class BasicSubmissionFlowTest {
 	}
 
 	private void setupStakedNode() {
-		subject = new BasicSubmissionFlow(STAKED_NODE, null, precheck, null, submissionManager);
+		subject = new BasicSubmissionFlow(STAKED_NODE, precheck, submissionManager);
 	}
 
 	private void setupZeroStakeNode() {
-		subject = new BasicSubmissionFlow(ZERO_STAKE_NODE, null, precheck, null, submissionManager);
+		subject = new BasicSubmissionFlow(ZERO_STAKE_NODE, precheck, submissionManager);
 	}
 }

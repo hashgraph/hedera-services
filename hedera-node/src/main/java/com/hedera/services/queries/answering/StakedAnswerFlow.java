@@ -79,7 +79,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 
 	@Override
 	public Response satisfyUsing(AnswerService service, Query query) {
-		StateView view = stateViews.get();
+		final var view = stateViews.get();
 		SignedTxnAccessor accessor = service.extractPaymentFrom(query).orElse(defaultAccessor);
 
 		if (shouldThrottle(service, accessor)) {

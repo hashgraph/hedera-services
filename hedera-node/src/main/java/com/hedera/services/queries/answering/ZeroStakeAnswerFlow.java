@@ -36,18 +36,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ZeroStakeAnswerFlow implements AnswerFlow {
-	private static final Logger log = LogManager.getLogger(ZeroStakeAnswerFlow.class);
-
-	private final TransactionHandler legacyHandler;
 	private final Supplier<StateView> stateViews;
+	private final QueryHeaderValidity queryHeaderValidity;
 	private final FunctionalityThrottling throttles;
 
 	public ZeroStakeAnswerFlow(
-			TransactionHandler legacyHandler,
+			QueryHeaderValidity queryHeaderValidity,
 			Supplier<StateView> stateViews,
 			FunctionalityThrottling throttles
 	) {
-		this.legacyHandler = legacyHandler;
+		this.queryHeaderValidity = queryHeaderValidity;
 		this.stateViews = stateViews;
 		this.throttles = throttles;
 	}
@@ -60,7 +58,7 @@ public class ZeroStakeAnswerFlow implements AnswerFlow {
 			return service.responseGiven(query, view, BUSY);
 		}
 
-		var validity = legacyHandler.validateQuery(query, false);
+		var validity = queryHeaderValidity.checkHeader(query);
 		if (validity == OK) {
 			validity = service.checkValidity(query, view);
 		}

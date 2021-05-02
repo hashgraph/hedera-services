@@ -29,6 +29,9 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.function.Supplier;
 
@@ -42,67 +45,65 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-class ZeroStakeAnswerFlowTest {
-	HederaFunctionality function = HederaFunctionality.ConsensusGetTopicInfo;
 
+@ExtendWith(MockitoExtension.class)
+class ZeroStakeAnswerFlowTest {
+	private final HederaFunctionality function = HederaFunctionality.ConsensusGetTopicInfo;
+
+	@Mock
+	private QueryHeaderValidity queryHeaderValidity;
+	@Mock
+	private StateView view;
+	@Mock
+	private FunctionalityThrottling throttles;
+	@Mock
+	private AnswerService service;
 
 	TransactionHandler legacyHandler;
-	StateView view;
-	Supplier<StateView> stateViews;
-	FunctionalityThrottling throttles;
 
-	Query query = Query.getDefaultInstance();
-	Response response;
-	AnswerService service;
+	private final Query query = Query.getDefaultInstance();
+	private final Response response = Response.getDefaultInstance();
 
-	ZeroStakeAnswerFlow subject;
+	private ZeroStakeAnswerFlow subject;
 
 	@BeforeEach
 	private void setup() {
-		view = mock(StateView.class);
-		throttles = mock(FunctionalityThrottling.class);
-		legacyHandler = mock(TransactionHandler.class);
-		stateViews = () -> view;
-
-		service = mock(AnswerService.class);
-		response = mock(Response.class);
-
-		subject = new ZeroStakeAnswerFlow(legacyHandler, stateViews, throttles);
+		subject = new ZeroStakeAnswerFlow(queryHeaderValidity, () -> view, throttles);
 	}
 
 	@Test
-	public void validatesMetaAsExpected() {
-		given(legacyHandler.validateQuery(query, false)).willReturn(ACCOUNT_IS_NOT_GENESIS_ACCOUNT);
+	void validatesMetaAsExpected() {
+		given(queryHeaderValidity.checkHeader(query)).willReturn(ACCOUNT_IS_NOT_GENESIS_ACCOUNT);
 		given(service.responseGiven(query, view, ACCOUNT_IS_NOT_GENESIS_ACCOUNT)).willReturn(response);
 
 		// when:
-		Response actual = subject.satisfyUsing(service, query);
+		final var actual = subject.satisfyUsing(service, query);
 
 		// then:
 		assertEquals(response, actual);
 	}
 
 	@Test
-	public void validatesSpecificAfterMetaOk() {
-		given(legacyHandler.validateQuery(query, false)).willReturn(OK);
+	void validatesSpecificAfterMetaOk() {
+		given(queryHeaderValidity.checkHeader(query)).willReturn(OK);
 		given(service.checkValidity(query, view)).willReturn(INVALID_ACCOUNT_ID);
 		given(service.responseGiven(query, view, INVALID_ACCOUNT_ID)).willReturn(response);
 
 		// when:
-		Response actual = subject.satisfyUsing(service, query);
+		final var actual = subject.satisfyUsing(service, query);
 
 		// then:
 		assertEquals(response, actual);
 	}
 
 	@Test
-	public void throttlesIfAppropriate() {
+	void throttlesIfAppropriate() {
 		given(service.canonicalFunction()).willReturn(function);
 		given(throttles.shouldThrottle(function)).willReturn(true);
 		given(service.responseGiven(query, view, BUSY)).willReturn(response);
 
 		// when:
-		Response actual = subject.satisfyUsing(service, query);
+		final var actual = subject.satisfyUsing(service, query);
 
 		// then:
 		assertEquals(response, actual);
@@ -110,32 +111,16 @@ class ZeroStakeAnswerFlowTest {
 	}
 
 	@Test
-	public void throttlesEvenAllegedSuperusers() {
-		given(throttles.shouldThrottle(CryptoGetStakers)).willReturn(true);
-		given(service.checkValidity(query, view)).willReturn(OK);
-		given(legacyHandler.validateQuery(query, false)).willReturn(OK);
+	void submitsIfShouldntThrottle() {
 		given(service.canonicalFunction()).willReturn(CryptoGetStakers);
-		// and:
-		given(service.responseGiven(query, view, BUSY)).willReturn(response);
-
-		// when:
-		Response actual = subject.satisfyUsing(service, query);
-
-		// then:
-		assertEquals(response, actual);
-	}
-
-	@Test
-	public void submitsIfShouldntThrottle() {
+		given(queryHeaderValidity.checkHeader(query)).willReturn(OK);
+		given(service.checkValidity(query, view)).willReturn(OK);
 		given(throttles.shouldThrottle(CryptoGetStakers)).willReturn(false);
-		given(service.checkValidity(query, view)).willReturn(OK);
-		given(legacyHandler.validateQuery(query, false)).willReturn(OK);
-		given(service.canonicalFunction()).willReturn(CryptoGetStakers);
 		// and:
 		given(service.responseGiven(query, view, OK)).willReturn(response);
 
 		// when:
-		Response actual = subject.satisfyUsing(service, query);
+		final var actual = subject.satisfyUsing(service, query);
 
 		// then:
 		assertEquals(response, actual);

@@ -74,6 +74,7 @@ import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.queries.answering.AnswerFunctions;
+import com.hedera.services.queries.answering.QueryHeaderValidity;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.answering.StakedAnswerFlow;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
@@ -534,6 +535,7 @@ public class ServicesContextTest {
 		assertThat(ctx.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
 		assertThat(ctx.syntaxPrecheck(), instanceOf(SyntaxPrecheck.class));
 		assertThat(ctx.transactionPrecheck(), instanceOf(TransactionPrecheck.class));
+		assertThat(ctx.queryHeaderValidity(), instanceOf(QueryHeaderValidity.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

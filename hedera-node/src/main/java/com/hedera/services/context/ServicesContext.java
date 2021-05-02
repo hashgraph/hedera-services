@@ -150,6 +150,7 @@ import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.answering.AnswerFunctions;
+import com.hedera.services.queries.answering.QueryHeaderValidity;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.answering.StakedAnswerFlow;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
@@ -505,6 +506,7 @@ public class ServicesContext {
 	private FeeSchedulesManager feeSchedulesManager;
 	private RecordStreamManager recordStreamManager;
 	private ThrottleDefsManager throttleDefsManager;
+	private QueryHeaderValidity queryHeaderValidity;
 	private Map<String, byte[]> blobStore;
 	private Map<EntityId, Long> entityExpiries;
 	private TransactionPrecheck transactionPrecheck;
@@ -611,6 +613,13 @@ public class ServicesContext {
 			}, runningAvgs(), txnCtx(), MiscUtils::baseStatNameOf);
 		}
 		return opCounters;
+	}
+
+	public QueryHeaderValidity queryHeaderValidity() {
+		if (queryHeaderValidity == null) {
+			queryHeaderValidity = new QueryHeaderValidity();
+		}
+		return queryHeaderValidity;
 	}
 
 	public MiscRunningAvgs runningAvgs() {
@@ -1040,7 +1049,7 @@ public class ServicesContext {
 						hapiThrottling(),
 						submissionManager());
 			} else {
-				answerFlow = new ZeroStakeAnswerFlow(txns(), stateViews(), hapiThrottling());
+				answerFlow = new ZeroStakeAnswerFlow(queryHeaderValidity(), stateViews(), hapiThrottling());
 			}
 		}
 		return answerFlow;
