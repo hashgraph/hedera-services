@@ -229,7 +229,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 		var logic = transitionLogic.get();
-		var opValidity = logic.syntaxCheck().apply(accessor.getTxn());
+		var opValidity = logic.semanticCheck().apply(accessor.getTxn());
 		if (opValidity != OK) {
 			ctx.txnCtx().setStatus(opValidity);
 			return;

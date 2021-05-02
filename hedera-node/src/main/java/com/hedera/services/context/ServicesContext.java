@@ -444,6 +444,7 @@ public class ServicesContext {
 	private FreezeHandler freeze;
 	private CryptoAnswers cryptoAnswers;
 	private ScheduleStore scheduleStore;
+	private SyntaxPrecheck syntaxPrecheck;
 	private AccountNumbers accountNums;
 	private SubmissionFlow submissionFlow;
 	private PropertySource properties;
@@ -458,6 +459,7 @@ public class ServicesContext {
 	private MiscRunningAvgs runningAvgs;
 	private ScheduleAnswers scheduleAnswers;
 	private MiscSpeedometers speedometers;
+	private ScheduleExecutor scheduleExecutor;
 	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
@@ -521,7 +523,6 @@ public class ServicesContext {
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
 	private ValidatingCallbackInterceptor apiPermissionsReloading;
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
-	private ScheduleExecutor scheduleExecutor;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
@@ -1455,7 +1456,7 @@ public class ServicesContext {
 
 	public OptionValidator validator() {
 		if (validator == null) {
-			validator = new ContextOptionValidator(txnCtx(), globalDynamicProperties());
+			validator = new ContextOptionValidator(nodeAccount(), txnCtx(), globalDynamicProperties());
 		}
 		return validator;
 	}
@@ -1769,6 +1770,13 @@ public class ServicesContext {
 		return bytecodeDb;
 	}
 
+	public SyntaxPrecheck syntaxPrecheck() {
+		if (syntaxPrecheck == null) {
+			syntaxPrecheck = new SyntaxPrecheck(recordCache(), validator(), globalDynamicProperties());
+		}
+		return syntaxPrecheck;
+	}
+
 	public TransactionHandler txns() {
 		if (txns == null) {
 			txns = new TransactionHandler(
@@ -1779,7 +1787,7 @@ public class ServicesContext {
 					txnThrottling(),
 					fees(),
 					stateViews(),
-					new SyntaxPrecheck(validator(), globalDynamicProperties()),
+					syntaxPrecheck(),
 					queryFeeCheck(),
 					accountNums(),
 					systemOpPolicies(),
@@ -1800,9 +1808,10 @@ public class ServicesContext {
 	public AccountID nodeAccount() {
 		if (accountId == null) {
 			try {
-				String memoOfAccountId = address().getMemo();
-				accountId = accountParsedFromString(memoOfAccountId);
-			} catch (Exception ignore) {
+				accountId = accountParsedFromString(address().getMemo());
+			} catch (Exception fatal) {
+				log.error("Address book has no account for node, cannot proceed!", fatal);
+				System.exit(1);
 			}
 		}
 		return accountId;

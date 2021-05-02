@@ -119,7 +119,7 @@ public class TxnHandlerVerifySigRegressionTest {
 				null,
 				TestFeesFactory.FEES_FACTORY.get(),
 				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, mock(NodeLocalProperties.class), null),
-				new SyntaxPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
+				new SyntaxPrecheck(null, TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
 				new QueryFeeCheck(() -> accounts),
 				new MockAccountNumbers(),
 				policies,

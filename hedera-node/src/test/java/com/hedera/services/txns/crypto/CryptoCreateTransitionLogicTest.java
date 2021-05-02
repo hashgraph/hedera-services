@@ -101,7 +101,7 @@ public class CryptoCreateTransitionLogicTest {
 		given(validator.memoCheck(memo)).willReturn(MEMO_TOO_LONG);
 
 		// expect:
-		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -109,7 +109,7 @@ public class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
 
 		// expect:
-		assertEquals(KEY_REQUIRED, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(KEY_REQUIRED, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -117,7 +117,7 @@ public class CryptoCreateTransitionLogicTest {
 		givenMissingKey();
 
 		// expect:
-		assertEquals(KEY_REQUIRED, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(KEY_REQUIRED, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -125,7 +125,7 @@ public class CryptoCreateTransitionLogicTest {
 		givenMissingAutoRenewPeriod();
 
 		// expect:
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -133,7 +133,7 @@ public class CryptoCreateTransitionLogicTest {
 		givenAbsurdInitialBalance();
 
 		// expect:
-		assertEquals(INVALID_INITIAL_BALANCE, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(INVALID_INITIAL_BALANCE, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -141,7 +141,7 @@ public class CryptoCreateTransitionLogicTest {
 		givenAbsurdSendThreshold();
 
 		// expect:
-		assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -149,7 +149,7 @@ public class CryptoCreateTransitionLogicTest {
 		givenAbsurdReceiveThreshold();
 
 		// expect:
-		assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -158,7 +158,7 @@ public class CryptoCreateTransitionLogicTest {
 		given(validator.hasGoodEncoding(any())).willReturn(false);
 
 		// expect:
-		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(BAD_ENCODING, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -167,7 +167,7 @@ public class CryptoCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
 		// expect:
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test
@@ -175,7 +175,7 @@ public class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(cryptoCreateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
 
 	@Test

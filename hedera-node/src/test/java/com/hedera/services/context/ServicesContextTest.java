@@ -129,6 +129,7 @@ import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
+import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -530,6 +531,7 @@ public class ServicesContextTest {
 		assertThat(ctx.networkCtxManager(), instanceOf(NetworkCtxManager.class));
 		assertThat(ctx.hapiOpPermissions(), instanceOf(HapiOpPermissions.class));
 		assertThat(ctx.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
+		assertThat(ctx.syntaxPrecheck(), instanceOf(SyntaxPrecheck.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

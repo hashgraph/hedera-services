@@ -27,7 +27,6 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -42,7 +41,6 @@ import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -282,7 +280,7 @@ public class ScheduleCreateTransitionLogicTest {
 		givenCtx(true, false, false);
 
 		// expect:
-		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
+		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
@@ -292,7 +290,7 @@ public class ScheduleCreateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(scheduleCreateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
@@ -300,7 +298,7 @@ public class ScheduleCreateTransitionLogicTest {
 		givenCtx(true, false, false);
 
 		// expect:
-		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(scheduleCreateTxn));
+		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
@@ -308,7 +306,7 @@ public class ScheduleCreateTransitionLogicTest {
 		givenCtx(false, true, false);
 
 		// expect:
-		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.syntaxCheck().apply(scheduleCreateTxn));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
@@ -316,14 +314,14 @@ public class ScheduleCreateTransitionLogicTest {
 		givenCtx(false, false, true);
 
 		// expect:
-		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.syntaxCheck().apply(scheduleCreateTxn));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
 	@Test
 	public void acceptsValidTxn() {
 		givenValidTxnCtx();
 
-		assertEquals(OK, subject.syntaxCheck().apply(scheduleCreateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(scheduleCreateTxn));
 	}
 
 	private void givenValidTxnCtx() {

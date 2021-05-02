@@ -24,14 +24,13 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.txns.submission.PresolvencyFlaws.PRESOLVENCY_FLAWS;
+import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -62,27 +61,27 @@ public class StructuralPrecheck {
 
 		if (hasSignedTxnBytes) {
 			if (hasDeprecatedBodyBytes || hasDeprecatedSigMap) {
-				return PRESOLVENCY_FLAWS.get(INVALID_TRANSACTION);
+				return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION);
 			}
 		} else if (!hasDeprecatedBodyBytes) {
-			return PRESOLVENCY_FLAWS.get(INVALID_TRANSACTION_BODY);
+			return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
 		}
 
 		if (signedTxn.getSerializedSize() > maxSignedTxnSize) {
-			return PRESOLVENCY_FLAWS.get(TRANSACTION_OVERSIZE);
+			return WELL_KNOWN_FLAWS.get(TRANSACTION_OVERSIZE);
 		}
 
 		try {
 			var accessor = new SignedTxnAccessor(signedTxn);
 			if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn()))	{
-				return PRESOLVENCY_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS);
+				return WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS);
 			}
 			if (accessor.getFunction() == NONE) {
-				return PRESOLVENCY_FLAWS.get(INVALID_TRANSACTION_BODY);
+				return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
 			}
 			return Pair.of(OK_STRUCTURALLY, Optional.of(accessor));
 		} catch (InvalidProtocolBufferException e) {
-			return PRESOLVENCY_FLAWS.get(INVALID_TRANSACTION_BODY);
+			return WELL_KNOWN_FLAWS.get(INVALID_TRANSACTION_BODY);
 		}
 	}
 

@@ -79,7 +79,7 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 
 			Optional<TransitionLogic> logic = transitionLogic.lookupFor(accessor.getFunction(), accessor.getTxn());
 			Function<TransactionBody, ResponseCodeEnum> syntaxCheck = logic
-					.map(TransitionLogic::syntaxCheck)
+					.map(TransitionLogic::semanticCheck)
 					.orElse(FALLBACK_SYNTAX_CHECK);
 			ResponseCodeEnum validity = syntaxCheck.apply(accessor.getTxn());
 			if (validity != OK) {

@@ -23,33 +23,43 @@ package com.hedera.services.txns.submission;
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.EnumSet;
 import java.util.Optional;
 
-import static com.hedera.services.txns.submission.PresolvencyFlaws.PRESOLVENCY_FLAWS;
+import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
+import static com.hedera.services.txns.submission.PresolvencyFlaws.responseForFlawed;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.swirlds.common.PlatformStatus.ACTIVE;
 
 public class Precheck {
 	private final SyntaxPrecheck syntaxPrecheck;
+	private final SemanticPrecheck semanticPrecheck;
 	private final StructuralPrecheck structuralPrecheck;
 	private final CurrentPlatformStatus currentPlatformStatus;
 
 	private static final EnumSet<PrecheckCharacteristics> TOP_LEVEL_CHARACTERISTICS =
-			EnumSet.allOf(PrecheckCharacteristics.class);
+			EnumSet.of(PrecheckCharacteristics.SHOULD_INCLUDE_SYSTEM_CHECKS);
 	private static final EnumSet<PrecheckCharacteristics> QUERY_PAYMENT_CHARACTERISTICS =
-			EnumSet.noneOf(PrecheckCharacteristics.class);
+			EnumSet.of(PrecheckCharacteristics.MUST_BE_CRYPTO_TRANSFER);
 
 	public Precheck(
 			SyntaxPrecheck syntaxPrecheck,
+			SemanticPrecheck semanticPrecheck,
 			StructuralPrecheck structuralPrecheck,
 			CurrentPlatformStatus currentPlatformStatus
 	) {
 		this.syntaxPrecheck = syntaxPrecheck;
+		this.semanticPrecheck = semanticPrecheck;
 		this.structuralPrecheck = structuralPrecheck;
 		this.currentPlatformStatus = currentPlatformStatus;
 	}
@@ -67,26 +77,45 @@ public class Precheck {
 			EnumSet<PrecheckCharacteristics> characteristics
 	) {
 		if (currentPlatformStatus.get() != ACTIVE) {
-			return PRESOLVENCY_FLAWS.get(PLATFORM_NOT_ACTIVE);
+			return WELL_KNOWN_FLAWS.get(PLATFORM_NOT_ACTIVE);
 		}
 
-		var structuralAssessment = structuralPrecheck.assess(signedTxn);
+		/* Structure */
+		final var structuralAssessment = structuralPrecheck.assess(signedTxn);
 		if (structuralAssessment.getLeft().getValidity() != OK) {
 			return structuralAssessment;
 		}
 
-		var accessor = structuralAssessment.getRight().get();
-		var txn = accessor.getTxn();
-		var syntacticValidity = syntaxPrecheck.validate(txn);
-		if (syntacticValidity != OK) {
-			return PresolvencyFlaws.responseFor(syntacticValidity);
+		final var accessor = structuralAssessment.getRight().get();
+		final var txn = accessor.getTxn();
+
+		/* Syntax */
+		final var syntaxStatus = syntaxPrecheck.validate(txn);
+		if (syntaxStatus != OK) {
+			return responseForFlawed(syntaxStatus);
+		}
+
+		/* Semantics */
+		final var semanticStatus = checkSemantics(accessor.getFunction(), txn, characteristics);
+		if (semanticStatus != OK) {
+			return responseForFlawed(semanticStatus);
 		}
 
 		throw new AssertionError("Not implemented!");
 	}
 
+	private ResponseCodeEnum checkSemantics(
+			HederaFunctionality function,
+			TransactionBody txn,
+			EnumSet<PrecheckCharacteristics> characteristics
+	) {
+		return characteristics.contains(PrecheckCharacteristics.MUST_BE_CRYPTO_TRANSFER)
+				? semanticPrecheck.validate(CryptoTransfer, txn, INSUFFICIENT_TX_FEE)
+				: semanticPrecheck.validate(function, txn, NOT_SUPPORTED);
+	}
+
 	private enum PrecheckCharacteristics {
-		CHECK_THROTTLES,
-		CHECK_API_PERMISSIONS
+		MUST_BE_CRYPTO_TRANSFER,
+		SHOULD_INCLUDE_SYSTEM_CHECKS
 	}
 }

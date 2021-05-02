@@ -129,7 +129,7 @@ class MerkleTopicCreateTransitionLogicTest {
 		given(validator.hasGoodEncoding(key)).willReturn(true);
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(transactionBody));
+		assertEquals(OK, subject.semanticCheck().apply(transactionBody));
 	}
 
 	@Test
@@ -139,7 +139,7 @@ class MerkleTopicCreateTransitionLogicTest {
 		given(validator.hasGoodEncoding(key)).willReturn(false);
 
 		// expect:
-		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(transactionBody));
+		assertEquals(BAD_ENCODING, subject.semanticCheck().apply(transactionBody));
 	}
 
 	@Test

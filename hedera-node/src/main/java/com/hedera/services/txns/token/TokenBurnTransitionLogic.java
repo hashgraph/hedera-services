@@ -85,7 +85,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
 		return SYNTAX_CHECK;
 	}
 

@@ -90,7 +90,7 @@ class TxnHandlerSubmissionFlowTest {
 		logic = mock(TransitionLogic.class);
 		txnHandler = mock(TransactionHandler.class);
 		syntaxCheck = mock(Function.class);
-		given(logic.syntaxCheck()).willReturn(syntaxCheck);
+		given(logic.semanticCheck()).willReturn(syntaxCheck);
 		logicLookup = mock(TransitionLogicLookup.class);
 		given(logicLookup.lookupFor(CryptoTransfer, CommonUtils.extractTransactionBody(signedTxn))).willReturn(Optional.of(logic));
 		submissionManager = mock(PlatformSubmissionManager.class);

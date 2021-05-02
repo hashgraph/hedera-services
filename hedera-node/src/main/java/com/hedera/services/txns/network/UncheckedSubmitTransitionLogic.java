@@ -43,7 +43,7 @@ public class UncheckedSubmitTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
 		return SYNTAX_RUBBER_STAMP;
 	}
 }

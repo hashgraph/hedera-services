@@ -28,6 +28,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.EnumMap;
 import java.util.Optional;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -44,6 +45,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
 
+/**
+ * Error response factory that caches well-known responses by status code.
+ */
 class PresolvencyFlaws {
 	private static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> failureWithUnknownFeeReq(
 			ResponseCodeEnum error
@@ -51,7 +55,7 @@ class PresolvencyFlaws {
 		return Pair.of(new TxnValidityAndFeeReq(error), Optional.empty());
 	}
 
-	static final EnumMap<ResponseCodeEnum, Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>>> PRESOLVENCY_FLAWS =
+	static final EnumMap<ResponseCodeEnum, Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>>> WELL_KNOWN_FLAWS =
 			new EnumMap<>(ResponseCodeEnum.class) {{
 				put(PLATFORM_NOT_ACTIVE, failureWithUnknownFeeReq(PLATFORM_NOT_ACTIVE));
 				/* Structural */
@@ -70,12 +74,13 @@ class PresolvencyFlaws {
 				put(INVALID_TRANSACTION_DURATION, failureWithUnknownFeeReq(INVALID_TRANSACTION_DURATION));
 				put(INVALID_TRANSACTION_START, failureWithUnknownFeeReq(INVALID_TRANSACTION_START));
 				put(TRANSACTION_EXPIRED, failureWithUnknownFeeReq(TRANSACTION_EXPIRED));
+				put(DUPLICATE_TRANSACTION, failureWithUnknownFeeReq(DUPLICATE_TRANSACTION));
 			}};
 
-	static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> responseFor(ResponseCodeEnum presolvencyFlaw) {
+	static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> responseForFlawed(ResponseCodeEnum status) {
 		Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> response;
-		return (response = PRESOLVENCY_FLAWS.get(presolvencyFlaw)) != null
+		return (response = WELL_KNOWN_FLAWS.get(status)) != null
 				? response
-				: Pair.of(new TxnValidityAndFeeReq(presolvencyFlaw), Optional.empty());
+				: Pair.of(new TxnValidityAndFeeReq(status), Optional.empty());
 	}
 }

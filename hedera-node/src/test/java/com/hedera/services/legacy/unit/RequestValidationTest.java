@@ -88,7 +88,7 @@ public class RequestValidationTest {
                 null,
                 TestFeesFactory.FEES_FACTORY.get(),
                 () -> StateView.EMPTY_VIEW,
-                new SyntaxPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
+                new SyntaxPrecheck(null, TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()),
                 null,
                 new MockAccountNumbers(),
                 policies,

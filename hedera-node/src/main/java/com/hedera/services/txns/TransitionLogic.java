@@ -73,7 +73,7 @@ public interface TransitionLogic {
 	 *
 	 * @return a syntax check functional.
 	 */
-	default Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+	default Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
 		return SYNTAX_RUBBER_STAMP;
 	}
 }

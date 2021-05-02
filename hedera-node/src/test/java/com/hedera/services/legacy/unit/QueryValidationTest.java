@@ -129,7 +129,10 @@ class QueryValidationTest {
 				platformStatus,
 				new DummyHapiPermissions());
 		transactionHandler.setSyntaxPrecheck(
-				new SyntaxPrecheck(TestContextValidator.TEST_VALIDATOR, new MockGlobalDynamicProps()));
+				new SyntaxPrecheck(
+						mock(RecordCache.class),
+						TestContextValidator.TEST_VALIDATOR,
+						new MockGlobalDynamicProps()));
 		byte[] pubKey = ((EdDSAPublicKey) payerKeyGenerated.getPublic()).getAbyte();
 		onboardAccount(payerAccount, pubKey, payerAccountInitialBalance);
 		onboardAccount(lowBalanceAccount, pubKey, 100L);

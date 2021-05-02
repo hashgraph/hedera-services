@@ -121,7 +121,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
 		return PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK;
 	}
 

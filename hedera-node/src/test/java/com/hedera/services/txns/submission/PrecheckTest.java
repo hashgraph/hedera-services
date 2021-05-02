@@ -22,7 +22,6 @@ package com.hedera.services.txns.submission;
 
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -39,17 +38,22 @@ import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.spongycastle.util.encoders.Hex;
 
 import java.util.Optional;
 
-import static com.hedera.services.txns.submission.PresolvencyFlaws.PRESOLVENCY_FLAWS;
+import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.eq;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class PrecheckTest {
@@ -58,6 +62,8 @@ class PrecheckTest {
 	@Mock
 	private SyntaxPrecheck syntaxPrecheck;
 	@Mock
+	private SemanticPrecheck semanticPrecheck;
+	@Mock
 	private StructuralPrecheck structuralPrecheck;
 
 	private Precheck subject;
@@ -65,7 +71,11 @@ class PrecheckTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new Precheck(syntaxPrecheck, structuralPrecheck, currentPlatformStatus);
+		subject = new Precheck(
+				syntaxPrecheck,
+				semanticPrecheck,
+				structuralPrecheck,
+				currentPlatformStatus);
 	}
 
 	@Test
@@ -84,7 +94,7 @@ class PrecheckTest {
 	@Test
 	void abortsOnStructuralFlaw() {
 		givenActivePlatform();
-		given(structuralPrecheck.assess(any())).willReturn(PRESOLVENCY_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS));
+		given(structuralPrecheck.assess(any())).willReturn(WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS));
 
 		// when:
 		var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
@@ -99,6 +109,7 @@ class PrecheckTest {
 	@CsvSource({
 			"INVALID_TRANSACTION_ID",
 			"TRANSACTION_ID_FIELD_NOT_ALLOWED",
+			"DUPLICATE_TRANSACTION",
 			"INSUFFICIENT_TX_FEE",
 			"PAYER_ACCOUNT_NOT_FOUND",
 			"INVALID_NODE_ACCOUNT",
@@ -123,9 +134,38 @@ class PrecheckTest {
 	}
 
 	@Test
+	void abortsOnSemanticErrorForTopLevel() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		given(semanticPrecheck.validate(any(), any(), eq(NOT_SUPPORTED))).willReturn(NOT_SUPPORTED);
+
+		// when:
+		var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
+
+		// then:
+		assertFailure(NOT_SUPPORTED, topLevelResponse);
+	}
+
+	@Test
+	void abortsOnSemanticErrorForQueryPayment() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		given(semanticPrecheck.validate(eq(CryptoTransfer), any(), eq(INSUFFICIENT_TX_FEE)))
+				.willReturn(INSUFFICIENT_TX_FEE);
+
+		// when:
+		var topLevelResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
+
+		// then:
+		assertFailure(INSUFFICIENT_TX_FEE, topLevelResponse);
+	}
+
+	@Test
 	void presolvencyFlawsCanResolveEvenUnexpectedError() {
 		// given:
-		var response = PresolvencyFlaws.responseFor(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+		var response = PresolvencyFlaws.responseForFlawed(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
 		// then:
 		assertFailure(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, response);
@@ -141,6 +181,10 @@ class PrecheckTest {
 						new TxnValidityAndFeeReq(OK),
 						Optional.of(SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance())))
 				);
+	}
+
+	private void givenValidSyntax() {
+		given(syntaxPrecheck.validate(any())).willReturn(OK);
 	}
 
 	private void assertFailure(

@@ -188,7 +188,7 @@ class FileSysUndelTransitionLogicTest {
 	@Test
 	public void syntaxCheckRubberstamps() {
 		// given:
-		var syntaxCheck = subject.syntaxCheck();
+		var syntaxCheck = subject.semanticCheck();
 
 		// expect:
 		assertEquals(ResponseCodeEnum.OK, syntaxCheck.apply(TransactionBody.getDefaultInstance()));
