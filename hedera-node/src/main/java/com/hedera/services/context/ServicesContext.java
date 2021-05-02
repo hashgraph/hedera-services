@@ -294,9 +294,11 @@ import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
+import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -405,6 +407,8 @@ import static java.util.Map.entry;
  */
 public class ServicesContext {
 	private static final Logger log = LogManager.getLogger(ServicesContext.class);
+
+	private SystemExits systemExits = new JvmSystemExits();
 
 	/* Injected dependencies. */
 	ServicesState state;
@@ -1811,7 +1815,7 @@ public class ServicesContext {
 				accountId = accountParsedFromString(address().getMemo());
 			} catch (Exception fatal) {
 				log.error("Address book has no account for node, cannot proceed!", fatal);
-				System.exit(1);
+				systemExits.fail(1);
 			}
 		}
 		return accountId;
@@ -2038,5 +2042,9 @@ public class ServicesContext {
 
 	public void setScheduleStore(ScheduleStore scheduleStore) {
 		this.scheduleStore = scheduleStore;
+	}
+
+	void setSystemExits(SystemExits systemExits) {
+		this.systemExits = systemExits;
 	}
 }

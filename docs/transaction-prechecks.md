@@ -8,27 +8,27 @@ a consensus timestamp, and then handled at that consensus time).
 Rather, the node first performs a "precheck" on the `Transaction` and 
 _only_ submits it to the Platform if the precheck passes. Precheck 
 may be broken into five stages, as follows:
-  1. **Structural checks** :building_construction:&nbsp; Test 
+  1. **Structural checks** &nbsp;:building_construction:&nbsp; Test 
   if the top-level `bytes` fields in the `Transaction` are set 
   correctly, are within size limits, and contain a parseable
   gRPC `TransactionBody` that requests exactly one function
   supported by the network.
 
-  2. **Syntax checks** :memo:&nbsp; Confirm that the parsed
+  2. **Syntax checks** &nbsp;:memo:&nbsp; Confirm that the parsed
   `TransactionBody` has all necessary fields set, including 
   a feasible valid start time and duration; and has a
   `TransactionID` that is believed to be unique.
 
-  3. **Semantic checks** :dart:&nbsp; Test if the specific HAPI
+  3. **Semantic checks** &nbsp;:dart:&nbsp; Test if the specific HAPI
   function requested by the `Transaction` is well-formed; note
   that these tests are always specific to the requested function, 
   and are repeated at consensus.
 
-  4. **Solvency checks** :moneybag:&nbsp; Determine if the payer 
+  4. **Solvency checks** &nbsp;:moneybag:&nbsp; Determine if the payer 
   account set in the `TransactionID` is expected to be both 
   willing and able to pay the transaction fees.
 
-  5. **System checks** :shield:&nbsp; Test if the network can be 
+  5. **System checks** &nbsp;:shield:&nbsp; Test if the network can be 
   expected to handle the given `TransactionBody` if it does reach 
   consensus---that is, if the requested HAPI function is enabled 
   on the network, and its [throttle bucket(s)](./throttle-design.md) 
@@ -40,13 +40,13 @@ instead immediately responding to to the gRPC request with a status
 code of `PLATFORM_NOT_ACTIVE`.
 
 In this document, we cover all the response codes that a gRPC client 
-can receive due to a failure in any of the first four stages of 
-precheck. We do not include an exhaustive list of response codes from
-failed semantic prechecks, since they are usually self-explanatory (e.g.,  
-`ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS`); and are likely to be removed 
-in future releases as Hedera client libraries are enhanced to perform 
-such checks before any network interaction occurs. (Of course the checks
-will always be enforced at consensus! :guard:)
+can receive due to a failure in any of the stages of precheck, _except_
+the third. We do not cover failed semantic prechecks for two reasons.
+First, they are usually specific enough to be self-explanatory (e.g.,  
+`ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS`); and, second, are likely to be 
+removed in future releases as Hedera client libraries are enhanced to 
+perform such checks before any network interaction occurs. (Of course 
+these checks will always be enforced at consensus! :guard:)
 
 ## A comment on queries
 It is important to understand that the header of any non-free `Query` 
@@ -57,7 +57,7 @@ This means all the response codes in this document are _also_
 possible for any non-free query, since they could arise from the 
 precheck performed on the query's enclosed `CryptoTransfer`.  
 
-## :building_construction:&nbsp; Response codes from failed structural checks
+## :building_construction:&nbsp; Failed structural checks
 - `INVALID_TRANSACTION`
   * The top-level `Transaction` used both a deprecated field _and_ 
     the `signedTransactionBytes` field.
@@ -71,7 +71,7 @@ precheck performed on the query's enclosed `CryptoTransfer`.
   * The deserialized `TransactionBody` contained an excessively nested 
     complex key (roughly 20+ levels of nested `ThesholdKey`s).
 
-## :memo:&nbsp; Response codes from failed syntax checks
+## :memo:&nbsp; Failed syntax checks
 - `INVALID_TRANSACTION_ID`
   * The `TransactionBody` was missing a `TransactionID` field.
 - `TRANSACTION_ID_FIELD_NOT_ALLOWED`
@@ -103,10 +103,10 @@ precheck performed on the query's enclosed `CryptoTransfer`.
     assigned consensus timestamp, preventing the transaction from 
     being handled at consensus.
 
-## :moneybag:&nbsp; Response codes from failed solvency checks
+## :moneybag:&nbsp; Failed solvency checks
 - `INSUFFICIENT_TX_FEE`
   * No positive `transactionFee` was offered, or a positive fee
     _was_ offered, but was insufficient.
 - `PAYER_ACCOUNT_NOT_FOUND`
-  * There was no payer `AccountID` given, or a payer _was_ given,  
+  * There was no payer `AccountID` given, or a payer _was_ given, 
     but the given account was deleted or missing.

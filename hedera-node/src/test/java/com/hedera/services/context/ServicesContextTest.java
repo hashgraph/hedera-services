@@ -220,7 +220,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void updatesStateAsExpected() {
+	void updatesStateAsExpected() {
 		// setup:
 		var newState = mock(ServicesState.class);
 		var newAccounts = mock(FCMap.class);
@@ -267,7 +267,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void delegatesPrimitivesToState() {
+	void delegatesPrimitivesToState() {
 		// setup:
 		InOrder inOrder = inOrder(state);
 
@@ -294,7 +294,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void hasExpectedNodeAccount() {
+	void hasExpectedNodeAccount() {
 		// setup:
 		Address address = mock(Address.class);
 		AddressBook book = mock(AddressBook.class);
@@ -312,7 +312,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void canOverrideLastHandledConsensusTime() {
+	void canOverrideLastHandledConsensusTime() {
 		// given:
 		Instant dataDrivenNow = Instant.now();
 		ServicesContext ctx =
@@ -330,7 +330,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void hasExpectedConsole() {
+	void hasExpectedConsole() {
 		// setup:
 		Console console = mock(Console.class);
 		given(platform.createConsole(true)).willReturn(console);
@@ -344,7 +344,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void hasExpectedZeroStakeInfrastructure() {
+	void hasExpectedZeroStakeInfrastructure() {
 		// setup:
 		Address address = mock(Address.class);
 		AddressBook book = mock(AddressBook.class);
@@ -363,7 +363,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void rebuildsStoreViewsIfNonNull() {
+	void rebuildsStoreViewsIfNonNull() {
 		// setup:
 		ScheduleStore scheduleStore = mock(ScheduleStore.class);
 		TokenStore tokenStore = mock(TokenStore.class);
@@ -387,7 +387,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void rebuildsBackingAccountsIfNonNull() {
+	void rebuildsBackingAccountsIfNonNull() {
 		// setup:
 		BackingTokenRels tokenRels = mock(BackingTokenRels.class);
 		FCMapBackingAccounts backingAccounts = mock(FCMapBackingAccounts.class);
@@ -411,7 +411,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void hasExpectedStakedInfrastructure() {
+	void hasExpectedStakedInfrastructure() {
 		// setup:
 		Address address = mock(Address.class);
 		AddressBook book = mock(AddressBook.class);
@@ -542,7 +542,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void shouldInitFees() throws Exception {
+	void shouldInitFees() throws Exception {
 		// setup:
 		MerkleNetworkContext networkCtx = new MerkleNetworkContext();
 
@@ -563,6 +563,7 @@ public class ServicesContextTest {
 		given(diskFs.contentsOf(any())).willReturn(fileContents);
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
+		ctx.setSystemExits(ignore -> {});
 		var subject = ctx.systemFilesManager();
 
 		assertSame(networkCtx, ctx.networkCtx());
@@ -570,7 +571,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void getRecordStreamDirectoryTest() {
+	void getRecordStreamDirectoryTest() {
 		String expectedDir = "/here/we/are";
 
 		NodeLocalProperties sourceProps = mock(NodeLocalProperties.class);
@@ -586,7 +587,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void updateRecordRunningHashTest() {
+	void updateRecordRunningHashTest() {
 		// given:
 		final RunningHash runningHash = mock(RunningHash.class);
 		final RecordsRunningHashLeaf runningHashLeaf = new RecordsRunningHashLeaf();
@@ -607,7 +608,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void initRecordStreamManagerTest() {
+	void initRecordStreamManagerTest() {
 		// given:
 		final AddressBook book = mock(AddressBook.class);
 		final Address address = mock(Address.class);
@@ -640,7 +641,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void setRecordsInitialHashTest() {
+	void setRecordsInitialHashTest() {
 		// given:
 		final Hash initialHash = INITIAL_RANDOM_HASH;
 
