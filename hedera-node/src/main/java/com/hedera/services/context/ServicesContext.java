@@ -273,7 +273,13 @@ import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
-import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
+import com.hedera.services.txns.submission.BasicSubmissionFlow;
+import com.hedera.services.txns.submission.SemanticPrecheck;
+import com.hedera.services.txns.submission.SolvencyPrecheck;
+import com.hedera.services.txns.submission.StagedPrechecks;
+import com.hedera.services.txns.submission.StructuralPrecheck;
+import com.hedera.services.txns.submission.SystemPrecheck;
+import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.token.TokenAssociateTransitionLogic;
 import com.hedera.services.txns.token.TokenBurnTransitionLogic;
@@ -359,6 +365,7 @@ import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_L
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.txns.submission.StructuralPrecheck.HISTORICAL_MAX_PROTO_MESSAGE_DEPTH;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -500,6 +507,7 @@ public class ServicesContext {
 	private ThrottleDefsManager throttleDefsManager;
 	private Map<String, byte[]> blobStore;
 	private Map<EntityId, Long> entityExpiries;
+	private TransactionPrecheck transactionPrecheck;
 	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
 	private TxnFeeChargingPolicy txnChargingPolicy;
@@ -611,6 +619,23 @@ public class ServicesContext {
 			}, nodeLocalProperties());
 		}
 		return runningAvgs;
+	}
+
+	public TransactionPrecheck transactionPrecheck() {
+		if (transactionPrecheck == null) {
+			final var structure = new StructuralPrecheck(
+					Platform.getTransactionMaxBytes(), HISTORICAL_MAX_PROTO_MESSAGE_DEPTH);
+			final var semantics = new SemanticPrecheck(
+					transitionLogic());
+			final var solvency = new SolvencyPrecheck(
+					exemptions(), fees(), precheckVerifier(), stateViews(), this::accounts);
+			final var system = new SystemPrecheck(
+					systemOpPolicies(), hapiOpPermissions(), txnThrottling());
+			final var stagedChecks = new StagedPrechecks(
+					syntaxPrecheck(), system, semantics, solvency, structure);
+			transactionPrecheck = new TransactionPrecheck(queryFeeCheck(), stagedChecks, platformStatus());
+		}
+		return transactionPrecheck;
 	}
 
 	public FeeMultiplierSource feeMultiplierSource() {
@@ -796,11 +821,7 @@ public class ServicesContext {
 
 	public SubmissionFlow submissionFlow() {
 		if (submissionFlow == null) {
-			submissionFlow = new TxnHandlerSubmissionFlow(
-					nodeType(),
-					txns(),
-					transitionLogic(),
-					submissionManager());
+			submissionFlow = new BasicSubmissionFlow(nodeType(), transactionPrecheck(), submissionManager());
 		}
 		return submissionFlow;
 	}

@@ -13,7 +13,7 @@ import java.util.Optional;
 /**
  * A wrapper object to improve readability of {@code TransactionPrecheck}.
  */
-class StagedPrechecks {
+public class StagedPrechecks {
 	private final SyntaxPrecheck syntaxPrecheck;
 	private final SystemPrecheck systemPrecheck;
 	private final SemanticPrecheck semanticPrecheck;

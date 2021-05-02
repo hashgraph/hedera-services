@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TO
  */
 public class StructuralPrecheck {
 	private static final TxnValidityAndFeeReq OK_STRUCTURALLY = new TxnValidityAndFeeReq(OK);
+	public static final int HISTORICAL_MAX_PROTO_MESSAGE_DEPTH = 50;
 
 	private final int maxSignedTxnSize;
 	private final int maxProtoMessageDepth;

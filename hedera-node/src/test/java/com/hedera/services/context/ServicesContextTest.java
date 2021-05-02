@@ -130,7 +130,8 @@ import com.hedera.services.throttling.TxnAwareHandleThrottling;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SyntaxPrecheck;
-import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
+import com.hedera.services.txns.submission.BasicSubmissionFlow;
+import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.SleepingPause;
@@ -468,7 +469,7 @@ public class ServicesContextTest {
 		assertThat(ctx.networkGrpc(), instanceOf(NetworkController.class));
 		assertThat(ctx.entityNums(), instanceOf(EntityNumbers.class));
 		assertThat(ctx.feeSchedulesManager(), instanceOf(FeeSchedulesManager.class));
-		assertThat(ctx.submissionFlow(), instanceOf(TxnHandlerSubmissionFlow.class));
+		assertThat(ctx.submissionFlow(), instanceOf(BasicSubmissionFlow.class));
 		assertThat(ctx.answerFunctions(), instanceOf(AnswerFunctions.class));
 		assertThat(ctx.queryFeeCheck(), instanceOf(QueryFeeCheck.class));
 		assertThat(ctx.queryableTopics(), instanceOf(AtomicReference.class));
@@ -532,6 +533,7 @@ public class ServicesContextTest {
 		assertThat(ctx.hapiOpPermissions(), instanceOf(HapiOpPermissions.class));
 		assertThat(ctx.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
 		assertThat(ctx.syntaxPrecheck(), instanceOf(SyntaxPrecheck.class));
+		assertThat(ctx.transactionPrecheck(), instanceOf(TransactionPrecheck.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

@@ -32,10 +32,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  *
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
-class SemanticPrecheck {
+public class SemanticPrecheck {
 	private final TransitionLogicLookup transitionLogic;
 
-	SemanticPrecheck(TransitionLogicLookup transitionLogic) {
+	public SemanticPrecheck(TransitionLogicLookup transitionLogic) {
 		this.transitionLogic = transitionLogic;
 	}
 
