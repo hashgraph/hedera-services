@@ -74,6 +74,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "10",
+										"autorenew.isEnabled", "true",
 										"autorenew.gracePeriod", "0"))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						cryptoCreate(autoRemovedAccount).autoRenewSecs(10).balance(0L),
@@ -100,6 +101,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of(
 										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
+										"autorenew.isEnabled", "true",
 										"autorenew.gracePeriod", "0"))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						cryptoCreate(autoRenewedAccount).autoRenewSecs(autoRenewSecs).balance(initialBalance),
@@ -129,6 +131,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of(
 										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
+										"autorenew.isEnabled", "true",
 										"autorenew.gracePeriod", "0",
 										"autorenew.numberOfEntitiesToScan", "100",
 										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
@@ -172,6 +175,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of(
 										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
+										"autorenew.isEnabled", "true",
 										"autorenew.gracePeriod", "0",
 										"autorenew.numberOfEntitiesToScan", String.valueOf(numberOfEntitiesToScan),
 										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
@@ -213,6 +217,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of(
 										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
+										"autorenew.isEnabled", "true",
 										"autorenew.gracePeriod", String.valueOf(gracePeriod),
 										"autorenew.numberOfEntitiesToScan", "100",
 										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
@@ -245,6 +250,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of(
 										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
+										"autorenew.isEnabled", "true",
 										"autorenew.gracePeriod", String.valueOf(gracePeriod),
 										"autorenew.numberOfEntitiesToScan", "100",
 										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
