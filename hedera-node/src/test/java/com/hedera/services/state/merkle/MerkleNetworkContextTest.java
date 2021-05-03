@@ -134,7 +134,7 @@ class MerkleNetworkContextTest {
 
 		// expect:
 		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
-		assertEquals(seqNoCopy, subjectCopy.getSeqNo());
+		assertEquals(seqNoCopy, subjectCopy.seqNo());
 		assertEquals(midnightRateSetCopy, subjectCopy.getMidnightRates());
 		assertSame(subjectCopy.getUsageSnapshots(), subject.getUsageSnapshots());
 		assertSame(subjectCopy.getCongestionLevelStarts(), subject.getCongestionLevelStarts());

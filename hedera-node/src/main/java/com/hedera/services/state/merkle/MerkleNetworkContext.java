@@ -330,10 +330,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return usageSnapshots;
 	}
 
-	SequenceNumber getSeqNo() {
-		return seqNo;
-	}
-
 	public long lastScannedEntity() {
 		return lastScannedEntity;
 	}
