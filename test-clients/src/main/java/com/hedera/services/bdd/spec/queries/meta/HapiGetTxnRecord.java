@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
@@ -29,6 +28,7 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -44,17 +44,21 @@ import org.junit.Assert;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final Logger log = LogManager.getLogger(HapiGetTxnRecord.class);
@@ -79,6 +83,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	Optional<String> topicToValidate = Optional.empty();
 	Optional<byte[]> lastMessagedSubmitted = Optional.empty();
 	Optional<LongConsumer> priceConsumer = Optional.empty();
+	Optional<Map<AccountID, Long>> expectedDebits = Optional.empty();
+	Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 
 	public HapiGetTxnRecord(String txn) {
@@ -127,6 +133,16 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord assertingNothing() {
 		assertNothing = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord hasExactDebits(Map<AccountID, Long> expected) {
+		expectedDebits = Optional.of(expected);
+		return this;
+	}
+
+	public HapiGetTxnRecord revealingDebitsTo(Consumer<Map<AccountID, Long>> observer) {
+		debitsConsumer = Optional.of(observer);
 		return this;
 	}
 
@@ -192,6 +208,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			List<Throwable> errors = asserts.errorsIn(actualRecord);
 			rethrowSummaryError(log, "Bad priority record!", errors);
 		}
+		expectedDebits.ifPresent(debits -> assertEquals(debits, asDebits(actualRecord.getTransferList())));
 	}
 
 	private void assertDuplicates(HapiApiSpec spec) throws Throwable {
@@ -259,7 +276,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			assertTopicRunningHash(spec, actualRecord);
 		}
 		if (shouldBeTransferFree) {
-			Assert.assertEquals(
+			assertEquals(
 					"Unexpected transfer list!",
 					0,
 					actualRecord.getTokenTransferListsCount());
@@ -283,6 +300,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 		if (response.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode() == OK) {
 			priceConsumer.ifPresent(pc -> pc.accept(record.getTransactionFee()));
+			debitsConsumer.ifPresent(dc -> dc.accept(asDebits(record.getTransferList())));
 		}
 		if (registryEntry.isPresent()) {
 			spec.registry().saveContractList(

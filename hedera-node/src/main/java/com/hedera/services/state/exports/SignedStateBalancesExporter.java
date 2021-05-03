@@ -96,7 +96,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	private BalancesSummary summary;
 
 	Instant periodBegin = NEVER;
-	private final int exportPeriod;
 
 	static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
 			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
@@ -109,12 +108,13 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		this.signer = signer;
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 		this.dynamicProperties = dynamicProperties;
-		exportPeriod = dynamicProperties.balancesExportPeriodSecs();
 	}
 
 	@Override
 	public boolean isTimeToExport(Instant now) {
-		if ( periodBegin != NEVER && now.getEpochSecond() % exportPeriod <= ALLOWED_EXPORT_TIME_SKEW
+		final int exportPeriod = dynamicProperties.balancesExportPeriodSecs();
+		if ( periodBegin != NEVER
+				&& now.getEpochSecond() % exportPeriod <= ALLOWED_EXPORT_TIME_SKEW
 				&& now.getEpochSecond() / exportPeriod != periodBegin.getEpochSecond() / exportPeriod) {
 			periodBegin = now;
 			return true;

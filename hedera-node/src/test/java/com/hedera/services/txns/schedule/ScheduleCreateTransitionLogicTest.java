@@ -94,7 +94,7 @@ public class ScheduleCreateTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private TransactionContext txnCtx;
 	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
-	private ScheduleReadyForExecution.ExecutionProcessor executor;
+	private ScheduleExecutor executor;
 
 	private boolean adminKeyActuallySkipped = false;
 	private boolean invalidAdminKeyIsSentinelKeyList = false;
@@ -123,7 +123,7 @@ public class ScheduleCreateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		activationHelper = mock(InHandleActivationHelper.class);
 		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
-		executor = mock(ScheduleReadyForExecution.ExecutionProcessor.class);
+		executor = mock(ScheduleExecutor.class);
 		merkleSchedule = mock(MerkleSchedule.class);
 
 		given(accessor.getTxnBytes()).willReturn(bodyBytes);
@@ -133,39 +133,16 @@ public class ScheduleCreateTransitionLogicTest {
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper))
 				.willReturn(Pair.of(OK, true));
 
-		given(executor.doProcess(schedule)).willReturn(OK);
+		given(executor.processExecution(any(), any(), any())).willReturn(OK);
 
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper, validator);
+		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper, validator, executor);
 
 		subject.signingsWitness = replSigningWitness;
-		subject.executor = executor;
 		subject.classifier = classifier;
-	}
-
-	@Test
-	public void validProcessExecution() throws InvalidProtocolBufferException {
-		// setup:
-		givenValidTxnCtx();
-		// and:
-		given(merkleSchedule.effectivePayer()).willReturn(EntityId.fromGrpcAccountId(payer));
-		given(merkleSchedule.asSignedTxn()).willReturn(Transaction.getDefaultInstance());
-		given(store.get(schedule)).willReturn(merkleSchedule);
-		// and:
-		given(store.markAsExecuted(schedule)).willReturn(OK);
-
-		// when:
-		var result = subject.processExecution(schedule);
-
-		// then:
-		verify(store).get(schedule);
-		verify(txnCtx).trigger(any());
-		verify(store).markAsExecuted(schedule);
-		// and:
-		assertEquals(OK, result);
 	}
 
 	@Test
@@ -264,7 +241,7 @@ public class ScheduleCreateTransitionLogicTest {
 		verify(store).createProvisionally(eq(merkleSchedule), eq(RichInstant.fromJava(now)));
 		verify(store, never()).commitCreation();
 		verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
-		verify(executor, never()).doProcess(any());
+		verify(executor, never()).processExecution(schedule, store, txnCtx);
 	}
 
 	@Test
