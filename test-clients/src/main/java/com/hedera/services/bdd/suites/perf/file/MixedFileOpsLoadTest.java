@@ -79,11 +79,13 @@ public class MixedFileOpsLoadTest extends LoadTest {
 						.fee(Integer.MAX_VALUE)
 						.contents(newContents)
 						.noLogging()
+						.payingWith(GENESIS)
 						.hasAnyPrecheck()
 						.deferStatusResolution(),
-				getFileInfo(targetFile).logging(),
 				fileAppend(targetFile)
 						.content("dummy")
+						.hasAnyPrecheck()
+						.payingWith(GENESIS)
 						.logging()
 						.deferStatusResolution()
 		};
@@ -93,7 +95,13 @@ public class MixedFileOpsLoadTest extends LoadTest {
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when(
-						fileCreate(targetFile).contents(initialContent)
+						fileCreate(targetFile)
+								.contents(initialContent)
+								.hasAnyPrecheck()
+								.payingWith(GENESIS),
+						getFileInfo(targetFile)
+								.logging()
+								.payingWith(GENESIS)
 				).then(
 						defaultLoadTest(mixedFileOpsBurst, settings)
 				);

@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,14 +48,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class MixedSmartContractOpsLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(MixedSmartContractOpsLoadTest.class);
-
-	private final String CONTRACT_NAME_PREFIX = "testContract";
-	private final String VERBOSE_FILE = "verboseContractFile";
-	private final String VERBOSE_CONTRACT = "verboseContract";
-	private final String LOOKUP_FILE = "lookUpContractFile";
-	private final String LOOKUP_CONTRACT = "lookUpContract";
-	private final String DEPOSIT_MEMO = "deposited some funds ..";
-	private final String civilianAccount = "civilian";
 
 	public static void main(String... args) {
 		parseArgs(args);
@@ -81,29 +74,35 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		final AtomicInteger createdSoFar = new AtomicInteger(0);
 		final byte[] memo = randomUtf8Bytes(memoLength.getAsInt());
 		final String byteCode = "contractByteCode";
+		final String CONTRACT_NAME_PREFIX = "testContract";
+		final String VERBOSE_FILE = "verboseContractFile";
+		final String VERBOSE_CONTRACT = "verboseContract";
+		final String LOOKUP_FILE = "lookUpContractFile";
+		final String LOOKUP_CONTRACT = "lookUpContract";
+		final String DEPOSIT_MEMO = "deposited some funds ..";
+		final String civilianAccount = "civilian";
 
 		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
+				/* create a contract and update the memo and  do get info on the contract*/
 				contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
-						.payingWith(GENESIS)
-						.bytecode("byteCode")
-						.entityMemo(new String(memo))
-						.noLogging()
+						.bytecode(byteCode)
 						.hasAnyPrecheck()
 						.deferStatusResolution(),
 				contractUpdate(CONTRACT_NAME_PREFIX + createdSoFar.get())
-						.newMemo(new String(memo)),
+						.newMemo(new String(memo))
+						.hasAnyPrecheck()
+						.deferStatusResolution(),
 				getContractInfo(CONTRACT_NAME_PREFIX + createdSoFar.get()),
 
+				/* call balance lookup contract and contract to deposit funds*/
 				contractCallLocal(LOOKUP_CONTRACT,
 						BALANCE_LOOKUP_ABI,
 						spec -> new Object[] { spec.registry().getAccountID(civilianAccount).getAccountNum() }
 				).payingWith(GENESIS),
 				contractCall(VERBOSE_CONTRACT, ContractResources.VERBOSE_DEPOSIT_ABI, 1, 0, DEPOSIT_MEMO)
 						.sending(1)
-						.noLogging()
 						.suppressStats(true)
 						.deferStatusResolution()
-						.payingWith(GENESIS)
 		};
 		return defaultHapiSpec("RunMixedSmartContractOps")
 				.given(
@@ -111,25 +110,22 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 						logIt(ignore -> settings.toString())
 				)
 				.when(
+						/* create an account and a file with some contents*/
 						cryptoCreate(civilianAccount).balance(ONE_HUNDRED_HBARS),
+						fileCreate(byteCode).contents("initial contents"),
 
+						/* create a contract which does a query to look up balance of the civilan account*/
 						fileCreate(LOOKUP_FILE).path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate(LOOKUP_CONTRACT)
-								.entityMemo(new String(memo))
-								.bytecode(byteCode)
-								.payingWith(GENESIS)
-								.noLogging()
-								.hasPrecheckFrom(standardPermissiblePrechecks)
-								.deferStatusResolution(),
+						contractCreate(LOOKUP_CONTRACT).bytecode(LOOKUP_FILE).balance(1_000L),
 
+						/* create a contract that does a transaction to deposit funds*/
 						fileCreate(VERBOSE_FILE).path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
-						contractCreate(VERBOSE_CONTRACT)
-								.entityMemo(new String(memo))
-								.bytecode(byteCode)
-								.payingWith(GENESIS)
-								.noLogging()
-								.hasPrecheckFrom(standardPermissiblePrechecks)
-								.deferStatusResolution()
+						contractCreate(VERBOSE_CONTRACT).bytecode(VERBOSE_FILE).balance(1_000L),
+
+						/* get contract info on both contracts created*/
+						getContractInfo(LOOKUP_CONTRACT).hasExpectedInfo().logged(),
+						getContractInfo(VERBOSE_CONTRACT).hasExpectedInfo().logged(),
+						UtilVerbs.startThroughputObs("contractCall").msToSaturateQueues(50L)
 				)
 				.then(
 						defaultLoadTest(mixedOpsBurst, settings)
