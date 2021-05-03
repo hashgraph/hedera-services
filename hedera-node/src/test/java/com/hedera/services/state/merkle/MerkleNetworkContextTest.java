@@ -517,6 +517,12 @@ class MerkleNetworkContextTest {
 			Instant.ofEpochSecond(3L, 300)
 	};
 
+	@Test
+	void updateLastScannedEntityWorks() {
+		subject.updateLastScannedEntity(2000L);
+		assertEquals(2000L, subject.lastScannedEntity());
+	}
+
 	private List<DeterministicThrottle> activeThrottles() {
 		var snapshots = snapshots();
 		List<DeterministicThrottle> active = new ArrayList<>();
