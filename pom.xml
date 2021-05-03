@@ -165,7 +165,7 @@
     <hapi-proto.version>0.14.0-SNAPSHOT</hapi-proto.version>
     <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.13.2</log4j.version>
-    <netty.version>4.1.51.Final</netty.version>
+    <netty.version>4.1.63.Final</netty.version>
     <swirlds.version>0.9.2</swirlds.version>
     <!-- Test dependency properties -->
     <hamcrest-all.version>1.3</hamcrest-all.version>
@@ -512,6 +512,12 @@ ${git.signoff}
         <groupId>com.hedera.hashgraph</groupId>
         <artifactId>ethereumj-core</artifactId>
         <version>${ethereum-core.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
     </dependencies>
   </dependencyManagement>
