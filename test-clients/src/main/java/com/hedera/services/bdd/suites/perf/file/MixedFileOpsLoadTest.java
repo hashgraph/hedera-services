@@ -76,7 +76,7 @@ public class MixedFileOpsLoadTest extends LoadTest {
 		Supplier<HapiSpecOperation[]> mixedFileOpsBurst = () -> new HapiSpecOperation[] {
 				fileCreate(targetFile + submittedSoFar.getAndIncrement()).contents(initialContent),
 				fileUpdate(targetFile)
-						.fee(Integer.MAX_VALUE)
+						.fee(ONE_HUNDRED_HBARS)
 						.contents(newContents)
 						.noLogging()
 						.payingWith(GENESIS)
@@ -86,6 +86,7 @@ public class MixedFileOpsLoadTest extends LoadTest {
 						.content("dummy")
 						.hasAnyPrecheck()
 						.payingWith(GENESIS)
+						.fee(ONE_HUNDRED_HBARS)
 						.logging()
 						.deferStatusResolution()
 		};
