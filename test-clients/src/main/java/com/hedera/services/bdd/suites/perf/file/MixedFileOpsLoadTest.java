@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.perf.file;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
@@ -46,6 +47,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 public class MixedFileOpsLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(MixedFileOpsLoadTest.class);
 	private final String FILE_NAME_PREFIX = "testFile";
+	final AtomicInteger createdSoFar = new AtomicInteger(0);
 
 	public static void main(String... args) {
 		parseArgs(args);
@@ -69,30 +71,26 @@ public class MixedFileOpsLoadTest extends LoadTest {
 
 	protected HapiApiSpec RunMixedFileOps() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
-		final AtomicInteger createdSoFar = new AtomicInteger(0);
-		int fileSize = 1000;
+		int fileSize = TxnUtils.BYTES_4K;
 		final byte[] initialContent = randomUtf8Bytes(fileSize);
-		final byte[] updatingNextContent = randomUtf8Bytes(fileSize);
 		final byte[] memo = randomUtf8Bytes(memoLength.getAsInt());
+		final byte[] newContents = TxnUtils.randomUtf8Bytes(fileSize);
 
 		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
 				fileCreate(FILE_NAME_PREFIX + createdSoFar.getAndIncrement())
-						.payingWith(GENESIS)
 						.entityMemo(new String(memo))
-						.noLogging()
+						.logging()
 						.contents(initialContent)
 						.hasAnyPrecheck()
 						.deferStatusResolution(),
-				getFileInfo(FILE_NAME_PREFIX + createdSoFar.get()),
+				getFileInfo(FILE_NAME_PREFIX + createdSoFar.get()).logging(),
 				fileUpdate(FILE_NAME_PREFIX + createdSoFar.get())
-						.payingWith(GENESIS)
-						.contents(updatingNextContent)
-						.noLogging()
+						.contents(newContents)
+						.logging()
 						.deferStatusResolution(),
 				fileAppend(FILE_NAME_PREFIX + createdSoFar.get())
-						.payingWith(GENESIS)
 						.content("dummy")
-						.noLogging()
+						.logging()
 						.deferStatusResolution()
 		};
 		return defaultHapiSpec("RunMixedFileOps")
@@ -102,10 +100,9 @@ public class MixedFileOpsLoadTest extends LoadTest {
 				)
 				.when(
 						fileCreate(FILE_NAME_PREFIX + createdSoFar.getAndIncrement())
-								.payingWith(GENESIS)
 								.entityMemo(new String(memo))
-								.noLogging()
-								.contents(initialContent)
+								.logging()
+								.contents("initial content")
 								.hasPrecheckFrom(standardPermissiblePrechecks)
 				)
 				.then(
