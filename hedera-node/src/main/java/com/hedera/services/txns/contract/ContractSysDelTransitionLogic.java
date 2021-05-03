@@ -49,7 +49,7 @@ public class ContractSysDelTransitionLogic implements TransitionLogic {
 	private final LegacySystemDeleter delegate;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	public ContractSysDelTransitionLogic(
 			OptionValidator validator,
@@ -89,7 +89,7 @@ public class ContractSysDelTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SYNTAX_CHECK;
+		return SEMANTIC_CHECK;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractSysDelTxn) {

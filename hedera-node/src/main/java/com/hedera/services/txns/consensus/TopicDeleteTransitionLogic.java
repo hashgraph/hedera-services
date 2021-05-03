@@ -40,7 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class TopicDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TopicDeleteTransitionLogic.class);
 
-	private static final Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
+	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final OptionValidator validator;
@@ -93,6 +93,6 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 	 */
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SYNTAX_RUBBER_STAMP;
+		return SEMANTIC_RUBBER_STAMP;
 	}
 }

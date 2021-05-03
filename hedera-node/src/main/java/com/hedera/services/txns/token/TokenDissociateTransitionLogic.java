@@ -47,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 public class TokenDissociateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenDissociateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final TokenStore store;
 	private final TransactionContext txnCtx;
@@ -79,7 +79,7 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SYNTAX_CHECK;
+		return SEMANTIC_CHECK;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

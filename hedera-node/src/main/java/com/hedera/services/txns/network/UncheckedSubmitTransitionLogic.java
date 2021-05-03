@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class UncheckedSubmitTransitionLogic implements TransitionLogic {
-	private static final Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
+	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
 	@Override
 	public void doStateTransition() {
@@ -44,6 +44,6 @@ public class UncheckedSubmitTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SYNTAX_RUBBER_STAMP;
+		return SEMANTIC_RUBBER_STAMP;
 	}
 }

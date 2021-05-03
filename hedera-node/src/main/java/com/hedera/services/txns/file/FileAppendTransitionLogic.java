@@ -43,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 public class FileAppendTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FileAppendTransitionLogic.class);
 
-	private static final Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
+	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
 	private final HederaFs hfs;
 	private final TransactionContext txnCtx;
@@ -100,6 +100,6 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SYNTAX_RUBBER_STAMP;
+		return SEMANTIC_RUBBER_STAMP;
 	}
 }

@@ -51,7 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class TopicCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TopicCreateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK =
+	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK =
 			this::validatePreSignatureValidation;
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
@@ -122,7 +122,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK;
+		return PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK;
 	}
 
 	/**

@@ -55,7 +55,7 @@ import java.util.function.Predicate;
 public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoUpdateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
@@ -124,7 +124,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SYNTAX_CHECK;
+		return SEMANTIC_CHECK;
 	}
 
 	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {

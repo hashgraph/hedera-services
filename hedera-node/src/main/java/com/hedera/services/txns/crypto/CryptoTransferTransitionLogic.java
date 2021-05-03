@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class CryptoTransferTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoTransferTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
@@ -114,13 +114,13 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SYNTAX_CHECK;
+		return SEMANTIC_CHECK;
 	}
 
 	private ResponseCodeEnum validate(TransactionBody txn) {
 		var op = txn.getCryptoTransfer();
 
-		var validity = basicSyntaxChecks(op.getTransfers(), validator);
+		var validity = basicSemanticChecks(op.getTransfers(), validator);
 		if (validity != OK) {
 			return validity;
 		}
@@ -133,7 +133,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		return checkTokenTransfers(op.getTokenTransfersList());
 	}
 
-	public static ResponseCodeEnum basicSyntaxChecks(TransferList transfers, OptionValidator validator) {
+	public static ResponseCodeEnum basicSemanticChecks(TransferList transfers, OptionValidator validator) {
 		if (hasRepeatedAccount(transfers)) {
 			return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 		} else if (!isNetZeroAdjustment(transfers)) {
