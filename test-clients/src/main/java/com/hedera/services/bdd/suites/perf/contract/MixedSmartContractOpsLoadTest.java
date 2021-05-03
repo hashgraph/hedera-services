@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.perf.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_LOOKUP_ABI;
+import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
@@ -45,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 
 public class MixedSmartContractOpsLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(MixedSmartContractOpsLoadTest.class);
@@ -59,7 +61,7 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return	List.of(
+		return List.of(
 				RunMixedSmartContractOps()
 		);
 	}
@@ -74,32 +76,34 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		final AtomicInteger createdSoFar = new AtomicInteger(0);
 		final byte[] memo = randomUtf8Bytes(memoLength.getAsInt());
 		final String byteCode = "contractByteCode";
+		final String contractToUpdate = "updatableContract";
 		final String CONTRACT_NAME_PREFIX = "testContract";
-		final String VERBOSE_FILE = "verboseContractFile";
-		final String VERBOSE_CONTRACT = "verboseContract";
-		final String LOOKUP_FILE = "lookUpContractFile";
+		final String PAYABLE_FILE = "payableByteCode";
+		final String PAYABLE_CONTRACT = "payableContract";
+		final String LOOKUP_FILE = "lookUpByteCode";
 		final String LOOKUP_CONTRACT = "lookUpContract";
-		final String DEPOSIT_MEMO = "deposited some funds ..";
 		final String civilianAccount = "civilian";
+		final int depositAmount = 1;
 
 		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
-				/* create a contract and update the memo and  do get info on the contract*/
+				/* create a contract*/
 				contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
 						.bytecode(byteCode)
 						.hasAnyPrecheck()
 						.deferStatusResolution(),
-				contractUpdate(CONTRACT_NAME_PREFIX + createdSoFar.get())
+
+				/* update the memo and  do get info on the contract */
+				contractUpdate(contractToUpdate)
 						.newMemo(new String(memo))
 						.hasAnyPrecheck()
 						.deferStatusResolution(),
-				getContractInfo(CONTRACT_NAME_PREFIX + createdSoFar.get()),
 
 				/* call balance lookup contract and contract to deposit funds*/
 				contractCallLocal(LOOKUP_CONTRACT,
 						BALANCE_LOOKUP_ABI,
 						spec -> new Object[] { spec.registry().getAccountID(civilianAccount).getAccountNum() }
 				).payingWith(GENESIS),
-				contractCall(VERBOSE_CONTRACT, ContractResources.VERBOSE_DEPOSIT_ABI, 1, 0, DEPOSIT_MEMO)
+				contractCall(PAYABLE_CONTRACT, ContractResources.DEPOSIT_ABI, depositAmount)
 						.sending(1)
 						.suppressStats(true)
 						.deferStatusResolution()
@@ -110,22 +114,25 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 						logIt(ignore -> settings.toString())
 				)
 				.when(
-						/* create an account and a file with some contents*/
+						/* create an account */
 						cryptoCreate(civilianAccount).balance(ONE_HUNDRED_HBARS),
-						fileCreate(byteCode).contents("initial contents"),
+
+						/* create a file with some contents and contract with it */
+						fileCreate(byteCode).path(ContractResources.VALID_BYTECODE_PATH),
+						contractCreate(contractToUpdate).bytecode(byteCode).adminKey(THRESHOLD),
 
 						/* create a contract which does a query to look up balance of the civilan account*/
 						fileCreate(LOOKUP_FILE).path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate(LOOKUP_CONTRACT).bytecode(LOOKUP_FILE).balance(1_000L),
+						contractCreate(LOOKUP_CONTRACT).bytecode(LOOKUP_FILE).adminKey(THRESHOLD),
 
 						/* create a contract that does a transaction to deposit funds*/
-						fileCreate(VERBOSE_FILE).path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
-						contractCreate(VERBOSE_CONTRACT).bytecode(VERBOSE_FILE).balance(1_000L),
+						fileCreate(PAYABLE_FILE).path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
+						contractCreate(PAYABLE_CONTRACT).bytecode(PAYABLE_FILE).adminKey(THRESHOLD),
 
-						/* get contract info on both contracts created*/
+						/* get contract info on all contracts created*/
 						getContractInfo(LOOKUP_CONTRACT).hasExpectedInfo().logged(),
-						getContractInfo(VERBOSE_CONTRACT).hasExpectedInfo().logged(),
-						UtilVerbs.startThroughputObs("contractCall").msToSaturateQueues(50L)
+						getContractInfo(PAYABLE_CONTRACT).hasExpectedInfo().logged(),
+						getContractInfo(contractToUpdate).hasExpectedInfo().logged()
 				)
 				.then(
 						defaultLoadTest(mixedOpsBurst, settings)
