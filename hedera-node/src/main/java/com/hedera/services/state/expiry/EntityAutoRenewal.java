@@ -21,6 +21,8 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountID;
 
@@ -44,6 +46,8 @@ public class EntityAutoRenewal {
 		AccountID feeCollector = props.fundingAccount();
 		AccountID.Builder accountBuilder = feeCollector.toBuilder();
 		var backingAccounts = ctx.backingAccounts();
+		var merkleFeeCollector = backingAccounts.getRef(feeCollector);
+		long feeCollectorBalance = merkleFeeCollector.getBalance();
 		long lastScannedEntity = ctx.lastScannedEntity();
 		long numberOfEntitiesRenewedOrDeleted = 0;
 		for (long i = 1; i <= props.autoRenewNumberOfEntitiesToScan(); i++) {
@@ -65,9 +69,13 @@ public class EntityAutoRenewal {
 					if (0 == balance) {
 						backingAccounts.remove(accountID);
 					} else {
+						// Check the remaining balance to adjust the extension
 						long autoRenewSecs = merkleAccount.getAutoRenewSecs();
 						newExpiry = expiry + autoRenewSecs;
 						merkleAccount.setExpiry(newExpiry);
+						feeCollectorBalance += fee;
+						balance -= fee;
+						setBalance(merkleAccount, balance);
 					}
 					Instant actionTime = consensusTime.plusNanos(numberOfEntitiesRenewedOrDeleted);
 					var record = (0 == balance)
@@ -82,7 +90,20 @@ public class EntityAutoRenewal {
 				break;
 			}
 		}
+		setBalance(merkleFeeCollector, feeCollectorBalance);
 		backingAccounts.flushMutableRefs();
 		ctx.updateLastScannedEntity(lastScannedEntity);
+	}
+
+	/*
+		The NegativeAccountBalanceException is ignored because
+		there are only 2 calls to this function to set balance of:
+			1. the fee collector, which is no less than its original balance
+			2. the auto renew account, which has been checked for the remaining balance to adjust the extension
+	 */
+	private void setBalance(MerkleAccount account, long newBalance) {
+		try {
+			account.setBalance(newBalance);
+		} catch (NegativeAccountBalanceException ignore) { }
 	}
 }
