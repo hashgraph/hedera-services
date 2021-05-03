@@ -83,8 +83,8 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 													.balance(initialBalance)
 													.withRecharging()
 													.rechargeWindow(3)
-													.key(GENESIS)
-													.payingWith(GENESIS)
+													.key(DEFAULT_PAYER)
+													.payingWith(DEFAULT_PAYER)
 													.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 													.via("txn")
 													.ensuringResolvedStatusIsntFromDuplicate();
