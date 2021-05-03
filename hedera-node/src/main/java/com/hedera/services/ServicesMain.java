@@ -256,14 +256,14 @@ public class ServicesMain implements SwirldMain {
 		}
 	}
 
-	void logInfoWithConsoleEcho(String s) {
+	private void logInfoWithConsoleEcho(String s) {
 		log.info(s);
 		if (ctx.consoleOut() != null) {
 			ctx.consoleOut().println(s);
 		}
 	}
 
-	void registerIssListener() {
+	private void registerIssListener() {
 		ctx.platform().addSignedStateListener(new IssListener(new FcmDump(), ctx.issEventInfo()));
 	}
 
