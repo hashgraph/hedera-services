@@ -256,7 +256,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				.append("\n  Midnight rate set                          :: ")
 				.append(midnightRates.readableRepr())
 				.append("\n  Next entity number                         :: ")
-				.append(seqNo.current());
+				.append(seqNo.current())
+				.append("\n  Last scanned entity                        :: ")
+				.append(lastScannedEntity);
 		sb.append("\n  Throttle usage snapshots are               ::");
 		for (var snapshot : usageSnapshots) {
 			sb.append("\n    ").append(snapshot.used())
