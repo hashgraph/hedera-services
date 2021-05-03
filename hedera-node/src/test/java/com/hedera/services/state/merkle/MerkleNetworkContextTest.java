@@ -66,6 +66,7 @@ import static org.mockito.Mockito.times;
 @ExtendWith(LogCaptureExtension.class)
 class MerkleNetworkContextTest {
 	private int stateVersion = 13;
+	private long lastScannedEntity = 1000L;
 	private RichInstant consensusTimeOfLastHandledTxn;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
@@ -115,7 +116,7 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo,
-				1000L,
+				lastScannedEntity,
 				midnightRateSet,
 				usageSnapshots,
 				richCongestionStarts(),
@@ -135,9 +136,11 @@ class MerkleNetworkContextTest {
 		// expect:
 		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
 		assertEquals(seqNoCopy, subjectCopy.seqNo());
+		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
 		assertEquals(midnightRateSetCopy, subjectCopy.getMidnightRates());
 		assertSame(subjectCopy.getUsageSnapshots(), subject.getUsageSnapshots());
 		assertSame(subjectCopy.getCongestionLevelStarts(), subject.getCongestionLevelStarts());
+		assertEquals(subjectCopy.getStateVersion(), stateVersion);
 	}
 
 	@Test
@@ -442,7 +445,8 @@ class MerkleNetworkContextTest {
 				.willReturn(stateVersion);
 		given(in.readLong())
 				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used());
+				.willReturn(usageSnapshots[1].used())
+				.willReturn(lastScannedEntity);
 		given(serdes.readNullableInstant(in))
 				.willReturn(consensusTimeOfLastHandledTxn)
 				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
@@ -461,6 +465,7 @@ class MerkleNetworkContextTest {
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
 		// and:
+		assertEquals(lastScannedEntity, subject.lastScannedEntity());
 		assertEquals(stateVersion, subject.getStateVersion());
 	}
 
@@ -495,6 +500,7 @@ class MerkleNetworkContextTest {
 		for (int i = 0; i < 2; i++) {
 			inOrder.verify(serdes).writeNullableInstant(richCongestionStarts()[i], out);
 		}
+		inOrder.verify(out).writeLong(lastScannedEntity);
 		inOrder.verify(out).writeInt(stateVersion);
 	}
 
