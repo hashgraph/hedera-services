@@ -1,11 +1,13 @@
 package com.hedera.services.bdd.suites.reconnect;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,9 +19,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AutoRenewEntitiesForReconnect.class);
@@ -50,22 +53,24 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 						cryptoCreate(autoDeleteAccount).autoRenewSecs(autoRenewSecs).balance(0L)
 				)
 				.when(
-						sleepFor(15 * 1000),
+						// do some transfers so that we pass autoRenewSecs
+						withOpContext((spec, ctxLog) -> {
+							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+							for (int i = 0; i < 25; i++) {
+								opsList.add(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).logged());
+							}
+							CustomSpecAssert.allRunFor(spec, opsList);
+						}),
+
 						withLiveNode("0.0.8")
 								.within(60, TimeUnit.SECONDS)
-								.loggingAvailabilityEvery(30)
-								.sleepingBetweenRetriesFor(10),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction"),
-						sleepFor(30 * 1000),
-						withLiveNode("0.0.8")
-								.within(60, TimeUnit.SECONDS)
-								.loggingAvailabilityEvery(30)
+								.loggingAvailabilityEvery(10)
 								.sleepingBetweenRetriesFor(10)
 				)
 				.then(
 						getAccountBalance(autoDeleteAccount)
 								.setNode("0.0.8")
-								.hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
+								.hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID)
 				);
 	}
 
