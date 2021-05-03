@@ -21,6 +21,9 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
@@ -31,6 +34,10 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromLiteral;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 /**
  * Given a state loaded from a preprod network (usually stable testnet), we
@@ -48,32 +55,52 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						rekeyTreasuryAndFreeze(),
+						rekeyTreasury(),
 				}
 		);
 	}
 
-	public HapiApiSpec rekeyTreasuryAndFreeze() {
-//		final var
-		final var hexedNewEd25519PrivateKey = Hex.encodeHexString(randomUtf8Bytes(32));
-		String testVectorKey = "testVectorKey";
+	final String newTreasuryStartUpAccountLoc = "DevStableTestnetStartUpAccount.txt";
+	final String newTreasuryPemLoc = "dev-stabletestnet-account2.pem";
 
-		return customHapiSpec("RekeyTreasuryAndFreeze")
+	private HapiApiSpec rekeyTreasury() {
+		final var treasury = HapiPropertySource.asAccount("0.0.2");
+		final var pemLocForOriginalTreasuryKey = "stabletestnet-account2.pem";
+		final var passphraseForOriginalPemLoc = "<SECRET>";
+
+		final var hexedNewEd25519PrivateKey = Hex.encodeHexString(randomUtf8Bytes(32));
+		final var newTreasuryKey = "newTreasuryKey";
+
+		return customHapiSpec("RekeyTreasury")
 				.withProperties(Map.of(
-						"nodes", "34.94.106.61",
+						"nodes", "localhost",
 						"default.payer", "0.0.2",
-//						"startupAccounts.path", "src/main/resource/StableTestnetStartupAccount.txt"
-						"default.payer.pemKeyLoc", "stabletestnet-account2.pem",
-						"default.payer.pemKeyPassphrase", "<SECRET>"
+						"default.payer.pemKeyLoc", pemLocForOriginalTreasuryKey,
+						"default.payer.pemKeyPassphrase", passphraseForOriginalPemLoc
 				))
 				.given(
+						keyFromLiteral(newTreasuryKey, hexedNewEd25519PrivateKey),
+						withOpContext((spec, opLog) -> {
+							spec.keys().exportSimpleKeyAsLegacyStartUpAccount(
+									newTreasuryKey,
+									treasury,
+									newTreasuryStartUpAccountLoc);
+							spec.keys().exportSimpleKey(newTreasuryPemLoc, newTreasuryKey);
+						})
+				).when( ).then(
+						cryptoUpdate(DEFAULT_PAYER).key(newTreasuryKey)
+				);
+	}
 
-//						keyFromLiteral(testVectorKey, explicit)
-				).when().then(
-//						cryptoCreate("another")
-//								.balance(1L)
-//								.receiverSigRequired(true)
-//								.key(testVectorKey)
+	private HapiApiSpec freezeWithNewTreasuryKey() {
+		return customHapiSpec("FreezeWithNewTreasuryKey")
+				.withProperties(Map.of(
+						"nodes", "localhost",
+						"default.payer", "0.0.2",
+						"startupAccounts.path", newTreasuryStartUpAccountLoc
+				))
+				.given( ).when( ).then(
+						freeze().startingIn(60).seconds().andLasting(1).minutes()
 				);
 	}
 
