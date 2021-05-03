@@ -30,7 +30,6 @@ import org.junit.Assert;
 
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -80,7 +79,8 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 									while (!createdAuditablePayer) {
 										try {
 											var cryptoCreateOp = cryptoCreate("payerAccount")
-													.balance(initialBalance)
+													.balance(DEFAULT_PAYER.equals(
+															"0.0.2") ? initialBalance : THOUSAND_HBAR)
 													.withRecharging()
 													.rechargeWindow(3)
 													.key(DEFAULT_PAYER)
