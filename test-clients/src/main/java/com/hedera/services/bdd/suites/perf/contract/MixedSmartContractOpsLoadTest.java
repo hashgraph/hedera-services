@@ -46,6 +46,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+/**
+ * Run mixed operations including ContractCreate, ContractUpdate, ContractCallLocal, ContractCall, ContractInfo
+ */
 public class MixedSmartContractOpsLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(MixedSmartContractOpsLoadTest.class);
 

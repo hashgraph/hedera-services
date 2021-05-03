@@ -41,7 +41,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 /**
- * Run FileCreate, FileAppend, FileUpdate operations in burst while the test is running
+ * Run mixed operations including FileCreate, FileAppend, FileUpdate
  */
 public class MixedFileOpsLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(MixedFileOpsLoadTest.class);
