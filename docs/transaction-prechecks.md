@@ -89,25 +89,64 @@ precheck performed on the query's enclosed `CryptoTransfer`.
     string delimiter in database internals).
 - `INVALID_TRANSACTION_DURATION`
   * The given `transactionValidDuration` fell outside the range set
-    by the [`hedera.transaction.minValidDuration` and `hedera.transaction.maxValidDuration` properties](../hedera-node/src/main/resources/bootstrap.properties), which default to 15 and 180 seconds, respectively.
+    by the [`hedera.transaction.minValidDuration` and 
+    `hedera.transaction.maxValidDuration` properties](../hedera-node/src/main/resources/bootstrap.properties), 
+    which default to 15 and 180 seconds, respectively.
 - `INVALID_TRANSACTION_START`
   * Even allowing for a delay of up to 
-    [`hedera.transaction.minValidityBufferSecs`](../hedera-node/src/main/resources/bootstrap.properties) seconds to reach consensus (default is
-    10 seconds), the given `transactionValidStart` is likely to 
-    fall _after_ any assigned consensus timestamp, preventing the 
-    transaction from being handled at consensus.
+    [`hedera.transaction.minValidityBufferSecs`](../hedera-node/src/main/resources/bootstrap.properties) 
+    seconds to reach consensus (default is 10 seconds), the given 
+    `transactionValidStart` is likely to fall _after_ any assigned 
+    consensus timestamp, preventing the transaction from being handled 
+    at consensus.
 - `TRANSACTION_EXPIRED`
   * After allowing for a delay of up to 
-    [`hedera.transaction.minValidityBufferSecs`](../hedera-node/src/main/resources/bootstrap.properties) seconds to reach consensus (default is
-    10 seconds), the window implied by the given `transactionValidStart` 
-    and `transactionValidDuration` is likely to end _before_ any 
-    assigned consensus timestamp, preventing the transaction from 
-    being handled at consensus.
+    [`hedera.transaction.minValidityBufferSecs`](../hedera-node/src/main/resources/bootstrap.properties) 
+    seconds to reach consensus (default is 10 seconds), the window 
+    implied by the given `transactionValidStart` and 
+    `transactionValidDuration` is likely to end _before_ any 
+    assigned consensus timestamp, preventing the transaction 
+    from being handled at consensus.
 
 ## :moneybag:&nbsp; Failed solvency checks
 - `INSUFFICIENT_TX_FEE`
-  * No positive `transactionFee` was offered, or a positive fee
-    _was_ offered, but was insufficient.
+  * No positive [`transactionFee`](https://hashgraph.github.io/hedera-protobufs/#proto.TransactionBody) 
+    was offered, or a positive fee _was_ offered, but was insufficient.
 - `PAYER_ACCOUNT_NOT_FOUND`
   * There was no payer `AccountID` given, or a payer _was_ given, 
     but the given account was deleted or missing.
+- `KEY_PREFIX_MISMATCH`
+  * More than one [`pubKeyPrefix`](https://hashgraph.github.io/hedera-protobufs/#proto.SignaturePair) 
+    in the resolved [`SignatureMap`](https://hashgraph.github.io/hedera-protobufs/#proto.SignatureMap) 
+    for the transaction was a prefix of some Ed25519 key in the 
+    payer's Hedera key.
+- `INVALID_ACCOUNT_ID` 
+  * _(Query precheck only)_ The query payment [`transfers`](https://hashgraph.github.io/hedera-protobufs/#proto.TransferList)
+    list included a non-existent or deleted `AccountID`.
+- `INVALID_SIGNATURE`
+  * The resolved `SignatureMap` did not contain valid signatures
+    for enough Ed25519 keys to activate the payer's Hedera key; or,
+  * _(Query precheck only)_ Same as above, but for a non-payer key
+    required to sign the payment `CryptoTransfer`.
+- `INSUFFICIENT_PAYER_BALANCE`
+  * Although the offered `transactionFee` was sufficient, the balance
+    of the payer account was not expected to be able to cover it. 
+- `FAIL_FEE`
+  * Something highly unusual prevented the node from calculating the
+    required fee. We would appreciate a [bug report](https://github.com/hashgraph/hedera-services/issues/new?assignees=&labels=bug&template=1-bug-report.md&title=)
+    if you receive this error code! 
+
+## :shield:&nbsp; Failed system checks
+- `NOT_SUPPORTED`
+  * The requested HAPI function was either not enabled, or is reserved
+    for privileged system accounts.
+- `AUTHORIZATION_FAILED`
+  * The payer used for the transaction did not [have the required privileges](./privileged-transactions.md)
+    to perform the HAPI function against the referenced entity; for
+    example, a non-privileged payer cannot update a system file.
+- `ENTITY_NOT_ALLOWED_TO_DELETE`
+  * The requested HAPI operation tried to delete a system entity.
+- `BUSY`
+  * The network does not have available capacity in one or 
+    more of the [throttle bucket(s)](./throttle-design.md) to 
+    which the requested function is assigned.
