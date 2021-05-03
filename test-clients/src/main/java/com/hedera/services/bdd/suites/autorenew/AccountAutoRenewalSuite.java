@@ -93,8 +93,6 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 	private HapiApiSpec accountAutoRenewal() {
 		String autoRenewedAccount = "autoRenewedAccount";
 		long autoRenewSecs = 10;
-		long initialExpirationTime = Instant.now().getEpochSecond() + autoRenewSecs;
-		long newExpirationTime = initialExpirationTime + autoRenewSecs;
 		long initialBalance = ONE_HUNDRED_HBARS;
 		return defaultFailingHapiSpec("AccountAutoRenewal")
 				.given(
@@ -105,7 +103,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 										"autorenew.gracePeriod", "0"))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						cryptoCreate(autoRenewedAccount).autoRenewSecs(autoRenewSecs).balance(initialBalance),
-						getAccountInfo(autoRenewedAccount).logged()
+						getAccountInfo(autoRenewedAccount).logged().saveToRegistry(autoRenewedAccount)
 				)
 				.when(
 						sleepFor(15 * 1000),
@@ -115,7 +113,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 				.then(
 						getAccountInfo(autoRenewedAccount)
 								.has(accountWith()
-										.expiry(newExpirationTime, 5L)
+										.expiry(autoRenewedAccount, autoRenewSecs)
 										.balanceLessThan(initialBalance)
 								).logged()
 				);
