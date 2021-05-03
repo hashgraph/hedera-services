@@ -187,6 +187,15 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
+	public AccountInfoAsserts expiry(String registryEntry, long delta) {
+		registerProvider((spec, o) -> {
+			long expiry = ((AccountInfo)o).getExpirationTime().getSeconds();
+			long expected = spec.registry().getAccountInfo(registryEntry).getExpirationTime().getSeconds() + delta;
+			Assert.assertEquals("Bad expiry!", expected, expiry);
+		});
+		return this;
+	}
+
 	public AccountInfoAsserts autoRenew(long period) {
 		registerProvider((spec, o) -> {
 			Assert.assertEquals("Bad auto-renew period!",
