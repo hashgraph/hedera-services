@@ -41,6 +41,7 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
@@ -534,8 +535,8 @@ public class SmartContractRequestHandler {
 			ContractCallLocalQuery transactionContractCallLocal, long currentTimeMs) throws Exception {
 		ContractCallLocalResponse responseToReturn;
 		Transaction tx;
-		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
-				.extractTransactionBody(transactionContractCallLocal.getHeader().getPayment());
+		TransactionBody body =
+				SignedTxnAccessor.uncheckedFrom(transactionContractCallLocal.getHeader().getPayment()).getTxn();
 		AccountID senderAccount = body.getTransactionID().getAccountID();
 		String senderAccountEthAddress = asSolidityAddressHex(senderAccount);
 		AccountID receiverAccount = EntityIdUtils.asAccount(transactionContractCallLocal.getContractID());

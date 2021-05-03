@@ -41,6 +41,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Locale;
@@ -85,7 +86,7 @@ public class ServicesMain implements SwirldMain {
 			systemExits.fail(1);
 		}
 		try {
-			CommonUtils.getSha384Hash();
+			MessageDigest.getInstance("SHA-384");
 		} catch (NoSuchAlgorithmException nsae) {
 			log.error(nsae);
 			systemExits.fail(1);

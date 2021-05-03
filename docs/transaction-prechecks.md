@@ -37,7 +37,7 @@ may be broken into five stages, as follows:
 
 The node only performs later checks if the earlier checks pass; and 
 it performs no checks at all if the Platform is in maintenance mode, 
-instead immediately responding to to the gRPC request with a status 
+instead immediately responding to the gRPC request with a status 
 code of `PLATFORM_NOT_ACTIVE`.
 
 In this document, we cover all the response codes that a gRPC client 
