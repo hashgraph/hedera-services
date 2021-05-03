@@ -20,22 +20,15 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
-
-import java.util.List;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMapOrUseDefault;
 
 /**
  * Defines a type that is a source of the cryptographic signatures associated to
  * given public keys. It is useful to define an explicit type for this simple behavior,
- * because it must be implemented quite differently for a gRPC transaction using a
- * {@link SignatureMap} vs. a gRPC transaction using a
- * {@link com.hederahashgraph.api.proto.java.SignatureList}.
- *
- * In particular, to create a {@link com.swirlds.common.crypto.Signature}, you must have:
+ * because to create a {@link com.swirlds.common.crypto.Signature}, you must have:
  * <ol>
  *     <li>The raw data that was signed.</li>
  *     <li>The public key matching the private key used to sign the data.</li>
@@ -45,8 +38,7 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatur
  * given the second.
  *
  * <b>NOTE:</b> This interface also provides static factories to obtain appropriate
- * implementations of its type given {@link SignatureMap},
- * {@link com.hederahashgraph.api.proto.java.SignatureList}, or gRPC transaction.
+ * implementations of its type given a {@link SignatureMap}.
  *
  * @author Michael Tinker
  */
@@ -71,18 +63,6 @@ public interface PubKeyToSigBytes {
 	 */
 	static PubKeyToSigBytes from(SignatureMap sigMap) {
 		return new SigMapPubKeyToSigBytes(sigMap);
-	}
-
-	/**
-	 * Create a {@code PubKeyToSigBytes} implementation backed by the [implied]
-	 * list of cryptographic signatures contained in a list of Hedera
-	 * {@link Signature} instances.
-	 *
-	 * @param hederaSigs a list of Hedera {@link Signature} objects.
-	 * @return a source of the raw signatures contained in the Hedera signatures.
-	 */
-	static PubKeyToSigBytes from(List<Signature> hederaSigs) {
-		return new SigListPubKeyToSigBytes(hederaSigs);
 	}
 
 	/**

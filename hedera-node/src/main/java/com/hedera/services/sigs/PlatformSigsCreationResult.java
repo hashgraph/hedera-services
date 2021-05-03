@@ -23,7 +23,6 @@ package com.hedera.services.sigs;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Signature;
@@ -73,9 +72,6 @@ public class PlatformSigsCreationResult {
 		if (!hasFailed()) {
 			sigStatus = SignatureStatusCode.SUCCESS;
 			responseCode = ResponseCodeEnum.OK;
-		} else if (terminatingEx.isPresent() && terminatingEx.get() instanceof KeySignatureCountMismatchException) {
-			sigStatus = SignatureStatusCode.KEY_COUNT_MISMATCH;
-			responseCode = ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
 		} else if (terminatingEx.isPresent() && terminatingEx.get() instanceof KeyPrefixMismatchException) {
 			sigStatus = SignatureStatusCode.KEY_PREFIX_MISMATCH;
 			responseCode = ResponseCodeEnum.KEY_PREFIX_MISMATCH;

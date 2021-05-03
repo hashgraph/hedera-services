@@ -7,8 +7,6 @@ import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -38,7 +36,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -99,30 +96,6 @@ class SolvencyPrecheckTest {
 
 		// then:
 		assertJustValidity(result, PAYER_ACCOUNT_NOT_FOUND);
-	}
-
-	@Test
-	void preservesRespForCountMismatch() throws Exception {
-		givenSolventPayer();
-		given(precheckVerifier.hasNecessarySignatures(accessor)).willThrow(KeySignatureCountMismatchException.class);
-
-		// when:
-		var result = subject.assess(accessor);
-
-		// then:
-		assertJustValidity(result, INVALID_SIGNATURE_COUNT_MISMATCHING_KEY);
-	}
-
-	@Test
-	void preservesRespForTypeMismatch() throws Exception {
-		givenSolventPayer();
-		given(precheckVerifier.hasNecessarySignatures(accessor)).willThrow(KeySignatureTypeMismatchException.class);
-
-		// when:
-		var result = subject.assess(accessor);
-
-		// then:
-		assertJustValidity(result, INVALID_SIGNATURE_TYPE_MISMATCHING_KEY);
 	}
 
 	@Test

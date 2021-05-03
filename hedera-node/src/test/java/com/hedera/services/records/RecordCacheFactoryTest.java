@@ -44,7 +44,7 @@ class RecordCacheFactoryTest {
 	private RecordCacheFactory subject;
 
 	@Test
-	public void hasExpectedExpiry() {
+	void hasExpectedExpiry() {
 		// setup:
 		properties = mock(PropertySource.class);
 		subject = new RecordCacheFactory(properties);
@@ -58,10 +58,9 @@ class RecordCacheFactoryTest {
 		// then:
 		assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
 		assertNull(cache.getIfPresent(txnIdB));
-		SLEEPING_PAUSE.forMs(500L);
+		SLEEPING_PAUSE.forMs(50L);
 		assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
-		SLEEPING_PAUSE.forMs(500L);
+		SLEEPING_PAUSE.forMs(1000L);
 		assertNull(cache.getIfPresent(txnIdA));
 	}
-
 }
