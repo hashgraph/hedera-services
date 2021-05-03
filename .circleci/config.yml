@@ -1476,28 +1476,34 @@ workflows:
             - attach_workspace:
                 at: /
 
-# The mainnet migration test needs to be run in a 13-node test network.
+# The mainnet migration test needs to be run in a 18-node test network.
 # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
 # Once this branch is released, disable this workflow.
   nightly-mainnet-migration-regression:
     triggers:
           - schedule:
-              cron: "0 23,8 * * *"
+              cron: "16 20 * * *"
               filters:
                 branches:
                   only:
-                    - release-branch-N
+                    - 1358-D-mainnet-migration-test
     jobs:
       - build-platform-and-services
-      - run-mainnet-migration-regression:
-          context: Slack
+      - update-start-up-key-for-mainnet:
           requires:
             - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/18N_1C/MainnetMigration
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Migration-18N-1C"
+          requires:
+            - update-start-up-key-for-mainnet
           pre-steps:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-mainnet-migration-regression"
 
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
@@ -2263,6 +2269,27 @@ jobs:
             - repo/
             - swirlds-platform/
 
+  update-start-up-key-for-mainnet:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+    steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name: Modify Payer account for Mainnet start from saved state test
+          command: |
+            sed -i 's/default.payer=0.0.2/default.payer=0.0.950/g' /repo/test-clients/src/main/resource/spec-default.properties;
+            echo -n "$KEY_950" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/
+            - swirlds-platform/
+
   javadoc-generation:
     executor:
       name: build-executor
@@ -2301,7 +2328,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 1358-D-mainnet-migration-test;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2723,10 +2750,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
