@@ -53,10 +53,10 @@ public class TransactionPrecheck {
 	private final StagedPrechecks stagedPrechecks;
 	private final CurrentPlatformStatus currentPlatformStatus;
 
-	private static final EnumSet<Characteristics> TOP_LEVEL_CHARACTERISTICS =
-			EnumSet.of(Characteristics.MUST_PASS_SYSTEM_SCREEN);
-	private static final EnumSet<Characteristics> QUERY_PAYMENT_CHARACTERISTICS =
-			EnumSet.of(Characteristics.MUST_BE_CRYPTO_TRANSFER);
+	private static final EnumSet<Characteristic> TOP_LEVEL_CHARACTERISTICS =
+			EnumSet.of(Characteristic.MUST_PASS_SYSTEM_SCREEN);
+	private static final EnumSet<Characteristic> QUERY_PAYMENT_CHARACTERISTICS =
+			EnumSet.of(Characteristic.MUST_BE_CRYPTO_TRANSFER, Characteristic.MUST_BE_SOLVENT_FOR_SVC_FEES);
 
 	public TransactionPrecheck(
 			QueryFeeCheck queryFeeCheck,
@@ -89,7 +89,7 @@ public class TransactionPrecheck {
 
 	private Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performance(
 			Transaction signedTxn,
-			EnumSet<Characteristics> characteristics
+			EnumSet<Characteristic> characteristics
 	) {
 		if (currentPlatformStatus.get() != ACTIVE) {
 			return WELL_KNOWN_FLAWS.get(PLATFORM_NOT_ACTIVE);
@@ -114,12 +114,14 @@ public class TransactionPrecheck {
 			return responseForFlawed(semanticStatus);
 		}
 
-		final var solvencyStatus = stagedPrechecks.assessSolvency(accessor);
+		final var solvencyStatus = characteristics.contains(Characteristic.MUST_BE_SOLVENT_FOR_SVC_FEES)
+				? stagedPrechecks.assessSolvencyWithSvcFees(accessor)
+				: stagedPrechecks.assessSolvencySansSvcFees(accessor);
 		if (solvencyStatus.getValidity() != OK) {
 			return failureFor(solvencyStatus);
 		}
 
-		if (characteristics.contains(Characteristics.MUST_PASS_SYSTEM_SCREEN)) {
+		if (characteristics.contains(Characteristic.MUST_PASS_SYSTEM_SCREEN)) {
 			final var systemStatus = stagedPrechecks.systemScreen(accessor);
 			if (systemStatus != OK) {
 				return failureFor(new TxnValidityAndFeeReq(systemStatus, solvencyStatus.getRequiredFee()));
@@ -136,15 +138,16 @@ public class TransactionPrecheck {
 	private ResponseCodeEnum checkSemantics(
 			HederaFunctionality function,
 			TransactionBody txn,
-			EnumSet<Characteristics> characteristics
+			EnumSet<Characteristic> characteristics
 	) {
-		return characteristics.contains(Characteristics.MUST_BE_CRYPTO_TRANSFER)
+		return characteristics.contains(Characteristic.MUST_BE_CRYPTO_TRANSFER)
 				? stagedPrechecks.validateSemantics(CryptoTransfer, txn, INSUFFICIENT_TX_FEE)
 				: stagedPrechecks.validateSemantics(function, txn, NOT_SUPPORTED);
 	}
 
-	private enum Characteristics {
+	private enum Characteristic {
 		MUST_BE_CRYPTO_TRANSFER,
-		MUST_PASS_SYSTEM_SCREEN
+		MUST_PASS_SYSTEM_SCREEN,
+		MUST_BE_SOLVENT_FOR_SVC_FEES
 	}
 }

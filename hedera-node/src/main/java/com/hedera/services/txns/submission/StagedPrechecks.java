@@ -58,7 +58,7 @@ public class StagedPrechecks {
 		return syntaxPrecheck.validate(txn);
 	}
 
-	public ResponseCodeEnum systemScreen(SignedTxnAccessor accessor) {
+	ResponseCodeEnum systemScreen(SignedTxnAccessor accessor) {
 		return systemPrecheck.screen(accessor);
 	}
 
@@ -66,11 +66,15 @@ public class StagedPrechecks {
 		return semanticPrecheck.validate(function, txn, failureType);
 	}
 
-	TxnValidityAndFeeReq assessSolvency(SignedTxnAccessor accessor) {
-		return solvencyPrecheck.assess(accessor);
+	TxnValidityAndFeeReq assessSolvencySansSvcFees(SignedTxnAccessor accessor) {
+		return solvencyPrecheck.assessSansSvcFees(accessor);
 	}
 
-	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> assessStructure(Transaction signedTxn) {
+	TxnValidityAndFeeReq assessSolvencyWithSvcFees(SignedTxnAccessor accessor) {
+		return solvencyPrecheck.assessWithSvcFees(accessor);
+	}
+
+	Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> assessStructure(Transaction signedTxn) {
 		return structuralPrecheck.assess(signedTxn);
 	}
 }

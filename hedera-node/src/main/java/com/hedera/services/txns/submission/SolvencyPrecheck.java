@@ -76,7 +76,15 @@ public class SolvencyPrecheck {
 		this.precheckVerifier = precheckVerifier;
 	}
 
-	TxnValidityAndFeeReq assess(SignedTxnAccessor accessor) {
+	TxnValidityAndFeeReq assessSansSvcFees(SignedTxnAccessor accessor) {
+		return assess(accessor, false);
+	}
+
+	TxnValidityAndFeeReq assessWithSvcFees(SignedTxnAccessor accessor) {
+		return assess(accessor, true);
+	}
+
+	private TxnValidityAndFeeReq assess(SignedTxnAccessor accessor, boolean includeSvcFee) {
 		final var payerStatus = queryableAccountStatus(accessor.getPayer(), accounts.get());
 		if (payerStatus != OK) {
 			return new TxnValidityAndFeeReq(PAYER_ACCOUNT_NOT_FOUND);
@@ -91,10 +99,10 @@ public class SolvencyPrecheck {
 			return VERIFIED_EXEMPT;
 		}
 
-		return solvencyOfVerifiedPayer(accessor);
+		return solvencyOfVerifiedPayer(accessor, includeSvcFee);
 	}
 
-	private TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor) {
+	private TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor, boolean includeSvcFee) {
 		final var payerId = MerkleEntityId.fromAccountId(accessor.getPayer());
 		final var payerAccount = accounts.get().get(payerId);
 
@@ -102,7 +110,7 @@ public class SolvencyPrecheck {
 			final var now = accessor.getTxnId().getTransactionValidStart();
 			final var payerKey = payerAccount.getKey();
 			final var estimatedFees = feeCalculator.estimateFee(accessor, payerKey, stateView.get(), now);
-			final var estimatedReqFee = totalOf(estimatedFees);
+			final var estimatedReqFee = totalOf(estimatedFees, includeSvcFee);
 
 			if (accessor.getTxn().getTransactionFee() < estimatedReqFee) {
 				return new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, estimatedReqFee);
@@ -120,8 +128,8 @@ public class SolvencyPrecheck {
 		}
 	}
 
-	private long totalOf(FeeObject fees) {
-		return fees.getServiceFee() + fees.getNodeFee() + fees.getNetworkFee();
+	private long totalOf(FeeObject fees, boolean includeSvcFee) {
+		return (includeSvcFee ? fees.getServiceFee() : 0) + fees.getNodeFee() + fees.getNetworkFee();
 	}
 
 	private ResponseCodeEnum checkSigs(SignedTxnAccessor accessor) {

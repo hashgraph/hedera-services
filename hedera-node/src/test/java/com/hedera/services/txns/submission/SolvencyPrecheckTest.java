@@ -56,7 +56,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
@@ -67,9 +66,11 @@ import static org.mockito.BDDMockito.given;
 class SolvencyPrecheckTest {
 	private final long payerBalance = 1_234L;
 	private final long acceptableRequiredFee = 666L;
+	private final long acceptableRequiredFeeSansSvc = 333L;
 	private final long unacceptableRequiredFee = 667L;
+	private final long unacceptableRequiredFeeSansSvc = 334L;
 	private final FeeObject acceptableFees = new FeeObject(111L, 222L, 333L);
-	private final FeeObject unacceptableFees = new FeeObject(111L, 222L, 334L);
+	private final FeeObject unacceptableFees = new FeeObject(111L, 223L, 333L);
 	private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 	private final Timestamp now = MiscUtils.asTimestamp(Instant.ofEpochSecond(1_234_567L));
 	private final AccountID payer = IdUtils.asAccount("0.0.1234");
@@ -81,12 +82,20 @@ class SolvencyPrecheckTest {
 			.accountKeys(payerKey)
 			.balance(0L)
 			.get();
-	private final SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+	private final SignedTxnAccessor accessorCoveringAllFees = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
 			.setBodyBytes(TransactionBody.newBuilder()
 					.setTransactionID(TransactionID.newBuilder()
 							.setTransactionValidStart(now)
 							.setAccountID(payer))
 					.setTransactionFee(acceptableRequiredFee)
+					.build().toByteString())
+			.build());
+	private final SignedTxnAccessor accessorNotCoveringSvcFee = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+			.setBodyBytes(TransactionBody.newBuilder()
+					.setTransactionID(TransactionID.newBuilder()
+							.setTransactionValidStart(now)
+							.setAccountID(payer))
+					.setTransactionFee(acceptableRequiredFeeSansSvc)
 					.build().toByteString())
 			.build());
 
@@ -112,7 +121,7 @@ class SolvencyPrecheckTest {
 	@Test
 	void rejectsUnusablePayer() {
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertJustValidity(result, PAYER_ACCOUNT_NOT_FOUND);
@@ -121,10 +130,10 @@ class SolvencyPrecheckTest {
 	@Test
 	void preservesRespForPrefixMismatch() throws Exception {
 		givenSolventPayer();
-		given(precheckVerifier.hasNecessarySignatures(accessor)).willThrow(KeyPrefixMismatchException.class);
+		given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willThrow(KeyPrefixMismatchException.class);
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertJustValidity(result, KEY_PREFIX_MISMATCH);
@@ -133,10 +142,10 @@ class SolvencyPrecheckTest {
 	@Test
 	void preservesRespForInvalidAccountId() throws Exception {
 		givenSolventPayer();
-		given(precheckVerifier.hasNecessarySignatures(accessor)).willThrow(InvalidAccountIDException.class);
+		given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willThrow(InvalidAccountIDException.class);
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertJustValidity(result, INVALID_ACCOUNT_ID);
@@ -145,10 +154,10 @@ class SolvencyPrecheckTest {
 	@Test
 	void preservesRespForGenericFailure() throws Exception {
 		givenSolventPayer();
-		given(precheckVerifier.hasNecessarySignatures(accessor)).willThrow(Exception.class);
+		given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willThrow(Exception.class);
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertJustValidity(result, INVALID_SIGNATURE);
@@ -157,10 +166,10 @@ class SolvencyPrecheckTest {
 	@Test
 	void preservesRespForMissingSigs() throws Exception {
 		givenSolventPayer();
-		given(precheckVerifier.hasNecessarySignatures(accessor)).willReturn(false);
+		given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willReturn(false);
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertJustValidity(result, INVALID_SIGNATURE);
@@ -170,10 +179,10 @@ class SolvencyPrecheckTest {
 	void alwaysOkForVerifiedExemptPayer() {
 		givenSolventPayer();
 		givenValidSigs();
-		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
+		given(feeExemptions.hasExemptPayer(accessorCoveringAllFees)).willReturn(true);
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertJustValidity(result, OK);
@@ -183,26 +192,41 @@ class SolvencyPrecheckTest {
 	void translatesFeeCalcFailure() {
 		givenSolventPayer();
 		givenValidSigs();
-		given(feeCalculator.estimateFee(accessor, payerKey, stateView, now)).willThrow(IllegalStateException.class);
+		given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now)).willThrow(IllegalStateException.class);
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertJustValidity(result, FAIL_FEE);
 	}
 
 	@Test
-	void recognizesUnwillingnessToPay() {
+	void recognizesUnwillingnessToPayAllFees() {
 		givenSolventPayer();
 		givenValidSigs();
-		given(feeCalculator.estimateFee(accessor, payerKey, stateView, now)).willReturn(unacceptableFees);
+		given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now))
+				.willReturn(unacceptableFees);
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertBothValidityAndReqFee(result, INSUFFICIENT_TX_FEE, unacceptableRequiredFee);
+	}
+
+	@Test
+	void recognizesUnwillingnessToPayNodeAndNetwork() {
+		givenSolventPayer();
+		givenValidSigsNonSvc();
+		given(feeCalculator.estimateFee(accessorNotCoveringSvcFee, payerKey, stateView, now))
+				.willReturn(unacceptableFees);
+
+		// when:
+		var result = subject.assessSansSvcFees(accessorNotCoveringSvcFee);
+
+		// then:
+		assertBothValidityAndReqFee(result, INSUFFICIENT_TX_FEE, unacceptableRequiredFeeSansSvc);
 	}
 
 	@Test
@@ -210,10 +234,10 @@ class SolvencyPrecheckTest {
 		givenInsolventPayer();
 		givenValidSigs();
 		givenAcceptableFees();
-		given(feeCalculator.estimatedNonFeePayerAdjustments(accessor, now)).willReturn(+payerBalance);
+		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(+payerBalance);
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertBothValidityAndReqFee(result, INSUFFICIENT_PAYER_BALANCE, acceptableRequiredFee);
@@ -224,10 +248,10 @@ class SolvencyPrecheckTest {
 		givenSolventPayer();
 		givenValidSigs();
 		givenAcceptableFees();
-		given(feeCalculator.estimatedNonFeePayerAdjustments(accessor, now)).willReturn(-payerBalance);
+		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(-payerBalance);
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertBothValidityAndReqFee(result, INSUFFICIENT_PAYER_BALANCE, acceptableRequiredFee);
@@ -241,23 +265,29 @@ class SolvencyPrecheckTest {
 		givenNoMaterialAdjustment();
 
 		// when:
-		var result = subject.assess(accessor);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
 		assertBothValidityAndReqFee(result, OK, acceptableRequiredFee);
 	}
 
 	private void givenNoMaterialAdjustment() {
-		given(feeCalculator.estimatedNonFeePayerAdjustments(accessor, now)).willReturn(-1L);
+		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(-1L);
 	}
 
 	private void givenAcceptableFees() {
-		given(feeCalculator.estimateFee(accessor, payerKey, stateView, now)).willReturn(acceptableFees);
+		given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now)).willReturn(acceptableFees);
 	}
 
 	private void givenValidSigs() {
 		try {
-			given(precheckVerifier.hasNecessarySignatures(accessor)).willReturn(true);
+			given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willReturn(true);
+		} catch (Exception impossible) {}
+	}
+
+	private void givenValidSigsNonSvc() {
+		try {
+			given(precheckVerifier.hasNecessarySignatures(accessorNotCoveringSvcFee)).willReturn(true);
 		} catch (Exception impossible) {}
 	}
 

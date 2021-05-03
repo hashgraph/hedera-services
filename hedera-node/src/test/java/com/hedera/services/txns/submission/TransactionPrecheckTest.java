@@ -185,19 +185,34 @@ class TransactionPrecheckTest {
 	}
 
 	@Test
-	void abortsOnInsolvency() {
+	void abortsOnInsolvencyForTopLevel() {
 		givenActivePlatform();
 		givenStructuralSoundness();
 		givenValidSyntax();
 		givenValidSemantics();
-		given(solvencyPrecheck.assess(any())).willReturn(new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, reqFee));
+		given(solvencyPrecheck.assessSansSvcFees(any()))
+				.willReturn(new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, reqFee));
 
 		// when:
 		var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
-		var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
 
 		// then:
 		assertFailure(INSUFFICIENT_TX_FEE, reqFee, topLevelResponse);
+	}
+
+	@Test
+	void abortsOnInsolvencyForQueryPayment() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		givenValidSemantics();
+		given(solvencyPrecheck.assessWithSvcFees(any()))
+				.willReturn(new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, reqFee));
+
+		// when:
+		var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
+
+		// then:
 		assertFailure(INSUFFICIENT_TX_FEE, reqFee, queryPaymentResponse);
 	}
 
@@ -207,7 +222,7 @@ class TransactionPrecheckTest {
 		givenStructuralSoundness();
 		givenValidSyntax();
 		givenValidSemantics();
-		givenSolvency();
+		givenNodeAndNetworkSolvency();
 		given(systemPrecheck.screen(any())).willReturn(BUSY);
 
 		// when:
@@ -223,7 +238,7 @@ class TransactionPrecheckTest {
 		givenStructuralSoundness();
 		givenValidSyntax();
 		givenValidSemantics();
-		givenSolvency();
+		givenFullSolvency();
 		givenValidQueryPaymentXfers();
 
 		// when:
@@ -239,7 +254,7 @@ class TransactionPrecheckTest {
 		givenStructuralSoundness();
 		givenValidSyntax();
 		givenValidSemantics();
-		givenSolvency();
+		givenFullSolvency();
 		given(queryFeeCheck.validateQueryPaymentTransfers(any())).willReturn(INSUFFICIENT_PAYER_BALANCE);
 
 		// when:
@@ -265,8 +280,12 @@ class TransactionPrecheckTest {
 				);
 	}
 
-	private void givenSolvency() {
-		given(solvencyPrecheck.assess(any())).willReturn(new TxnValidityAndFeeReq(OK, reqFee));
+	private void givenFullSolvency() {
+		given(solvencyPrecheck.assessWithSvcFees(any())).willReturn(new TxnValidityAndFeeReq(OK, reqFee));
+	}
+
+	private void givenNodeAndNetworkSolvency() {
+		given(solvencyPrecheck.assessSansSvcFees(any())).willReturn(new TxnValidityAndFeeReq(OK, reqFee));
 	}
 
 	private void givenValidSyntax() {
