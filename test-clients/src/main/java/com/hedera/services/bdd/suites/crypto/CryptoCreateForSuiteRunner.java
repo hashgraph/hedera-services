@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.SuiteRunner;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -78,9 +79,9 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 									var createdAuditablePayer = false;
 									while (!createdAuditablePayer) {
 										try {
+											AccountID id = spec.registry().getAccountID(DEFAULT_PAYER);
 											var cryptoCreateOp = cryptoCreate("payerAccount")
-													.balance(DEFAULT_PAYER.equals(
-															"0.0.2") ? initialBalance : THOUSAND_HBAR)
+													.balance(id.getAccountNum() == 2L ? initialBalance : THOUSAND_HBAR)
 													.withRecharging()
 													.rechargeWindow(3)
 													.key(DEFAULT_PAYER)
