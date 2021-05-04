@@ -62,7 +62,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
@@ -439,7 +438,7 @@ class FileUpdateTransitionLogicTest {
 		given(validator.memoCheck(newMemo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// when:
-		var syntaxCheck = subject.syntaxCheck();
+		var syntaxCheck = subject.semanticCheck();
 		var status = syntaxCheck.apply(fileUpdateTxn);
 
 		// expect:
@@ -452,7 +451,7 @@ class FileUpdateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
 
 		// when:
-		var syntaxCheck = subject.syntaxCheck();
+		var syntaxCheck = subject.semanticCheck();
 		var status = syntaxCheck.apply(fileUpdateTxn);
 
 		// expect:

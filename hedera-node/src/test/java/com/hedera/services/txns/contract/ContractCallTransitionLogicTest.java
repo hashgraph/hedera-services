@@ -145,7 +145,7 @@ public class ContractCallTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(contractCallTxn));
+		assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
 	}
 
 	@Test
@@ -156,7 +156,7 @@ public class ContractCallTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(CONTRACT_NEGATIVE_VALUE, subject.syntaxCheck().apply(contractCallTxn));
+		assertEquals(CONTRACT_NEGATIVE_VALUE, subject.semanticCheck().apply(contractCallTxn));
 	}
 
 	@Test
@@ -167,7 +167,7 @@ public class ContractCallTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(CONTRACT_NEGATIVE_GAS, subject.syntaxCheck().apply(contractCallTxn));
+		assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
 	}
 
 	@Test
@@ -177,7 +177,7 @@ public class ContractCallTransitionLogicTest {
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
 
 		// expect:
-		assertEquals(CONTRACT_DELETED, subject.syntaxCheck().apply(contractCallTxn));
+		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractCallTxn));
 	}
 
 	@Test

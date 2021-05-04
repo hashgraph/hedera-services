@@ -31,7 +31,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -69,7 +68,7 @@ public class PlatformSigOpsTest {
 	private TxnScopedPlatformSigFactory sigFactory;
 
 	@BeforeEach
-	public void setup() throws Throwable {
+	void setup() throws Throwable {
 		pubKeys.clear();
 		sigBytes = mock(PubKeyToSigBytes.class);
 		sigFactory = mock(TxnScopedPlatformSigFactory.class);
@@ -79,7 +78,7 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
-	public void createsOnlyNonDegenerateSigs() throws Throwable {
+	void createsOnlyNonDegenerateSigs() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG, MORE_EMPTY_SIGS);
 
 		// when:
@@ -103,7 +102,7 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
-	public void createsSigsInTraversalOrder() throws Throwable {
+	void createsSigsInTraversalOrder() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG, MORE_MOCK_SIGS);
 
 		// when:
@@ -124,7 +123,7 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
-	public void ignoresAmbiguousScheduledSig() throws Throwable {
+	void ignoresAmbiguousScheduledSig() throws Throwable {
 		// setup:
 		JKey scheduledKey = new JEd25519Key("01234578901234578901234578901".getBytes());
 		// and:
@@ -141,7 +140,7 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
-	public void doesntIgnoreUnrecognizedProblemForScheduledSig() throws Throwable {
+	void doesntIgnoreUnrecognizedProblemForScheduledSig() throws Throwable {
 		// setup:
 		JKey scheduledKey = new JEd25519Key("01234578901234578901234578901".getBytes());
 		// and:
@@ -157,7 +156,7 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
-	public void failsOnInsufficientSigs() throws Throwable {
+	void failsOnInsufficientSigs() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG).willThrow(Exception.class);
 
 		// when:
@@ -169,7 +168,7 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
-	public void returnsSuccessSigStatusByDefault() {
+	void returnsSuccessSigStatusByDefault() {
 		// given:
 		TransactionID txnId = TransactionID.getDefaultInstance();
 		PlatformSigsCreationResult subject = new PlatformSigsCreationResult();
@@ -185,25 +184,7 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
-	public void reportsInsufficientSigs() {
-		// given:
-		TransactionID txnId = TransactionID.getDefaultInstance();
-		PlatformSigsCreationResult subject = new PlatformSigsCreationResult();
-		subject.setTerminatingEx(new KeySignatureCountMismatchException("No!"));
-		// and:
-		SignatureStatus expectedStatus = new SignatureStatus(
-				SignatureStatusCode.KEY_COUNT_MISMATCH, ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY,
-				true, txnId, null, null, null, null);
-
-		// when:
-		SignatureStatus status = subject.asSignatureStatus(true, txnId);
-
-		// then:
-		assertEquals(expectedStatus.toLogMessage(), status.toLogMessage());
-	}
-
-	@Test
-	public void reportsInvalidSigMap() {
+	void reportsInvalidSigMap() {
 		// given:
 		TransactionID txnId = TransactionID.getDefaultInstance();
 		PlatformSigsCreationResult subject = new PlatformSigsCreationResult();
@@ -221,7 +202,7 @@ public class PlatformSigOpsTest {
 	}
 
 	@Test
-	public void reportsNonspecificInvalidSig() {
+	void reportsNonspecificInvalidSig() {
 		// given:
 		TransactionID txnId = TransactionID.getDefaultInstance();
 		PlatformSigsCreationResult subject = new PlatformSigsCreationResult();

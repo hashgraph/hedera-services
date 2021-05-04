@@ -1,4 +1,4 @@
-package com.hedera.services.txns.validation;
+package com.hedera.services.txns.submission;
 
 /*-
  * ‌
@@ -21,34 +21,43 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.records.RecordCache;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.time.Clock;
 import java.time.Instant;
 
 import static com.hedera.services.txns.validation.PureValidation.asCoercedInstant;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
-public class BasicPrecheck {
+/**
+ * Confirms that the parsed {@code TransactionBody} has all necessary fields set, including
+ * a feasible valid start time and duration; and has a {@code TransactionID} that is believed
+ * to be unique.
+ *
+ * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
+ */
+public class SyntaxPrecheck {
+	private final RecordCache recordCache;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	public BasicPrecheck(
+	public SyntaxPrecheck(
+			RecordCache recordCache,
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.validator = validator;
+		this.recordCache = recordCache;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -60,13 +69,16 @@ public class BasicPrecheck {
 		if (txnId.getScheduled()) {
 			return TRANSACTION_ID_FIELD_NOT_ALLOWED;
 		}
+		if (recordCache.isReceiptPresent(txnId)) {
+			return DUPLICATE_TRANSACTION;
+		}
 		if (!validator.isPlausibleTxnFee(txn.getTransactionFee())) {
 			return INSUFFICIENT_TX_FEE;
 		}
 		if (!validator.isPlausibleAccount(txn.getTransactionID().getAccountID())) {
 			return PAYER_ACCOUNT_NOT_FOUND;
 		}
-		if (!validator.isPlausibleAccount(txn.getNodeAccountID())) {
+		if (!validator.isThisNodeAccount(txn.getNodeAccountID())) {
 			return INVALID_NODE_ACCOUNT;
 		}
 

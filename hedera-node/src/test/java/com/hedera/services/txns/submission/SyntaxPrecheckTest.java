@@ -1,4 +1,4 @@
-package com.hedera.services.txns.validation;
+package com.hedera.services.txns.submission;
 
 /*-
  * ‌
@@ -21,17 +21,23 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.records.RecordCache;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static com.hedera.services.txns.validation.PureValidationTest.from;
+import static com.hedera.test.utils.TxnUtils.timestampFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
@@ -49,38 +55,32 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 
-class BasicPrecheckTest {
-	int validityBufferOverride = 7;
-	AccountID node = asAccount("0.0.3");
-	AccountID payer = asAccount("0.0.13257");
-	long duration = 1_234;
-	Instant startTime = Instant.now();
-	TransactionID txnId = TransactionID.newBuilder()
+@ExtendWith(MockitoExtension.class)
+class SyntaxPrecheckTest {
+	private int validityBufferOverride = 7;
+	private AccountID node = asAccount("0.0.3");
+	private AccountID payer = asAccount("0.0.13257");
+	private long duration = 1_234;
+	private Instant startTime = Instant.now();
+	private TransactionID txnId = TransactionID.newBuilder()
 			.setAccountID(payer)
-			.setTransactionValidStart(from(startTime.getEpochSecond(), startTime.getNano()))
+			.setTransactionValidStart(timestampFrom(startTime.getEpochSecond(), startTime.getNano()))
 			.build();
-	String memo = "Our souls, which to advance their state / Were gone out, hung twixt her and me.";
-	TransactionBody txn;
+	private String memo = "Our souls, which to advance their state / Were gone out, hung twixt her and me.";
+	private TransactionBody txn;
 
-	OptionValidator validator;
-	GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RecordCache recordCache;
 
-	BasicPrecheck subject;
+	private SyntaxPrecheck subject;
 
 	@BeforeEach
 	private void setup() {
-		validator = mock(OptionValidator.class);
-		dynamicProperties = mock(GlobalDynamicProperties.class);
-
-		given(validator.isValidTxnDuration(anyLong())).willReturn(true);
-		given(validator.isPlausibleTxnFee(anyLong())).willReturn(true);
-		given(validator.isPlausibleAccount(node)).willReturn(true);
-		given(validator.isPlausibleAccount(payer)).willReturn(true);
-		given(validator.memoCheck(memo)).willReturn(OK);
-		given(validator.chronologyStatusForTxn(any(), anyLong(), any())).willReturn(OK);
-		given(dynamicProperties.minValidityBuffer()).willReturn(validityBufferOverride);
-
-		subject = new BasicPrecheck(validator, dynamicProperties);
+		subject = new SyntaxPrecheck(recordCache, validator, dynamicProperties);
 
 		txn = TransactionBody.newBuilder()
 				.setTransactionID(txnId)
@@ -88,6 +88,15 @@ class BasicPrecheckTest {
 				.setNodeAccountID(node)
 				.setMemo(memo)
 				.build();
+	}
+
+	@Test
+	void assertsExtantTransactionId() {
+		// when:
+		var status = subject.validate(TransactionBody.getDefaultInstance());
+
+		// then:
+		assertEquals(INVALID_TRANSACTION_ID, status);
 	}
 
 	@Test
@@ -106,8 +115,22 @@ class BasicPrecheckTest {
 	}
 
 	@Test
-	public void assertsValidDuration() {
-		given(validator.isValidTxnDuration(anyLong())).willReturn(false);
+	void rejectsDuplicateTxnId() {
+		given(recordCache.isReceiptPresent(txnId)).willReturn(true);
+
+		// when:
+		var status = subject.validate(txn);
+
+		// then:
+		assertEquals(DUPLICATE_TRANSACTION, status);
+	}
+
+	@Test
+	void assertsValidDuration() {
+		given(validator.isPlausibleTxnFee(anyLong())).willReturn(true);
+		given(validator.isPlausibleAccount(payer)).willReturn(true);
+		given(validator.isThisNodeAccount(node)).willReturn(true);
+		given(validator.memoCheck(memo)).willReturn(OK);
 
 		// when:
 		var status = subject.validate(txn);
@@ -117,7 +140,13 @@ class BasicPrecheckTest {
 	}
 
 	@Test
-	public void assertsValidChronology() {
+	void assertsValidChronology() {
+		given(validator.isPlausibleTxnFee(anyLong())).willReturn(true);
+		given(validator.isPlausibleAccount(payer)).willReturn(true);
+		given(validator.isThisNodeAccount(node)).willReturn(true);
+		given(validator.memoCheck(memo)).willReturn(OK);
+		given(validator.isValidTxnDuration(duration)).willReturn(true);
+		given(dynamicProperties.minValidityBuffer()).willReturn(validityBufferOverride);
 		given(validator.chronologyStatusForTxn(
 				argThat(startTime::equals),
 				longThat(l -> l == (duration - validityBufferOverride)),
@@ -131,18 +160,7 @@ class BasicPrecheckTest {
 	}
 
 	@Test
-	public void assertsExtantTransactionId() {
-		// when:
-		var status = subject.validate(TransactionBody.getDefaultInstance());
-
-		// then:
-		assertEquals(INVALID_TRANSACTION_ID, status);
-	}
-
-	@Test
-	public void assertsPlausibleTxnFee() {
-		given(validator.isPlausibleTxnFee(anyLong())).willReturn(false);
-
+	void assertsPlausibleTxnFee() {
 		// when:
 		var status = subject.validate(txn);
 
@@ -151,7 +169,8 @@ class BasicPrecheckTest {
 	}
 
 	@Test
-	public void assertsPlausiblePayer() {
+	void assertsPlausiblePayer() {
+		given(validator.isPlausibleTxnFee(anyLong())).willReturn(true);
 		given(validator.isPlausibleAccount(payer)).willReturn(false);
 
 		// when:
@@ -162,8 +181,10 @@ class BasicPrecheckTest {
 	}
 
 	@Test
-	public void assertsPlausibleNode() {
-		given(validator.isPlausibleAccount(node)).willReturn(false);
+	void assertsPlausibleNode() {
+		given(validator.isPlausibleTxnFee(anyLong())).willReturn(true);
+		given(validator.isPlausibleAccount(payer)).willReturn(true);
+		given(validator.isThisNodeAccount(node)).willReturn(false);
 
 		// when:
 		var status = subject.validate(txn);
@@ -173,7 +194,10 @@ class BasicPrecheckTest {
 	}
 
 	@Test
-	public void assertsValidMemo() {
+	void assertsValidMemo() {
+		given(validator.isPlausibleTxnFee(anyLong())).willReturn(true);
+		given(validator.isPlausibleAccount(payer)).willReturn(true);
+		given(validator.isThisNodeAccount(node)).willReturn(true);
 		given(validator.memoCheck(memo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// when:

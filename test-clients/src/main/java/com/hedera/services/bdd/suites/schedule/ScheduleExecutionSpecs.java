@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.schedule;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -77,8 +76,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
@@ -89,17 +88,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
 	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
-	private static final int MAX_TRANSFER_LENGTH = 1;
-	private static final int MAX_TOKEN_TRANSFER_LENGTH = 1;
+	private static final int TMP_MAX_TRANSFER_LENGTH = 2;
+	private static final int TMP_MAX_TOKEN_TRANSFER_LENGTH = 2;
 
 	private static final String defaultTxExpiry =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
@@ -126,7 +125,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				executionWithDefaultPayerButNoFundsFails(),
 				executionWithCustomPayerButNoFundsFails(),
 				executionWithInvalidAccountAmountsFails(),
-				executionWithTransferListSizeExceedFails(),
+				executionWithTransferListWrongSizedFails(),
 				executionWithTokenTransferListSizeExceedFails(),
 				executionWithCryptoInsufficientAccountBalanceFails(),
 				executionWithTokenInsufficientAccountBalanceFails(),
@@ -1142,15 +1141,15 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec executionWithTransferListSizeExceedFails(){
+	public HapiApiSpec executionWithTransferListWrongSizedFails(){
 		long transferAmount = 1L;
 		long senderBalance = 1000L;
 		long payingAccountBalance = 1_000_000L;
 		long noBalance = 0L;
 
-		return defaultHapiSpec("ExecutionWithTransferListSizeExceedFails")
+		return defaultHapiSpec("ExecutionWithTransferListWrongSizedFails")
 				.given(
-						overriding("ledger.transfers.maxLen", "" + MAX_TRANSFER_LENGTH),
+						overriding("ledger.transfers.maxLen", "" + TMP_MAX_TRANSFER_LENGTH),
 						cryptoCreate("payingAccount").balance(payingAccountBalance),
 						cryptoCreate("sender").balance(senderBalance),
 						cryptoCreate("receiverA").balance(noBalance),
@@ -1199,7 +1198,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("ExecutionWithTokenTransferListSizeExceedFails")
 				.given(
-						overriding("ledger.tokenTransfers.maxLen", "" + MAX_TOKEN_TRANSFER_LENGTH),
+						overriding("ledger.tokenTransfers.maxLen", "" + TMP_MAX_TOKEN_TRANSFER_LENGTH),
 						newKeyNamed("admin"),
 						cryptoCreate(schedulePayer),
 						cryptoCreate(xTreasury),

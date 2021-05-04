@@ -142,7 +142,7 @@ public class ScheduleSignTransitionLogicTest {
         givenValidTxnCtx();
 
         // expect:
-        assertEquals(OK, subject.syntaxCheck().apply(scheduleSignTxn));
+        assertEquals(OK, subject.semanticCheck().apply(scheduleSignTxn));
     }
 
     @Test
@@ -228,7 +228,7 @@ public class ScheduleSignTransitionLogicTest {
     @Test
     public void rejectsInvalidScheduleId() {
         givenCtx(true);
-        assertEquals(INVALID_SCHEDULE_ID, subject.syntaxCheck().apply(scheduleSignTxn));
+        assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleSignTxn));
     }
 
     private void givenValidTxnCtx() {

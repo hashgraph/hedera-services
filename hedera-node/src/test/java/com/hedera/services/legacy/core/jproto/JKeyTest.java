@@ -22,8 +22,8 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.hedera.services.legacy.util.ComplexKeyManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
@@ -48,25 +48,13 @@ public class JKeyTest {
 	@Test
 	public void negativeConvertKeyTest() {
 		// given:
-		var keyTooDeep = nestKeys(Key.newBuilder(), KEY_EXPANSION_DEPTH).build();
+		var keyTooDeep = TxnUtils.nestKeys(Key.newBuilder(), KEY_EXPANSION_DEPTH).build();
 
 		// expect:
 		assertThrows(
 				DecoderException.class,
 				() -> JKey.convertKey(keyTooDeep, 1),
 				"Exceeding max expansion depth of " + KEY_EXPANSION_DEPTH);
-	}
-
-	private Key.Builder nestKeys(Key.Builder builder, int additionalKeysToNest) {
-		if (additionalKeysToNest == 0) {
-			builder.setEd25519(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
-			return builder;
-		} else {
-			var nestedBuilder = Key.newBuilder();
-			nestKeys(nestedBuilder, additionalKeysToNest - 1);
-			builder.setKeyList(KeyList.newBuilder().addKeys(nestedBuilder));
-			return builder;
-		}
 	}
 
 	@Test

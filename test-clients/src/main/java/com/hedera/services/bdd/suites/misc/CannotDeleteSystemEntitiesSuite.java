@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.misc;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,8 +34,10 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
@@ -52,6 +55,8 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[]{
+				ensureSystemAccountsHaveSomeFunds(),
+
 				systemUserCannotDeleteSystemAccounts(1,100, GENESIS),
 				systemUserCannotDeleteSystemAccounts(900,999, GENESIS),
 				systemUserCannotDeleteSystemAccounts(1,100, SYSTEM_ADMIN),
@@ -63,7 +68,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 
 				systemUserCannotDeleteSystemFiles(sysFileIds, GENESIS),
 				systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN),
-				systemUserCannotDeleteSystemFiles(sysFileIds,SYSTEM_DELETE_ADMIN),
+				systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN),
 
 				normalUserCannotDeleteSystemFiles(sysFileIds),
 				systemDeleteCannotDeleteSystemFiles(sysFileIds, GENESIS),
@@ -72,15 +77,26 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 		});
 	}
 
+	private HapiApiSpec ensureSystemAccountsHaveSomeFunds() {
+		return defaultHapiSpec("EnsureSystemAccountsHaveSomeFunds")
+				.given( ).when( ) .then(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, ONE_HUNDRED_HBARS))
+								.payingWith(GENESIS),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_DELETE_ADMIN, ONE_HUNDRED_HBARS))
+								.payingWith(GENESIS)
+				);
+	}
+
 	private HapiApiSpec systemUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount, String sysUser) {
 		return defaultHapiSpec("systemUserCannotDeleteSystemAccounts")
-				.given()
-				.when()
-				.then(
+				.given(
+						cryptoCreate("unluckyReceiver").balance(0L)
+				).when( ) .then(
 						inParallel(
 								IntStream.rangeClosed(firstAccount, lastAccount)
 										.mapToObj(id ->
 														cryptoDelete("0.0." + id)
+																.transfer("unluckyReceiver")
 																.payingWith(sysUser)
 																.signedBy(sysUser)
 																.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
@@ -93,7 +109,8 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 	private HapiApiSpec normalUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount) {
 		return defaultHapiSpec("normalUserCannotDeleteSystemAccounts")
 				.given(
-						newKeyNamed("normalKey")
+						newKeyNamed("normalKey"),
+						cryptoCreate("unluckyReceiver").balance(0L)
 				).when(
 						cryptoCreate("normalUser")
 								.key("normalKey")
@@ -103,6 +120,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiApiSuite {
 								IntStream.rangeClosed(firstAccount, lastAccount)
 										.mapToObj(id ->
 												cryptoDelete("0.0." + id)
+														.transfer("unluckyReceiver")
 														.payingWith("normalUser")
 														.signedBy("normalKey")
 														.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)

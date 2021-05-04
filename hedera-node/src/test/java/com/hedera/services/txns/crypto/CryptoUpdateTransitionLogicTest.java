@@ -249,7 +249,7 @@ public class CryptoUpdateTransitionLogicTest {
 		given(validator.memoCheck(memo)).willReturn(MEMO_TOO_LONG);
 
 		// expect:
-		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(cryptoUpdateTxn));
+		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	@Test
@@ -258,7 +258,7 @@ public class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidExpiry(any())).willReturn(false);
 
 		// expect:
-		assertEquals(INVALID_EXPIRATION_TIME, subject.syntaxCheck().apply(cryptoUpdateTxn));
+		assertEquals(INVALID_EXPIRATION_TIME, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	@Test
@@ -267,7 +267,7 @@ public class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
 		// expect:
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.syntaxCheck().apply(cryptoUpdateTxn));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	@Test
@@ -275,7 +275,7 @@ public class CryptoUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(cryptoUpdateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	@Test
@@ -338,7 +338,7 @@ public class CryptoUpdateTransitionLogicTest {
 				.build();
 
 		// expect:
-		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
+		assertEquals(BAD_ENCODING, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	private void givenValidTxnCtx() {

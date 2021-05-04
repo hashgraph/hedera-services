@@ -22,6 +22,7 @@ package com.hedera.test.mocks;
 
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -51,6 +52,11 @@ public enum TestContextValidator implements OptionValidator {
 	@Override
 	public boolean isValidExpiry(Timestamp expiry) {
 		return expiry.getSeconds() > CONSENSUS_NOW;
+	}
+
+	@Override
+	public boolean isThisNodeAccount(AccountID id) {
+		return true;
 	}
 
 	@Override
@@ -102,4 +108,6 @@ public enum TestContextValidator implements OptionValidator {
 	public ResponseCodeEnum memoCheck(String cand) {
 		return cand.length() <= 100 ? OK : MEMO_TOO_LONG;
 	}
+
+
 }

@@ -129,21 +129,21 @@ public class ScheduleDeleteTransitionLogicTest {
     public void acceptsValidTxn() {
         givenValidTxnCtx();
 
-        assertEquals(OK, subject.syntaxCheck().apply(scheduleDeleteTxn));
+        assertEquals(OK, subject.semanticCheck().apply(scheduleDeleteTxn));
     }
 
     @Test
     public void rejectsInvalidScheduleId() {
         givenCtx(true);
 
-        assertEquals(INVALID_SCHEDULE_ID, subject.syntaxCheck().apply(scheduleDeleteTxn));
+        assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleDeleteTxn));
     }
 
     public void syntaxCheckWorks() {
         givenValidTxnCtx();
 
         // expect:
-        assertEquals(OK, subject.syntaxCheck().apply(scheduleDeleteTxn));
+        assertEquals(OK, subject.semanticCheck().apply(scheduleDeleteTxn));
     }
 
     private void givenValidTxnCtx() {

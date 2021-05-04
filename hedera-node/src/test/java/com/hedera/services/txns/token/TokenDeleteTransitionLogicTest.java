@@ -132,7 +132,7 @@ class TokenDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenDeleteTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenDeleteTxn));
 	}
 
 	@Test
@@ -140,7 +140,7 @@ class TokenDeleteTransitionLogicTest {
 		givenMissingToken();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenDeleteTxn));
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenDeleteTxn));
 	}
 
 	private void givenValidTxnCtx() {

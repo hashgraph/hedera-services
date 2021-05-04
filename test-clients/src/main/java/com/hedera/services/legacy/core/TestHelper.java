@@ -170,36 +170,6 @@ public class TestHelper {
     FeeClient.initialize(hbarEquivalent, centEquivalent, feeScheduleBytes);
   }
 
-  public static AccountID createFirstAccountFromGenesis(KeyPair firstPair,
-      CryptoServiceBlockingStub stub) throws Exception {
-    List<AccountKeyListObj> genesisAccount = getGenAccountKey();
-    // get Private Key
-    KeyPairObj genKeyPairObj = genesisAccount.get(0).getKeyPairList().get(0);
-    KeyPair genesisKeyPair = new KeyPair(genKeyPairObj.getPublicKey(), genKeyPairObj.getPrivateKey());
-    AccountID payerAccount = genesisAccount.get(0).getAccountId();
-
-    AccountID defaultNodeAccount = getDefaultNodeAccount();
-
-    // create 1st account by payer as genesis
-    Transaction transaction = TestHelper
-        .createAccountWithSigMap(payerAccount, defaultNodeAccount, firstPair, 1000000l,
-            genesisKeyPair);
-    TransactionResponse response = stub.createAccount(transaction);
-    Assert.assertNotNull(response);
-    Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
-    log.info(
-        "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
-            .name());
-
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
-    TransactionReceipt txReceipt1 = getTxReceipt(body.getTransactionID(), stub);
-    AccountID newlyCreateAccountId1 = txReceipt1.getAccountID();
-    Assert.assertNotNull(newlyCreateAccountId1);
-    log.info("Account ID " + newlyCreateAccountId1.getAccountNum() + " created successfully.");
-    log.info("--------------------------------------");
-    return newlyCreateAccountId1;
-  }
-
   public static List<AccountKeyListObj> getGenAccountKey() throws URISyntaxException, IOException {
     Map<String, List<AccountKeyListObj>> keyFromFile = getKeyFromFile(fileName);
 
@@ -231,29 +201,6 @@ public class TestHelper {
         .signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap);
     long createAccountFee = FeeClient.getCreateAccountFee(signTransaction, 1);
     System.out.println("createAccountFee ===> " + createAccountFee);
-    return signTransaction;
-  }
-
-  public static Transaction createAccountWithFeeAndThresholds(AccountID payerAccount,
-      AccountID nodeAccount, KeyPair pair, long initialBalance, KeyPair payerKeyPair,
-      long sendRecordThreshold, long receiveRecordThreshold) throws Exception {
-
-    Transaction transaction = TestHelper
-        .createAccount(payerAccount, nodeAccount, pair, initialBalance, 0,
-            sendRecordThreshold, receiveRecordThreshold);
-    List<Key> keyList = Collections.singletonList(Common.PrivateKeyToKey(payerKeyPair.getPrivate()));
-    HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-    Common.addKeyMap(pair, pubKey2privKeyMap);
-    Common.addKeyMap(payerKeyPair, pubKey2privKeyMap);
-    Transaction signTransaction = TransactionSigner
-        .signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap);
-    long createAccountFee = FeeClient.getCreateAccountFee(signTransaction, 1);
-    System.out.println("createAccountFee ===> " + createAccountFee);
-    transaction = TestHelper
-        .createAccount(payerAccount, nodeAccount, pair, initialBalance,
-            createAccountFee, sendRecordThreshold, receiveRecordThreshold);
-    signTransaction =  TransactionSigner
-        .signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap);
     return signTransaction;
   }
 
@@ -558,24 +505,6 @@ public class TestHelper {
     return stub.getAccountRecords(query);
   }
 
-  public static Response getAccountLiveHash(CryptoServiceBlockingStub stub,
-      AccountID accountId, byte[] hash, AccountID payerAccount, KeyPair payerAccountKey,
-      AccountID nodeAccount) throws Exception {
-
-    long costForQuery = FeeClient.getFeeByID(HederaFunctionality.CryptoGetLiveHash);
-    System.out.println(costForQuery + " :: is the cost for query");
-    Response response = executeGetAccountLiveHash(stub, accountId, hash, payerAccount, payerAccountKey,
-        nodeAccount, costForQuery, ResponseType.COST_ANSWER);
-
-    if (response.getCryptoGetLiveHash().getHeader().getNodeTransactionPrecheckCode()
-        == ResponseCodeEnum.OK) {
-      long getAcctFee = response.getCryptoGetLiveHash().getHeader().getCost();
-      response = executeGetAccountLiveHash(stub, accountId, hash, payerAccount, payerAccountKey,
-          nodeAccount, getAcctFee, ResponseType.ANSWER_ONLY);
-    }
-    return response;
-  }
-
   private static Response executeGetAccountLiveHash(CryptoServiceBlockingStub stub,
       AccountID accountID, byte[] hash, AccountID payerAccount, KeyPair payerAccountKey,
       AccountID nodeAccount, long costForQuery, ResponseType responseType) throws Exception {
@@ -601,20 +530,6 @@ public class TestHelper {
         autoRenew);
 
 
-  }
-
-  public static Transaction deleteAccount(AccountID accountID, AccountID trasferAccountID,
-      AccountID payerAccount,
-      PrivateKey payerAccountKey, AccountID nodeAccount) {
-    Timestamp startTime = TestHelper.getDefaultCurrentTimestampUTC();
-    Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION);
-
-    long nodeAccountNum = nodeAccount.getAccountNum();
-    long payerAccountNum = payerAccount.getAccountNum();
-    return RequestBuilder.getAccountDeleteRequest(accountID, trasferAccountID, payerAccountNum, 0l,
-        0l, nodeAccountNum, 0l,
-        0l, TestHelper.getCryptoMaxFee(), startTime,
-        transactionDuration, true, "Delete Account");
   }
 
   public static Transaction createFile(long payerAccountNum,
@@ -780,14 +695,6 @@ public class TestHelper {
     return RequestBuilder.getAccountRecordsQuery(accountID, transferTransaction, responsetype);
   }
 
-  public static Query getTxRecordByContractId(ContractID contractID, AccountID payerAccount,
-      KeyPair payerAccountKeyPair, AccountID nodeAccount, long getTxRecordFee,
-      ResponseType responseType) throws Exception {
-    Transaction transferTransaction = createTransferSigMap(payerAccount, payerAccountKeyPair, nodeAccount,
-        payerAccount, payerAccountKeyPair, nodeAccount, getTxRecordFee);
-    return RequestBuilder.getContractRecordsQuery(contractID, transferTransaction, responseType);
-  }
-
   public static Transaction createTransfer(AccountID fromAccount, PrivateKey fromKey,
       AccountID toAccount, AccountID payerAccount, PrivateKey payerAccountKey,
       AccountID nodeAccount, long amount) {
@@ -884,49 +791,6 @@ public class TestHelper {
     }
 
     Transaction signedTx = TransactionSigner.signTransactionComplexWithSigMap(
-        transferTx, keyList, pubKey2privKeyMap);
-    return signedTx;
-  }
-
-
-  public static Transaction createTransferSigMapBeforeCurrentStartTime(AccountID fromAccount, KeyPair fromKeyPair,
-      AccountID toAccount, AccountID payerAccount, KeyPair payerKeyPair,
-      AccountID nodeAccount, long amount) throws Exception {
-    Timestamp timestamp = ProtoCommonUtils.getCurrentTimestampUTC(-1200);
-    Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION);
-
-    Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
-        payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-        nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 0, timestamp, transactionDuration,
-        false, "Test Transfer", fromAccount.getAccountNum(), -amount,
-        toAccount.getAccountNum(), amount);
-    // sign the tx
-    List<Key> keyList = new ArrayList<>();
-    HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-    keyList.add(Common.PrivateKeyToKey(payerKeyPair.getPrivate()));
-    Common.addKeyMap(payerKeyPair, pubKey2privKeyMap);
-    if (!payerKeyPair.equals(fromKeyPair)) {
-      keyList.add(Common.PrivateKeyToKey(fromKeyPair.getPrivate()));
-      Common.addKeyMap(fromKeyPair, pubKey2privKeyMap);
-    }
-
-    Transaction signedTx = TransactionSigner.signTransactionComplexWithSigMap(
-        transferTx, keyList, pubKey2privKeyMap);
-
-    long transferFee = 0;
-    try {
-      transferFee = FeeClient.getTransferFee(signedTx, keyList.size());
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
-        payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-        nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transferFee, timestamp,
-        transactionDuration, false,
-        "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
-        amount);
-
-    signedTx = TransactionSigner.signTransactionComplexWithSigMap(
         transferTx, keyList, pubKey2privKeyMap);
     return signedTx;
   }
@@ -1048,33 +912,6 @@ public class TestHelper {
     return rv;
   }
 
-
-  public static Transaction getContractCallRequest(Long payerAccountNum, Long payerRealmNum,
-      Long payerShardNum,
-      Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-      long transactionFee, Timestamp timestamp,
-      Duration txDuration, long gas, ContractID contractId,
-      ByteString functionData, long value,
-      List<PrivateKey> keys) throws Exception {
-
-    Transaction transaction = RequestBuilder
-        .getContractCallRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
-            nodeRealmNum, nodeShardNum, transactionFee, timestamp,
-            txDuration, gas, contractId, functionData, value);
-
-    transaction = TransactionSigner.signTransaction(transaction, keys);
-
-    transactionFee = FeeClient.getCostContractCallFee(transaction, keys.size());
-
-    transaction = RequestBuilder
-        .getContractCallRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
-            nodeRealmNum, nodeShardNum, transactionFee, timestamp,
-            txDuration, gas, contractId, functionData, value);
-
-    return TransactionSigner.signTransaction(transaction, keys);
-
-  }
-
   public static Transaction getContractCallRequestSigMap(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum,
       Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
@@ -1105,21 +942,6 @@ public class TestHelper {
     return TransactionSigner.signTransactionComplexWithSigMap(
         transaction, keyList, pubKey2privKeyMap);
 
-  }
-
-  public static Transaction getCreateContractRequest(Long payerAccountNum, Long payerRealmNum,
-      Long payerShardNum,
-      Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-      long transactionFee, Timestamp timestamp, Duration txDuration,
-      boolean generateRecord, String txMemo, long gas, FileID fileId,
-      ByteString constructorParameters, long initialBalance,
-      Duration autoRenewalPeriod, List<PrivateKey> keys, String contractMemo) throws Exception {
-    return getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum,
-        nodeAccountNum, nodeRealmNum, nodeShardNum,
-        transactionFee, timestamp, txDuration,
-        generateRecord, txMemo, gas, fileId,
-        constructorParameters, initialBalance,
-        autoRenewalPeriod, keys, contractMemo, null);
   }
 
   public static Transaction getCreateContractRequest(Long payerAccountNum, Long payerRealmNum,
@@ -1186,44 +1008,6 @@ public class TestHelper {
     return transaction;
   }
 
-  public static Transaction getCreateContractRequestSigMap(Long payerAccountNum, Long payerRealmNum,
-      Long payerShardNum,
-      Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-      long transactionFee, Timestamp timestamp, Duration txDuration,
-      boolean generateRecord, String txMemo, long gas, FileID fileId,
-      ByteString constructorParameters, long initialBalance,
-      Duration autoRenewalPeriod, List<KeyPair> keyPairs, String contractMemo,
-      Key adminPubKey) throws Exception {
-
-    List<Key> keyList = new ArrayList<>();
-    HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-    for (KeyPair pair : keyPairs) {
-      keyList.add(Common.PrivateKeyToKey(pair.getPrivate()));
-      Common.addKeyMap(pair, pubKey2privKeyMap);
-    }
-
-    Transaction transaction = RequestBuilder
-        .getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
-            nodeRealmNum, nodeShardNum, transactionFee, timestamp,
-            txDuration, generateRecord, txMemo, gas, fileId, constructorParameters, initialBalance,
-            autoRenewalPeriod, contractMemo, adminPubKey);
-
-    transaction = TransactionSigner.signTransactionComplexWithSigMap(
-        transaction, keyList, pubKey2privKeyMap);
-
-    transactionFee = FeeClient.getContractCreateFee(transaction, keyList.size());
-
-    transaction = RequestBuilder
-        .getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
-            nodeRealmNum, nodeShardNum, transactionFee, timestamp,
-            txDuration, generateRecord, txMemo, gas, fileId, constructorParameters, initialBalance,
-            autoRenewalPeriod, contractMemo, adminPubKey);
-
-    transaction = TransactionSigner.signTransactionComplexWithSigMap(
-        transaction, keyList, pubKey2privKeyMap);
-    return transaction;
-  }
-
   public static long getFileMaxFee() {
     return CryptoServiceTest.getUmbrellaProperties().getLong("fileMaxFee", 800_000_000L);
   }
@@ -1238,41 +1022,6 @@ public class TestHelper {
     return CryptoServiceTest.getUmbrellaProperties().getInt("errorReturnCode", -1);
   }
 
-
-  public static Transaction getSystemDeleteTx(PrivateKey payerPrivateKey, AccountID payerAccount,
-      AccountID defaultNodeAccount, FileID fileID, long expireTimeInSeconds) throws Exception {
-
-    Timestamp startTime = TestHelper.getDefaultCurrentTimestampUTC();
-    Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION);
-    // prepare tx Body
-    TransactionBody.Builder body = RequestBuilder
-        .getTxBodyBuilder(30, startTime, transactionDuration,
-            true, "System Delete", payerAccount, defaultNodeAccount);
-
-    // prepare specif request body
-    SystemDeleteTransactionBody systemDeleteTransactionBody =
-        RequestBuilder.getSystemDeleteTransactionBody(fileID, expireTimeInSeconds);
-    body.setSystemDelete(systemDeleteTransactionBody);
-    ByteString bodyBytes = ByteString.copyFrom(body.build().toByteArray());
-
-    // step 1 : create tx
-    Transaction transaction = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
-    // step 2 : sign tx by payer account's private key
-    Transaction signTransaction = TransactionSigner.signTransaction(transaction,
-        Collections.singletonList(payerPrivateKey));
-    // step 3 calculate fee after signing tx
-    long systemDeleteFee = FeeClient.getSystemDeleteFee(signTransaction, 1);
-    // step 4 setting fee to body
-    body.setTransactionFee(systemDeleteFee);
-    System.out.println("SystemDelete Fee ===> " + systemDeleteFee);
-    // step 5  sign again after fee calculation
-    transaction = Transaction.newBuilder()
-        .setBodyBytes(ByteString.copyFrom(body.build().toByteArray()))
-        .build();
-    signTransaction = TransactionSigner.signTransaction(transaction,
-        Collections.singletonList(payerPrivateKey));
-    return signTransaction;
-  }
 
   public static Response getFileInfo(FileServiceBlockingStub stub,
       FileID fileID, AccountID payerAccount, KeyPair payerAccountKey, AccountID nodeAccount)
@@ -1299,62 +1048,11 @@ public class TestHelper {
     return stub.getFileInfo(fileGetInfoBuilder);
   }
 
-  public static Transaction getDeleteContractRequest(AccountID payer,
-      AccountID node,
-      long transactionFee, Timestamp timestamp, Duration txDuration,
-      boolean generateRecord, String txMemo, ContractID contractId, AccountID transferAccount,
-      ContractID transferContract, List<PrivateKey> keys) throws Exception {
-
-    Transaction transaction = RequestBuilder
-        .getDeleteContractRequest(payer, node, transactionFee, timestamp, txDuration, contractId,
-            transferAccount, transferContract, generateRecord, txMemo);
-
-    transaction = TransactionSigner.signTransaction(transaction, keys);
-    return transaction;
-  }
-
-  public static Transaction getDeleteContractRequestSigMap(AccountID payer,
-      AccountID node,
-      long transactionFee, Timestamp timestamp, Duration txDuration,
-      boolean generateRecord, String txMemo, ContractID contractId, AccountID transferAccount,
-      ContractID transferContract, List<KeyPair> keyPairs) throws Exception {
-    List<Key> keyList = new ArrayList<>();
-    HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-    for (KeyPair pair : keyPairs) {
-      keyList.add(Common.PrivateKeyToKey(pair.getPrivate()));
-      Common.addKeyMap(pair, pubKey2privKeyMap);
-    }
-
-    Transaction transaction = RequestBuilder
-        .getDeleteContractRequest(payer, node, transactionFee, timestamp, txDuration, contractId,
-            transferAccount, transferContract, generateRecord, txMemo);
-
-    transaction = TransactionSigner.signTransactionComplexWithSigMap(transaction, keyList,
-        pubKey2privKeyMap);
-    return transaction;
-  }
-
   public static ExchangeRate getExchangeRate() {
     long expiryTime = Instant.now().getEpochSecond() + 10000000;
     ExchangeRateSet exchangeRateSet = RequestBuilder
         .getExchangeRateSetBuilder(1, 12, expiryTime, 1, 12, expiryTime);
     return exchangeRateSet.getCurrentRate();
-  }
-
-  public static TransactionResponse addLiveHash(Builder txBodyBuilder,
-      List<PrivateKey> genesisPrivateKey, AccountID accountIdBuild, KeyList keyList, byte[] hash,
-      CryptoServiceBlockingStub stub) {
-    Duration claimDuration = RequestBuilder
-        .getDuration(Instant.now(Clock.systemUTC()).getEpochSecond() + 1000000L);
-    LiveHash claim = RequestBuilder.getLiveHash(accountIdBuild, claimDuration, keyList, hash);
-    CryptoAddLiveHashTransactionBody addLiveHashTransactionBody = CryptoAddLiveHashTransactionBody
-        .newBuilder().setLiveHash(claim).build();
-    txBodyBuilder.setCryptoAddLiveHash(addLiveHashTransactionBody);
-    ByteString bodyBytes = ByteString.copyFrom(txBodyBuilder.build().toByteArray());
-    Transaction addLiveHashTx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
-    Transaction signedAddLiveHashTx = TransactionSigner
-        .signTransaction(addLiveHashTx, genesisPrivateKey);
-    return stub.addLiveHash(signedAddLiveHashTx);
   }
 
   public static void genWacl(int numKeys, List<Key> waclPubKeyList,
@@ -1367,5 +1065,4 @@ public class TestHelper {
       waclPrivKeyList.add(pair.getPrivate());
     }
   }
-
 }

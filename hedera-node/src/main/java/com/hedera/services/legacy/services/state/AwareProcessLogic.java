@@ -53,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -71,7 +70,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			INVALID_SCHEDULE_ID,
 			INVALID_SIGNATURE,
 			KEY_PREFIX_MISMATCH,
-			INVALID_SIGNATURE_COUNT_MISMATCHING_KEY,
 			MODIFYING_IMMUTABLE_CONTRACT,
 			INVALID_CONTRACT_ID,
 			UNRESOLVABLE_REQUIRED_SIGNERS,
@@ -229,7 +227,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 		var logic = transitionLogic.get();
-		var opValidity = logic.syntaxCheck().apply(accessor.getTxn());
+		var opValidity = logic.semanticCheck().apply(accessor.getTxn());
 		if (opValidity != OK) {
 			ctx.txnCtx().setStatus(opValidity);
 			return;
