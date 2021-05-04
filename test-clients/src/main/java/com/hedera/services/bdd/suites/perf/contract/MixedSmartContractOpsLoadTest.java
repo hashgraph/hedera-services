@@ -75,7 +75,6 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 	protected HapiApiSpec RunMixedSmartContractOps() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger createdSoFar = new AtomicInteger(0);
-		final byte[] memo = randomUtf8Bytes(memoLength.getAsInt());
 		final String SOME_BYTE_CODE = "contractByteCode";
 		final String UPDATABLE_CONTRACT = "updatableContract";
 		final String CONTRACT_NAME_PREFIX = "testContract";
@@ -95,7 +94,7 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 
 				/* update the memo and  do get info on the contract that needs to be updated */
 				contractUpdate(UPDATABLE_CONTRACT)
-						.newMemo(new String(memo))
+						.newMemo(new String(randomUtf8Bytes(memoLength.getAsInt())))
 						.hasAnyPrecheck()
 						.deferStatusResolution(),
 

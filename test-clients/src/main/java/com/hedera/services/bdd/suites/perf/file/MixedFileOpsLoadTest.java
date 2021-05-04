@@ -69,7 +69,6 @@ public class MixedFileOpsLoadTest extends LoadTest {
 	protected HapiApiSpec runMixedFileOps() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
-		final byte[] newContents = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 		String initialContent = "The initial contents!";
 		String targetFile = "targetFile";
 
@@ -77,7 +76,7 @@ public class MixedFileOpsLoadTest extends LoadTest {
 				fileCreate(targetFile + submittedSoFar.getAndIncrement()).contents(initialContent),
 				fileUpdate(targetFile)
 						.fee(ONE_HUNDRED_HBARS)
-						.contents(newContents)
+						.contents(TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K))
 						.noLogging()
 						.payingWith(GENESIS)
 						.hasAnyPrecheck()
