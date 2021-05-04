@@ -414,7 +414,9 @@ public class SuiteRunner {
 			if(!otherOverrides.containsKey("totalClients")) {
 				otherOverrides.put("totalClients", "" + expectedNetworkSize);
 			}
+
 			createPayerAccount(System.getenv("NODES"), args[1]);
+
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
 					payerId,

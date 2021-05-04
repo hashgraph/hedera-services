@@ -102,7 +102,7 @@ public class MixedTransferAndSubmitLoadTest extends HapiApiSuite {
 						logIt(ignore -> settings.toString())
 				).when(
 						createTopic("topic"),
-						cryptoCreate("sender").balance(999_999_999_999_999L),
+						cryptoCreate("sender").balance(ignore -> settings.getInitialBalance()),
 						cryptoCreate("receiver")
 				).then(
 						runLoadTest(transferBurst)
