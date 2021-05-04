@@ -130,7 +130,7 @@ class TokenWipeTransitionLogicTest {
         givenValidTxnCtx();
 
         // expect:
-        assertEquals(OK, subject.syntaxCheck().apply(tokenWipeTxn));
+        assertEquals(OK, subject.semanticCheck().apply(tokenWipeTxn));
     }
 
     @Test
@@ -138,7 +138,7 @@ class TokenWipeTransitionLogicTest {
         givenMissingToken();
 
         // expect:
-        assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenWipeTxn));
     }
 
     @Test
@@ -146,7 +146,7 @@ class TokenWipeTransitionLogicTest {
         givenMissingAccount();
 
         // expect:
-        assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenWipeTxn));
     }
 
     @Test
@@ -154,7 +154,7 @@ class TokenWipeTransitionLogicTest {
         givenInvalidZeroWipeAmount();
 
         // expect:
-        assertEquals(INVALID_WIPING_AMOUNT, subject.syntaxCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
     }
 
     @Test
@@ -162,7 +162,7 @@ class TokenWipeTransitionLogicTest {
         givenInvalidNegativeWipeAmount();
 
         // expect:
-        assertEquals(INVALID_WIPING_AMOUNT, subject.syntaxCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
     }
 
     private void givenValidTxnCtx() {

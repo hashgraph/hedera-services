@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -62,12 +63,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER
  */
 public class ContextOptionValidator implements OptionValidator {
 	private static final Logger log = LogManager.getLogger(ContextOptionValidator.class);
+
+	private final AccountID nodeAccount;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties properties;
 
-	public ContextOptionValidator(TransactionContext txnCtx, GlobalDynamicProperties properties) {
+	public ContextOptionValidator(
+			AccountID nodeAccount,
+			TransactionContext txnCtx,
+			GlobalDynamicProperties properties
+	) {
 		this.txnCtx = txnCtx;
 		this.properties = properties;
+		this.nodeAccount = nodeAccount;
+	}
+
+	@Override
+	public boolean isThisNodeAccount(AccountID id) {
+		return nodeAccount.equals(id);
 	}
 
 	@Override

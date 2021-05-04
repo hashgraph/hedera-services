@@ -79,7 +79,7 @@ public class CryptoDeleteTransitionLogicTest {
 		givenValidTxnCtx(target);
 
 		// expect:
-		assertEquals(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.syntaxCheck().apply(cryptoDeleteTxn));
+		assertEquals(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.semanticCheck().apply(cryptoDeleteTxn));
 	}
 
 	@Test
@@ -87,7 +87,7 @@ public class CryptoDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(cryptoDeleteTxn));
+		assertEquals(OK, subject.semanticCheck().apply(cryptoDeleteTxn));
 	}
 
 	@Test
@@ -158,7 +158,7 @@ public class CryptoDeleteTransitionLogicTest {
 		givenDeleteTxnMissingTarget();
 
 		// when:
-		ResponseCodeEnum validity = subject.syntaxCheck().apply(cryptoDeleteTxn);
+		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
 
 		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
@@ -169,7 +169,7 @@ public class CryptoDeleteTransitionLogicTest {
 		givenDeleteTxnMissingTransfer();
 
 		// when:
-		ResponseCodeEnum validity = subject.syntaxCheck().apply(cryptoDeleteTxn);
+		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
 
 		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);

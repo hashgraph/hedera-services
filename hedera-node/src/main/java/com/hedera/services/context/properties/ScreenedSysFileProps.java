@@ -42,7 +42,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static java.util.Map.entry;
 
 public class ScreenedSysFileProps implements PropertySource {
-	static Logger log = LogManager.getLogger(ScreenedSysFileProps.class);
+	private static final Logger log = LogManager.getLogger(ScreenedSysFileProps.class);
 
 	static String UNUSABLE_PROP_TPL = "Value '%s' is unusable for '%s', being ignored!";
 	static String MISPLACED_PROP_TPL = "Property '%s' is not global/dynamic, please find it a proper home!";
@@ -87,12 +87,18 @@ public class ScreenedSysFileProps implements PropertySource {
 					maxUtf8Bytes -> (int) maxUtf8Bytes <= MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES),
 			entry(
 					"tokens.maxTokenNameUtf8Bytes",
-					maxUtf8Bytes -> (int) maxUtf8Bytes <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES)
+					maxUtf8Bytes -> (int) maxUtf8Bytes <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES),
+			entry(
+					"ledger.transfers.maxLen",
+					maxLen -> (int) maxLen >= 2),
+			entry(
+					"ledger.tokenTransfers.maxLen",
+					maxLen -> (int) maxLen >= 2)
 	);
 
 	Map<String, Object> from121 = Collections.emptyMap();
 
-	public void screenNew(ServicesConfigurationList rawProps) {
+	void screenNew(ServicesConfigurationList rawProps) {
 		from121 = rawProps.getNameValueList()
 				.stream()
 				.map(this::withStandardizedName)

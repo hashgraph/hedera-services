@@ -22,8 +22,12 @@ package com.hedera.test.utils;
 
 import com.google.protobuf.ByteString;
 import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -145,5 +149,24 @@ public class TxnUtils {
 
 	public static ByteString randomUtf8ByteString(int n) {
 		return ByteString.copyFrom(randomUtf8Bytes(n));
+	}
+
+	public static Timestamp timestampFrom(long secs, int nanos) {
+		return Timestamp.newBuilder()
+				.setSeconds(secs)
+				.setNanos(nanos)
+				.build();
+	}
+
+	public static Key.Builder nestKeys(Key.Builder builder, int additionalKeysToNest) {
+		if (additionalKeysToNest == 0) {
+			builder.setEd25519(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
+			return builder;
+		} else {
+			var nestedBuilder = Key.newBuilder();
+			nestKeys(nestedBuilder, additionalKeysToNest - 1);
+			builder.setKeyList(KeyList.newBuilder().addKeys(nestedBuilder));
+			return builder;
+		}
 	}
 }

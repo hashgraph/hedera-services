@@ -25,7 +25,6 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -33,7 +32,6 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -114,7 +112,7 @@ public class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(contractCreateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -122,7 +120,7 @@ public class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx(false);
 
 		// expect:
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.syntaxCheck().apply(contractCreateTxn));
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -133,7 +131,7 @@ public class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(CONTRACT_NEGATIVE_VALUE, subject.syntaxCheck().apply(contractCreateTxn));
+		assertEquals(CONTRACT_NEGATIVE_VALUE, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -144,7 +142,7 @@ public class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(CONTRACT_NEGATIVE_GAS, subject.syntaxCheck().apply(contractCreateTxn));
+		assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -155,7 +153,7 @@ public class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.syntaxCheck().apply(contractCreateTxn));
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -165,7 +163,7 @@ public class ContractCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
 		// expect:
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.syntaxCheck().apply(contractCreateTxn));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -226,7 +224,7 @@ public class ContractCreateTransitionLogicTest {
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
 
 		// expect:
-		assertEquals(MEMO_TOO_LONG, subject.syntaxCheck().apply(contractCreateTxn));
+		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test

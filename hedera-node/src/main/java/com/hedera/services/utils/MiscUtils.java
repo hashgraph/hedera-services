@@ -358,7 +358,7 @@ public class MiscUtils {
 		}
 	}
 
-	public static String getTxnStat(TransactionBody txn) {
+	static String getTxnStat(TransactionBody txn) {
 		try {
 			return BASE_STAT_NAMES.get(functionOf(txn));
 		} catch (UnknownHederaFunctionality unknownHederaFunctionality) {

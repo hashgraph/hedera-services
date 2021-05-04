@@ -41,13 +41,10 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRECOGNIZED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -134,7 +131,7 @@ public class FreezeTransitionLogicTest {
 		givenTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(freezeTxn));
+		assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
@@ -142,7 +139,7 @@ public class FreezeTransitionLogicTest {
 		givenTxnCtx(false, Optional.empty(), Optional.empty());
 
 		// expect:
-		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.syntaxCheck().apply(freezeTxn));
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
@@ -150,7 +147,7 @@ public class FreezeTransitionLogicTest {
 		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.feeSchedules())), Optional.empty());
 
 		// expect:
-		assertEquals(INVALID_FILE_ID, subject.syntaxCheck().apply(freezeTxn));
+		assertEquals(INVALID_FILE_ID, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test
@@ -158,7 +155,7 @@ public class FreezeTransitionLogicTest {
 		givenTxnCtx(true, Optional.of(fileNums.toFid(fileNums.softwareUpdateZip())), Optional.empty());
 
 		// expect:
-		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.syntaxCheck().apply(freezeTxn));
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
 	}
 
 	@Test

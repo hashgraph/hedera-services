@@ -49,10 +49,6 @@ public class CustomPropertiesSingleton {
     return instance;
   }
 
-  public CustomProperties getCustomProperties() {
-    return properties;
-  }
-
   public long getAccountDuration() {
     return accountDuration;
   }

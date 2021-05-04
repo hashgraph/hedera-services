@@ -97,7 +97,6 @@ public class SigOpsRegressionTest {
 	private SignatureStatus syncSuccessStatus;
 	private SignatureStatus asyncSuccessStatus;
 	private SignatureStatus expectedErrorStatus;
-	private SignatureStatus sigCreationFailureStatus;
 	private PlatformTxnAccessor platformTxn;
 	private HederaSigningOrder signingOrder;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -472,10 +471,6 @@ public class SigOpsRegressionTest {
 				null, null, null, null);
 		asyncSuccessStatus = new SignatureStatus(
 				SignatureStatusCode.SUCCESS_VERIFY_ASYNC, ResponseCodeEnum.OK,
-				true, platformTxn.getTxn().getTransactionID(),
-				null, null, null, null);
-		sigCreationFailureStatus = new SignatureStatus(
-				SignatureStatusCode.KEY_COUNT_MISMATCH, ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY,
 				true, platformTxn.getTxn().getTransactionID(),
 				null, null, null, null);
 	}

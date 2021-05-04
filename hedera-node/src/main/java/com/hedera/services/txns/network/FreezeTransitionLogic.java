@@ -46,7 +46,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	private final LegacyFreezer delegate;
 	private final TransactionContext txnCtx;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	public FreezeTransitionLogic(FileNumbers fileNums, LegacyFreezer delegate, TransactionContext txnCtx) {
 		this.txnCtx = txnCtx;
@@ -80,8 +80,8 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
-		return SYNTAX_CHECK;
+	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+		return SEMANTIC_CHECK;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody freezeTxn) {

@@ -133,7 +133,7 @@ public class ContractDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(contractDeleteTxn));
+		assertEquals(OK, subject.semanticCheck().apply(contractDeleteTxn));
 	}
 
 	@Test
@@ -143,7 +143,7 @@ public class ContractDeleteTransitionLogicTest {
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
 
 		// expect:
-		assertEquals(CONTRACT_DELETED, subject.syntaxCheck().apply(contractDeleteTxn));
+		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractDeleteTxn));
 	}
 
 	@Test

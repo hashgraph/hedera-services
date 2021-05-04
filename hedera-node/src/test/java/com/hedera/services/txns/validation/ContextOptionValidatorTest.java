@@ -96,6 +96,7 @@ public class ContextOptionValidatorTest {
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 	final private AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();
 	final private AccountID missing = AccountID.newBuilder().setAccountNum(1_234L).build();
+	final private AccountID thisNodeAccount = AccountID.newBuilder().setAccountNum(13L).build();
 	final private ContractID missingContract = ContractID.newBuilder().setContractNum(5_431L).build();
 	final private AccountID deleted = AccountID.newBuilder().setAccountNum(2_234L).build();
 	final private MerkleAccount deletedV = MerkleAccountFactory.newAccount().deleted(true).get();
@@ -157,7 +158,7 @@ public class ContextOptionValidatorTest {
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
 
-		subject = new ContextOptionValidator(txnCtx, dynamicProperties);
+		subject = new ContextOptionValidator(thisNodeAccount, txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
@@ -168,7 +169,14 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void recognizesOkFile() throws Exception {
+	void recognizesCurrentNodeAccount() {
+		// expect:
+		assertTrue(subject.isThisNodeAccount(thisNodeAccount));
+		assertFalse(subject.isThisNodeAccount(a));
+	}
+
+	@Test
+	void recognizesOkFile() throws Exception {
 		given(view.infoForFile(target)).willReturn(Optional.of(asMinimalInfo(attr)));
 
 		// when:
@@ -179,7 +187,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void recognizesDeletedFile() throws Exception {
+	void recognizesDeletedFile() throws Exception {
 		given(view.infoForFile(target)).willReturn(Optional.of(asMinimalInfo(deletedAttr)));
 
 		// when:
@@ -191,7 +199,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void recognizesMissingFile() {
+	void recognizesMissingFile() {
 		given(view.infoForFile(target)).willReturn(Optional.empty());
 
 		// when:
@@ -202,50 +210,50 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void usesConsensusTimeForTopicExpiry() {
+	void usesConsensusTimeForTopicExpiry() {
 		// expect:
 		assertTrue(subject.isExpired(expiredMerkleTopic));
 		assertFalse(subject.isExpired(merkleTopic));
 	}
 
 	@Test
-	public void recognizesMissingTopic() {
+	void recognizesMissingTopic() {
 		// expect:
 		assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(missingTopicId, topics));
 	}
 
 	@Test
-	public void recognizesDeletedTopicStatus() {
+	void recognizesDeletedTopicStatus() {
 		// expect:
 		assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(deletedTopicId, topics));
 	}
 
 	@Test
-	public void ignoresExpiredTopicStatus() {
+	void ignoresExpiredTopicStatus() {
 		// expect:
 		assertEquals(OK, subject.queryableTopicStatus(expiredTopicId, topics));
 	}
 
 	@Test
-	public void recognizesOkTopicStatus() {
+	void recognizesOkTopicStatus() {
 		// expect:
 		assertEquals(OK, subject.queryableTopicStatus(topicId, topics));
 	}
 
 	@Test
-	public void recognizesMissingAccountStatus() {
+	void recognizesMissingAccountStatus() {
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, subject.queryableAccountStatus(missing, accounts));
 	}
 
 	@Test
-	public void recognizesDeletedAccountStatus() {
+	void recognizesDeletedAccountStatus() {
 		// expect:
 		assertEquals(ACCOUNT_DELETED, subject.queryableAccountStatus(deleted, accounts));
 	}
 
 	@Test
-	public void recognizesOutOfPlaceAccountStatus() {
+	void recognizesOutOfPlaceAccountStatus() {
 		// expect:
 		assertEquals(
 				INVALID_ACCOUNT_ID,
@@ -253,13 +261,13 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void recognizesOkAccountStatus() {
+	void recognizesOkAccountStatus() {
 		// expect:
 		assertEquals(OK, subject.queryableAccountStatus(a, accounts));
 	}
 
 	@Test
-	public void recognizesMissingContractStatus() {
+	void recognizesMissingContractStatus() {
 		// expect:
 		assertEquals(
 				INVALID_CONTRACT_ID,
@@ -267,13 +275,13 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void recognizesDeletedContractStatus() {
+	void recognizesDeletedContractStatus() {
 		// expect:
 		assertEquals(CONTRACT_DELETED, subject.queryableContractStatus(deletedContract, accounts));
 	}
 
 	@Test
-	public void recognizesOutOfPlaceContractStatus() {
+	void recognizesOutOfPlaceContractStatus() {
 		// expect:
 		assertEquals(
 				INVALID_CONTRACT_ID,
@@ -281,13 +289,13 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void recognizesOkContractStatus() {
+	void recognizesOkContractStatus() {
 		// expect:
 		assertEquals(OK, subject.queryableContractStatus(contract, accounts));
 	}
 
 	@Test
-	public void rejectsBriefTxnDuration() {
+	void rejectsBriefTxnDuration() {
 		given(dynamicProperties.minTxnDuration()).willReturn(2L);
 		given(dynamicProperties.maxTxnDuration()).willReturn(10L);
 
@@ -296,7 +304,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsProlongedTxnDuration() {
+	void rejectsProlongedTxnDuration() {
 		given(dynamicProperties.minTxnDuration()).willReturn(2L);
 		given(dynamicProperties.maxTxnDuration()).willReturn(10L);
 
@@ -305,7 +313,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsBriefAutoRenewPeriod() {
+	void rejectsBriefAutoRenewPeriod() {
 		// setup:
 		Duration autoRenewPeriod = Duration.newBuilder().setSeconds(55L).build();
 
@@ -319,7 +327,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void acceptsReasonablePeriod() {
+	void acceptsReasonablePeriod() {
 		// setup:
 		Duration autoRenewPeriod = Duration.newBuilder().setSeconds(500_000L).build();
 
@@ -334,7 +342,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsProlongedAutoRenewPeriod() {
+	void rejectsProlongedAutoRenewPeriod() {
 		// setup:
 		Duration autoRenewPeriod = Duration.newBuilder().setSeconds(5_555_555L).build();
 
@@ -349,7 +357,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void allowsReasonableLength() {
+	void allowsReasonableLength() {
 		// setup:
 		TransferList wrapper = withAdjustments(a, 2L, b, -3L, d, 1L);
 
@@ -360,7 +368,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsUnreasonableLength() {
+	void rejectsUnreasonableLength() {
 		// setup:
 		TransferList wrapper = withAdjustments(a, 2L, b, -3L, d, 1L);
 
@@ -371,25 +379,25 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void acceptsMappableKey() {
+	void acceptsMappableKey() {
 		// expect:
 		assertTrue(subject.hasGoodEncoding(key));
 	}
 
 	@Test
-	public void rejectsUnmappableKey() {
+	void rejectsUnmappableKey() {
 		// expect:
 		assertFalse(subject.hasGoodEncoding(Key.getDefaultInstance()));
 	}
 
 	@Test
-	public void acceptsEmptyKeyList() {
+	void acceptsEmptyKeyList() {
 		// expect:
 		assertTrue(subject.hasGoodEncoding(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()));
 	}
 
 	@Test
-	public void allowsAnyFutureExpiry() {
+	void allowsAnyFutureExpiry() {
 		// expect:
 		assertTrue(subject.isValidExpiry(
 				Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano() + 1).build()));
@@ -398,7 +406,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsAnyNonFutureExpiry() {
+	void rejectsAnyNonFutureExpiry() {
 		// expect:
 		assertFalse(subject.isValidExpiry(
 				Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build()));
@@ -407,7 +415,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void recognizesExpiredCondition() {
+	void recognizesExpiredCondition() {
 		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
 
 		// given:
@@ -438,7 +446,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void recognizesFutureValidStartStart() {
+	void recognizesFutureValidStartStart() {
 		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
 
 		// given:
@@ -469,7 +477,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void acceptsOk() {
+	void acceptsOk() {
 		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
 
 		// given:
@@ -497,7 +505,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsImplausibleAccounts() {
+	void rejectsImplausibleAccounts() {
 		// given:
 		var implausibleShard = AccountID.newBuilder().setShardNum(-1).build();
 		var implausibleRealm = AccountID.newBuilder().setRealmNum(-1).build();
@@ -512,14 +520,14 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsImplausibleTxnFee() {
+	void rejectsImplausibleTxnFee() {
 		// expect:
 		assertFalse(subject.isPlausibleTxnFee(-1));
 		assertTrue(subject.isPlausibleTxnFee(0));
 	}
 
 	@Test
-	public void acceptsReasonableTokenSymbol() {
+	void acceptsReasonableTokenSymbol() {
 		given(dynamicProperties.maxTokenSymbolUtf8Bytes()).willReturn(3);
 
 		// expect:
@@ -527,7 +535,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsMalformedTokenSymbol() {
+	void rejectsMalformedTokenSymbol() {
 		given(dynamicProperties.maxTokenSymbolUtf8Bytes()).willReturn(100);
 
 		// expect:
@@ -536,7 +544,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsTooLongTokenSymbol() {
+	void rejectsTooLongTokenSymbol() {
 		given(dynamicProperties.maxTokenSymbolUtf8Bytes()).willReturn(3);
 
 		// expect:
@@ -544,7 +552,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void acceptsReasonableTokenName() {
+	void acceptsReasonableTokenName() {
 		given(dynamicProperties.maxTokenNameUtf8Bytes()).willReturn(100);
 
 		// expect:
@@ -552,13 +560,13 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsMissingTokenName() {
+	void rejectsMissingTokenName() {
 		// expect:
 		assertEquals(MISSING_TOKEN_NAME, subject.tokenNameCheck(""));
 	}
 
 	@Test
-	public void rejectsMalformedTokenName() {
+	void rejectsMalformedTokenName() {
 		given(dynamicProperties.maxTokenNameUtf8Bytes()).willReturn(3);
 
 		// expect:
@@ -567,7 +575,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void acceptsReasonableTokenTransfersLength() {
+	void acceptsReasonableTokenTransfersLength() {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
@@ -578,7 +586,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsExceedingTokenTransfersLength() {
+	void rejectsExceedingTokenTransfersLength() {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
@@ -589,7 +597,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsExceedingTokenTransfersAccountAmountsLength() {
+	void rejectsExceedingTokenTransfersAccountAmountsLength() {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
 

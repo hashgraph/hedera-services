@@ -163,7 +163,6 @@ public class SignatureStatus {
       case SCHEDULED_TRANSACTION_NOT_IN_WHITELIST:
       case GENERAL_PAYER_ERROR:
       case GENERAL_TRANSACTION_ERROR:
-      case KEY_COUNT_MISMATCH:
       case KEY_PREFIX_MISMATCH:
         formatArguments.add(format(transactionId));
         break;
