@@ -32,7 +32,6 @@ public enum SignatureStatusCode {
       "Unable to map signatures due to an general exception [ source = '%s', transactionId = '%s' ]"),
   GENERAL_PAYER_ERROR(
       "Unable to map signatures due to an general payer exception [ source = '%s', transactionId = '%s' ]"),
-  KEY_COUNT_MISMATCH("Key Count Mismatch Error [ source = '%s', transactionId = '%s' ]"),
   KEY_PREFIX_MISMATCH("Key Prefix Mismatch Error [ source = '%s', transactionId = '%s' ]"),
   INVALID_FILE_ID("Invalid Account ID [ source = '%s', transactionId = '%s', fileId = '%s' ]"),
   IMMUTABLE_CONTRACT(

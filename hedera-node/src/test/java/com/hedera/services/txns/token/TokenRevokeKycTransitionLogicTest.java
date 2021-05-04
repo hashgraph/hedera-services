@@ -123,7 +123,7 @@ class TokenRevokeKycTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenRevokeKycTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenRevokeKycTxn));
 	}
 
 	@Test
@@ -131,7 +131,7 @@ class TokenRevokeKycTransitionLogicTest {
 		givenMissingToken();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenRevokeKycTxn));
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenRevokeKycTxn));
 	}
 
 	@Test
@@ -139,7 +139,7 @@ class TokenRevokeKycTransitionLogicTest {
 		givenMissingAccount();
 
 		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(tokenRevokeKycTxn));
+		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenRevokeKycTxn));
 	}
 
 	private void givenValidTxnCtx() {

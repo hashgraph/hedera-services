@@ -22,7 +22,6 @@ package com.hedera.services.txns.contract;
 
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederLedgerTokensTest;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -37,8 +36,6 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +46,6 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -151,7 +147,7 @@ class ContractUpdateTransitionLogicTest {
 		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// expect:
-		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.syntaxCheck().apply(contractUpdateTxn));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
 	@Test
@@ -159,7 +155,7 @@ class ContractUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(contractUpdateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
 	@Test
@@ -167,7 +163,7 @@ class ContractUpdateTransitionLogicTest {
 		givenValidTxnCtx(false);
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(contractUpdateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
 	@Test
@@ -177,7 +173,7 @@ class ContractUpdateTransitionLogicTest {
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
 
 		// expect:
-		assertEquals(CONTRACT_DELETED, subject.syntaxCheck().apply(contractUpdateTxn));
+		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
 	@Test
@@ -188,7 +184,7 @@ class ContractUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.syntaxCheck().apply(contractUpdateTxn));
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
 	@Test
@@ -198,7 +194,7 @@ class ContractUpdateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
 		// expect:
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.syntaxCheck().apply(contractUpdateTxn));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractUpdateTxn));
 	}
 
 	private void givenValidTxnCtx() {

@@ -124,7 +124,7 @@ class TokenAssociateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenAssociateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenAssociateTxn));
 	}
 
 	@Test
@@ -132,7 +132,7 @@ class TokenAssociateTransitionLogicTest {
 		givenMissingAccount();
 
 		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(tokenAssociateTxn));
+		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenAssociateTxn));
 	}
 
 	@Test
@@ -140,7 +140,7 @@ class TokenAssociateTransitionLogicTest {
 		givenDuplicateTokens();
 
 		// expect:
-		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.syntaxCheck().apply(tokenAssociateTxn));
+		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(tokenAssociateTxn));
 	}
 
 	private void givenValidTxnCtx() {

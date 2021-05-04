@@ -102,15 +102,15 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.initialSupply(100)
 								.treasury(TOKEN_TREASURY)
 				).then(
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"ledger.tokenTransfers.maxLen", "" + 1
-						)).payingWith(ADDRESS_BOOK_CONTROL),
 						cryptoTransfer(
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER),
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED),
+						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"ledger.tokenTransfers.maxLen", "" + 2
+						)).payingWith(ADDRESS_BOOK_CONTROL),
 						cryptoTransfer(
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER),

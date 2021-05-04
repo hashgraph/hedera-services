@@ -80,16 +80,8 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 
 /**
- * Encapsulates all policies related to:
- * <ol>
- * <li>Which Hedera keys must have active signatures for a given gRPC transaction to be valid; and,</li>
- * <li>The <i>order</i> in which Hedera {@link com.hederahashgraph.api.proto.java.Signature}
- * instances must be supplied to test activation of these keys when the gRPC transaction has a
- * {@link com.hederahashgraph.api.proto.java.SignatureList}.</li>
- * </ol>
- * The second item is really an implementation detail, as logically this class could just as well
- * return a {@code Set<JKey>} instead of a {@code List<JKey>}. However, until there are no clients
- * using the deprecated {@code SignatureList}, it is an absolutely crucial detail.
+ * Encapsulates all policies related to which Hedera keys must have active
+ * signatures for a given gRPC transaction to be valid.
  *
  * Two strategy predicates are injected into this class, one with logic to decide if the WACL for a
  * file targeted by the gRPC transaction must have an active signature; and one with logic to make an

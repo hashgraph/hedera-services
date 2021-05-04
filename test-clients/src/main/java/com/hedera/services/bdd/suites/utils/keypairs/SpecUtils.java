@@ -58,6 +58,20 @@ public class SpecUtils {
 				Hex.encodeHexString(keyPair.getPrivate().getEncoded()));
 	}
 
+	public static String ed25519KeyToOcKeystore(EdDSAPrivateKey privKey, AccountID id) throws IOException {
+		var hexPublicKey = Hex.encodeHexString(privKey.getAbyte());
+		var hexPrivateKey = Hex.encodeHexString(privKey.getEncoded());
+		var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
+		var keys = new AccountKeyListObj(id, List.of(keyPairObj));
+
+		var baos = new ByteArrayOutputStream();
+		var oos = new ObjectOutputStream(baos);
+		oos.writeObject(Map.of("START_ACCOUNT", List.of(keys)));
+		oos.close();
+
+		return CommonUtils.base64encode(baos.toByteArray());
+	}
+
 	public static String asSerializedOcKeystore(KeyPair keyPair, AccountID id) throws IOException {
 		var hexPublicKey = Hex.encodeHexString(keyPair.getPublic().getEncoded());
 		var hexPrivateKey = Hex.encodeHexString(keyPair.getPrivate().getEncoded());

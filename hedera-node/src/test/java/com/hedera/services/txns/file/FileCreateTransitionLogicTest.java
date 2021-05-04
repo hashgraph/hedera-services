@@ -56,7 +56,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
@@ -150,7 +149,7 @@ class FileCreateTransitionLogicTest {
 		given(validator.memoCheck(memo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// when:
-		var syntaxCheck = subject.syntaxCheck();
+		var syntaxCheck = subject.semanticCheck();
 		var status = syntaxCheck.apply(fileCreateTxn);
 
 		// expect:
@@ -163,7 +162,7 @@ class FileCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
 
 		// when:
-		var syntaxCheck = subject.syntaxCheck();
+		var syntaxCheck = subject.semanticCheck();
 		var status = syntaxCheck.apply(fileCreateTxn);
 
 		// expect:
@@ -176,7 +175,7 @@ class FileCreateTransitionLogicTest {
 		givenTxnCtxCreating(EnumSet.of(CONTENTS, KEY));
 
 		// when:
-		var syntaxCheck = subject.syntaxCheck();
+		var syntaxCheck = subject.semanticCheck();
 		var status = syntaxCheck.apply(fileCreateTxn);
 
 		// expect:

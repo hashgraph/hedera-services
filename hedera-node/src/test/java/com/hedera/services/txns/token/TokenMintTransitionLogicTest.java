@@ -21,7 +21,6 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -140,7 +139,7 @@ class TokenMintTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenMintTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenMintTxn));
 	}
 
 	@Test
@@ -148,7 +147,7 @@ class TokenMintTransitionLogicTest {
 		givenMissingToken();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenMintTxn));
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenMintTxn));
 	}
 
 	@Test
@@ -156,7 +155,7 @@ class TokenMintTransitionLogicTest {
 		givenInvalidNegativeAmount();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_MINT_AMOUNT, subject.syntaxCheck().apply(tokenMintTxn));
+		assertEquals(INVALID_TOKEN_MINT_AMOUNT, subject.semanticCheck().apply(tokenMintTxn));
 	}
 
 	@Test
@@ -164,7 +163,7 @@ class TokenMintTransitionLogicTest {
 		givenInvalidZeroAmount();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_MINT_AMOUNT, subject.syntaxCheck().apply(tokenMintTxn));
+		assertEquals(INVALID_TOKEN_MINT_AMOUNT, subject.semanticCheck().apply(tokenMintTxn));
 	}
 
 	private void givenValidTxnCtx() {

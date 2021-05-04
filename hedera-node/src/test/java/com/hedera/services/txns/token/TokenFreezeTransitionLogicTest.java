@@ -123,7 +123,7 @@ class TokenFreezeTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenFreezeTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenFreezeTxn));
 	}
 
 	@Test
@@ -131,7 +131,7 @@ class TokenFreezeTransitionLogicTest {
 		givenMissingToken();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenFreezeTxn));
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenFreezeTxn));
 	}
 
 	@Test
@@ -139,7 +139,7 @@ class TokenFreezeTransitionLogicTest {
 		givenMissingAccount();
 
 		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(tokenFreezeTxn));
+		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenFreezeTxn));
 	}
 
 	private void givenValidTxnCtx() {

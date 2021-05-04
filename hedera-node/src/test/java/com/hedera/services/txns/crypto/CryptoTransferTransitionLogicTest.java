@@ -27,7 +27,6 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -115,7 +114,7 @@ public class CryptoTransferTransitionLogicTest {
 		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
 		// expect:
-		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -124,7 +123,7 @@ public class CryptoTransferTransitionLogicTest {
 		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		// expect:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -133,7 +132,7 @@ public class CryptoTransferTransitionLogicTest {
 		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
 
 		// expect:
-		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -212,7 +211,7 @@ public class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(OK, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -220,7 +219,7 @@ public class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx(withAdjustments(a, -2L, a, 1L, c, 1L));
 
 		// expect:
-		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -228,7 +227,7 @@ public class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 3L, c, 1L));
 
 		// expect:
-		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -237,7 +236,7 @@ public class CryptoTransferTransitionLogicTest {
 		given(validator.isAcceptableTransfersLength(any())).willReturn(false);
 
 		// expect:
-		assertEquals(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -245,7 +244,7 @@ public class CryptoTransferTransitionLogicTest {
 		givenDuplicateTokens();
 
 		// expect:
-		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -253,7 +252,7 @@ public class CryptoTransferTransitionLogicTest {
 		givenInvalidTokenDuplicateAccounts();
 
 		// expect:
-		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -261,7 +260,7 @@ public class CryptoTransferTransitionLogicTest {
 		givenInvalidTokenAdjustment();
 
 		// expect:
-		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -269,7 +268,7 @@ public class CryptoTransferTransitionLogicTest {
 		givenMissingTokenInTransfer();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
@@ -277,14 +276,14 @@ public class CryptoTransferTransitionLogicTest {
 		givenMissingAccountInTokenAccountAmount();
 
 		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	@Test
 	public void rejectsInvalidTokenZeroAmounts() {
 		givenInvalidTokenZeroAmounts();
 
-		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(cryptoTransferTxn));
+		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	private void givenValidTxnCtx(TransferList wrapper) {

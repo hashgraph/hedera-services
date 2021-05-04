@@ -40,16 +40,6 @@ public class CustomProperties {
   private static final Logger log = LogManager.getLogger(CustomProperties.class);
   private Properties customProperties = new Properties();
 
-
-  /**
-   * Read custom properties from a file located in the project classpath root folder.
-   *
-   * @param file the properties file to be read
-   */
-  public CustomProperties(String file) {
-    this(file, true);
-  }
-
   /**
    * Read custom properties from a file path.
    *
@@ -131,19 +121,5 @@ public class CustomProperties {
       rv = defaultValue;
     }
     return rv;
-  }
-
-  /**
-   * Getter method
-   */
-  public Properties getCustomProperties() {
-    return customProperties;
-  }
-
-  /**
-   * Setter method
-   */
-  public void setCustomProperties(Properties customProperties) {
-    this.customProperties = customProperties;
   }
 }

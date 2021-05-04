@@ -58,9 +58,6 @@ import static java.lang.Boolean.parseBoolean;
  * @author hua
  */
 public class CommonUtils {
-
-  private static final int EVM_ACCOUNT_SIZE_BYTES = 20;
-
   /**
    * Read UTF-8 content from a file given a path on disk.
    *
@@ -75,34 +72,6 @@ public class CommonUtils {
     }
 
     return fileString;
-  }
-
-  /**
-   * Extracts the string data from a ByteBuffer.
-   */
-  public static String extractData(ByteBuffer peerAppData) {
-    byte[] bytes = extractBytes(peerAppData);
-    String rv = convert2String(bytes);
-    return rv;
-  }
-
-  /**
-   * Converts bytes to String.
-   */
-  public static String convert2String(byte[] bytes) {
-    return new String(bytes);
-  }
-
-  /**
-   * Extracts the byte data from a ByteBuffer.
-   */
-  public static byte[] extractBytes(ByteBuffer peerAppData) {
-    int pos = peerAppData.position();
-    int limit = peerAppData.limit();
-    int len = limit - pos;
-    byte[] bytes = new byte[len];
-    peerAppData.get(bytes, pos, len);
-    return bytes;
   }
 
   /**
@@ -130,19 +99,6 @@ public class CommonUtils {
       Thread.sleep((long) timeInSec * 1000);
     } catch (Exception e) {
     }
-  }
-
-  /**
-   * Get string representation of an object array.
-   */
-  public static String array2String(Object[] array) {
-    StringBuffer sb = new StringBuffer("\n");
-    int i = 1;
-    for (Object e : array) {
-      sb.append(i + ". ").append(e).append("\n");
-      i++;
-    }
-    return sb.toString();
   }
 
   /**
@@ -174,39 +130,6 @@ public class CommonUtils {
   }
 
   /**
-   * Write string to a file using UTF_8 encoding.
-   *
-   * @param path the file path to write bytes
-   * @param data the byte array data
-   */
-  public static void writeToFileUTF8(String path, String data) throws IOException {
-    byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-    writeToFile(path, bytes);
-  }
-
-  /**
-   * Write string to a file using UTF_8 encoding.
-   *
-   * @param append append to existing file if true
-   */
-  public static void writeToFileUTF8(String path, String data, boolean append) throws IOException {
-    byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-    writeToFile(path, bytes, append);
-  }
-
-  /**
-   * Encode bytes as base64.
-   *
-   * @param bytes to be encoded
-   * @return base64 string
-   */
-  public static String base64encode(byte[] bytes) {
-    String rv = null;
-    rv = Base64.getEncoder().encodeToString(bytes);
-    return rv;
-  }
-
-  /**
    * Decode base64 string to bytes.
    *
    * @param base64string to be decoded
@@ -216,70 +139,6 @@ public class CommonUtils {
     byte[] rv = null;
     rv = Base64.getDecoder().decode(base64string);
     return rv;
-  }
-
-  /**
-   * Convert long value to bytes.
-   *
-   * @param x long to be converted
-   * @return byte array
-   */
-  public static byte[] longToBytes(long x) {
-    ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-    buffer.putLong(x);
-    return buffer.array();
-  }
-
-  /**
-   * Convert int value to bytes.
-   *
-   * @param x int to be converted
-   * @return byte array
-   */
-  public static byte[] intToBytes(int x) {
-    ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
-    buffer.putInt(x);
-    return buffer.array();
-  }
-
-  /**
-   * Convert bytes to int value.
-   *
-   * @param bytes input bytes
-   * @return the int value
-   */
-  public static int bytesToInt(byte[] bytes) {
-    ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
-    buffer.put(bytes);
-    buffer.flip();// need flip
-    return buffer.getInt();
-  }
-
-  /**
-   * Convert bytes to long value.
-   *
-   * @param bytes input bytes
-   * @return the long value
-   */
-  public static long bytesToLong(byte[] bytes) {
-    ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-    buffer.put(bytes);
-    buffer.flip();// need flip
-    return buffer.getLong();
-  }
-
-  /**
-   * Serialize a Java object to bytes.
-   *
-   * @param object the Java object to be serialized
-   * @return converted bytes
-   */
-  public static byte[] convertToBytes(Object object) throws IOException {
-    try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(
-        bos)) {
-      out.writeObject(object);
-      return bos.toByteArray();
-    }
   }
 
   /**
@@ -310,26 +169,6 @@ public class CommonUtils {
     for (int i = 0; i < length; i++) {
       rv[i] = bytes[start + i];
     }
-    return rv;
-  }
-
-  /**
-   * Concatenate two byte arrays into one.
-   *
-   * @return the combined byte array.
-   */
-  public static byte[] mergeByteArray(byte[] a, byte[] b) {
-    int al = a.length;
-    int bl = b.length;
-    byte[] rv = new byte[al + bl];
-
-    for (int i = 0; i < al; i++) {
-      rv[i] = a[i];
-    }
-    for (int i = al; i < (al + bl); i++) {
-      rv[i] = b[i];
-    }
-
     return rv;
   }
 
@@ -382,16 +221,6 @@ public class CommonUtils {
       throws IOException, URISyntaxException {
     Path path = Paths.get(myClass.getClassLoader().getResource(filePath).toURI());
     return Files.readAllBytes(path);
-  }
-
-  public static String[] splitLine(String line) {
-    String[] elms = line.split(",");
-
-    for (int i = 0; i < elms.length; ++i) {
-      elms[i] = elms[i].trim();
-    }
-
-    return elms;
   }
 
   /**
@@ -451,17 +280,4 @@ public class CommonUtils {
     
     System.out.println(":) record check success!");
   }
-
-  /**
-   * Generates number of bytes.
-   * 
-   * @param numBytes
-   * @return bytes generated
-   */
-  public static byte[] genRandomBytes(int numBytes) {
-    byte[] fileContents = new byte[numBytes];
-    (new Random()).nextBytes(fileContents);
-    return fileContents;
-  }
-
 }

@@ -82,21 +82,6 @@ public class GrpcStub {
 		return FileUploader.getFileInfo(fileStub, payerAccount, payerKey, nodeAccountNumber, fid);
 	}
 
-	public Pair<List<Transaction>, FileID> uploadFile(AccountID payerAccount,
-			PrivateKey payerPrivateKey,
-			final List<KeyPair> accessKeys,
-			long fileDuration, long transactionFee,
-			final Map<String, PrivateKey> pubKey2PrivateKeyMap,
-			byte[] bytes,
-			long nodeAccountNumber) throws Exception {
-
-		return FileUploader.uploadFile(null, cryptoStub, fileStub,
-				payerAccount, payerPrivateKey, accessKeys, fileDuration, transactionFee,
-		pubKey2PrivateKeyMap,
-		bytes,
-		nodeAccountNumber);
-	}
-
 	public Pair<List<Transaction>, FileID> updateFile(FileID fileID,
 			AccountID payerAccount,
 			PrivateKey payerPrivateKey,

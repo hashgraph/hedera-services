@@ -70,7 +70,6 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 				)
 				.when(
 						cryptoCreate("repeatedTransaction")
-								.validDurationSecs(180)
 								.via(transactionId),
 						getAccountBalance(GENESIS)
 								.setNode("0.0.8")
@@ -88,7 +87,6 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 								.sleepingBetweenRetriesFor(5),
 						cryptoCreate("repeatedTransaction")
 								.txnId(transactionId)
-								.validDurationSecs(180)
 								.hasPrecheck(DUPLICATE_TRANSACTION)
 								.setNode("0.0.8")
 				);
