@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.perf;
+package com.hedera.services.bdd.suites.perf.token;
 
 /*-
  * ‌
@@ -21,30 +21,31 @@ package com.hedera.services.bdd.suites.perf;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
-public class CryptoCreatePerfSuite extends LoadTest {
-	private static final Logger log = LogManager.getLogger(CryptoCreatePerfSuite.class);
+public class TokenCreatePerfSuite extends LoadTest {
+	private static final Logger log = LogManager.getLogger(TokenCreatePerfSuite.class);
 
 	public static void main(String... args) {
-		CryptoCreatePerfSuite suite = new CryptoCreatePerfSuite();
+		parseArgs(args);
+		TokenCreatePerfSuite suite = new TokenCreatePerfSuite();
 		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(runCryptoCreates());
+		return List.of(runTokenCreates());
 	}
 
 	@Override
@@ -52,29 +53,26 @@ public class CryptoCreatePerfSuite extends LoadTest {
 		return true;
 	}
 
-	private HapiApiSpec runCryptoCreates() {
-		final int NUM_CREATES = 1000000;
-		return defaultHapiSpec("cryptoCreatePerf")
+	private HapiApiSpec runTokenCreates() {
+		final int NUM_CREATES = 100000;
+		return defaultHapiSpec("tokenCreatePerf")
 				.given(
 				).when(
 						inParallel(
 								asOpArray(NUM_CREATES, i ->
-										(i == (NUM_CREATES - 1)) ? cryptoCreate("testAccount" + i)
-												.balance(100_000_000_000L)
-												.key(GENESIS)
-												.withRecharging()
-												.rechargeWindow(30)
-												.payingWith(GENESIS) :
-												cryptoCreate("testAccount" + i)
-														.balance(100_000_000_000L)
-														.key(GENESIS)
-														.withRecharging()
-														.rechargeWindow(30)
+										(i == (NUM_CREATES - 1)) ? tokenCreate("testToken" + i)
+												.payingWith(GENESIS)
+												.initialSupply(100_000_000_000L)
+												.signedBy(GENESIS):
+												tokenCreate("testToken" + i)
 														.payingWith(GENESIS)
+														.signedBy(GENESIS)
+														.initialSupply(100_000_000_000L)
 														.deferStatusResolution()
 								)
 						)
 				).then(
+						UtilVerbs.sleepFor(200000),
 						freeze().payingWith(GENESIS).startingIn(60).seconds().andLasting(1).minutes()
 				);
 	}

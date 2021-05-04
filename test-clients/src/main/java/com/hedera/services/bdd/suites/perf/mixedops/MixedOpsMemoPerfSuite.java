@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.perf;
+package com.hedera.services.bdd.suites.perf.mixedops;
 
 /*-
  * ‌
@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

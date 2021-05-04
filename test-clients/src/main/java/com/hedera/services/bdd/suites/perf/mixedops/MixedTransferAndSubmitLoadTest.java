@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.perf;
+package com.hedera.services.bdd.suites.perf.mixedops;
 
 /*-
  * ‌
@@ -22,20 +22,21 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
@@ -46,18 +47,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class FileUpdateLoadTest extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(FileUpdateLoadTest.class);
+public class MixedTransferAndSubmitLoadTest extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(MixedTransferAndSubmitLoadTest.class);
 
 	public static void main(String... args) {
-		FileUpdateLoadTest suite = new FileUpdateLoadTest();
+		MixedTransferAndSubmitLoadTest suite = new MixedTransferAndSubmitLoadTest();
 		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(runFileUpdates());
+		return List.of(runMixedTransferAndSubmits());
 	}
 
 	@Override
@@ -65,39 +66,46 @@ public class FileUpdateLoadTest extends HapiApiSuite {
 		return true;
 	}
 
-	private HapiApiSpec runFileUpdates() {
+	private HapiApiSpec runMixedTransferAndSubmits() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
-		final byte[] NEW_CONTENTS = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 
-		Supplier<HapiSpecOperation[]> fileUpdateBurst = () -> new HapiSpecOperation[] {
-				inParallel(IntStream.range(0, settings.getBurstSize())
-						.mapToObj(i ->
-								TxnVerbs.fileUpdate("target")
-										.fee(Integer.MAX_VALUE)
-										.contents(NEW_CONTENTS)
-										.noLogging()
-										.hasPrecheckFrom(
-												OK,
-												BUSY,
-												DUPLICATE_TRANSACTION,
-												PLATFORM_TRANSACTION_NOT_CREATED)
-										.deferStatusResolution())
-						.toArray(n -> new HapiSpecOperation[n])),
+		Supplier<HapiSpecOperation[]> transferBurst = () -> new HapiSpecOperation[] {
+				inParallel(flattened(
+						IntStream.range(0, settings.getBurstSize() / 2)
+								.mapToObj(ignore ->
+										cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1L))
+												.noLogging()
+												.hasPrecheckFrom(
+														OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+												.deferStatusResolution())
+								.toArray(n -> new HapiSpecOperation[n]),
+						IntStream.range(0, settings.getBurstSize() / 2)
+								.mapToObj(ignore ->
+										submitMessageTo("topic")
+												.message("A fascinating item of general interest!")
+												.noLogging()
+												.hasPrecheckFrom(
+														OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+												.deferStatusResolution())
+								.toArray(n -> new HapiSpecOperation[n])
+				)),
 				logIt(ignore ->
 						String.format(
-								"Now a total of %d file updates submitted.",
+								"Now a 50/50 mix of %d transfers and messages submitted in total.",
 								submittedSoFar.addAndGet(settings.getBurstSize()))),
 		};
 
-		return defaultHapiSpec("RunFileUpdates")
+		return defaultHapiSpec("RunMixedTransferAndSubmits")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when(
-						fileCreate("target").contents("The initial contents!")
+						createTopic("topic"),
+						cryptoCreate("sender").balance(999_999_999_999_999L),
+						cryptoCreate("receiver")
 				).then(
-						runLoadTest(fileUpdateBurst)
+						runLoadTest(transferBurst)
 								.tps(settings::getTps)
 								.tolerance(settings::getTolerancePercentage)
 								.allowedSecsBelow(settings::getAllowedSecsBelow)
@@ -110,3 +118,5 @@ public class FileUpdateLoadTest extends HapiApiSuite {
 		return log;
 	}
 }
+
+

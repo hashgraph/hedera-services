@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.perf;
+package com.hedera.services.bdd.suites.perf.file;
 
 /*-
  * ‌
@@ -22,43 +22,42 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class createTopicLoadTest extends LoadTest {
-
-	private static final Logger log = LogManager.getLogger(createTopicLoadTest.class);
+public class FileUpdateLoadTest extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(FileUpdateLoadTest.class);
 
 	public static void main(String... args) {
-		parseArgs(args);
-
-		createTopicLoadTest suite = new createTopicLoadTest();
+		FileUpdateLoadTest suite = new FileUpdateLoadTest();
 		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(runCreateTopics());
+		return List.of(runFileUpdates());
 	}
 
 	@Override
@@ -66,26 +65,43 @@ public class createTopicLoadTest extends LoadTest {
 		return true;
 	}
 
-	private static HapiApiSpec runCreateTopics() {
+	private HapiApiSpec runFileUpdates() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
-		KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
+		final byte[] NEW_CONTENTS = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 
-		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
-				createTopic("testTopic" + submittedSoFar.addAndGet(1)).submitKeyShape(submitKeyShape)
-						.noLogging()
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-						.deferStatusResolution()
-
+		Supplier<HapiSpecOperation[]> fileUpdateBurst = () -> new HapiSpecOperation[] {
+				inParallel(IntStream.range(0, settings.getBurstSize())
+						.mapToObj(i ->
+								TxnVerbs.fileUpdate("target")
+										.fee(Integer.MAX_VALUE)
+										.contents(NEW_CONTENTS)
+										.noLogging()
+										.hasPrecheckFrom(
+												OK,
+												BUSY,
+												DUPLICATE_TRANSACTION,
+												PLATFORM_TRANSACTION_NOT_CREATED)
+										.deferStatusResolution())
+						.toArray(n -> new HapiSpecOperation[n])),
+				logIt(ignore ->
+						String.format(
+								"Now a total of %d file updates submitted.",
+								submittedSoFar.addAndGet(settings.getBurstSize()))),
 		};
 
-		return defaultHapiSpec("runCreateTopics")
+		return defaultHapiSpec("RunFileUpdates")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when(
+						fileCreate("target").contents("The initial contents!")
 				).then(
-						defaultLoadTest(submitBurst, settings)
+						runLoadTest(fileUpdateBurst)
+								.tps(settings::getTps)
+								.tolerance(settings::getTolerancePercentage)
+								.allowedSecsBelow(settings::getAllowedSecsBelow)
+								.lasting(settings::getMins, () -> MINUTES)
 				);
 	}
 

@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.perf;
+package com.hedera.services.bdd.suites.perf.contract;
 
 /*-
  * ‌
@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.perf;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -30,26 +31,30 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 
-public class ContractCallLocalPerfSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ContractCallLocalPerfSuite.class);
+public class ContractCallPerfSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(ContractCallPerfSuite.class);
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
 		new org.ethereum.crypto.HashUtil();
 
-		new ContractCallLocalPerfSuite().runSuiteSync();
+		new ContractCallPerfSuite().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				contractCallLocalPerf()
+				contractCallPerf()
 		);
 	}
 
@@ -63,30 +68,42 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 		return true;
 	}
 
-	HapiApiSpec contractCallLocalPerf() {
+	HapiApiSpec contractCallPerf() {
 		final int NUM_CALLS = 1_000;
+		final long ENDING_BALANCE = NUM_CALLS * (NUM_CALLS + 1)	 / 2;
+		final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";
 
-		return defaultHapiSpec("ContractCallLocalPerf")
+		return defaultHapiSpec("ContractCallPerf")
 				.given(
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("contract").bytecode("bytecode").balance(1_000L)
+						fileCreate("contractBytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
+						contractCreate("perf").bytecode("contractBytecode"),
+						fileCreate("lookupBytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
+						contractCreate("balanceLookup").bytecode("lookupBytecode").balance(1L)
 				).when(
-						contractCallLocal(
-								"contract",
-								ContractResources.BALANCE_LOOKUP_ABI,
-								spec -> new Object[] {
-										spec.registry().getContractId("contract").getContractNum()
-								}).recordNodePaymentAs("cost"),
-						UtilVerbs.startThroughputObs("contractCallLocal")
+						getContractInfo("perf").hasExpectedInfo().logged(),
+						UtilVerbs.startThroughputObs("contractCall").msToSaturateQueues(50L)
 				).then(
-						UtilVerbs.inParallel(asOpArray(NUM_CALLS, ignore ->
+						UtilVerbs.inParallel(asOpArray(NUM_CALLS, i ->
+								contractCall("perf", ContractResources.VERBOSE_DEPOSIT_ABI, i + 1, 0, DEPOSIT_MEMO)
+										.sending(i + 1)
+										.deferStatusResolution())),
+						UtilVerbs.finishThroughputObs("contractCall")
+								.gatedByQuery(() ->
 										contractCallLocal(
-												"contract",
+												"balanceLookup",
 												ContractResources.BALANCE_LOOKUP_ABI,
 												spec -> new Object[] {
-														spec.registry().getContractId("contract").getContractNum()
-												}).nodePayment(spec -> spec.registry().getAmount("cost")))),
-						UtilVerbs.finishThroughputObs("contractCallLocal")
+													spec.registry().getContractId("perf").getContractNum()
+												}
+										).has(
+												resultWith().resultThruAbi(
+														ContractResources.BALANCE_LOOKUP_ABI,
+														isLiteralResult(
+																new Object[] { BigInteger.valueOf(ENDING_BALANCE) }
+														)
+												)
+										).noLogging()
+								)
 				);
 	}
 

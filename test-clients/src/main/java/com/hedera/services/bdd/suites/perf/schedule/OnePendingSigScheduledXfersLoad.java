@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.perf;
+package com.hedera.services.bdd.suites.perf.schedule;
 
 /*-
  * ‌
@@ -54,9 +54,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
-import static com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad.inertReceiver;
-import static com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad.initializersGiven;
-import static com.hedera.services.bdd.suites.perf.ReadyToRunScheduledXfersLoad.payingSender;
+import static com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad.inertReceiver;
+import static com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad.initializersGiven;
+import static com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad.payingSender;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
