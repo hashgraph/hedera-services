@@ -360,6 +360,12 @@ ${git.signoff}
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hedera-protobuf-java-api</artifactId>
       <version>${hapi-proto.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
@@ -512,12 +518,6 @@ ${git.signoff}
         <groupId>com.hedera.hashgraph</groupId>
         <artifactId>ethereumj-core</artifactId>
         <version>${ethereum-core.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
     </dependencies>
   </dependencyManagement>
