@@ -63,7 +63,7 @@ public class CreateTokensBeforeReconnect extends HapiApiSuite {
 		);
 	}
 
-	private synchronized HapiSpecOperation generateTopicCreateOperation() {
+	private HapiSpecOperation generateTopicCreateOperation() {
 		final long token = tokenNumber.getAndIncrement();
 		if (token >= TOKEN_CREATION_LIMIT) {
 			return getVersionInfo()
@@ -71,7 +71,7 @@ public class CreateTokensBeforeReconnect extends HapiApiSuite {
 		}
 
 		return tokenCreate("token" + token)
-				.logging()
+				.noLogging()
 				.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
 				.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
 						TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)

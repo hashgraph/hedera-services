@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
 import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
+import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
@@ -154,6 +155,10 @@ public class UtilVerbs {
 
 	public static SpecKeyFromMnemonic keyFromMnemonic(String name, String mnemonic) {
 		return new SpecKeyFromMnemonic(name, mnemonic);
+	}
+
+	public static SpecKeyFromMutation keyFromMutation(String name, String mutated) {
+		return new SpecKeyFromMutation(name, mutated);
 	}
 
 	public static SpecKeyFromLiteral keyFromLiteral(String name, String hexEncodedPrivateKey) {

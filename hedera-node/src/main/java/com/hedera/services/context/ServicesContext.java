@@ -270,6 +270,7 @@ import com.hedera.services.txns.network.FreezeTransitionLogic;
 import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleCreateTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
+import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
@@ -520,6 +521,7 @@ public class ServicesContext {
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
 	private ValidatingCallbackInterceptor apiPermissionsReloading;
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
+	private ScheduleExecutor scheduleExecutor;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
@@ -689,6 +691,13 @@ public class ServicesContext {
 					txnCtx()::accessor);
 		}
 		return activationHelper;
+	}
+
+	public ScheduleExecutor scheduleExecutor() {
+		if (scheduleExecutor == null) {
+			scheduleExecutor = new ScheduleExecutor();
+		}
+		return scheduleExecutor;
 	}
 
 	public IssEventInfo issEventInfo() {
@@ -1259,9 +1268,14 @@ public class ServicesContext {
 				/* Schedule */
 				entry(ScheduleCreate,
 						List.of(new ScheduleCreateTransitionLogic(
-								scheduleStore(), txnCtx(), activationHelper(), validator()))),
+								scheduleStore(), txnCtx(), activationHelper(), validator(), scheduleExecutor()))),
 				entry(ScheduleSign,
-						List.of(new ScheduleSignTransitionLogic(scheduleStore(), txnCtx(), activationHelper()))),
+						List.of(new ScheduleSignTransitionLogic(
+								scheduleStore(),
+								txnCtx(),
+								activationHelper(),
+								scheduleExecutor()
+						))),
 				entry(ScheduleDelete,
 						List.of(new ScheduleDeleteTransitionLogic(scheduleStore(), txnCtx()))),
 				/* System */

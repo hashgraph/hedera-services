@@ -71,7 +71,7 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 		);
 	}
 
-	private synchronized HapiSpecOperation generateScheduleCreateOperation() {
+	private HapiSpecOperation generateScheduleCreateOperation() {
 		if (scheduleNumber.getAndIncrement() > SCHEDULE_CREATION_LIMIT) {
 			return getVersionInfo()
 					.noLogging();
@@ -88,7 +88,7 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 				.hasAnyKnownStatus()
 				.deferStatusResolution()
 				.adminKey(DEFAULT_PAYER)
-				.logging()
+				.noLogging()
 				.advertisingCreation();
 	}
 
@@ -126,7 +126,8 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 								.hasAnyKnownStatus()
 								.deferStatusResolution()
 								.adminKey(DEFAULT_PAYER)
-								.logging().advertisingCreation()
+								.noLogging()
+								.advertisingCreation()
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
@@ -146,7 +147,7 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 								.hasAnyKnownStatus()
 								.deferStatusResolution()
 								.adminKey(DEFAULT_PAYER)
-								.logging().advertisingCreation(),
+								.noLogging().advertisingCreation(),
 						defaultLoadTest(createBurst, settings)
 				);
 	}

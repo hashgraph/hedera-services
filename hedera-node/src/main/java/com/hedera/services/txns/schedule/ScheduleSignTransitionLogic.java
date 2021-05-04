@@ -39,25 +39,32 @@ import java.util.function.Predicate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution implements TransitionLogic {
+public class ScheduleSignTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleSignTransitionLogic.class);
 
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	private final InHandleActivationHelper activationHelper;
 
-	ExecutionProcessor executor = this::processExecution;
+	private ScheduleExecutor executor;
+	private final ScheduleStore store;
+	private final TransactionContext txnCtx;
+
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness replSigningsWitness = SignatoryUtils::witnessScoped;
 
 	public ScheduleSignTransitionLogic(
 			ScheduleStore store,
 			TransactionContext txnCtx,
-			InHandleActivationHelper activationHelper
-	) {
-		super(store, txnCtx);
+			InHandleActivationHelper activationHelper,
+			ScheduleExecutor executor) {
+		this.store = store;
+		this.txnCtx = txnCtx;
+		this.executor = executor;
 		this.activationHelper = activationHelper;
 	}
 
@@ -76,12 +83,22 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
 			SignatureMap sigMap,
 			ScheduleSignTransactionBody op
 	) throws InvalidProtocolBufferException {
+		var scheduleId = op.getScheduleID();
+		var origSchedule = store.get(scheduleId);
+		if (origSchedule.isExecuted()) {
+			txnCtx.setStatus(SCHEDULE_ALREADY_EXECUTED);
+			return;
+		}
+		if (origSchedule.isDeleted()) {
+			txnCtx.setStatus(SCHEDULE_ALREADY_DELETED);
+			return;
+		}
+
 		var validScheduleKeys = classifier.validScheduleKeys(
 				List.of(txnCtx.activePayerKey()),
 				sigMap,
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);
-		var scheduleId = op.getScheduleID();
 		var signingOutcome = replSigningsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
 
 		var outcome = signingOutcome.getLeft();
@@ -89,7 +106,7 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
 			var updatedSchedule = store.get(scheduleId);
 			txnCtx.setScheduledTxnId(updatedSchedule.scheduledTransactionId());
 			if (signingOutcome.getRight()) {
-				outcome = executor.doProcess(scheduleId);
+				outcome = executor.processExecution(scheduleId, store, txnCtx);
 			}
 		}
 		txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
