@@ -100,11 +100,11 @@ public class EntityAutoRenewal {
 		ctx.updateLastScannedEntity(lastScannedEntity);
 	}
 
-	/*
-		The NegativeAccountBalanceException is ignored because
-		there are only 2 calls to this function to set balance of:
-			1. the fee collector, which is no less than its original balance
-			2. the auto renew account, which has been checked for the remaining balance to adjust the extension
+	/**
+	 *	The NegativeAccountBalanceException is ignored because
+	 *	there are only 2 calls to this function to set the balance of:
+	 *		1. the fee collector, which is no less than its original balance
+	 *		2. the auto renew account, which has been checked for the remaining balance to adjust the extension
 	 */
 	private void setBalance(MerkleAccount account, long newBalance) {
 		try {
