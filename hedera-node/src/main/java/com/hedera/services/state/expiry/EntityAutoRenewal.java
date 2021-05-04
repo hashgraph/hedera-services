@@ -67,7 +67,9 @@ public class EntityAutoRenewal {
 					long newExpiry = expiry;
 					long fee = 100_000_000L;
 					if (0 == balance) {
-						backingAccounts.remove(accountID);
+						if (expiry + props.autoRenewGracePeriod() <= consensusTime.getEpochSecond()) {
+							backingAccounts.remove(accountID);
+						}
 					} else {
 						// Check the remaining balance to adjust the extension
 						long autoRenewSecs = merkleAccount.getAutoRenewSecs();
