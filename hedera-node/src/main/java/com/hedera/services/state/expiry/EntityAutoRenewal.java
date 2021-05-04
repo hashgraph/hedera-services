@@ -63,6 +63,9 @@ public class EntityAutoRenewal {
 				long expiry = merkleAccount.getExpiry();
 				if (expiry <= consensusTime.getEpochSecond()) {
 					numberOfEntitiesRenewedOrDeleted++;
+					if (merkleAccount.isDeleted()) {
+						backingAccounts.remove(accountID);
+					}
 					long balance = merkleAccount.getBalance();
 					long newExpiry = expiry;
 					long fee = 100_000_000L;
