@@ -42,8 +42,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 /**
  * Given a state loaded from a preprod network (usually stable testnet), we
  * want to "re-key" the treasury account for use in dev migration testing.
- *
- *
  */
 public class RekeySavedStateTreasury extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RekeySavedStateTreasury.class);
@@ -56,6 +54,7 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						rekeyTreasury(),
+						freezeWithNewTreasuryKey(),
 				}
 		);
 	}
@@ -87,7 +86,7 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 									newTreasuryStartUpAccountLoc);
 							spec.keys().exportSimpleKey(newTreasuryPemLoc, newTreasuryKey);
 						})
-				).when( ).then(
+				).when().then(
 						cryptoUpdate(DEFAULT_PAYER).key(newTreasuryKey)
 				);
 	}
@@ -99,7 +98,7 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 						"default.payer", "0.0.2",
 						"startupAccounts.path", newTreasuryStartUpAccountLoc
 				))
-				.given( ).when( ).then(
+				.given().when().then(
 						freeze().startingIn(60).seconds().andLasting(1).minutes()
 				);
 	}
