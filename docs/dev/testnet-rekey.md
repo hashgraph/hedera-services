@@ -65,7 +65,7 @@ address,  D, Dave,     1, 127.0.0.1, 50207, 127.0.0.1, 50207, 0.0.6
 address,  E, Eric,     1, 127.0.0.1, 50208, 127.0.0.1, 50208, 0.0.7
 ```
 
-### Starting Services
+## Starting Services
 
 Whether you are starting Services from IntelliJ or command line,
 make sure you give it sufficient heap (8GB to be safe). In IntelliJ 
@@ -96,7 +96,7 @@ logs like,
 2021-05-04 09:47:26.691 INFO   330  HapiApiSpec - 'FreezeWithNewTreasuryKey' - final status: PASSED!
 ```
 
-### Capturing the new state
+## Capturing the new state
 
 :bangbang:&nbsp;Now we need a minute or two for Services logs to go 
 through the `MAINTENANCE -> ACTIVE` cycle. 
