@@ -1551,6 +1551,56 @@ workflows:
             - attach_workspace:
                 at: /
 
+
+  GCP-Daily-Services-Reconnect-6N-4C:
+    triggers:
+      - schedule:
+          cron: "20 20,22,0,2,4 * * *"
+          filters:
+            branches:
+              only:
+                - 01334-D-increase-reconnect-tests-TPS
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_4C/Reconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Reconnect-6N-4C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+
+  GCP-Daily-Services-Global-3NReconnect-15N-4C:
+    triggers:
+      - schedule:
+          cron: "20 20,22,0,2,4 * * *"
+          filters:
+            branches:
+              only:
+                - 01334-D-increase-reconnect-tests-TPS
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/15N_4C/Reconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Global-3NReconnect-15N-4C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+
+
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
@@ -1694,11 +1744,12 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "5 7 * * *"
+          cron: "20 20,2,6 * * *"
           filters:
             branches:
               only:
-                - master
+#                - master
+                - 01334-D-increase-reconnect-tests-TPS
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1714,45 +1765,23 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Global-3NReconnect-15N-1C:
+  GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "15 7 * * *"
+          cron: "20 20,23,2,5,8 * * *"
           filters:
             branches:
               only:
-                - master
+#                - master
+                - 01334-D-increase-reconnect-tests-TPS
     jobs:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/15N_1C/Global3NReconnect
+          result_path: results/15N_4C/3NReconnect
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Global-3NReconnect-15N-1C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-
-  GCP-Daily-Services-Comp-3NReconnect-15N-1C:
-    triggers:
-      - schedule:
-          cron: "15 8 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/15N_1C/3NReconnect
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-3NReconnect-15N-1C"
+          workflow-name: "GCP-Daily-Services-Comp-3NReconnect-15N-4C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -2031,6 +2060,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
+                  - 01334-D-increase-reconnect-tests-TPS
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
@@ -2296,7 +2326,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 01334-D-increase-reconnect-tests-TPS
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2718,10 +2748,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""

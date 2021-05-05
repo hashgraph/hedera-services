@@ -75,6 +75,7 @@ import com.hedera.services.bdd.suites.misc.MixedOpsTransactionsSuite;
 import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
 import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTest;
+import com.hedera.services.bdd.suites.perf.AdjustFeeScheduleSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTest;
@@ -237,6 +238,8 @@ public class SuiteRunner {
 //				new SmartContractInlineAssemblySpec(),
 //				new OCTokenSpec(),
 //				new RecordCreationSuite()));
+		/* Adjust fee schedules */
+		put("AdjustFeeSchedule", aof(new AdjustFeeScheduleSuite()));
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Regression saved state management helpers */

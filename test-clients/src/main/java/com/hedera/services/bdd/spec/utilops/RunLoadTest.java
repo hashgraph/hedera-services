@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_T
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TEST_TOPICS;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_TEST_TOPIC_ID;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -79,6 +80,7 @@ public class RunLoadTest extends UtilOp {
 	private IntSupplier totalTokenAssociations = () -> DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
 	private IntSupplier totalScheduled = () -> DEFAULT_TOTAL_SCHEDULED;
 	private LongSupplier initialBalance = () -> DEFAULT_INITIAL_BALANCE;
+	private IntSupplier testTopicId = () -> DEFAULT_TEST_TOPIC_ID;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
 
@@ -166,6 +168,11 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest setInitialBalance(LongSupplier initialBalance) {
 		this.initialBalance = initialBalance;
+		return this;
+	}
+
+	public RunLoadTest setTestTopicId(IntSupplier testTopicId) {
+		this.testTopicId = testTopicId;
 		return this;
 	}
 

@@ -22,6 +22,7 @@ package com.hedera.services.state.initialization;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.TextFormat;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
@@ -29,6 +30,7 @@ import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.files.SysFileCallbacks;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -47,7 +49,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.swirlds.common.AddressBook;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -201,7 +202,14 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 		try {
 			return parser.parseFrom(hfs.cat(disFid));
 		} catch (InvalidProtocolBufferException e) {
-			log.error("Corrupt {} in saved state, unable to continue!", resource);
+			log.error("Corrupt {} in saved state (believed to be blob id {}), unable to continue!",
+					resource, MerkleOptionalBlob.lastAccessedBlob.get());
+			try {
+				byte[] bytes = hfs.cat(disFid);
+				log.error("Bytes were: {}", TextFormat.escapeBytes(bytes));
+			} catch (Exception alsoE) {
+				log.error("Couldn't tell you the bytes", alsoE);
+			}
 			throw new IllegalStateException(e);
 		}
 	}
