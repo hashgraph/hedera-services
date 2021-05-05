@@ -84,7 +84,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 	@Test
 	public void rubberstampsSyntax() {
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(null));
+		assertEquals(OK, subject.semanticCheck().apply(null));
 	}
 
 	@Test

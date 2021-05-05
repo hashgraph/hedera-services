@@ -24,7 +24,9 @@ import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
+import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -38,6 +40,7 @@ import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
@@ -96,6 +99,20 @@ public class KeyFactory implements Serializable {
 		return TransactionSigner.signTransactionComplexWithSigMap(txn, signers, pkMap);
 	}
 
+	public void exportSimpleKeyAsLegacyStartUpAccount(String exportKey, AccountID owner, String b64EncodedLoc) {
+		final var protoKey = registry.getKey(exportKey);
+		final var pubKeyBytes = protoKey.getEd25519().toByteArray();
+		final var hexedPubKey = Hex.encodeHexString(pubKeyBytes);
+		final var privKey = pkMap.get(hexedPubKey);
+
+		try {
+			final var b64Form = SpecUtils.ed25519KeyToOcKeystore((EdDSAPrivateKey) privKey, owner);
+			java.nio.file.Files.writeString(Paths.get(b64EncodedLoc), b64Form);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
 	public void exportSimpleKey(
 			String loc,
 			String name
@@ -133,7 +150,9 @@ public class KeyFactory implements Serializable {
 			String passphrase
 	) throws KeyStoreException {
 		var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
-		var privateKey = pkMap.get(Hex.encodeHexString(pubKeyBytes));
+		var hexedPubKey = Hex.encodeHexString(pubKeyBytes);
+
+		var privateKey = pkMap.get(hexedPubKey);
 
 		var store = new Ed25519KeyStore.Builder().withPassword(passphrase.toCharArray()).build();
 		store.insertNewKeyPair(Ed25519PrivateKey.fromBytes(privateKey.getEncoded()));

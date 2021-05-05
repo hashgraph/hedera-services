@@ -51,7 +51,7 @@ class UncheckedSubmitTransitionLogicTest {
 	@Test
 	public void rubberstampsEverything() {
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(TransactionBody.getDefaultInstance()));
+		assertEquals(OK, subject.semanticCheck().apply(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test

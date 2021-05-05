@@ -146,10 +146,10 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
-import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.answering.AnswerFunctions;
+import com.hedera.services.queries.answering.QueryHeaderValidity;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.answering.StakedAnswerFlow;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
@@ -274,7 +274,13 @@ import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
-import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
+import com.hedera.services.txns.submission.BasicSubmissionFlow;
+import com.hedera.services.txns.submission.SemanticPrecheck;
+import com.hedera.services.txns.submission.SolvencyPrecheck;
+import com.hedera.services.txns.submission.StagedPrechecks;
+import com.hedera.services.txns.submission.StructuralPrecheck;
+import com.hedera.services.txns.submission.SystemPrecheck;
+import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.token.TokenAssociateTransitionLogic;
 import com.hedera.services.txns.token.TokenBurnTransitionLogic;
@@ -288,16 +294,18 @@ import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
-import com.hedera.services.txns.validation.BasicPrecheck;
+import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
+import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -358,6 +366,7 @@ import static com.hedera.services.sigs.metadata.SigMetadataLookup.SCHEDULE_REF_L
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.txns.submission.StructuralPrecheck.HISTORICAL_MAX_PROTO_MESSAGE_DEPTH;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -407,6 +416,8 @@ import static java.util.Map.entry;
 public class ServicesContext {
 	private static final Logger log = LogManager.getLogger(ServicesContext.class);
 
+	private SystemExits systemExits = new JvmSystemExits();
+
 	/* Injected dependencies. */
 	ServicesState state;
 
@@ -446,6 +457,7 @@ public class ServicesContext {
 	private FreezeHandler freeze;
 	private CryptoAnswers cryptoAnswers;
 	private ScheduleStore scheduleStore;
+	private SyntaxPrecheck syntaxPrecheck;
 	private AccountNumbers accountNums;
 	private SubmissionFlow submissionFlow;
 	private PropertySource properties;
@@ -460,6 +472,7 @@ public class ServicesContext {
 	private MiscRunningAvgs runningAvgs;
 	private ScheduleAnswers scheduleAnswers;
 	private MiscSpeedometers speedometers;
+	private ScheduleExecutor scheduleExecutor;
 	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
@@ -480,7 +493,6 @@ public class ServicesContext {
 	private BlobStorageSource bytecodeDb;
 	private HapiOpPermissions hapiOpPermissions;
 	private TransactionContext txnCtx;
-	private TransactionHandler txns;
 	private ContractController contractsGrpc;
 	private HederaSigningOrder keyOrder;
 	private HederaSigningOrder backedKeyOrder;
@@ -494,8 +506,10 @@ public class ServicesContext {
 	private FeeSchedulesManager feeSchedulesManager;
 	private RecordStreamManager recordStreamManager;
 	private ThrottleDefsManager throttleDefsManager;
+	private QueryHeaderValidity queryHeaderValidity;
 	private Map<String, byte[]> blobStore;
 	private Map<EntityId, Long> entityExpiries;
+	private TransactionPrecheck transactionPrecheck;
 	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
 	private TxnFeeChargingPolicy txnChargingPolicy;
@@ -523,7 +537,6 @@ public class ServicesContext {
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
 	private ValidatingCallbackInterceptor apiPermissionsReloading;
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
-	private ScheduleExecutor scheduleExecutor;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
@@ -602,12 +615,36 @@ public class ServicesContext {
 		return opCounters;
 	}
 
+	public QueryHeaderValidity queryHeaderValidity() {
+		if (queryHeaderValidity == null) {
+			queryHeaderValidity = new QueryHeaderValidity();
+		}
+		return queryHeaderValidity;
+	}
+
 	public MiscRunningAvgs runningAvgs() {
 		if (runningAvgs == null) {
 			runningAvgs = new MiscRunningAvgs(new RunningAvgFactory() {
 			}, nodeLocalProperties());
 		}
 		return runningAvgs;
+	}
+
+	public TransactionPrecheck transactionPrecheck() {
+		if (transactionPrecheck == null) {
+			final var structure = new StructuralPrecheck(
+					Platform.getTransactionMaxBytes(), HISTORICAL_MAX_PROTO_MESSAGE_DEPTH);
+			final var semantics = new SemanticPrecheck(
+					transitionLogic());
+			final var solvency = new SolvencyPrecheck(
+					exemptions(), fees(), precheckVerifier(), stateViews(), this::accounts);
+			final var system = new SystemPrecheck(
+					systemOpPolicies(), hapiOpPermissions(), txnThrottling());
+			final var stagedChecks = new StagedPrechecks(
+					syntaxPrecheck(), system, semantics, solvency, structure);
+			transactionPrecheck = new TransactionPrecheck(queryFeeCheck(), stagedChecks, platformStatus());
+		}
+		return transactionPrecheck;
 	}
 
 	public FeeMultiplierSource feeMultiplierSource() {
@@ -793,11 +830,7 @@ public class ServicesContext {
 
 	public SubmissionFlow submissionFlow() {
 		if (submissionFlow == null) {
-			submissionFlow = new TxnHandlerSubmissionFlow(
-					nodeType(),
-					txns(),
-					transitionLogic(),
-					submissionManager());
+			submissionFlow = new BasicSubmissionFlow(nodeType(), transactionPrecheck(), submissionManager());
 		}
 		return submissionFlow;
 	}
@@ -1010,13 +1043,16 @@ public class ServicesContext {
 			if (nodeType() == STAKED_NODE) {
 				answerFlow = new StakedAnswerFlow(
 						fees(),
-						txns(),
 						stateViews(),
 						usagePrices(),
 						hapiThrottling(),
-						submissionManager());
+						submissionManager(),
+						queryHeaderValidity(),
+						transactionPrecheck(),
+						hapiOpPermissions(),
+						queryFeeCheck());
 			} else {
-				answerFlow = new ZeroStakeAnswerFlow(txns(), stateViews(), hapiThrottling());
+				answerFlow = new ZeroStakeAnswerFlow(queryHeaderValidity(), stateViews(), hapiThrottling());
 			}
 		}
 		return answerFlow;
@@ -1464,7 +1500,7 @@ public class ServicesContext {
 
 	public OptionValidator validator() {
 		if (validator == null) {
-			validator = new ContextOptionValidator(txnCtx(), globalDynamicProperties());
+			validator = new ContextOptionValidator(nodeAccount(), txnCtx(), globalDynamicProperties());
 		}
 		return validator;
 	}
@@ -1778,25 +1814,11 @@ public class ServicesContext {
 		return bytecodeDb;
 	}
 
-	public TransactionHandler txns() {
-		if (txns == null) {
-			txns = new TransactionHandler(
-					recordCache(),
-					precheckVerifier(),
-					this::accounts,
-					nodeAccount(),
-					txnThrottling(),
-					fees(),
-					stateViews(),
-					new BasicPrecheck(validator(), globalDynamicProperties()),
-					queryFeeCheck(),
-					accountNums(),
-					systemOpPolicies(),
-					exemptions(),
-					platformStatus(),
-					hapiOpPermissions());
+	public SyntaxPrecheck syntaxPrecheck() {
+		if (syntaxPrecheck == null) {
+			syntaxPrecheck = new SyntaxPrecheck(recordCache(), validator(), globalDynamicProperties());
 		}
-		return txns;
+		return syntaxPrecheck;
 	}
 
 	public Console console() {
@@ -1809,9 +1831,10 @@ public class ServicesContext {
 	public AccountID nodeAccount() {
 		if (accountId == null) {
 			try {
-				String memoOfAccountId = address().getMemo();
-				accountId = accountParsedFromString(memoOfAccountId);
-			} catch (Exception ignore) {
+				accountId = accountParsedFromString(address().getMemo());
+			} catch (Exception fatal) {
+				log.error("Address book has no account for node, cannot proceed!", fatal);
+				systemExits.fail(1);
 			}
 		}
 		return accountId;
@@ -2046,5 +2069,9 @@ public class ServicesContext {
 
 	public void setScheduleStore(ScheduleStore scheduleStore) {
 		this.scheduleStore = scheduleStore;
+	}
+
+	void setSystemExits(SystemExits systemExits) {
+		this.systemExits = systemExits;
 	}
 }

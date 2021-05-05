@@ -81,7 +81,7 @@ class TransitionLogicLookupTest {
 			}
 
 			@Override
-			public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+			public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
 				return ignore -> SUCCESS;
 			}
 		};

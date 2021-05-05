@@ -68,6 +68,7 @@ public abstract class HapiApiSuite {
 	}
 
 	public static final long ONE_HBAR = 100_000_000L;
+	public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;
 	public static final long ONE_HUNDRED_HBARS = 100 * ONE_HBAR;
 	public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;

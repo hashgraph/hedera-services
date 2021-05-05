@@ -20,17 +20,13 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
-import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hederahashgraph.api.proto.java.Transaction;
-
 /**
  * Defines a type of precheck validation failure in which the payer account
  * does not exist or is otherwise invalid. (As opposed to an invalid non-payer
  * account involved in a query payment.)
  *
  * This allows control flow in the {@link PrecheckVerifier} to maintain the
- * behavior of the legacy {@link TransactionHandler#verifySignature(Transaction)}
- * implementation.
+ * behavior of the existing implementation of synchronous verification.
  *
  * @author Michael Tinker
  */

@@ -133,7 +133,7 @@ public class ContractSysDelTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(contractSysDelTxn));
+		assertEquals(OK, subject.semanticCheck().apply(contractSysDelTxn));
 	}
 
 	@Test
@@ -143,7 +143,7 @@ public class ContractSysDelTransitionLogicTest {
 		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(contractSysDelTxn));
+		assertEquals(OK, subject.semanticCheck().apply(contractSysDelTxn));
 	}
 
 	@Test
@@ -153,7 +153,7 @@ public class ContractSysDelTransitionLogicTest {
 		given(validator.queryableContractStatus(target, contracts)).willReturn(INVALID_CONTRACT_ID);
 
 		// expect:
-		assertEquals(INVALID_CONTRACT_ID, subject.syntaxCheck().apply(contractSysDelTxn));
+		assertEquals(INVALID_CONTRACT_ID, subject.semanticCheck().apply(contractSysDelTxn));
 	}
 
 	@Test

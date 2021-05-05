@@ -139,7 +139,7 @@ class TokenBurnTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenBurnTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenBurnTxn));
 	}
 
 	@Test
@@ -147,7 +147,7 @@ class TokenBurnTransitionLogicTest {
 		givenMissingToken();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenBurnTxn));
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenBurnTxn));
 	}
 
 	@Test
@@ -155,7 +155,7 @@ class TokenBurnTransitionLogicTest {
 		givenInvalidNegativeAmount();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.syntaxCheck().apply(tokenBurnTxn));
+		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
 	}
 
 	@Test
@@ -163,7 +163,7 @@ class TokenBurnTransitionLogicTest {
 		givenInvalidZeroAmount();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.syntaxCheck().apply(tokenBurnTxn));
+		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
 	}
 
 	private void givenValidTxnCtx() {

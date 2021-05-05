@@ -55,7 +55,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -299,7 +298,7 @@ class TokenCreateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -307,7 +306,7 @@ class TokenCreateTransitionLogicTest {
 		givenValidMissingRenewAccount();
 
 		// expect
-		assertEquals(OK, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -316,7 +315,7 @@ class TokenCreateTransitionLogicTest {
 		given(validator.tokenSymbolCheck(any())).willReturn(MISSING_TOKEN_SYMBOL);
 
 		// expect:
-		assertEquals(MISSING_TOKEN_SYMBOL, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(MISSING_TOKEN_SYMBOL, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -325,7 +324,7 @@ class TokenCreateTransitionLogicTest {
 		given(validator.tokenSymbolCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
 		// expect:
-		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -334,7 +333,7 @@ class TokenCreateTransitionLogicTest {
 		given(validator.tokenSymbolCheck(any())).willReturn(INVALID_TOKEN_SYMBOL);
 
 		// expect:
-		assertEquals(INVALID_TOKEN_SYMBOL, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_TOKEN_SYMBOL, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -343,7 +342,7 @@ class TokenCreateTransitionLogicTest {
 		given(validator.tokenNameCheck(any())).willReturn(MISSING_TOKEN_NAME);
 
 		// expect:
-		assertEquals(MISSING_TOKEN_NAME, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(MISSING_TOKEN_NAME, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -352,7 +351,7 @@ class TokenCreateTransitionLogicTest {
 		given(validator.tokenNameCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
 		// expect:
-		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -360,7 +359,7 @@ class TokenCreateTransitionLogicTest {
 		givenInvalidInitialSupply();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -368,7 +367,7 @@ class TokenCreateTransitionLogicTest {
 		givenInvalidDecimals();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_DECIMALS, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_TOKEN_DECIMALS, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -376,7 +375,7 @@ class TokenCreateTransitionLogicTest {
 		givenMissingTreasury();
 
 		// expect:
-		assertEquals(INVALID_TREASURY_ACCOUNT_FOR_TOKEN, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_TREASURY_ACCOUNT_FOR_TOKEN, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -384,7 +383,7 @@ class TokenCreateTransitionLogicTest {
 		givenInvalidAdminKey();
 
 		// expect:
-		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -392,7 +391,7 @@ class TokenCreateTransitionLogicTest {
 		givenInvalidKycKey();
 
 		// expect:
-		assertEquals(INVALID_KYC_KEY, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_KYC_KEY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -400,7 +399,7 @@ class TokenCreateTransitionLogicTest {
 		givenInvalidWipeKey();
 
 		// expect:
-		assertEquals(INVALID_WIPE_KEY, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_WIPE_KEY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -408,7 +407,7 @@ class TokenCreateTransitionLogicTest {
 		givenInvalidSupplyKey();
 
 		// expect:
-		assertEquals(INVALID_SUPPLY_KEY, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_SUPPLY_KEY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -416,7 +415,7 @@ class TokenCreateTransitionLogicTest {
 		givenMissingFreezeKeyWithFreezeDefault();
 
 		// expect:
-		assertEquals(TOKEN_HAS_NO_FREEZE_KEY, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(TOKEN_HAS_NO_FREEZE_KEY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -424,7 +423,7 @@ class TokenCreateTransitionLogicTest {
 		givenInvalidFreezeKey();
 
 		// expect:
-		assertEquals(INVALID_FREEZE_KEY, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_FREEZE_KEY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -432,7 +431,7 @@ class TokenCreateTransitionLogicTest {
 		givenInvalidAdminKeyBytes();
 
 		// expect:
-		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -441,7 +440,7 @@ class TokenCreateTransitionLogicTest {
 		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// expect:
-		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -450,14 +449,14 @@ class TokenCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
 		// expect:
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
 	public void rejectsInvalidExpirationTime() {
 		givenInvalidExpirationTime();
 
-		assertEquals(INVALID_EXPIRATION_TIME, subject.syntaxCheck().apply(tokenCreateTxn));
+		assertEquals(INVALID_EXPIRATION_TIME, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	private void givenValidTxnCtx() {

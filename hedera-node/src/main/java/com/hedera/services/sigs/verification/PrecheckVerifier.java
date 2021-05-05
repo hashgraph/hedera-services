@@ -54,7 +54,6 @@ public class PrecheckVerifier {
 	private final SyncVerifier syncVerifier;
 	private final PrecheckKeyReqs precheckKeyReqs;
 	private final PubKeyToSigBytesProvider provider;
-	private static final Logger log = LogManager.getLogger(PrecheckVerifier.class);
 
 	public PrecheckVerifier(
 			SyncVerifier syncVerifier,

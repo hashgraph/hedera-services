@@ -138,7 +138,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
 	}
 
-	public boolean isTriggeredTxn() { return false; }
+	public boolean isTriggeredTxn() {
+		return false;
+	}
 
 	public ScheduleID getScheduleRef() {
 		throw new UnsupportedOperationException("Only the TriggeredTxnAccessor implementation can refer to a schedule");

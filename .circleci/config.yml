@@ -1476,10 +1476,10 @@ workflows:
             - attach_workspace:
                 at: /
 
-# The mainnet migration test needs to be run in a 13-node test network.
+# The mainnet migration test needs to be run in a 18-node test network.
 # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
 # Once this branch is released, disable this workflow.
-  nightly-mainnet-migration-regression:
+  GCP-Daily-Services-Crypto-Migration-18N-1C:
     triggers:
           - schedule:
               cron: "0 23,8 * * *"
@@ -1489,15 +1489,21 @@ workflows:
                     - release-branch-N
     jobs:
       - build-platform-and-services
-      - run-mainnet-migration-regression:
-          context: Slack
+      - update-start-up-key-for-mainnet:
           requires:
             - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/18N_1C/MainnetMigration
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Migration-18N-1C"
+          requires:
+            - update-start-up-key-for-mainnet
           pre-steps:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-mainnet-migration-regression"
 
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
@@ -2211,38 +2217,6 @@ jobs:
             - root/.m2
             - repo/hedera-node
 
-  run-mainnet-migration-regression:
-    parameters:
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: build-executor
-      workflow-name:  << parameters.workflow-name >>
-    steps:
-      - run:
-          name: Modify Payer account for Mainnet Migration test
-          command: |
-            sed -i 's/default.payer=0.0.2/default.payer=0.0.950/g' /repo/test-clients/src/main/resource/spec-default.properties;
-            echo -n "$KEY_950" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
-
-      - run:
-          name: Run Mainnet Migration test
-          command: |
-            cd /repo ; mvn --no-transfer-progress clean install -DskipTests -PdevSetup;
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/daily/13N_13C/AWS-Services-Daily-MainnetMigration-13N-1C.json /repo
-
-      - run:
-          name: Sync results of mainnet migration test to AWS
-          command: |
-            cd /swirlds-platform/regression/results/; find . -type d -name data -prune -exec rm -rf {} \;
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
-            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
-
-      - store_artifacts:
-          path: /results.tar.gz
-
   update-start-up-key:
     parameters:
       workflow-name:
@@ -2257,6 +2231,27 @@ jobs:
           name: Modify Payer account for Public testnet start from saved state test
           command: |
             echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/
+            - swirlds-platform/
+
+  update-start-up-key-for-mainnet:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+    steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name: Modify Payer account for Mainnet start from saved state test
+          command: |
+            sed -i 's/default.payer=0.0.2/default.payer=0.0.950/g' /repo/test-clients/src/main/resource/spec-default.properties;
+            echo -n "$KEY_950" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - persist_to_workspace:
           root: /
           paths:

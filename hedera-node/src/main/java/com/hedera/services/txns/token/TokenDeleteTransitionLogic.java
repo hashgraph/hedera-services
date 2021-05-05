@@ -45,7 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class TokenDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenDeleteTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final TokenStore store;
 	private final TransactionContext txnCtx;
@@ -76,8 +76,8 @@ public class TokenDeleteTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
-		return SYNTAX_CHECK;
+	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+		return SEMANTIC_CHECK;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

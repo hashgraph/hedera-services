@@ -21,20 +21,15 @@ package com.hedera.test.factories.sigs;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.KeyTreeLeaf;
 import com.hedera.test.factories.keys.KeyTreeListNode;
 import com.hedera.test.factories.keys.KeyTreeNode;
-import com.hedera.test.factories.keys.KeyTreeThresholdNode;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
-import com.hederahashgraph.api.proto.java.ThresholdSignature;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.swirlds.common.crypto.SignatureType;
 
 import java.security.PrivateKey;
@@ -48,7 +43,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBodyBytes;
 import static com.hedera.services.legacy.proto.utils.SignatureGenerator.signBytes;
-import static java.util.stream.Collectors.toList;
 
 public class SigFactory {
 	private final SigMapGenerator sigMapGen;
@@ -68,56 +62,6 @@ public class SigFactory {
 		} catch (Exception e) {
 			throw new IllegalStateException("Impossible signing error!");
 		}
-	}
-
-	private Signature asHederaSignature(KeyTreeNode node, byte[] data, KeyFactory factory) {
-		if (node instanceof KeyTreeLeaf) {
-			@SuppressWarnings("unchecked")
-			KeyTreeLeaf leaf = (KeyTreeLeaf)node;
-			if (leaf.isUsedToSign()) {
-				if (leaf.getSigType() == SignatureType.ED25519) {
-					byte[] sig = signUnchecked(data, factory.lookupPrivateKey(leaf.asKey(factory)));
-					return Signature.newBuilder().setEd25519(ByteString.copyFrom(sig)).build();
-				} else if (leaf.getSigType() == SignatureType.RSA) {
-					return Signature.newBuilder().setRSA3072(ByteString.copyFrom(NONSENSE_RSA_SIG)).build();
-				} else if (leaf.getSigType() == SignatureType.ECDSA) {
-					return Signature.newBuilder().setECDSA384(ByteString.copyFrom(NONSENSE_ECDSA_SIG)).build();
-				}
-			} else {
-				return Signature.getDefaultInstance();
-			}
-		} else if (node instanceof KeyTreeThresholdNode) {
-			@SuppressWarnings("unchecked")
-			KeyTreeThresholdNode thresholdNode = (KeyTreeThresholdNode)node;
-			return Signature.newBuilder()
-					.setThresholdSignature(
-							ThresholdSignature.newBuilder()
-									.setSigs(
-											SignatureList.newBuilder()
-													.addAllSigs(
-														thresholdNode.getChildren().stream()
-																.map(child -> asHederaSignature(child, data, factory))
-																.collect(toList())
-													).build()
-									).build()
-					).build();
-		} else if (node instanceof KeyTreeListNode) {
-			@SuppressWarnings("unchecked")
-			KeyTreeListNode listNode = (KeyTreeListNode)node;
-			return Signature.newBuilder()
-					.setSignatureList(
-							SignatureList.newBuilder()
-									.addAllSigs(
-											listNode.getChildren().stream()
-													.map(child -> asHederaSignature(child, data, factory))
-													.collect(toList())
-
-									).build()
-
-					).build();
-
-		}
-		throw new AssertionError("Impossible node type!");
 	}
 
 	public Transaction signWithSigMap(

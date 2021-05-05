@@ -24,13 +24,13 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.SuiteRunner;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -79,12 +79,13 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 									var createdAuditablePayer = false;
 									while (!createdAuditablePayer) {
 										try {
+											AccountID id = spec.registry().getAccountID(DEFAULT_PAYER);
 											var cryptoCreateOp = cryptoCreate("payerAccount")
-													.balance(initialBalance)
+													.balance(id.getAccountNum() == 2L ? initialBalance : THOUSAND_HBAR)
 													.withRecharging()
 													.rechargeWindow(3)
-													.key(GENESIS)
-													.payingWith(GENESIS)
+													.key(DEFAULT_PAYER)
+													.payingWith(DEFAULT_PAYER)
 													.hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
 													.via("txn")
 													.ensuringResolvedStatusIsntFromDuplicate();

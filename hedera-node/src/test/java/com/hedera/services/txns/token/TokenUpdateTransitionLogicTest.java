@@ -331,7 +331,7 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -339,7 +339,7 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -347,7 +347,7 @@ class TokenUpdateTransitionLogicTest {
 		givenMissingToken();
 
 		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -356,7 +356,7 @@ class TokenUpdateTransitionLogicTest {
 		given(validator.tokenSymbolCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
 		// expect:
-		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -365,7 +365,7 @@ class TokenUpdateTransitionLogicTest {
 		given(validator.tokenSymbolCheck(any())).willReturn(INVALID_TOKEN_SYMBOL);
 
 		// expect:
-		assertEquals(INVALID_TOKEN_SYMBOL, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(INVALID_TOKEN_SYMBOL, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -374,7 +374,7 @@ class TokenUpdateTransitionLogicTest {
 		given(validator.tokenNameCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
 		// expect:
-		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -382,7 +382,7 @@ class TokenUpdateTransitionLogicTest {
 		givenInvalidAdminKey();
 
 		// expect:
-		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -390,7 +390,7 @@ class TokenUpdateTransitionLogicTest {
 		givenInvalidKycKey();
 
 		// expect:
-		assertEquals(INVALID_KYC_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(INVALID_KYC_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -398,7 +398,7 @@ class TokenUpdateTransitionLogicTest {
 		givenInvalidWipeKey();
 
 		// expect:
-		assertEquals(INVALID_WIPE_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(INVALID_WIPE_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -406,7 +406,7 @@ class TokenUpdateTransitionLogicTest {
 		givenInvalidSupplyKey();
 
 		// expect:
-		assertEquals(INVALID_SUPPLY_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(INVALID_SUPPLY_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -415,7 +415,7 @@ class TokenUpdateTransitionLogicTest {
 		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// expect:
-		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	@Test
@@ -423,7 +423,7 @@ class TokenUpdateTransitionLogicTest {
 		givenInvalidFreezeKey();
 
 		// expect:
-		assertEquals(INVALID_FREEZE_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+		assertEquals(INVALID_FREEZE_KEY, subject.semanticCheck().apply(tokenUpdateTxn));
 	}
 
 	private void givenValidTxnCtx() {

@@ -47,7 +47,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	public ContractDeleteTransitionLogic(
 			LegacyDeleter delegate,
@@ -86,8 +86,8 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
-		return SYNTAX_CHECK;
+	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+		return SEMANTIC_CHECK;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractDeleteTxn) {

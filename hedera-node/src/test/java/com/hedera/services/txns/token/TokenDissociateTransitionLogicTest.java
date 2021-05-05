@@ -124,7 +124,7 @@ class TokenDissociateTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.syntaxCheck().apply(tokenDissociateTxn));
+		assertEquals(OK, subject.semanticCheck().apply(tokenDissociateTxn));
 	}
 
 	@Test
@@ -132,7 +132,7 @@ class TokenDissociateTransitionLogicTest {
 		givenMissingAccount();
 
 		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(tokenDissociateTxn));
+		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenDissociateTxn));
 	}
 
 	@Test
@@ -140,7 +140,7 @@ class TokenDissociateTransitionLogicTest {
 		givenDuplicateTokens();
 
 		// expect:
-		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.syntaxCheck().apply(tokenDissociateTxn));
+		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(tokenDissociateTxn));
 	}
 
 	private void givenValidTxnCtx() {
