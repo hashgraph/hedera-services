@@ -60,17 +60,17 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				accountAutoRemoval(),
-				accountAutoRenewal(),
-				maxNumberOfEntitiesToRenewOrDeleteWorks(),
-				numberOfEntitiesToScanWorks(),
-				autoDeleteAfterGracePeriod(),
-				updateExpiration()
+				accountAutoRenewal()
+//				maxNumberOfEntitiesToRenewOrDeleteWorks(),
+//				numberOfEntitiesToScanWorks(),
+//				autoDeleteAfterGracePeriod(),
+//				updateExpiration()
 		);
 	}
 
 	private HapiApiSpec accountAutoRemoval() {
 		String autoRemovedAccount = "autoRemovedAccount";
-		return defaultFailingHapiSpec("AccountAutoRemoval")
+		return defaultHapiSpec("AccountAutoRemoval")
 				.given(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "10",
@@ -94,7 +94,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 		String autoRenewedAccount = "autoRenewedAccount";
 		long autoRenewSecs = 10;
 		long initialBalance = ONE_HUNDRED_HBARS;
-		return defaultFailingHapiSpec("AccountAutoRenewal")
+		return defaultHapiSpec("AccountAutoRenewal")
 				.given(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of(
