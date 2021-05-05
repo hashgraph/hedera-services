@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,7 +88,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 		var feeSchedulesId = fileNumbers.toFid(fileNumbers.feeSchedules());
 		if (!hfs.exists(feeSchedulesId)) {
 			throw new IllegalStateException(
-					String.format( "No fee schedule available at %s!", readableId(this.feeSchedules)));
+					String.format("No fee schedule available at %s!", readableId(this.feeSchedules)));
 		}
 		try {
 			var schedules = CurrentAndNextFeeSchedule.parseFrom(hfs.cat(feeSchedulesId));
@@ -95,7 +96,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Corrupt fee schedules file at {}, may require remediation!", readableId(this.feeSchedules), e);
 			throw new IllegalStateException(
-					String.format( "Fee schedule %s is corrupt!", readableId(this.feeSchedules)));
+					String.format("Fee schedule %s is corrupt!", readableId(this.feeSchedules)));
 		}
 	}
 
@@ -123,6 +124,16 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 					function, Instant.ofEpochSecond(at.getSeconds(), at.getNanos()));
 		}
 		return DEFAULT_USAGE_PRICES;
+	}
+
+	@Override
+	public Triple<FeeData, Instant, FeeData> activePricingSequence(HederaFunctionality function) {
+		return Triple.of(
+				currFunctionUsagePrices.get(function),
+				Instant.ofEpochSecond(
+						currFunctionUsagePricesExpiry.getSeconds(),
+						currFunctionUsagePricesExpiry.getNanos()),
+				nextFunctionUsagePrices.get(function));
 	}
 
 	private Map<HederaFunctionality, FeeData> applicableUsagePrices(Timestamp at) {

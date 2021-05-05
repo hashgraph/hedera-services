@@ -49,6 +49,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
+import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
@@ -948,6 +949,7 @@ public class ServicesContext {
 			SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
 
 			fees = new UsageBasedFeeCalculator(
+					new AutoRenewCalcs(cryptoOpsUsage),
 					exchange(),
 					usagePrices(),
 					feeMultiplierSource(),
