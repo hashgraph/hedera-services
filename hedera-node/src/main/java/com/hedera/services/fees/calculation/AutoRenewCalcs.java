@@ -20,12 +20,15 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
+import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 
@@ -36,6 +39,8 @@ import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 public class AutoRenewCalcs {
+	private static final Logger log = LogManager.getLogger(AutoRenewCalcs.class);
+
 	private static final RenewAssessment NO_RENEWAL_POSSIBLE = new RenewAssessment(0L, 0L);
 
 	private final CryptoOpsUsage cryptoOpsUsage;
@@ -54,11 +59,15 @@ public class AutoRenewCalcs {
 	public void setCryptoAutoRenewPriceSeq(Triple<FeeData, Instant, FeeData> cryptoAutoRenewPriceSeq) {
 		this.cryptoAutoRenewPriceSeq = cryptoAutoRenewPriceSeq;
 
-		this.firstConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getLeft());
-		this.secondConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getRight());
+		if (cryptoAutoRenewPriceSeq.getLeft() == null) {
+			log.warn("No prices known for CryptoAccountAutoRenew, will charge zero fees!");
+		} else {
+			this.firstConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getLeft());
+			this.secondConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getRight());
 
-		this.firstServiceRbhPrice = cryptoAutoRenewPriceSeq.getLeft().getServicedata().getRbh();
-		this.secondServiceRbhPrice = cryptoAutoRenewPriceSeq.getRight().getServicedata().getRbh();
+			this.firstServiceRbhPrice = cryptoAutoRenewPriceSeq.getLeft().getServicedata().getRbh();
+			this.secondServiceRbhPrice = cryptoAutoRenewPriceSeq.getRight().getServicedata().getRbh();
+		}
 	}
 
 	public RenewAssessment maxRenewalAndFeeFor(

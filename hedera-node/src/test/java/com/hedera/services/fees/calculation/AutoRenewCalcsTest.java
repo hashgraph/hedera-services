@@ -25,6 +25,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -33,10 +36,13 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.commons.lang3.tuple.Triple;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.inject.Inject;
 import java.time.Instant;
 
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -44,7 +50,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccou
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
+@ExtendWith(LogCaptureExtension.class)
 class AutoRenewCalcsTest {
 	private final Instant preCutoff = Instant.ofEpochSecond(1_234_566L);
 	private final Instant cutoff = Instant.ofEpochSecond(1_234_567L);
@@ -57,6 +66,10 @@ class AutoRenewCalcsTest {
 			.setCentEquiv(10)
 			.build();
 
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
 	private AutoRenewCalcs subject;
 
 	@BeforeEach
@@ -64,6 +77,17 @@ class AutoRenewCalcsTest {
 		cryptoPrices = frozenPricesFrom("fees/feeSchedules.json", CryptoAccountAutoRenew);
 		subject = new AutoRenewCalcs(cryptoOpsUsage);
 		subject.setCryptoAutoRenewPriceSeq(cryptoPrices);
+	}
+
+	@Test
+	void warnsOnMissingFeeData() {
+		// when:
+		subject.setCryptoAutoRenewPriceSeq(Triple.of(null, cutoff, null));
+
+		// then:
+		assertThat(
+				logCaptor.warnLogs(),
+				contains(Matchers.startsWith("No prices known for CryptoAccountAutoRenew, will charge zero fees!")));
 	}
 
 	@Test
