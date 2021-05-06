@@ -23,6 +23,7 @@ package com.hedera.test.mocks;
 import com.google.common.io.Files;
 import com.hedera.services.fees.bootstrap.JsonToProtoSerdeTest;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
@@ -30,7 +31,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
+import org.apache.commons.lang3.tuple.Triple;
+
 import java.io.File;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import static java.util.stream.Collectors.toMap;
@@ -73,10 +77,17 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 			FeeData usagePrices = functionUsagePrices.get(function);
 			Objects.requireNonNull(usagePrices);
 			return usagePrices;
-		} catch (Exception e) {
-		}
+		} catch (Exception ignore) { }
 		return DEFAULT_USAGE_PRICES;
 	}
+
+	@Override
+	public Triple<FeeData, Instant, FeeData> activePricingSequence(HederaFunctionality function) {
+		var now = Instant.now();
+		var prices = pricesGiven(function, MiscUtils.asTimestamp(now));
+		return Triple.of(prices, now, prices);
+	}
+
 
 	private Map<HederaFunctionality, FeeData> applicableUsagePrices(Timestamp at) {
 		if (onlyNextScheduleApplies(at)) {

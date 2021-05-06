@@ -20,6 +20,8 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
@@ -122,16 +124,30 @@ public class SpecUtils {
 	}
 
 	public static void main(String... args) throws Exception {
-		var pemLoc = new File("pretend-genesis.pem");
-		var passphrase = "guessAgain";
-
-		var b64Loc = "PretendStartupAccount.txt";
-		var literal = "0.0.2";
-
-		var txt = asSerializedLegacyOcKeystore(pemLoc, passphrase, asAccount(literal));
-		var out = newBufferedWriter(Paths.get(b64Loc));
-
-		out.write(txt);
-		out.close();
+//		var pemLoc = new File("pretend-genesis.pem");
+//		var passphrase = "guessAgain";
+//
+//		var b64Loc = "PretendStartupAccount.txt";
+//		var literal = "0.0.2";
+//
+//		var txt = asSerializedLegacyOcKeystore(pemLoc, passphrase, asAccount(literal));
+//		var out = newBufferedWriter(Paths.get(b64Loc));
+//
+//		out.write(txt);
+//		out.close();
+		String firstPub = "\\3512\\364\\322\\234{~z\\271\\376_\\361\\220\\316b\\377\\017," +
+				"\\003\\207Z\\336\\004T\\\\\\024z\\000\\366M5P";
+		String secondPub = "\\177\\200\\367wLo\\237\\020c\\214\\vz\\v\\302\\274\\276\\353\\203@Z\\375\\265E\\001\\202" +
+				"^tR\\260\\207Z\\341";
+		String something = "8\\244\\220";
+		System.out.println(asHex(firstPub));
+		System.out.println(asHex(secondPub));
+		System.out.println(asHex(something));
 	}
+
+	private static String asHex(String encoded) throws TextFormat.InvalidEscapeSequenceException {
+		ByteString bs = TextFormat.unescapeBytes(encoded);
+		return Hex.encodeHexString(bs.toByteArray());
+	}
+
 }

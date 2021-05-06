@@ -1,0 +1,121 @@
+package com.hedera.services.state.expiry.renewal;
+
+import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.stream.RecordStreamObject;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
+
+import java.time.Instant;
+
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+
+public class RenewalRecordsHelper {
+	private static final Transaction EMPTY_SIGNED_TXN = Transaction.getDefaultInstance();
+
+	private final ServicesContext ctx;
+	private final RecordStreamManager recordStreamManager;
+	private final GlobalDynamicProperties dynamicProperties;
+
+	private int consensusNanosIncr = 0;
+	private Instant cycleStart = null;
+	private AccountID funding = null;
+
+	public RenewalRecordsHelper(
+			ServicesContext ctx,
+			RecordStreamManager recordStreamManager,
+			GlobalDynamicProperties dynamicProperties
+	) {
+		this.ctx = ctx;
+		this.recordStreamManager = recordStreamManager;
+		this.dynamicProperties = dynamicProperties;
+	}
+
+	public void beginRenewalCycle(Instant now) {
+		cycleStart = now;
+		consensusNanosIncr = 1;
+		funding = dynamicProperties.fundingAccount();
+	}
+
+	public void streamCryptoRemoval(MerkleEntityId id) {
+		assertInCycle();
+
+		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
+		final var grpcId = id.toAccountId();
+		final var memo = new StringBuilder("Entity ")
+				.append(id.toAbbrevString())
+				.append(" was automatically deleted.")
+				.toString();
+
+		final var record = forCrypto(grpcId, eventTime).setMemo(memo).build();
+		stream(record, eventTime);
+	}
+
+	public void streamCryptoRenewal(MerkleEntityId id, long fee, long newExpiry) {
+		assertInCycle();
+
+		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
+		final var grpcId = id.toAccountId();
+		final var memo = new StringBuilder("Entity ")
+				.append(id.toAbbrevString())
+				.append(" was automatically renewed. New expiration time: ")
+				.append(newExpiry)
+				.append(".")
+				.toString();
+
+		final var record = forCrypto(grpcId, eventTime)
+				.setMemo(memo)
+				.setTransferList(feeXfers(fee, grpcId))
+				.setTransactionFee(fee)
+				.build();
+		stream(record, eventTime);
+	}
+
+	private void stream(TransactionRecord record, Instant at) {
+		final var rso = new RecordStreamObject(record, EMPTY_SIGNED_TXN, at);
+		ctx.updateRecordRunningHash(rso.getRunningHash());
+		recordStreamManager.addRecordStreamObject(rso);
+	}
+
+	public void endRenewalCycle() {
+		cycleStart = null;
+		consensusNanosIncr = 0;
+	}
+
+	private TransferList feeXfers(long amount, AccountID payer) {
+		return TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAmount(amount).setAccountID(funding))
+				.addAccountAmounts(AccountAmount.newBuilder().setAmount(-amount).setAccountID(payer))
+				.build();
+	}
+
+	private TransactionRecord.Builder forCrypto(AccountID id, Instant at) {
+		return TransactionRecord.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setAccountID(id))
+				.setReceipt(TransactionReceipt.newBuilder()
+						.setAccountID(id))
+				.setConsensusTimestamp(asTimestamp(at));
+	}
+
+	int getConsensusNanosIncr() {
+		return consensusNanosIncr;
+	}
+
+	Instant getCycleStart() {
+		return cycleStart;
+	}
+
+	private void assertInCycle() {
+		if (cycleStart == null) {
+			throw new IllegalStateException("Cannot stream records if not in a renewal cycle!");
+		}
+	}
+}

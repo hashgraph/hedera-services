@@ -49,6 +49,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
+import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
@@ -196,6 +197,10 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.expiry.renewal.RenewalFeeHelper;
+import com.hedera.services.state.expiry.renewal.RenewalHelper;
+import com.hedera.services.state.expiry.renewal.RenewalProcess;
+import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
@@ -948,6 +953,7 @@ public class ServicesContext {
 			SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
 
 			fees = new UsageBasedFeeCalculator(
+					new AutoRenewCalcs(cryptoOpsUsage),
 					exchange(),
 					usagePrices(),
 					feeMultiplierSource(),
@@ -1477,7 +1483,16 @@ public class ServicesContext {
 
 	public EntityAutoRenewal entityAutoRenewal() {
 		if (entityAutoRenewal == null) {
-			entityAutoRenewal = new EntityAutoRenewal(this);
+			final var helper = new RenewalHelper(
+					hederaNums(), this::accounts);
+			final var feeHelper = new RenewalFeeHelper(
+					globalDynamicProperties(), this::accounts);
+			final var recordHelper = new RenewalRecordsHelper(
+					this, recordStreamManager(), globalDynamicProperties());
+			final var renewalProcess = new RenewalProcess(
+					fees(), hederaNums(), helper, feeHelper, recordHelper, globalDynamicProperties());
+			entityAutoRenewal = new EntityAutoRenewal(
+					hederaNums(), renewalProcess, this, globalDynamicProperties());
 		}
 		return entityAutoRenewal;
 	}

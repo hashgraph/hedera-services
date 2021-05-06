@@ -64,27 +64,27 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class CryptoOpsUsageTest {
-	int numTokenRels = 3;
-	long secs = 500_000L;
-	long now = 1_234_567L;
-	long expiry = now + secs;
-	Key key = KeyUtils.A_COMPLEX_KEY;
-	String memo = "That abler soul, which thence doth flow";
-	AccountID proxy = IdUtils.asAccount("0.0.75231");
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private int numTokenRels = 3;
+	private long secs = 500_000L;
+	private long now = 1_234_567L;
+	private long expiry = now + secs;
+	private Key key = KeyUtils.A_COMPLEX_KEY;
+	private String memo = "That abler soul, which thence doth flow";
+	private AccountID proxy = IdUtils.asAccount("0.0.75231");
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	Function<ResponseType, QueryUsage> queryEstimatorFactory;
-	QueryUsage queryBase;
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private Function<ResponseType, QueryUsage> queryEstimatorFactory;
+	private QueryUsage queryBase;
 
-	CryptoCreateTransactionBody creationOp;
-	CryptoUpdateTransactionBody updateOp;
-	TransactionBody txn;
-	Query query;
+	private CryptoCreateTransactionBody creationOp;
+	private CryptoUpdateTransactionBody updateOp;
+	private TransactionBody txn;
+	private Query query;
 
-	CryptoOpsUsage subject = new CryptoOpsUsage();
+	private CryptoOpsUsage subject = new CryptoOpsUsage();
 
 	@BeforeEach
 	@SuppressWarnings("unchecked")
@@ -142,8 +142,8 @@ class CryptoOpsUsageTest {
 	void estimatesCreationAsExpected() {
 		givenCreationOp();
 		// and given:
-		long rb = reprSize();
-		long bytesUsed = reprSize() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+		long rb = basicReprBytes();
+		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 				+ 2 * LONG_SIZE + BOOL_SIZE;
 
 		// when:
@@ -158,6 +158,27 @@ class CryptoOpsUsageTest {
 	}
 
 	@Test
+	void estimatesAutoRenewAsExpected() {
+		// setup:
+		var expectedRbsUsedInRenewal = (basicReprBytes() + (numTokenRels * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()));
+
+		// given:
+		var ctx = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(expiry)
+				.setCurrentMemo(memo)
+				.setCurrentKey(key)
+				.setCurrentlyHasProxy(true)
+				.setCurrentNumTokenRels(numTokenRels)
+				.build();
+
+		// when:
+		var estimate = subject.cryptoAutoRenewRb(ctx);
+
+		// then:
+		assertEquals(expectedRbsUsedInRenewal, estimate);
+	}
+
+	@Test
 	void estimatesUpdateAsExpected() {
 		// setup:
 		Key oldKey = FileOpsUsage.asKey(KeyUtils.A_KEY_LIST.getKeyList());
@@ -165,13 +186,17 @@ class CryptoOpsUsageTest {
 		boolean oldWasUsingProxy = false;
 		String oldMemo = "Lettuce";
 		// and:
-		long bytesUsed = reprSize() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
+		long bytesUsed = basicReprBytes() - CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
 		// and:
 		long oldRbs = (oldExpiry - now) *
-				(oldMemo.length() + getAccountKeyStorageSize(oldKey));
+				(oldMemo.length() + getAccountKeyStorageSize(oldKey)
+				+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
+				+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 		// and:
 		long newRbs = (expiry - now) *
-				(memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE);
+				(memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE
+				+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
+				+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 
 		givenUpdateOp();
 		// and:
@@ -193,7 +218,7 @@ class CryptoOpsUsageTest {
 		verify(base).addRbs(newRbs - oldRbs);
 	}
 
-	private long reprSize() {
+	private long basicReprBytes() {
 		return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 				/* The proxy account */
 				+ BASIC_ENTITY_ID_SIZE
