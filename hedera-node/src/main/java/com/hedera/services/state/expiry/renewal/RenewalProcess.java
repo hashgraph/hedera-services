@@ -67,8 +67,8 @@ public class RenewalProcess {
 		final var lastClassified = helper.getLastClassifiedAccount();
 		final long reqPeriod = lastClassified.getAutoRenewSecs();
 		final var usageAssessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);
-		final long effPeriod = usageAssessment.getKey();
-		final long renewalFee = usageAssessment.getValue();
+		final long effPeriod = usageAssessment.renewalPeriod();
+		final long renewalFee = usageAssessment.fee();
 
 		helper.renewLastClassifiedWith(renewalFee, effPeriod);
 		recordsHelper.streamCryptoRenewal(accountId, renewalFee, longNow + effPeriod);

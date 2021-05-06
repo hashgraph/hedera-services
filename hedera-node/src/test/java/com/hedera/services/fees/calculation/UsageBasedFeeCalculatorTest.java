@@ -152,9 +152,9 @@ class UsageBasedFeeCalculatorTest {
 	@Test
 	void delegatesAutoRenewCalcs() {
 		// setup:
-		final var expected = Pair.of(123L, 456L);
+		final var expected = new AutoRenewCalcs.RenewAssessment(456L, 123L);
 
-		given(autoRenewCalcs.maxRenewalAndFeeFor(any(), anyLong(), any())).willReturn(expected);
+		given(autoRenewCalcs.maxRenewalAndFeeFor(any(), anyLong(), any(), any())).willReturn(expected);
 
 		// when:
 		var actual = subject.assessCryptoAutoRenewal(new MerkleAccount(), 1L, Instant.ofEpochSecond(2L));

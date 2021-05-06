@@ -2,8 +2,8 @@ package com.hedera.test.mocks;
 
 import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.time.Instant;
@@ -14,8 +14,13 @@ public class TestAutoRenewCalcs extends AutoRenewCalcs {
 	}
 
 	@Override
-	public Pair<Long, Long> maxRenewalAndFeeFor(MerkleAccount expiredAccount, long requestedPeriod, Instant at) {
-		return Pair.of(Long.MAX_VALUE, 0L);
+	public AutoRenewCalcs.RenewAssessment maxRenewalAndFeeFor(
+			MerkleAccount expiredAccount,
+			long requestedPeriod,
+			Instant at,
+			ExchangeRate active
+	) {
+		return new AutoRenewCalcs.RenewAssessment(0L, Long.MAX_VALUE);
 	}
 
 	@Override

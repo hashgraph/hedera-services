@@ -3,6 +3,7 @@ package com.hedera.services.state.expiry.renewal;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -159,7 +160,7 @@ class RenewalProcessTest {
 		given(helper.classify(fundedExpiredAccountNum, now)).willReturn(ACCOUNT_EXPIRED_NONZERO_BALANCE);
 		given(helper.getLastClassifiedAccount()).willReturn(expiredAccountNonZeroBalance);
 		given(fees.assessCryptoAutoRenewal(expiredAccountNonZeroBalance, requestedRenewalPeriod, instantNow))
-				.willReturn(Pair.of(actualRenewalPeriod, fee));
+				.willReturn(new AutoRenewCalcs.RenewAssessment(fee, actualRenewalPeriod));
 
 		// when:
 		subject.beginRenewalCycle(instantNow);

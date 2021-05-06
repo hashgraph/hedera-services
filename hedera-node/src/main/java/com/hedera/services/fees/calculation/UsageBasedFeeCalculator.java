@@ -98,12 +98,12 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	@Override
-	public Pair<Long, Long> assessCryptoAutoRenewal(
+	public AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
 			MerkleAccount expiredAccount,
 			long requestedRenewal,
 			Instant now
 	) {
-		return autoRenewCalcs.maxRenewalAndFeeFor(expiredAccount, requestedRenewal, now);
+		return autoRenewCalcs.maxRenewalAndFeeFor(expiredAccount, requestedRenewal, now, exchange.activeRate());
 	}
 
 	@Override

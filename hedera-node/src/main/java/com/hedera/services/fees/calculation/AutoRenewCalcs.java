@@ -3,17 +3,20 @@ package com.hedera.services.fees.calculation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.time.Instant;
 
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
+import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 public class AutoRenewCalcs {
-	private static final Pair<Long, Long> NO_RENEWAL_POSSIBLE = Pair.of(0L, 0L);
+	private static final RenewAssessment NO_RENEWAL_POSSIBLE = new RenewAssessment(0L, 0L);
 
 	private final CryptoOpsUsage cryptoOpsUsage;
 
@@ -38,13 +41,12 @@ public class AutoRenewCalcs {
 		this.secondServiceRbhPrice = cryptoAutoRenewPriceSeq.getRight().getServicedata().getRbh();
 	}
 
-	private long constantFeeFrom(FeeData prices) {
-		return prices.getNodedata().getConstant()
-				+ prices.getNetworkdata().getConstant()
-				+ prices.getServicedata().getConstant();
-	}
-
-	public Pair<Long, Long> maxRenewalAndFeeFor(MerkleAccount expiredAccount, long requestedPeriod, Instant at) {
+	public RenewAssessment maxRenewalAndFeeFor(
+			MerkleAccount expiredAccount,
+			long requestedPeriod,
+			Instant at,
+			ExchangeRate rate
+	) {
 		if (cryptoAutoRenewPriceSeq == null) {
 			throw new IllegalStateException("No crypto usage prices are set!");
 		}
@@ -54,29 +56,37 @@ public class AutoRenewCalcs {
 			return NO_RENEWAL_POSSIBLE;
 		}
 
-		final long rbUsage = rbUsedBy(expiredAccount);
-		final long maxRenewableRbh = Math.max(
-				1L,
-				maxRenewableRbhGiven(rbUsage, requestedPeriod, expiredAccount.getBalance()));
-
 		final boolean isBeforeSwitch = at.isBefore(cryptoAutoRenewPriceSeq.getMiddle());
-		final long fixedFee = isBeforeSwitch ? firstConstantCryptoAutoRenewFee : secondConstantCryptoAutoRenewFee;
+		final long nominalFixed = isBeforeSwitch ? firstConstantCryptoAutoRenewFee : secondConstantCryptoAutoRenewFee;
 		final long serviceRbhPrice = isBeforeSwitch ? firstServiceRbhPrice : secondServiceRbhPrice;
 
-		final long maxRenewablePeriod = maxRenewableRbh * HRS_DIVISOR;
-		final long feeForMaxRenewal = Math.min(fixedFee + maxRenewableRbh * serviceRbhPrice, balance);
+		final long fixedTinybarFee = inTinybars(nominalFixed, rate);
+		final long rbUsage = rbUsedBy(expiredAccount);
+		final long tinybarPerHour = inTinybars(serviceRbhPrice * rbUsage, rate);
+		final long maxRenewableRbh = Math.max(
+				1L,
+				maxRenewableRbhGiven(fixedTinybarFee, tinybarPerHour, requestedPeriod, expiredAccount.getBalance()));
 
-		return Pair.of(maxRenewablePeriod, feeForMaxRenewal);
+		final long maxRenewablePeriod = maxRenewableRbh * HRS_DIVISOR;
+		final long feeForMaxRenewal = Math.min(fixedTinybarFee + maxRenewableRbh * tinybarPerHour, balance);
+
+		return new RenewAssessment(feeForMaxRenewal, maxRenewablePeriod);
 	}
 
-	long maxRenewableRbhGiven(long rbUsage, long requestedPeriod, long balance) {
-		final long remainingBalance = Math.max(0, balance - firstConstantCryptoAutoRenewFee);
-
-		final long feePerHour = firstServiceRbhPrice * rbUsage;
-		final long affordableHours = remainingBalance / feePerHour;
+	private long maxRenewableRbhGiven(
+			long fixedTinybarFee,
+			long tinybarPerHour,
+			long requestedPeriod,
+			long balance
+	) {
+		final long remainingBalance = Math.max(0, balance - fixedTinybarFee);
+		final long affordableHours = remainingBalance / tinybarPerHour;
 		final long requestedHours = requestedPeriod / HRS_DIVISOR;
-
 		return Math.min(affordableHours, requestedHours);
+	}
+
+	long inTinybars(long nominalFee, ExchangeRate rate) {
+		return getTinybarsFromTinyCents(rate, nominalFee / FEE_DIVISOR_FACTOR);
 	}
 
 	long rbUsedBy(MerkleAccount account) {
@@ -87,6 +97,30 @@ public class AutoRenewCalcs {
 				.setCurrentMemo(account.getMemo())
 				.setCurrentNumTokenRels(account.tokens().numAssociations())
 				.build();
-		return(cryptoOpsUsage.cryptoAutoRenewRb(extantCtx));
+		return(BASIC_ACCOUNT_SIZE + cryptoOpsUsage.cryptoAutoRenewRb(extantCtx));
+	}
+
+	private long constantFeeFrom(FeeData prices) {
+		return prices.getNodedata().getConstant()
+				+ prices.getNetworkdata().getConstant()
+				+ prices.getServicedata().getConstant();
+	}
+
+	public static class RenewAssessment {
+		private final long fee;
+		private final long renewalPeriod;
+
+		public RenewAssessment(long fee, long renewalPeriod) {
+			this.fee = fee;
+			this.renewalPeriod = renewalPeriod;
+		}
+
+		public long fee() {
+			return fee;
+		}
+
+		public long renewalPeriod() {
+			return renewalPeriod;
+		}
 	}
 }

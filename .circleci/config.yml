@@ -2025,7 +2025,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 01350-01215-ImplCryptoAutoRenewFees
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
