@@ -38,7 +38,11 @@ public class RenewalProcess {
 	}
 
 	public void beginRenewalCycle(Instant now) {
+		assertNotInCycle();
+
 		cycleTime = now;
+		feeHelper.beginChargingCycle();
+		recordsHelper.beginRenewalCycle(now);
 	}
 
 	public boolean process(long entityNum) {
@@ -53,8 +57,21 @@ public class RenewalProcess {
 				processExpiredAccountZeroBalance(new MerkleEntityId(shard, realm, entityNum));
 				return true;
 			case ACCOUNT_EXPIRED_NONZERO_BALANCE:
+				processExpiredAccountNonzeroBalance(new MerkleEntityId(shard, realm, entityNum));
+				return true;
 		}
 		return false;
+	}
+
+	private void processExpiredAccountNonzeroBalance(MerkleEntityId accountId) {
+		final var lastClassified = helper.getLastClassifiedAccount();
+		final long reqPeriod = lastClassified.getAutoRenewSecs();
+		final var usageAssessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);
+		final long effPeriod = usageAssessment.getKey();
+		final long renewalFee = usageAssessment.getValue();
+
+		helper.renewLastClassifiedWith(renewalFee, effPeriod);
+		recordsHelper.streamCryptoRenewal(accountId, renewalFee, longNow + effPeriod);
 	}
 
 	private void processExpiredAccountZeroBalance(MerkleEntityId accountId) {
@@ -69,12 +86,22 @@ public class RenewalProcess {
 	}
 
 	public void endRenewalCycle() {
-		throw new AssertionError("Not implemented!");
+		assertInCycle();
+
+		cycleTime = null;
+		feeHelper.endChargingCycle();
+		recordsHelper.endRenewalCycle();
 	}
 
 	private void assertInCycle() {
 		if (cycleTime == null) {
 			throw new IllegalStateException("Cannot stream records if not in a renewal cycle!");
+		}
+	}
+
+	private void assertNotInCycle() {
+		if (cycleTime != null) {
+			throw new IllegalStateException("Cannot end renewal cycle, none is started!");
 		}
 	}
 

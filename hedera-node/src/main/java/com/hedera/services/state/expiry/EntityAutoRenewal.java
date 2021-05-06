@@ -75,45 +75,11 @@ public class EntityAutoRenewal {
 			if (renewalProcess.process(scanNum)) {
 				entitiesTouched++;
 			}
-//			final var classification = helper.classify(scanNum, now);
-
-//			AccountID accountID = accountBuilder
-//					.setAccountNum(scanNum)
-//					.build();
-//			if (backingAccounts.contains(accountID)) {
-//				var merkleAccount = backingAccounts.getRef(accountID);
-//				long expiry = merkleAccount.getExpiry();
-//				if (expiry <= consensusTime.getEpochSecond()) {
-//					numberOfEntitiesRenewedOrDeleted++;
-//					long balance = merkleAccount.getBalance();
-//					long newExpiry = expiry;
-//					long fee = 100_000_000L;
-//					if (0 == balance) {
-//						backingAccounts.remove(accountID);
-//					} else {
-//						// Check the remaining balance to adjust the extension
-//						long autoRenewSecs = merkleAccount.getAutoRenewSecs();
-//						newExpiry = expiry + autoRenewSecs;
-//						merkleAccount.setExpiry(newExpiry);
-//						feeCollectorBalance += fee;
-//						balance -= fee;
-//						setBalance(merkleAccount, balance);
-//					}
-//					Instant actionTime = consensusTime.plusNanos(numberOfEntitiesRenewedOrDeleted);
-//					var record = (0 == balance)
-//							? EntityRemovalRecord.generatedFor(accountID, actionTime, accountID)
-//							: AutoRenewalRecord.generatedForCrypto(accountID, actionTime, accountID, fee, newExpiry, feeCollector);
-//					var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
-//					ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
-//					ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
-//				}
-//			}
 			if (entitiesTouched >= maxEntitiesToTouch) {
 				break;
 			}
 		}
-//		setBalance(merkleFeeCollector, feeCollectorBalance);
-//		backingAccounts.flushMutableRefs();
+
 		renewalProcess.endRenewalCycle();
 		ctx.updateLastScannedEntity(scanNum);
 	}
